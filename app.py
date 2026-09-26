@@ -1850,6 +1850,41 @@ def _gsf_ai_window_features(scan,start,duration):
         for i in range(len(aa))
     ]
 
+    # Struttura locale attorno al picco: distingue un vero momento
+    # da un singolo flash/rumore casuale.
+    radius=max(1,int(round(2.0/step)))
+    left=max(0,peak_idx-radius)
+    right=min(len(activity),peak_idx+radius+1)
+    peak_neighborhood=activity[left:right]
+    sustained_peak=avg(peak_neighborhood)
+
+    setup_slice=activity[max(0,peak_idx-radius*2):peak_idx]
+    aftermath_slice=activity[peak_idx+1:min(len(activity),peak_idx+1+radius*2)]
+    setup_score=avg(setup_slice)
+    aftermath_score=avg(aftermath_slice)
+
+    isolated_spike=max(
+        0.0,
+        min(1.0,activity[peak_idx]-sustained_peak)
+    )
+
+    flat_audio_risk=max(
+        0.0,
+        min(
+            1.0,
+            avg(aa)
+            - 0.70*avg(mm)
+            - 0.25*avg([min(aa[i],mm[i]) for i in range(len(aa))])
+        )
+    )
+
+    continuity=min(
+        1.0,
+        0.45*sustained_peak+
+        0.25*setup_score+
+        0.30*aftermath_score
+    )
+
     return {
         "audio_avg":avg(aa),
         "audio_peak":mx(aa),
@@ -1871,6 +1906,12 @@ def _gsf_ai_window_features(scan,start,duration):
         "build":build,
         "release":release,
         "center_peak":center_peak,
+        "sustained_peak":sustained_peak,
+        "setup_score":setup_score,
+        "aftermath_score":aftermath_score,
+        "isolated_spike":isolated_spike,
+        "flat_audio_risk":flat_audio_risk,
+        "continuity":continuity,
         "speech":0.0,
         "reaction":0.0,
         "event_score":0.0,
@@ -2043,6 +2084,124 @@ Za-zÀ-ÿ']+",joined.lower())
         return 0.0,0.0,""
 
 
+def _gsf_short_worthiness(features, profile="auto"):
+    """
+    0..1: quanto questa finestra sembra già una clip completa e pubblicabile,
+    non semplicemente un picco statistico.
+    """
+    f=features or {}
+
+    event=float(f.get("event_score",0.0))
+    reaction=max(
+        float(f.get("reaction",0.0)),
+        float(f.get("reaction_cue",0.0))
+    )
+    hook=float(f.get("hook_score",0.0))
+    payoff=float(f.get("payoff_position",0.0))
+    sustained=float(f.get("sustained_peak",0.0))
+    setup=float(f.get("setup_score",0.0))
+    aftermath=float(f.get("aftermath_score",0.0))
+    continuity=float(f.get("continuity",0.0))
+    active=float(f.get("active_ratio",0.0))
+    synergy=float(f.get("synergy",0.0))
+    arc=float(f.get("arc",0.0))
+    isolated=float(f.get("isolated_spike",0.0))
+    flat_audio=float(f.get("flat_audio_risk",0.0))
+    dead=float(f.get("dead_ratio",0.0))
+    dead_streak=float(f.get("dead_streak_ratio",0.0))
+    motion=float(f.get("motion_avg",0.0))
+
+    if profile=="action":
+        core=(
+            0.18*continuity+
+            0.16*sustained+
+            0.14*active+
+            0.12*setup+
+            0.12*aftermath+
+            0.09*hook+
+            0.07*payoff+
+            0.07*synergy+
+            0.05*event
+        )
+    elif profile=="reaction":
+        core=(
+            0.20*reaction+
+            0.16*aftermath+
+            0.13*hook+
+            0.12*payoff+
+            0.11*continuity+
+            0.09*event+
+            0.08*sustained+
+            0.06*setup+
+            0.05*synergy
+        )
+    elif profile=="director":
+        core=(
+            0.18*arc+
+            0.15*setup+
+            0.15*payoff+
+            0.14*aftermath+
+            0.12*hook+
+            0.10*continuity+
+            0.07*event+
+            0.05*reaction+
+            0.04*synergy
+        )
+    else:
+        core=(
+            0.13*hook+
+            0.13*payoff+
+            0.12*continuity+
+            0.10*sustained+
+            0.10*setup+
+            0.10*aftermath+
+            0.09*active+
+            0.08*event+
+            0.06*reaction+
+            0.05*arc+
+            0.04*synergy
+        )
+
+    event_protection=min(0.85,event)
+    reaction_protection=min(0.65,reaction)
+
+    false_peak_penalty=isolated*max(
+        0.15,
+        1.0-0.75*event_protection-0.45*reaction_protection
+    )
+
+    flat_noise_penalty=flat_audio*max(
+        0.0,
+        1.0-0.80*event-0.55*reaction
+    )*max(0.15,1.0-motion)
+
+    dead_penalty=0.55*dead+0.65*dead_streak
+
+    sequence_bonus=min(
+        0.16,
+        0.07*min(setup,sustained)+
+        0.09*min(sustained,aftermath)
+    )
+
+    raw=(
+        core+
+        sequence_bonus+
+        0.10*event+
+        0.05*reaction-
+        0.34*false_peak_penalty-
+        0.24*flat_noise_penalty-
+        0.22*dead_penalty
+    )
+
+    score=max(0.0,min(1.0,raw))
+
+    return score,{
+        "false_peak":max(0.0,min(1.0,false_peak_penalty)),
+        "flat_noise":max(0.0,min(1.0,flat_noise_penalty)),
+        "sequence":max(0.0,min(1.0,sequence_bonus/0.16 if 0.16 else 0.0)),
+    }
+
+
 def _gsf_score_ai_window(profile,f):
     """Pesi distinti + hook/payoff + eventi importanti + anti-tempo-morto."""
     dead=float(f.get("dead_ratio",0.0))
@@ -2053,6 +2212,7 @@ def _gsf_score_ai_window(profile,f):
     payoff=float(f.get("payoff_position",0.0))
     reaction_cue=float(f.get("reaction_cue",0.0))
     event_score=float(f.get("event_score",0.0))
+    short_score=float(f.get("short_worthiness",0.0))
 
     if profile=="action":
         score=(
@@ -2064,7 +2224,8 @@ def _gsf_score_ai_window(profile,f):
             0.07*f["synergy"]+
             0.06*hook+
             0.05*payoff+
-            0.11*event_score-
+            0.09*event_score+
+            0.08*short_score-
             0.25*dead-
             0.16*dead_streak
         )
@@ -2079,7 +2240,8 @@ def _gsf_score_ai_window(profile,f):
             0.03*f["motion_avg"]+
             0.03*hook+
             0.03*payoff+
-            0.13*event_score-
+            0.10*event_score+
+            0.08*short_score-
             0.22*dead-
             0.12*dead_streak
         )
@@ -2095,7 +2257,8 @@ def _gsf_score_ai_window(profile,f):
             0.06*speech+
             0.04*reaction+
             0.03*f["motion_avg"]+
-            0.16*event_score-
+            0.12*event_score+
+            0.10*short_score-
             0.24*dead-
             0.15*dead_streak
         )
@@ -2113,7 +2276,8 @@ def _gsf_score_ai_window(profile,f):
             0.05*reaction+
             0.04*f["arc"]+
             0.02*reaction_cue+
-            0.18*event_score-
+            0.14*event_score+
+            0.10*short_score-
             0.25*dead-
             0.15*dead_streak
         )
@@ -2128,7 +2292,8 @@ def _gsf_ai_feature_similarity(a,b):
     keys=[
         "audio_avg","audio_burst","motion_avg","motion_burst",
         "synergy","active_ratio","arc","hook_score",
-        "payoff_position","speech","reaction","reaction_cue","event_score"
+        "payoff_position","speech","reaction","reaction_cue","event_score",
+        "short_worthiness","continuity","sustained_peak"
     ]
     diffs=[]
     for k in keys:
@@ -2444,6 +2609,8 @@ def _gsf_ai_pick_diverse(enriched,duration,numero_clip):
                 }
                 this_category=_gsf_moment_category(f)
                 category_bonus=0.055 if this_category not in chosen_categories else -0.015
+                short_bonus=0.08*float(f.get("short_worthiness",0.0))
+                false_peak_penalty=0.08*float(f.get("false_peak_penalty",0.0))
 
                 # Similarità contenuto pesa meno dell'overlap temporale.
                 return (
@@ -2451,6 +2618,8 @@ def _gsf_ai_pick_diverse(enriched,duration,numero_clip):
                     -0.10*worst_similarity
                     -0.24*worst_overlap
                     +category_bonus
+                    +short_bonus
+                    -false_peak_penalty
                 )
 
             pick=max(remaining,key=utility)
@@ -2566,7 +2735,26 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
         f["event_position"]=None
         f["moment_category"]=_gsf_moment_category(f)
 
+        short_worthiness,short_diag=_gsf_short_worthiness(f,profile)
+        f["short_worthiness"]=short_worthiness
+        f["false_peak_penalty"]=float(short_diag.get("false_peak",0.0))
+        f["flat_noise_penalty"]=float(short_diag.get("flat_noise",0.0))
+        f["sequence_score"]=float(short_diag.get("sequence",0.0))
+
         score=_gsf_score_ai_window(profile,f)
+
+        if (
+            f["false_peak_penalty"]>=0.45
+            and f["event_score"]<0.56
+            and f["reaction"]<0.28
+        ):
+            score*=0.72
+
+        if (
+            f["flat_noise_penalty"]>=0.45
+            and f["event_score"]<0.56
+        ):
+            score*=0.78
         adjusted_start=start
 
         if f["event_score"]>=0.56 and f.get("event_time") is not None:
@@ -2619,6 +2807,10 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
                 "event_signal":round(float(f.get("event_signal_score",0.0)),3),
                 "event_semantic":round(float(f.get("event_semantic_score",0.0)),3),
                 "category":str(f.get("moment_category","") or ""),
+                "short_worthiness":round(float(f.get("short_worthiness",0.0)),3),
+                "false_peak":round(float(f.get("false_peak_penalty",0.0)),3),
+                "flat_noise":round(float(f.get("flat_noise_penalty",0.0)),3),
+                "sequence":round(float(f.get("sequence_score",0.0)),3),
             }
         }
 
@@ -4036,10 +4228,17 @@ if video:
                                 "story":"🎬 MOMENTO",
                             }.get(_category,"")
 
+                        _short_pct = int(
+                            max(1,min(
+                                100,
+                                float(_features.get("short_worthiness",0.0))*100
+                            ))
+                        )
+
                         label = (
                             f"#{i + 1} • "
                             + (f"{_event_badge} • " if _event_badge else "")
-                            + f"Qualità {qualita}% • "
+                            + f"Qualità {qualita}% • Short {_short_pct}% • "
                             + f"{sec:.0f}s → {sec + duration:.0f}s"
                         )
 
