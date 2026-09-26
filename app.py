@@ -1873,13 +1873,110 @@ def _gsf_ai_window_features(scan,start,duration):
         "center_peak":center_peak,
         "speech":0.0,
         "reaction":0.0,
+        "event_score":0.0,
+        "event_type":"",
+        "event_time":None,
     }
 
+
+
+_GSF_IMPORTANT_EVENTS = {
+    "goal": {
+        "weight": 1.00,
+        "patterns": [
+            r"\bgo+l+\b", r"\bgoal+\b", r"\bgolazo\b",
+            r"\bha segnato\b", r"\bsegna(?:to)?\b", r"\brete\b",
+            r"\bequalizer\b", r"\bpareggio\b"
+        ],
+    },
+    "shooter_elimination": {
+        "weight": 0.96,
+        "patterns": [
+            r"\bheadshot\b", r"\bkill(?:ed)?\b", r"\beliminat(?:ed|o|a|i|e|ion)\b",
+            r"\buccis[oa]\b", r"\bknock(?:ed)?\b", r"\bdowned\b",
+            r"\bsquad wipe\b", r"\bteam wipe\b", r"\bace\b", r"\bclutch\b"
+        ],
+    },
+    "victory": {
+        "weight": 0.98,
+        "patterns": [
+            r"\bvictory\b", r"\bvittoria\b", r"\byou win\b", r"\bwe win\b",
+            r"\bhai vinto\b", r"\bwinner\b", r"\bchampion\b", r"\bcampione\b",
+            r"\bmission complete\b", r"\bboss defeated\b", r"\bdefeated\b",
+            r"\bextraction successful\b", r"\bextracted\b"
+        ],
+    },
+    "sports_big_chance": {
+        "weight": 0.78,
+        "patterns": [
+            r"\brigore\b", r"\bpenalty\b", r"\bparata\b", r"\bsave\b",
+            r"\bpalo\b", r"\bpost\b", r"\btraversa\b", r"\bcrossbar\b",
+            r"\bvantaggio\b", r"\btakes the lead\b"
+        ],
+    },
+    "racing": {
+        "weight": 0.82,
+        "patterns": [
+            r"\bsorpasso\b", r"\bovertak(?:e|es|ing)\b", r"\bovertook\b",
+            r"\bpole position\b", r"\bfastest lap\b", r"\bgiro veloce\b",
+            r"\bphoto finish\b", r"\bfinish line\b", r"\bcrash\b", r"\bcollision\b"
+        ],
+    },
+    "achievement": {
+        "weight": 0.76,
+        "patterns": [
+            r"\blevel up\b", r"\brank up\b", r"\bachievement\b",
+            r"\btrofeo\b", r"\btrophy\b", r"\bnew record\b",
+            r"\bnuovo record\b", r"\bpromozione\b"
+        ],
+    },
+}
+
+def _gsf_detect_important_event(segments, duration):
+    best={"type":"","semantic":0.0,"time":None,"text":""}
+    for seg in segments or []:
+        tx=str(getattr(seg,"text","") or "").strip().lower()
+        if not tx:
+            continue
+        for event_type,cfg in _GSF_IMPORTANT_EVENTS.items():
+            hits=0
+            for pat in cfg["patterns"]:
+                try:
+                    if re.search(pat,tx,flags=re.I):
+                        hits+=1
+                except Exception:
+                    pass
+            if not hits:
+                continue
+            semantic=min(1.0,float(cfg["weight"])+0.05*max(0,hits-1))
+            try:
+                seg_mid=(float(seg.start)+float(seg.end))/2.0
+            except Exception:
+                seg_mid=float(duration)*0.55
+            pos=seg_mid/max(1.0,float(duration))
+            if pos<0.05 or pos>0.95:
+                semantic*=0.88
+            if semantic>best["semantic"]:
+                best={"type":event_type,"semantic":semantic,
+                      "time":max(0.0,min(float(duration),seg_mid)),
+                      "text":tx[:180]}
+    return best
+
+def _gsf_event_strength(event,features):
+    semantic=float((event or {}).get("semantic",0.0))
+    if semantic<=0:
+        return 0.0
+    audio=float(features.get("audio_peak",0.0))
+    burst=float(features.get("audio_burst",0.0))
+    motion=float(features.get("motion_peak",0.0))
+    synergy=float(features.get("synergy",0.0))
+    support=0.34*audio+0.26*burst+0.22*motion+0.18*synergy
+    return max(0.0,min(1.0,semantic*(0.68+0.32*support)))
 
 def _gsf_ai_voice_features(input_file,start,duration):
     """
     Secondo passaggio SOLO sui candidati migliori.
-    Misura densità del parlato + segnali di reazione, senza trascrivere tutto il video.
+    Misura parlato, reazione e segnali semantici di eventi importanti.
     """
     try:
         temp_dir=os.path.join(tempfile.gettempdir(),"gsf_ai_voice")
@@ -1888,21 +1985,25 @@ def _gsf_ai_voice_features(input_file,start,duration):
         wav=os.path.join(temp_dir,f"{token}.wav")
         cmd=[
             FFMPEG_PATH,"-y","-ss",str(max(0.0,float(start))),"-i",str(input_file),
-            "-t",str(max(3.0,float(duration))),"-vn","-ac","1","-ar","16000",wav
+            "-t",str(max(3.0,float(duration))),"-vn","-ac","1","-ar","16000",
+            "-af","highpass=f=70,lowpass=f=7800,loudnorm=I=-16:LRA=11:TP=-1.5",
+            wav
         ]
         r=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         if r.returncode!=0 or not os.path.exists(wav):
-            return 0.0,0.0,""
+            return 0.0,0.0,"",{"type":"","semantic":0.0,"time":None,"text":""}
 
         model=_gsf_ai_whisper_tiny()
         segs,_=model.transcribe(
-            wav,language=None,vad_filter=True,beam_size=1,best_of=1,
-            condition_on_previous_text=False,word_timestamps=False,
-            vad_parameters=dict(min_silence_duration_ms=250)
+            wav,language=None,task="transcribe",vad_filter=True,
+            beam_size=2,best_of=2,condition_on_previous_text=False,
+            word_timestamps=False,
+            initial_prompt=_gsf_gaming_prompt(st.session_state.get("gioco","")),
+            vad_parameters=dict(min_silence_duration_ms=220)
         )
         segs=list(segs)
         if not segs:
-            return 0.0,0.0,""
+            return 0.0,0.0,"",{"type":"","semantic":0.0,"time":None,"text":""}
 
         texts=[]
         spoken=0.0
@@ -1910,12 +2011,24 @@ def _gsf_ai_voice_features(input_file,start,duration):
             tx=str(getattr(seg,"text","") or "").strip()
             if tx: texts.append(tx)
             try:
-                spoken += max(0.0,float(seg.end)-float(seg.start))
+                spoken+=max(0.0,float(seg.end)-float(seg.start))
             except Exception:
                 pass
 
         joined=" ".join(texts)
         words=re.findall(r"[A-Za-zÀ-ÿ']+",joined.lower())
+        density=min(1.0,spoken/max(1.0,float(duration))*1.55)
+        hits=sum(1 for w in words if w in _GSF_REACTION_WORDS)
+        punctuation=joined.count("!")+joined.count("?")
+        short_exclamations=sum(1 for tx in texts if 0<len(tx.split())<=5)
+        reaction=min(1.0,hits*0.20+punctuation*0.08+min(0.30,short_exclamations*0.045))
+        event=_gsf_detect_important_event(segs,duration)
+        return density,reaction,joined,event
+    except Exception:
+        return 0.0,0.0,"",{"type":"","semantic":0.0,"time":None,"text":""}
+
+
+Za-zÀ-ÿ']+",joined.lower())
         density=min(1.0,spoken/max(1.0,float(duration))*1.55)
 
         hits=sum(1 for w in words if w in _GSF_REACTION_WORDS)
@@ -1931,7 +2044,7 @@ def _gsf_ai_voice_features(input_file,start,duration):
 
 
 def _gsf_score_ai_window(profile,f):
-    """Pesi distinti per i 4 motori + hook/payoff + anti-tempo-morto."""
+    """Pesi distinti + hook/payoff + eventi importanti + anti-tempo-morto."""
     dead=float(f.get("dead_ratio",0.0))
     dead_streak=float(f.get("dead_streak_ratio",0.0))
     speech=float(f.get("speech",0.0))
@@ -1939,63 +2052,68 @@ def _gsf_score_ai_window(profile,f):
     hook=float(f.get("hook_score",0.0))
     payoff=float(f.get("payoff_position",0.0))
     reaction_cue=float(f.get("reaction_cue",0.0))
+    event_score=float(f.get("event_score",0.0))
 
     if profile=="action":
         score=(
-            0.31*f["motion_avg"]+
-            0.15*f["motion_peak"]+
-            0.13*f["motion_burst"]+
-            0.12*f["active_ratio"]+
-            0.08*f["audio_avg"]+
-            0.08*f["synergy"]+
-            0.07*hook+
-            0.06*payoff-
+            0.27*f["motion_avg"]+
+            0.14*f["motion_peak"]+
+            0.12*f["motion_burst"]+
+            0.11*f["active_ratio"]+
+            0.07*f["audio_avg"]+
+            0.07*f["synergy"]+
+            0.06*hook+
+            0.05*payoff+
+            0.11*event_score-
             0.25*dead-
             0.16*dead_streak
         )
     elif profile=="reaction":
         score=(
-            0.25*reaction+
-            0.18*speech+
-            0.18*f["audio_burst"]+
-            0.12*reaction_cue+
-            0.08*f["audio_peak"]+
-            0.08*f["synergy"]+
-            0.04*f["motion_avg"]+
-            0.04*hook+
-            0.03*payoff-
+            0.22*reaction+
+            0.15*speech+
+            0.16*f["audio_burst"]+
+            0.11*reaction_cue+
+            0.07*f["audio_peak"]+
+            0.07*f["synergy"]+
+            0.03*f["motion_avg"]+
+            0.03*hook+
+            0.03*payoff+
+            0.13*event_score-
             0.22*dead-
             0.12*dead_streak
         )
     elif profile=="director":
         score=(
-            0.24*f["arc"]+
-            0.14*f["center_peak"]+
-            0.12*f["activity_avg"]+
-            0.10*f["synergy"]+
-            0.09*f["active_ratio"]+
-            0.09*hook+
-            0.09*payoff+
+            0.21*f["arc"]+
+            0.12*f["center_peak"]+
+            0.10*f["activity_avg"]+
+            0.08*f["synergy"]+
+            0.08*f["active_ratio"]+
+            0.08*hook+
+            0.08*payoff+
             0.06*speech+
             0.04*reaction+
-            0.03*f["motion_avg"]-
+            0.03*f["motion_avg"]+
+            0.16*event_score-
             0.24*dead-
             0.15*dead_streak
         )
-    else:  # automatico = equilibrio vero
+    else:
         score=(
-            0.17*f["activity_avg"]+
-            0.12*f["activity_peak"]+
-            0.12*f["motion_avg"]+
-            0.10*f["audio_avg"]+
-            0.09*f["synergy"]+
-            0.08*f["active_ratio"]+
-            0.08*hook+
-            0.07*payoff+
-            0.06*speech+
+            0.14*f["activity_avg"]+
+            0.10*f["activity_peak"]+
+            0.10*f["motion_avg"]+
+            0.08*f["audio_avg"]+
+            0.08*f["synergy"]+
+            0.07*f["active_ratio"]+
+            0.07*hook+
+            0.06*payoff+
+            0.05*speech+
             0.05*reaction+
             0.04*f["arc"]+
-            0.02*reaction_cue-
+            0.02*reaction_cue+
+            0.18*event_score-
             0.25*dead-
             0.15*dead_streak
         )
@@ -2010,7 +2128,7 @@ def _gsf_ai_feature_similarity(a,b):
     keys=[
         "audio_avg","audio_burst","motion_avg","motion_burst",
         "synergy","active_ratio","arc","hook_score",
-        "payoff_position","speech","reaction","reaction_cue"
+        "payoff_position","speech","reaction","reaction_cue","event_score"
     ]
     diffs=[]
     for k in keys:
@@ -2142,24 +2260,31 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
         if len(shortlist)>=shortlist_target:
             break
 
-    # Voice/reaction solo dove serve.
+    # Voice/reaction/event detection SOLO sulla shortlist.
     enriched=[]
     diagnostics={}
     for prelim,start,f in shortlist:
         f=dict(f)
         transcript=""
-        if profile in ("auto","director","reaction"):
-            speech,reaction,transcript=_gsf_ai_voice_features(
-                input_file,start,duration
-            )
-            f["speech"]=speech
-            f["reaction"]=reaction
+        speech,reaction,transcript,event=_gsf_ai_voice_features(
+            input_file,start,duration
+        )
+        f["speech"]=speech
+        f["reaction"]=reaction
+        f["event_type"]=str(event.get("type","") or "")
+        f["event_time"]=event.get("time")
+        f["event_score"]=_gsf_event_strength(event,f)
 
         score=_gsf_score_ai_window(profile,f)
-
-        # Reazioni: includi un po' di "causa" prima dell'urlo/risata.
         adjusted_start=start
-        if profile=="reaction" and (f["reaction"]>0.12 or f["audio_burst"]>0.55):
+
+        # Evento forte: lo mettiamo circa al 60-62% dello Short.
+        # Così resta contesto prima e conseguenza/reazione dopo.
+        if f["event_score"]>=0.56 and f.get("event_time") is not None:
+            event_abs=float(start)+float(f["event_time"])
+            target_pos=0.62 if f["event_type"] in ("goal","shooter_elimination","victory") else 0.58
+            adjusted_start=max(0.0,event_abs-duration*target_pos)
+        elif profile=="reaction" and (f["reaction"]>0.12 or f["audio_burst"]>0.55):
             adjusted_start=max(0.0,start-1.5)
 
         enriched.append((score,adjusted_start,f,transcript))
@@ -2182,6 +2307,8 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
                 "payoff":round(float(f.get("payoff_position",0.0)),3),
                 "dead_streak":round(float(f.get("dead_streak_ratio",0.0)),3),
                 "reaction_cue":round(float(f.get("reaction_cue",0.0)),3),
+                "event":str(f.get("event_type","") or ""),
+                "event_score":round(float(f.get("event_score",0.0)),3),
             }
         }
 
@@ -3509,11 +3636,21 @@ if video:
                             clip_rifinite = {}
                             candidati_rifiniti = []
                             for start_ai in candidati:
-                                nuovo_start, nuova_durata = rifinisci_confini_clip(
-                                    analisi_input,
-                                    float(start_ai),
-                                    float(duration)
+                                _diag=st.session_state.get("gsf_ai_v3_diagnostics",{}).get(
+                                    round(float(start_ai),3),{}
                                 )
+                                _event_strength=float(
+                                    (_diag.get("features") or {}).get("event_score",0.0)
+                                )
+                                if _event_strength>=0.56:
+                                    nuovo_start=float(start_ai)
+                                    nuova_durata=float(duration)
+                                else:
+                                    nuovo_start, nuova_durata = rifinisci_confini_clip(
+                                        analisi_input,
+                                        float(start_ai),
+                                        float(duration)
+                                    )
                                 candidati_rifiniti.append(nuovo_start)
                                 clip_rifinite[round(nuovo_start, 3)] = nuova_durata
                             candidati = candidati_rifiniti
