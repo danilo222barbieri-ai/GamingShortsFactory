@@ -4993,4 +4993,1096 @@ if video:
                                 st.session_state["editor_sub_seek_nonce"]=int(st.session_state.get("editor_sub_seek_nonce",0))+1
                                 st.rerun()
                     if "editor_sub_seek_feedback" in st.session_state:
-                        _ft=float(st.session_state["editor_sub_seek_feedback"])
+                        _ft=float(st.session_state["editor_sub_seek_feedback"])                        st.caption(f"✓ Anteprima posizionata a {int(_ft//60):02d}:{(_ft%60):05.2f}")
+                    edited=st.text_area(
+                        "Correggi, elimina o aggiungi parole",
+                        value=st.session_state.get("editor_sub_text",""),
+                        height=125,key="editor_sub_text_area_v18"
+                    )
+                    _main_is_applied=(edited==st.session_state.get("editor_sub_applied_text",st.session_state.get("editor_sub_text","")))
+                    _main_apply_label="✓ APPLICATO" if _main_is_applied else "✓ APPLICA"
+                    if st.button(_main_apply_label,type="primary",use_container_width=True,key="editor_apply_subs_v26",disabled=_main_is_applied):
+                        st.session_state["editor_sub_text"]=edited
+                        st.session_state["editor_sub_applied_text"]=edited
+                        tokens=edited.split()
+                        timed=st.session_state.get("editor_sub_words",[])
+                        live_words=[]
+                        for i,w in enumerate(timed):
+                            if i<len(tokens):
+                                live_words.append({"text":tokens[i],"start":w["start"],"end":w["end"]})
+                        if len(tokens)>len(timed):
+                            last_end=(timed[-1]["end"] if timed else editor_start)
+                            remain=max(.08,(editor_end-last_end)/max(1,len(tokens)-len(timed)))
+                            for j in range(len(timed),len(tokens)):
+                                a=min(editor_end-.04,last_end+(j-len(timed))*remain)
+                                b=min(editor_end,a+remain*.9)
+                                live_words.append({"text":tokens[j],"start":a,"end":b})
+                        st.session_state["editor_sub_live_words"]=live_words
+                        st.rerun()
+
+        st.markdown("#### 🎞️ Crea video")
+        if st.button(
+            "🎞️ CREA VIDEO COMPLETO",
+            type="primary",
+            use_container_width=True,
+            key="editor_preview_btn"
+        ):
+            editor_output = os.path.join(editor_dir, "editor_preview.mp4")
+
+            _main_sub_mode=st.session_state.get("editor_sub_mode","Automatici")
+            _main_sub_words=(
+                st.session_state.get(
+                    "editor_sub_live_words",
+                    st.session_state.get("editor_sub_words",[])
+                )
+                if _main_sub_mode=="Manuali" else []
+            )
+
+            with st.spinner("🎬 Creo il video finale dal file originale..."):
+                editor_run = _gsf_render_core(
+                    editor_input,
+                    editor_output,
+                    editor_start,
+                    editor_len,
+                    fmt=editor_format,
+                    zoom=editor_zoom,
+                    x_pos=editor_x,
+                    y_pos=editor_y,
+                    brightness=editor_brightness,
+                    contrast=editor_contrast,
+                    speed=editor_speed,
+                    volume=editor_volume,
+                    subtitles_enabled=(_main_sub_mode!="Nessuno"),
+                    subtitle_mode=_main_sub_mode,
+                    subtitle_words=_main_sub_words,
+                    subtitle_text=st.session_state.get("editor_sub_text",""),
+                    subtitle_time_origin=editor_start,
+                    subtitle_font=st.session_state.get(
+                        "editor_sub_font_v18",
+                        st.session_state.get("subtitle_font","Arial")
+                    ),
+                    subtitle_size=st.session_state.get(
+                        "editor_sub_size_v18",
+                        st.session_state.get("editor_sub_size",92)
+                    ),
+                    subtitle_x=st.session_state.get(
+                        "subtitle_x_v18",
+                        st.session_state.get("subtitle_x",50)
+                    ),
+                    subtitle_y=st.session_state.get(
+                        "subtitle_y_v18",
+                        st.session_state.get("subtitle_y",78)
+                    ),
+                    text_color=st.session_state.get(
+                        "subtitle_text_color_v18","#FFFFFF"
+                    ),
+                    active_color=st.session_state.get(
+                        "subtitle_active_color_v18","#FFD400"
+                    ),
+                    outline_color=st.session_state.get(
+                        "subtitle_outline_color_v18","#000000"
+                    ),
+                    normalize_audio=True,
+                    smart_reframe=False,
+                    hook_text="",
+                    polish_audio=True
+                )
+
+            if editor_run.get("ok") and os.path.exists(editor_output):
+                # IMPORTANT: teniamo i byte in session_state.
+                # Streamlit riesegue lo script quando si preme Download;
+                # affidarsi solo al file temporaneo può far sparire il file.
+                with open(editor_output, "rb") as edf:
+                    editor_bytes = edf.read()
+
+                st.session_state["editor_output"] = editor_output
+                st.session_state["editor_output_bytes"] = editor_bytes
+                st.session_state["editor_output_name"] = "gaming_short_edit.mp4"
+                st.session_state["publication_final_bytes"]=editor_bytes
+                st.session_state["publication_source"]="main_editor"
+                st.success(
+                    f"✅ Video finale pronto · {editor_run.get('encoder','')} · "
+                    f"{editor_run.get('seconds',0):.1f}s"
+                )
+            else:
+                st.error("❌ Non sono riuscito a creare l'anteprima.")
+                if editor_run.get("error"):
+                    st.code(editor_run.get("error","")[-3000:])
+
+        editor_bytes = st.session_state.get("editor_output_bytes")
+
+        if editor_bytes:
+            # Il player e il download usano gli stessi byte persistenti.
+            st.caption("🎬 RISULTATO EDITOR")
+            _editor_result_path = st.session_state.get("editor_output")
+            if _editor_result_path and os.path.exists(_editor_result_path):
+                render_gsf_player(_editor_result_path, "editor_result")
+            else:
+                _erp = _gsf_bytes_to_preview(editor_bytes, "editor_result")
+                render_gsf_player(_erp, "editor_result")
+
+            st.download_button(
+                "⬇️ SCARICA VIDEO MODIFICATO",
+                data=editor_bytes,
+                file_name=st.session_state.get(
+                    "editor_output_name",
+                    "gaming_short_edit.mp4"
+                ),
+                mime="video/mp4",
+                use_container_width=True,
+                key="editor_download_fixed"
+            )
+
+
+    if modalita == "✋ Manuale":
+        # Nessuna barra/numero di partenza: la selezione arriva solo dall'Editor.
+        start = float(st.session_state.get("manual_start_editor", 0.0))
+        duration = float(
+            st.session_state.get("manual_duration_editor", duration)
+        )
+    else:
+        if "auto_clip_scelta" not in st.session_state:
+            st.session_state.auto_clip_scelta = None
+
+        if st.button("✦ CREA CON AI", use_container_width=True):
+            with tempfile.TemporaryDirectory() as analisi_temp:
+                analisi_input = os.path.join(analisi_temp, "input.mp4")
+
+                with open(analisi_input, "wb") as f:
+                    f.write(video.getbuffer())
+
+                if modalita == "🚀 AUTO TOTALE":
+                    messaggio = "✨ Scansione completa → azione, audio, voce e tempi morti..."
+                elif modalita == "🎬 AI Director":
+                    messaggio = "🎬 Cerco costruzione, picco e chiusura dei momenti..."
+                elif modalita == "🧠 Smart Clip":
+                    messaggio = "🔥 Cerco movimento, combattimenti e attività sostenuta..."
+                else:
+                    messaggio = "🎙️ Cerco voce, reazioni e picchi collegati al gameplay..."
+
+                _video_cache_token = (
+                    f"{getattr(video,'name','video')}|"
+                    f"{getattr(video,'size',len(video.getbuffer()))}"
+                )
+
+                cache_key_ai = (
+                    GSF_AI_ENGINE_VERSION,
+                    _video_cache_token,
+                    modalita,
+                    float(duration)
+                )
+                cached_ai = st.session_state.get("gsf_fast_ai_cache", {}).get(cache_key_ai)
+
+                with st.spinner(messaggio):
+                    if cached_ai is not None:
+                        candidati = cached_ai.get("candidati", [])
+                        if cached_ai.get("scores") is not None:
+                            st.session_state.ai_director_scores = cached_ai["scores"]
+                        if cached_ai.get("clip_rifinite") is not None:
+                            st.session_state.clip_rifinite = cached_ai["clip_rifinite"]
+                        if cached_ai.get("diagnostics") is not None:
+                            st.session_state["gsf_ai_v3_diagnostics"] = cached_ai["diagnostics"]
+
+                    else:
+                        risultati_ai, ai_diag = _gsf_ai_rank_v3(
+                            analisi_input,
+                            modalita,
+                            clip_duration=float(duration),
+                            numero_clip=3,
+                            cache_token=_video_cache_token
+                        )
+
+                        candidati = [start_ai for score_ai, start_ai in risultati_ai]
+                        st.session_state.ai_director_scores = risultati_ai
+                        st.session_state["gsf_ai_v3_diagnostics"] = ai_diag
+
+                        # Solo Automatico e Momento migliore rifiniscono i bordi:
+                        # per Azione/Reazioni non vogliamo spostare via il picco trovato.
+                        if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
+                            clip_rifinite = {}
+                            candidati_rifiniti = []
+                            for start_ai in candidati:
+                                _diag=st.session_state.get("gsf_ai_v3_diagnostics",{}).get(
+                                    round(float(start_ai),3),{}
+                                )
+                                _event_strength=float(
+                                    (_diag.get("features") or {}).get("event_score",0.0)
+                                )
+                                if _event_strength>=0.56:
+                                    nuovo_start=float(start_ai)
+                                    nuova_durata=float(duration)
+                                else:
+                                    nuovo_start, nuova_durata = rifinisci_confini_clip(
+                                        analisi_input,
+                                        float(start_ai),
+                                        float(duration)
+                                    )
+                                candidati_rifiniti.append(nuovo_start)
+                                clip_rifinite[round(nuovo_start, 3)] = nuova_durata
+                            candidati = candidati_rifiniti
+                            st.session_state.clip_rifinite = clip_rifinite
+                            risultati_ai = [
+                                (risultati_ai[i][0], candidati[i])
+                                for i in range(min(len(risultati_ai),len(candidati)))
+                            ]
+                            st.session_state.ai_director_scores = risultati_ai
+                        else:
+                            st.session_state.clip_rifinite = {}
+
+                if cached_ai is None:
+                    if "gsf_fast_ai_cache" not in st.session_state:
+                        st.session_state["gsf_fast_ai_cache"] = {}
+
+                    st.session_state["gsf_fast_ai_cache"][cache_key_ai] = {
+                        "candidati": list(candidati),
+                        "scores": st.session_state.get("ai_director_scores"),
+                        "clip_rifinite": st.session_state.get("clip_rifinite"),
+                        "diagnostics": st.session_state.get("gsf_ai_v3_diagnostics"),
+                    }
+
+                st.session_state.auto_clip_candidati = candidati
+                st.session_state.auto_clip_modalita = modalita
+
+                if candidati:
+                    st.session_state.auto_clip_scelta = candidati[0]
+                else:
+                    st.warning("Non ho trovato candidati. Usa la modalità Manuale.")
+
+        if st.session_state.get("auto_clip_modalita") != modalita:
+            candidati = []
+        else:
+            candidati = st.session_state.get("auto_clip_candidati", [])
+
+        if candidati:
+            if modalita != "✋ Manuale":
+                risultati_ai = st.session_state.get(
+                    "ai_director_scores",
+                    []
+                )
+
+                if risultati_ai:
+                    massimo_score = max(
+                        score for score, _ in risultati_ai
+                    ) or 1.0
+
+                    opzioni = {}
+
+                    for i, (score, sec) in enumerate(risultati_ai):
+                        qualita = int(
+                            max(1, min(100, score / massimo_score * 100))
+                        )
+
+                        _diag = st.session_state.get(
+                            "gsf_ai_v3_diagnostics", {}
+                        ).get(round(float(sec), 3), {})
+                        _features = _diag.get("features") or {}
+                        _event_type = str(_features.get("event_type", "") or "")
+                        _event_score = float(_features.get("event_score", 0.0))
+                        _event_badge = (
+                            _GSF_EVENT_LABELS.get(_event_type, "")
+                            if _event_score >= 0.56 else ""
+                        )
+                        if not _event_badge:
+                            _category = str(_features.get("moment_category","") or "")
+                            _event_badge = {
+                                "reaction":"🎙️ REAZIONE",
+                                "action":"🔥 AZIONE",
+                                "story":"🎬 MOMENTO",
+                            }.get(_category,"")
+
+                        _short_pct = int(
+                            max(1,min(
+                                100,
+                                float(_features.get("short_worthiness",0.0))*100
+                            ))
+                        )
+
+                        label = (
+                            f"#{i + 1} • "
+                            + (f"{_event_badge} • " if _event_badge else "")
+                            + f"Qualità {qualita}% • Short {_short_pct}% • "
+                            + f"{sec:.0f}s → {sec + duration:.0f}s"
+                        )
+
+                        opzioni[label] = sec
+                else:
+                    opzioni = {
+                        f"Clip {i + 1} — da {sec:.0f}s a {sec + duration:.0f}s": sec
+                        for i, sec in enumerate(candidati)
+                    }
+            else:
+                opzioni = {
+                    f"Clip {i + 1} — da {sec:.0f}s a {sec + duration:.0f}s": sec
+                    for i, sec in enumerate(candidati)
+                }
+
+            _ai_meta = st.session_state.get(
+                "gsf_ai_v3_diagnostics", {}
+            ).get("__meta__", {})
+            if _ai_meta:
+                _sec=float(_ai_meta.get("analysis_seconds",0.0))
+                _scan_txt="riusata" if _ai_meta.get("scan_cache_hit") else "nuova"
+                _vh=int(_ai_meta.get("voice_cache_hits",0))
+                _vc=int(_ai_meta.get("voice_checks",0))
+                st.caption(
+                    f"⚡ Analisi AI {_sec:.1f}s · scansione {_scan_txt}"
+                    + (f" · voce cache {_vh}/{_vc}" if _vc else "")
+                )
+
+            st.markdown('<div class="mini-label" style="margin-top:18px;">CLASSIFICA AI</div>', unsafe_allow_html=True)
+            for posizione, label in enumerate(opzioni.keys(), start=1):
+                st.write(f"**{posizione}.** {label}")
+
+            scelta_label = st.radio(
+                "🎯 Scegli un momento da vedere",
+                list(opzioni.keys())
+            )
+
+            start = float(opzioni[scelta_label])
+            st.session_state.auto_clip_scelta = start
+
+            durata_effettiva = float(duration)
+
+            if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
+                durata_effettiva = float(
+                    st.session_state.get(
+                        "clip_rifinite",
+                        {}
+                    ).get(round(start, 3), duration)
+                )
+
+                st.caption(
+                    f"✂️ Taglio intelligente: {durata_effettiva:.1f}s"
+                )
+
+            st.caption("👀 Anteprima")
+
+            preview_key = (
+                f"{video.name}_{start:.2f}_{durata_effettiva:.2f}"
+            )
+
+            if st.session_state.get("preview_key") != preview_key:
+                with tempfile.TemporaryDirectory() as preview_temp:
+                    preview_input = os.path.join(preview_temp, "input.mp4")
+                    preview_output = os.path.join(preview_temp, "preview.mp4")
+
+                    with open(preview_input, "wb") as f:
+                        f.write(video.getbuffer())
+
+                    with st.spinner("⚡ Creo anteprima..."):
+                        ok_preview = crea_anteprima(
+                            preview_input,
+                            preview_output,
+                            start,
+                            durata_effettiva
+                        )
+
+                    if ok_preview:
+                        with open(preview_output, "rb") as f:
+                            st.session_state.preview_bytes = f.read()
+                        st.session_state.preview_key = preview_key
+
+            if st.session_state.get("preview_bytes"):
+                _aip = _gsf_bytes_to_preview(
+                    st.session_state.preview_bytes,
+                    f"ai_preview_{start:.2f}_{durata_effettiva:.2f}"
+                )
+                render_gsf_player(_aip, f"ai_preview_{start:.2f}_{durata_effettiva:.2f}")
+
+                edit_col, keep_col = st.columns(2)
+                with edit_col:
+                    if st.button(
+                        "✂️ MODIFICA NELL’EDITOR",
+                        use_container_width=True,
+                        key=f"edit_ai_{start:.2f}_{durata_effettiva:.2f}"
+                    ):
+                        # Apre UNA copia dell'Editor direttamente sotto questa clip.
+                        _inline_id=f"{start:.2f}_{durata_effettiva:.2f}"
+                        _edit_dir=tempfile.mkdtemp(prefix="gsf_inline_ai_")
+                        _edit_input=os.path.join(_edit_dir,"ai_clip_inline_preview.mp4")
+                        _edit_original=os.path.join(_edit_dir,"source_original.mp4")
+                        with open(_edit_input,"wb") as _ef:
+                            _ef.write(st.session_state.preview_bytes)
+                        with open(_edit_original,"wb") as _of:
+                            _of.write(video.getbuffer())
+                        st.session_state["inline_editor_id"]=_inline_id
+                        st.session_state["inline_editor_dir"]=_edit_dir
+                        st.session_state["inline_editor_input"]=_edit_input
+                        st.session_state["inline_editor_original_input"]=_edit_original
+                        st.session_state["inline_editor_source_start"]=float(start)
+                        st.session_state["inline_editor_duration"]=float(
+                            durata_video(_edit_input) or durata_effettiva
+                        )
+                        st.session_state.pop("inline_final_bytes",None)
+                        # Un solo editor AI aperto alla volta.
+                        st.rerun()
+
+                with keep_col:
+                    if st.button(
+                        "✓ USA QUESTA",
+                        use_container_width=True,
+                        key=f"use_ai_{start:.2f}_{durata_effettiva:.2f}"
+                    ):
+                        st.session_state.auto_clip_scelta = float(start)
+                        st.session_state["auto_clip_duration"] = float(durata_effettiva)
+                        st.session_state["publication_ready"] = True
+                        st.session_state["publication_source"] = "ai_clip"
+                        st.session_state["publication_preview_bytes"] = st.session_state.get("preview_bytes")
+                        st.session_state.pop("publication_final_bytes",None)
+                        st.session_state.pop("publication_final_signature",None)
+                        st.session_state["project_view"] = "publication"
+                        st.rerun()
+
+
+                # ===== EDITOR INLINE DELLA CLIP AI =====
+                _this_inline_id=f"{start:.2f}_{durata_effettiva:.2f}"
+                if st.session_state.get("inline_editor_id")==_this_inline_id:
+                    _ii=st.session_state.get("inline_editor_input")
+                    _idir=st.session_state.get("inline_editor_dir")
+                    _idur=float(st.session_state.get("inline_editor_duration",durata_effettiva))
+
+                    if _ii and os.path.exists(_ii):
+                        st.markdown("##### ✂️ Editor")
+                        _close_col,_space_col=st.columns([.24,.76])
+                        with _close_col:
+                            if st.button("✕ CHIUDI EDITOR",use_container_width=True,key=f"inline_close_{_this_inline_id}"):
+                                st.session_state.pop("inline_editor_id",None)
+                                st.rerun()
+
+                        # Timeline: descrizione sopra, nessuno scroll verso altri editor.
+                        st.caption("✂️ Timeline · trascina IN/OUT per selezionare la scena")
+                        _trim=st.slider(
+                            "IN / OUT",0.0,float(max(.5,_idur)),
+                            (0.0,float(max(.5,_idur))),.1,
+                            key=f"inline_trim_{_this_inline_id}"
+                        )
+                        _istart=float(_trim[0])
+                        _iend=float(_trim[1])
+                        _ilen=max(.1,_iend-_istart)
+
+                        # Stato grafico indipendente dalla trascrizione.
+                        _fmt_key=f"inline_fmt_{_this_inline_id}"
+                        _zoom_key=f"inline_zoom_{_this_inline_id}"
+                        _x_key=f"inline_x_{_this_inline_id}"
+                        _y_key=f"inline_y_{_this_inline_id}"
+                        _vol_key=f"inline_vol_{_this_inline_id}"
+                        _bri_key=f"inline_bri_{_this_inline_id}"
+                        _con_key=f"inline_con_{_this_inline_id}"
+                        _spd_key=f"inline_spd_{_this_inline_id}"
+                        _submode_key=f"inline_submode_{_this_inline_id}"
+
+                        if _fmt_key not in st.session_state: st.session_state[_fmt_key]="9:16 Short"
+                        if _zoom_key not in st.session_state: st.session_state[_zoom_key]=1.0
+                        if _x_key not in st.session_state: st.session_state[_x_key]=0
+                        if _y_key not in st.session_state: st.session_state[_y_key]=0
+                        if _vol_key not in st.session_state: st.session_state[_vol_key]=100
+                        if _bri_key not in st.session_state: st.session_state[_bri_key]=0.0
+                        if _con_key not in st.session_state: st.session_state[_con_key]=1.0
+                        if _spd_key not in st.session_state: st.session_state[_spd_key]=1.0
+                        if _submode_key not in st.session_state: st.session_state[_submode_key]="Automatici"
+
+                        _pl,_side=st.columns([.22,.78],gap="medium")
+
+                        # Trascrizione persistente PER CLIP: non viene toccata dai controlli grafici.
+                        _trans_words_key=f"inline_trans_words_{_this_inline_id}"
+                        _trans_text_key=f"inline_trans_text_{_this_inline_id}"
+                        _trans_live_key=f"inline_trans_live_{_this_inline_id}"
+
+                        with _pl:
+                            _sub_on=st.session_state.get(_submode_key,"Automatici")!="Nessuno"
+                            render_gsf_editor_live_player(
+                                _ii,
+                                f"inline_live_v32_{_this_inline_id}",
+                                _istart,
+                                st.session_state[_fmt_key],st.session_state[_zoom_key],
+                                st.session_state[_x_key],st.session_state[_y_key],
+                                st.session_state[_vol_key],st.session_state[_bri_key],
+                                st.session_state[_con_key],st.session_state[_spd_key],
+                                subtitles_on=_sub_on,subtitle_style="Base",
+                                subtitle_size=st.session_state.get(f"inline_subsize_widget_v18_{_this_inline_id}",st.session_state.get(f"inline_subsize_{_this_inline_id}",92)),
+                                subtitle_position=330,
+                                subtitle_words=st.session_state.get(_trans_live_key,st.session_state.get(_trans_words_key,[])),
+                                subtitle_text=(st.session_state.get(_trans_text_key,"") or ("Anteprima sottotitoli" if _sub_on else "")),
+                                subtitle_font=st.session_state.get(f"inline_font_widget_v18_{_this_inline_id}",st.session_state.get(f"inline_font_{_this_inline_id}","Arial")),
+                                subtitle_x=st.session_state.get(f"inline_subx_widget_v18_{_this_inline_id}",st.session_state.get(f"inline_subx_{_this_inline_id}",50)),
+                                subtitle_y=st.session_state.get(f"inline_suby_widget_v18_{_this_inline_id}",st.session_state.get(f"inline_suby_{_this_inline_id}",78)),
+                                end_seconds=_iend,
+                                seek_target=st.session_state.get(f"inline_seek_{_this_inline_id}",_istart),
+                                seek_nonce=st.session_state.get(f"inline_seek_nonce_{_this_inline_id}",0),
+                                text_color=st.session_state.get(f"inline_txtcol_v18_{_this_inline_id}",st.session_state.get("subtitle_text_color","#FFFFFF")),
+                                active_color=st.session_state.get(f"inline_actcol_v18_{_this_inline_id}",st.session_state.get("subtitle_active_color","#FFD400")),
+                                outline_color=st.session_state.get(f"inline_outcol_v18_{_this_inline_id}","#000000"),
+                                reset_id=st.session_state.get(f"inline_reset_id_{_this_inline_id}",0),
+                                clip_start_override=_istart
+                            )
+
+                        with _side:
+                            _ith,_itr=st.columns([.78,.22],gap="small")
+                            with _ith:
+                                st.markdown("##### 🛠️ Strumenti",help="Regola formato, inquadratura, audio e immagine. Le modifiche sono mostrate nel player LIVE.")
+                            with _itr:
+                                st.button(
+                                    "↶ RESET TUTTO",use_container_width=True,key=f"reset_inline_all_v29_{_this_inline_id}",
+                                    on_click=_gsf_reset_inline_all,
+                                    args=(_this_inline_id,_fmt_key,_zoom_key,_x_key,_y_key,_vol_key,_bri_key,_con_key,_spd_key)
+                                )
+                            _fc,_ic,_rc=st.columns([.30,.35,.35],gap="small")
+                            with _fc:
+                                st.session_state[_fmt_key]=st.segmented_control(
+                                    "Formato",["9:16 Short","16:9 Originale"],
+                                    default=st.session_state[_fmt_key],key=f"inline_fmt_widget_v18_{_this_inline_id}"
+                                )
+                            with _ic:
+                                with st.popover("🎯 INQUADRATURA",use_container_width=True):
+                                    st.session_state[_zoom_key]=st.slider("Zoom",1.0,2.0,float(st.session_state[_zoom_key]),.05,key=f"inline_zoom_widget_v18_{_this_inline_id}")
+                                    st.session_state[_x_key]=st.slider("↔ X",-100,100,int(st.session_state[_x_key]),5,key=f"inline_x_widget_v18_{_this_inline_id}")
+                                    st.session_state[_y_key]=st.slider("↕ Y",-100,100,int(st.session_state[_y_key]),5,key=f"inline_y_widget_v18_{_this_inline_id}")
+                            with _rc:
+                                with st.popover("🎚️ REGOLAZIONI",use_container_width=True):
+                                    _reg=st.selectbox("Parametro",["Volume","Luminosità","Contrasto","Velocità"],key=f"inline_reg_v18_{_this_inline_id}")
+                                    if _reg=="Volume":
+                                        st.session_state[_vol_key]=st.slider("Volume",0,200,int(st.session_state[_vol_key]),5,key=f"inline_vol_widget_v18_{_this_inline_id}")
+                                    elif _reg=="Luminosità":
+                                        st.session_state[_bri_key]=st.slider("Luminosità",-.30,.30,float(st.session_state[_bri_key]),.05,key=f"inline_bri_widget_v18_{_this_inline_id}")
+                                    elif _reg=="Contrasto":
+                                        st.session_state[_con_key]=st.slider("Contrasto",.70,1.50,float(st.session_state[_con_key]),.05,key=f"inline_con_widget_v18_{_this_inline_id}")
+                                    else:
+                                        st.session_state[_spd_key]=st.select_slider("Velocità",options=[.5,.75,1.0,1.25,1.5,2.0],value=float(st.session_state[_spd_key]),key=f"inline_spd_widget_v18_{_this_inline_id}")
+
+                            st.markdown("##### 📝 Sottotitoli",help="Automatici: fa tutto l'AI. Manuali: trascrive la clip e permette di correggere testo e aspetto. Nessuno: video pulito.")
+                            _modes=["Nessuno","Automatici","Manuali"]
+                            _cur=st.session_state.get(_submode_key,"Automatici")
+                            if _cur not in _modes: _cur="Automatici"
+                            st.session_state[_submode_key]=st.segmented_control(
+                                "Modalità sottotitoli",_modes,default=_cur,
+                                key=f"inline_submode_widget_v18_{_this_inline_id}",label_visibility="collapsed"
+                            )
+
+                            if st.session_state[_submode_key]=="Manuali":
+                                _fonts=_gsf_windows_fonts()
+                                _font_key=f"inline_font_{_this_inline_id}"
+                                _size_key=f"inline_subsize_{_this_inline_id}"
+                                _sx=f"inline_subx_{_this_inline_id}"
+                                _sy=f"inline_suby_{_this_inline_id}"
+                                if _font_key not in st.session_state: st.session_state[_font_key]="Arial"
+                                if st.session_state[_font_key] not in _fonts: st.session_state[_font_key]="Arial"
+                                if _size_key not in st.session_state: st.session_state[_size_key]=92
+                                if _sx not in st.session_state: st.session_state[_sx]=50
+                                if _sy not in st.session_state: st.session_state[_sy]=78
+
+                                _fontc,_aspectc,_posc=st.columns([.40,.30,.30],gap="small")
+                                with _fontc:
+                                    _font_widget_key=f"inline_font_widget_v18_{_this_inline_id}"
+                                    st.selectbox(
+                                        "🔤 Font",_fonts,index=_fonts.index(st.session_state[_font_key]),
+                                        key=_font_widget_key,
+                                        on_change=_gsf_sync_inline_subtitle_font,
+                                        args=(_font_widget_key,_font_key)
+                                    )
+                                with _aspectc:
+                                    with st.popover("📐 ASPETTO",use_container_width=True):
+                                        st.slider("Dimensione",48,140,int(st.session_state.get(f"inline_subsize_widget_v18_{_this_inline_id}",st.session_state[_size_key])),2,key=f"inline_subsize_widget_v18_{_this_inline_id}")
+                                        c1,c2,c3=st.columns(3,gap="small")
+                                        with c1:
+                                            st.session_state["subtitle_text_color"]=st.color_picker("Testo",st.session_state.get("subtitle_text_color","#FFFFFF"),key=f"inline_txtcol_v18_{_this_inline_id}")
+                                        with c2:
+                                            st.session_state["subtitle_active_color"]=st.color_picker("Attiva",st.session_state.get("subtitle_active_color","#FFD400"),key=f"inline_actcol_v18_{_this_inline_id}")
+                                        with c3:
+                                            st.session_state["subtitle_outline_color"]=st.color_picker("Bordo",st.session_state.get("subtitle_outline_color","#000000"),key=f"inline_outcol_v18_{_this_inline_id}")
+                                with _posc:
+                                    with st.popover("📍 POSIZIONE",use_container_width=True):
+                                        st.slider("↔ X",5,95,int(st.session_state.get(f"inline_subx_widget_v18_{_this_inline_id}",st.session_state[_sx])),1,key=f"inline_subx_widget_v18_{_this_inline_id}")
+                                        st.slider("↕ Y",5,95,int(st.session_state.get(f"inline_suby_widget_v18_{_this_inline_id}",st.session_state[_sy])),1,key=f"inline_suby_widget_v18_{_this_inline_id}")
+                                st.markdown("##### ✏️ Trascrizione intelligente",help="Resta salvata mentre modifichi font, colori, posizione o gli strumenti.")
+                                if not st.session_state.get(_trans_words_key):
+                                    if st.button("TRASCRIVI LA CLIP",use_container_width=True,key=f"inline_transcribe_v18_{_this_inline_id}"):
+                                        with st.spinner("Trascrivo la clip..."):
+                                            _words,_err=_gsf_transcribe_editor_scene(_ii,_istart,_ilen)
+                                        if _err:
+                                            st.warning(f"Trascrizione non disponibile: {_err}")
+                                        else:
+                                            st.session_state[_trans_words_key]=list(_words)
+                                            st.session_state[_trans_live_key]=list(_words)
+                                            st.session_state[_trans_text_key]=" ".join(w["text"] for w in _words)
+                                            st.session_state[f"inline_applied_text_{_this_inline_id}"]=st.session_state[_trans_text_key]
+                                            st.session_state[f"inline_seek_{_this_inline_id}"]=_istart
+                                            st.rerun()
+                                else:
+                                    _tw=st.session_state.get(_trans_words_key,[])
+                                    if _tw:
+                                        _time_opts=[]
+                                        for _group in _gsf_subtitle_groups(_tw):
+                                            _t=float(_group[0]["start"])
+                                            _preview=" ".join(w["text"] for w in _group)
+                                            _time_opts.append((_t,f"{int(_t//60):02d}:{(_t%60):05.2f} · {_preview}"))
+                                        _tc_col,_go_col=st.columns([.82,.18],gap="small")
+                                        with _tc_col:
+                                            _chosen_label=st.selectbox(
+                                                "⏱ Vai al testo",[x[1] for x in _time_opts],
+                                                key=f"inline_time_nav_v22_{_this_inline_id}"
+                                            )
+                                        with _go_col:
+                                            st.write("")
+                                            if st.button("VAI",use_container_width=True,key=f"inline_time_go_v22_{_this_inline_id}"):
+                                                _chosen_t=next(t for t,label in _time_opts if label==_chosen_label)
+                                                st.session_state[f"inline_seek_{_this_inline_id}"]=float(_chosen_t)
+                                                st.session_state[f"inline_seek_feedback_{_this_inline_id}"]=float(_chosen_t)
+                                                st.session_state[f"inline_seek_nonce_{_this_inline_id}"]=int(
+                                                    st.session_state.get(f"inline_seek_nonce_{_this_inline_id}",0)
+                                                )+1
+                                                st.rerun()
+                                    if f"inline_seek_feedback_{_this_inline_id}" in st.session_state:
+                                        _ft=float(st.session_state[f"inline_seek_feedback_{_this_inline_id}"])
+                                        st.caption(f"✓ Anteprima posizionata a {int(_ft//60):02d}:{(_ft%60):05.2f}")
+                                    _edited=st.text_area(
+                                        "Correggi, elimina o aggiungi parole",
+                                        value=st.session_state.get(_trans_text_key,""),
+                                        height=125,key=f"inline_textarea_v18_{_this_inline_id}"
+                                    )
+                                    _inline_applied_key=f"inline_applied_text_{_this_inline_id}"
+                                    _inline_is_applied=(_edited==st.session_state.get(_inline_applied_key,st.session_state.get(_trans_text_key,"")))
+                                    _inline_apply_label="✓ APPLICATO" if _inline_is_applied else "✓ APPLICA"
+                                    if st.button(_inline_apply_label,type="primary",use_container_width=True,key=f"inline_apply_subs_v26_{_this_inline_id}",disabled=_inline_is_applied):
+                                        st.session_state[_trans_text_key]=_edited
+                                        st.session_state[_inline_applied_key]=_edited
+                                        _tokens=_edited.split()
+                                        _timed=st.session_state.get(_trans_words_key,[])
+                                        _live=[]
+                                        for _i,_w in enumerate(_timed):
+                                            if _i<len(_tokens):
+                                                _live.append({"text":_tokens[_i],"start":_w["start"],"end":_w["end"]})
+                                        st.session_state[_trans_live_key]=_live
+                                        st.rerun()
+
+                        # Azioni dell'editor inline.
+                        _ec1,_ec2=st.columns(2,gap="small")
+                        with _ec1:
+                            if st.button("🎞️ CREA VIDEO",type="primary",use_container_width=True,key=f"inline_create_{_this_inline_id}"):
+                                _out=os.path.join(_idir,"inline_edit_final.mp4")
+                                _original_source=st.session_state.get(
+                                    "inline_editor_original_input",_ii
+                                )
+                                _source_base=float(
+                                    st.session_state.get("inline_editor_source_start",0.0)
+                                )
+                                _render_start=(
+                                    _source_base+_istart
+                                    if _original_source!=_ii else _istart
+                                )
+                                _inline_sub_mode=st.session_state.get(
+                                    _submode_key,"Automatici"
+                                )
+                                _inline_sub_words=(
+                                    st.session_state.get(
+                                        _trans_live_key,
+                                        st.session_state.get(_trans_words_key,[])
+                                    )
+                                    if _inline_sub_mode=="Manuali" else []
+                                )
+
+                                with st.spinner("Creo il video finale dal file originale..."):
+                                    _r=_gsf_render_core(
+                                        _original_source,
+                                        _out,
+                                        _render_start,
+                                        _ilen,
+                                        fmt=st.session_state[_fmt_key],
+                                        zoom=st.session_state[_zoom_key],
+                                        x_pos=st.session_state[_x_key],
+                                        y_pos=st.session_state[_y_key],
+                                        brightness=st.session_state[_bri_key],
+                                        contrast=st.session_state[_con_key],
+                                        speed=st.session_state[_spd_key],
+                                        volume=st.session_state[_vol_key],
+                                        subtitles_enabled=(_inline_sub_mode!="Nessuno"),
+                                        subtitle_mode=_inline_sub_mode,
+                                        subtitle_words=_inline_sub_words,
+                                        subtitle_text=st.session_state.get(_trans_text_key,""),
+                                        subtitle_time_origin=_istart,
+                                        subtitle_font=st.session_state.get(
+                                            f"inline_font_widget_v18_{_this_inline_id}",
+                                            st.session_state.get(
+                                                f"inline_font_{_this_inline_id}","Arial"
+                                            )
+                                        ),
+                                        subtitle_size=st.session_state.get(
+                                            f"inline_subsize_widget_v18_{_this_inline_id}",
+                                            st.session_state.get(
+                                                f"inline_subsize_{_this_inline_id}",92
+                                            )
+                                        ),
+                                        subtitle_x=st.session_state.get(
+                                            f"inline_subx_widget_v18_{_this_inline_id}",50
+                                        ),
+                                        subtitle_y=st.session_state.get(
+                                            f"inline_suby_widget_v18_{_this_inline_id}",78
+                                        ),
+                                        text_color=st.session_state.get(
+                                            f"inline_txtcol_v18_{_this_inline_id}","#FFFFFF"
+                                        ),
+                                        active_color=st.session_state.get(
+                                            f"inline_actcol_v18_{_this_inline_id}","#FFD400"
+                                        ),
+                                        outline_color=st.session_state.get(
+                                            f"inline_outcol_v18_{_this_inline_id}","#000000"
+                                        ),
+                                        normalize_audio=True,
+                                        smart_reframe=False,
+                                        hook_text="",
+                                        polish_audio=True
+                                    )
+                                if _r.get("ok") and os.path.exists(_out):
+                                    with open(_out,"rb") as _f:
+                                        st.session_state["inline_final_bytes"]=_f.read()
+                                    st.session_state["publication_final_bytes"]=st.session_state["inline_final_bytes"]
+                                    st.session_state["publication_ready"]=True
+                                    st.session_state["publication_source"]="inline_editor"
+                                    st.success(
+                                        f"Video creato · {_r.get('encoder','')} · "
+                                        f"{_r.get('seconds',0):.1f}s"
+                                    )
+                                else:
+                                    st.error("Creazione video non riuscita.")
+                                    if _r.get("error"):
+                                        st.code(_r.get("error","")[-2500:])
+                        with _ec2:
+                            _inline_master_ready=bool(
+                                st.session_state.get("inline_final_bytes")
+                            )
+                            if st.button(
+                                "✓ USA QUESTA",
+                                use_container_width=True,
+                                key=f"inline_use_{_this_inline_id}",
+                                disabled=not _inline_master_ready
+                            ):
+                                st.session_state["publication_ready"]=True
+                                st.session_state["publication_source"]="inline_editor"
+                                st.session_state["publication_preview_bytes"]=st.session_state.get(
+                                    "inline_final_bytes"
+                                )
+                                st.session_state["publication_final_bytes"]=st.session_state.get(
+                                    "inline_final_bytes"
+                                )
+                                st.rerun()
+                            if not _inline_master_ready:
+                                st.caption("Prima crea il video finale.")
+        else:
+            start = 0.0
+
+    # La clip AI si modifica soltanto nell'Editor completo.
+    _ai_selected_start = st.session_state.get("auto_clip_scelta")
+
+    if st.session_state.get("publication_ready") and st.session_state.get("publication_source")=="ai_clip":
+        st.markdown("#### 🎬 Esporta")
+        st.caption(
+            "La preview serve solo per scegliere la scena. "
+            "Il file finale viene sempre creato dal gameplay originale."
+        )
+
+        if st.button(
+            "🎞️ CREA SHORT FINALE",
+            type="primary",
+            use_container_width=True,
+            key="render_ai_selected_v41"
+        ):
+            _pub_dir=tempfile.mkdtemp(prefix="gsf_ai_final_")
+            _pub_source=os.path.join(_pub_dir,"source_original.mp4")
+            _pub_out=os.path.join(_pub_dir,"gaming_short_ai_final.mp4")
+            with open(_pub_source,"wb") as _pf:
+                _pf.write(video.getbuffer())
+
+            _pub_start=float(st.session_state.get("auto_clip_scelta",0.0) or 0.0)
+            _pub_duration=float(
+                st.session_state.get("auto_clip_duration",duration) or duration
+            )
+            _pub_subtitles=bool(
+                st.session_state.get("project_subtitles_enabled",True)
+            )
+            _pub_master_token=_gsf_upload_master_token(video)
+
+            with st.spinner("🎬 Render finale dal file originale..."):
+                _pub_result=_gsf_render_auto_master(
+                    _pub_source,
+                    _pub_start,
+                    _pub_duration,
+                    master_token=_pub_master_token,
+                    subtitles_enabled=_pub_subtitles,
+                    manual_hook=st.session_state.get("hook_testo",""),
+                    output_path=_pub_out
+                )
+
+            if _pub_result.get("ok"):
+                st.session_state["publication_final_bytes"]=_pub_result.get("bytes",b"")
+                st.session_state["publication_final_signature"]=_pub_result.get("signature","")
+                st.session_state["publication_final_encoder"]=_pub_result.get("encoder","")
+                st.session_state["publication_final_seconds"]=_pub_result.get("seconds",0)
+                _rf=_pub_result.get("smart_reframe") or {}
+                _rf_text=(
+                    f" · Smart Reframe {int(float(_rf.get('confidence',0))*100)}%"
+                    if _rf.get("enabled") else " · crop centrale"
+                )
+                _hook_info=(
+                    f" · Hook: {_pub_result.get('hook_text','')}"
+                    if _pub_result.get("hook_text") else ""
+                )
+                _cache_text=" · master riusato" if _pub_result.get("cache_hit") else ""
+                _sig_text=(
+                    f" · {_pub_result.get('signature','')[:8]}"
+                    if _pub_result.get("signature") else ""
+                )
+                st.success(
+                    f"✅ Short finale pronto · {_pub_result.get('encoder','')} · "
+                    f"{_pub_result.get('seconds',0):.1f}s"
+                    f"{_rf_text}{_hook_info}{_cache_text}{_sig_text}"
+                )
+            else:
+                st.error("Render finale non riuscito.")
+                if _pub_result.get("error"):
+                    st.code(_pub_result.get("error","")[-2500:])
+
+        _final_ai=st.session_state.get("publication_final_bytes")
+        if _final_ai:
+            _final_ai_path=_gsf_bytes_to_preview(_final_ai,"ai_final_v41")
+            render_gsf_player(_final_ai_path,"ai_final_v41")
+            st.download_button(
+                "⬇️ SCARICA SHORT FINALE",
+                _final_ai,
+                "gaming_short_ai_final.mp4",
+                "video/mp4",
+                use_container_width=True,
+                key="export_ai_selected_final_v41"
+            )
+
+        st.markdown("#### 🚀 Pubblicazione")
+        st.success("Clip scelta. Il master finale usa sempre il video originale.")
+        st.caption("Titolo, descrizione e pubblicazione diretta arriveranno nel punto successivo.")
+
+    # Nelle modalità AI l'utente non deve micro-gestire i sottotitoli:
+    # l'AI usa automaticamente il preset completo.
+    _manual_editor_mode = (modalita == "✋ Manuale")
+
+    _project_subtitles_enabled = bool(
+        st.session_state.get("project_subtitles_enabled", False if modalita != "✋ Manuale" and _ai_selected_start is None else True)
+    )
+    if _manual_editor_mode:
+        sottotitoli = _project_subtitles_enabled
+        stile_sub = "Base"
+        dimensione_sub = int(st.session_state.get("editor_sub_size", 92))
+        posizione_sub = int(st.session_state.get("editor_sub_position", 330))
+    else:
+        # Vale anche per i motori AI: se il progetto è senza sottotitoli,
+        # nessun motore deve reinserirli.
+        sottotitoli = _project_subtitles_enabled
+        stile_sub = "Base"
+        dimensione_sub = int(st.session_state.get("editor_sub_size", 92))
+        posizione_sub = int(st.session_state.get("editor_sub_position", 330))
+
+    # Motori tecnici sempre attivi: non sono più opzioni dell'interfaccia.
+    smart_reframe = True
+    analisi_rapida = True
+    normalizza_audio = True
+
+
+    # Manteniamo valori interni compatibili con il flusso esistente.
+    gioco = st.session_state.get("gioco", "ARC Raiders")
+    piattaforma = st.session_state.get("piattaforma", "YouTube Shorts")
+    tono_social = st.session_state.get("tono_social", "Gaming forte")
+    hook_testo = st.session_state.get("hook_testo", "")
+
+
+    # ==========================================================
+    # BATCH — CREA TUTTI I MOMENTI TROVATI
+    # ==========================================================
+
+    candidati_batch = st.session_state.get("auto_clip_candidati", [])
+
+    if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
+        # L'AI può mostrare 5 candidati, ma il batch crea i 3 migliori.
+        candidati_batch = candidati_batch[:3]
+
+    if modalita != "✋ Manuale" and candidati_batch:
+
+        st.divider()
+        st.markdown('<div class="soft-card"><div class="mini-label">SELEZIONE AI</div><h2 style="margin:.35rem 0 0;">Momenti migliori</h2></div>', unsafe_allow_html=True)
+
+        st.write(
+            f"Pronti **{len(candidati_batch)} momenti**. "
+            "Puoi creare tutti gli Shorts in una volta."
+        )
+
+        if st.button(
+            "✦ GENERA I 3 SHORTS",
+            type="primary",
+            use_container_width=True
+        ):
+
+            batch_bar = st.progress(0)
+            batch_status = st.empty()
+
+            # Conserviamo i bytes in session_state, perché la temp
+            # directory viene eliminata alla fine.
+            risultati_batch = []
+
+            with tempfile.TemporaryDirectory() as batch_temp:
+
+                batch_input = os.path.join(
+                    batch_temp,
+                    "batch_input.mp4"
+                )
+
+                with open(batch_input, "wb") as f:
+                    f.write(video.getbuffer())
+
+                totale_batch = len(candidati_batch)
+
+                for indice, inizio_clip in enumerate(
+                    candidati_batch,
+                    start=1
+                ):
+
+                    batch_status.write(
+                        f"🎬 Creo Short {indice}/{totale_batch}..."
+                    )
+
+                    durata_batch = float(duration)
+
+                    if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
+                        durata_batch = float(
+                            st.session_state.get(
+                                "clip_rifinite",
+                                {}
+                            ).get(round(float(inizio_clip), 3), duration)
+                        )
+
+                    _batch_manual_hook=st.session_state.get("hook_testo","")
+                    _batch_master_token=_gsf_upload_master_token(video)
+
+                    output_batch = crea_short_batch(
+                        batch_input,
+                        batch_temp,
+                        float(inizio_clip),
+                        durata_batch,
+                        indice,
+                        sottotitoli,
+                        normalizza_audio,
+                        stile_sub,
+                        dimensione_sub,
+                        posizione_sub,
+                        hook_text=_batch_manual_hook,
+                        master_token=_batch_master_token
+                    )
+
+                    if output_batch and os.path.exists(output_batch):
+                        with open(output_batch, "rb") as f:
+                            risultati_batch.append(
+                                (
+                                    indice,
+                                    float(inizio_clip),
+                                    f.read()
+                                )
+                            )
+
+                    batch_bar.progress(
+                        int(indice / totale_batch * 100)
+                    )
+
+            st.session_state.risultati_batch = risultati_batch
+
+            if risultati_batch:
+                batch_status.write(
+                    f"✅ Creati {len(risultati_batch)} Shorts."
+                )
+            else:                batch_status.write(
+                    "❌ Non sono riuscito a creare gli Shorts."
+                )
+
+        risultati_batch = st.session_state.get(
+            "risultati_batch",
+            []
+        )
+
+        if risultati_batch:
+
+            st.subheader("📦 Shorts pronti")
+
+            for indice, inizio_clip, dati_video in risultati_batch:
+
+                st.write(
+                    f"### Short {indice} — da {inizio_clip:.0f}s"
+                )
+
+                _batch_path = _gsf_bytes_to_preview(
+                    dati_video, f"batch_short_{indice}"
+                )
+                render_gsf_player(_batch_path, f"batch_short_{indice}")
+
+                st.download_button(
+                    f"⬇️ Scarica Short {indice}",
+                    dati_video,
+                    f"gaming_short_{indice}.mp4",
+                    "video/mp4",
+                    key=f"download_batch_{indice}"
+                )
+
+            # ZIP unico con tutti gli Shorts
+            import io
+            import zipfile
+
+            zip_buffer = io.BytesIO()
+
+            with zipfile.ZipFile(
+                zip_buffer,
+                "w",
+                zipfile.ZIP_DEFLATED
+            ) as archivio:
+
+                for indice, inizio_clip, dati_video in risultati_batch:
+                    archivio.writestr(
+                        f"gaming_short_{indice}.mp4",
+                        dati_video
+                    )
+
+                _master_profile=_gsf_auto_master_profile(
+                    subtitles_enabled=bool(sottotitoli)
+                )
+                _master_token=_gsf_upload_master_token(video)
+                _manifest_lines=[
+                    "Gaming Shorts Factory — MASTER V44",
+                    f"Gioco: {gioco}",
+                    f"Piattaforma: {piattaforma}",
+                    f"Modalità: {modalita}",
+                    f"Short creati: {len(risultati_batch)}",
+                ]
+                for _idx,_start,_bytes in risultati_batch:
+                    _dur=float(duration)
+                    if modalita in ["🚀 AUTO TOTALE","🎬 AI Director"]:
+                        _dur=float(
+                            st.session_state.get("clip_rifinite",{}).get(
+                                round(float(_start),3),duration
+                            )
+                        )
+                    _hook=_gsf_auto_hook_for_start(
+                        float(_start),
+                        manual_hook=st.session_state.get("hook_testo","")
+                    )
+                    _sig=_gsf_master_signature(
+                        _master_token,float(_start),_dur,_master_profile,_hook
+                    )
+                    _manifest_lines.append(
+                        f"Short {_idx}: {_start:.2f}s | master {_sig}"
+                    )
+                manifest="\n".join(_manifest_lines)+"\n"
+                archivio.writestr("INFO.txt", manifest)
+
+            st.download_button(
+                "📦 SCARICA TUTTI (.ZIP)",
+                zip_buffer.getvalue(),
+                "gaming_shorts.zip",
+                "application/zip",
+                use_container_width=True
+            )
+
+        st.divider()
+        st.caption(
+            "Oppure crea soltanto la clip selezionata:"
+        )        )        )        )
