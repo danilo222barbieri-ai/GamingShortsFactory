@@ -1078,6 +1078,30 @@ def crea_anteprima(input_file, output_file, start, duration):
     return risultato.returncode == 0 and os.path.exists(output_file)
 
 
+@st.cache_resource(show_spinner=False)
+def _gsf_subtitle_whisper_model():
+    """
+    Modello dedicato ai sottotitoli.
+    Small è molto più accurato di Tiny, ma viene usato solo sulle clip/scena
+    selezionate, non sulla scansione AI dell'intero gameplay.
+    """
+    try:
+        return WhisperModel("small", device="cpu", compute_type="int8")
+    except Exception:
+        return WhisperModel("tiny", device="cpu", compute_type="int8")
+
+
+def _gsf_gaming_prompt(context_hint=""):
+    hint = str(context_hint or "").strip()
+    base = (
+        "Gaming commentary. Preserve game names, player names, weapon names, "
+        "gaming terms, acronyms and English words exactly when they are spoken."
+    )
+    if hint:
+        base += f" Game: {hint}."
+    return base
+
+
 def crea_short_batch(
     input_file,
     temp_dir,
@@ -1124,18 +1148,21 @@ def crea_short_batch(
     # 2) Whisper + ASS leggibile
     if usa_sub:
         try:
-            model = WhisperModel(
-                "tiny",
-                device="cpu",
-                compute_type="int8"
-            )
+            model = _gsf_subtitle_whisper_model()
 
             segments, info = model.transcribe(
                 segment_file,
-                language="it",
+                language=None,
+                task="transcribe",
                 vad_filter=True,
-                beam_size=1,
-                word_timestamps=True
+                beam_size=5,
+                best_of=5,
+                word_timestamps=True,
+                condition_on_previous_text=False,
+                initial_prompt=_gsf_gaming_prompt(
+                    st.session_state.get("gioco", "ARC Raiders")
+                ),
+                vad_parameters=dict(min_silence_duration_ms=250)
             )
 
             segments = list(segments)
@@ -2699,7 +2726,10 @@ def _gsf_clean_transcript_words(words):
         if out and norm and norm==prev_norm and float(w.get("start",0))-float(out[-1]["end"]) < .18:
             out[-1]["end"]=max(float(out[-1]["end"]),float(w.get("end",out[-1]["end"])))
             continue
-        out.append({"text":t,"start":float(w["start"]),"end":float(w["end"])})
+        item={"text":t,"start":float(w["start"]),"end":float(w["end"])}
+        if w.get("language"):
+            item["language"]=w["language"]
+        out.append(item)
         prev_norm=norm
     return out
 
@@ -2726,24 +2756,42 @@ def _gsf_transcribe_editor_scene(source_path, start_seconds, duration_seconds):
     os.makedirs(temp_dir,exist_ok=True)
     token=hashlib.md5(f"{source_path}|{start_seconds:.2f}|{duration_seconds:.2f}".encode()).hexdigest()[:12]
     wav=os.path.join(temp_dir,f"{token}.wav")
-    cmd=[FFMPEG_PATH,"-y","-ss",str(float(start_seconds)),"-i",str(source_path),
-         "-t",str(float(duration_seconds)),"-vn","-ac","1","-ar","16000",wav]
+    cmd=[
+        FFMPEG_PATH,"-y","-ss",str(float(start_seconds)),"-i",str(source_path),
+        "-t",str(float(duration_seconds)),"-vn","-ac","1","-ar","16000",
+        "-af","highpass=f=70,lowpass=f=7800,loudnorm=I=-16:LRA=11:TP=-1.5",
+        wav
+    ]
     run=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
     if run.returncode!=0 or not os.path.exists(wav):
         return [], "Estrazione audio non riuscita"
     try:
-        model=WhisperModel("tiny",device="cpu",compute_type="int8")
+        model=_gsf_subtitle_whisper_model()
         segs,info=model.transcribe(
-            wav,language=None,vad_filter=True,beam_size=3,best_of=3,
-            word_timestamps=True,condition_on_previous_text=True,
-            vad_parameters=dict(min_silence_duration_ms=350)
+            wav,
+            language=None,
+            task="transcribe",
+            vad_filter=True,
+            beam_size=5,
+            best_of=5,
+            word_timestamps=True,
+            condition_on_previous_text=False,
+            initial_prompt=_gsf_gaming_prompt(
+                st.session_state.get("gioco", "ARC Raiders")
+            ),
+            vad_parameters=dict(min_silence_duration_ms=250)
         )
         result=[]
         for seg in list(segs):
             for w in (getattr(seg,"words",None) or []):
                 t=str(w.word).strip()
                 if t:
-                    result.append({"text":t,"start":float(start_seconds)+float(w.start),"end":float(start_seconds)+float(w.end)})
+                    result.append({
+                        "text":t,
+                        "start":float(start_seconds)+float(w.start),
+                        "end":float(start_seconds)+float(w.end),
+                        "language":str(getattr(info,"language","") or "")
+                    })
         return _gsf_clean_transcript_words(result), None
     except Exception as e:
         return [], str(e)
