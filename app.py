@@ -1624,6 +1624,431 @@ def ai_director_locale(input_file, clip_duration=30, numero_clip=5):
     return chosen
 
 
+
+# ==========================================================
+# POINT 3 — AI MOMENT ENGINE V3
+# Quattro profili realmente distinti, mantenendo l'analisi locale/leggera.
+# ==========================================================
+
+_GSF_REACTION_WORDS = {
+    # IT
+    "wow","oddio","dio","no","sì","si","dai","vai","attenzione","merda","cazzo",
+    "incredibile","pazzesco","assurdo","preso","preso!","morto","ucciso","grande",
+    # EN
+    "wow","oh","omg","god","no","yes","yeah","lets","let's","go","damn","shit",
+    "crazy","insane","what","nice","got","him","dead","kill","killed",
+    # ES / PT / FR — piccoli segnali universali, nessun modello aggiuntivo
+    "vamos","dios","madre","mierda","increíble","increible","sim","não","nao",
+    "allez","putain","incroyable"
+}
+
+@st.cache_resource(show_spinner=False)
+def _gsf_ai_whisper_tiny():
+    """Carica Tiny una volta sola per i controlli vocali dei candidati."""
+    return WhisperModel("tiny", device="cpu", compute_type="int8")
+
+
+def _gsf_norm_series(values):
+    if not values:
+        return []
+    vals=[float(v) for v in values]
+    ordered=sorted(vals)
+    # Percentili robusti: un singolo botto non schiaccia tutto il resto.
+    lo=ordered[max(0, int(len(ordered)*0.05)-1)]
+    hi=ordered[min(len(ordered)-1, int(len(ordered)*0.95))]
+    span=max(1e-6, hi-lo)
+    return [max(0.0,min(1.0,(v-lo)/span)) for v in vals]
+
+
+def _gsf_ai_scan_base(input_file):
+    """
+    Fast scan unico dell'intero gameplay.
+    Ritorna feature ogni ~0.5s:
+    audio RMS, picco audio e differenza visiva/scene score.
+    """
+    # AUDIO 0.5 s, normalizzato poi in modo robusto.
+    cmd_audio=[
+        FFMPEG_PATH,"-hide_banner","-i",input_file,"-vn",
+        "-af",
+        (
+            "aresample=16000,asetnsamples=n=8000:p=0,"
+            "astats=metadata=1:reset=1,"
+            "ametadata=print:key=lavfi.astats.Overall.RMS_level,"
+            "ametadata=print:key=lavfi.astats.Overall.Peak_level"
+        ),
+        "-f","null","-"
+    ]
+    ra=subprocess.run(cmd_audio,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    raw_audio=(ra.stdout or "")+"\n"+(ra.stderr or "")
+    audio_points={}
+    current_t=None
+    for line in raw_audio.splitlines():
+        mt=re.search(r"pts_time:([0-9.]+)",line)
+        if mt:
+            try: current_t=float(mt.group(1))
+            except Exception: current_t=None
+        if current_t is None:
+            continue
+        bucket=max(0,int(round(current_t*2.0)))
+        if "lavfi.astats.Overall.RMS_level=" in line:
+            try:
+                v=float(line.split("lavfi.astats.Overall.RMS_level=",1)[1].strip().split()[0])
+                if math.isfinite(v):
+                    audio_points.setdefault(bucket,{})["rms"]=v
+            except Exception:
+                pass
+        elif "lavfi.astats.Overall.Peak_level=" in line:
+            try:
+                v=float(line.split("lavfi.astats.Overall.Peak_level=",1)[1].strip().split()[0])
+                if math.isfinite(v):
+                    audio_points.setdefault(bucket,{})["peak"]=v
+            except Exception:
+                pass
+
+    # VIDEO 2 fps: scene score come proxy economica di cambi/movimento.
+    cmd_video=[
+        FFMPEG_PATH,"-hide_banner","-i",input_file,"-an",
+        "-vf","fps=2,scale=192:-2,select='gte(scene,0)',metadata=print",
+        "-f","null","-"
+    ]
+    rv=subprocess.run(cmd_video,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    raw_video=(rv.stdout or "")+"\n"+(rv.stderr or "")
+    motion_points={}
+    current_t=None
+    for line in raw_video.splitlines():
+        mt=re.search(r"pts_time:([0-9.]+)",line)
+        if mt:
+            try: current_t=float(mt.group(1))
+            except Exception: current_t=None
+        if current_t is not None and "lavfi.scene_score=" in line:
+            try:
+                v=float(line.split("lavfi.scene_score=",1)[1].strip().split()[0])
+                bucket=max(0,int(round(current_t*2.0)))
+                motion_points[bucket]=max(motion_points.get(bucket,0.0),max(0.0,v))
+            except Exception:
+                pass
+
+    all_buckets=set(audio_points)|set(motion_points)
+    if not all_buckets:
+        return {"step":0.5,"audio":[],"peak":[],"motion":[]}
+
+    n=max(all_buckets)+2
+    rms_raw=[]
+    peak_raw=[]
+    motion_raw=[]
+    last_rms=-80.0
+    last_peak=-80.0
+    for i in range(n):
+        ap=audio_points.get(i,{})
+        r=ap.get("rms",last_rms)
+        p=ap.get("peak",last_peak)
+        last_rms=r
+        last_peak=p
+        rms_raw.append(r)
+        peak_raw.append(p)
+        motion_raw.append(motion_points.get(i,0.0))
+
+    audio=_gsf_norm_series(rms_raw)
+    peak=_gsf_norm_series(peak_raw)
+    motion=_gsf_norm_series(motion_raw)
+
+    return {"step":0.5,"audio":audio,"peak":peak,"motion":motion}
+
+
+def _gsf_ai_window_features(scan,start,duration):
+    step=float(scan.get("step",0.5) or 0.5)
+    a=scan.get("audio",[])
+    p=scan.get("peak",[])
+    m=scan.get("motion",[])
+    n=min(len(a),len(p),len(m))
+    if n<=0:
+        return {}
+
+    i0=max(0,min(n-1,int(start/step)))
+    i1=max(i0+1,min(n,int((start+duration)/step)))
+    aa=a[i0:i1]; pp=p[i0:i1]; mm=m[i0:i1]
+    if not aa:
+        return {}
+
+    def avg(xs): return sum(xs)/len(xs) if xs else 0.0
+    def mx(xs): return max(xs) if xs else 0.0
+
+    activity=[0.46*aa[i]+0.44*mm[i]+0.10*min(aa[i],mm[i]) for i in range(len(aa))]
+    dead=[1.0 if aa[i]<0.10 and mm[i]<0.07 else 0.0 for i in range(len(aa))]
+    burst=[max(0.0,pp[i]-aa[i]) for i in range(len(aa))]
+    delta_audio=[max(0.0,aa[i]-aa[i-1]) for i in range(1,len(aa))] or [0.0]
+    delta_motion=[max(0.0,mm[i]-mm[i-1]) for i in range(1,len(mm))] or [0.0]
+
+    third=max(1,len(activity)//3)
+    s1=activity[:third]
+    s2=activity[third:third*2] or activity
+    s3=activity[third*2:] or activity[-third:]
+
+    # Picco centrale e arco: utile al Director.
+    center_peak=mx(s2)
+    build=max(0.0,avg(s2)-avg(s1))
+    release=max(0.0,avg(s2)-avg(s3))
+    arc=min(1.0,0.45*center_peak+0.30*build+0.25*release)
+
+    return {
+        "audio_avg":avg(aa),
+        "audio_peak":mx(aa),
+        "audio_burst":min(1.0,0.55*mx(burst)+0.45*mx(delta_audio)),
+        "motion_avg":avg(mm),
+        "motion_peak":mx(mm),
+        "motion_burst":mx(delta_motion),
+        "synergy":avg([min(aa[i],mm[i]) for i in range(len(aa))]),
+        "activity_avg":avg(activity),
+        "activity_peak":mx(activity),
+        "active_ratio":sum(1 for x in activity if x>=0.30)/len(activity),
+        "dead_ratio":avg(dead),
+        "arc":arc,
+        "build":build,
+        "release":release,
+        "center_peak":center_peak,
+        "speech":0.0,
+        "reaction":0.0,
+    }
+
+
+def _gsf_ai_voice_features(input_file,start,duration):
+    """
+    Secondo passaggio SOLO sui candidati migliori.
+    Misura densità del parlato + segnali di reazione, senza trascrivere tutto il video.
+    """
+    try:
+        temp_dir=os.path.join(tempfile.gettempdir(),"gsf_ai_voice")
+        os.makedirs(temp_dir,exist_ok=True)
+        token=hashlib.md5(f"{input_file}|{start:.2f}|{duration:.2f}".encode()).hexdigest()[:14]
+        wav=os.path.join(temp_dir,f"{token}.wav")
+        cmd=[
+            FFMPEG_PATH,"-y","-ss",str(max(0.0,float(start))),"-i",str(input_file),
+            "-t",str(max(3.0,float(duration))),"-vn","-ac","1","-ar","16000",wav
+        ]
+        r=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        if r.returncode!=0 or not os.path.exists(wav):
+            return 0.0,0.0,""
+
+        model=_gsf_ai_whisper_tiny()
+        segs,_=model.transcribe(
+            wav,language=None,vad_filter=True,beam_size=1,best_of=1,
+            condition_on_previous_text=False,word_timestamps=False,
+            vad_parameters=dict(min_silence_duration_ms=250)
+        )
+        segs=list(segs)
+        if not segs:
+            return 0.0,0.0,""
+
+        texts=[]
+        spoken=0.0
+        for seg in segs:
+            tx=str(getattr(seg,"text","") or "").strip()
+            if tx: texts.append(tx)
+            try:
+                spoken += max(0.0,float(seg.end)-float(seg.start))
+            except Exception:
+                pass
+
+        joined=" ".join(texts)
+        words=re.findall(r"[A-Za-zÀ-ÿ']+",joined.lower())
+        density=min(1.0,spoken/max(1.0,float(duration))*1.55)
+
+        hits=sum(1 for w in words if w in _GSF_REACTION_WORDS)
+        punctuation=joined.count("!")+joined.count("?")
+        short_exclamations=sum(1 for tx in texts if 0 < len(tx.split()) <= 5)
+        reaction=min(
+            1.0,
+            hits*0.20 + punctuation*0.08 + min(0.30,short_exclamations*0.045)
+        )
+        return density,reaction,joined
+    except Exception:
+        return 0.0,0.0,""
+
+
+def _gsf_score_ai_window(profile,f):
+    """Pesi volutamente diversi per i 4 pulsanti del punto 3."""
+    dead=float(f.get("dead_ratio",0.0))
+    speech=float(f.get("speech",0.0))
+    reaction=float(f.get("reaction",0.0))
+
+    if profile=="action":
+        score=(
+            0.38*f["motion_avg"]+
+            0.18*f["motion_peak"]+
+            0.13*f["motion_burst"]+
+            0.13*f["active_ratio"]+
+            0.09*f["audio_avg"]+
+            0.09*f["synergy"]-
+            0.34*dead
+        )
+    elif profile=="reaction":
+        score=(
+            0.28*reaction+
+            0.22*speech+
+            0.20*f["audio_burst"]+
+            0.10*f["audio_peak"]+
+            0.10*f["synergy"]+
+            0.05*f["motion_avg"]+
+            0.05*f["activity_peak"]-
+            0.30*dead
+        )
+    elif profile=="director":
+        score=(
+            0.28*f["arc"]+
+            0.17*f["center_peak"]+
+            0.13*f["activity_avg"]+
+            0.11*f["synergy"]+
+            0.10*f["active_ratio"]+
+            0.08*speech+
+            0.07*reaction+
+            0.06*f["motion_avg"]-
+            0.32*dead
+        )
+    else:  # automatico = bilanciato
+        score=(
+            0.20*f["activity_avg"]+
+            0.14*f["activity_peak"]+
+            0.14*f["motion_avg"]+
+            0.12*f["audio_avg"]+
+            0.10*f["synergy"]+
+            0.09*f["active_ratio"]+
+            0.08*speech+
+            0.07*reaction+
+            0.06*f["arc"]-
+            0.34*dead
+        )
+    return max(0.0,float(score))
+
+
+def _gsf_profile_from_mode(modalita):
+    return {
+        "🚀 AUTO TOTALE":"auto",
+        "🎬 AI Director":"director",
+        "🧠 Smart Clip":"action",
+        "🤖 Auto Clip":"reaction",
+    }.get(modalita,"auto")
+
+
+def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
+    """
+    Fast Scan -> shortlist diversa per profilo -> voice check mirato -> ranking finale.
+    Restituisce [(score,start), ...] + diagnostica per eventuali sviluppi futuri.
+    """
+    profile=_gsf_profile_from_mode(modalita)
+    duration=max(10.0,float(clip_duration))
+    scan=_gsf_ai_scan_base(input_file)
+    n=min(len(scan.get("audio",[])),len(scan.get("motion",[])))
+    step=float(scan.get("step",0.5) or 0.5)
+    total=n*step
+    if n<=0 or total<5:
+        return [],{}
+
+    # Ogni 1 secondo: qualità migliore senza moltiplicare troppo il lavoro.
+    candidates=[]
+    last_start=max(0,int(total-max(5.0,duration)))
+    for start in range(0,last_start+1):
+        f=_gsf_ai_window_features(scan,float(start),duration)
+        if not f:
+            continue
+
+        # Prima fase NON usa Whisper.
+        if profile=="reaction":
+            prelim=(
+                0.38*f["audio_burst"]+0.22*f["audio_peak"]+
+                0.16*f["synergy"]+0.10*f["activity_peak"]+
+                0.08*f["motion_avg"]+0.06*f["active_ratio"]-
+                0.30*f["dead_ratio"]
+            )
+        elif profile=="action":
+            prelim=_gsf_score_ai_window("action",f)
+        elif profile=="director":
+            prelim=(
+                0.38*f["arc"]+0.20*f["center_peak"]+
+                0.16*f["activity_avg"]+0.13*f["synergy"]+
+                0.13*f["active_ratio"]-0.30*f["dead_ratio"]
+            )
+        else:
+            prelim=(
+                0.28*f["activity_avg"]+0.18*f["activity_peak"]+
+                0.16*f["motion_avg"]+0.13*f["audio_avg"]+
+                0.12*f["synergy"]+0.08*f["arc"]+
+                0.05*f["active_ratio"]-0.32*f["dead_ratio"]
+            )
+        candidates.append((float(prelim),float(start),f))
+
+    if not candidates:
+        return [],{}
+
+    candidates.sort(key=lambda x:x[0],reverse=True)
+
+    # Shortlist con un po' di diversità. Non aspettiamo il ranking finale per evitare
+    # di mandare a Whisper dieci finestre quasi identiche dello stesso combattimento.
+    shortlist=[]
+    shortlist_target=10 if profile in ("auto","director","reaction") else 8
+    min_gap=max(3.0,duration*0.35)
+    for item in candidates:
+        if any(abs(item[1]-x[1])<min_gap for x in shortlist):
+            continue
+        shortlist.append(item)
+        if len(shortlist)>=shortlist_target:
+            break
+
+    # Voice/reaction solo dove serve.
+    enriched=[]
+    diagnostics={}
+    for prelim,start,f in shortlist:
+        f=dict(f)
+        transcript=""
+        if profile in ("auto","director","reaction"):
+            speech,reaction,transcript=_gsf_ai_voice_features(
+                input_file,start,duration
+            )
+            f["speech"]=speech
+            f["reaction"]=reaction
+
+        score=_gsf_score_ai_window(profile,f)
+
+        # Reazioni: includi un po' di "causa" prima dell'urlo/risata.
+        adjusted_start=start
+        if profile=="reaction" and (f["reaction"]>0.12 or f["audio_burst"]>0.55):
+            adjusted_start=max(0.0,start-1.5)
+
+        enriched.append((score,adjusted_start,f,transcript))
+
+    enriched.sort(key=lambda x:x[0],reverse=True)
+
+    # Ranking finale: i 3 momenti devono essere distinti.
+    chosen=[]
+    final_gap=max(5.0,duration*0.72)
+    for score,start,f,transcript in enriched:
+        if any(abs(start-old_start)<final_gap for _,old_start in chosen):
+            continue
+        chosen.append((float(score),float(start)))
+        diagnostics[round(float(start),3)]={
+            "profile":profile,
+            "score":float(score),
+            "features":f,
+            "transcript":transcript,
+        }
+        if len(chosen)>=int(numero_clip):
+            break
+
+    # Fallback se il video è corto e il gap è troppo severo.
+    if len(chosen)<numero_clip:
+        for score,start,f,transcript in enriched:
+            if any(abs(start-old_start)<3.0 for _,old_start in chosen):
+                continue
+            chosen.append((float(score),float(start)))
+            diagnostics[round(float(start),3)]={
+                "profile":profile,"score":float(score),
+                "features":f,"transcript":transcript,
+            }
+            if len(chosen)>=int(numero_clip):
+                break
+
+    return chosen,diagnostics
+
+
 def rifinisci_confini_clip(input_file, centro_start, durata_target):
     """
     Rifinisce gratis inizio/fine della clip usando silenzio audio.
@@ -2881,12 +3306,14 @@ if video:
                 with open(analisi_input, "wb") as f:
                     f.write(video.getbuffer())
 
-                if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
-                    messaggio = "⚡ Fast Scan → 3 candidati → controllo qualità..."
+                if modalita == "🚀 AUTO TOTALE":
+                    messaggio = "✨ Scansione completa → azione, audio, voce e tempi morti..."
+                elif modalita == "🎬 AI Director":
+                    messaggio = "🎬 Cerco costruzione, picco e chiusura dei momenti..."
                 elif modalita == "🧠 Smart Clip":
-                    messaggio = "🧠 Analizzo audio + movimento..."
+                    messaggio = "🔥 Cerco movimento, combattimenti e attività sostenuta..."
                 else:
-                    messaggio = "⚡ Analizzo l'audio del gameplay..."
+                    messaggio = "🎙️ Cerco voce, reazioni e picchi collegati al gameplay..."
 
                 cache_key_ai = (
                     getattr(video, "name", "video"),
@@ -2904,61 +3331,40 @@ if video:
                         if cached_ai.get("clip_rifinite") is not None:
                             st.session_state.clip_rifinite = cached_ai["clip_rifinite"]
 
-                    elif modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
-                        risultati_ai = ai_director_locale(
-                            analisi_input,
-                            clip_duration=float(duration),
-                            numero_clip=3
-                        )
-                        # Secondo passaggio: analizza in profondità SOLO i 3 candidati.
-                        risultati_ai = deep_rank_candidati_leggero(
-                            analisi_input,
-                            risultati_ai,
-                            float(duration)
-                        )
-
-                        st.session_state.ai_director_scores = risultati_ai
-                        candidati = [
-                            start_ai
-                            for score_ai, start_ai in risultati_ai
-                        ]
-
-                        # Rifinisce automaticamente hook/finale sui silenzi.
-                        clip_rifinite = {}
-                        candidati_rifiniti = []
-
-                        for start_ai in candidati:
-                            nuovo_start, nuova_durata = rifinisci_confini_clip(
-                                analisi_input,
-                                float(start_ai),
-                                float(duration)
-                            )
-                            candidati_rifiniti.append(nuovo_start)
-                            clip_rifinite[round(nuovo_start, 3)] = nuova_durata
-
-                        candidati = candidati_rifiniti
-                        st.session_state.clip_rifinite = clip_rifinite
-
-                        # Mantiene score e nuovi start allineati.
-                        risultati_ai = [
-                            (risultati_ai[i][0], candidati[i])
-                            for i in range(min(len(risultati_ai), len(candidati)))
-                        ]
-                        st.session_state.ai_director_scores = risultati_ai
-                    elif modalita == "🧠 Smart Clip":
-                        candidati = trova_clip_smart(
-                            analisi_input,
-                            analisi_temp,
-                            clip_duration=float(duration),
-                            numero_clip=3
-                        )
                     else:
-                        candidati = trova_clip_audio(
+                        risultati_ai, ai_diag = _gsf_ai_rank_v3(
                             analisi_input,
-                            analisi_temp,
+                            modalita,
                             clip_duration=float(duration),
                             numero_clip=3
                         )
+
+                        candidati = [start_ai for score_ai, start_ai in risultati_ai]
+                        st.session_state.ai_director_scores = risultati_ai
+                        st.session_state["gsf_ai_v3_diagnostics"] = ai_diag
+
+                        # Solo Automatico e Momento migliore rifiniscono i bordi:
+                        # per Azione/Reazioni non vogliamo spostare via il picco trovato.
+                        if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
+                            clip_rifinite = {}
+                            candidati_rifiniti = []
+                            for start_ai in candidati:
+                                nuovo_start, nuova_durata = rifinisci_confini_clip(
+                                    analisi_input,
+                                    float(start_ai),
+                                    float(duration)
+                                )
+                                candidati_rifiniti.append(nuovo_start)
+                                clip_rifinite[round(nuovo_start, 3)] = nuova_durata
+                            candidati = candidati_rifiniti
+                            st.session_state.clip_rifinite = clip_rifinite
+                            risultati_ai = [
+                                (risultati_ai[i][0], candidati[i])
+                                for i in range(min(len(risultati_ai),len(candidati)))
+                            ]
+                            st.session_state.ai_director_scores = risultati_ai
+                        else:
+                            st.session_state.clip_rifinite = {}
 
                 if cached_ai is None:
                     if "gsf_fast_ai_cache" not in st.session_state:
@@ -2966,10 +3372,8 @@ if video:
 
                     st.session_state["gsf_fast_ai_cache"][cache_key_ai] = {
                         "candidati": list(candidati),
-                        "scores": st.session_state.get("ai_director_scores")
-                            if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"] else None,
-                        "clip_rifinite": st.session_state.get("clip_rifinite")
-                            if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"] else None,
+                        "scores": st.session_state.get("ai_director_scores"),
+                        "clip_rifinite": st.session_state.get("clip_rifinite"),
                     }
 
                 st.session_state.auto_clip_candidati = candidati
@@ -2986,7 +3390,7 @@ if video:
             candidati = st.session_state.get("auto_clip_candidati", [])
 
         if candidati:
-            if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
+            if modalita != "✋ Manuale":
                 risultati_ai = st.session_state.get(
                     "ai_director_scores",
                     []
