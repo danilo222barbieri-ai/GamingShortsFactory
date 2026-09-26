@@ -1801,21 +1801,54 @@ def _gsf_ai_window_features(scan,start,duration):
     def mx(xs): return max(xs) if xs else 0.0
 
     activity=[0.46*aa[i]+0.44*mm[i]+0.10*min(aa[i],mm[i]) for i in range(len(aa))]
-    dead=[1.0 if aa[i]<0.10 and mm[i]<0.07 else 0.0 for i in range(len(aa))]
+    dead_flags=[1.0 if aa[i]<0.10 and mm[i]<0.07 else 0.0 for i in range(len(aa))]
     burst=[max(0.0,pp[i]-aa[i]) for i in range(len(aa))]
-    delta_audio=[max(0.0,aa[i]-aa[i-1]) for i in range(1,len(aa))] or [0.0]
-    delta_motion=[max(0.0,mm[i]-mm[i-1]) for i in range(1,len(mm))] or [0.0]
+    delta_audio=[0.0]+[max(0.0,aa[i]-aa[i-1]) for i in range(1,len(aa))]
+    delta_motion=[0.0]+[max(0.0,mm[i]-mm[i-1]) for i in range(1,len(mm))]
 
     third=max(1,len(activity)//3)
     s1=activity[:third]
     s2=activity[third:third*2] or activity
     s3=activity[third*2:] or activity[-third:]
 
-    # Picco centrale e arco: utile al Director.
     center_peak=mx(s2)
     build=max(0.0,avg(s2)-avg(s1))
     release=max(0.0,avg(s2)-avg(s3))
     arc=min(1.0,0.45*center_peak+0.30*build+0.25*release)
+
+    # Hook: i primi secondi devono contenere abbastanza informazione da non sembrare "morti".
+    hook_n=max(1,min(len(activity),int(round(3.0/step))))
+    hook_vals=activity[:hook_n]
+    hook_score=min(1.0,0.60*avg(hook_vals)+0.40*mx(hook_vals))
+
+    # Dove cade il payoff principale nella clip.
+    peak_idx=max(range(len(activity)),key=lambda i:activity[i])
+    peak_pos=peak_idx/max(1,len(activity)-1)
+
+    # Un payoff tra ~35% e ~75% della clip tende a lasciare contesto prima e respiro dopo.
+    if peak_pos < 0.35:
+        payoff_position=max(0.0,peak_pos/0.35)
+    elif peak_pos <= 0.75:
+        payoff_position=1.0
+    else:
+        payoff_position=max(0.0,(1.0-peak_pos)/0.25)
+
+    # Penalità più severa per una striscia continua di silenzio/staticità.
+    longest_dead=0
+    current_dead=0
+    for flag in dead_flags:
+        if flag:
+            current_dead+=1
+            longest_dead=max(longest_dead,current_dead)
+        else:
+            current_dead=0
+    dead_streak_ratio=longest_dead/max(1,len(dead_flags))
+
+    # "Reaction cue" audio: scatto improvviso + differenza tra picco e livello medio.
+    reaction_curve=[
+        min(1.0,0.58*delta_audio[i]+0.42*max(0.0,pp[i]-aa[i]))
+        for i in range(len(aa))
+    ]
 
     return {
         "audio_avg":avg(aa),
@@ -1828,7 +1861,12 @@ def _gsf_ai_window_features(scan,start,duration):
         "activity_avg":avg(activity),
         "activity_peak":mx(activity),
         "active_ratio":sum(1 for x in activity if x>=0.30)/len(activity),
-        "dead_ratio":avg(dead),
+        "dead_ratio":avg(dead_flags),
+        "dead_streak_ratio":dead_streak_ratio,
+        "hook_score":hook_score,
+        "payoff_position":payoff_position,
+        "peak_pos":peak_pos,
+        "reaction_cue":mx(reaction_curve),
         "arc":arc,
         "build":build,
         "release":release,
@@ -1893,58 +1931,137 @@ def _gsf_ai_voice_features(input_file,start,duration):
 
 
 def _gsf_score_ai_window(profile,f):
-    """Pesi volutamente diversi per i 4 pulsanti del punto 3."""
+    """Pesi distinti per i 4 motori + hook/payoff + anti-tempo-morto."""
     dead=float(f.get("dead_ratio",0.0))
+    dead_streak=float(f.get("dead_streak_ratio",0.0))
     speech=float(f.get("speech",0.0))
     reaction=float(f.get("reaction",0.0))
+    hook=float(f.get("hook_score",0.0))
+    payoff=float(f.get("payoff_position",0.0))
+    reaction_cue=float(f.get("reaction_cue",0.0))
 
     if profile=="action":
         score=(
-            0.38*f["motion_avg"]+
-            0.18*f["motion_peak"]+
+            0.31*f["motion_avg"]+
+            0.15*f["motion_peak"]+
             0.13*f["motion_burst"]+
-            0.13*f["active_ratio"]+
-            0.09*f["audio_avg"]+
-            0.09*f["synergy"]-
-            0.34*dead
+            0.12*f["active_ratio"]+
+            0.08*f["audio_avg"]+
+            0.08*f["synergy"]+
+            0.07*hook+
+            0.06*payoff-
+            0.25*dead-
+            0.16*dead_streak
         )
     elif profile=="reaction":
         score=(
-            0.28*reaction+
-            0.22*speech+
-            0.20*f["audio_burst"]+
-            0.10*f["audio_peak"]+
-            0.10*f["synergy"]+
-            0.05*f["motion_avg"]+
-            0.05*f["activity_peak"]-
-            0.30*dead
+            0.25*reaction+
+            0.18*speech+
+            0.18*f["audio_burst"]+
+            0.12*reaction_cue+
+            0.08*f["audio_peak"]+
+            0.08*f["synergy"]+
+            0.04*f["motion_avg"]+
+            0.04*hook+
+            0.03*payoff-
+            0.22*dead-
+            0.12*dead_streak
         )
     elif profile=="director":
         score=(
-            0.28*f["arc"]+
-            0.17*f["center_peak"]+
-            0.13*f["activity_avg"]+
-            0.11*f["synergy"]+
-            0.10*f["active_ratio"]+
-            0.08*speech+
-            0.07*reaction+
-            0.06*f["motion_avg"]-
-            0.32*dead
-        )
-    else:  # automatico = bilanciato
-        score=(
-            0.20*f["activity_avg"]+
-            0.14*f["activity_peak"]+
-            0.14*f["motion_avg"]+
-            0.12*f["audio_avg"]+
+            0.24*f["arc"]+
+            0.14*f["center_peak"]+
+            0.12*f["activity_avg"]+
             0.10*f["synergy"]+
             0.09*f["active_ratio"]+
-            0.08*speech+
-            0.07*reaction+
-            0.06*f["arc"]-
-            0.34*dead
+            0.09*hook+
+            0.09*payoff+
+            0.06*speech+
+            0.04*reaction+
+            0.03*f["motion_avg"]-
+            0.24*dead-
+            0.15*dead_streak
+        )
+    else:  # automatico = equilibrio vero
+        score=(
+            0.17*f["activity_avg"]+
+            0.12*f["activity_peak"]+
+            0.12*f["motion_avg"]+
+            0.10*f["audio_avg"]+
+            0.09*f["synergy"]+
+            0.08*f["active_ratio"]+
+            0.08*hook+
+            0.07*payoff+
+            0.06*speech+
+            0.05*reaction+
+            0.04*f["arc"]+
+            0.02*reaction_cue-
+            0.25*dead-
+            0.15*dead_streak
         )
     return max(0.0,float(score))
+
+
+def _gsf_ai_feature_similarity(a,b):
+    """
+    Similarità 0..1 tra due momenti.
+    Serve a non proporre tre clip tecnicamente diverse nel tempo ma identiche nel contenuto.
+    """
+    keys=[
+        "audio_avg","audio_burst","motion_avg","motion_burst",
+        "synergy","active_ratio","arc","hook_score",
+        "payoff_position","speech","reaction","reaction_cue"
+    ]
+    diffs=[]
+    for k in keys:
+        diffs.append(abs(float(a.get(k,0.0))-float(b.get(k,0.0))))
+    return max(0.0,min(1.0,1.0-(sum(diffs)/max(1,len(diffs)))))
+
+
+def _gsf_ai_pick_diverse(enriched,duration,numero_clip):
+    """
+    Ranking finale tipo MMR:
+    qualità prima, poi penalità se una nuova clip assomiglia troppo a una già scelta.
+    """
+    if not enriched:
+        return []
+
+    best_score=max(float(x[0]) for x in enriched) or 1.0
+    # Non sacrifichiamo la qualità solo per essere diversi.
+    quality_floor=best_score*0.55
+    pool=[x for x in enriched if float(x[0])>=quality_floor]
+    if len(pool)<numero_clip:
+        pool=list(enriched)
+
+    chosen=[]
+    remaining=list(pool)
+
+    while remaining and len(chosen)<int(numero_clip):
+        if not chosen:
+            pick=max(remaining,key=lambda x:x[0])
+        else:
+            def utility(item):
+                score,start,f,transcript=item
+                worst_similarity=0.0
+                worst_overlap=0.0
+                for old_score,old_start,old_f,old_transcript in chosen:
+                    worst_similarity=max(
+                        worst_similarity,
+                        _gsf_ai_feature_similarity(f,old_f)
+                    )
+                    gap=abs(float(start)-float(old_start))
+                    overlap=max(0.0,1.0-gap/max(1.0,float(duration)))
+                    worst_overlap=max(worst_overlap,overlap)
+
+                # Similarità contenuto pesa meno dell'overlap temporale.
+                return float(score)-0.10*worst_similarity-0.24*worst_overlap
+
+            pick=max(remaining,key=utility)
+
+        chosen.append(pick)
+        remaining.remove(pick)
+
+    return chosen
 
 
 def _gsf_profile_from_mode(modalita):
@@ -1981,25 +2098,30 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
         # Prima fase NON usa Whisper.
         if profile=="reaction":
             prelim=(
-                0.38*f["audio_burst"]+0.22*f["audio_peak"]+
-                0.16*f["synergy"]+0.10*f["activity_peak"]+
-                0.08*f["motion_avg"]+0.06*f["active_ratio"]-
-                0.30*f["dead_ratio"]
+                0.31*f["audio_burst"]+0.18*f["audio_peak"]+
+                0.16*f["reaction_cue"]+0.13*f["synergy"]+
+                0.08*f["activity_peak"]+0.06*f["motion_avg"]+
+                0.04*f["hook_score"]+0.04*f["payoff_position"]-
+                0.22*f["dead_ratio"]-0.12*f["dead_streak_ratio"]
             )
         elif profile=="action":
             prelim=_gsf_score_ai_window("action",f)
         elif profile=="director":
             prelim=(
-                0.38*f["arc"]+0.20*f["center_peak"]+
-                0.16*f["activity_avg"]+0.13*f["synergy"]+
-                0.13*f["active_ratio"]-0.30*f["dead_ratio"]
+                0.30*f["arc"]+0.16*f["center_peak"]+
+                0.14*f["activity_avg"]+0.11*f["synergy"]+
+                0.10*f["active_ratio"]+0.09*f["hook_score"]+
+                0.10*f["payoff_position"]-0.22*f["dead_ratio"]-
+                0.14*f["dead_streak_ratio"]
             )
         else:
             prelim=(
-                0.28*f["activity_avg"]+0.18*f["activity_peak"]+
-                0.16*f["motion_avg"]+0.13*f["audio_avg"]+
-                0.12*f["synergy"]+0.08*f["arc"]+
-                0.05*f["active_ratio"]-0.32*f["dead_ratio"]
+                0.23*f["activity_avg"]+0.15*f["activity_peak"]+
+                0.14*f["motion_avg"]+0.11*f["audio_avg"]+
+                0.10*f["synergy"]+0.08*f["arc"]+
+                0.07*f["active_ratio"]+0.06*f["hook_score"]+
+                0.06*f["payoff_position"]-0.23*f["dead_ratio"]-
+                0.14*f["dead_streak_ratio"]
             )
         candidates.append((float(prelim),float(start),f))
 
@@ -2044,34 +2166,24 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
 
     enriched.sort(key=lambda x:x[0],reverse=True)
 
-    # Ranking finale: i 3 momenti devono essere distinti.
+    # Ranking finale: qualità + differenza reale tra i tre momenti.
+    diverse=_gsf_ai_pick_diverse(enriched,duration,numero_clip)
+
     chosen=[]
-    final_gap=max(5.0,duration*0.72)
-    for score,start,f,transcript in enriched:
-        if any(abs(start-old_start)<final_gap for _,old_start in chosen):
-            continue
+    for score,start,f,transcript in diverse:
         chosen.append((float(score),float(start)))
         diagnostics[round(float(start),3)]={
             "profile":profile,
             "score":float(score),
             "features":f,
             "transcript":transcript,
-        }
-        if len(chosen)>=int(numero_clip):
-            break
-
-    # Fallback se il video è corto e il gap è troppo severo.
-    if len(chosen)<numero_clip:
-        for score,start,f,transcript in enriched:
-            if any(abs(start-old_start)<3.0 for _,old_start in chosen):
-                continue
-            chosen.append((float(score),float(start)))
-            diagnostics[round(float(start),3)]={
-                "profile":profile,"score":float(score),
-                "features":f,"transcript":transcript,
+            "why":{
+                "hook":round(float(f.get("hook_score",0.0)),3),
+                "payoff":round(float(f.get("payoff_position",0.0)),3),
+                "dead_streak":round(float(f.get("dead_streak_ratio",0.0)),3),
+                "reaction_cue":round(float(f.get("reaction_cue",0.0)),3),
             }
-            if len(chosen)>=int(numero_clip):
-                break
+        }
 
     return chosen,diagnostics
 
