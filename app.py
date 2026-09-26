@@ -2136,6 +2136,133 @@ def _gsf_ai_feature_similarity(a,b):
     return max(0.0,min(1.0,1.0-(sum(diffs)/max(1,len(diffs)))))
 
 
+
+_GSF_EVENT_LABELS = {
+    "goal": "⚽ GOL",
+    "shooter_elimination": "🎯 ELIMINAZIONE",
+    "victory": "🏆 VITTORIA",
+    "sports_big_chance": "🥅 OCCASIONE",
+    "racing": "🏎️ EVENTO GARA",
+    "achievement": "⭐ TRAGUARDO",
+}
+
+
+def _gsf_event_target_position(event_type, reaction=0.0, event_score=0.0):
+    """
+    Posizione ideale dell'evento nello Short.
+    Più serve vedere la reazione dopo, più spostiamo l'evento verso il centro.
+    """
+    base = {
+        "goal": 0.58,
+        "sports_big_chance": 0.58,
+        "victory": 0.54,
+        "shooter_elimination": 0.64,
+        "racing": 0.58,
+        "achievement": 0.55,
+    }.get(str(event_type or ""), 0.60)
+
+    reaction_pull = min(0.07, max(0.0, float(reaction)) * 0.06)
+    strength_pull = min(0.025, max(0.0, float(event_score) - 0.70) * 0.08)
+    return max(0.48, min(0.68, base - reaction_pull - strength_pull))
+
+
+def _gsf_smart_event_start(scan, event_abs, duration, event_type, total,
+                           reaction=0.0, event_score=0.0):
+    """
+    Cerca il miglior IN attorno all'evento, preservando contesto, evento e reazione.
+    """
+    duration = max(5.0, float(duration))
+    total = max(duration, float(total))
+    event_abs = max(0.0, min(float(total), float(event_abs)))
+    target = _gsf_event_target_position(event_type, reaction, event_score)
+
+    candidate_positions = [
+        max(0.44, min(0.72, target + delta))
+        for delta in (-0.08, -0.04, 0.0, 0.04, 0.08)
+    ]
+
+    best = None
+    max_start = max(0.0, total - duration)
+
+    for pos in candidate_positions:
+        start = event_abs - duration * pos
+        start = max(0.0, min(max_start, start))
+
+        actual_pos = (event_abs - start) / max(1.0, duration)
+        if actual_pos < 0.34 or actual_pos > 0.82:
+            continue
+
+        f = _gsf_ai_window_features(scan, start, duration)
+        if not f:
+            continue
+
+        placement = max(0.0, 1.0 - abs(actual_pos - target) / 0.24)
+        post_room = max(0.0, (start + duration - event_abs) / duration)
+        aftermath = min(1.0, post_room / 0.34)
+
+        context = (
+            0.23 * float(f.get("hook_score", 0.0)) +
+            0.18 * float(f.get("active_ratio", 0.0)) +
+            0.14 * float(f.get("activity_avg", 0.0)) +
+            0.12 * float(f.get("arc", 0.0)) +
+            0.10 * float(f.get("synergy", 0.0)) +
+            0.12 * (1.0 - float(f.get("dead_streak_ratio", 0.0))) +
+            0.11 * (1.0 - float(f.get("dead_ratio", 0.0)))
+        )
+
+        utility = 0.58 * context + 0.27 * placement + 0.15 * aftermath
+
+        if best is None or utility > best[0]:
+            best = (utility, start, actual_pos)
+
+    if best is None:
+        fallback = max(0.0, min(max_start, event_abs - duration * target))
+        return fallback, target
+
+    return float(best[1]), float(best[2])
+
+
+def _gsf_same_physical_event(item_a, item_b, duration):
+    """Decide se due finestre descrivono probabilmente lo stesso evento reale."""
+    _, _, fa, _ = item_a
+    _, _, fb, _ = item_b
+
+    ea = fa.get("event_abs")
+    eb = fb.get("event_abs")
+    sa = float(fa.get("event_score", 0.0))
+    sb = float(fb.get("event_score", 0.0))
+
+    if ea is None or eb is None or sa < 0.56 or sb < 0.56:
+        return False
+
+    delta = abs(float(ea) - float(eb))
+    ta = str(fa.get("event_type", "") or "")
+    tb = str(fb.get("event_type", "") or "")
+
+    same_type_window = max(2.5, min(6.0, float(duration) * 0.26))
+    if ta and ta == tb and delta <= same_type_window:
+        return True
+
+    if delta <= 1.5:
+        return True
+
+    return False
+
+
+def _gsf_collapse_event_duplicates(enriched, duration):
+    """
+    Tiene una sola rappresentazione del medesimo gol/kill/vittoria.
+    """
+    ordered = sorted(enriched, key=lambda x: float(x[0]), reverse=True)
+    kept = []
+
+    for item in ordered:
+        if any(_gsf_same_physical_event(item, old, duration) for old in kept):
+            continue
+        kept.append(item)
+
+    return kept
+
 def _gsf_ai_pick_diverse(enriched,duration,numero_clip):
     """
     Ranking finale tipo MMR:
@@ -2147,7 +2274,11 @@ def _gsf_ai_pick_diverse(enriched,duration,numero_clip):
     best_score=max(float(x[0]) for x in enriched) or 1.0
     # Non sacrifichiamo la qualità solo per essere diversi.
     quality_floor=best_score*0.55
-    pool=[x for x in enriched if float(x[0])>=quality_floor]
+    pool=[
+        x for x in enriched
+        if float(x[0])>=quality_floor
+        or float((x[2] or {}).get("event_score",0.0))>=0.68
+    ]
     if len(pool)<numero_clip:
         pool=list(enriched)
 
@@ -2274,16 +2405,27 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
         f["event_type"]=str(event.get("type","") or "")
         f["event_time"]=event.get("time")
         f["event_score"]=_gsf_event_strength(event,f)
+        f["event_abs"]=None
+        f["event_position"]=None
 
         score=_gsf_score_ai_window(profile,f)
         adjusted_start=start
 
-        # Evento forte: lo mettiamo circa al 60-62% dello Short.
-        # Così resta contesto prima e conseguenza/reazione dopo.
         if f["event_score"]>=0.56 and f.get("event_time") is not None:
             event_abs=float(start)+float(f["event_time"])
-            target_pos=0.62 if f["event_type"] in ("goal","shooter_elimination","victory") else 0.58
-            adjusted_start=max(0.0,event_abs-duration*target_pos)
+            f["event_abs"]=event_abs
+
+            adjusted_start,event_position=_gsf_smart_event_start(
+                scan,
+                event_abs,
+                duration,
+                f["event_type"],
+                total,
+                reaction=f.get("reaction",0.0),
+                event_score=f.get("event_score",0.0)
+            )
+            f["event_position"]=event_position
+
         elif profile=="reaction" and (f["reaction"]>0.12 or f["audio_burst"]>0.55):
             adjusted_start=max(0.0,start-1.5)
 
@@ -2291,7 +2433,10 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
 
     enriched.sort(key=lambda x:x[0],reverse=True)
 
-    # Ranking finale: qualità + differenza reale tra i tre momenti.
+    # Prima eliminiamo le finestre duplicate dello stesso evento fisico.
+    enriched=_gsf_collapse_event_duplicates(enriched,duration)
+
+    # Poi scegliamo tre momenti realmente diversi.
     diverse=_gsf_ai_pick_diverse(enriched,duration,numero_clip)
 
     chosen=[]
@@ -2309,6 +2454,10 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
                 "reaction_cue":round(float(f.get("reaction_cue",0.0)),3),
                 "event":str(f.get("event_type","") or ""),
                 "event_score":round(float(f.get("event_score",0.0)),3),
+                "event_position":(
+                    round(float(f.get("event_position")),3)
+                    if f.get("event_position") is not None else None
+                ),
             }
         }
 
@@ -3617,6 +3766,8 @@ if video:
                             st.session_state.ai_director_scores = cached_ai["scores"]
                         if cached_ai.get("clip_rifinite") is not None:
                             st.session_state.clip_rifinite = cached_ai["clip_rifinite"]
+                        if cached_ai.get("diagnostics") is not None:
+                            st.session_state["gsf_ai_v3_diagnostics"] = cached_ai["diagnostics"]
 
                     else:
                         risultati_ai, ai_diag = _gsf_ai_rank_v3(
@@ -3671,6 +3822,7 @@ if video:
                         "candidati": list(candidati),
                         "scores": st.session_state.get("ai_director_scores"),
                         "clip_rifinite": st.session_state.get("clip_rifinite"),
+                        "diagnostics": st.session_state.get("gsf_ai_v3_diagnostics"),
                     }
 
                 st.session_state.auto_clip_candidati = candidati
@@ -3705,9 +3857,22 @@ if video:
                             max(1, min(100, score / massimo_score * 100))
                         )
 
+                        _diag = st.session_state.get(
+                            "gsf_ai_v3_diagnostics", {}
+                        ).get(round(float(sec), 3), {})
+                        _features = _diag.get("features") or {}
+                        _event_type = str(_features.get("event_type", "") or "")
+                        _event_score = float(_features.get("event_score", 0.0))
+                        _event_badge = (
+                            _GSF_EVENT_LABELS.get(_event_type, "")
+                            if _event_score >= 0.56 else ""
+                        )
+
                         label = (
-                            f"#{i + 1} • Qualità {qualita}% • "
-                            f"{sec:.0f}s → {sec + duration:.0f}s"
+                            f"#{i + 1} • "
+                            + (f"{_event_badge} • " if _event_badge else "")
+                            + f"Qualità {qualita}% • "
+                            + f"{sec:.0f}s → {sec + duration:.0f}s"
                         )
 
                         opzioni[label] = sec
