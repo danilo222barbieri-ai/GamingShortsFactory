@@ -2144,8 +2144,143 @@ _GSF_EVENT_LABELS = {
     "sports_big_chance": "🥅 OCCASIONE",
     "racing": "🏎️ EVENTO GARA",
     "achievement": "⭐ TRAGUARDO",
+    "impact_event": "💥 MOMENTO FORTE",
 }
 
+
+
+def _gsf_detect_signal_event(scan, start, duration):
+    """
+    Cerca un evento forte anche SENZA trascrizione:
+    picco audio + movimento + salto rispetto ai secondi precedenti +
+    attività che continua subito dopo.
+    """
+    step=float(scan.get("step",0.5) or 0.5)
+    audio=scan.get("audio",[])
+    peak=scan.get("peak",[])
+    motion=scan.get("motion",[])
+    n=min(len(audio),len(peak),len(motion))
+
+    if n<=0:
+        return {"score":0.0,"time":None}
+
+    i0=max(0,min(n-1,int(float(start)/step)))
+    i1=max(i0+1,min(n,int((float(start)+float(duration))/step)))
+    if i1-i0<3:
+        return {"score":0.0,"time":None}
+
+    best_score=0.0
+    best_time=None
+    pre_n=max(1,int(round(2.0/step)))
+    post_n=max(1,int(round(3.0/step)))
+
+    for idx in range(i0,i1):
+        local=idx-i0
+
+        a=float(audio[idx])
+        p=float(peak[idx])
+        m=float(motion[idx])
+        instant=0.38*a+0.34*m+0.18*p+0.10*min(a,m)
+
+        pre0=max(i0,idx-pre_n)
+        pre_vals=[
+            0.50*float(audio[j])+0.50*float(motion[j])
+            for j in range(pre0,idx)
+        ]
+        pre_avg=sum(pre_vals)/len(pre_vals) if pre_vals else 0.0
+
+        post1=min(i1,idx+post_n+1)
+        post_vals=[
+            0.46*float(audio[j])+0.42*float(motion[j])+0.12*float(peak[j])
+            for j in range(idx+1,post1)
+        ]
+        post_avg=sum(post_vals)/len(post_vals) if post_vals else 0.0
+
+        surge=max(0.0,instant-pre_avg)
+        synergy=min(a,m)
+
+        score=(
+            0.38*instant+
+            0.24*surge+
+            0.18*post_avg+
+            0.12*synergy+
+            0.08*m
+        )
+
+        if surge<0.10 and instant<0.70:
+            score*=0.72
+
+        if score>best_score:
+            best_score=score
+            best_time=local*step
+
+    return {
+        "score":max(0.0,min(1.0,best_score)),
+        "time":best_time
+    }
+
+
+def _gsf_merge_semantic_and_signal_event(event, signal_event, features):
+    """
+    Combina significato (Whisper) e firma audio/video.
+    Se manca la voce ma il segnale è molto forte, crea un 'impact_event'.
+    """
+    event=event or {"type":"","semantic":0.0,"time":None,"text":""}
+    signal_event=signal_event or {"score":0.0,"time":None}
+
+    semantic_strength=_gsf_event_strength(event,features)
+    signal_strength=float(signal_event.get("score",0.0))
+    semantic_time=event.get("time")
+    signal_time=signal_event.get("time")
+
+    event_type=str(event.get("type","") or "")
+    final_time=semantic_time
+    final_score=semantic_strength
+
+    if semantic_strength>0 and signal_strength>0:
+        close=True
+        if semantic_time is not None and signal_time is not None:
+            close=abs(float(semantic_time)-float(signal_time))<=4.0
+
+        if close:
+            final_score=min(1.0,semantic_strength+0.18*signal_strength)
+        else:
+            final_score=max(semantic_strength,signal_strength*0.78)
+
+    elif semantic_strength<=0 and signal_strength>=0.64:
+        event_type="impact_event"
+        final_time=signal_time
+        final_score=min(0.86,signal_strength*0.94)
+
+    return {
+        "type":event_type,
+        "score":max(0.0,min(1.0,float(final_score))),
+        "time":final_time,
+        "signal_score":signal_strength,
+        "semantic_score":semantic_strength,
+    }
+
+
+def _gsf_moment_category(features):
+    """Categoria sintetica usata per aumentare la varietà dei 3 risultati."""
+    f=features or {}
+
+    if float(f.get("event_score",0.0))>=0.56:
+        return "event"
+    if (
+        float(f.get("reaction",0.0))>=0.34
+        or float(f.get("reaction_cue",0.0))>=0.66
+        or float(f.get("audio_burst",0.0))>=0.78
+    ):
+        return "reaction"
+    if (
+        float(f.get("motion_avg",0.0))>=0.52
+        or float(f.get("motion_burst",0.0))>=0.68
+    ):
+        return "action"
+    if float(f.get("arc",0.0))>=0.52:
+        return "story"
+    return "balanced"
 
 def _gsf_event_target_position(event_type, reaction=0.0, event_score=0.0):
     """
@@ -2159,6 +2294,7 @@ def _gsf_event_target_position(event_type, reaction=0.0, event_score=0.0):
         "shooter_elimination": 0.64,
         "racing": 0.58,
         "achievement": 0.55,
+        "impact_event": 0.60,
     }.get(str(event_type or ""), 0.60)
 
     reaction_pull = min(0.07, max(0.0, float(reaction)) * 0.06)
@@ -2302,8 +2438,20 @@ def _gsf_ai_pick_diverse(enriched,duration,numero_clip):
                     overlap=max(0.0,1.0-gap/max(1.0,float(duration)))
                     worst_overlap=max(worst_overlap,overlap)
 
+                chosen_categories={
+                    _gsf_moment_category(old_f)
+                    for _,_,old_f,_ in chosen
+                }
+                this_category=_gsf_moment_category(f)
+                category_bonus=0.055 if this_category not in chosen_categories else -0.015
+
                 # Similarità contenuto pesa meno dell'overlap temporale.
-                return float(score)-0.10*worst_similarity-0.24*worst_overlap
+                return (
+                    float(score)
+                    -0.10*worst_similarity
+                    -0.24*worst_overlap
+                    +category_bonus
+                )
 
             pick=max(remaining,key=utility)
 
@@ -2402,11 +2550,21 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
         )
         f["speech"]=speech
         f["reaction"]=reaction
-        f["event_type"]=str(event.get("type","") or "")
-        f["event_time"]=event.get("time")
-        f["event_score"]=_gsf_event_strength(event,f)
+        signal_event=_gsf_detect_signal_event(
+            scan,start,duration
+        )
+        merged_event=_gsf_merge_semantic_and_signal_event(
+            event,signal_event,f
+        )
+
+        f["event_type"]=str(merged_event.get("type","") or "")
+        f["event_time"]=merged_event.get("time")
+        f["event_score"]=float(merged_event.get("score",0.0))
+        f["event_signal_score"]=float(merged_event.get("signal_score",0.0))
+        f["event_semantic_score"]=float(merged_event.get("semantic_score",0.0))
         f["event_abs"]=None
         f["event_position"]=None
+        f["moment_category"]=_gsf_moment_category(f)
 
         score=_gsf_score_ai_window(profile,f)
         adjusted_start=start
@@ -2458,6 +2616,9 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
                     round(float(f.get("event_position")),3)
                     if f.get("event_position") is not None else None
                 ),
+                "event_signal":round(float(f.get("event_signal_score",0.0)),3),
+                "event_semantic":round(float(f.get("event_semantic_score",0.0)),3),
+                "category":str(f.get("moment_category","") or ""),
             }
         }
 
@@ -3867,6 +4028,13 @@ if video:
                             _GSF_EVENT_LABELS.get(_event_type, "")
                             if _event_score >= 0.56 else ""
                         )
+                        if not _event_badge:
+                            _category = str(_features.get("moment_category","") or "")
+                            _event_badge = {
+                                "reaction":"🎙️ REAZIONE",
+                                "action":"🔥 AZIONE",
+                                "story":"🎬 MOMENTO",
+                            }.get(_category,"")
 
                         label = (
                             f"#{i + 1} • "
