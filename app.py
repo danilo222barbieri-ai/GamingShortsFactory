@@ -5,6 +5,7 @@ import json
 import tempfile
 import re
 import math
+import time
 import hashlib
 import shutil
 import threading
@@ -14,6 +15,11 @@ from pathlib import Path
 from urllib.parse import quote
 import streamlit.components.v1 as components
 from faster_whisper import WhisperModel
+
+try:
+    import numpy as np
+except Exception:
+    np = None
 
 
 
@@ -1078,6 +1084,7 @@ def crea_anteprima(input_file, output_file, start, duration):
     return risultato.returncode == 0 and os.path.exists(output_file)
 
 
+
 @st.cache_resource(show_spinner=False)
 def _gsf_subtitle_whisper_model():
     """
@@ -1088,6 +1095,7 @@ def _gsf_subtitle_whisper_model():
     try:
         return WhisperModel("small", device="cpu", compute_type="int8")
     except Exception:
+        # Fallback: l'app continua a funzionare anche se Small non è disponibile.
         return WhisperModel("tiny", device="cpu", compute_type="int8")
 
 
@@ -1100,6 +1108,738 @@ def _gsf_gaming_prompt(context_hint=""):
     if hint:
         base += f" Game: {hint}."
     return base
+
+
+
+GSF_RENDER_ENGINE_VERSION = "v42-render-smart-reframe"
+
+
+def _gsf_hex_to_ass(value, fallback="#FFFFFF"):
+    """#RRGGBB -> ASS &H00BBGGRR."""
+    value=str(value or fallback).strip()
+    if not re.fullmatch(r"#[0-9A-Fa-f]{6}", value):
+        value=fallback
+    r=value[1:3]
+    g=value[3:5]
+    b=value[5:7]
+    return f"&H00{b}{g}{r}"
+
+
+def _gsf_ass_escape(text):
+    return (
+        str(text or "")
+        .replace("\\", r"\\")
+        .replace("{", "(")
+        .replace("}", ")")
+        .replace("\n", " ")
+    )
+
+
+def _gsf_ass_time(seconds):
+    seconds=max(0.0,float(seconds))
+    h=int(seconds//3600)
+    m=int((seconds%3600)//60)
+    s=seconds%60
+    return f"{h}:{m:02d}:{s:05.2f}"
+
+
+def _gsf_render_transcribe_words(source_path,start,duration):
+    """
+    Automatic subtitles for FINAL render only.
+    Small stays the high-quality subtitle model; timestamps are relative
+    to the selected output segment.
+    """
+    tmp_dir=tempfile.mkdtemp(prefix="gsf_render_sub_")
+    wav=os.path.join(tmp_dir,"speech.wav")
+    try:
+        cmd=[
+            FFMPEG_PATH,"-y","-ss",str(max(0.0,float(start))),"-i",str(source_path),
+            "-t",str(max(.1,float(duration))),"-vn","-ac","1","-ar","16000",
+            "-af","highpass=f=70,lowpass=f=7800,loudnorm=I=-16:LRA=11:TP=-1.5",
+            wav
+        ]
+        r=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        if r.returncode!=0 or not os.path.exists(wav):
+            return [],"Estrazione audio sottotitoli non riuscita"
+
+        model=_gsf_subtitle_whisper_model()
+        segs,info=model.transcribe(
+            wav,
+            language=None,
+            task="transcribe",
+            vad_filter=True,
+            beam_size=5,
+            best_of=5,
+            word_timestamps=True,
+            condition_on_previous_text=False,
+            initial_prompt=_gsf_gaming_prompt(st.session_state.get("gioco","ARC Raiders")),
+            vad_parameters=dict(min_silence_duration_ms=250)
+        )
+
+        words=[]
+        for seg in list(segs):
+            for w in (getattr(seg,"words",None) or []):
+                tx=str(getattr(w,"word","") or "").strip()
+                if not tx:
+                    continue
+                words.append({
+                    "text":tx,
+                    "start":max(0.0,float(w.start)),
+                    "end":max(0.0,float(w.end)),
+                })
+        return words,None
+    except Exception as e:
+        return [],str(e)
+    finally:
+        try:
+            shutil.rmtree(tmp_dir,ignore_errors=True)
+        except Exception:
+            pass
+
+
+def _gsf_prepare_render_words(words, origin, duration):
+    """
+    Convert existing editor timestamps to segment-relative timestamps.
+    Main editor passes origin=editor_start.
+    Inline editor passes origin=its local IN because its words are relative
+    to the lightweight preview.
+    """
+    out=[]
+    origin=float(origin or 0.0)
+    duration=max(.1,float(duration))
+    for w in (words or []):
+        try:
+            tx=str(w.get("text","") or "").strip()
+            if not tx:
+                continue
+            a=float(w.get("start",0.0))-origin
+            b=float(w.get("end",a+.12))-origin
+            if b<0 or a>duration:
+                continue
+            a=max(0.0,a)
+            b=min(duration,max(a+.04,b))
+            out.append({"text":tx,"start":a,"end":b})
+        except Exception:
+            continue
+    return out
+
+
+def _gsf_write_render_ass(
+    ass_file, words, fallback_text="",
+    font="Arial", size=92, x_pct=50, y_pct=78,
+    text_color="#FFFFFF", active_color="#FFD400",
+    outline_color="#000000", fmt="9:16 Short"
+):
+    """
+    Burn-in subtitles matching the LIVE editor concept:
+    groups of four words, current word highlighted.
+    """
+    if fmt=="9:16 Short":
+        w_res,h_res=1080,1920
+    else:
+        w_res,h_res=1920,1080
+
+    x=int(max(5,min(95,float(x_pct)))/100.0*w_res)
+    y=int(max(5,min(95,float(y_pct)))/100.0*h_res)
+    fs=int(max(24,min(180,int(size))))
+    primary=_gsf_hex_to_ass(text_color,"#FFFFFF")
+    active=_gsf_hex_to_ass(active_color,"#FFD400")
+    outline=_gsf_hex_to_ass(outline_color,"#000000")
+    safe_font=str(font or "Arial").replace(","," ")
+
+    ass=f"""[Script Info]
+ScriptType: v4.00+
+PlayResX: {w_res}
+PlayResY: {h_res}
+ScaledBorderAndShadow: yes
+WrapStyle: 2
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,{safe_font},{fs},{primary},{active},{outline},&H78000000,-1,0,0,0,100,100,0,0,1,5,2,5,20,20,20,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+
+    words=list(words or [])
+    if words:
+        # Every active-word interval renders a 4-word group, like the LIVE player.
+        for idx,word in enumerate(words):
+            group_start=(idx//4)*4
+            group=words[group_start:group_start+4]
+            parts=[]
+            for j,item in enumerate(group):
+                tx=_gsf_ass_escape(item.get("text",""))
+                if group_start+j==idx:
+                    parts.append(r"{\c"+active+r"\b1}"+tx+r"{\c"+primary+r"\b1}")
+                else:
+                    parts.append(tx)
+            line=" ".join(parts).strip()
+            if not line:
+                continue
+            a=float(word.get("start",0.0))
+            b=max(a+.06,float(word.get("end",a+.16)))
+            positioned=r"{\an5\pos("+str(x)+","+str(y)+r")}"+line
+            ass+=(
+                f"Dialogue: 0,{_gsf_ass_time(a)},{_gsf_ass_time(b)},"
+                f"Default,,0,0,0,,{positioned}\n"
+            )
+    elif str(fallback_text or "").strip():
+        line=_gsf_ass_escape(fallback_text)
+        positioned=r"{\an5\pos("+str(x)+","+str(y)+r")}"+line
+        ass+=(
+            f"Dialogue: 0,0:00:00.00,9:59:59.00,"
+            f"Default,,0,0,0,,{positioned}\n"
+        )
+    else:
+        return False
+
+    with open(ass_file,"w",encoding="utf-8") as f:
+        f.write(ass)
+    return True
+
+
+
+GSF_SMART_REFRAME_VERSION = "v42-motion-track"
+
+
+def _gsf_probe_video_size(path):
+    """Raw video dimensions for Smart Reframe analysis."""
+    try:
+        probe=FFPROBE_PATH or shutil.which("ffprobe")
+        if not probe:
+            return None,None
+        r=subprocess.run(
+            [
+                probe,"-v","error","-select_streams","v:0",
+                "-show_entries","stream=width,height",
+                "-of","csv=p=0:s=x",str(path)
+            ],
+            stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=15
+        )
+        if r.returncode!=0:
+            return None,None
+        lines=(r.stdout or "").strip().splitlines()
+        if not lines:
+            return None,None
+        w,h=[int(float(x)) for x in lines[0].split("x")[:2]]
+        if w<=0 or h<=0:
+            return None,None
+        return w,h
+    except Exception:
+        return None,None
+
+
+def _gsf_smart_reframe_analyze(source_path,start,duration,sample_fps=4,analysis_width=288):
+    """
+    Lightweight motion tracker for 9:16 auto renders.
+    FFmpeg decodes tiny grayscale frames; NumPy estimates the horizontal
+    center of local motion. Conservative smoothing prevents jitter.
+    """
+    result={
+        "enabled":False,
+        "reason":"",
+        "track":[],
+        "confidence":0.0,
+        "movement":0.0,
+        "samples":0,
+    }
+
+    if np is None:
+        result["reason"]="numpy non disponibile"
+        return result
+
+    w,h=_gsf_probe_video_size(source_path)
+    if not w or not h:
+        result["reason"]="dimensioni video non disponibili"
+        return result
+
+    source_aspect=float(w)/float(h)
+    target_aspect=9.0/16.0
+
+    if source_aspect <= target_aspect*1.08:
+        result["reason"]="video già verticale"
+        return result
+
+    aw=max(160,int(analysis_width))
+    ah=max(90,int(round(aw*h/w)))
+    if ah%2:
+        ah+=1
+
+    fps=max(2,min(6,int(sample_fps)))
+    cmd=[
+        FFMPEG_PATH,"-hide_banner","-loglevel","error",
+        "-ss",str(max(0.0,float(start))),
+        "-i",str(source_path),
+        "-t",str(max(.25,float(duration))),
+        "-an",
+        "-vf",f"fps={fps},scale={aw}:{ah},format=gray",
+        "-pix_fmt","gray",
+        "-f","rawvideo","pipe:1"
+    ]
+    try:
+        r=subprocess.run(
+            cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+            timeout=max(15,int(float(duration)*2.5)+10)
+        )
+    except Exception as e:
+        result["reason"]=f"analisi fallita: {e}"
+        return result
+
+    if r.returncode!=0 or not r.stdout:
+        result["reason"]="FFmpeg non ha prodotto frame"
+        return result
+
+    frame_size=aw*ah
+    frame_count=len(r.stdout)//frame_size
+    if frame_count<3:
+        result["reason"]="pochi frame"
+        return result
+
+    raw=np.frombuffer(r.stdout[:frame_count*frame_size],dtype=np.uint8)
+    frames=raw.reshape(frame_count,ah,aw)
+
+    crop_fraction=min(1.0,target_aspect/source_aspect)
+    half_crop=crop_fraction/2.0
+    min_c=max(half_crop,0.05)
+    max_c=min(1.0-half_crop,0.95)
+
+    xs=(np.arange(aw,dtype=np.float32)+0.5)/float(aw)
+    center_prior=1.0-0.18*np.minimum(1.0,np.abs(xs-0.5)/0.5)
+
+    centers=[0.5]
+    confidences=[0.0]
+    prev_center=0.5
+
+    for i in range(1,frame_count):
+        cur=frames[i].astype(np.int16)
+        prev=frames[i-1].astype(np.int16)
+        diff=np.abs(cur-prev).astype(np.float32)
+
+        total=float(diff.sum())
+        mean=float(diff.mean())
+        if total<=1.0 or mean<0.15:
+            centers.append(prev_center)
+            confidences.append(0.0)
+            continue
+
+        threshold=float(np.percentile(diff,78.0))
+        salient=np.maximum(diff-threshold,0.0)
+
+        col=salient.sum(axis=0)
+        sal_total=float(col.sum())
+        if sal_total<=1.0:
+            centers.append(prev_center)
+            confidences.append(0.0)
+            continue
+
+        col=col*center_prior
+        weighted_total=float(col.sum()) or 1.0
+        desired=float((col*xs).sum()/weighted_total)
+
+        saliency_ratio=min(1.0,sal_total/(total+1e-6)*3.0)
+        p=col/weighted_total
+        entropy=float(
+            -(p*np.log(p+1e-9)).sum()/max(1e-9,math.log(len(p)))
+        )
+        concentration=max(0.0,min(1.0,1.0-entropy))
+        confidence=max(
+            0.0,min(1.0,0.72*saliency_ratio+0.28*concentration)
+        )
+
+        desired=max(min_c,min(max_c,desired))
+
+        # On the first reliable motion sample, acquire the subject quickly
+        # instead of spending the first seconds drifting from dead center.
+        if i==1 and confidence>=0.30:
+            smoothed=desired
+            centers[0]=desired
+        else:
+            delta=desired-prev_center
+            if abs(delta)<0.035:
+                desired=prev_center
+
+            max_step=0.080
+            desired=max(
+                prev_center-max_step,
+                min(prev_center+max_step,desired)
+            )
+            alpha=0.16+0.34*confidence
+            smoothed=prev_center*(1.0-alpha)+desired*alpha
+
+        smoothed=max(min_c,min(max_c,smoothed))
+        centers.append(smoothed)
+        confidences.append(confidence)
+        prev_center=smoothed
+
+    smoothed=list(centers)
+    for _ in range(2):
+        next_values=list(smoothed)
+        for i in range(1,len(smoothed)-1):
+            next_values[i]=(
+                0.20*smoothed[i-1]+
+                0.60*smoothed[i]+
+                0.20*smoothed[i+1]
+            )
+        smoothed=next_values
+
+    stride=max(1,int(fps))
+    track=[]
+    for i in range(0,len(smoothed),stride):
+        j=min(len(smoothed),i+stride)
+        c=float(np.median(np.asarray(smoothed[i:j],dtype=np.float32)))
+        conf=float(np.mean(np.asarray(confidences[i:j],dtype=np.float32)))
+        track.append({
+            "t":round(i/float(fps),3),
+            "cx":round(max(min_c,min(max_c,c)),6),
+            "confidence":round(max(0.0,min(1.0,conf)),4),
+        })
+
+    last_t=max(0.0,(len(smoothed)-1)/float(fps))
+    if not track or last_t-track[-1]["t"]>0.35:
+        track.append({
+            "t":round(last_t,3),
+            "cx":round(
+                max(min_c,min(max_c,float(smoothed[-1]))),6
+            ),
+            "confidence":round(
+                max(0.0,min(1.0,float(confidences[-1]))),4
+            ),
+        })
+
+    movement=0.0
+    if len(track)>1:
+        movement=sum(
+            abs(float(track[i]["cx"])-float(track[i-1]["cx"]))
+            for i in range(1,len(track))
+        )/max(1,len(track)-1)
+
+    mean_conf=float(
+        np.mean(np.asarray(confidences,dtype=np.float32))
+    )
+
+    if mean_conf<0.12 or movement<0.006:
+        result.update({
+            "reason":"movimento non abbastanza affidabile",
+            "track":[
+                {"t":0.0,"cx":0.5,"confidence":round(mean_conf,4)}
+            ],
+            "confidence":round(mean_conf,4),
+            "movement":round(movement,5),
+            "samples":frame_count,
+        })
+        return result
+
+    result.update({
+        "enabled":True,
+        "reason":"motion tracking",
+        "track":track,
+        "confidence":round(mean_conf,4),
+        "movement":round(movement,5),
+        "samples":frame_count,
+    })
+    return result
+
+
+def _gsf_smart_reframe_cached(source_path,start,duration,cache_token=None):
+    cache=st.session_state.setdefault(
+        "gsf_smart_reframe_cache_v42",{}
+    )
+    key=(
+        GSF_SMART_REFRAME_VERSION,
+        str(cache_token or source_path),
+        round(float(start),2),
+        round(float(duration),2),
+    )
+    if key in cache:
+        return cache[key],True
+
+    result=_gsf_smart_reframe_analyze(
+        source_path,start,duration
+    )
+    cache[key]=result
+    try:
+        while len(cache)>24:
+            first=next(iter(cache))
+            cache.pop(first,None)
+    except Exception:
+        pass
+    return result,False
+
+
+def _gsf_smart_reframe_cx_expression(track):
+    """Piecewise-linear normalized horizontal center for FFmpeg crop."""
+    pts=[]
+    for item in (track or []):
+        try:
+            pts.append((float(item["t"]),float(item["cx"])))
+        except Exception:
+            continue
+
+    if not pts:
+        return "0.5"
+
+    pts=sorted(pts,key=lambda x:x[0])
+    if len(pts)==1:
+        return f"{pts[0][1]:.6f}"
+
+    expr=f"{pts[-1][1]:.6f}"
+    for i in range(len(pts)-2,-1,-1):
+        t0,c0=pts[i]
+        t1,c1=pts[i+1]
+        dt=max(.001,t1-t0)
+        segment=(
+            f"({c0:.6f}+({c1-c0:.6f})*"
+            f"(t-{t0:.3f})/{dt:.3f})"
+        )
+        expr=f"if(lt(t,{t1:.3f}),{segment},{expr})"
+    return expr
+
+
+def _gsf_smart_reframe_filter(track,zoom=1.0,y_pos=0):
+    """
+    Landscape -> 1080x1920 with continuous horizontal pan.
+    Manual Y still applies if zoom creates vertical headroom.
+    """
+    zoom=max(1.0,float(zoom))
+    y_pos=float(y_pos)
+    cx=_gsf_smart_reframe_cx_expression(track)
+
+    return (
+        "setpts=PTS-STARTPTS,"
+        "scale=-2:1920,"
+        f"scale=iw*{zoom}:ih*{zoom},"
+        "crop=1080:1920:"
+        f"x='max(0,min(iw-ow,({cx})*iw-ow/2))':"
+        f"y='max(0,min(ih-oh,(ih-oh)/2+({y_pos}/100)*(ih-oh)/2))'"
+    )
+
+
+def _gsf_render_video_filters(
+    fmt,zoom,x_pos,y_pos,brightness,contrast,speed,
+    ass_file=None,reframe_track=None
+):
+    """Single source of truth for FINAL render geometry."""
+    zoom=max(1.0,float(zoom))
+    x_pos=float(x_pos)
+    y_pos=float(y_pos)
+    brightness=float(brightness)
+    contrast=float(contrast)
+    speed=max(.25,float(speed))
+
+    if fmt=="9:16 Short" and reframe_track:
+        vf=(
+            _gsf_smart_reframe_filter(
+                reframe_track,zoom=zoom,y_pos=y_pos
+            )
+            +f",eq=brightness={brightness}:contrast={contrast},"
+            +f"setpts=PTS/{speed}"
+        )
+    elif fmt=="9:16 Short":
+        out_w,out_h=1080,1920
+        vf=(
+            f"scale={out_w}:{out_h}:force_original_aspect_ratio=increase,"
+            f"crop={out_w}:{out_h},"
+            f"scale=iw*{zoom}:ih*{zoom},"
+            f"crop={out_w}:{out_h}:"
+            f"(iw-{out_w})/2+({x_pos}/100)*(iw-{out_w})/2:"
+            f"(ih-{out_h})/2+({y_pos}/100)*(ih-{out_h})/2,"
+            f"eq=brightness={brightness}:contrast={contrast},"
+            f"setpts=PTS/{speed}"
+        )
+    else:
+        out_h=1080
+        vf=(
+            f"scale=-2:{out_h},"
+            f"scale=iw*{zoom}:ih*{zoom},"
+            f"crop=iw/{zoom}:ih/{zoom}:"
+            f"(iw-iw/{zoom})/2+({x_pos}/100)*(iw-iw/{zoom})/2:"
+            f"(ih-ih/{zoom})/2+({y_pos}/100)*(ih-ih/{zoom})/2,"
+            f"scale=-2:{out_h},"
+            f"eq=brightness={brightness}:contrast={contrast},"
+            f"setpts=PTS/{speed}"
+        )
+
+    if ass_file and os.path.exists(ass_file):
+        ass_path=str(ass_file).replace("\\","/").replace(":","\\:")
+        vf+=f",ass=filename='{ass_path}'"
+
+    return vf
+
+
+def _gsf_render_audio_filter(speed=1.0,volume=100,normalize_audio=True):
+    speed=max(.25,float(speed))
+    volume=max(0.0,float(volume))/100.0
+    parts=[]
+
+    local_speed=speed
+    while local_speed>2.0:
+        parts.append("atempo=2.0")
+        local_speed/=2.0
+    while local_speed<0.5:
+        parts.append("atempo=0.5")
+        local_speed/=0.5
+    parts.append(f"atempo={local_speed:.4f}")
+
+    if normalize_audio:
+        parts.append("loudnorm=I=-14:LRA=11:TP=-1.5")
+    parts.append(f"volume={volume:.4f}")
+    return ",".join(parts)
+
+
+def _gsf_render_core(
+    source_path, output_path, start, duration,
+    fmt="9:16 Short", zoom=1.0, x_pos=0, y_pos=0,
+    brightness=0.0, contrast=1.0, speed=1.0, volume=100,
+    subtitles_enabled=False, subtitle_mode="Automatici",
+    subtitle_words=None, subtitle_text="", subtitle_time_origin=None,
+    subtitle_font="Arial", subtitle_size=92,
+    subtitle_x=50, subtitle_y=78,
+    text_color="#FFFFFF", active_color="#FFD400",
+    outline_color="#000000",
+    normalize_audio=True,
+    smart_reframe=False,
+    reframe_cache_token=None
+):
+    """
+    V41 final render core.
+
+    ALWAYS renders from source_path, performs one final video encode,
+    burns subtitles in that same pass, prefers Intel QSV and falls back
+    to libx264 automatically.
+    """
+    t0=time.perf_counter()
+    start=max(0.0,float(start))
+    duration=max(.1,float(duration))
+    temp_dir=tempfile.mkdtemp(prefix="gsf_render_core_")
+    ass_file=os.path.join(temp_dir,"subs.ass")
+    subtitle_error=None
+    used_words=[]
+    reframe_meta={
+        "enabled":False,
+        "reason":"disattivato",
+        "track":[],
+        "confidence":0.0,
+        "movement":0.0,
+        "samples":0,
+    }
+    reframe_cache_hit=False
+
+    try:
+        if subtitles_enabled and str(subtitle_mode)!="Nessuno":
+            if subtitle_words:
+                origin=start if subtitle_time_origin is None else float(subtitle_time_origin)
+                used_words=_gsf_prepare_render_words(
+                    subtitle_words,origin,duration
+                )
+            else:
+                used_words,subtitle_error=_gsf_render_transcribe_words(
+                    source_path,start,duration
+                )
+
+            _gsf_write_render_ass(
+                ass_file,
+                used_words,
+                fallback_text=(subtitle_text if subtitle_words else ""),
+                font=subtitle_font,
+                size=subtitle_size,
+                x_pct=subtitle_x,
+                y_pct=subtitle_y,
+                text_color=text_color,
+                active_color=active_color,
+                outline_color=outline_color,
+                fmt=fmt
+            )
+
+        reframe_track=None
+        if bool(smart_reframe) and fmt=="9:16 Short":
+            reframe_meta,reframe_cache_hit=_gsf_smart_reframe_cached(
+                source_path,start,duration,
+                cache_token=reframe_cache_token
+            )
+            if reframe_meta.get("enabled"):
+                reframe_track=reframe_meta.get("track") or None
+
+        vf=_gsf_render_video_filters(
+            fmt,zoom,x_pos,y_pos,brightness,contrast,speed,
+            ass_file=ass_file if os.path.exists(ass_file) else None,
+            reframe_track=reframe_track
+        )
+        af=_gsf_render_audio_filter(
+            speed=speed,volume=volume,normalize_audio=normalize_audio
+        )
+
+        base=[
+            FFMPEG_PATH,"-y",
+            "-ss",str(start),
+            "-i",str(source_path),
+            "-t",str(duration),
+            "-vf",vf,
+            "-af",af
+        ]
+
+        attempts=[
+            (
+                "Intel QSV",
+                base+[
+                    "-c:v","h264_qsv",
+                    "-preset","veryfast",
+                    "-global_quality","23",
+                    "-c:a","aac","-b:a","160k",
+                    "-movflags","+faststart",
+                    str(output_path)
+                ]
+            ),
+            (
+                "libx264",
+                base+[
+                    "-c:v","libx264",
+                    "-preset","veryfast",
+                    "-crf","22",
+                    "-c:a","aac","-b:a","160k",
+                    "-movflags","+faststart",
+                    str(output_path)
+                ]
+            )
+        ]
+
+        last_error=""
+        for encoder,cmd in attempts:
+            try:
+                if os.path.exists(output_path):
+                    os.remove(output_path)
+            except Exception:
+                pass
+
+            r=subprocess.run(
+                cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True
+            )
+            if r.returncode==0 and os.path.exists(output_path) and os.path.getsize(output_path)>0:
+                return {
+                    "ok":True,
+                    "path":str(output_path),
+                    "encoder":encoder,
+                    "seconds":round(time.perf_counter()-t0,2),
+                    "subtitle_words":len(used_words),
+                    "subtitle_error":subtitle_error,
+                    "smart_reframe":reframe_meta,
+                    "reframe_cache_hit":bool(reframe_cache_hit),
+                    "error":"",
+                }
+            last_error=(r.stderr or "")[-3500:]
+
+        return {
+            "ok":False,"path":str(output_path),"encoder":"",
+            "seconds":round(time.perf_counter()-t0,2),
+            "subtitle_words":len(used_words),
+            "subtitle_error":subtitle_error,
+            "smart_reframe":reframe_meta,
+            "reframe_cache_hit":bool(reframe_cache_hit),
+            "error":last_error,
+        }
+    finally:
+        shutil.rmtree(temp_dir,ignore_errors=True)
 
 
 def crea_short_batch(
@@ -1115,200 +1855,36 @@ def crea_short_batch(
     posizione_sub_attiva=330
 ):
     """
-    Crea uno Short completo per il batch.
-    Usa lo stesso motore FAST: estrazione copy -> Whisper -> una codifica QSV.
-    Ritorna il percorso del file finale oppure None.
+    Batch now uses the SAME V41 final render core as the Editors.
+    One source, one final encode.
     """
-    segment_file = os.path.join(temp_dir, f"segment_{indice}.mp4")
-    ass_file = os.path.join(temp_dir, f"subtitles_{indice}.ass")
-    output_file = os.path.join(temp_dir, f"short_{indice}.mp4")
-
-    # 1) Estrazione veloce
-    comando_segmento = [
-        FFMPEG_PATH, "-y",
-        "-ss", str(start),
-        "-i", input_file,
-        "-t", str(duration),
-        "-c", "copy",
-        segment_file
-    ]
-
-    r = subprocess.run(
-        comando_segmento,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
+    output_file=os.path.join(temp_dir,f"short_{indice}.mp4")
+    subtitle_y=max(
+        5,min(95,100.0*(1920-int(posizione_sub_attiva))/1920.0)
     )
-
-    if r.returncode != 0 or not os.path.exists(segment_file):
-        return None
-
-    usa_sub = sottotitoli_attivi
-
-    # 2) Whisper + ASS leggibile
-    if usa_sub:
-        try:
-            model = _gsf_subtitle_whisper_model()
-
-            segments, info = model.transcribe(
-                segment_file,
-                language=None,
-                task="transcribe",
-                vad_filter=True,
-                beam_size=5,
-                best_of=5,
-                word_timestamps=True,
-                condition_on_previous_text=False,
-                initial_prompt=_gsf_gaming_prompt(
-                    st.session_state.get("gioco", "ARC Raiders")
-                ),
-                vad_parameters=dict(min_silence_duration_ms=250)
-            )
-
-            segments = list(segments)
-
-            if segments:
-                preset_batch = {
-                    "Gaming": ("Arial", dimensione_sub_attiva, "&H00FFFFFF", "&H0000D7FF", "&H00111111", 8, 2, -1),
-                    "Clean": ("Arial", max(54, dimensione_sub_attiva - 16), "&H00FFFFFF", "&H00FFFFFF", "&H003A2B22", 4, 1, 0),
-                    "Pop": ("Arial", min(124, dimensione_sub_attiva + 10), "&H00FFFFFF", "&H00694FFF", "&H00251A35", 9, 3, -1),
-                    "Karaoke": ("Arial", dimensione_sub_attiva, "&H00FFFFFF", "&H00FFC752", "&H00301F12", 7, 2, -1),
-                    "Neon": ("Arial", dimensione_sub_attiva, "&H00FFF777", "&H00FF82D9", "&H006A247C", 7, 4, -1),
-                }.get(stile_sub_attivo, ("Arial", 92, "&H00FFFFFF", "&H0000D7FF", "&H00111111", 8, 2, -1))
-
-                b_font, b_size, b_primary, b_active, b_outline, b_ow, b_shadow, b_bold = preset_batch
-
-                ass = f"""[Script Info]
-ScriptType: v4.00+
-PlayResX: 1080
-PlayResY: 1920
-ScaledBorderAndShadow: yes
-WrapStyle: 2
-
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{b_font},{b_size},{b_primary},{b_active},{b_outline},&H90000000,{b_bold},0,0,0,100,100,0,0,1,{b_ow},{b_shadow},2,90,90,{posizione_sub_attiva},1
-
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-"""
-
-                def ass_time(seconds):
-                    h = int(seconds // 3600)
-                    m = int((seconds % 3600) // 60)
-                    s = seconds % 60
-                    return f"{h}:{m:02d}:{s:05.2f}"
-
-                for segmento in segments:
-                    testo = (
-                        segmento.text.strip()
-                        .replace("{", "(")
-                        .replace("}", ")")
-                        .replace("\n", " ")
-                    )
-
-                    if not testo:
-                        continue
-
-                    parole = testo.split()
-                    blocchi = [
-                        parole[i:i + 10]
-                        for i in range(0, len(parole), 10)
-                    ]
-
-                    durata_seg = max(
-                        0.01,
-                        segmento.end - segmento.start
-                    )
-                    totale = max(1, len(parole))
-                    cursore = segmento.start
-
-                    for j, blocco in enumerate(blocchi):
-                        n = len(blocco)
-
-                        if j == len(blocchi) - 1:
-                            fine = segmento.end
-                        else:
-                            fine = min(
-                                segmento.end,
-                                cursore + durata_seg * n / totale
-                            )
-
-                        riga1 = " ".join(blocco[:5])
-                        riga2 = " ".join(blocco[5:10])
-                        testo_ass = (
-                            riga1 + (r"\N" + riga2 if riga2 else "")
-                        )
-
-                        y_batch = max(200, min(1720, 1920 - int(posizione_sub_attiva)))
-                        testo_ass = r"{\an2\pos(540," + str(y_batch) + ")}" + testo_ass
-
-                        ass += (
-                            f"Dialogue: 0,"
-                            f"{ass_time(cursore)},"
-                            f"{ass_time(fine)},"
-                            f"Default,,0,0,0,,"
-                            f"{testo_ass}\n"
-                        )
-
-                        cursore = fine
-
-                with open(ass_file, "w", encoding="utf-8") as f:
-                    f.write(ass)
-            else:
-                usa_sub = False
-
-        except:
-            usa_sub = False
-
-    # 3) Unica codifica finale QSV
-    filtro_verticale = (
-        "scale=1080:1920:"
-        "force_original_aspect_ratio=increase,"
-        "crop=1080:1920"
+    result=_gsf_render_core(
+        input_file,output_file,start,duration,
+        fmt="9:16 Short",
+        zoom=1.0,x_pos=0,y_pos=0,
+        brightness=0.0,contrast=1.0,speed=1.0,volume=100,
+        subtitles_enabled=bool(sottotitoli_attivi),
+        subtitle_mode="Automatici",
+        subtitle_words=None,
+        subtitle_text="",
+        subtitle_font="Arial",
+        subtitle_size=int(dimensione_sub_attiva),
+        subtitle_x=50,
+        subtitle_y=subtitle_y,
+        text_color="#FFFFFF",
+        active_color="#FFD400",
+        outline_color="#000000",
+        normalize_audio=bool(normalizza_audio_attivo),
+        smart_reframe=True,
+        reframe_cache_token=f"batch|{os.path.abspath(str(input_file))}"
     )
-
-    if usa_sub and os.path.exists(ass_file):
-        ass_path = (
-            ass_file
-            .replace("\\", "/")
-            .replace(":", "\\:")
-        )
-        filtro_finale = (
-            filtro_verticale
-            + ",ass=filename='"
-            + ass_path
-            + "'"
-        )
-    else:
-        filtro_finale = filtro_verticale
-
-    comando_finale = [
-        FFMPEG_PATH, "-y",
-        "-i", segment_file,
-        "-vf", filtro_finale,
-        "-c:v", "h264_qsv",
-        "-preset", "veryfast",
-        "-global_quality", "25",
-        "-c:a", "aac",
-        "-b:a", "128k",
-        *(["-af", "loudnorm=I=-14:LRA=11:TP=-1.5"] if normalizza_audio_attivo else []),
-        "-movflags", "+faststart",
-        output_file
-    ]
-
-    r = subprocess.run(
-        comando_finale,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
-
-    if r.returncode != 0 or not os.path.exists(output_file):
-        return None
-
-    return output_file
-
+    if result.get("ok"):
+        return output_file
+    return None
 
 
 def deep_rank_candidati_leggero(input_file, risultati, clip_duration):
@@ -1687,6 +2263,64 @@ def _gsf_norm_series(values):
     return [max(0.0,min(1.0,(v-lo)/span)) for v in vals]
 
 
+
+GSF_AI_ENGINE_VERSION = "v40-point3-final"
+
+
+def _gsf_ai_cache_trim(cache, max_items):
+    """Mantiene piccole le cache di sessione."""
+    try:
+        while len(cache) > int(max_items):
+            first_key = next(iter(cache))
+            cache.pop(first_key, None)
+    except Exception:
+        pass
+
+
+def _gsf_ai_scan_cached(input_file, cache_token=None):
+    """
+    La scansione FFmpeg dell'intero gameplay è la parte che cresce con la durata.
+    La riusiamo quando l'utente prova Automatico / Director / Azione / Reazioni
+    sullo stesso video.
+    """
+    cache = st.session_state.setdefault("gsf_ai_scan_cache_v40", {})
+    key = (
+        GSF_AI_ENGINE_VERSION,
+        str(cache_token or input_file)
+    )
+
+    if key in cache:
+        return cache[key], True
+
+    scan = _gsf_ai_scan_base(input_file)
+    cache[key] = scan
+    _gsf_ai_cache_trim(cache, 2)
+    return scan, False
+
+
+def _gsf_ai_voice_cached(input_file, start, duration, cache_token=None):
+    """
+    Riusa Whisper Tiny quando due modalità AI finiscono per controllare
+    la stessa finestra temporale.
+    """
+    cache = st.session_state.setdefault("gsf_ai_voice_cache_v40", {})
+    key = (
+        GSF_AI_ENGINE_VERSION,
+        str(cache_token or input_file),
+        round(float(start), 2),
+        round(float(duration), 2),
+        str(st.session_state.get("gioco", "") or "")
+    )
+
+    if key in cache:
+        return cache[key], True
+
+    result = _gsf_ai_voice_features(input_file, start, duration)
+    cache[key] = result
+    _gsf_ai_cache_trim(cache, 96)
+    return result, False
+
+
 def _gsf_ai_scan_base(input_file):
     """
     Fast scan unico dell'intero gameplay.
@@ -1863,11 +2497,14 @@ def _gsf_ai_window_features(scan,start,duration):
     setup_score=avg(setup_slice)
     aftermath_score=avg(aftermath_slice)
 
+    # Un picco molto più alto di tutto ciò che lo circonda è spesso
+    # un click, una transizione, un colpo singolo o altro falso positivo.
     isolated_spike=max(
         0.0,
         min(1.0,activity[peak_idx]-sustained_peak)
     )
 
+    # Audio alto ma immagine quasi ferma: possibile menu/musica/loading.
     flat_audio_risk=max(
         0.0,
         min(
@@ -2019,6 +2656,7 @@ def _gsf_ai_voice_features(input_file,start,duration):
     Secondo passaggio SOLO sui candidati migliori.
     Misura parlato, reazione e segnali semantici di eventi importanti.
     """
+    wav=None
     try:
         temp_dir=os.path.join(tempfile.gettempdir(),"gsf_ai_voice")
         os.makedirs(temp_dir,exist_ok=True)
@@ -2050,7 +2688,8 @@ def _gsf_ai_voice_features(input_file,start,duration):
         spoken=0.0
         for seg in segs:
             tx=str(getattr(seg,"text","") or "").strip()
-            if tx: texts.append(tx)
+            if tx:
+                texts.append(tx)
             try:
                 spoken+=max(0.0,float(seg.end)-float(seg.start))
             except Exception:
@@ -2062,26 +2701,23 @@ def _gsf_ai_voice_features(input_file,start,duration):
         hits=sum(1 for w in words if w in _GSF_REACTION_WORDS)
         punctuation=joined.count("!")+joined.count("?")
         short_exclamations=sum(1 for tx in texts if 0<len(tx.split())<=5)
-        reaction=min(1.0,hits*0.20+punctuation*0.08+min(0.30,short_exclamations*0.045))
+        reaction=min(
+            1.0,
+            hits*0.20+punctuation*0.08+min(0.30,short_exclamations*0.045)
+        )
         event=_gsf_detect_important_event(segs,duration)
         return density,reaction,joined,event
+
     except Exception:
         return 0.0,0.0,"",{"type":"","semantic":0.0,"time":None,"text":""}
 
-
-Za-zÀ-ÿ']+",joined.lower())
-        density=min(1.0,spoken/max(1.0,float(duration))*1.55)
-
-        hits=sum(1 for w in words if w in _GSF_REACTION_WORDS)
-        punctuation=joined.count("!")+joined.count("?")
-        short_exclamations=sum(1 for tx in texts if 0 < len(tx.split()) <= 5)
-        reaction=min(
-            1.0,
-            hits*0.20 + punctuation*0.08 + min(0.30,short_exclamations*0.045)
-        )
-        return density,reaction,joined
-    except Exception:
-        return 0.0,0.0,""
+    finally:
+        if wav:
+            try:
+                if os.path.exists(wav):
+                    os.remove(wav)
+            except Exception:
+                pass
 
 
 def _gsf_short_worthiness(features, profile="auto"):
@@ -2162,6 +2798,8 @@ def _gsf_short_worthiness(features, profile="auto"):
             0.04*synergy
         )
 
+    # Un evento riconosciuto semanticamente può essere valido anche con camera stabile
+    # (es. gol in un gioco calcistico), quindi la penalità viene attenuata.
     event_protection=min(0.85,event)
     reaction_protection=min(0.65,reaction)
 
@@ -2170,6 +2808,7 @@ def _gsf_short_worthiness(features, profile="auto"):
         1.0-0.75*event_protection-0.45*reaction_protection
     )
 
+    # Musica/menu: audio continuo alto, poco movimento, nessun evento/reazione.
     flat_noise_penalty=flat_audio*max(
         0.0,
         1.0-0.80*event-0.55*reaction
@@ -2177,6 +2816,7 @@ def _gsf_short_worthiness(features, profile="auto"):
 
     dead_penalty=0.55*dead+0.65*dead_streak
 
+    # Bonus se c'è una sequenza leggibile: preparazione -> picco -> conseguenza.
     sequence_bonus=min(
         0.16,
         0.07*min(setup,sustained)+
@@ -2364,6 +3004,8 @@ def _gsf_detect_signal_event(scan, start, duration):
         surge=max(0.0,instant-pre_avg)
         synergy=min(a,m)
 
+        # Un vero evento tende ad avere un picco + un cambio rispetto al prima
+        # e spesso mantiene attività per qualche secondo dopo.
         score=(
             0.38*instant+
             0.24*surge+
@@ -2372,6 +3014,7 @@ def _gsf_detect_signal_event(scan, start, duration):
             0.08*m
         )
 
+        # Evita di chiamare evento una zona semplicemente rumorosa ma piatta.
         if surge<0.10 and instant<0.70:
             score*=0.72
 
@@ -2447,6 +3090,7 @@ def _gsf_moment_category(features):
         return "story"
     return "balanced"
 
+
 def _gsf_event_target_position(event_type, reaction=0.0, event_score=0.0):
     """
     Posizione ideale dell'evento nello Short.
@@ -2462,6 +3106,7 @@ def _gsf_event_target_position(event_type, reaction=0.0, event_score=0.0):
         "impact_event": 0.60,
     }.get(str(event_type or ""), 0.60)
 
+    # Una reazione forte merita qualche secondo in più DOPO l'evento.
     reaction_pull = min(0.07, max(0.0, float(reaction)) * 0.06)
     strength_pull = min(0.025, max(0.0, float(event_score) - 0.70) * 0.08)
     return max(0.48, min(0.68, base - reaction_pull - strength_pull))
@@ -2470,7 +3115,11 @@ def _gsf_event_target_position(event_type, reaction=0.0, event_score=0.0):
 def _gsf_smart_event_start(scan, event_abs, duration, event_type, total,
                            reaction=0.0, event_score=0.0):
     """
-    Cerca il miglior IN attorno all'evento, preservando contesto, evento e reazione.
+    Cerca il miglior IN attorno all'evento, preservando:
+    - contesto prima;
+    - evento chiaramente dentro la clip;
+    - spazio dopo per esultanza/reazione/conseguenza;
+    - hook non morto all'inizio.
     """
     duration = max(5.0, float(duration))
     total = max(duration, float(total))
@@ -2540,10 +3189,14 @@ def _gsf_same_physical_event(item_a, item_b, duration):
     ta = str(fa.get("event_type", "") or "")
     tb = str(fb.get("event_type", "") or "")
 
+    # Stesso tipo entro pochi secondi: quasi certamente la stessa azione
+    # vista da finestre sovrapposte.
     same_type_window = max(2.5, min(6.0, float(duration) * 0.26))
     if ta and ta == tb and delta <= same_type_window:
         return True
 
+    # Due etichette diverse ma praticamente allo stesso istante
+    # (es. goal + victory) appartengono comunque allo stesso momento.
     if delta <= 1.5:
         return True
 
@@ -2552,7 +3205,8 @@ def _gsf_same_physical_event(item_a, item_b, duration):
 
 def _gsf_collapse_event_duplicates(enriched, duration):
     """
-    Tiene una sola rappresentazione del medesimo gol/kill/vittoria.
+    Tiene una sola rappresentazione del medesimo gol/kill/vittoria,
+    scegliendo la finestra col punteggio più alto.
     """
     ordered = sorted(enriched, key=lambda x: float(x[0]), reverse=True)
     kept = []
@@ -2563,6 +3217,7 @@ def _gsf_collapse_event_duplicates(enriched, duration):
         kept.append(item)
 
     return kept
+
 
 def _gsf_ai_pick_diverse(enriched,duration,numero_clip):
     """
@@ -2639,14 +3294,19 @@ def _gsf_profile_from_mode(modalita):
     }.get(modalita,"auto")
 
 
-def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
+def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3, cache_token=None):
     """
     Fast Scan -> shortlist diversa per profilo -> voice check mirato -> ranking finale.
     Restituisce [(score,start), ...] + diagnostica per eventuali sviluppi futuri.
     """
+    _analysis_t0=time.perf_counter()
     profile=_gsf_profile_from_mode(modalita)
     duration=max(10.0,float(clip_duration))
-    scan=_gsf_ai_scan_base(input_file)
+    scan,scan_cache_hit=_gsf_ai_scan_cached(
+        input_file,cache_token=cache_token
+    )
+    voice_cache_hits=0
+    voice_checks=0
     n=min(len(scan.get("audio",[])),len(scan.get("motion",[])))
     step=float(scan.get("step",0.5) or 0.5)
     total=n*step
@@ -2714,9 +3374,13 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
     for prelim,start,f in shortlist:
         f=dict(f)
         transcript=""
-        speech,reaction,transcript,event=_gsf_ai_voice_features(
-            input_file,start,duration
+        _voice_result,_voice_hit=_gsf_ai_voice_cached(
+            input_file,start,duration,cache_token=cache_token
         )
+        speech,reaction,transcript,event=_voice_result
+        voice_checks+=1
+        if _voice_hit:
+            voice_cache_hits+=1
         f["speech"]=speech
         f["reaction"]=reaction
         signal_event=_gsf_detect_signal_event(
@@ -2743,6 +3407,8 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
 
         score=_gsf_score_ai_window(profile,f)
 
+        # Se è soltanto un picco isolato e non è confermato da evento/reazione,
+        # lo abbassiamo nettamente: è il falso positivo tipico.
         if (
             f["false_peak_penalty"]>=0.45
             and f["event_score"]<0.56
@@ -2750,6 +3416,7 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
         ):
             score*=0.72
 
+        # Audio piatto/forte con immagine quasi ferma: probabile menu/loading/musica.
         if (
             f["flat_noise_penalty"]>=0.45
             and f["event_score"]<0.56
@@ -2813,6 +3480,15 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3):
                 "sequence":round(float(f.get("sequence_score",0.0)),3),
             }
         }
+
+    diagnostics["__meta__"]={
+        "engine":GSF_AI_ENGINE_VERSION,
+        "analysis_seconds":round(time.perf_counter()-_analysis_t0,3),
+        "scan_cache_hit":bool(scan_cache_hit),
+        "voice_cache_hits":int(voice_cache_hits),
+        "voice_checks":int(voice_checks),
+        "video_seconds":round(float(total),2),
+    }
 
     return chosen,diagnostics
 
@@ -4007,37 +4683,64 @@ if video:
         ):
             editor_output = os.path.join(editor_dir, "editor_preview.mp4")
 
-            vf, af = _gsf_editor_filters(
-                editor_format, editor_zoom, editor_x, editor_y,
-                editor_brightness, editor_contrast,
-                editor_speed, preview=False
+            _main_sub_mode=st.session_state.get("editor_sub_mode","Automatici")
+            _main_sub_words=(
+                st.session_state.get(
+                    "editor_sub_live_words",
+                    st.session_state.get("editor_sub_words",[])
+                )
+                if _main_sub_mode=="Manuali" else []
             )
 
-            editor_cmd = [
-                FFMPEG_PATH, "-y",
-                "-ss", str(editor_start),
-                "-i", editor_input,
-                "-t", str(editor_len),
-                "-vf", vf,
-                "-af", af,
-                "-c:v", "libx264",
-                "-preset", "veryfast",
-                "-crf", "24",
-                "-c:a", "aac",
-                "-b:a", "128k",
-                "-movflags", "+faststart",
-                editor_output
-            ]
-
-            with st.spinner("🎬 Creo il video completo con le impostazioni dell’Editor..."):
-                editor_run = subprocess.run(
-                    editor_cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
+            with st.spinner("🎬 Creo il video finale dal file originale..."):
+                editor_run = _gsf_render_core(
+                    editor_input,
+                    editor_output,
+                    editor_start,
+                    editor_len,
+                    fmt=editor_format,
+                    zoom=editor_zoom,
+                    x_pos=editor_x,
+                    y_pos=editor_y,
+                    brightness=editor_brightness,
+                    contrast=editor_contrast,
+                    speed=editor_speed,
+                    volume=editor_volume,
+                    subtitles_enabled=(_main_sub_mode!="Nessuno"),
+                    subtitle_mode=_main_sub_mode,
+                    subtitle_words=_main_sub_words,
+                    subtitle_text=st.session_state.get("editor_sub_text",""),
+                    subtitle_time_origin=editor_start,
+                    subtitle_font=st.session_state.get(
+                        "editor_sub_font_v18",
+                        st.session_state.get("subtitle_font","Arial")
+                    ),
+                    subtitle_size=st.session_state.get(
+                        "editor_sub_size_v18",
+                        st.session_state.get("editor_sub_size",92)
+                    ),
+                    subtitle_x=st.session_state.get(
+                        "subtitle_x_v18",
+                        st.session_state.get("subtitle_x",50)
+                    ),
+                    subtitle_y=st.session_state.get(
+                        "subtitle_y_v18",
+                        st.session_state.get("subtitle_y",78)
+                    ),
+                    text_color=st.session_state.get(
+                        "subtitle_text_color_v18","#FFFFFF"
+                    ),
+                    active_color=st.session_state.get(
+                        "subtitle_active_color_v18","#FFD400"
+                    ),
+                    outline_color=st.session_state.get(
+                        "subtitle_outline_color_v18","#000000"
+                    ),
+                    normalize_audio=True,
+                    smart_reframe=False
                 )
 
-            if editor_run.returncode == 0 and os.path.exists(editor_output):
+            if editor_run.get("ok") and os.path.exists(editor_output):
                 # IMPORTANT: teniamo i byte in session_state.
                 # Streamlit riesegue lo script quando si preme Download;
                 # affidarsi solo al file temporaneo può far sparire il file.
@@ -4047,11 +4750,14 @@ if video:
                 st.session_state["editor_output"] = editor_output
                 st.session_state["editor_output_bytes"] = editor_bytes
                 st.session_state["editor_output_name"] = "gaming_short_edit.mp4"
-                st.success("✅ Anteprima pronta.")
+                st.success(
+                    f"✅ Video finale pronto · {editor_run.get('encoder','')} · "
+                    f"{editor_run.get('seconds',0):.1f}s"
+                )
             else:
                 st.error("❌ Non sono riuscito a creare l'anteprima.")
-                if editor_run.stderr:
-                    st.code(editor_run.stderr[-3000:])
+                if editor_run.get("error"):
+                    st.code(editor_run.get("error","")[-3000:])
 
         editor_bytes = st.session_state.get("editor_output_bytes")
 
@@ -4104,9 +4810,14 @@ if video:
                 else:
                     messaggio = "🎙️ Cerco voce, reazioni e picchi collegati al gameplay..."
 
+                _video_cache_token = (
+                    f"{getattr(video,'name','video')}|"
+                    f"{getattr(video,'size',len(video.getbuffer()))}"
+                )
+
                 cache_key_ai = (
-                    getattr(video, "name", "video"),
-                    getattr(video, "size", len(video.getbuffer())),
+                    GSF_AI_ENGINE_VERSION,
+                    _video_cache_token,
                     modalita,
                     float(duration)
                 )
@@ -4127,7 +4838,8 @@ if video:
                             analisi_input,
                             modalita,
                             clip_duration=float(duration),
-                            numero_clip=3
+                            numero_clip=3,
+                            cache_token=_video_cache_token
                         )
 
                         candidati = [start_ai for score_ai, start_ai in risultati_ai]
@@ -4254,6 +4966,19 @@ if video:
                     for i, sec in enumerate(candidati)
                 }
 
+            _ai_meta = st.session_state.get(
+                "gsf_ai_v3_diagnostics", {}
+            ).get("__meta__", {})
+            if _ai_meta:
+                _sec=float(_ai_meta.get("analysis_seconds",0.0))
+                _scan_txt="riusata" if _ai_meta.get("scan_cache_hit") else "nuova"
+                _vh=int(_ai_meta.get("voice_cache_hits",0))
+                _vc=int(_ai_meta.get("voice_checks",0))
+                st.caption(
+                    f"⚡ Analisi AI {_sec:.1f}s · scansione {_scan_txt}"
+                    + (f" · voce cache {_vh}/{_vc}" if _vc else "")
+                )
+
             st.markdown('<div class="mini-label" style="margin-top:18px;">CLASSIFICA AI</div>', unsafe_allow_html=True)
             for posizione, label in enumerate(opzioni.keys(), start=1):
                 st.write(f"**{posizione}.** {label}")
@@ -4324,13 +5049,20 @@ if video:
                         # Apre UNA copia dell'Editor direttamente sotto questa clip.
                         _inline_id=f"{start:.2f}_{durata_effettiva:.2f}"
                         _edit_dir=tempfile.mkdtemp(prefix="gsf_inline_ai_")
-                        _edit_input=os.path.join(_edit_dir,"ai_clip_inline.mp4")
+                        _edit_input=os.path.join(_edit_dir,"ai_clip_inline_preview.mp4")
+                        _edit_original=os.path.join(_edit_dir,"source_original.mp4")
                         with open(_edit_input,"wb") as _ef:
                             _ef.write(st.session_state.preview_bytes)
+                        with open(_edit_original,"wb") as _of:
+                            _of.write(video.getbuffer())
                         st.session_state["inline_editor_id"]=_inline_id
                         st.session_state["inline_editor_dir"]=_edit_dir
                         st.session_state["inline_editor_input"]=_edit_input
-                        st.session_state["inline_editor_duration"]=float(durata_video(_edit_input) or durata_effettiva)
+                        st.session_state["inline_editor_original_input"]=_edit_original
+                        st.session_state["inline_editor_source_start"]=float(start)
+                        st.session_state["inline_editor_duration"]=float(
+                            durata_video(_edit_input) or durata_effettiva
+                        )
                         # Un solo editor AI aperto alla volta.
                         st.rerun()
 
@@ -4345,6 +5077,7 @@ if video:
                         st.session_state["publication_ready"] = True
                         st.session_state["publication_source"] = "ai_clip"
                         st.session_state["publication_preview_bytes"] = st.session_state.get("preview_bytes")
+                        st.session_state.pop("publication_final_bytes",None)
                         st.session_state["project_view"] = "publication"
                         st.rerun()
 
@@ -4574,27 +5307,89 @@ if video:
                         with _ec1:
                             if st.button("🎞️ CREA VIDEO",type="primary",use_container_width=True,key=f"inline_create_{_this_inline_id}"):
                                 _out=os.path.join(_idir,"inline_edit_final.mp4")
-                                _vf,_af=_gsf_editor_filters(
-                                    st.session_state[_fmt_key],st.session_state[_zoom_key],
-                                    st.session_state[_x_key],st.session_state[_y_key],
-                                    st.session_state[_bri_key],st.session_state[_con_key],
-                                    st.session_state[_spd_key],preview=False
+                                _original_source=st.session_state.get(
+                                    "inline_editor_original_input",_ii
                                 )
-                                _cmd=[
-                                    FFMPEG_PATH,"-y","-ss",str(_istart),"-i",_ii,"-t",str(_ilen),
-                                    "-vf",_vf,"-af",_af,"-c:v","libx264","-preset","veryfast","-crf","24",
-                                    "-c:a","aac","-b:a","128k","-movflags","+faststart",_out
-                                ]
-                                with st.spinner("Creo il video..."):
-                                    _r=subprocess.run(_cmd,capture_output=True,text=True)
-                                if _r.returncode==0 and os.path.exists(_out):
+                                _source_base=float(
+                                    st.session_state.get("inline_editor_source_start",0.0)
+                                )
+                                _render_start=(
+                                    _source_base+_istart
+                                    if _original_source!=_ii else _istart
+                                )
+                                _inline_sub_mode=st.session_state.get(
+                                    _submode_key,"Automatici"
+                                )
+                                _inline_sub_words=(
+                                    st.session_state.get(
+                                        _trans_live_key,
+                                        st.session_state.get(_trans_words_key,[])
+                                    )
+                                    if _inline_sub_mode=="Manuali" else []
+                                )
+
+                                with st.spinner("Creo il video finale dal file originale..."):
+                                    _r=_gsf_render_core(
+                                        _original_source,
+                                        _out,
+                                        _render_start,
+                                        _ilen,
+                                        fmt=st.session_state[_fmt_key],
+                                        zoom=st.session_state[_zoom_key],
+                                        x_pos=st.session_state[_x_key],
+                                        y_pos=st.session_state[_y_key],
+                                        brightness=st.session_state[_bri_key],
+                                        contrast=st.session_state[_con_key],
+                                        speed=st.session_state[_spd_key],
+                                        volume=st.session_state[_vol_key],
+                                        subtitles_enabled=(_inline_sub_mode!="Nessuno"),
+                                        subtitle_mode=_inline_sub_mode,
+                                        subtitle_words=_inline_sub_words,
+                                        subtitle_text=st.session_state.get(_trans_text_key,""),
+                                        subtitle_time_origin=_istart,
+                                        subtitle_font=st.session_state.get(
+                                            f"inline_font_widget_v18_{_this_inline_id}",
+                                            st.session_state.get(
+                                                f"inline_font_{_this_inline_id}","Arial"
+                                            )
+                                        ),
+                                        subtitle_size=st.session_state.get(
+                                            f"inline_subsize_widget_v18_{_this_inline_id}",
+                                            st.session_state.get(
+                                                f"inline_subsize_{_this_inline_id}",92
+                                            )
+                                        ),
+                                        subtitle_x=st.session_state.get(
+                                            f"inline_subx_widget_v18_{_this_inline_id}",50
+                                        ),
+                                        subtitle_y=st.session_state.get(
+                                            f"inline_suby_widget_v18_{_this_inline_id}",78
+                                        ),
+                                        text_color=st.session_state.get(
+                                            f"inline_txtcol_v18_{_this_inline_id}","#FFFFFF"
+                                        ),
+                                        active_color=st.session_state.get(
+                                            f"inline_actcol_v18_{_this_inline_id}","#FFD400"
+                                        ),
+                                        outline_color=st.session_state.get(
+                                            f"inline_outcol_v18_{_this_inline_id}","#000000"
+                                        ),
+                                        normalize_audio=True,
+                                        smart_reframe=False
+                                    )
+                                if _r.get("ok") and os.path.exists(_out):
                                     with open(_out,"rb") as _f:
                                         st.session_state["inline_final_bytes"]=_f.read()
                                     st.session_state["publication_ready"]=True
                                     st.session_state["publication_source"]="inline_editor"
-                                    st.success("Video creato.")
+                                    st.success(
+                                        f"Video creato · {_r.get('encoder','')} · "
+                                        f"{_r.get('seconds',0):.1f}s"
+                                    )
                                 else:
                                     st.error("Creazione video non riuscita.")
+                                    if _r.get("error"):
+                                        st.code(_r.get("error","")[-2500:])
                         with _ec2:
                             if st.button("✓ USA QUESTA",use_container_width=True,key=f"inline_use_{_this_inline_id}"):
                                 st.session_state["publication_ready"]=True
@@ -4609,12 +5404,90 @@ if video:
 
     if st.session_state.get("publication_ready") and st.session_state.get("publication_source")=="ai_clip":
         st.markdown("#### 🎬 Esporta")
-        _pb=st.session_state.get("publication_preview_bytes")
-        if _pb:
-            st.download_button("⬇️ SCARICA CLIP",_pb,"gaming_short_ai.mp4","video/mp4",use_container_width=True,key="export_ai_selected")
+        st.caption(
+            "La preview serve solo per scegliere la scena. "
+            "Il file finale viene sempre creato dal gameplay originale."
+        )
+
+        if st.button(
+            "🎞️ CREA SHORT FINALE",
+            type="primary",
+            use_container_width=True,
+            key="render_ai_selected_v41"
+        ):
+            _pub_dir=tempfile.mkdtemp(prefix="gsf_ai_final_")
+            _pub_source=os.path.join(_pub_dir,"source_original.mp4")
+            _pub_out=os.path.join(_pub_dir,"gaming_short_ai_final.mp4")
+            with open(_pub_source,"wb") as _pf:
+                _pf.write(video.getbuffer())
+
+            _pub_start=float(st.session_state.get("auto_clip_scelta",0.0) or 0.0)
+            _pub_duration=float(
+                st.session_state.get("auto_clip_duration",duration) or duration
+            )
+            _pub_subtitles=bool(
+                st.session_state.get("project_subtitles_enabled",True)
+            )
+
+            with st.spinner("🎬 Render finale dal file originale..."):
+                _pub_result=_gsf_render_core(
+                    _pub_source,_pub_out,_pub_start,_pub_duration,
+                    fmt="9:16 Short",
+                    zoom=1.0,x_pos=0,y_pos=0,
+                    brightness=0.0,contrast=1.0,speed=1.0,volume=100,
+                    subtitles_enabled=_pub_subtitles,
+                    subtitle_mode="Automatici",
+                    subtitle_words=None,
+                    subtitle_font="Arial",
+                    subtitle_size=int(st.session_state.get("editor_sub_size",92)),
+                    subtitle_x=50,
+                    subtitle_y=int(st.session_state.get("subtitle_y",78)),
+                    text_color=st.session_state.get("subtitle_text_color","#FFFFFF"),
+                    active_color=st.session_state.get("subtitle_active_color","#FFD400"),
+                    outline_color=st.session_state.get("subtitle_outline_color","#000000"),
+                    normalize_audio=True,
+                    smart_reframe=True,
+                    reframe_cache_token=(
+                        f"ai-final|{getattr(video,'name','video')}|"
+                        f"{getattr(video,'size',0)}"
+                    )
+                )
+
+            if _pub_result.get("ok"):
+                with open(_pub_out,"rb") as _pf:
+                    st.session_state["publication_final_bytes"]=_pf.read()
+                st.session_state["publication_final_encoder"]=_pub_result.get("encoder","")
+                st.session_state["publication_final_seconds"]=_pub_result.get("seconds",0)
+                _rf=_pub_result.get("smart_reframe") or {}
+                _rf_text=(
+                    f" · Smart Reframe {int(float(_rf.get('confidence',0))*100)}%"
+                    if _rf.get("enabled") else " · crop centrale"
+                )
+                st.success(
+                    f"✅ Short finale pronto · {_pub_result.get('encoder','')} · "
+                    f"{_pub_result.get('seconds',0):.1f}s{_rf_text}"
+                )
+            else:
+                st.error("Render finale non riuscito.")
+                if _pub_result.get("error"):
+                    st.code(_pub_result.get("error","")[-2500:])
+
+        _final_ai=st.session_state.get("publication_final_bytes")
+        if _final_ai:
+            _final_ai_path=_gsf_bytes_to_preview(_final_ai,"ai_final_v41")
+            render_gsf_player(_final_ai_path,"ai_final_v41")
+            st.download_button(
+                "⬇️ SCARICA SHORT FINALE",
+                _final_ai,
+                "gaming_short_ai_final.mp4",
+                "video/mp4",
+                use_container_width=True,
+                key="export_ai_selected_final_v41"
+            )
+
         st.markdown("#### 🚀 Pubblicazione")
-        st.success("Clip scelta e pronta per la pubblicazione.")
-        st.caption("Qui collegheremo titolo, descrizione, piattaforma e pubblicazione diretta.")
+        st.success("Clip scelta. Il master finale usa sempre il video originale.")
+        st.caption("Titolo, descrizione e pubblicazione diretta arriveranno nel punto successivo.")
 
     # Nelle modalità AI l'utente non deve micro-gestire i sottotitoli:
     # l'AI usa automaticamente il preset completo.
