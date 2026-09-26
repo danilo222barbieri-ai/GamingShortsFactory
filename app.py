@@ -1,0 +1,3587 @@
+import streamlit as st
+import subprocess
+import os
+import json
+import tempfile
+import re
+import math
+import hashlib
+import shutil
+import threading
+import socket
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
+from pathlib import Path
+from urllib.parse import quote
+import streamlit.components.v1 as components
+from faster_whisper import WhisperModel
+
+
+
+st.markdown("""
+<style>
+/* UI creazione più compatta */
+div[data-testid="stRadio"] > div { gap: .35rem !important; }
+div[data-testid="stCheckbox"] { margin-top: -.20rem !important; margin-bottom: -.20rem !important; }
+div[data-testid="stSelectbox"], div[data-testid="stTextInput"] { margin-bottom: .25rem !important; }
+.gsf-section-title { margin-top: .65rem !important; margin-bottom: .35rem !important; }
+
+
+/* ===== LAYOUT UNICO E PULITO ===== */
+.block-container {
+    max-width: 1400px !important;
+    width: 94vw !important;
+    padding-top: 1.4rem !important;
+    padding-bottom: 4rem !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+/* ===== V10 CLEAN UI — solo interfaccia ===== */
+.block-container{
+  max-width:1320px!important;width:94vw!important;
+  padding-top:.8rem!important;padding-bottom:2.5rem!important;
+}
+h1{font-size:2.15rem!important;letter-spacing:-.035em!important}
+h2{font-size:1.55rem!important}
+h3{font-size:1.25rem!important}
+h4{font-size:1.08rem!important;margin-top:.45rem!important;margin-bottom:.45rem!important}
+h5{font-size:.94rem!important;margin:.2rem 0 .45rem!important}
+[data-testid="stCaptionContainer"]{font-size:.78rem!important;line-height:1.25!important}
+[data-testid="stVerticalBlock"]{gap:.55rem!important}
+[data-testid="column"] [data-testid="stVerticalBlock"]{gap:.38rem!important}
+
+/* Controls più compatti */
+.stButton>button,.stDownloadButton>button{
+ min-height:2.65rem!important;padding:.35rem .9rem!important;
+ box-shadow:none!important;border-radius:14px!important
+}
+.stButton>button[kind="primary"]{min-height:3.15rem!important;font-size:1rem!important}
+[data-baseweb="select"]>div,[data-baseweb="input"]>div,.stTextInput input{
+ border-radius:13px!important;min-height:2.55rem!important
+}
+[data-testid="stSlider"]{padding-top:0!important;padding-bottom:.1rem!important}
+[data-testid="stTextArea"] textarea{border-radius:15px!important;min-height:130px!important}
+[data-testid="stAlert"]{border-radius:14px!important;padding:.55rem .75rem!important}
+[data-testid="stFileUploader"],[data-testid="stExpander"]{border-radius:18px!important;box-shadow:none!important}
+
+/* Radio motori = tab pulite */
+[data-testid="stRadio"]>div{gap:.4rem!important}
+[data-testid="stRadio"] label{
+ border-radius:13px!important;padding:.48rem .72rem!important;
+ box-shadow:none!important
+}
+
+/* Le vecchie decorazioni diventano più discrete */
+.soft-card{border-radius:18px!important;padding:14px 16px!important;margin:9px 0!important;box-shadow:none!important}
+.gsf-section-title{font-size:1.2rem!important;margin:.4rem 0 .2rem!important}
+.gsf-section-sub{font-size:.84rem!important;margin-bottom:.45rem!important}
+.help-cloud{margin:.25rem 0!important}
+
+/* Desktop: workspace più denso; mobile torna naturalmente in colonna */
+@media (min-width: 900px){
+  [data-testid="stHorizontalBlock"]{align-items:flex-start}
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+GSF_PREVIEW_DIR = Path(tempfile.gettempdir()) / "gaming_shorts_factory_preview"
+GSF_PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
+
+def _gsf_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+class _GSFQuietHandler(SimpleHTTPRequestHandler):
+    """Quiet HTTP handler with proper byte-range support for HTML5 video seeking."""
+    protocol_version = "HTTP/1.1"
+
+    def log_message(self, format, *args):
+        pass
+
+    def end_headers(self):
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
+
+    def send_head(self):
+        path = self.translate_path(self.path)
+
+        # Keep normal SimpleHTTPRequestHandler behaviour for folders.
+        if os.path.isdir(path):
+            return super().send_head()
+
+        ctype = self.guess_type(path)
+        try:
+            f = open(path, "rb")
+        except OSError:
+            self.send_error(404, "File not found")
+            return None
+
+        try:
+            fs = os.fstat(f.fileno())
+            size = fs.st_size
+            range_header = self.headers.get("Range")
+            self._gsf_range = None
+
+            if range_header:
+                m = re.match(r"bytes=(\d*)-(\d*)$", range_header.strip())
+                if not m:
+                    f.close()
+                    self.send_error(416, "Requested Range Not Satisfiable")
+                    return None
+
+                a, b = m.groups()
+
+                # bytes=-N  -> final N bytes
+                if a == "":
+                    suffix = int(b or 0)
+                    if suffix <= 0:
+                        f.close()
+                        self.send_error(416, "Requested Range Not Satisfiable")
+                        return None
+                    start = max(0, size - suffix)
+                    end = size - 1
+                else:
+                    start = int(a)
+                    end = int(b) if b else size - 1
+
+                if start >= size or start < 0 or end < start:
+                    f.close()
+                    self.send_response(416)
+                    self.send_header("Content-Range", f"bytes */{size}")
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return None
+
+                end = min(end, size - 1)
+                length = end - start + 1
+                self._gsf_range = (start, end)
+
+                self.send_response(206)
+                self.send_header("Content-Type", ctype)
+                self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+                self.send_header("Content-Length", str(length))
+                self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
+                self.end_headers()
+                return f
+
+            self.send_response(200)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(size))
+            self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
+            self.end_headers()
+            return f
+
+        except Exception:
+            f.close()
+            raise
+
+    def copyfile(self, source, outputfile):
+        byte_range = getattr(self, "_gsf_range", None)
+        if not byte_range:
+            return super().copyfile(source, outputfile)
+
+        start, end = byte_range
+        source.seek(start)
+        remaining = end - start + 1
+        chunk_size = 256 * 1024
+
+        while remaining > 0:
+            chunk = source.read(min(chunk_size, remaining))
+            if not chunk:
+                break
+            outputfile.write(chunk)
+            remaining -= len(chunk)
+
+@st.cache_resource
+def _gsf_start_preview_server():
+    port = _gsf_free_port()
+    def handler(*args, **kwargs):
+        return _GSFQuietHandler(*args, directory=str(GSF_PREVIEW_DIR), **kwargs)
+    server = ThreadingHTTPServer(("127.0.0.1", port), handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return port
+
+GSF_PREVIEW_PORT = _gsf_start_preview_server()
+
+def _gsf_probe_display_size(path):
+    ffprobe = shutil.which("ffprobe")
+    if not ffprobe:
+        return None, None, None, "ffprobe non trovato nel PATH"
+    try:
+        import json
+        r = subprocess.run(
+            [ffprobe, "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=width,height:stream_tags=rotate:stream_side_data=rotation",
+             "-of", "json", str(path)],
+            capture_output=True, text=True, timeout=15
+        )
+        if r.returncode != 0:
+            return None, None, None, (r.stderr or "errore ffprobe").strip()
+        streams=(json.loads(r.stdout or "{}").get("streams") or [])
+        if not streams:
+            return None,None,None,"nessuna traccia video"
+        s=streams[0]
+        rw,rh=int(s.get("width") or 0),int(s.get("height") or 0)
+        rot=0
+        try: rot=int(float((s.get("tags") or {}).get("rotate",0)))
+        except Exception: pass
+        for sd in s.get("side_data_list") or []:
+            if "rotation" in sd:
+                try: rot=int(float(sd["rotation"]))
+                except Exception: pass
+        if rw<=0 or rh<=0:
+            return None,None,None,f"dimensioni non valide: {rw}x{rh}"
+        if rot % 360 in (90,270):
+            rw,rh=rh,rw
+        return rw,rh,rot,None
+    except Exception as e:
+        return None,None,None,str(e)
+
+
+def _gsf_serve_path(source_path, key):
+    source_path = Path(source_path)
+    ext = source_path.suffix or ".mp4"
+    safe_key = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(key))
+    served_name = f"{safe_key}{ext}"
+    served_path = GSF_PREVIEW_DIR / served_name
+    if (not served_path.exists()
+        or served_path.stat().st_size != source_path.stat().st_size
+        or served_path.stat().st_mtime < source_path.stat().st_mtime):
+        shutil.copy2(source_path, served_path)
+    return served_name, served_path
+
+def _gsf_bytes_to_preview(data, key, suffix=".mp4"):
+    digest = hashlib.md5(data[:1024*1024]).hexdigest()[:10]
+    safe_key = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(key))
+    path = GSF_PREVIEW_DIR / f"{safe_key}_{digest}{suffix}"
+    if not path.exists() or path.stat().st_size != len(data):
+        with open(path, "wb") as f:
+            f.write(data)
+    return path
+
+def render_gsf_player(source_path, key, *, scene=False, start_seconds=None):
+    """Motore unico HTML5: sorgente, scena/editor e risultati."""
+    source_path = Path(source_path)
+    if not source_path.exists():
+        st.warning("Anteprima video non disponibile.")
+        return None
+
+    pw, ph, rotation, err = _gsf_probe_display_size(source_path)
+    if err:
+        st.warning(f"Anteprima non leggibile: {err}")
+        return None
+
+    vertical = ph > pw
+
+    # Profili INDIPENDENTI: cambiare un player non modifica gli altri.
+    key_s = str(key)
+
+    if scene:
+        # SCENA / EDITOR
+        target_width = 290 if vertical else 650
+        max_vw = "290px" if vertical else "650px"
+        cap = 620 if vertical else 410
+
+    elif (
+        key_s.startswith("result_v2_")
+        or key_s.startswith("ai_preview_")
+        or key_s.startswith("batch_short_")
+    ):
+        # CLIP / 3 RISULTATI
+        target_width = 250 if vertical else 560
+        max_vw = "250px" if vertical else "560px"
+        cap = 560 if vertical else 380
+
+    elif key_s in ("editor_result", "final_short"):
+        # RISULTATO FINALE
+        target_width = 260 if vertical else 580
+        max_vw = "300px" if vertical else "720px"
+        cap = 680 if vertical else 470
+
+    else:
+        # PRINCIPALE / VIDEO ORIGINALE
+        target_width = 340 if vertical else 900
+        max_vw = "340px" if vertical else "900px"
+        cap = 760 if vertical else 600
+
+    served_name, _ = _gsf_serve_path(source_path, key)
+    url = f"http://127.0.0.1:{GSF_PREVIEW_PORT}/{quote(served_name)}"
+    if start_seconds is not None:
+        try:
+            url += f"#t={max(0.0,float(start_seconds)):.3f}"
+        except Exception:
+            pass
+
+    target_height = round(target_width * ph / pw)
+    html_player=f"""
+    <!doctype html><html><head><meta charset="utf-8"><style>
+    html,body{{margin:0;padding:0;background:transparent;overflow:hidden}}
+    .wrap{{width:100%;display:flex;justify-content:center;align-items:flex-start}}
+    video{{display:block;width:{target_width}px;max-width:{max_vw};height:auto;
+    object-fit:contain;border-radius:18px;background:#000;
+    box-shadow:0 14px 34px rgba(16,40,61,.14)}}
+    </style></head><body><div class="wrap">
+    <video controls preload="metadata" playsinline><source src="{url}"></video>
+    </div></body></html>"""
+    components.html(html_player,height=min(target_height+30,cap),scrolling=False)
+    return {"vertical":vertical,"width":pw,"height":ph,"rotation":rotation}
+
+st.set_page_config(
+    page_title="Gaming Shorts Factory",
+    page_icon="🎮",
+    layout="wide"
+)
+st.markdown("""
+<style>
+.block-container {max-width: 1500px !important; padding-left: 1.2rem !important; padding-right: 1.2rem !important;}
+</style>
+""", unsafe_allow_html=True)
+
+
+
+
+st.markdown("""
+<style>
+:root {
+  --bg:#f4f9ff;
+  --surface:#ffffff;
+  --text:#10233f;
+  --muted:#60758f;
+  --blue:#21a8ff;
+  --blue2:#68c9ff;
+  --cyan:#53e0ea;
+  --yellow:#ffd84d;
+  --red:#ff6673;
+  --green:#5ed6a0;
+  --purple:#9d82ff;
+}
+.stApp {
+  background:
+    radial-gradient(circle at 5% 8%, rgba(33,168,255,.18) 0 110px, transparent 112px),
+    radial-gradient(circle at 95% 16%, rgba(83,224,234,.20) 0 145px, transparent 147px),
+    radial-gradient(circle at 86% 90%, rgba(157,130,255,.12) 0 180px, transparent 182px),
+    var(--bg);
+  color:var(--text);
+}
+
+h1,h2,h3,p,label { color:var(--text) !important; }
+[data-testid="stCaptionContainer"] { color:var(--muted) !important; }
+
+/* Hero */
+.hero-title {
+  text-align:center;
+  color:var(--text);
+  font-size:clamp(2.6rem,7vw,5rem);
+  font-weight:950;
+  letter-spacing:-.065em;
+  line-height:.91;
+}
+.hero-sub {
+  text-align:center;
+  color:var(--muted);
+  font-size:1.08rem;
+  margin:17px 0 4px;
+}
+.ai-orb {
+  width:68px;height:68px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 20px;
+  background:linear-gradient(145deg,var(--blue),var(--blue2));
+  color:white;font-weight:950;font-size:1.05rem;
+  box-shadow:0 15px 35px rgba(33,168,255,.28);
+}
+
+/* Circular workflow */
+.flow {
+  display:flex;justify-content:center;align-items:center;
+  gap:12px;flex-wrap:wrap;margin:30px 0 34px;
+}
+.orb {
+  width:92px;height:92px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;font-size:.73rem;font-weight:900;line-height:1.08;
+  color:white;
+  box-shadow:0 13px 28px rgba(39,80,120,.16);
+}
+.orb-blue {background:linear-gradient(145deg,#159eff,#67caff);}
+.orb-cyan {background:linear-gradient(145deg,#21c8dc,#76e9ed);}
+.orb-yellow {background:linear-gradient(145deg,#ffc928,#ffe87b);color:#574500;}
+.orb-red {background:linear-gradient(145deg,#ff596b,#ff8a94);}
+.flow-arrow {font-size:1.45rem;color:#9db1c8;font-weight:900;}
+
+/* Surfaces */
+[data-testid="stFileUploader"], [data-testid="stExpander"] {
+  background:rgba(255,255,255,.92);
+  border:1px solid #dceaf7;
+  border-radius:32px;
+  box-shadow:0 16px 45px rgba(44,89,130,.09);
+}
+[data-testid="stFileUploader"] {padding:14px 18px 8px;}
+[data-testid="stFileUploaderDropzone"] {
+  background:#f8fcff !important;
+  border:2px dashed #9bd8ff !important;
+  border-radius:25px !important;
+}
+.soft-card {
+  background:white;
+  border:1px solid #dceaf7;
+  border-radius:32px;
+  padding:22px 25px;
+  margin:16px 0;
+  box-shadow:0 16px 45px rgba(44,89,130,.08);
+}
+.mini-label {
+  color:#159eff !important;
+  text-transform:uppercase;
+  letter-spacing:.16em;
+  font-size:.68rem;
+  font-weight:950;
+}
+
+/* Pills / controls */
+.stButton>button,.stDownloadButton>button {
+  border-radius:999px !important;
+  min-height:3.3rem;
+  font-weight:900 !important;
+  border:1px solid #bde4ff !important;
+  background:white !important;
+  color:#117ec5 !important;
+  box-shadow:0 9px 22px rgba(33,168,255,.11);
+}
+.stButton>button[kind="primary"] {
+  min-height:4rem;
+  background:linear-gradient(90deg,#159eff,#53c8ff) !important;
+  color:white !important;
+  border:0 !important;
+  font-size:1.08rem;
+}
+[data-baseweb="select"]>div,
+[data-baseweb="input"]>div,
+.stTextInput input {
+  background:white !important;
+  border-radius:999px !important;
+  color:var(--text) !important;
+}
+[data-testid="stRadio"] label {
+  background:white;
+  border:1px solid #dceaf7;
+  border-radius:999px;
+  padding:.55rem .8rem;
+  color:var(--text) !important;
+}
+[data-testid="stAlert"] {
+  border-radius:24px !important;
+}
+#MainMenu,footer {visibility:hidden;}
+
+/* Contextual help clouds */
+.help-cloud{
+  position:relative;
+  background:#eaf7ff;
+  border:1px solid #bfe7ff;
+  border-radius:28px;
+  padding:15px 18px;
+  margin:10px 0 18px;
+  color:#315b78;
+  box-shadow:0 10px 26px rgba(33,168,255,.08);
+  font-size:.91rem;
+  line-height:1.45;
+}
+.help-cloud:after{
+  content:"";
+  position:absolute;
+  left:28px;
+  bottom:-9px;
+  width:18px;height:18px;
+  background:#eaf7ff;
+  border-right:1px solid #bfe7ff;
+  border-bottom:1px solid #bfe7ff;
+  transform:rotate(45deg);
+}
+.help-cloud b{color:#117ec5}
+
+/* ===== GSF V3 — CHAT-LIKE AZZURRO ===== */
+:root{
+  --gsf-blue:#27aef3;
+  --gsf-blue2:#79d2ff;
+  --gsf-soft:#eef9ff;
+  --gsf-line:#d9effb;
+  --gsf-ink:#10283d;
+  --gsf-muted:#6d8497;
+}
+html,body,[class*="css"]{
+  font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.stApp{
+  background:linear-gradient(180deg,#f8fdff 0%,#ffffff 38%,#f5fbff 100%);
+}
+
+[data-testid="stSidebar"]{display:none;}
+[data-testid="collapsedControl"]{display:none;}
+.stButton>button,
+.stDownloadButton>button{
+  border-radius:999px!important;
+}
+[data-testid="stFileUploader"]{
+  background:#fff;
+  border:1px solid var(--gsf-line);
+  border-radius:34px!important;
+  padding:12px;
+  box-shadow:0 14px 36px rgba(39,174,243,.07);
+}
+[data-testid="stExpander"]{
+  background:#fff;
+  border:1px solid var(--gsf-line)!important;
+  border-radius:28px!important;
+  overflow:hidden;
+}
+[data-testid="stSegmentedControl"] button{
+  border-radius:999px!important;
+}
+.gsf-brand{
+  display:flex;align-items:center;gap:12px;
+  padding:8px 6px 18px;
+}
+.gsf-logo{
+  width:42px;height:42px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(145deg,var(--gsf-blue),var(--gsf-blue2));
+  color:#fff;font-size:19px;font-weight:950;
+  box-shadow:0 9px 24px rgba(39,174,243,.22);
+}
+.gsf-brand-name{font-weight:950;color:var(--gsf-ink);letter-spacing:-.03em}
+.gsf-brand-sub{font-size:.72rem;color:var(--gsf-muted);margin-top:1px}
+.gsf-hero{
+  text-align:center;
+  padding:26px 12px 14px;
+}
+.gsf-orb{
+  width:66px;height:66px;margin:0 auto 16px;border-radius:50%;
+  background:linear-gradient(145deg,#23adf3,#8bdcff);
+  display:flex;align-items:center;justify-content:center;
+  color:white;font-size:29px;
+  box-shadow:0 15px 35px rgba(39,174,243,.20);
+}
+.gsf-hero h1{
+  color:var(--gsf-ink);font-size:2.05rem;letter-spacing:-.055em;
+  margin:0;font-weight:950;
+}
+.gsf-hero p{color:var(--gsf-muted);margin:.55rem 0 0;font-size:.96rem}
+.gsf-step{
+  display:inline-flex;align-items:center;gap:8px;
+  background:#eaf8ff;border:1px solid #ccecff;
+  color:#2879a8;border-radius:999px;padding:7px 12px;
+  font-size:.78rem;font-weight:850;margin:10px 0 8px;
+}
+.gsf-command{
+  background:white;border:1px solid var(--gsf-line);
+  border-radius:30px;padding:15px 18px;margin:12px 0 18px;
+  box-shadow:0 12px 34px rgba(39,174,243,.07);
+  color:var(--gsf-muted);
+}
+.gsf-section-title{
+  color:var(--gsf-ink);font-size:1.15rem;font-weight:950;
+  letter-spacing:-.025em;margin:18px 0 5px;
+}
+.gsf-section-sub{color:var(--gsf-muted);font-size:.87rem;margin-bottom:12px}
+
+
+/* ===== RESULTS V2 ===== */
+.result-wrap{
+  background:#ffffff;
+  border:1px solid #d9effb;
+  border-radius:32px;
+  padding:18px;
+  margin:12px 0 18px;
+  box-shadow:0 12px 34px rgba(39,174,243,.07);
+}
+.result-badge{
+  display:inline-flex;align-items:center;
+  padding:6px 11px;border-radius:999px;
+  background:#eaf8ff;color:#2184ba;
+  font-size:.75rem;font-weight:900;
+}
+.result-title{
+  color:#10283d;font-size:1.05rem;font-weight:950;
+  margin-top:10px;letter-spacing:-.02em;
+}
+.result-time{color:#6d8497;font-size:.83rem;margin-top:3px}
+.results-head{
+  text-align:center;margin:26px 0 12px;
+}
+.results-head h2{
+  color:#10283d;font-size:1.55rem;font-weight:950;
+  letter-spacing:-.04em;margin:0;
+}
+.results-head p{color:#6d8497;margin:.35rem 0 0}
+
+/* ===== EDITOR V2 ===== */
+.editor-v2-head{
+  background:#fff;border:1px solid #d9effb;border-radius:30px;
+  padding:16px 18px;margin:8px 0 14px;
+  box-shadow:0 12px 30px rgba(39,174,243,.06);
+}
+.editor-v2-head b{color:#10283d;font-size:1.05rem}
+.editor-v2-head span{color:#6d8497;font-size:.84rem}
+.editor-preview-tag{
+  display:inline-flex;padding:6px 11px;border-radius:999px;
+  background:#eaf8ff;color:#2184ba;font-weight:900;font-size:.72rem;
+  margin-bottom:8px;
+}
+
+
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<div style="margin-top:10px;">
+  <div class="ai-orb">AI</div>
+  <div class="hero-title">Gaming<br>Shorts Factory</div>
+  <div class="hero-sub">Dal gameplay allo Short. Automaticamente.</div>
+</div>
+
+<div class="flow">
+  <div class="orb orb-blue">CARICA</div>
+  <div class="flow-arrow">›</div>
+  <div class="orb orb-cyan">AI<br>ANALIZZA</div>
+  <div class="flow-arrow">›</div>
+  <div class="orb orb-yellow">SMART<br>CUT</div>
+  <div class="flow-arrow">›</div>
+  <div class="orb orb-red">SHORTS</div>
+</div>
+""", unsafe_allow_html=True)
+
+
+# Cerca FFmpeg automaticamente: prima il vecchio percorso, poi PATH di Windows.
+import shutil
+
+def trova_ffmpeg():
+    """Trova ffmpeg.exe senza dipendere da una singola cartella/versione."""
+    candidati = []
+
+    # 1) PATH di Windows
+    trovato_path = shutil.which("ffmpeg")
+    if trovato_path:
+        candidati.append(trovato_path)
+
+    # 2) Accanto all'app / sottocartelle comuni
+    base_app = os.path.dirname(os.path.abspath(__file__))
+    candidati += [
+        os.path.join(base_app, "ffmpeg.exe"),
+        os.path.join(base_app, "ffmpeg", "bin", "ffmpeg.exe"),
+        os.path.join(base_app, "bin", "ffmpeg.exe"),
+    ]
+
+    # 3) Cartelle utente comuni
+    home = os.path.expanduser("~")
+    candidati += [
+        os.path.join(home, "ffmpeg", "bin", "ffmpeg.exe"),
+        os.path.join(home, "Desktop", "ffmpeg", "bin", "ffmpeg.exe"),
+        os.path.join(home, "Downloads", "ffmpeg", "bin", "ffmpeg.exe"),
+    ]
+
+    for candidato in candidati:
+        if candidato and os.path.isfile(candidato):
+            return candidato
+
+    # 4) Ultimo tentativo: cerca qualsiasi ffmpeg.exe nei Downloads.
+    # Lo facciamo solo se i controlli rapidi sopra falliscono.
+    downloads = os.path.join(home, "Downloads")
+    if os.path.isdir(downloads):
+        try:
+            for root, dirs, files in os.walk(downloads):
+                # evita cartelle enormi/nascoste non utili
+                dirs[:] = [d for d in dirs if not d.startswith(".")]
+                if "ffmpeg.exe" in files:
+                    return os.path.join(root, "ffmpeg.exe")
+        except OSError:
+            pass
+
+    return None
+
+
+FFMPEG_PATH = trova_ffmpeg()
+
+def trova_ffprobe():
+    """Trova ffprobe.exe usando la stessa installazione di FFmpeg o il PATH."""
+    # 1) Se FFmpeg è stato trovato, ffprobe normalmente è nella stessa cartella.
+    if FFMPEG_PATH:
+        stessa_cartella = os.path.join(
+            os.path.dirname(FFMPEG_PATH),
+            "ffprobe.exe" if os.name == "nt" else "ffprobe"
+        )
+        if os.path.isfile(stessa_cartella):
+            return stessa_cartella
+
+    # 2) PATH di Windows/sistema.
+    trovato_path = shutil.which("ffprobe")
+    if trovato_path:
+        return trovato_path
+
+    # 3) Stesse cartelle comuni già usate per FFmpeg.
+    base_app = os.path.dirname(os.path.abspath(__file__))
+    home = os.path.expanduser("~")
+    candidati = [
+        os.path.join(base_app, "ffprobe.exe"),
+        os.path.join(base_app, "ffmpeg", "bin", "ffprobe.exe"),
+        os.path.join(base_app, "bin", "ffprobe.exe"),
+        os.path.join(home, "ffmpeg", "bin", "ffprobe.exe"),
+        os.path.join(home, "Desktop", "ffmpeg", "bin", "ffprobe.exe"),
+        os.path.join(home, "Downloads", "ffmpeg", "bin", "ffprobe.exe"),
+    ]
+
+    for candidato in candidati:
+        if os.path.isfile(candidato):
+            return candidato
+
+    return None
+
+
+FFPROBE_PATH = trova_ffprobe()
+
+
+def durata_video(file_path):
+    if not FFMPEG_PATH:
+        st.error(
+            "⚠️ FFmpeg non trovato automaticamente. "
+            "Metti la cartella FFmpeg dentro GamingShortsFactory "
+            "oppure aggiungi ffmpeg al PATH di Windows."
+        )
+        return None
+
+    comando = [
+        FFMPEG_PATH,
+        "-i", file_path
+    ]
+    try:
+        risultato = subprocess.run(
+            comando,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+    except FileNotFoundError:
+        st.error(
+            "⚠️ FFmpeg non trovato. Controlla che ffmpeg.exe sia installato "
+            "oppure disponibile nel PATH di Windows."
+        )
+        return None
+    testo = risultato.stderr
+    import re
+    match = re.search(r"Duration:\s*(\d+):(\d+):([\d.]+)", testo)
+    if not match:
+        return None
+    ore = int(match.group(1))
+    minuti = int(match.group(2))
+    secondi = float(match.group(3))
+    return ore * 3600 + minuti * 60 + secondi
+
+
+def trova_clip_audio(input_file, temp_dir, clip_duration=30, numero_clip=3):
+    """Trova rapidamente picchi audio usando solo FFmpeg."""
+    comando = [
+        FFMPEG_PATH,
+        "-hide_banner",
+        "-i", input_file,
+        "-vn",
+        "-af",
+        "asetnsamples=n=88200:p=0,astats=metadata=1:reset=1,"
+        "ametadata=print:key=lavfi.astats.Overall.RMS_level",
+        "-f", "null",
+        "-"
+    ]
+
+    risultato = subprocess.run(
+        comando,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    testo = (risultato.stdout or "") + "\\n" + (risultato.stderr or "")
+    valori = []
+    tempo_corrente = None
+
+    for riga in testo.splitlines():
+        match_tempo = re.search(r"pts_time:([0-9.]+)", riga)
+        if match_tempo:
+            tempo_corrente = float(match_tempo.group(1))
+
+        if "lavfi.astats.Overall.RMS_level=" in riga and tempo_corrente is not None:
+            try:
+                valore = riga.split(
+                    "lavfi.astats.Overall.RMS_level=", 1
+                )[1].strip()
+                db = float(valore)
+
+                if math.isfinite(db):
+                    valori.append((tempo_corrente, db))
+            except:
+                pass
+
+    if not valori:
+        return []
+
+    candidati = sorted(
+        valori,
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    scelti = []
+
+    for tempo, db in candidati:
+        start_clip = max(
+            0.0,
+            tempo - clip_duration / 2
+        )
+
+        troppo_vicino = any(
+            abs(start_clip - precedente) < clip_duration * 0.8
+            for precedente in scelti
+        )
+
+        if troppo_vicino:
+            continue
+
+        scelti.append(start_clip)
+
+        if len(scelti) >= numero_clip:
+            break
+
+    return sorted(scelti)
+
+
+def trova_clip_smart(input_file, temp_dir, clip_duration=30, numero_clip=3):
+    """
+    SMART CLIP:
+    combina picchi audio e movimento/cambi scena.
+    L'analisi video usa una copia ridotta (320px, 4 fps) per restare veloce.
+    """
+
+    # ---------- AUDIO ----------
+    comando_audio = [
+        FFMPEG_PATH,
+        "-hide_banner",
+        "-i", input_file,
+        "-vn",
+        "-af",
+        "asetnsamples=n=44100:p=0,astats=metadata=1:reset=1,"
+        "ametadata=print:key=lavfi.astats.Overall.RMS_level",
+        "-f", "null",
+        "-"
+    ]
+
+    risultato_audio = subprocess.run(
+        comando_audio,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    testo_audio = (
+        (risultato_audio.stdout or "")
+        + "\n"
+        + (risultato_audio.stderr or "")
+    )
+
+    audio = []
+    tempo_corrente = None
+
+    for riga in testo_audio.splitlines():
+        mt = re.search(r"pts_time:([0-9.]+)", riga)
+
+        if mt:
+            tempo_corrente = float(mt.group(1))
+
+        if (
+            "lavfi.astats.Overall.RMS_level=" in riga
+            and tempo_corrente is not None
+        ):
+            try:
+                db = float(
+                    riga.split(
+                        "lavfi.astats.Overall.RMS_level=", 1
+                    )[1].strip()
+                )
+
+                if math.isfinite(db):
+                    audio.append((tempo_corrente, db))
+            except:
+                pass
+
+    # ---------- VIDEO / MOVIMENTO ----------
+    # scene score ad FPS ridotto: non renderizza un nuovo video.
+    comando_video = [
+        FFMPEG_PATH,
+        "-hide_banner",
+        "-i", input_file,
+        "-an",
+        "-vf",
+        "fps=4,scale=320:-2,select='gte(scene,0)',metadata=print",
+        "-f", "null",
+        "-"
+    ]
+
+    risultato_video = subprocess.run(
+        comando_video,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    testo_video = (
+        (risultato_video.stdout or "")
+        + "\n"
+        + (risultato_video.stderr or "")
+    )
+
+    movimento = []
+    tempo_video = None
+
+    for riga in testo_video.splitlines():
+        mt = re.search(r"pts_time:([0-9.]+)", riga)
+
+        if mt:
+            tempo_video = float(mt.group(1))
+
+        if "lavfi.scene_score=" in riga and tempo_video is not None:
+            try:
+                score = float(
+                    riga.split("lavfi.scene_score=", 1)[1]
+                    .strip()
+                    .split()[0]
+                )
+                movimento.append((tempo_video, score))
+            except:
+                pass
+
+    if not audio and not movimento:
+        return []
+
+    # ---------- NORMALIZZAZIONE ----------
+    # Creiamo punteggi per secondo.
+    massimo_tempo = 0
+
+    if audio:
+        massimo_tempo = max(massimo_tempo, int(max(t for t, _ in audio)) + 1)
+
+    if movimento:
+        massimo_tempo = max(
+            massimo_tempo,
+            int(max(t for t, _ in movimento)) + 1
+        )
+
+    if massimo_tempo <= 0:
+        return []
+
+    audio_sec = [0.0] * (massimo_tempo + 1)
+    video_sec = [0.0] * (massimo_tempo + 1)
+
+    if audio:
+        db_values = [db for _, db in audio]
+        db_min = min(db_values)
+        db_max = max(db_values)
+        span = max(0.001, db_max - db_min)
+
+        for t, db in audio:
+            idx = min(int(t), massimo_tempo)
+            norm = (db - db_min) / span
+            audio_sec[idx] = max(audio_sec[idx], norm)
+
+    if movimento:
+        max_scene = max(score for _, score in movimento)
+        max_scene = max(0.001, max_scene)
+
+        for t, score in movimento:
+            idx = min(int(t), massimo_tempo)
+            norm = min(1.0, score / max_scene)
+            video_sec[idx] = max(video_sec[idx], norm)
+
+    # 60% audio + 40% movimento.
+    combinato = [
+        audio_sec[i] * 0.60 + video_sec[i] * 0.40
+        for i in range(len(audio_sec))
+    ]
+
+    # ---------- FINESTRE ----------
+    finestra = max(10, int(clip_duration))
+    candidati = []
+
+    for i in range(len(combinato)):
+        fine = min(len(combinato), i + finestra)
+
+        if fine - i < max(5, finestra // 2):
+            continue
+
+        valori = combinato[i:fine]
+        media = sum(valori) / len(valori)
+        picco = max(valori)
+
+        # Preferiamo clip con attività sostenuta, non un singolo botto.
+        score = media * 0.75 + picco * 0.25
+
+        candidati.append((score, float(i)))
+
+    candidati.sort(reverse=True)
+
+    scelti = []
+
+    for score, start_clip in candidati:
+        troppo_vicino = any(
+            abs(start_clip - precedente) < clip_duration * 0.8
+            for precedente in scelti
+        )
+
+        if troppo_vicino:
+            continue
+
+        scelti.append(start_clip)
+
+        if len(scelti) >= numero_clip:
+            break
+
+    return sorted(scelti)
+
+
+def crea_anteprima(input_file, output_file, start, duration):
+    """Crea una preview leggera 640px usando QSV."""
+    comando = [
+        FFMPEG_PATH,
+        "-y",
+        "-ss", str(start),
+        "-i", input_file,
+        "-t", str(duration),
+        "-vf", "scale=640:-2",
+        "-c:v", "h264_qsv",
+        "-preset", "veryfast",
+        "-global_quality", "30",
+        "-c:a", "aac",
+        "-b:a", "96k",
+        "-movflags", "+faststart",
+        output_file
+    ]
+
+    risultato = subprocess.run(
+        comando,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    return risultato.returncode == 0 and os.path.exists(output_file)
+
+
+def crea_short_batch(
+    input_file,
+    temp_dir,
+    start,
+    duration,
+    indice,
+    sottotitoli_attivi=True,
+    normalizza_audio_attivo=True,
+    stile_sub_attivo="Gaming",
+    dimensione_sub_attiva=92,
+    posizione_sub_attiva=330
+):
+    """
+    Crea uno Short completo per il batch.
+    Usa lo stesso motore FAST: estrazione copy -> Whisper -> una codifica QSV.
+    Ritorna il percorso del file finale oppure None.
+    """
+    segment_file = os.path.join(temp_dir, f"segment_{indice}.mp4")
+    ass_file = os.path.join(temp_dir, f"subtitles_{indice}.ass")
+    output_file = os.path.join(temp_dir, f"short_{indice}.mp4")
+
+    # 1) Estrazione veloce
+    comando_segmento = [
+        FFMPEG_PATH, "-y",
+        "-ss", str(start),
+        "-i", input_file,
+        "-t", str(duration),
+        "-c", "copy",
+        segment_file
+    ]
+
+    r = subprocess.run(
+        comando_segmento,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    if r.returncode != 0 or not os.path.exists(segment_file):
+        return None
+
+    usa_sub = sottotitoli_attivi
+
+    # 2) Whisper + ASS leggibile
+    if usa_sub:
+        try:
+            model = WhisperModel(
+                "tiny",
+                device="cpu",
+                compute_type="int8"
+            )
+
+            segments, info = model.transcribe(
+                segment_file,
+                language="it",
+                vad_filter=True,
+                beam_size=1,
+                word_timestamps=True
+            )
+
+            segments = list(segments)
+
+            if segments:
+                preset_batch = {
+                    "Gaming": ("Arial", dimensione_sub_attiva, "&H00FFFFFF", "&H0000D7FF", "&H00111111", 8, 2, -1),
+                    "Clean": ("Arial", max(54, dimensione_sub_attiva - 16), "&H00FFFFFF", "&H00FFFFFF", "&H003A2B22", 4, 1, 0),
+                    "Pop": ("Arial", min(124, dimensione_sub_attiva + 10), "&H00FFFFFF", "&H00694FFF", "&H00251A35", 9, 3, -1),
+                    "Karaoke": ("Arial", dimensione_sub_attiva, "&H00FFFFFF", "&H00FFC752", "&H00301F12", 7, 2, -1),
+                    "Neon": ("Arial", dimensione_sub_attiva, "&H00FFF777", "&H00FF82D9", "&H006A247C", 7, 4, -1),
+                }.get(stile_sub_attivo, ("Arial", 92, "&H00FFFFFF", "&H0000D7FF", "&H00111111", 8, 2, -1))
+
+                b_font, b_size, b_primary, b_active, b_outline, b_ow, b_shadow, b_bold = preset_batch
+
+                ass = f"""[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+ScaledBorderAndShadow: yes
+WrapStyle: 2
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,{b_font},{b_size},{b_primary},{b_active},{b_outline},&H90000000,{b_bold},0,0,0,100,100,0,0,1,{b_ow},{b_shadow},2,90,90,{posizione_sub_attiva},1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+
+                def ass_time(seconds):
+                    h = int(seconds // 3600)
+                    m = int((seconds % 3600) // 60)
+                    s = seconds % 60
+                    return f"{h}:{m:02d}:{s:05.2f}"
+
+                for segmento in segments:
+                    testo = (
+                        segmento.text.strip()
+                        .replace("{", "(")
+                        .replace("}", ")")
+                        .replace("\n", " ")
+                    )
+
+                    if not testo:
+                        continue
+
+                    parole = testo.split()
+                    blocchi = [
+                        parole[i:i + 10]
+                        for i in range(0, len(parole), 10)
+                    ]
+
+                    durata_seg = max(
+                        0.01,
+                        segmento.end - segmento.start
+                    )
+                    totale = max(1, len(parole))
+                    cursore = segmento.start
+
+                    for j, blocco in enumerate(blocchi):
+                        n = len(blocco)
+
+                        if j == len(blocchi) - 1:
+                            fine = segmento.end
+                        else:
+                            fine = min(
+                                segmento.end,
+                                cursore + durata_seg * n / totale
+                            )
+
+                        riga1 = " ".join(blocco[:5])
+                        riga2 = " ".join(blocco[5:10])
+                        testo_ass = (
+                            riga1 + (r"\N" + riga2 if riga2 else "")
+                        )
+
+                        y_batch = max(200, min(1720, 1920 - int(posizione_sub_attiva)))
+                        testo_ass = r"{\an2\pos(540," + str(y_batch) + ")}" + testo_ass
+
+                        ass += (
+                            f"Dialogue: 0,"
+                            f"{ass_time(cursore)},"
+                            f"{ass_time(fine)},"
+                            f"Default,,0,0,0,,"
+                            f"{testo_ass}\n"
+                        )
+
+                        cursore = fine
+
+                with open(ass_file, "w", encoding="utf-8") as f:
+                    f.write(ass)
+            else:
+                usa_sub = False
+
+        except:
+            usa_sub = False
+
+    # 3) Unica codifica finale QSV
+    filtro_verticale = (
+        "scale=1080:1920:"
+        "force_original_aspect_ratio=increase,"
+        "crop=1080:1920"
+    )
+
+    if usa_sub and os.path.exists(ass_file):
+        ass_path = (
+            ass_file
+            .replace("\\", "/")
+            .replace(":", "\\:")
+        )
+        filtro_finale = (
+            filtro_verticale
+            + ",ass=filename='"
+            + ass_path
+            + "'"
+        )
+    else:
+        filtro_finale = filtro_verticale
+
+    comando_finale = [
+        FFMPEG_PATH, "-y",
+        "-i", segment_file,
+        "-vf", filtro_finale,
+        "-c:v", "h264_qsv",
+        "-preset", "veryfast",
+        "-global_quality", "25",
+        "-c:a", "aac",
+        "-b:a", "128k",
+        *(["-af", "loudnorm=I=-14:LRA=11:TP=-1.5"] if normalizza_audio_attivo else []),
+        "-movflags", "+faststart",
+        output_file
+    ]
+
+    r = subprocess.run(
+        comando_finale,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    if r.returncode != 0 or not os.path.exists(output_file):
+        return None
+
+    return output_file
+
+
+
+def deep_rank_candidati_leggero(input_file, risultati, clip_duration):
+    """
+    Secondo passaggio leggero SOLO sui candidati del Fast Scan.
+    Non usa modelli vision pesanti.
+
+    Per ogni candidato misura:
+    - energia audio a inizio / centro / fine
+    - densità dei cambi visivi
+    - presenza di un picco centrale
+    - penalità se la clip parte già al massimo o finisce senza chiusura
+
+    Restituisce gli stessi candidati riordinati.
+    """
+    if not risultati:
+        return []
+
+    refined = []
+
+    for fast_score, start in risultati[:3]:
+        start = max(0.0, float(start))
+        dur = max(5.0, float(clip_duration))
+
+        # Analisi locale molto economica: solo questa piccola finestra.
+        cmd = [
+            FFMPEG_PATH, "-hide_banner",
+            "-ss", str(start),
+            "-t", str(dur),
+            "-i", input_file,
+            "-filter_complex",
+            (
+                "[0:a]asetnsamples=n=22050:p=0,"
+                "astats=metadata=1:reset=1,"
+                "ametadata=print:key=lavfi.astats.Overall.RMS_level[a];"
+                "[0:v]fps=2,scale=160:-2,"
+                "select='gte(scene,0)',metadata=print[v]"
+            ),
+            "-map", "[a]", "-map", "[v]",
+            "-f", "null", "-"
+        ]
+
+        rr = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+
+        raw = (rr.stdout or "") + "\n" + (rr.stderr or "")
+
+        audio_points = []
+        scene_points = []
+        current_t = None
+
+        for line in raw.splitlines():
+            mt = re.search(r"pts_time:([0-9.]+)", line)
+            if mt:
+                try:
+                    current_t = float(mt.group(1))
+                except Exception:
+                    current_t = None
+
+            if current_t is not None and "lavfi.astats.Overall.RMS_level=" in line:
+                try:
+                    db = float(
+                        line.split("lavfi.astats.Overall.RMS_level=", 1)[1]
+                        .strip().split()[0]
+                    )
+                    if math.isfinite(db):
+                        audio_points.append((current_t, db))
+                except Exception:
+                    pass
+
+            if current_t is not None and "lavfi.scene_score=" in line:
+                try:
+                    val = float(
+                        line.split("lavfi.scene_score=", 1)[1]
+                        .strip().split()[0]
+                    )
+                    scene_points.append((current_t, val))
+                except Exception:
+                    pass
+
+        # Audio -> 0..1 locale.
+        norm_audio = []
+        if audio_points:
+            vals = [x[1] for x in audio_points]
+            lo, hi = min(vals), max(vals)
+            span = max(0.001, hi - lo)
+            norm_audio = [(t, (db - lo) / span) for t, db in audio_points]
+
+        def media_fascia(points, a, b):
+            vals = [v for t, v in points if a <= t < b]
+            return sum(vals) / len(vals) if vals else 0.0
+
+        third = dur / 3.0
+        a_start = media_fascia(norm_audio, 0, third)
+        a_mid = media_fascia(norm_audio, third, third * 2)
+        a_end = media_fascia(norm_audio, third * 2, dur)
+
+        # Picco centrale = utile per mini arco narrativo/hook-payoff.
+        center_peak = max(0.0, a_mid - ((a_start + a_end) / 2.0))
+
+        # Densità visiva, ma limitata per non premiare il caos infinito.
+        scene_density = 0.0
+        if scene_points:
+            scene_density = min(
+                1.0,
+                sum(max(0.0, v) for _, v in scene_points)
+                / max(1.0, dur * 0.12)
+            )
+
+        # Preferisce una clip che cresce verso il centro e poi respira leggermente.
+        arc_score = (
+            0.30 * a_mid
+            + 0.22 * center_peak
+            + 0.20 * scene_density
+            + 0.14 * max(0.0, a_mid - a_start)
+            + 0.14 * max(0.0, a_mid - a_end)
+        )
+
+        # Se inizia già "esplosa", possibile taglio troppo tardi.
+        late_start_penalty = 0.10 if a_start > 0.82 and a_mid <= a_start else 0.0
+
+        deep_score = (
+            float(fast_score) * 0.72
+            + arc_score * 0.28
+            - late_start_penalty
+        )
+
+        refined.append((deep_score, start))
+
+    refined.sort(reverse=True)
+    return refined
+
+
+def ai_director_locale(input_file, clip_duration=30, numero_clip=5):
+    """
+    AI Director locale leggero per CPU/RAM contenute.
+    Analizza l'intero video con FFmpeg:
+    - energia audio
+    - movimento/cambi scena
+    - attività sostenuta
+    - penalità per zone quasi ferme/silenziose
+    Restituisce i migliori momenti senza modelli vision pesanti.
+    """
+
+    # AUDIO: RMS per circa 1 secondo.
+    cmd_audio = [
+        FFMPEG_PATH, "-hide_banner",
+        "-i", input_file,
+        "-vn",
+        "-af",
+        "asetnsamples=n=44100:p=0,astats=metadata=1:reset=1,"
+        "ametadata=print:key=lavfi.astats.Overall.RMS_level",
+        "-f", "null", "-"
+    ]
+
+    ra = subprocess.run(
+        cmd_audio,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    audio_text = (ra.stdout or "") + "\n" + (ra.stderr or "")
+    audio_raw = []
+    t = None
+
+    for line in audio_text.splitlines():
+        mt = re.search(r"pts_time:([0-9.]+)", line)
+        if mt:
+            t = float(mt.group(1))
+
+        if "lavfi.astats.Overall.RMS_level=" in line and t is not None:
+            try:
+                db = float(
+                    line.split(
+                        "lavfi.astats.Overall.RMS_level=", 1
+                    )[1].strip()
+                )
+                if math.isfinite(db):
+                    audio_raw.append((t, db))
+            except:
+                pass
+
+    # VIDEO FAST: 1 fps / 192px = scansione leggera dell’intero gameplay.
+    cmd_video = [
+        FFMPEG_PATH, "-hide_banner",
+        "-i", input_file,
+        "-an",
+        "-vf",
+        (
+            "fps=0.5,scale=128:-2,select='gte(scene,0)',metadata=print"
+            if globals().get("analisi_rapida", True)
+            else
+            "fps=3,scale=256:-2,select='gte(scene,0)',metadata=print"
+        ),
+        "-f", "null", "-"
+    ]
+
+    rv = subprocess.run(
+        cmd_video,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    video_text = (rv.stdout or "") + "\n" + (rv.stderr or "")
+    video_raw = []
+    t = None
+
+    for line in video_text.splitlines():
+        mt = re.search(r"pts_time:([0-9.]+)", line)
+        if mt:
+            t = float(mt.group(1))
+
+        if "lavfi.scene_score=" in line and t is not None:
+            try:
+                score = float(
+                    line.split("lavfi.scene_score=", 1)[1]
+                    .strip().split()[0]
+                )
+                video_raw.append((t, score))
+            except:
+                pass
+
+    if not audio_raw and not video_raw:
+        return []
+
+    max_t = 1
+    if audio_raw:
+        max_t = max(max_t, int(max(x[0] for x in audio_raw)) + 2)
+    if video_raw:
+        max_t = max(max_t, int(max(x[0] for x in video_raw)) + 2)
+
+    audio = [0.0] * max_t
+    motion = [0.0] * max_t
+
+    # Normalizzazione audio 0..1
+    if audio_raw:
+        vals = [db for _, db in audio_raw]
+        lo, hi = min(vals), max(vals)
+        span = max(0.001, hi - lo)
+
+        for sec, db in audio_raw:
+            idx = min(int(sec), max_t - 1)
+            audio[idx] = max(
+                audio[idx],
+                (db - lo) / span
+            )
+
+    # Normalizzazione movimento 0..1, robusta al singolo picco.
+    if video_raw:
+        vals = sorted(v for _, v in video_raw)
+        ref = vals[max(0, int(len(vals) * 0.95) - 1)] if vals else 1.0
+        ref = max(0.001, ref)
+
+        for sec, val in video_raw:
+            idx = min(int(sec), max_t - 1)
+            motion[idx] = max(
+                motion[idx],
+                min(1.0, val / ref)
+            )
+
+    # Feature combinata per secondo.
+    activity = []
+    for i in range(max_t):
+        a = audio[i]
+        m = motion[i]
+
+        # Bonus quando audio e azione visiva avvengono insieme.
+        synergy = min(a, m)
+
+        # Penalizza tempi morti e scene statiche/menu/loading.
+        dead_penalty = 0.22 if a < 0.12 and m < 0.08 else 0.0
+        static_penalty = 0.18 if m < 0.035 else 0.0
+
+        score = (
+            0.45 * a
+            + 0.40 * m
+            + 0.25 * synergy
+            - dead_penalty
+            - static_penalty
+        )
+
+        activity.append(max(0.0, score))
+
+    win = max(10, int(clip_duration))
+    candidates = []
+
+    # Valutiamo ogni possibile finestra.
+    for start in range(0, max(1, len(activity) - win + 1)):
+        vals = activity[start:start + win]
+        if len(vals) < max(5, win // 2):
+            continue
+
+        avg = sum(vals) / len(vals)
+        peak = max(vals)
+
+        # Quanto della clip è davvero "vivo".
+        active_ratio = (
+            sum(1 for x in vals if x >= 0.28)
+            / len(vals)
+        )
+
+        # Premia attività nella parte centrale, utile per hook -> payoff.
+        q1 = max(1, len(vals) // 4)
+        center = vals[q1:-q1] if len(vals) > q1 * 2 else vals
+        center_avg = sum(center) / len(center)
+
+        score = (
+            avg * 0.48
+            + peak * 0.17
+            + active_ratio * 0.20
+            + center_avg * 0.15
+        )
+
+        candidates.append((score, float(start)))
+
+    candidates.sort(reverse=True)
+
+    chosen = []
+
+    for score, start in candidates:
+        # Evita 5 clip dello stesso combattimento.
+        if any(
+            abs(start - old_start) < clip_duration * 0.85
+            for _, old_start in chosen
+        ):
+            continue
+
+        chosen.append((score, start))
+
+        if len(chosen) >= numero_clip:
+            break
+
+    # Manteniamo ordine di qualità: migliore per prima.
+    return chosen
+
+
+def rifinisci_confini_clip(input_file, centro_start, durata_target):
+    """
+    Rifinisce gratis inizio/fine della clip usando silenzio audio.
+    Cerca un punto naturale vicino ai bordi senza allungare troppo.
+    """
+    margine = 8.0
+    analisi_start = max(0.0, centro_start - margine)
+    analisi_durata = durata_target + margine * 2
+
+    cmd = [
+        FFMPEG_PATH, "-hide_banner",
+        "-ss", str(analisi_start),
+        "-i", input_file,
+        "-t", str(analisi_durata),
+        "-vn",
+        "-af", "silencedetect=noise=-36dB:d=0.35",
+        "-f", "null", "-"
+    ]
+
+    r = subprocess.run(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    log = (r.stdout or "") + "\n" + (r.stderr or "")
+    silenzi = []
+    current = None
+
+    for line in log.splitlines():
+        ms = re.search(r"silence_start:\s*([0-9.]+)", line)
+        if ms:
+            current = float(ms.group(1))
+
+        me = re.search(r"silence_end:\s*([0-9.]+)", line)
+        if me and current is not None:
+            silenzi.append((current, float(me.group(1))))
+            current = None
+
+    originale_start_rel = centro_start - analisi_start
+    originale_end_rel = originale_start_rel + durata_target
+
+    nuovo_start_rel = originale_start_rel
+    nuovo_end_rel = originale_end_rel
+
+    # Cerca una fine di silenzio poco prima/dopo dell'inizio:
+    # partire dopo un silenzio tende a dare un hook più pulito.
+    candidati_start = []
+    for s0, s1 in silenzi:
+        distanza = abs(s1 - originale_start_rel)
+        if distanza <= 5.0:
+            candidati_start.append((distanza, s1))
+
+    if candidati_start:
+        nuovo_start_rel = min(candidati_start)[1]
+
+    # Cerca un inizio di silenzio vicino alla fine:
+    # chiudere prima del silenzio elimina code morte.
+    candidati_end = []
+    for s0, s1 in silenzi:
+        distanza = abs(s0 - originale_end_rel)
+        if distanza <= 6.0 and s0 > nuovo_start_rel + 8:
+            candidati_end.append((distanza, s0))
+
+    if candidati_end:
+        nuovo_end_rel = min(candidati_end)[1]
+
+    nuovo_start = max(0.0, analisi_start + nuovo_start_rel)
+    nuovo_end = max(
+        nuovo_start + 8.0,
+        analisi_start + nuovo_end_rel
+    )
+
+    # Evita clip eccessivamente lunghe.
+    if nuovo_end - nuovo_start > durata_target + 8:
+        nuovo_end = nuovo_start + durata_target + 8
+
+    return nuovo_start, nuovo_end - nuovo_start
+
+
+
+def mostra_risultati_v2(items, titolo="✨ Le tue clip sono pronte"):
+    """UI semplice per preview, modifica e download delle clip generate."""
+    if not items:
+        return
+
+    st.markdown(
+        f"""
+        <div class="results-head">
+          <h2>{titolo}</h2>
+          <p>Guarda il risultato, scaricalo oppure mandalo all’Editor.</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    for i, item in enumerate(items, start=1):
+        path = item.get("path")
+        if not path or not os.path.exists(path):
+            continue
+
+        start = float(item.get("start", 0.0))
+        duration = float(item.get("duration", 0.0))
+        end = start + duration
+
+        st.markdown(
+            f"""
+            <div class="result-wrap">
+              <span class="result-badge">✦ MOMENTO {i}</span>
+              <div class="result-title">Short #{i}</div>
+              <div class="result-time">{start:.1f}s → {end:.1f}s • {duration:.1f}s</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        render_gsf_player(path, f"result_v2_{i}")
+
+        b1, b2 = st.columns(2)
+
+        with b1:
+            if st.button(
+                "✂️ MODIFICA",
+                key=f"result_edit_{i}",
+                use_container_width=True
+            ):
+                st.session_state["editor_result_path"] = path
+                st.session_state["apri_editor_risultato"] = True
+                st.session_state["manual_start_editor"] = start
+                st.session_state["manual_duration_editor"] = duration
+                st.info(
+                    "✂️ Clip inviata all’Editor. "
+                    "Apri l’Editor video sopra per modificarla."
+                )
+
+        with b2:
+            with open(path, "rb") as rf:
+                result_bytes = rf.read()
+
+            st.download_button(
+                "⬇️ SCARICA",
+                data=result_bytes,
+                file_name=f"GamingShort_{i}.mp4",
+                mime="video/mp4",
+                key=f"result_download_{i}",
+                use_container_width=True
+            )
+
+
+    st.markdown(
+        """
+        <div class="gsf-hero">
+          <div class="gsf-orb">✦</div>
+          <h1>Cosa vuoi creare oggi?</h1>
+          <p>Carica il gameplay. Al resto può pensare la tua Gaming Shorts Factory.</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown('<div class="gsf-step">① CARICA IL VIDEO</div>', unsafe_allow_html=True)
+video = st.file_uploader(
+    "🎬 Carica il gameplay",
+    type=["mp4", "mov", "mkv"]
+)
+
+
+
+def _gsf_windows_fonts():
+    """Font Windows disponibili; fallback sicuro se il registro non è leggibile."""
+    fallback=["Arial","Arial Black","Calibri","Cambria","Candara","Comic Sans MS",
+              "Consolas","Georgia","Impact","Segoe UI","Tahoma","Times New Roman",
+              "Trebuchet MS","Verdana"]
+    names=set(fallback)
+    if os.name=="nt":
+        try:
+            import winreg
+            key=winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE,
+                r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
+            )
+            i=0
+            while True:
+                try:
+                    name,_,_=winreg.EnumValue(key,i); i+=1
+                    clean=re.sub(r"\s*\((TrueType|OpenType|All res)\)\s*$","",str(name),flags=re.I).strip()
+                    if clean:
+                        for part in clean.split(" & "): names.add(part.strip())
+                except OSError:
+                    break
+            winreg.CloseKey(key)
+        except Exception:
+            pass
+    return sorted(names,key=str.casefold)
+
+def _gsf_sync_main_subtitle_font():
+    v=st.session_state.get("editor_sub_font_v18")
+    if v:
+        st.session_state["subtitle_font"]=v
+
+def _gsf_sync_inline_subtitle_font(widget_key, state_key):
+    v=st.session_state.get(widget_key)
+    if v:
+        st.session_state[state_key]=v
+
+def _gsf_live_signature(*values):
+    """Short signature used to rebuild the LIVE iframe when editor controls change."""
+    raw="|".join(str(v) for v in values)
+    return hashlib.md5(raw.encode("utf-8")).hexdigest()[:10]
+
+
+# ==========================================================
+# V25 — PERSISTENT LIVE PLAYER (Streamlit Components V2)
+# ==========================================================
+_GSF_LIVE_V2 = None
+if hasattr(st, "components") and hasattr(st.components, "v2") and hasattr(st.components.v2, "component"):
+    _GSF_LIVE_V2 = st.components.v2.component(
+        "gaming_shorts_factory.live_editor_v25",
+        html="""
+        <div class="gsf-live-stage">
+          <div class="gsf-live-viewport">
+            <div class="gsf-live-badge">LIVE</div>
+            <video class="gsf-live-video" controls preload="metadata" playsinline></video>
+            <div class="gsf-live-subs"></div>
+          </div>
+        </div>
+        """,
+        css="""
+        .gsf-live-stage{width:100%;display:flex;justify-content:flex-start}
+        .gsf-live-viewport{position:relative;overflow:hidden;border-radius:18px;background:#000;
+          box-shadow:0 14px 34px rgba(16,40,61,.14)}
+        .gsf-live-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:center}
+        .gsf-live-badge{position:absolute;z-index:4;left:10px;top:10px;padding:5px 9px;border-radius:999px;
+          background:rgba(0,0,0,.62);color:#fff;font:600 12px Arial;pointer-events:none}
+        .gsf-live-subs{position:absolute;z-index:5;width:88%;text-align:center;line-height:1.05;
+          transform:translate(-50%,-50%);pointer-events:none;padding:2px 4px}
+        .gsf-live-subs .active{display:inline-block;transform:scale(1.10)}
+        """,
+        js=r"""
+        export default function(component) {
+          const { parentElement, data } = component;
+          const v = parentElement.querySelector(".gsf-live-video");
+          const vp = parentElement.querySelector(".gsf-live-viewport");
+          const badge = parentElement.querySelector(".gsf-live-badge");
+          const box = parentElement.querySelector(".gsf-live-subs");
+          if (!v || !vp || !box) return;
+
+          const d = data || {};
+          const src = d.url || "";
+          const srcChanged = v.dataset.src !== src;
+
+          if (srcChanged) {
+            v.dataset.src = src;
+            v.src = src;
+            v.load();
+            v.dataset.clipStart = "";
+            v.dataset.seekNonce = "";
+          }
+
+          const vertical = d.format === "9:16 Short";
+          const fw = vertical ? 220 : 480;
+          const fh = vertical ? 391 : 270;
+          vp.style.width = fw + "px";
+          vp.style.height = fh + "px";
+          vp.style.maxWidth = "96vw";
+          badge.textContent = "LIVE · " + (d.format || "");
+
+          const zoom = Number(d.zoom ?? 1);
+          const tx = Number(d.x ?? 0) * .35;
+          const ty = Number(d.y ?? 0) * .35;
+          v.style.transform = `translate(${tx}%, ${ty}%) scale(${zoom})`;
+          v.style.filter = `brightness(${Math.max(0,1+Number(d.brightness ?? 0))}) contrast(${Math.max(0,Number(d.contrast ?? 1))})`;
+          v.volume = Math.max(0,Math.min(1,Number(d.volume ?? 100)/100));
+          v.playbackRate = Number(d.speed ?? 1);
+
+          const clipStart = Math.max(0,Number(d.clipStart ?? 0));
+          const clipEnd = Math.max(clipStart,Number(d.clipEnd ?? clipStart));
+          const timelineToken = `${clipStart.toFixed(3)}|${clipEnd.toFixed(3)}`;
+
+          function seekTo(t) {
+            if (!Number.isFinite(t)) return;
+            const go = () => {
+              let target = Math.max(0,t);
+              if (Number.isFinite(v.duration) && v.duration > 0) {
+                target = Math.min(target, Math.max(0,v.duration-.03));
+              }
+              try {
+                v.currentTime = target;
+                // Some browsers need the media to become seekable first.
+                setTimeout(() => {
+                  if (Math.abs(v.currentTime-target) > .25 && v.seekable && v.seekable.length) {
+                    try { v.currentTime = target; } catch(e) {}
+                  }
+                }, 120);
+              } catch(e) {}
+            };
+            if (v.readyState >= 1) go();
+            else v.addEventListener("loadedmetadata", go, {once:true});
+          }
+
+          // Timeline is authoritative: changing IN/OUT seeks to the new IN once.
+          if (v.dataset.clipStart !== timelineToken) {
+            v.dataset.clipStart = timelineToken;
+            seekTo(clipStart);
+          }
+
+          // RESET TUTTO: reset del componente senza ricaricare la sorgente video.
+          const resetId = String(d.resetId ?? "");
+          if (resetId && v.dataset.resetId !== resetId) {
+            v.dataset.resetId = resetId;
+            v.dataset.seekNonce = "";
+            try { v.pause(); } catch(e) {}
+            seekTo(clipStart);
+          }
+
+          // VAI è un evento, non uno stato: ogni nonce nuovo esegue UN seek sullo stesso <video>.
+          const seekNonce = String(d.seekNonce ?? "");
+          if (seekNonce && v.dataset.seekNonce !== seekNonce) {
+            v.dataset.seekNonce = seekNonce;
+            const requested = Number(d.seekTarget);
+            if (Number.isFinite(requested)) seekTo(requested);
+          }
+
+          const words = Array.isArray(d.words) ? d.words : [];
+          const fallback = String(d.subtitleText ?? "");
+          box.style.display = d.subtitlesOn ? "block" : "none";
+          box.style.left = `${Math.max(5,Math.min(95,Number(d.subtitleX ?? 50)))}%`;
+          box.style.top = `${Math.max(5,Math.min(95,Number(d.subtitleY ?? 78)))}%`;
+          box.style.color = d.textColor || "#FFFFFF";
+          box.style.fontFamily = `"${String(d.font || "Arial").replaceAll('"','')}", Arial, sans-serif`;
+          box.style.fontSize = `${Math.max(13,Math.min(48,Number(d.liveFont ?? 20)))}px`;
+          box.style.fontWeight = "800";
+          const outline = d.outlineColor || "#000000";
+          box.style.textShadow = `-2px -2px 0 ${outline},2px -2px 0 ${outline},-2px 2px 0 ${outline},2px 2px 0 ${outline},0 3px 7px rgba(0,0,0,.55)`;
+
+          function esc(s) {
+            return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+          }
+          function renderSubs() {
+            if (!d.subtitlesOn) { box.innerHTML=""; return; }
+            const t = v.currentTime;
+            if (words.length) {
+              let idx = words.findIndex(w=>t>=Number(w.start)-.06 && t<=Number(w.end)+.10);
+              if (idx < 0) {
+                idx = words.findIndex(w=>t<Number(w.start));
+                if (idx < 0) idx=words.length-1; else if (idx>0) idx-=1;
+              }
+              const base=Math.floor(idx/4)*4, group=words.slice(base,base+4);
+              const active=d.activeColor || "#FFD400";
+              box.innerHTML=group.map((w,j)=>j===idx-base
+                ? `<span class="active" style="color:${active}">${esc(w.text)}</span>`
+                : esc(w.text)).join(" ");
+            } else {
+              box.textContent=fallback || "ANTEPRIMA SOTTOTITOLI";
+            }
+          }
+
+          // Bind listeners only once. They read latest config from element properties/data on each V2 render.
+          if (!v.dataset.gsfBound) {
+            v.dataset.gsfBound="1";
+            v.addEventListener("timeupdate", () => {
+              const latest = v._gsfRenderSubs;
+              if (latest) latest();
+              const end = Number(v._gsfClipEnd ?? 0);
+              const start = Number(v._gsfClipStart ?? 0);
+              if (end > start && v.currentTime >= end) {
+                v.pause();
+                try { v.currentTime = start; } catch(e) {}
+                if (latest) latest();
+              }
+            });
+            v.addEventListener("seeked", () => v._gsfRenderSubs && v._gsfRenderSubs());
+            v.addEventListener("play", () => {
+              const start = Number(v._gsfClipStart ?? 0), end=Number(v._gsfClipEnd ?? 0);
+              if (end>start && (v.currentTime < start || v.currentTime >= end)) seekTo(start);
+            });
+          }
+          v._gsfClipStart=clipStart;
+          v._gsfClipEnd=clipEnd;
+          v._gsfRenderSubs=renderSubs;
+          renderSubs();
+        }
+        """
+    )
+
+
+
+def _gsf_reset_main_tools():
+    defaults={
+        "editor_zoom":1.0,"editor_x":0,"editor_y":0,"editor_volume":100,
+        "editor_brightness":0.0,"editor_contrast":1.0,"editor_speed":1.0
+    }
+    for k,v in defaults.items(): st.session_state[k]=v
+
+def _gsf_reset_main_subtitles():
+    defaults={
+        "subtitle_font":"Arial","editor_sub_font_v18":"Arial",
+        "editor_sub_size":92,"editor_sub_size_v18":92,
+        "subtitle_text_color":"#FFFFFF","subtitle_text_color_v18":"#FFFFFF",
+        "subtitle_active_color":"#FFD400","subtitle_active_color_v18":"#FFD400",
+        "subtitle_outline_color":"#000000","subtitle_outline_color_v18":"#000000",
+        "subtitle_x":50,"subtitle_x_v18":50,"subtitle_y":78,"subtitle_y_v18":78
+    }
+    for k,v in defaults.items(): st.session_state[k]=v
+
+def _gsf_reset_inline_tools(i, fmt_key, zoom_key, x_key, y_key, vol_key, bri_key, con_key, spd_key):
+    for k,v in {
+        zoom_key:1.0,x_key:0,y_key:0,vol_key:100,bri_key:0.0,con_key:1.0,spd_key:1.0
+    }.items(): st.session_state[k]=v
+
+def _gsf_reset_inline_subtitles(i):
+    defaults={
+        f"inline_font_{i}":"Arial",f"inline_font_widget_v18_{i}":"Arial",
+        f"inline_subsize_{i}":92,f"inline_subsize_widget_v18_{i}":92,
+        f"inline_txtcol_v18_{i}":"#FFFFFF",f"inline_actcol_v18_{i}":"#FFD400",
+        f"inline_outcol_v18_{i}":"#000000",
+        f"inline_subx_{i}":50,f"inline_subx_widget_v18_{i}":50,
+        f"inline_suby_{i}":78,f"inline_suby_widget_v18_{i}":78
+    }
+    for k,v in defaults.items(): st.session_state[k]=v
+
+def _gsf_reset_main_all():
+    # Strumenti / immagine / audio
+    _gsf_reset_main_tools()
+    _gsf_reset_main_subtitles()
+
+    # Timeline: torna ai limiti originali conosciuti della clip/video.
+    if "editor_original_start" in st.session_state:
+        st.session_state["editor_start"]=st.session_state["editor_original_start"]
+    if "editor_original_end" in st.session_state:
+        st.session_state["editor_end"]=st.session_state["editor_original_end"]
+
+    # Sottotitoli / trascrizione: reset completo.
+    for k in [
+        "editor_sub_words","editor_sub_live_words","editor_sub_text",
+        "editor_sub_applied_text","editor_sub_text_area_v18",
+        "editor_sub_seek","editor_sub_seek_feedback","editor_sub_seek_nonce",
+        "editor_time_nav_v22"
+    ]:
+        st.session_state.pop(k,None)
+
+    # Torna alla modalità sottotitoli iniziale se il relativo widget esiste.
+    for k in ["editor_sub_mode","editor_sub_mode_v18"]:
+        st.session_state.pop(k,None)
+
+    # Evento di reset per il componente persistente.
+    st.session_state["editor_reset_id"]=int(st.session_state.get("editor_reset_id",0))+1
+
+def _gsf_reset_inline_all(i, fmt_key, zoom_key, x_key, y_key, vol_key, bri_key, con_key, spd_key):
+    _gsf_reset_inline_tools(i,fmt_key,zoom_key,x_key,y_key,vol_key,bri_key,con_key,spd_key)
+    _gsf_reset_inline_subtitles(i)
+
+    # Rimuove ogni modifica della trascrizione e del seek della clip AI.
+    prefixes=[
+        f"inline_trans_words_{i}",f"inline_trans_live_{i}",f"inline_trans_text_{i}",
+        f"inline_applied_text_{i}",f"inline_seek_{i}",f"inline_seek_feedback_{i}",
+        f"inline_seek_nonce_{i}",f"inline_time_nav_v22_{i}"
+    ]
+    for k in prefixes:
+        st.session_state.pop(k,None)
+
+    st.session_state[f"inline_reset_id_{i}"]=int(st.session_state.get(f"inline_reset_id_{i}",0))+1
+
+def render_gsf_editor_live_player(
+    source_path, key, start_seconds, fmt, zoom, x_pos, y_pos,
+    volume, brightness, contrast, speed,
+    subtitles_on=False, subtitle_style="Gaming",
+    subtitle_size=92, subtitle_position=330,
+    subtitle_words=None, subtitle_text="",
+    subtitle_font="Arial", subtitle_x=50, subtitle_y=78,
+    end_seconds=None, seek_target=None, seek_nonce=0, reset_id=0, clip_start_override=None,
+    text_color=None, active_color=None, outline_color=None
+):
+    """Persistent V2 live preview. Falls back to the legacy iframe on older Streamlit."""
+    source_path=Path(source_path)
+    if not source_path.exists():
+        st.warning("Anteprima scena non disponibile.")
+        return
+    if _GSF_LIVE_V2 is None:
+        st.warning("Per il player LIVE persistente serve una versione recente di Streamlit con Components V2.")
+        return _render_gsf_editor_live_player_legacy(
+            source_path,key,start_seconds,fmt,zoom,x_pos,y_pos,volume,brightness,contrast,speed,
+            subtitles_on,subtitle_style,subtitle_size,subtitle_position,subtitle_words,subtitle_text,
+            subtitle_font,subtitle_x,subtitle_y
+        )
+
+    served_name,_=_gsf_serve_path(source_path,"persistent_"+str(Path(source_path).name))
+    url=f"http://127.0.0.1:{GSF_PREVIEW_PORT}/{quote(served_name)}"
+    vertical=(fmt=="9:16 Short")
+    frame_h=391 if vertical else 270
+    live_font=max(13,min(48,float(subtitle_size)*(frame_h/1920.0)*1.25))
+    words=[]
+    for w in (subtitle_words or []):
+        try:
+            words.append({"text":str(w.get("text","")),"start":float(w.get("start",0)),"end":float(w.get("end",0))})
+        except Exception:
+            pass
+
+    tc=text_color or st.session_state.get("subtitle_text_color_v18",st.session_state.get("subtitle_text_color","#FFFFFF"))
+    ac=active_color or st.session_state.get("subtitle_active_color_v18",st.session_state.get("subtitle_active_color","#FFD400"))
+    oc=outline_color or st.session_state.get("subtitle_outline_color_v18",st.session_state.get("subtitle_outline_color","#000000"))
+    clip_start=float(clip_start_override if clip_start_override is not None else start_seconds)
+    end=float(end_seconds if end_seconds is not None else max(clip_start+.1,clip_start+30))
+    seek=float(seek_target if seek_target is not None else clip_start)
+
+    _GSF_LIVE_V2(
+        key=key,
+        data={
+            "url":url,
+            "format":fmt,
+            "zoom":float(zoom),"x":float(x_pos),"y":float(y_pos),
+            "volume":float(volume),"brightness":float(brightness),"contrast":float(contrast),"speed":float(speed),
+            "clipStart":clip_start,"clipEnd":end,
+            "seekTarget":seek,"seekNonce":str(seek_nonce),"resetId":str(reset_id),
+            "subtitlesOn":bool(subtitles_on),
+            "words":words,"subtitleText":str(subtitle_text or ""),
+            "font":str(subtitle_font or "Arial"),"liveFont":live_font,
+            "subtitleX":float(subtitle_x),"subtitleY":float(subtitle_y),
+            "textColor":tc,"activeColor":ac,"outlineColor":oc,
+        },
+    )
+
+def _render_gsf_editor_live_player_legacy(
+    source_path, key, start_seconds, fmt, zoom, x_pos, y_pos,
+    volume, brightness, contrast, speed,
+    subtitles_on=False, subtitle_style="Gaming",
+    subtitle_size=92, subtitle_position=330,
+    subtitle_words=None, subtitle_text="",
+    subtitle_font="Arial", subtitle_x=50, subtitle_y=78
+):
+    """Live editor preview in browser, including live subtitle overlay."""
+    source_path=Path(source_path)
+    if not source_path.exists():
+        st.warning("Anteprima scena non disponibile."); return
+    pw,ph,rotation,err=_gsf_probe_display_size(source_path)
+    if err:
+        st.warning(f"Anteprima scena non leggibile: {err}"); return
+
+    served_name,_=_gsf_serve_path(source_path,key)
+    url=f"http://127.0.0.1:{GSF_PREVIEW_PORT}/{quote(served_name)}"
+    start_seconds=max(0.0,float(start_seconds))
+    vertical=(fmt=="9:16 Short")
+    frame_w,frame_h,iframe_h=((220,391,424) if vertical else (480,270,309))
+    zoom=float(zoom); x_pos=float(x_pos); y_pos=float(y_pos)
+    vol=max(0.0,min(1.0,float(volume)/100.0))
+    bri=max(0.0,1.0+float(brightness))
+    con=max(0.0,float(contrast)); speed=float(speed)
+    tx=x_pos*0.35; ty=y_pos*0.35
+
+    # Sottotitoli: niente preset. Aspetto controllato direttamente da font/colori/dimensione.
+    ps=dict(
+        color=st.session_state.get("subtitle_text_color","#FFFFFF"),
+        active=st.session_state.get("subtitle_active_color","#FFD400"),
+        weight=800,
+        shadow=f"-2px -2px 0 {st.session_state.get('subtitle_outline_color','#000000')},2px -2px 0 {st.session_state.get('subtitle_outline_color','#000000')},-2px 2px 0 {st.session_state.get('subtitle_outline_color','#000000')},2px 2px 0 {st.session_state.get('subtitle_outline_color','#000000')},0 3px 7px rgba(0,0,0,.55)",
+        transform="none", bg="transparent", radius=0, pad="2px 4px",
+        family=f'"{subtitle_font}", Arial, sans-serif', scale=1.0, spacing="0px"
+    )
+    sx=max(5.0,min(95.0,float(subtitle_x)))
+    sy=max(5.0,min(95.0,float(subtitle_y)))
+    # Scale ASS-like 1080x1920 values to the small live viewport.
+    live_font=max(13,min(48,float(subtitle_size)*(frame_h/1920.0)*1.25*float(ps.get("scale",1.0))))
+    words=subtitle_words or []
+    # Normalize subtitle timestamps to the player's source timeline.
+    # Whisper returns source-absolute timestamps; this also accepts already-relative words.
+    normalized_words=[]
+    for _w in words:
+        try:
+            _ws=float(_w.get("start",0.0)); _we=float(_w.get("end",_ws))
+            normalized_words.append({"text":str(_w.get("text","")), "start":_ws, "end":_we})
+        except Exception:
+            pass
+    words_json=json.dumps(normalized_words,ensure_ascii=False)
+    fallback_json=json.dumps(str(subtitle_text or ""),ensure_ascii=False)
+
+    html=f"""
+    <!doctype html><html><head><meta charset="utf-8"><style>
+    html,body{{margin:0;padding:0;background:transparent;overflow:hidden}}
+    .stage{{width:100%;display:flex;justify-content:center}}
+    .viewport{{position:relative;width:{frame_w}px;height:{frame_h}px;max-width:96vw;
+      overflow:hidden;border-radius:18px;background:#000;box-shadow:0 14px 34px rgba(16,40,61,.14)}}
+    video{{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+      transform-origin:center;transform:translate({tx}%, {ty}%) scale({zoom});
+      filter:brightness({bri}) contrast({con})}}
+    .badge{{position:absolute;z-index:4;left:10px;top:10px;padding:5px 9px;border-radius:999px;
+      background:rgba(0,0,0,.62);color:#fff;font:600 12px Arial;pointer-events:none}}
+    #subs{{display:{'block' if subtitles_on else 'none'};position:absolute;z-index:5;
+      left:{sx}%;top:{sy}%;width:88%;text-align:center;color:{ps['color']};
+      transform:translate(-50%,-50%);
+      font-family:{ps['family']};font-size:{live_font}px;font-weight:{ps['weight']};
+      letter-spacing:{ps['spacing']};line-height:1.05;text-shadow:{ps['shadow']};text-transform:{ps['transform']};
+      background:{ps['bg']};padding:{ps['pad']};border-radius:{ps['radius']}px;pointer-events:none}}
+    #subs .active{{color:{ps['active']};display:inline-block;transform:scale(1.10)}}
+    #subs{{transition:all .12s ease}}
+    </style></head><body><div class="stage"><div class="viewport">
+    <div class="badge">LIVE · {fmt}</div>
+    <video id="v" controls preload="metadata" playsinline><source src="{url}"></video>
+    <div id="subs"></div>
+    </div></div><script>
+    const v=document.getElementById("v"), box=document.getElementById("subs");
+    const startAt={start_seconds:.3f}, words={words_json}, fallback={fallback_json}, style={json.dumps(subtitle_style)};
+    function apply(){{v.volume={vol:.4f};v.playbackRate={speed:.4f};}}
+    function esc(s){{return String(s).replace(/[&<>"']/g,m=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}}[m]));}}
+    function renderSubs(){{
+      if(!{str(bool(subtitles_on)).lower()}) return;
+      const t=v.currentTime;
+      if(words.length){{
+        let idx=words.findIndex(w=>t>=Number(w.start)-0.06 && t<=Number(w.end)+0.10);
+        if(idx<0){{
+          // Between two Whisper words keep the nearest group visible instead of making subtitles disappear.
+          idx=words.findIndex(w=>t<Number(w.start));
+          if(idx<0) idx=words.length-1;
+          else if(idx>0) idx-=1;
+        }}
+        const groupSize = 4;
+         const base=Math.floor(idx/groupSize)*groupSize, group=words.slice(base,base+groupSize);
+        box.innerHTML=group.map((w,j)=>j===idx-base?`<span class="active">${{esc(w.text)}}</span>`:esc(w.text)).join(" ");
+      }} else {{
+        box.textContent=fallback || "ANTEPRIMA SOTTOTITOLI";
+      }}
+    }}
+    v.addEventListener("loadedmetadata",()=>{{
+      apply();
+      if(Number.isFinite(startAt) && startAt>=0 && Math.abs(v.currentTime-startAt)>.20){{
+        try{{v.currentTime=Math.min(startAt,Math.max(0,v.duration-.03));}}catch(e){{}}
+      }}
+      renderSubs();
+    }});
+    v.addEventListener("timeupdate",renderSubs);
+    v.addEventListener("seeked",renderSubs);
+    v.addEventListener("play",renderSubs);
+    v.addEventListener("pause",renderSubs);
+    apply(); renderSubs();
+    </script></body></html>"""
+    components.html(html,height=iframe_h,scrolling=False)
+
+
+def _gsf_clean_transcript_words(words):
+    """Light cleanup while preserving original word timestamps."""
+    import re
+    out=[]; prev_norm=""
+    for w in words:
+        t=re.sub(r"\s+"," ",str(w.get("text","")).strip())
+        t=re.sub(r"\s+([,.;:!?])",r"\1",t)
+        if not t: continue
+        norm=re.sub(r"[^\wÀ-ÿ']+","",t.lower())
+        if out and norm and norm==prev_norm and float(w.get("start",0))-float(out[-1]["end"]) < .18:
+            out[-1]["end"]=max(float(out[-1]["end"]),float(w.get("end",out[-1]["end"])))
+            continue
+        out.append({"text":t,"start":float(w["start"]),"end":float(w["end"])})
+        prev_norm=norm
+    return out
+
+def _gsf_subtitle_groups(words, max_words=5, max_seconds=2.8, pause_break=.55):
+    """Build natural subtitle/navigation groups without changing timings."""
+    groups=[]; cur=[]
+    for w in words:
+        if cur:
+            pause=float(w["start"])-float(cur[-1]["end"])
+            dur=float(w["end"])-float(cur[0]["start"])
+            punct=str(cur[-1]["text"]).rstrip().endswith((".", "!", "?", ",", ";", ":"))
+            if len(cur)>=max_words or pause>=pause_break or dur>=max_seconds or punct:
+                groups.append(cur); cur=[]
+        cur.append(w)
+    if cur: groups.append(cur)
+    return groups
+
+@st.cache_data(show_spinner=False)
+def _gsf_transcribe_editor_scene(source_path, start_seconds, duration_seconds):
+    """Transcribe only selected editor scene; returns word timestamps on source timeline."""
+    if not FFMPEG_PATH:
+        return [], "FFmpeg non disponibile"
+    temp_dir=os.path.join(tempfile.gettempdir(),"gsf_editor_subs")
+    os.makedirs(temp_dir,exist_ok=True)
+    token=hashlib.md5(f"{source_path}|{start_seconds:.2f}|{duration_seconds:.2f}".encode()).hexdigest()[:12]
+    wav=os.path.join(temp_dir,f"{token}.wav")
+    cmd=[FFMPEG_PATH,"-y","-ss",str(float(start_seconds)),"-i",str(source_path),
+         "-t",str(float(duration_seconds)),"-vn","-ac","1","-ar","16000",wav]
+    run=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    if run.returncode!=0 or not os.path.exists(wav):
+        return [], "Estrazione audio non riuscita"
+    try:
+        model=WhisperModel("tiny",device="cpu",compute_type="int8")
+        segs,info=model.transcribe(
+            wav,language=None,vad_filter=True,beam_size=3,best_of=3,
+            word_timestamps=True,condition_on_previous_text=True,
+            vad_parameters=dict(min_silence_duration_ms=350)
+        )
+        result=[]
+        for seg in list(segs):
+            for w in (getattr(seg,"words",None) or []):
+                t=str(w.word).strip()
+                if t:
+                    result.append({"text":t,"start":float(start_seconds)+float(w.start),"end":float(start_seconds)+float(w.end)})
+        return _gsf_clean_transcript_words(result), None
+    except Exception as e:
+        return [], str(e)
+
+
+def _gsf_atempo_chain(speed):
+    """FFmpeg atempo chain valid for the editor speed range."""
+    speed=float(speed)
+    parts=[]
+    while speed > 2.0:
+        parts.append("atempo=2.0"); speed/=2.0
+    while speed < 0.5:
+        parts.append("atempo=0.5"); speed/=0.5
+    parts.append(f"atempo={speed:.4f}")
+    return ",".join(parts)
+
+def _gsf_editor_filters(fmt, zoom, x_pos, y_pos, brightness, contrast, speed, preview=False):
+    """One source of truth for quick preview and final editor render."""
+    zoom=float(zoom); x_pos=float(x_pos); y_pos=float(y_pos)
+    brightness=float(brightness); contrast=float(contrast); speed=float(speed)
+
+    if fmt == "9:16 Short":
+        out_w,out_h=(540,960) if preview else (1080,1920)
+        # First cover the vertical canvas, then zoom and pan inside it.
+        vf=(
+            f"scale={out_w}:{out_h}:force_original_aspect_ratio=increase,"
+            f"crop={out_w}:{out_h},"
+            f"scale=iw*{zoom}:ih*{zoom},"
+            f"crop={out_w}:{out_h}:"
+            f"(iw-{out_w})/2+({x_pos}/100)*(iw-{out_w})/2:"
+            f"(ih-{out_h})/2+({y_pos}/100)*(ih-{out_h})/2,"
+            f"eq=brightness={brightness}:contrast={contrast},"
+            f"setpts=PTS/{speed}"
+        )
+    else:
+        # Same geometry for preview/final; preview only lowers output resolution.
+        base_h=540 if preview else 1080
+        vf=(
+            f"scale=-2:{base_h},"
+            f"scale=iw*{zoom}:ih*{zoom},"
+            f"crop=iw/{zoom}:ih/{zoom}:"
+            f"(iw-iw/{zoom})/2+({x_pos}/100)*(iw-iw/{zoom})/2:"
+            f"(ih-ih/{zoom})/2+({y_pos}/100)*(ih-ih/{zoom})/2,"
+            f"scale=-2:{base_h},"
+            f"eq=brightness={brightness}:contrast={contrast},"
+            f"setpts=PTS/{speed}"
+        )
+
+    af=f"volume={float(st.session_state.get('editor_volume',100))/100.0}," + _gsf_atempo_chain(speed)
+    return vf,af
+
+
+if video:
+
+    # Player pulito: solo il lettore nativo, senza etichette o controlli aggiuntivi.
+    st.markdown(
+        '<div class="gsf-command">✨ <b>Cosa vuoi fare con questo gameplay?</b> '
+        'Puoi lasciare scegliere tutto all’AI oppure controllare la scena manualmente.</div>',
+        unsafe_allow_html=True
+    )
+
+    # Player sorgente compatto, stile YouTube: riduce solo la UI,
+    # non modifica risoluzione o qualità del video.
+    # PLAYER PRINCIPALE: dimensione separata per formato.
+    # Lettore 1 (9:16) resta com'è; Lettore 2 (16:9) diventa molto più grande.
+    try:
+        _main_probe_dir = tempfile.mkdtemp(prefix="gsf_main_ratio_")
+        _main_probe_path = os.path.join(_main_probe_dir, "main_ratio.mp4")
+        with open(_main_probe_path, "wb") as _mf:
+            _mf.write(video.getvalue())
+
+        _main_probe_cmd = [
+            FFPROBE_PATH, "-v", "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=width,height",
+            "-of", "csv=p=0:s=x",
+            _main_probe_path
+        ]
+        _main_probe = subprocess.run(
+            _main_probe_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        _mw, _mh = [int(x) for x in _main_probe.stdout.strip().split("x")[:2]]
+    except Exception:
+        _mw, _mh = 16, 9
+
+    # PLAYER HTML5 ADATTIVO DEFINITIVO
+    st.markdown("### 🎬 Anteprima video")
+
+    _safe_name = Path(getattr(video, "name", "preview.mp4")).name
+    _preview_path = GSF_PREVIEW_DIR / _safe_name
+    _uploaded_size = getattr(video, "size", None)
+    _must_write = (not _preview_path.exists()) or (
+        _uploaded_size is not None and _preview_path.exists()
+        and _preview_path.stat().st_size != _uploaded_size
+    )
+    if _must_write:
+        with st.spinner("Preparo l'anteprima locale..."):
+            with open(_preview_path, "wb") as _f:
+                video.seek(0)
+                while True:
+                    _chunk=video.read(4*1024*1024)
+                    if not _chunk: break
+                    _f.write(_chunk)
+                video.seek(0)
+
+    _pw,_ph,_rotation,_probe_error=_gsf_probe_display_size(_preview_path)
+    if _probe_error:
+        st.error(f"⚠️ Impossibile leggere il formato video: {_probe_error}")
+    else:
+        _vertical=_ph>_pw
+        if _vertical:
+            _profile="PLAYER 9:16"; _target_width=300; _max_vw="300px"; _cap=680
+        else:
+            _profile="PLAYER 16:9"; _target_width=800; _max_vw="800px"; _cap=540
+
+        _target_height=round(_target_width*_ph/_pw)
+        _video_url=f"http://127.0.0.1:{GSF_PREVIEW_PORT}/{quote(_safe_name)}"
+
+        _html=f"""
+        <!doctype html><html><head><meta charset="utf-8"><style>
+        html,body{{margin:0;padding:0;background:transparent;overflow:hidden}}
+        .wrap{{width:100%;display:flex;justify-content:center;align-items:flex-start}}
+        video{{display:block;width:{_target_width}px;max-width:{_max_vw};height:auto;
+        object-fit:contain;border-radius:18px;background:#000;
+        box-shadow:0 14px 34px rgba(16,40,61,.14)}}
+        </style></head><body><div class="wrap">
+        <video controls preload="metadata" playsinline><source src="{_video_url}"></video>
+        </div></body></html>
+        """
+        components.html(_html,height=min(_target_height+30,_cap),scrolling=False)
+
+    st.divider()
+    st.markdown('<div class="gsf-section-title">Come vuoi creare?</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="gsf-section-sub">Lascia fare all’AI oppure scegli tu la scena.</div>',
+        unsafe_allow_html=True
+    )
+    modalita = st.radio(
+        "Modalità",
+        ["🚀 AUTO TOTALE", "🎬 AI Director", "🧠 Smart Clip", "🤖 Auto Clip", "✋ Manuale"],
+        horizontal=True,
+        label_visibility="collapsed",
+        key="modalita_gsf",
+        format_func=lambda x: {
+            "🚀 AUTO TOTALE": "✨ Automatico",
+            "🎬 AI Director": "🎬 Momento migliore",
+            "🧠 Smart Clip": "🔥 Più azione",
+            "🤖 Auto Clip": "🎙️ Reazioni",
+            "✋ Manuale": "🎯 Scegli scena"
+        }.get(x, x)
+    )
+
+    # Spiegazione compatta del motore selezionato, vicino a Durata.
+    _engine_help = {
+        "🚀 AUTO TOTALE": "☁️ Automatico: analizza tutto il gameplay combinando azione, movimento, audio, voce/reazioni, cambi di scena e parti morte. Alla fine propone i 3 momenti con il punteggio complessivo migliore.",
+        "🎬 AI Director": "☁️ Momento migliore: cerca i picchi più interessanti e completi bilanciando evento, ritmo e audio. Alla fine propone i 3 momenti migliori secondo questo criterio.",
+        "🧠 Smart Clip": "☁️ Più azione: privilegia movimento, combattimenti, cambi rapidi, eventi intensi e picchi visivi, penalizzando attese e parti statiche. Alla fine propone le 3 scene con più azione.",
+        "🤖 Auto Clip": "☁️ Reazioni: privilegia voce, urla, risate, esclamazioni e picchi audio collegandoli al gameplay. Alla fine propone i 3 momenti con le reazioni più interessanti.",
+        "✋ Manuale": "☁️ Scegli scena: qui l’AI non crea 3 proposte. Selezioni tu IN/OUT e lavori direttamente sulla scena nel player LIVE."
+    }
+    st.caption(_engine_help.get(modalita, ""))
+
+    # Prima dell'analisi scegliamo solo la durata. I sottotitoli si decidono DOPO aver scelto una clip.
+    preset_durata = st.selectbox(
+        "⏱️ Durata",
+        ["15s", "30s"],
+        index=0,
+        help="Durata target di ciascuna delle 3 proposte create dall’AI."
+    )
+    duration = float(preset_durata.replace("s", ""))
+
+
+    # Collegamento reale Scegli scena -> Editor.
+    st.session_state["apri_editor_manuale"] = (modalita == "✋ Manuale")
+
+
+    # ==========================================================
+    # MINI VIDEO EDITOR — prima versione
+    # ==========================================================
+    if modalita == "✋ Manuale":
+        # Salva una copia temporanea dell'upload per leggere durata e fare preview/export.
+        _editor_from_ai = (st.session_state.get("current_view") == "editor" and
+                           st.session_state.get("editor_source") == "ai")
+        editor_key = f"{video.name}_{video.size}"
+        if _editor_from_ai and st.session_state.get("editor_input") and os.path.exists(st.session_state.get("editor_input","")):
+            # La clip AI è già stata materializzata: usa quella, non sovrascriverla con l'upload originale.
+            editor_input = st.session_state["editor_input"]
+            editor_dir = st.session_state["editor_dir"]
+        else:
+            if st.session_state.get("editor_key") != editor_key:
+                editor_dir = tempfile.mkdtemp(prefix="gsf_editor_")
+                editor_input = os.path.join(editor_dir, "editor_input.mp4")
+                with open(editor_input, "wb") as ef:
+                    ef.write(video.getvalue())
+                st.session_state["editor_key"] = editor_key
+                st.session_state["editor_dir"] = editor_dir
+                st.session_state["editor_input"] = editor_input
+                st.session_state.pop("editor_output", None)
+                st.session_state.pop("editor_output_bytes", None)
+                st.session_state.pop("editor_output_name", None)
+                st.session_state.pop("editor_quick_bytes", None)
+                st.session_state.pop("editor_quick_path", None)
+                st.session_state.pop("editor_quick_signature", None)
+            editor_input = st.session_state["editor_input"]
+            editor_dir = st.session_state["editor_dir"]
+        editor_duration = durata_video(editor_input) or 30.0
+
+
+        # ===== EDITOR STUDIO: timeline + player + tools in one compact workspace =====
+        st.markdown("#### ✂️ Editor")
+        ai_edit_start = float(st.session_state.get("editor_ai_start", 0.0))
+        ai_edit_duration = float(
+            st.session_state.get("editor_ai_duration", min(editor_duration, 15.0))
+        )
+        trim_default = (
+            max(0.0, min(ai_edit_start, editor_duration)),
+            max(0.5, min(ai_edit_start + ai_edit_duration, editor_duration))
+        )
+        if trim_default[1] <= trim_default[0]:
+            trim_default = (0.0, float(min(editor_duration, 15.0)))
+
+        editor_trim_key = "editor_trim_" + str(
+            st.session_state.get("editor_ai_token", "manual")
+        )
+        st.caption("✂️ Timeline · trascina IN/OUT per selezionare la scena")
+        trim_range = st.slider(
+            "Inizio / fine",
+            min_value=0.0,
+            max_value=float(max(1.0, editor_duration)),
+            value=trim_default,
+            step=0.5,
+            key=editor_trim_key,
+            label_visibility="collapsed"
+        )
+        editor_start, editor_end = trim_range
+        editor_len = max(0.5, editor_end - editor_start)
+
+        info1, info2, info3 = st.columns(3)
+        info1.caption(f"IN · **{editor_start:.1f}s**")
+        info2.caption(f"OUT · **{editor_end:.1f}s**")
+        info3.caption(f"DURATA · **{editor_len:.1f}s**")
+
+        if editor_len > 30:
+            st.warning("☁️ Per uno Short più rapido prova a restare entro 30 secondi.")
+
+        # ===== EDITOR V13: PLAYER UNICO + CONTROLLI LATERALI PULITI =====
+        if "editor_speed" not in st.session_state: st.session_state["editor_speed"]=1.0
+        if "editor_brightness" not in st.session_state: st.session_state["editor_brightness"]=0.0
+        if "editor_contrast" not in st.session_state: st.session_state["editor_contrast"]=1.0
+        if "editor_sub_size" not in st.session_state: st.session_state["editor_sub_size"]=92
+        if "editor_sub_text" not in st.session_state: st.session_state["editor_sub_text"]=""
+        if "subtitle_x" not in st.session_state: st.session_state["subtitle_x"]=50
+        if "subtitle_y" not in st.session_state: st.session_state["subtitle_y"]=78
+        if "subtitle_text_color" not in st.session_state: st.session_state["subtitle_text_color"]="#FFFFFF"
+        if "subtitle_active_color" not in st.session_state: st.session_state["subtitle_active_color"]="#FFD400"
+        if "subtitle_outline_color" not in st.session_state: st.session_state["subtitle_outline_color"]="#000000"
+        if "project_subtitles_enabled" not in st.session_state: st.session_state["project_subtitles_enabled"]=True
+
+        editor_format=st.session_state.get("editor_format","9:16 Short")
+        editor_zoom=float(st.session_state.get("editor_zoom",1.0))
+        editor_x=int(st.session_state.get("editor_x",0))
+        editor_y=int(st.session_state.get("editor_y",0))
+        editor_volume=int(st.session_state.get("editor_volume",100))
+        editor_speed=float(st.session_state.get("editor_speed",1.0))
+        editor_brightness=float(st.session_state.get("editor_brightness",0.0))
+        editor_contrast=float(st.session_state.get("editor_contrast",1.0))
+
+        # Conserva i limiti originali una sola volta per RESET TUTTO.
+        st.session_state.setdefault("editor_original_start",editor_start)
+        st.session_state.setdefault("editor_original_end",editor_end)
+
+        # V25: leggi subito i valori dei widget già aggiornati dal rerun, prima del player.
+        if "editor_sub_font_v18" in st.session_state:
+            st.session_state["subtitle_font"]=st.session_state["editor_sub_font_v18"]
+        if "editor_sub_size_v18" in st.session_state:
+            st.session_state["editor_sub_size"]=st.session_state["editor_sub_size_v18"]
+        if "subtitle_text_color_v18" in st.session_state:
+            st.session_state["subtitle_text_color"]=st.session_state["subtitle_text_color_v18"]
+        if "subtitle_active_color_v18" in st.session_state:
+            st.session_state["subtitle_active_color"]=st.session_state["subtitle_active_color_v18"]
+        if "subtitle_outline_color_v18" in st.session_state:
+            st.session_state["subtitle_outline_color"]=st.session_state["subtitle_outline_color_v18"]
+        if "subtitle_x_v18" in st.session_state:
+            st.session_state["subtitle_x"]=st.session_state["subtitle_x_v18"]
+        if "subtitle_y_v18" in st.session_state:
+            st.session_state["subtitle_y"]=st.session_state["subtitle_y_v18"]
+
+        # V18: UN SOLO PLAYER a sinistra, workspace compatto a destra.
+        studio_player, studio_side = st.columns([.22,.78],gap="medium")
+
+        # Trascrizione persistente per sorgente: i controlli grafici non la resettano.
+        scene_token=f"{editor_input}"
+        if st.session_state.get("editor_sub_scene_token") != scene_token:
+            st.session_state["editor_sub_words"]=[]
+            st.session_state["editor_sub_live_words"]=[]
+            st.session_state["editor_sub_text"]=""
+            st.session_state["editor_sub_scene_token"]=scene_token
+
+        with studio_player:
+            render_gsf_editor_live_player(
+                editor_input,
+                "editor_master_live_v32",
+                editor_start,
+                editor_format,editor_zoom,editor_x,editor_y,editor_volume,
+                editor_brightness,editor_contrast,editor_speed,
+                subtitles_on=(st.session_state.get("editor_sub_mode","Automatici")!="Nessuno"),
+                subtitle_style="Base",
+                subtitle_size=st.session_state.get("editor_sub_size_v18",st.session_state.get("editor_sub_size",92)),
+                subtitle_position=330,
+                subtitle_words=st.session_state.get("editor_sub_live_words",st.session_state.get("editor_sub_words",[])),
+                subtitle_text=(st.session_state.get("editor_sub_text","") or
+                               ("Anteprima sottotitoli" if st.session_state.get("editor_sub_mode","Automatici")!="Nessuno" else "")),
+                subtitle_font=st.session_state.get("editor_sub_font_v18",st.session_state.get("subtitle_font","Arial")),
+                subtitle_x=st.session_state.get("subtitle_x_v18",st.session_state.get("subtitle_x",50)),
+                subtitle_y=st.session_state.get("subtitle_y_v18",st.session_state.get("subtitle_y",78)),
+                end_seconds=editor_end,
+                seek_target=st.session_state.get("editor_sub_seek",editor_start),
+                seek_nonce=st.session_state.get("editor_sub_seek_nonce",0),
+                text_color=st.session_state.get("subtitle_text_color_v18","#FFFFFF"),
+                active_color=st.session_state.get("subtitle_active_color_v18","#FFD400"),
+                outline_color=st.session_state.get("subtitle_outline_color_v18","#000000"),
+                reset_id=st.session_state.get("editor_reset_id",0),
+                clip_start_override=editor_start
+            )
+
+        with studio_side:
+            _th,_tr=st.columns([.78,.22],gap="small")
+            with _th:
+                st.markdown("##### 🛠️ Strumenti",help="Regola formato, inquadratura, audio e immagine. Le modifiche sono mostrate nel player LIVE.")
+            with _tr:
+                st.button(
+                    "↶ RESET TUTTO",use_container_width=True,key="reset_main_all_v29",
+                    on_click=_gsf_reset_main_all
+                )
+            _fmtc,_inqc,_regc=st.columns([.30,.35,.35],gap="small")
+            with _fmtc:
+                editor_format=st.segmented_control(
+                    "Formato",["9:16 Short","16:9 Originale"],key="editor_format"
+                )
+            with _inqc:
+                with st.popover("🎯 INQUADRATURA",use_container_width=True):
+                    editor_zoom=st.slider("Zoom",1.0,2.0,float(st.session_state.get("editor_zoom",1.0)),.05,key="editor_zoom")
+                    editor_x=st.slider("↔ X",-100,100,int(st.session_state.get("editor_x",0)),5,key="editor_x")
+                    editor_y=st.slider("↕ Y",-100,100,int(st.session_state.get("editor_y",0)),5,key="editor_y")
+            with _regc:
+                with st.popover("🎚️ REGOLAZIONI",use_container_width=True):
+                    editor_extra_tool=st.selectbox("Parametro",["Volume","Velocità","Luminosità","Contrasto"],key="editor_extra_tool")
+                    if editor_extra_tool=="Volume":
+                        editor_volume=st.slider("Volume",0,200,int(st.session_state.get("editor_volume",100)),5,key="editor_volume")
+                    elif editor_extra_tool=="Velocità":
+                        editor_speed=st.select_slider("Velocità",options=[.5,.75,1.0,1.25,1.5,2.0],value=float(st.session_state.get("editor_speed",1.0)),key="editor_speed")
+                    elif editor_extra_tool=="Luminosità":
+                        editor_brightness=st.slider("Luminosità",-.30,.30,float(st.session_state.get("editor_brightness",0.0)),.05,key="editor_brightness")
+                    else:
+                        editor_contrast=st.slider("Contrasto",.70,1.50,float(st.session_state.get("editor_contrast",1.0)),.05,key="editor_contrast")
+
+            st.markdown("##### 📝 Sottotitoli",help="Automatici: fa tutto l'AI. Manuali: trascrive la scena e permette di correggere testo e aspetto. Nessuno: video pulito.")
+            _modes=["Nessuno","Automatici","Manuali"]
+            _cur=st.session_state.get("editor_sub_mode","Automatici")
+            if _cur not in _modes: _cur="Automatici"
+            editor_sub_mode=st.segmented_control(
+                "Modalità sottotitoli",_modes,default=_cur,key="editor_sub_mode_v18",
+                label_visibility="collapsed"
+            )
+            st.session_state["editor_sub_mode"]=editor_sub_mode
+            st.session_state["project_subtitles_enabled"]=(editor_sub_mode!="Nessuno")
+            st.session_state["project_subtitles_mode"]=editor_sub_mode
+
+            if editor_sub_mode=="Manuali":
+                _fonts=_gsf_windows_fonts()
+                _current_font=st.session_state.get("subtitle_font","Arial")
+                if _current_font not in _fonts: _current_font="Arial"
+                _fontc,_aspectc,_posc=st.columns([.40,.30,.30],gap="small")
+                with _fontc:
+                    st.selectbox(
+                        "🔤 Font",_fonts,index=_fonts.index(_current_font),key="editor_sub_font_v18",
+                        on_change=_gsf_sync_main_subtitle_font
+                    )
+                    st.session_state["subtitle_font"]=st.session_state.get("editor_sub_font_v18",_current_font)
+                with _aspectc:
+                    with st.popover("📐 ASPETTO",use_container_width=True):
+                        st.slider(
+                            "Dimensione",48,140,int(st.session_state.get("editor_sub_size_v18",st.session_state.get("editor_sub_size",92))),2,key="editor_sub_size_v18"
+                        )
+                        c1,c2,c3=st.columns(3,gap="small")
+                        with c1:
+                            st.color_picker("Testo",st.session_state.get("subtitle_text_color_v18",st.session_state.get("subtitle_text_color","#FFFFFF")),key="subtitle_text_color_v18")
+                        with c2:
+                            st.color_picker("Attiva",st.session_state.get("subtitle_active_color_v18",st.session_state.get("subtitle_active_color","#FFD400")),key="subtitle_active_color_v18")
+                        with c3:
+                            st.color_picker("Bordo",st.session_state.get("subtitle_outline_color_v18",st.session_state.get("subtitle_outline_color","#000000")),key="subtitle_outline_color_v18")
+                with _posc:
+                    with st.popover("📍 POSIZIONE",use_container_width=True):
+                        st.slider("↔ X",5,95,int(st.session_state.get("subtitle_x_v18",st.session_state.get("subtitle_x",50))),1,key="subtitle_x_v18")
+                        st.slider("↕ Y",5,95,int(st.session_state.get("subtitle_y_v18",st.session_state.get("subtitle_y",78))),1,key="subtitle_y_v18")
+                st.markdown("##### ✏️ Trascrizione intelligente",help="La trascrizione resta salvata mentre modifichi font, colori, posizione o gli strumenti.")
+                if not st.session_state.get("editor_sub_words"):
+                    if st.button("TRASCRIVI LA SCENA",use_container_width=True,key="editor_transcribe_scene_v18"):
+                        with st.spinner("Trascrivo la scena..."):
+                            words,err=_gsf_transcribe_editor_scene(editor_input,editor_start,editor_len)
+                        if err:
+                            st.warning(f"Trascrizione non disponibile: {err}")
+                        else:
+                            st.session_state["editor_sub_words"]=list(words)
+                            st.session_state["editor_sub_live_words"]=list(words)
+                            st.session_state["editor_sub_text"]=" ".join(w["text"] for w in words)
+                            st.session_state["editor_sub_applied_text"]=st.session_state["editor_sub_text"]
+                            st.session_state["editor_sub_seek"]=editor_start
+                            st.rerun()
+                else:
+                    # Navigazione temporale compatta: una sola riga.
+                    _tw=st.session_state.get("editor_sub_words",[])
+                    if _tw:
+                        _time_opts=[]
+                        for _group in _gsf_subtitle_groups(_tw):
+                            _t=float(_group[0]["start"])
+                            _preview=" ".join(w["text"] for w in _group)
+                            _time_opts.append((_t,f"{int(_t//60):02d}:{(_t%60):05.2f} · {_preview}"))
+                        _tc_col,_go_col=st.columns([.82,.18],gap="small")
+                        with _tc_col:
+                            _chosen_label=st.selectbox(
+                                "⏱ Vai al testo", [x[1] for x in _time_opts],
+                                key="editor_time_nav_v22"
+                            )
+                        with _go_col:
+                            st.write("")
+                            if st.button("VAI",use_container_width=True,key="editor_time_go_v22"):
+                                _chosen_t=next(t for t,label in _time_opts if label==_chosen_label)
+                                # _chosen_t è un timestamp assoluto della sorgente.
+                                st.session_state["editor_sub_seek"]=float(_chosen_t)
+                                st.session_state["editor_sub_seek_feedback"]=float(_chosen_t)
+                                st.session_state["editor_sub_seek_nonce"]=int(st.session_state.get("editor_sub_seek_nonce",0))+1
+                                st.rerun()
+                    if "editor_sub_seek_feedback" in st.session_state:
+                        _ft=float(st.session_state["editor_sub_seek_feedback"])
+                        st.caption(f"✓ Anteprima posizionata a {int(_ft//60):02d}:{(_ft%60):05.2f}")
+                    edited=st.text_area(
+                        "Correggi, elimina o aggiungi parole",
+                        value=st.session_state.get("editor_sub_text",""),
+                        height=125,key="editor_sub_text_area_v18"
+                    )
+                    _main_is_applied=(edited==st.session_state.get("editor_sub_applied_text",st.session_state.get("editor_sub_text","")))
+                    _main_apply_label="✓ APPLICATO" if _main_is_applied else "✓ APPLICA"
+                    if st.button(_main_apply_label,type="primary",use_container_width=True,key="editor_apply_subs_v26",disabled=_main_is_applied):
+                        st.session_state["editor_sub_text"]=edited
+                        st.session_state["editor_sub_applied_text"]=edited
+                        tokens=edited.split()
+                        timed=st.session_state.get("editor_sub_words",[])
+                        live_words=[]
+                        for i,w in enumerate(timed):
+                            if i<len(tokens):
+                                live_words.append({"text":tokens[i],"start":w["start"],"end":w["end"]})
+                        if len(tokens)>len(timed):
+                            last_end=(timed[-1]["end"] if timed else editor_start)
+                            remain=max(.08,(editor_end-last_end)/max(1,len(tokens)-len(timed)))
+                            for j in range(len(timed),len(tokens)):
+                                a=min(editor_end-.04,last_end+(j-len(timed))*remain)
+                                b=min(editor_end,a+remain*.9)
+                                live_words.append({"text":tokens[j],"start":a,"end":b})
+                        st.session_state["editor_sub_live_words"]=live_words
+                        st.rerun()
+
+        st.markdown("#### 🎞️ Crea video")
+        if st.button(
+            "🎞️ CREA VIDEO COMPLETO",
+            type="primary",
+            use_container_width=True,
+            key="editor_preview_btn"
+        ):
+            editor_output = os.path.join(editor_dir, "editor_preview.mp4")
+
+            vf, af = _gsf_editor_filters(
+                editor_format, editor_zoom, editor_x, editor_y,
+                editor_brightness, editor_contrast,
+                editor_speed, preview=False
+            )
+
+            editor_cmd = [
+                FFMPEG_PATH, "-y",
+                "-ss", str(editor_start),
+                "-i", editor_input,
+                "-t", str(editor_len),
+                "-vf", vf,
+                "-af", af,
+                "-c:v", "libx264",
+                "-preset", "veryfast",
+                "-crf", "24",
+                "-c:a", "aac",
+                "-b:a", "128k",
+                "-movflags", "+faststart",
+                editor_output
+            ]
+
+            with st.spinner("🎬 Creo il video completo con le impostazioni dell’Editor..."):
+                editor_run = subprocess.run(
+                    editor_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+
+            if editor_run.returncode == 0 and os.path.exists(editor_output):
+                # IMPORTANT: teniamo i byte in session_state.
+                # Streamlit riesegue lo script quando si preme Download;
+                # affidarsi solo al file temporaneo può far sparire il file.
+                with open(editor_output, "rb") as edf:
+                    editor_bytes = edf.read()
+
+                st.session_state["editor_output"] = editor_output
+                st.session_state["editor_output_bytes"] = editor_bytes
+                st.session_state["editor_output_name"] = "gaming_short_edit.mp4"
+                st.success("✅ Anteprima pronta.")
+            else:
+                st.error("❌ Non sono riuscito a creare l'anteprima.")
+                if editor_run.stderr:
+                    st.code(editor_run.stderr[-3000:])
+
+        editor_bytes = st.session_state.get("editor_output_bytes")
+
+        if editor_bytes:
+            # Il player e il download usano gli stessi byte persistenti.
+            st.caption("🎬 RISULTATO EDITOR")
+            _editor_result_path = st.session_state.get("editor_output")
+            if _editor_result_path and os.path.exists(_editor_result_path):
+                render_gsf_player(_editor_result_path, "editor_result")
+            else:
+                _erp = _gsf_bytes_to_preview(editor_bytes, "editor_result")
+                render_gsf_player(_erp, "editor_result")
+
+            st.download_button(
+                "⬇️ SCARICA VIDEO MODIFICATO",
+                data=editor_bytes,
+                file_name=st.session_state.get(
+                    "editor_output_name",
+                    "gaming_short_edit.mp4"
+                ),
+                mime="video/mp4",
+                use_container_width=True,
+                key="editor_download_fixed"
+            )
+
+
+    if modalita == "✋ Manuale":
+        # Nessuna barra/numero di partenza: la selezione arriva solo dall'Editor.
+        start = float(st.session_state.get("manual_start_editor", 0.0))
+        duration = float(
+            st.session_state.get("manual_duration_editor", duration)
+        )
+    else:
+        if "auto_clip_scelta" not in st.session_state:
+            st.session_state.auto_clip_scelta = None
+
+        if st.button("✦ CREA CON AI", use_container_width=True):
+            with tempfile.TemporaryDirectory() as analisi_temp:
+                analisi_input = os.path.join(analisi_temp, "input.mp4")
+
+                with open(analisi_input, "wb") as f:
+                    f.write(video.getbuffer())
+
+                if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
+                    messaggio = "⚡ Fast Scan → 3 candidati → controllo qualità..."
+                elif modalita == "🧠 Smart Clip":
+                    messaggio = "🧠 Analizzo audio + movimento..."
+                else:
+                    messaggio = "⚡ Analizzo l'audio del gameplay..."
+
+                cache_key_ai = (
+                    getattr(video, "name", "video"),
+                    getattr(video, "size", len(video.getbuffer())),
+                    modalita,
+                    float(duration)
+                )
+                cached_ai = st.session_state.get("gsf_fast_ai_cache", {}).get(cache_key_ai)
+
+                with st.spinner(messaggio):
+                    if cached_ai is not None:
+                        candidati = cached_ai.get("candidati", [])
+                        if cached_ai.get("scores") is not None:
+                            st.session_state.ai_director_scores = cached_ai["scores"]
+                        if cached_ai.get("clip_rifinite") is not None:
+                            st.session_state.clip_rifinite = cached_ai["clip_rifinite"]
+
+                    elif modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
+                        risultati_ai = ai_director_locale(
+                            analisi_input,
+                            clip_duration=float(duration),
+                            numero_clip=3
+                        )
+                        # Secondo passaggio: analizza in profondità SOLO i 3 candidati.
+                        risultati_ai = deep_rank_candidati_leggero(
+                            analisi_input,
+                            risultati_ai,
+                            float(duration)
+                        )
+
+                        st.session_state.ai_director_scores = risultati_ai
+                        candidati = [
+                            start_ai
+                            for score_ai, start_ai in risultati_ai
+                        ]
+
+                        # Rifinisce automaticamente hook/finale sui silenzi.
+                        clip_rifinite = {}
+                        candidati_rifiniti = []
+
+                        for start_ai in candidati:
+                            nuovo_start, nuova_durata = rifinisci_confini_clip(
+                                analisi_input,
+                                float(start_ai),
+                                float(duration)
+                            )
+                            candidati_rifiniti.append(nuovo_start)
+                            clip_rifinite[round(nuovo_start, 3)] = nuova_durata
+
+                        candidati = candidati_rifiniti
+                        st.session_state.clip_rifinite = clip_rifinite
+
+                        # Mantiene score e nuovi start allineati.
+                        risultati_ai = [
+                            (risultati_ai[i][0], candidati[i])
+                            for i in range(min(len(risultati_ai), len(candidati)))
+                        ]
+                        st.session_state.ai_director_scores = risultati_ai
+                    elif modalita == "🧠 Smart Clip":
+                        candidati = trova_clip_smart(
+                            analisi_input,
+                            analisi_temp,
+                            clip_duration=float(duration),
+                            numero_clip=3
+                        )
+                    else:
+                        candidati = trova_clip_audio(
+                            analisi_input,
+                            analisi_temp,
+                            clip_duration=float(duration),
+                            numero_clip=3
+                        )
+
+                if cached_ai is None:
+                    if "gsf_fast_ai_cache" not in st.session_state:
+                        st.session_state["gsf_fast_ai_cache"] = {}
+
+                    st.session_state["gsf_fast_ai_cache"][cache_key_ai] = {
+                        "candidati": list(candidati),
+                        "scores": st.session_state.get("ai_director_scores")
+                            if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"] else None,
+                        "clip_rifinite": st.session_state.get("clip_rifinite")
+                            if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"] else None,
+                    }
+
+                st.session_state.auto_clip_candidati = candidati
+                st.session_state.auto_clip_modalita = modalita
+
+                if candidati:
+                    st.session_state.auto_clip_scelta = candidati[0]
+                else:
+                    st.warning("Non ho trovato candidati. Usa la modalità Manuale.")
+
+        if st.session_state.get("auto_clip_modalita") != modalita:
+            candidati = []
+        else:
+            candidati = st.session_state.get("auto_clip_candidati", [])
+
+        if candidati:
+            if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
+                risultati_ai = st.session_state.get(
+                    "ai_director_scores",
+                    []
+                )
+
+                if risultati_ai:
+                    massimo_score = max(
+                        score for score, _ in risultati_ai
+                    ) or 1.0
+
+                    opzioni = {}
+
+                    for i, (score, sec) in enumerate(risultati_ai):
+                        qualita = int(
+                            max(1, min(100, score / massimo_score * 100))
+                        )
+
+                        label = (
+                            f"#{i + 1} • Qualità {qualita}% • "
+                            f"{sec:.0f}s → {sec + duration:.0f}s"
+                        )
+
+                        opzioni[label] = sec
+                else:
+                    opzioni = {
+                        f"Clip {i + 1} — da {sec:.0f}s a {sec + duration:.0f}s": sec
+                        for i, sec in enumerate(candidati)
+                    }
+            else:
+                opzioni = {
+                    f"Clip {i + 1} — da {sec:.0f}s a {sec + duration:.0f}s": sec
+                    for i, sec in enumerate(candidati)
+                }
+
+            st.markdown('<div class="mini-label" style="margin-top:18px;">CLASSIFICA AI</div>', unsafe_allow_html=True)
+            for posizione, label in enumerate(opzioni.keys(), start=1):
+                st.write(f"**{posizione}.** {label}")
+
+            scelta_label = st.radio(
+                "🎯 Scegli un momento da vedere",
+                list(opzioni.keys())
+            )
+
+            start = float(opzioni[scelta_label])
+            st.session_state.auto_clip_scelta = start
+
+            durata_effettiva = float(duration)
+
+            if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
+                durata_effettiva = float(
+                    st.session_state.get(
+                        "clip_rifinite",
+                        {}
+                    ).get(round(start, 3), duration)
+                )
+
+                st.caption(
+                    f"✂️ Taglio intelligente: {durata_effettiva:.1f}s"
+                )
+
+            st.caption("👀 Anteprima")
+
+            preview_key = (
+                f"{video.name}_{start:.2f}_{durata_effettiva:.2f}"
+            )
+
+            if st.session_state.get("preview_key") != preview_key:
+                with tempfile.TemporaryDirectory() as preview_temp:
+                    preview_input = os.path.join(preview_temp, "input.mp4")
+                    preview_output = os.path.join(preview_temp, "preview.mp4")
+
+                    with open(preview_input, "wb") as f:
+                        f.write(video.getbuffer())
+
+                    with st.spinner("⚡ Creo anteprima..."):
+                        ok_preview = crea_anteprima(
+                            preview_input,
+                            preview_output,
+                            start,
+                            durata_effettiva
+                        )
+
+                    if ok_preview:
+                        with open(preview_output, "rb") as f:
+                            st.session_state.preview_bytes = f.read()
+                        st.session_state.preview_key = preview_key
+
+            if st.session_state.get("preview_bytes"):
+                _aip = _gsf_bytes_to_preview(
+                    st.session_state.preview_bytes,
+                    f"ai_preview_{start:.2f}_{durata_effettiva:.2f}"
+                )
+                render_gsf_player(_aip, f"ai_preview_{start:.2f}_{durata_effettiva:.2f}")
+
+                edit_col, keep_col = st.columns(2)
+                with edit_col:
+                    if st.button(
+                        "✂️ MODIFICA NELL’EDITOR",
+                        use_container_width=True,
+                        key=f"edit_ai_{start:.2f}_{durata_effettiva:.2f}"
+                    ):
+                        # Apre UNA copia dell'Editor direttamente sotto questa clip.
+                        _inline_id=f"{start:.2f}_{durata_effettiva:.2f}"
+                        _edit_dir=tempfile.mkdtemp(prefix="gsf_inline_ai_")
+                        _edit_input=os.path.join(_edit_dir,"ai_clip_inline.mp4")
+                        with open(_edit_input,"wb") as _ef:
+                            _ef.write(st.session_state.preview_bytes)
+                        st.session_state["inline_editor_id"]=_inline_id
+                        st.session_state["inline_editor_dir"]=_edit_dir
+                        st.session_state["inline_editor_input"]=_edit_input
+                        st.session_state["inline_editor_duration"]=float(durata_video(_edit_input) or durata_effettiva)
+                        # Un solo editor AI aperto alla volta.
+                        st.rerun()
+
+                with keep_col:
+                    if st.button(
+                        "✓ USA QUESTA",
+                        use_container_width=True,
+                        key=f"use_ai_{start:.2f}_{durata_effettiva:.2f}"
+                    ):
+                        st.session_state.auto_clip_scelta = float(start)
+                        st.session_state["auto_clip_duration"] = float(durata_effettiva)
+                        st.session_state["publication_ready"] = True
+                        st.session_state["publication_source"] = "ai_clip"
+                        st.session_state["publication_preview_bytes"] = st.session_state.get("preview_bytes")
+                        st.session_state["project_view"] = "publication"
+                        st.rerun()
+
+
+                # ===== EDITOR INLINE DELLA CLIP AI =====
+                _this_inline_id=f"{start:.2f}_{durata_effettiva:.2f}"
+                if st.session_state.get("inline_editor_id")==_this_inline_id:
+                    _ii=st.session_state.get("inline_editor_input")
+                    _idir=st.session_state.get("inline_editor_dir")
+                    _idur=float(st.session_state.get("inline_editor_duration",durata_effettiva))
+
+                    if _ii and os.path.exists(_ii):
+                        st.markdown("##### ✂️ Editor")
+                        _close_col,_space_col=st.columns([.24,.76])
+                        with _close_col:
+                            if st.button("✕ CHIUDI EDITOR",use_container_width=True,key=f"inline_close_{_this_inline_id}"):
+                                st.session_state.pop("inline_editor_id",None)
+                                st.rerun()
+
+                        # Timeline: descrizione sopra, nessuno scroll verso altri editor.
+                        st.caption("✂️ Timeline · trascina IN/OUT per selezionare la scena")
+                        _trim=st.slider(
+                            "IN / OUT",0.0,float(max(.5,_idur)),
+                            (0.0,float(max(.5,_idur))),.1,
+                            key=f"inline_trim_{_this_inline_id}"
+                        )
+                        _istart=float(_trim[0])
+                        _iend=float(_trim[1])
+                        _ilen=max(.1,_iend-_istart)
+
+                        # Stato grafico indipendente dalla trascrizione.
+                        _fmt_key=f"inline_fmt_{_this_inline_id}"
+                        _zoom_key=f"inline_zoom_{_this_inline_id}"
+                        _x_key=f"inline_x_{_this_inline_id}"
+                        _y_key=f"inline_y_{_this_inline_id}"
+                        _vol_key=f"inline_vol_{_this_inline_id}"
+                        _bri_key=f"inline_bri_{_this_inline_id}"
+                        _con_key=f"inline_con_{_this_inline_id}"
+                        _spd_key=f"inline_spd_{_this_inline_id}"
+                        _submode_key=f"inline_submode_{_this_inline_id}"
+
+                        if _fmt_key not in st.session_state: st.session_state[_fmt_key]="9:16 Short"
+                        if _zoom_key not in st.session_state: st.session_state[_zoom_key]=1.0
+                        if _x_key not in st.session_state: st.session_state[_x_key]=0
+                        if _y_key not in st.session_state: st.session_state[_y_key]=0
+                        if _vol_key not in st.session_state: st.session_state[_vol_key]=100
+                        if _bri_key not in st.session_state: st.session_state[_bri_key]=0.0
+                        if _con_key not in st.session_state: st.session_state[_con_key]=1.0
+                        if _spd_key not in st.session_state: st.session_state[_spd_key]=1.0
+                        if _submode_key not in st.session_state: st.session_state[_submode_key]="Automatici"
+
+                        _pl,_side=st.columns([.22,.78],gap="medium")
+
+                        # Trascrizione persistente PER CLIP: non viene toccata dai controlli grafici.
+                        _trans_words_key=f"inline_trans_words_{_this_inline_id}"
+                        _trans_text_key=f"inline_trans_text_{_this_inline_id}"
+                        _trans_live_key=f"inline_trans_live_{_this_inline_id}"
+
+                        with _pl:
+                            _sub_on=st.session_state.get(_submode_key,"Automatici")!="Nessuno"
+                            render_gsf_editor_live_player(
+                                _ii,
+                                f"inline_live_v32_{_this_inline_id}",
+                                _istart,
+                                st.session_state[_fmt_key],st.session_state[_zoom_key],
+                                st.session_state[_x_key],st.session_state[_y_key],
+                                st.session_state[_vol_key],st.session_state[_bri_key],
+                                st.session_state[_con_key],st.session_state[_spd_key],
+                                subtitles_on=_sub_on,subtitle_style="Base",
+                                subtitle_size=st.session_state.get(f"inline_subsize_widget_v18_{_this_inline_id}",st.session_state.get(f"inline_subsize_{_this_inline_id}",92)),
+                                subtitle_position=330,
+                                subtitle_words=st.session_state.get(_trans_live_key,st.session_state.get(_trans_words_key,[])),
+                                subtitle_text=(st.session_state.get(_trans_text_key,"") or ("Anteprima sottotitoli" if _sub_on else "")),
+                                subtitle_font=st.session_state.get(f"inline_font_widget_v18_{_this_inline_id}",st.session_state.get(f"inline_font_{_this_inline_id}","Arial")),
+                                subtitle_x=st.session_state.get(f"inline_subx_widget_v18_{_this_inline_id}",st.session_state.get(f"inline_subx_{_this_inline_id}",50)),
+                                subtitle_y=st.session_state.get(f"inline_suby_widget_v18_{_this_inline_id}",st.session_state.get(f"inline_suby_{_this_inline_id}",78)),
+                                end_seconds=_iend,
+                                seek_target=st.session_state.get(f"inline_seek_{_this_inline_id}",_istart),
+                                seek_nonce=st.session_state.get(f"inline_seek_nonce_{_this_inline_id}",0),
+                                text_color=st.session_state.get(f"inline_txtcol_v18_{_this_inline_id}",st.session_state.get("subtitle_text_color","#FFFFFF")),
+                                active_color=st.session_state.get(f"inline_actcol_v18_{_this_inline_id}",st.session_state.get("subtitle_active_color","#FFD400")),
+                                outline_color=st.session_state.get(f"inline_outcol_v18_{_this_inline_id}","#000000"),
+                                reset_id=st.session_state.get(f"inline_reset_id_{_this_inline_id}",0),
+                                clip_start_override=_istart
+                            )
+
+                        with _side:
+                            _ith,_itr=st.columns([.78,.22],gap="small")
+                            with _ith:
+                                st.markdown("##### 🛠️ Strumenti",help="Regola formato, inquadratura, audio e immagine. Le modifiche sono mostrate nel player LIVE.")
+                            with _itr:
+                                st.button(
+                                    "↶ RESET TUTTO",use_container_width=True,key=f"reset_inline_all_v29_{_this_inline_id}",
+                                    on_click=_gsf_reset_inline_all,
+                                    args=(_this_inline_id,_fmt_key,_zoom_key,_x_key,_y_key,_vol_key,_bri_key,_con_key,_spd_key)
+                                )
+                            _fc,_ic,_rc=st.columns([.30,.35,.35],gap="small")
+                            with _fc:
+                                st.session_state[_fmt_key]=st.segmented_control(
+                                    "Formato",["9:16 Short","16:9 Originale"],
+                                    default=st.session_state[_fmt_key],key=f"inline_fmt_widget_v18_{_this_inline_id}"
+                                )
+                            with _ic:
+                                with st.popover("🎯 INQUADRATURA",use_container_width=True):
+                                    st.session_state[_zoom_key]=st.slider("Zoom",1.0,2.0,float(st.session_state[_zoom_key]),.05,key=f"inline_zoom_widget_v18_{_this_inline_id}")
+                                    st.session_state[_x_key]=st.slider("↔ X",-100,100,int(st.session_state[_x_key]),5,key=f"inline_x_widget_v18_{_this_inline_id}")
+                                    st.session_state[_y_key]=st.slider("↕ Y",-100,100,int(st.session_state[_y_key]),5,key=f"inline_y_widget_v18_{_this_inline_id}")
+                            with _rc:
+                                with st.popover("🎚️ REGOLAZIONI",use_container_width=True):
+                                    _reg=st.selectbox("Parametro",["Volume","Luminosità","Contrasto","Velocità"],key=f"inline_reg_v18_{_this_inline_id}")
+                                    if _reg=="Volume":
+                                        st.session_state[_vol_key]=st.slider("Volume",0,200,int(st.session_state[_vol_key]),5,key=f"inline_vol_widget_v18_{_this_inline_id}")
+                                    elif _reg=="Luminosità":
+                                        st.session_state[_bri_key]=st.slider("Luminosità",-.30,.30,float(st.session_state[_bri_key]),.05,key=f"inline_bri_widget_v18_{_this_inline_id}")
+                                    elif _reg=="Contrasto":
+                                        st.session_state[_con_key]=st.slider("Contrasto",.70,1.50,float(st.session_state[_con_key]),.05,key=f"inline_con_widget_v18_{_this_inline_id}")
+                                    else:
+                                        st.session_state[_spd_key]=st.select_slider("Velocità",options=[.5,.75,1.0,1.25,1.5,2.0],value=float(st.session_state[_spd_key]),key=f"inline_spd_widget_v18_{_this_inline_id}")
+
+                            st.markdown("##### 📝 Sottotitoli",help="Automatici: fa tutto l'AI. Manuali: trascrive la clip e permette di correggere testo e aspetto. Nessuno: video pulito.")
+                            _modes=["Nessuno","Automatici","Manuali"]
+                            _cur=st.session_state.get(_submode_key,"Automatici")
+                            if _cur not in _modes: _cur="Automatici"
+                            st.session_state[_submode_key]=st.segmented_control(
+                                "Modalità sottotitoli",_modes,default=_cur,
+                                key=f"inline_submode_widget_v18_{_this_inline_id}",label_visibility="collapsed"
+                            )
+
+                            if st.session_state[_submode_key]=="Manuali":
+                                _fonts=_gsf_windows_fonts()
+                                _font_key=f"inline_font_{_this_inline_id}"
+                                _size_key=f"inline_subsize_{_this_inline_id}"
+                                _sx=f"inline_subx_{_this_inline_id}"
+                                _sy=f"inline_suby_{_this_inline_id}"
+                                if _font_key not in st.session_state: st.session_state[_font_key]="Arial"
+                                if st.session_state[_font_key] not in _fonts: st.session_state[_font_key]="Arial"
+                                if _size_key not in st.session_state: st.session_state[_size_key]=92
+                                if _sx not in st.session_state: st.session_state[_sx]=50
+                                if _sy not in st.session_state: st.session_state[_sy]=78
+
+                                _fontc,_aspectc,_posc=st.columns([.40,.30,.30],gap="small")
+                                with _fontc:
+                                    _font_widget_key=f"inline_font_widget_v18_{_this_inline_id}"
+                                    st.selectbox(
+                                        "🔤 Font",_fonts,index=_fonts.index(st.session_state[_font_key]),
+                                        key=_font_widget_key,
+                                        on_change=_gsf_sync_inline_subtitle_font,
+                                        args=(_font_widget_key,_font_key)
+                                    )
+                                with _aspectc:
+                                    with st.popover("📐 ASPETTO",use_container_width=True):
+                                        st.slider("Dimensione",48,140,int(st.session_state.get(f"inline_subsize_widget_v18_{_this_inline_id}",st.session_state[_size_key])),2,key=f"inline_subsize_widget_v18_{_this_inline_id}")
+                                        c1,c2,c3=st.columns(3,gap="small")
+                                        with c1:
+                                            st.session_state["subtitle_text_color"]=st.color_picker("Testo",st.session_state.get("subtitle_text_color","#FFFFFF"),key=f"inline_txtcol_v18_{_this_inline_id}")
+                                        with c2:
+                                            st.session_state["subtitle_active_color"]=st.color_picker("Attiva",st.session_state.get("subtitle_active_color","#FFD400"),key=f"inline_actcol_v18_{_this_inline_id}")
+                                        with c3:
+                                            st.session_state["subtitle_outline_color"]=st.color_picker("Bordo",st.session_state.get("subtitle_outline_color","#000000"),key=f"inline_outcol_v18_{_this_inline_id}")
+                                with _posc:
+                                    with st.popover("📍 POSIZIONE",use_container_width=True):
+                                        st.slider("↔ X",5,95,int(st.session_state.get(f"inline_subx_widget_v18_{_this_inline_id}",st.session_state[_sx])),1,key=f"inline_subx_widget_v18_{_this_inline_id}")
+                                        st.slider("↕ Y",5,95,int(st.session_state.get(f"inline_suby_widget_v18_{_this_inline_id}",st.session_state[_sy])),1,key=f"inline_suby_widget_v18_{_this_inline_id}")
+                                st.markdown("##### ✏️ Trascrizione intelligente",help="Resta salvata mentre modifichi font, colori, posizione o gli strumenti.")
+                                if not st.session_state.get(_trans_words_key):
+                                    if st.button("TRASCRIVI LA CLIP",use_container_width=True,key=f"inline_transcribe_v18_{_this_inline_id}"):
+                                        with st.spinner("Trascrivo la clip..."):
+                                            _words,_err=_gsf_transcribe_editor_scene(_ii,_istart,_ilen)
+                                        if _err:
+                                            st.warning(f"Trascrizione non disponibile: {_err}")
+                                        else:
+                                            st.session_state[_trans_words_key]=list(_words)
+                                            st.session_state[_trans_live_key]=list(_words)
+                                            st.session_state[_trans_text_key]=" ".join(w["text"] for w in _words)
+                                            st.session_state[f"inline_applied_text_{_this_inline_id}"]=st.session_state[_trans_text_key]
+                                            st.session_state[f"inline_seek_{_this_inline_id}"]=_istart
+                                            st.rerun()
+                                else:
+                                    _tw=st.session_state.get(_trans_words_key,[])
+                                    if _tw:
+                                        _time_opts=[]
+                                        for _group in _gsf_subtitle_groups(_tw):
+                                            _t=float(_group[0]["start"])
+                                            _preview=" ".join(w["text"] for w in _group)
+                                            _time_opts.append((_t,f"{int(_t//60):02d}:{(_t%60):05.2f} · {_preview}"))
+                                        _tc_col,_go_col=st.columns([.82,.18],gap="small")
+                                        with _tc_col:
+                                            _chosen_label=st.selectbox(
+                                                "⏱ Vai al testo",[x[1] for x in _time_opts],
+                                                key=f"inline_time_nav_v22_{_this_inline_id}"
+                                            )
+                                        with _go_col:
+                                            st.write("")
+                                            if st.button("VAI",use_container_width=True,key=f"inline_time_go_v22_{_this_inline_id}"):
+                                                _chosen_t=next(t for t,label in _time_opts if label==_chosen_label)
+                                                st.session_state[f"inline_seek_{_this_inline_id}"]=float(_chosen_t)
+                                                st.session_state[f"inline_seek_feedback_{_this_inline_id}"]=float(_chosen_t)
+                                                st.session_state[f"inline_seek_nonce_{_this_inline_id}"]=int(
+                                                    st.session_state.get(f"inline_seek_nonce_{_this_inline_id}",0)
+                                                )+1
+                                                st.rerun()
+                                    if f"inline_seek_feedback_{_this_inline_id}" in st.session_state:
+                                        _ft=float(st.session_state[f"inline_seek_feedback_{_this_inline_id}"])
+                                        st.caption(f"✓ Anteprima posizionata a {int(_ft//60):02d}:{(_ft%60):05.2f}")
+                                    _edited=st.text_area(
+                                        "Correggi, elimina o aggiungi parole",
+                                        value=st.session_state.get(_trans_text_key,""),
+                                        height=125,key=f"inline_textarea_v18_{_this_inline_id}"
+                                    )
+                                    _inline_applied_key=f"inline_applied_text_{_this_inline_id}"
+                                    _inline_is_applied=(_edited==st.session_state.get(_inline_applied_key,st.session_state.get(_trans_text_key,"")))
+                                    _inline_apply_label="✓ APPLICATO" if _inline_is_applied else "✓ APPLICA"
+                                    if st.button(_inline_apply_label,type="primary",use_container_width=True,key=f"inline_apply_subs_v26_{_this_inline_id}",disabled=_inline_is_applied):
+                                        st.session_state[_trans_text_key]=_edited
+                                        st.session_state[_inline_applied_key]=_edited
+                                        _tokens=_edited.split()
+                                        _timed=st.session_state.get(_trans_words_key,[])
+                                        _live=[]
+                                        for _i,_w in enumerate(_timed):
+                                            if _i<len(_tokens):
+                                                _live.append({"text":_tokens[_i],"start":_w["start"],"end":_w["end"]})
+                                        st.session_state[_trans_live_key]=_live
+                                        st.rerun()
+
+                        # Azioni dell'editor inline.
+                        _ec1,_ec2=st.columns(2,gap="small")
+                        with _ec1:
+                            if st.button("🎞️ CREA VIDEO",type="primary",use_container_width=True,key=f"inline_create_{_this_inline_id}"):
+                                _out=os.path.join(_idir,"inline_edit_final.mp4")
+                                _vf,_af=_gsf_editor_filters(
+                                    st.session_state[_fmt_key],st.session_state[_zoom_key],
+                                    st.session_state[_x_key],st.session_state[_y_key],
+                                    st.session_state[_bri_key],st.session_state[_con_key],
+                                    st.session_state[_spd_key],preview=False
+                                )
+                                _cmd=[
+                                    FFMPEG_PATH,"-y","-ss",str(_istart),"-i",_ii,"-t",str(_ilen),
+                                    "-vf",_vf,"-af",_af,"-c:v","libx264","-preset","veryfast","-crf","24",
+                                    "-c:a","aac","-b:a","128k","-movflags","+faststart",_out
+                                ]
+                                with st.spinner("Creo il video..."):
+                                    _r=subprocess.run(_cmd,capture_output=True,text=True)
+                                if _r.returncode==0 and os.path.exists(_out):
+                                    with open(_out,"rb") as _f:
+                                        st.session_state["inline_final_bytes"]=_f.read()
+                                    st.session_state["publication_ready"]=True
+                                    st.session_state["publication_source"]="inline_editor"
+                                    st.success("Video creato.")
+                                else:
+                                    st.error("Creazione video non riuscita.")
+                        with _ec2:
+                            if st.button("✓ USA QUESTA",use_container_width=True,key=f"inline_use_{_this_inline_id}"):
+                                st.session_state["publication_ready"]=True
+                                st.session_state["publication_source"]="inline_editor"
+                                st.session_state["publication_preview_bytes"]=st.session_state.get("inline_final_bytes",st.session_state.preview_bytes)
+                                st.rerun()
+        else:
+            start = 0.0
+
+    # La clip AI si modifica soltanto nell'Editor completo.
+    _ai_selected_start = st.session_state.get("auto_clip_scelta")
+
+    if st.session_state.get("publication_ready") and st.session_state.get("publication_source")=="ai_clip":
+        st.markdown("#### 🎬 Esporta")
+        _pb=st.session_state.get("publication_preview_bytes")
+        if _pb:
+            st.download_button("⬇️ SCARICA CLIP",_pb,"gaming_short_ai.mp4","video/mp4",use_container_width=True,key="export_ai_selected")
+        st.markdown("#### 🚀 Pubblicazione")
+        st.success("Clip scelta e pronta per la pubblicazione.")
+        st.caption("Qui collegheremo titolo, descrizione, piattaforma e pubblicazione diretta.")
+
+    # Nelle modalità AI l'utente non deve micro-gestire i sottotitoli:
+    # l'AI usa automaticamente il preset completo.
+    _manual_editor_mode = (modalita == "✋ Manuale")
+
+    _project_subtitles_enabled = bool(
+        st.session_state.get("project_subtitles_enabled", False if modalita != "✋ Manuale" and _ai_selected_start is None else True)
+    )
+    if _manual_editor_mode:
+        sottotitoli = _project_subtitles_enabled
+        stile_sub = "Base"
+        dimensione_sub = int(st.session_state.get("editor_sub_size", 92))
+        posizione_sub = int(st.session_state.get("editor_sub_position", 330))
+    else:
+        # Vale anche per i motori AI: se il progetto è senza sottotitoli,
+        # nessun motore deve reinserirli.
+        sottotitoli = _project_subtitles_enabled
+        stile_sub = "Base"
+        dimensione_sub = int(st.session_state.get("editor_sub_size", 92))
+        posizione_sub = int(st.session_state.get("editor_sub_position", 330))
+
+    # Motori tecnici sempre attivi: non sono più opzioni dell'interfaccia.
+    smart_reframe = True
+    analisi_rapida = True
+    normalizza_audio = True
+
+
+    # Manteniamo valori interni compatibili con il flusso esistente.
+    gioco = st.session_state.get("gioco", "ARC Raiders")
+    piattaforma = st.session_state.get("piattaforma", "YouTube Shorts")
+    tono_social = st.session_state.get("tono_social", "Gaming forte")
+    hook_testo = st.session_state.get("hook_testo", "")
+
+
+    # ==========================================================
+    # BATCH — CREA TUTTI I MOMENTI TROVATI
+    # ==========================================================
+
+    candidati_batch = st.session_state.get("auto_clip_candidati", [])
+
+    if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
+        # L'AI può mostrare 5 candidati, ma il batch crea i 3 migliori.
+        candidati_batch = candidati_batch[:3]
+
+    if modalita != "✋ Manuale" and candidati_batch:
+
+        st.divider()
+        st.markdown('<div class="soft-card"><div class="mini-label">SELEZIONE AI</div><h2 style="margin:.35rem 0 0;">Momenti migliori</h2></div>', unsafe_allow_html=True)
+
+        st.write(
+            f"Pronti **{len(candidati_batch)} momenti**. "
+            "Puoi creare tutti gli Shorts in una volta."
+        )
+
+        if st.button(
+            "✦ GENERA I 3 SHORTS",
+            type="primary",
+            use_container_width=True
+        ):
+
+            batch_bar = st.progress(0)
+            batch_status = st.empty()
+
+            # Conserviamo i bytes in session_state, perché la temp
+            # directory viene eliminata alla fine.
+            risultati_batch = []
+
+            with tempfile.TemporaryDirectory() as batch_temp:
+
+                batch_input = os.path.join(
+                    batch_temp,
+                    "batch_input.mp4"
+                )
+
+                with open(batch_input, "wb") as f:
+                    f.write(video.getbuffer())
+
+                totale_batch = len(candidati_batch)
+
+                for indice, inizio_clip in enumerate(
+                    candidati_batch,
+                    start=1
+                ):
+
+                    batch_status.write(
+                        f"🎬 Creo Short {indice}/{totale_batch}..."
+                    )
+
+                    durata_batch = float(duration)
+
+                    if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
+                        durata_batch = float(
+                            st.session_state.get(
+                                "clip_rifinite",
+                                {}
+                            ).get(round(float(inizio_clip), 3), duration)
+                        )
+
+                    output_batch = crea_short_batch(
+                        batch_input,
+                        batch_temp,
+                        float(inizio_clip),
+                        durata_batch,
+                        indice,
+                        sottotitoli,
+                        normalizza_audio,
+                        stile_sub,
+                        dimensione_sub,
+                        posizione_sub
+                    )
+
+                    if output_batch and os.path.exists(output_batch):
+                        with open(output_batch, "rb") as f:
+                            risultati_batch.append(
+                                (
+                                    indice,
+                                    float(inizio_clip),
+                                    f.read()
+                                )
+                            )
+
+                    batch_bar.progress(
+                        int(indice / totale_batch * 100)
+                    )
+
+            st.session_state.risultati_batch = risultati_batch
+
+            if risultati_batch:
+                batch_status.write(
+                    f"✅ Creati {len(risultati_batch)} Shorts."
+                )
+            else:
+                batch_status.write(
+                    "❌ Non sono riuscito a creare gli Shorts."
+                )
+
+        risultati_batch = st.session_state.get(
+            "risultati_batch",
+            []
+        )
+
+        if risultati_batch:
+
+            st.subheader("📦 Shorts pronti")
+
+            for indice, inizio_clip, dati_video in risultati_batch:
+
+                st.write(
+                    f"### Short {indice} — da {inizio_clip:.0f}s"
+                )
+
+                _batch_path = _gsf_bytes_to_preview(
+                    dati_video, f"batch_short_{indice}"
+                )
+                render_gsf_player(_batch_path, f"batch_short_{indice}")
+
+                st.download_button(
+                    f"⬇️ Scarica Short {indice}",
+                    dati_video,
+                    f"gaming_short_{indice}.mp4",
+                    "video/mp4",
+                    key=f"download_batch_{indice}"
+                )
+
+            # ZIP unico con tutti gli Shorts
+            import io
+            import zipfile
+
+            zip_buffer = io.BytesIO()
+
+            with zipfile.ZipFile(
+                zip_buffer,
+                "w",
+                zipfile.ZIP_DEFLATED
+            ) as archivio:
+
+                for indice, inizio_clip, dati_video in risultati_batch:
+                    archivio.writestr(
+                        f"gaming_short_{indice}.mp4",
+                        dati_video
+                    )
+
+                manifest = (
+                    "Gaming Shorts Factory — SUPER FREE AUTO\n"
+                    f"Gioco: {gioco}\n"
+                    f"Piattaforma: {piattaforma}\n"
+                    f"Modalità: {modalita}\n"
+                    f"Short creati: {len(risultati_batch)}\n"
+                )
+                archivio.writestr("INFO.txt", manifest)
+
+            st.download_button(
+                "📦 SCARICA TUTTI (.ZIP)",
+                zip_buffer.getvalue(),
+                "gaming_shorts.zip",
+                "application/zip",
+                use_container_width=True
+            )
+
+        st.divider()
+        st.caption(
+            "Oppure crea soltanto la clip selezionata:"
+        )
