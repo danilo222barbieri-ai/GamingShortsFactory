@@ -1111,7 +1111,7 @@ def _gsf_gaming_prompt(context_hint=""):
 
 
 
-GSF_RENDER_ENGINE_VERSION = "v42-render-smart-reframe"
+GSF_RENDER_ENGINE_VERSION = "v43-hook-audio"
 
 
 def _gsf_hex_to_ass(value, fallback="#FFFFFF"):
@@ -1224,15 +1224,119 @@ def _gsf_prepare_render_words(words, origin, duration):
     return out
 
 
+
+_GSF_HOOK_TEMPLATES = {
+    "goal": "GOOOL! ⚽",
+    "shooter_elimination": "ELIMINAZIONE! 🎯",
+    "victory": "VITTORIA! 🏆",
+    "sports_big_chance": "CHE OCCASIONE! 🥅",
+    "racing": "MOMENTO GARA! 🏎️",
+    "achievement": "NUOVO TRAGUARDO! ⭐",
+    "impact_event": "MOMENTO FORTE! 💥",
+}
+
+_GSF_CATEGORY_HOOKS = {
+    "reaction": "REAZIONE! 🎙️",
+    "action": "AZIONE! 🔥",
+    "story": "MOMENTO! 🎬",
+}
+
+
+def _gsf_diag_for_start(start, max_gap=12.0):
+    """
+    Finds the closest Point-3 diagnostic even after boundary refinement
+    has shifted the actual clip start by a few seconds.
+    """
+    diagnostics=st.session_state.get("gsf_ai_v3_diagnostics",{}) or {}
+    try:
+        target=float(start)
+    except Exception:
+        return {}
+
+    exact=diagnostics.get(round(target,3))
+    if isinstance(exact,dict):
+        return exact
+
+    best=None
+    best_gap=None
+    for key,value in diagnostics.items():
+        if key=="__meta__" or not isinstance(value,dict):
+            continue
+        try:
+            k=float(key)
+        except Exception:
+            continue
+        gap=abs(k-target)
+        if best_gap is None or gap<best_gap:
+            best_gap=gap
+            best=value
+
+    if best is not None and best_gap is not None and best_gap<=float(max_gap):
+        return best
+    return {}
+
+
+def _gsf_hook_from_diag(diag, manual_hook=""):
+    """
+    Conservative hooks: only claims what Point 3 actually detected.
+    A user supplied hook always wins.
+    """
+    manual=str(manual_hook or "").strip()
+    if manual:
+        return manual[:70]
+
+    diag=diag or {}
+    features=diag.get("features") or {}
+    event_type=str(features.get("event_type","") or "")
+    event_score=float(features.get("event_score",0.0))
+    category=str(features.get("moment_category","") or "")
+
+    if event_score>=0.56 and event_type in _GSF_HOOK_TEMPLATES:
+        return _GSF_HOOK_TEMPLATES[event_type]
+
+    if category in _GSF_CATEGORY_HOOKS:
+        return _GSF_CATEGORY_HOOKS[category]
+
+    return ""
+
+
+def _gsf_auto_hook_for_start(start, manual_hook=""):
+    return _gsf_hook_from_diag(
+        _gsf_diag_for_start(start),
+        manual_hook=manual_hook
+    )
+
+
+def _gsf_wrap_hook(text, max_chars=22):
+    """At most two balanced lines for the top-of-screen hook."""
+    words=str(text or "").strip().split()
+    if not words:
+        return ""
+
+    lines=[""]
+    for word in words:
+        candidate=(lines[-1]+" "+word).strip()
+        if len(candidate)<=int(max_chars) or len(lines)>=2:
+            lines[-1]=candidate
+        else:
+            lines.append(word)
+
+    if len(lines)>2:
+        lines=lines[:2]
+    return r"\N".join(x for x in lines if x)
+
+
 def _gsf_write_render_ass(
     ass_file, words, fallback_text="",
     font="Arial", size=92, x_pct=50, y_pct=78,
     text_color="#FFFFFF", active_color="#FFD400",
-    outline_color="#000000", fmt="9:16 Short"
+    outline_color="#000000", fmt="9:16 Short",
+    hook_text="", hook_duration=1.8, hook_y_pct=15
 ):
     """
-    Burn-in subtitles matching the LIVE editor concept:
-    groups of four words, current word highlighted.
+    Final burn-in:
+    - subtitles mirror the LIVE editor concept;
+    - hook is a separate top layer and never replaces subtitles.
     """
     if fmt=="9:16 Short":
         w_res,h_res=1080,1920
@@ -1247,6 +1351,9 @@ def _gsf_write_render_ass(
     outline=_gsf_hex_to_ass(outline_color,"#000000")
     safe_font=str(font or "Arial").replace(","," ")
 
+    hook_y=int(max(7,min(35,float(hook_y_pct)))/100.0*h_res)
+    hook_size=84 if fmt=="9:16 Short" else 64
+
     ass=f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {w_res}
@@ -1257,14 +1364,32 @@ WrapStyle: 2
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Default,{safe_font},{fs},{primary},{active},{outline},&H78000000,-1,0,0,0,100,100,0,0,1,5,2,5,20,20,20,1
+Style: Hook,Arial Black,{hook_size},&H00FFFFFF,&H0000D7FF,&H00000000,&H72000000,-1,0,0,0,100,100,0,0,1,7,3,8,40,40,30,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
+    wrote=False
+
+    hook=str(hook_text or "").strip()
+    if hook:
+        hook=_gsf_wrap_hook(hook)
+        hook_end=max(.65,min(2.4,float(hook_duration)))
+        hook_line=(
+            r"{\an8\pos("+str(w_res//2)+","+str(hook_y)+
+            r")\fad(90,180)}"+_gsf_ass_escape(hook)
+        )
+        # _gsf_ass_escape would escape the ASS newline token; restore only ours.
+        hook_line=hook_line.replace(r"\\N",r"\N")
+        ass+=(
+            f"Dialogue: 2,0:00:00.00,{_gsf_ass_time(hook_end)},"
+            f"Hook,,0,0,0,,{hook_line}\n"
+        )
+        wrote=True
+
     words=list(words or [])
     if words:
-        # Every active-word interval renders a 4-word group, like the LIVE player.
         for idx,word in enumerate(words):
             group_start=(idx//4)*4
             group=words[group_start:group_start+4]
@@ -1272,7 +1397,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             for j,item in enumerate(group):
                 tx=_gsf_ass_escape(item.get("text",""))
                 if group_start+j==idx:
-                    parts.append(r"{\c"+active+r"\b1}"+tx+r"{\c"+primary+r"\b1}")
+                    parts.append(
+                        r"{\c"+active+r"\b1}"+tx+
+                        r"{\c"+primary+r"\b1}"
+                    )
                 else:
                     parts.append(tx)
             line=" ".join(parts).strip()
@@ -1285,6 +1413,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 f"Dialogue: 0,{_gsf_ass_time(a)},{_gsf_ass_time(b)},"
                 f"Default,,0,0,0,,{positioned}\n"
             )
+            wrote=True
+
     elif str(fallback_text or "").strip():
         line=_gsf_ass_escape(fallback_text)
         positioned=r"{\an5\pos("+str(x)+","+str(y)+r")}"+line
@@ -1292,13 +1422,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             f"Dialogue: 0,0:00:00.00,9:59:59.00,"
             f"Default,,0,0,0,,{positioned}\n"
         )
-    else:
+        wrote=True
+
+    if not wrote:
         return False
 
     with open(ass_file,"w",encoding="utf-8") as f:
         f.write(ass)
     return True
-
 
 
 GSF_SMART_REFRAME_VERSION = "v42-motion-track"
@@ -1668,7 +1799,16 @@ def _gsf_render_video_filters(
     return vf
 
 
-def _gsf_render_audio_filter(speed=1.0,volume=100,normalize_audio=True):
+def _gsf_render_audio_filter(
+    speed=1.0,volume=100,normalize_audio=True,
+    duration=None,polish_audio=True
+):
+    """
+    Final audio chain:
+    speed -> loudness -> user volume -> limiter -> micro fades.
+    Fades are intentionally tiny: they remove hard cuts without softening
+    gunshots, goals or other important impacts.
+    """
     speed=max(.25,float(speed))
     volume=max(0.0,float(volume))/100.0
     parts=[]
@@ -1683,8 +1823,25 @@ def _gsf_render_audio_filter(speed=1.0,volume=100,normalize_audio=True):
     parts.append(f"atempo={local_speed:.4f}")
 
     if normalize_audio:
-        parts.append("loudnorm=I=-14:LRA=11:TP=-1.5")
+        parts.append("loudnorm=I=-14:LRA=9:TP=-1.5")
+
     parts.append(f"volume={volume:.4f}")
+
+    if polish_audio:
+        parts.append("alimiter=limit=0.95:attack=5:release=50")
+
+        if duration is not None:
+            out_duration=max(.10,float(duration)/speed)
+            fade_in=min(.045,out_duration*.15)
+            fade_out=min(.085,out_duration*.20)
+            fade_out_start=max(0.0,out_duration-fade_out)
+            parts.append(
+                f"afade=t=in:st=0:d={fade_in:.4f}"
+            )
+            parts.append(
+                f"afade=t=out:st={fade_out_start:.4f}:d={fade_out:.4f}"
+            )
+
     return ",".join(parts)
 
 
@@ -1700,10 +1857,13 @@ def _gsf_render_core(
     outline_color="#000000",
     normalize_audio=True,
     smart_reframe=False,
-    reframe_cache_token=None
+    reframe_cache_token=None,
+    hook_text="",
+    hook_duration=None,
+    polish_audio=True
 ):
     """
-    V41 final render core.
+    V43 final render core: Smart Reframe + hook + audio polish.
 
     ALWAYS renders from source_path, performs one final video encode,
     burns subtitles in that same pass, prefers Intel QSV and falls back
@@ -1738,10 +1898,24 @@ def _gsf_render_core(
                     source_path,start,duration
                 )
 
+        _hook_text=str(hook_text or "").strip()
+        _hook_duration=(
+            float(hook_duration)
+            if hook_duration is not None
+            else min(2.0,max(1.15,float(duration)*0.12))
+        )
+
+        if (
+            (subtitles_enabled and str(subtitle_mode)!="Nessuno")
+            or _hook_text
+        ):
             _gsf_write_render_ass(
                 ass_file,
                 used_words,
-                fallback_text=(subtitle_text if subtitle_words else ""),
+                fallback_text=(
+                    subtitle_text
+                    if subtitle_words and subtitles_enabled else ""
+                ),
                 font=subtitle_font,
                 size=subtitle_size,
                 x_pct=subtitle_x,
@@ -1749,7 +1923,10 @@ def _gsf_render_core(
                 text_color=text_color,
                 active_color=active_color,
                 outline_color=outline_color,
-                fmt=fmt
+                fmt=fmt,
+                hook_text=_hook_text,
+                hook_duration=_hook_duration,
+                hook_y_pct=15
             )
 
         reframe_track=None
@@ -1767,7 +1944,11 @@ def _gsf_render_core(
             reframe_track=reframe_track
         )
         af=_gsf_render_audio_filter(
-            speed=speed,volume=volume,normalize_audio=normalize_audio
+            speed=speed,
+            volume=volume,
+            normalize_audio=normalize_audio,
+            duration=duration,
+            polish_audio=polish_audio
         )
 
         base=[
@@ -1825,6 +2006,8 @@ def _gsf_render_core(
                     "subtitle_error":subtitle_error,
                     "smart_reframe":reframe_meta,
                     "reframe_cache_hit":bool(reframe_cache_hit),
+                    "hook_text":_hook_text,
+                    "audio_polish":bool(polish_audio),
                     "error":"",
                 }
             last_error=(r.stderr or "")[-3500:]
@@ -1836,6 +2019,8 @@ def _gsf_render_core(
             "subtitle_error":subtitle_error,
             "smart_reframe":reframe_meta,
             "reframe_cache_hit":bool(reframe_cache_hit),
+            "hook_text":_hook_text,
+            "audio_polish":bool(polish_audio),
             "error":last_error,
         }
     finally:
@@ -1852,7 +2037,8 @@ def crea_short_batch(
     normalizza_audio_attivo=True,
     stile_sub_attivo="Gaming",
     dimensione_sub_attiva=92,
-    posizione_sub_attiva=330
+    posizione_sub_attiva=330,
+    hook_text=""
 ):
     """
     Batch now uses the SAME V41 final render core as the Editors.
@@ -1880,6 +2066,8 @@ def crea_short_batch(
         outline_color="#000000",
         normalize_audio=bool(normalizza_audio_attivo),
         smart_reframe=True,
+        hook_text=hook_text,
+        polish_audio=True,
         reframe_cache_token=f"batch|{os.path.abspath(str(input_file))}"
     )
     if result.get("ok"):
@@ -4737,7 +4925,9 @@ if video:
                         "subtitle_outline_color_v18","#000000"
                     ),
                     normalize_audio=True,
-                    smart_reframe=False
+                    smart_reframe=False,
+                    hook_text="",
+                    polish_audio=True
                 )
 
             if editor_run.get("ok") and os.path.exists(editor_output):
@@ -5375,7 +5565,9 @@ if video:
                                             f"inline_outcol_v18_{_this_inline_id}","#000000"
                                         ),
                                         normalize_audio=True,
-                                        smart_reframe=False
+                                        smart_reframe=False,
+                                        hook_text="",
+                                        polish_audio=True
                                     )
                                 if _r.get("ok") and os.path.exists(_out):
                                     with open(_out,"rb") as _f:
@@ -5428,6 +5620,10 @@ if video:
             _pub_subtitles=bool(
                 st.session_state.get("project_subtitles_enabled",True)
             )
+            _pub_hook=_gsf_auto_hook_for_start(
+                _pub_start,
+                manual_hook=st.session_state.get("hook_testo","")
+            )
 
             with st.spinner("🎬 Render finale dal file originale..."):
                 _pub_result=_gsf_render_core(
@@ -5450,7 +5646,9 @@ if video:
                     reframe_cache_token=(
                         f"ai-final|{getattr(video,'name','video')}|"
                         f"{getattr(video,'size',0)}"
-                    )
+                    ),
+                    hook_text=_pub_hook,
+                    polish_audio=True
                 )
 
             if _pub_result.get("ok"):
@@ -5463,9 +5661,13 @@ if video:
                     f" · Smart Reframe {int(float(_rf.get('confidence',0))*100)}%"
                     if _rf.get("enabled") else " · crop centrale"
                 )
+                _hook_info=(
+                    f" · Hook: {_pub_result.get('hook_text','')}"
+                    if _pub_result.get("hook_text") else ""
+                )
                 st.success(
                     f"✅ Short finale pronto · {_pub_result.get('encoder','')} · "
-                    f"{_pub_result.get('seconds',0):.1f}s{_rf_text}"
+                    f"{_pub_result.get('seconds',0):.1f}s{_rf_text}{_hook_info}"
                 )
             else:
                 st.error("Render finale non riuscito.")
@@ -5586,6 +5788,11 @@ if video:
                             ).get(round(float(inizio_clip), 3), duration)
                         )
 
+                    _batch_hook=_gsf_auto_hook_for_start(
+                        float(inizio_clip),
+                        manual_hook=st.session_state.get("hook_testo","")
+                    )
+
                     output_batch = crea_short_batch(
                         batch_input,
                         batch_temp,
@@ -5596,7 +5803,8 @@ if video:
                         normalizza_audio,
                         stile_sub,
                         dimensione_sub,
-                        posizione_sub
+                        posizione_sub,
+                        hook_text=_batch_hook
                     )
 
                     if output_batch and os.path.exists(output_batch):
