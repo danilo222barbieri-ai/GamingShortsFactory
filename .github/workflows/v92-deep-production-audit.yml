@@ -126,7 +126,7 @@ jobs:
           }
 
           async function selectEngine(page,label){
-            const target=page.getByText(label,{exact:true}).first();
+            const target=page.getByRole('button').filter({hasText:label}).first();
             await target.waitFor({state:'visible',timeout:30000});
             await target.scrollIntoViewIfNeeded();
             await target.click();
