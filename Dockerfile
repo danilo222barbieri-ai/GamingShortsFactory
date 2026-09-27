@@ -49,6 +49,7 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/test_v87_upload_persist.py /app/GamingShortsFactory_V87_UPLOAD_PERSISTS.py && \
     python /app/web/apply_v88_persistent_loaded_circle.py && \
     python /app/web/test_v88_persistent_loaded_circle.py /app/GamingShortsFactory_V88_PERSISTENT_LOADED_CIRCLE.py && \
+    python /app/web/diagnose_v88_upload_flow.py && \
     python -m py_compile /app/GamingShortsFactory_V88_PERSISTENT_LOADED_CIRCLE.py
 
 COPY .streamlit /app/.streamlit
