@@ -1,0 +1,237 @@
+name: V92 deep production audit
+
+on:
+  push:
+    branches:
+      - v92-deep-audit
+
+jobs:
+  deep-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install browser and FFmpeg
+        run: |
+          npm init -y
+          npm install playwright
+          npx playwright install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Generate gameplay sample
+        run: |
+          ffmpeg -hide_banner -loglevel error -y \
+            -f lavfi -i "testsrc2=size=640x360:rate=30:duration=75" \
+            -f lavfi -i "sine=frequency=220:sample_rate=48000:duration=75" \
+            -filter:a "volume='if(between(t,10,16),1.0,if(between(t,31,38),0.8,if(between(t,58,67),1.0,0.08)))':eval=frame" \
+            -vf "eq=brightness='0.18*sin(2*PI*t/13)':eval=frame:saturation='1+0.35*sin(2*PI*t/9)':eval=frame" \
+            -c:v libx264 -preset ultrafast -pix_fmt yuv420p \
+            -c:a aac -b:a 128k -shortest deep_gameplay.mp4
+          ls -lh deep_gameplay.mp4
+
+      - name: Run deep browser audit
+        env:
+          APP_URL: https://gaming-shorts-factory-v79-production.up.railway.app/
+        run: |
+          cat > deep-audit.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          import fs from 'fs';
+
+          const OUT='deep-audit-artifacts';
+          fs.mkdirSync(OUT,{recursive:true});
+          const modes=['Automatico','Momento migliore','Più azione','Reazioni'];
+          const results={modes:{},checks:[]};
+          const browser=await chromium.launch({headless:true});
+
+          async function waitLoaded(page){
+            await page.locator('input[type="file"]').waitFor({state:'attached',timeout:60000});
+          }
+
+          async function upload(page){
+            await page.locator('input[type="file"]').setInputFiles('deep_gameplay.mp4');
+            await page.getByText('Video caricato',{exact:false}).waitFor({state:'visible',timeout:120000});
+          }
+
+          async function choose15(page){
+            const b=page.getByRole('button',{name:/^15s$/i}).first();
+            await b.waitFor({state:'visible',timeout:30000});
+            await b.click();
+            await page.waitForTimeout(500);
+          }
+
+          async function choose30(page){
+            const b=page.getByRole('button',{name:/^30s$/i}).first();
+            await b.waitFor({state:'visible',timeout:30000});
+            await b.click();
+            await page.waitForTimeout(500);
+          }
+
+          async function selectMode(page,mode){
+            const btn=page.getByRole('button').filter({hasText:mode}).first();
+            await btn.waitFor({state:'visible',timeout:30000});
+            await btn.click();
+            await page.waitForTimeout(700);
+          }
+
+          async function runAI(page){
+            const c=page.getByRole('button',{name:'CREA CON AI',exact:true});
+            await c.waitFor({state:'visible',timeout:30000});
+            await c.click();
+            await page.getByText('Scegli il tuo momento',{exact:false}).waitFor({state:'visible',timeout:300000});
+            await page.waitForFunction(()=>{
+              const cards=[...document.querySelectorAll('.v70-short-card-time')];
+              return cards.length>=3;
+            },null,{timeout:300000});
+            await page.waitForTimeout(800);
+            return await page.locator('.v70-short-card-time').evaluateAll(es=>es.slice(0,3).map(e=>e.textContent.trim()));
+          }
+
+          function startsFrom(times){
+            return times.map(t=>Number((t.match(/([0-9.]+)s\s*→/)||[])[1]));
+          }
+
+          for(const mode of modes){
+            const context=await browser.newContext({viewport:{width:1440,height:1200}});
+            const page=await context.newPage();
+            const consoleErrors=[];
+            page.on('pageerror',e=>consoleErrors.push('PAGEERROR '+e.message));
+            page.on('console',m=>{if(m.type()==='error') consoleErrors.push('CONSOLE '+m.text());});
+            console.log('MODE',mode,'OPEN');
+            await page.goto(process.env.APP_URL,{waitUntil:'domcontentloaded',timeout:60000});
+            await waitLoaded(page);
+            await upload(page);
+            await choose15(page);
+            await selectMode(page,mode);
+            const times=await runAI(page);
+            const starts=startsFrom(times);
+            console.log('MODE',mode,'TIMES',JSON.stringify(times));
+            console.log('MODE',mode,'STARTS',JSON.stringify(starts));
+            if(times.length!==3) throw new Error(mode+': expected 3 cards');
+            if(new Set(starts).size!==3) throw new Error(mode+': duplicate start times');
+            results.modes[mode]={times,starts,consoleErrors};
+            await page.screenshot({path:OUT+'/mode-'+mode.replace(/\W+/g,'-')+'.png',fullPage:true});
+
+            if(mode==='Automatico'){
+              await selectMode(page,'Più azione');
+              if(!(await page.getByText('Video caricato',{exact:false}).isVisible())) throw new Error('Upload lost after engine switch');
+              const b15=page.getByRole('button',{name:/^15s$/i}).first();
+              if(!(await b15.isVisible())) throw new Error('15s disappeared after engine switch');
+              results.checks.push('engine switch preserves upload');
+              console.log('PASS engine switch preserves upload');
+            }
+
+            await context.close();
+          }
+
+          {
+            const context=await browser.newContext({viewport:{width:1440,height:1200}});
+            const page=await context.newPage();
+            console.log('30S FLOW OPEN');
+            await page.goto(process.env.APP_URL,{waitUntil:'domcontentloaded',timeout:60000});
+            await waitLoaded(page);
+            await upload(page);
+            await choose30(page);
+            await selectMode(page,'Automatico');
+
+            await page.reload({waitUntil:'domcontentloaded',timeout:60000});
+            await page.getByText('Video caricato',{exact:false}).waitFor({state:'visible',timeout:90000});
+            results.checks.push('refresh preserves uploaded project');
+            console.log('PASS refresh preserves uploaded project');
+
+            const times=await runAI(page);
+            console.log('30S TIMES',JSON.stringify(times));
+            if(times.length!==3 || !times.every(t=>/·\s*30s/i.test(t))) throw new Error('30s AI cards are not all 30 seconds');
+            results.checks.push('30s AI returns 3 x 30s cards');
+            console.log('PASS 30s AI returns 3 x 30s cards');
+
+            const edit=page.getByRole('button',{name:/MODIFICA NELL.?EDITOR/i}).first();
+            await edit.waitFor({state:'visible',timeout:120000});
+            await edit.click();
+            await page.getByRole('button',{name:/CHIUDI EDITOR/i}).waitFor({state:'visible',timeout:60000});
+
+            const inquad=page.getByRole('button',{name:/INQUADRATURA/i}).last();
+            await inquad.click();
+            const zoom=page.getByRole('slider',{name:/Zoom/i}).last();
+            await zoom.waitFor({state:'visible'});
+            await zoom.press('ArrowRight');
+            await zoom.press('ArrowRight');
+
+            const reg=page.getByRole('button',{name:/REGOLAZIONI/i}).last();
+            await reg.click();
+            await page.getByText('Parametro',{exact:false}).last().waitFor({state:'visible',timeout:15000});
+
+            const use=page.getByRole('button',{name:/USA QUESTE MODIFICHE/i}).last();
+            await use.waitFor({state:'visible'});
+            await use.click();
+            await page.getByText(/Modifiche pronte|MODIFICHE SELEZIONATE/i).last().waitFor({state:'visible',timeout:30000});
+
+            const finalBtn=page.getByRole('button',{name:/CREA SHORT FINALE/i});
+            await finalBtn.click();
+            const dl=page.locator('[data-testid="stDownloadButton"]').last();
+            await dl.waitFor({state:'visible',timeout:360000});
+            let trigger=dl.locator('button');
+            if(!(await trigger.count())) trigger=dl.locator('a');
+            const promise=page.waitForEvent('download',{timeout:60000});
+            await trigger.first().click();
+            const download=await promise;
+            const outPath=OUT+'/final-30s.mp4';
+            await download.saveAs(outPath);
+            const size=fs.statSync(outPath).size;
+            if(size<10000) throw new Error('final 30s MP4 too small');
+            results.final30sBytes=size;
+            results.checks.push('editor + final 30s render + download');
+            console.log('PASS editor + final 30s render + download',size);
+            await page.screenshot({path:OUT+'/final-30s.png',fullPage:true});
+            await context.close();
+          }
+
+          {
+            const context=await browser.newContext({viewport:{width:1440,height:1200}});
+            const page=await context.newPage();
+            await page.goto(process.env.APP_URL,{waitUntil:'domcontentloaded',timeout:60000});
+            await waitLoaded(page);
+            await upload(page);
+            const newVideo=page.getByRole('button',{name:/NUOVO VIDEO/i});
+            await newVideo.waitFor({state:'visible'});
+            await newVideo.click();
+            await page.waitForTimeout(700);
+            await page.getByText('Carica il tuo video',{exact:false}).waitFor({state:'visible',timeout:30000});
+            const loadedText=page.getByText('Video caricato',{exact:false});
+            if(await loadedText.count()){
+              const vis=await loadedText.first().isVisible().catch(()=>false);
+              if(vis) throw new Error('Video caricato still visible after NEW VIDEO');
+            }
+            results.checks.push('new video reset');
+            console.log('PASS new video reset');
+            await context.close();
+          }
+
+          const signatures=Object.values(results.modes).map(x=>JSON.stringify(x.starts));
+          if(new Set(signatures).size<2) throw new Error('All four AI modes returned the exact same three starts');
+          results.checks.push('AI modes are not all identical');
+          console.log('PASS AI modes are not all identical');
+
+          fs.writeFileSync(OUT+'/results.json',JSON.stringify(results,null,2));
+          console.log('DEEP AUDIT PASS');
+          await browser.close();
+          EOF
+          node deep-audit.mjs
+
+      - name: Validate final video metadata
+        if: success()
+        run: |
+          ffprobe -v error -show_entries format=duration,size -show_entries stream=codec_name,width,height,r_frame_rate -of json deep-audit-artifacts/final-30s.mp4 | tee deep-audit-artifacts/final-30s-ffprobe.json
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v92-deep-audit
+          path: deep-audit-artifacts/
+          if-no-files-found: warn
