@@ -10,13 +10,14 @@ export GSF_MEDIA_PORT="${GSF_MEDIA_PORT:-8765}"
 export GSF_MEDIA_BASE_URL="${GSF_MEDIA_BASE_URL:-/media}"
 export GSF_RUNTIME_ROOT="${GSF_RUNTIME_ROOT:-/tmp/gsf-runtime}"
 export GSF_SESSION_TTL_SECONDS="${GSF_SESSION_TTL_SECONDS:-21600}"
+export HF_HOME="${HF_HOME:-/app/.cache/huggingface}"
 
 mkdir -p "$GSF_RUNTIME_ROOT"
 rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 envsubst '${PORT}' < /app/web/nginx.conf.template > /etc/nginx/conf.d/default.conf
 nginx
 
-exec python -m streamlit run /app/GamingShortsFactory_V79_SESSION_SOCIAL_BETA.py \
+exec python -m streamlit run /app/GamingShortsFactory_V80_UI_AUTOSUB_BETA.py \
   --server.address=127.0.0.1 \
   --server.port=8501 \
   --server.maxUploadSize=4096 \
