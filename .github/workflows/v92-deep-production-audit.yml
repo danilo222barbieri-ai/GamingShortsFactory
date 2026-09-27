@@ -148,7 +148,7 @@ jobs:
             const seconds=(Date.now()-t0)/1000;
             const fps=await candidateMediaFingerprints(page,context);
             const body=await page.locator('body').innerText();
-            const clips=[...body.matchAll(/([0-9]+(?:\\.[0-9]+)?)s\\s*→\\s*([0-9]+(?:\\.[0-9]+)?)s\\s*·\\s*([0-9]+(?:\\.[0-9]+)?)s/g)]
+            const clips=[...body.matchAll(/([0-9.]+)s → ([0-9.]+)s · ([0-9.]+)s/g)]
               .slice(-3).map(m=>({start:Number(m[1]),end:Number(m[2]),duration:Number(m[3])}));
             fs.writeFileSync(`${OUT}/body-${slug}.txt`,body);
             await shot(page,`engine-${slug}`);
@@ -367,7 +367,7 @@ jobs:
             await page.getByRole('button',{name:'CREA CON AI',exact:true}).click();
             await waitThree(page);
             const body30=await page.locator('body').innerText();
-            const clips30=[...body30.matchAll(/([0-9]+(?:\\.[0-9]+)?)s\\s*→\\s*([0-9]+(?:\\.[0-9]+)?)s\\s*·\\s*([0-9]+(?:\\.[0-9]+)?)s/g)]
+            const clips30=[...body30.matchAll(/([0-9.]+)s → ([0-9.]+)s · ([0-9.]+)s/g)]
               .slice(-3).map(m=>({start:Number(m[1]),end:Number(m[2]),duration:Number(m[3])}));
             results.duration30={clips:clips30,contract:clips30.length===3&&clips30.every(c=>Math.abs(c.duration-30)<=0.25)};
             console.log('30S CLIPS',JSON.stringify(results.duration30));
