@@ -148,11 +148,15 @@ jobs:
             const seconds=(Date.now()-t0)/1000;
             const fps=await candidateMediaFingerprints(page,context);
             const body=await page.locator('body').innerText();
+            const clips=[...body.matchAll(/([0-9]+(?:\\.[0-9]+)?)s\\s*→\\s*([0-9]+(?:\\.[0-9]+)?)s\\s*·\\s*([0-9]+(?:\\.[0-9]+)?)s/g)]
+              .slice(-3).map(m=>({start:Number(m[1]),end:Number(m[2]),duration:Number(m[3])}));
             fs.writeFileSync(`${OUT}/body-${slug}.txt`,body);
             await shot(page,`engine-${slug}`);
-            console.log('ENGINE PASS',label,'seconds',seconds.toFixed(2),'fingerprints',JSON.stringify(fps));
-            results[slug]={seconds,fingerprints:fps};
-            return fps;
+            const durationContract=clips.length===3 && clips.every(c=>Math.abs(c.duration-15)<=0.25);
+            console.log('ENGINE PASS',label,'seconds',seconds.toFixed(2),'clips',JSON.stringify(clips),'durationContract',durationContract,'fingerprints',JSON.stringify(fps));
+            results[slug]={seconds,clips,durationContract,fingerprints:fps};
+            if(!durationContract) console.log('ISSUE',label,'did not keep all three candidates at requested 15s');
+            return clips;
           }
 
           let desktopContext;
@@ -259,15 +263,19 @@ jobs:
 
             const modeSignatures=Object.fromEntries(
               Object.entries(results).filter(([k])=>['automatico','momento-migliore','piu-azione','reazioni'].includes(k))
-                .map(([k,v])=>[k,(v.fingerprints||[]).map(x=>x.sha256||x.src).join('|')])
+                .map(([k,v])=>[k,(v.clips||[]).map(c=>`${c.start}-${c.end}-${c.duration}`).join('|')])
             );
             console.log('MODE SIGNATURES',JSON.stringify(modeSignatures));
             const unique=new Set(Object.values(modeSignatures).filter(Boolean));
-            if(unique.size<2) throw new Error('All AI modes produced identical candidate media sets');
+            if(unique.size<2) throw new Error('All AI modes produced identical candidate time ranges');
             if(modeSignatures['reazioni'] && modeSignatures['piu-azione'] && modeSignatures['reazioni']===modeSignatures['piu-azione']){
-              throw new Error('Reazioni and Più azione produced identical candidate media sets');
+              throw new Error('Reazioni and Più azione produced identical candidate time ranges');
             }
-            console.log('PASS AI modes are not all selecting the same media');
+            results.aiModesDistinct=unique.size;
+            results.duration15Contract=Object.fromEntries(
+              ['automatico','momento-migliore','piu-azione','reazioni'].map(k=>[k,Boolean(results[k]?.durationContract)])
+            );
+            console.log('PASS AI modes select different time ranges');
 
             console.log('STEP 7: inline editor controls on Reazioni');
             const edit=page.getByRole('button',{name:/MODIFICA NELL.?EDITOR/i});
@@ -358,6 +366,12 @@ jobs:
             await selectEngine(page,'Automatico');
             await page.getByRole('button',{name:'CREA CON AI',exact:true}).click();
             await waitThree(page);
+            const body30=await page.locator('body').innerText();
+            const clips30=[...body30.matchAll(/([0-9]+(?:\\.[0-9]+)?)s\\s*→\\s*([0-9]+(?:\\.[0-9]+)?)s\\s*·\\s*([0-9]+(?:\\.[0-9]+)?)s/g)]
+              .slice(-3).map(m=>({start:Number(m[1]),end:Number(m[2]),duration:Number(m[3])}));
+            results.duration30={clips:clips30,contract:clips30.length===3&&clips30.every(c=>Math.abs(c.duration-30)<=0.25)};
+            console.log('30S CLIPS',JSON.stringify(results.duration30));
+            if(!results.duration30.contract) console.log('ISSUE 30s mode did not keep all three candidates at requested 30s');
             console.log('PASS 30s -> 3 candidates');
             await shot(page,'09-30s-results');
 
