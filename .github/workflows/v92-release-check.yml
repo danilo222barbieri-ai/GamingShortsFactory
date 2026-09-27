@@ -67,8 +67,14 @@ jobs:
             const b15=page.getByRole('button',{name:/^15s$/i});
             if(await b15.count()) await b15.first().click();
 
-            const reaction=page.getByRole('button',{name:/Auto Clip|Reazioni/i});
-            if(!(await reaction.count())) throw new Error('Reaction engine button not found');
+            let reaction=page.locator('.st-key-v69_engine_grid button').filter({hasText:/Auto Clip|Reazioni/i});
+            if(!(await reaction.count())){
+              const engineButtons=page.locator('.st-key-v69_engine_grid button');
+              const labels=await engineButtons.allInnerTexts();
+              console.log('ENGINE BUTTONS:',JSON.stringify(labels));
+              if((await engineButtons.count())<4) throw new Error('Reaction engine button not found');
+              reaction=engineButtons.nth(3);
+            }
             await reaction.first().click();
 
             const create=page.getByRole('button',{name:'CREA CON AI',exact:true});
