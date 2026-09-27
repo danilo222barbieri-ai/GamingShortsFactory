@@ -1,0 +1,406 @@
+name: V92 deep production audit
+
+on:
+  push:
+    branches:
+      - v92-deep-production-audit
+
+jobs:
+  deep-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install test dependencies
+        run: |
+          npm init -y
+          npm install playwright
+          npx playwright install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg espeak-ng
+
+      - name: Generate test videos
+        run: |
+          # A larger file so the real upload-status indicator stays visible long enough to verify.
+          ffmpeg -hide_banner -loglevel error -y \
+            -f lavfi -i "testsrc2=size=1280x720:rate=30:duration=24" \
+            -f lavfi -i "sine=frequency=330:sample_rate=48000:duration=24" \
+            -c:v libx264 -preset ultrafast -b:v 4M -maxrate 4M -bufsize 8M -pix_fmt yuv420p \
+            -c:a aac -b:a 128k -shortest upload_progress.mp4
+
+          # Purpose-built 80s pseudo-gameplay:
+          # 0-20 quiet/static, 20-40 heavy motion/action,
+          # 40-60 spoken reaction/semantic event, 60-80 sustained climax.
+          ffmpeg -hide_banner -loglevel error -y \
+            -f lavfi -i "color=c=0x20252b:size=640x360:rate=30:duration=20" \
+            -f lavfi -i "sine=frequency=180:sample_rate=48000:duration=20" \
+            -filter:a "volume=0.025" \
+            -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -b:a 96k -shortest seg1.mp4
+
+          ffmpeg -hide_banner -loglevel error -y \
+            -f lavfi -i "testsrc2=size=640x360:rate=30:duration=20" \
+            -f lavfi -i "sine=frequency=850:sample_rate=48000:duration=20" \
+            -filter:a "volume='if(lt(mod(t,5),2),0.85,0.18)':eval=frame" \
+            -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -b:a 128k -shortest seg2.mp4
+
+          espeak-ng -w reaction_voice.wav -s 165 -a 190 "Oh my god! No no no! What a kill! Let's go! Victory! Clutch! What a play!"
+          ffmpeg -hide_banner -loglevel error -y \
+            -f lavfi -i "testsrc2=size=640x360:rate=30:duration=20" \
+            -f lavfi -i "sine=frequency=300:sample_rate=48000:duration=20" \
+            -i reaction_voice.wav \
+            -filter_complex "[1:a]volume=0.08[base];[2:a]adelay=4500|4500,volume=1.5[voice];[base][voice]amix=inputs=2:duration=first:dropout_transition=1[a]" \
+            -map 0:v -map "[a]" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -b:a 128k -shortest seg3.mp4
+
+          ffmpeg -hide_banner -loglevel error -y \
+            -f lavfi -i "testsrc2=size=640x360:rate=30:duration=20" \
+            -f lavfi -i "sine=frequency=1200:sample_rate=48000:duration=20" \
+            -filter_complex "[0:v]eq=contrast=1.15:saturation=1.3[v];[1:a]volume='if(lt(t,5),0.10,if(lt(t,12),0.45,0.95))':eval=frame[a]" \
+            -map "[v]" -map "[a]" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -b:a 128k -shortest seg4.mp4
+
+          printf "file 'seg1.mp4'\nfile 'seg2.mp4'\nfile 'seg3.mp4'\nfile 'seg4.mp4'\n" > concat.txt
+          ffmpeg -hide_banner -loglevel error -y -f concat -safe 0 -i concat.txt -c copy deep_gameplay.mp4
+          ffprobe -v error -show_entries format=duration,size -of default=nw=1 deep_gameplay.mp4
+          ls -lh upload_progress.mp4 deep_gameplay.mp4
+
+      - name: Run deep browser audit
+        env:
+          APP_URL: https://gaming-shorts-factory-v79-production.up.railway.app/
+        run: |
+          cat > deep-audit.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          import fs from 'fs';
+          import crypto from 'crypto';
+
+          const APP=process.env.APP_URL;
+          const OUT='v92-deep-artifacts';
+          fs.mkdirSync(OUT,{recursive:true});
+
+          const browser=await chromium.launch({headless:true});
+          const results={};
+          const errors=[];
+
+          const addListeners=(page)=>{
+            page.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
+            page.on('console',m=>{ if(m.type()==='error') errors.push('CONSOLE '+m.text()); });
+          };
+
+          const shot=async(page,name)=>page.screenshot({path:`${OUT}/${name}.png`,fullPage:true});
+
+          async function assertNoOverflow(page,label,tolerance=8){
+            const m=await page.evaluate(()=>({iw:innerWidth,sw:document.documentElement.scrollWidth,bw:document.body.scrollWidth}));
+            console.log('OVERFLOW',label,JSON.stringify(m));
+            results['overflow_'+label]=m;
+            if(m.sw>m.iw+tolerance||m.bw>m.iw+tolerance) throw new Error(`Horizontal overflow at ${label}: ${JSON.stringify(m)}`);
+          }
+
+          async function waitThree(page,timeout=360000){
+            await page.getByText('Scegli il tuo momento',{exact:false}).waitFor({state:'visible',timeout});
+            await page.waitForFunction(()=>{
+              const labels=[...document.querySelectorAll('button')].map(b=>(b.innerText||'').trim());
+              return labels.filter(t=>/SCEGLI QUESTO|SELEZIONATA/i.test(t)).length>=3;
+            },null,{timeout});
+            const c=await page.getByRole('button',{name:/SCEGLI QUESTO|SELEZIONATA/i}).count();
+            if(c!==3) throw new Error(`Expected exactly 3 AI candidates, got ${c}`);
+            return c;
+          }
+
+          async function candidateMediaFingerprints(page,context){
+            const srcs=await page.locator('video').evaluateAll(els=>els.map(v=>v.currentSrc||v.src||'').filter(Boolean));
+            const minis=[...new Set(srcs.filter(s=>/v71_mini_|persistent_/i.test(s)))].slice(-3);
+            const out=[];
+            for(const src of minis){
+              try{
+                const r=await context.request.get(src);
+                const buf=await r.body();
+                out.push({src,bytes:buf.length,sha256:crypto.createHash('sha256').update(buf).digest('hex')});
+              }catch(e){
+                out.push({src,error:String(e)});
+              }
+            }
+            return out;
+          }
+
+          async function selectEngine(page,label){
+            const target=page.getByText(label,{exact:true}).first();
+            await target.waitFor({state:'visible',timeout:30000});
+            await target.scrollIntoViewIfNeeded();
+            await target.click();
+            await page.waitForTimeout(900);
+          }
+
+          async function runEngine(page,context,label,slug){
+            console.log('ENGINE START',label);
+            await selectEngine(page,label);
+            const stale=await page.getByRole('button',{name:/SCEGLI QUESTO|SELEZIONATA/i}).count();
+            console.log('ENGINE stale candidates after switch',label,stale);
+            if(stale!==0) throw new Error(`Switch to ${label} did not clear old AI candidates`);
+            await page.getByText('Video caricato',{exact:false}).waitFor({state:'visible'});
+            const create=page.getByRole('button',{name:'CREA CON AI',exact:true});
+            await create.waitFor({state:'visible',timeout:30000});
+            const t0=Date.now();
+            await create.click();
+            await waitThree(page);
+            const seconds=(Date.now()-t0)/1000;
+            const fps=await candidateMediaFingerprints(page,context);
+            const body=await page.locator('body').innerText();
+            fs.writeFileSync(`${OUT}/body-${slug}.txt`,body);
+            await shot(page,`engine-${slug}`);
+            console.log('ENGINE PASS',label,'seconds',seconds.toFixed(2),'fingerprints',JSON.stringify(fps));
+            results[slug]={seconds,fingerprints:fps};
+            return fps;
+          }
+
+          let desktopContext;
+          try{
+            desktopContext=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
+            const page=await desktopContext.newPage();
+            addListeners(page);
+            page.setDefaultTimeout(30000);
+
+            console.log('STEP 1: app health + initial uploader');
+            await page.goto(APP,{waitUntil:'domcontentloaded',timeout:60000});
+            await page.locator('input[type="file"]').waitFor({state:'attached',timeout:60000});
+            await page.getByText('Carica il tuo video',{exact:false}).waitFor({state:'visible'});
+            await assertNoOverflow(page,'desktop-home');
+            await shot(page,'01-desktop-home');
+            console.log('PASS initial uploader');
+
+            console.log('STEP 2: real upload-progress indicator under throttling');
+            const cdp=await desktopContext.newCDPSession(page);
+            await cdp.send('Network.enable');
+            await cdp.send('Network.emulateNetworkConditions',{
+              offline:false,latency:120,downloadThroughput:750000,uploadThroughput:120000,connectionType:'cellular3g'
+            });
+            const input=page.locator('input[type="file"]');
+            const setPromise=input.setInputFiles('upload_progress.mp4');
+            const status=page.locator('.gsf-v91-upload-status');
+            await status.waitFor({state:'visible',timeout:30000});
+            const statusText=(await status.innerText()).trim();
+            console.log('UPLOAD STATUS VISIBLE:',statusText);
+            if(!/Caricamento video/i.test(statusText)) throw new Error('Upload status text is not correct');
+            await shot(page,'02-upload-progress');
+            await setPromise;
+            await page.getByText('Video caricato',{exact:false}).waitFor({state:'visible',timeout:180000});
+            await cdp.send('Network.emulateNetworkConditions',{
+              offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1,connectionType:'wifi'
+            });
+            console.log('PASS real upload progress + completion');
+
+            console.log('STEP 3: + NUOVO VIDEO reset');
+            await page.getByRole('button',{name:/NUOVO VIDEO/i}).click();
+            await page.getByText('Carica il tuo video',{exact:false}).waitFor({state:'visible',timeout:30000});
+            const loadedAfterReset=await page.getByText('Video caricato',{exact:false}).count();
+            if(loadedAfterReset!==0) throw new Error('New video reset kept loaded state');
+            console.log('PASS new-video reset');
+
+            console.log('STEP 4: upload deep gameplay + session recovery');
+            await page.locator('input[type="file"]').setInputFiles('deep_gameplay.mp4');
+            await page.getByText('Video caricato',{exact:false}).waitFor({state:'visible',timeout:120000});
+            await page.reload({waitUntil:'domcontentloaded',timeout:60000});
+            await page.getByText('Video caricato',{exact:false}).waitFor({state:'visible',timeout:60000});
+            console.log('PASS upload survives browser refresh/session recovery');
+
+            console.log('STEP 5: duration UI');
+            const b15=page.getByRole('button',{name:/^15s$/i}).first();
+            const b30=page.getByRole('button',{name:/^30s$/i}).first();
+            await b15.waitFor({state:'visible'});
+            await b30.waitFor({state:'visible'});
+            const p15=await b15.boundingBox(), p30=await b30.boundingBox();
+            console.log('DURATION POS',JSON.stringify({p15,p30}));
+            if(!p15||!p30||Math.abs(p15.y-p30.y)>12) throw new Error('15s and 30s not aligned');
+            await b15.click();
+            await page.waitForTimeout(600);
+            console.log('PASS 15s/30s layout and 15s selection');
+
+            console.log('STEP 6: all four AI modes');
+            const modeLabels=[
+              ['Automatico','automatico'],
+              ['Momento migliore','momento-migliore'],
+              ['Più azione','piu-azione'],
+              ['Reazioni','reazioni']
+            ];
+            for(const [label,slug] of modeLabels){
+              await runEngine(page,desktopContext,label,slug);
+            }
+
+            const modeSignatures=Object.fromEntries(
+              Object.entries(results).filter(([k])=>['automatico','momento-migliore','piu-azione','reazioni'].includes(k))
+                .map(([k,v])=>[k,(v.fingerprints||[]).map(x=>x.sha256||x.src).join('|')])
+            );
+            console.log('MODE SIGNATURES',JSON.stringify(modeSignatures));
+            const unique=new Set(Object.values(modeSignatures).filter(Boolean));
+            if(unique.size<2) throw new Error('All AI modes produced identical candidate media sets');
+            if(modeSignatures['reazioni'] && modeSignatures['piu-azione'] && modeSignatures['reazioni']===modeSignatures['piu-azione']){
+              throw new Error('Reazioni and Più azione produced identical candidate media sets');
+            }
+            console.log('PASS AI modes are not all selecting the same media');
+
+            console.log('STEP 7: inline editor controls on Reazioni');
+            const edit=page.getByRole('button',{name:/MODIFICA NELL.?EDITOR/i});
+            await edit.waitFor({state:'visible',timeout:120000});
+            await edit.click();
+            await page.getByRole('button',{name:/CHIUDI EDITOR/i}).waitFor({state:'visible',timeout:60000});
+
+            const format16=page.getByText('16:9 Originale',{exact:true}).last();
+            if(await format16.count()){
+              await format16.click();
+              await page.waitForTimeout(500);
+              const format9=page.getByText('9:16 Short',{exact:true}).last();
+              await format9.click();
+              await page.waitForTimeout(500);
+              console.log('PASS format 16:9 -> 9:16 switch');
+            }
+
+            const inquad=page.getByRole('button',{name:/INQUADRATURA/i}).last();
+            await inquad.click();
+            const zoom=page.getByRole('slider',{name:/Zoom/i}).last();
+            await zoom.waitFor({state:'visible'});
+            const beforeZoom=await zoom.getAttribute('aria-valuenow');
+            await zoom.press('ArrowRight');
+            await zoom.press('ArrowRight');
+            const afterZoom=await zoom.getAttribute('aria-valuenow');
+            console.log('ZOOM',beforeZoom,'->',afterZoom);
+            if(beforeZoom===afterZoom) throw new Error('Zoom did not change');
+            await page.keyboard.press('Escape');
+
+            const reg=page.getByRole('button',{name:/REGOLAZIONI/i}).last();
+            await reg.click();
+            const combo=page.getByRole('combobox',{name:/Parametro/i}).last();
+            await combo.waitFor({state:'visible'});
+            console.log('PASS regulation selector opened');
+            await page.keyboard.press('Escape');
+
+            const trimBlock=page.locator('[data-testid="stSlider"]').filter({hasText:'IN / OUT'}).last();
+            if(await trimBlock.count()){
+              const trims=trimBlock.getByRole('slider');
+              const tc=await trims.count();
+              console.log('TRIM HANDLES',tc);
+              if(tc>=2){
+                const outHandle=trims.nth(1);
+                const before=await outHandle.getAttribute('aria-valuenow');
+                await outHandle.press('ArrowLeft');
+                await outHandle.press('ArrowLeft');
+                const after=await outHandle.getAttribute('aria-valuenow');
+                console.log('TRIM OUT',before,'->',after);
+                if(before===after) throw new Error('IN/OUT trim did not change');
+              }
+            }
+            await assertNoOverflow(page,'desktop-editor');
+            await shot(page,'07-editor-controls');
+            console.log('PASS editor controls');
+
+            console.log('STEP 8: save editor recipe + final render + actual MP4');
+            const use=page.getByRole('button',{name:/USA QUESTE MODIFICHE/i}).last();
+            await use.waitFor({state:'visible'});
+            await use.click();
+            await page.getByText(/Modifiche pronte|MODIFICHE SELEZIONATE/i).last().waitFor({state:'visible',timeout:30000});
+            const finalBtn=page.getByRole('button',{name:/CREA SHORT FINALE/i});
+            await finalBtn.waitFor({state:'visible'});
+            const tRender=Date.now();
+            await finalBtn.click();
+            const downloadBox=page.locator('[data-testid="stDownloadButton"]').last();
+            await downloadBox.waitFor({state:'visible',timeout:360000});
+            const renderSeconds=(Date.now()-tRender)/1000;
+            let trigger=downloadBox.locator('button');
+            if(!(await trigger.count())) trigger=downloadBox.locator('a');
+            const dlP=page.waitForEvent('download',{timeout:60000});
+            await trigger.first().click();
+            const dl=await dlP;
+            const finalPath=`${OUT}/desktop-final.mp4`;
+            await dl.saveAs(finalPath);
+            const bytes=fs.statSync(finalPath).size;
+            if(bytes<10000) throw new Error('Final render downloaded file too small');
+            results.finalRender={seconds:renderSeconds,bytes};
+            console.log('PASS final render/download',JSON.stringify(results.finalRender));
+            await shot(page,'08-final-render');
+
+            console.log('STEP 9: 30s AI path');
+            await page.getByRole('button',{name:/NUOVO VIDEO/i}).click();
+            await page.locator('input[type="file"]').setInputFiles('deep_gameplay.mp4');
+            await page.getByText('Video caricato',{exact:false}).waitFor({state:'visible',timeout:120000});
+            await b30.waitFor({state:'visible'});
+            await b30.click();
+            await page.waitForTimeout(600);
+            await selectEngine(page,'Automatico');
+            await page.getByRole('button',{name:'CREA CON AI',exact:true}).click();
+            await waitThree(page);
+            console.log('PASS 30s -> 3 candidates');
+            await shot(page,'09-30s-results');
+
+            console.log('STEP 10: final desktop reset');
+            await page.getByRole('button',{name:/NUOVO VIDEO/i}).click();
+            await page.getByText('Carica il tuo video',{exact:false}).waitFor({state:'visible',timeout:30000});
+            if(await page.getByRole('button',{name:/SCEGLI QUESTO|SELEZIONATA/i}).count()) throw new Error('AI results survived new-video reset');
+            console.log('PASS final reset clears project');
+          }catch(e){
+            console.error('DESKTOP DEEP AUDIT FAIL',e);
+            results.desktopFailure=String(e);
+            try{const pages=desktopContext?.pages()||[]; if(pages[0]) await shot(pages[0],'FAIL-desktop');}catch{}
+            throw e;
+          }finally{
+            if(desktopContext) await desktopContext.close();
+          }
+
+          console.log('STEP 11: mobile V92 Reazioni smoke + no overflow');
+          const mobileContext=await browser.newContext({
+            viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1,acceptDownloads:true,
+            userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1'
+          });
+          const mobile=await mobileContext.newPage();
+          addListeners(mobile);
+          try{
+            await mobile.goto(APP,{waitUntil:'domcontentloaded',timeout:60000});
+            await mobile.locator('input[type="file"]').waitFor({state:'attached',timeout:60000});
+            await mobile.locator('input[type="file"]').setInputFiles('deep_gameplay.mp4');
+            await mobile.getByText('Video caricato',{exact:false}).waitFor({state:'visible',timeout:120000});
+            const circle=await mobile.locator('.gsf-v89-upload-visual.is-loaded').boundingBox();
+            console.log('MOBILE CIRCLE',JSON.stringify(circle));
+            if(!circle||Math.abs(circle.width-208)>8) throw new Error('Mobile loaded circle is not ~208px');
+
+            const mb15=mobile.getByRole('button',{name:/^15s$/i}).first();
+            const mb30=mobile.getByRole('button',{name:/^30s$/i}).first();
+            const x15=await mb15.boundingBox(),x30=await mb30.boundingBox();
+            if(!x15||!x30||Math.abs(x15.y-x30.y)>12) throw new Error('Mobile 15/30 not side-by-side');
+            await mb15.click();
+            await selectEngine(mobile,'Reazioni');
+            await mobile.getByRole('button',{name:'CREA CON AI',exact:true}).click();
+            await waitThree(mobile);
+            await assertNoOverflow(mobile,'mobile-ai');
+            await shot(mobile,'10-mobile-reazioni');
+            console.log('PASS mobile V92 Reazioni + 3 candidates + no overflow');
+          }catch(e){
+            console.error('MOBILE DEEP AUDIT FAIL',e);
+            results.mobileFailure=String(e);
+            try{await shot(mobile,'FAIL-mobile');}catch{}
+            throw e;
+          }finally{
+            await mobileContext.close();
+            await browser.close();
+          }
+
+          fs.writeFileSync(`${OUT}/results.json`,JSON.stringify(results,null,2));
+          if(errors.length) fs.writeFileSync(`${OUT}/browser-errors.txt`,errors.join('\n'));
+          console.log('BROWSER ERROR COUNT',errors.length);
+          console.log('V92 DEEP PRODUCTION AUDIT PASS');
+          EOF
+          node deep-audit.mjs
+
+      - name: Verify final MP4 with ffprobe
+        if: always()
+        run: |
+          if [ -f v92-deep-artifacts/desktop-final.mp4 ]; then
+            ffprobe -v error -show_entries format=duration,size -show_entries stream=index,codec_name,codec_type,width,height,r_frame_rate -of json v92-deep-artifacts/desktop-final.mp4 | tee v92-deep-artifacts/final-ffprobe.json
+          fi
+
+      - name: Upload deep diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v92-deep-production-audit
+          path: v92-deep-artifacts/
+          if-no-files-found: warn
