@@ -112,13 +112,18 @@ jobs:
             await createAI.waitFor({ state: 'visible', timeout: 30000 });
             await createAI.click();
             await page.getByText('Scegli il tuo momento', { exact: false }).waitFor({ state: 'visible', timeout: 240000 });
-            await page.waitForTimeout(1500);
+            console.log('AI ranking ready; waiting for three preview cards...');
+            await page.waitForFunction(() => {
+              const labels = [...document.querySelectorAll('button')].map(b => (b.innerText || '').trim());
+              return labels.filter(t => /SCEGLI QUESTO|SELEZIONATA/i.test(t)).length >= 3;
+            }, null, { timeout: 240000 });
+            await page.waitForTimeout(1000);
             await snap('03-ai-results');
 
             const chooseCount = await page.getByRole('button', { name: /SCEGLI QUESTO|SELEZIONATA/i }).count();
             console.log('AI candidate buttons:', chooseCount);
             if (chooseCount < 3) throw new Error(`Expected 3 AI candidates, found ${chooseCount}`);
-            console.log('PASS 3 AI candidates');
+            console.log('PASS 3 AI candidates + previews');
 
             console.log('STEP 4 open inline editor');
             const edit = page.getByRole('button', { name: /MODIFICA NELL.?EDITOR/i });
