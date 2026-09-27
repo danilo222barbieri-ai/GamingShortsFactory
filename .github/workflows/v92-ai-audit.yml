@@ -46,6 +46,7 @@ jobs:
           p=Path('/app/GamingShortsFactory_V91_ROADMAP_POLISH.py')
           lines=p.read_text(encoding='utf-8').splitlines()
           for a,b,label in [
+              (4700,5200,'VOICE'),
               (5200,5650,'SELECT'),
               (5650,6150,'RANK'),
           ]:
