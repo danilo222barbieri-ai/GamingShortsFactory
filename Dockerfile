@@ -43,7 +43,7 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v83_upload_fix.py && \
     python /app/web/apply_v84_mobile_media_upload_fix.py && \
     python /app/web/apply_v85_upload_cleanup.py && \
-    python /app/web/diagnose_v85_uploader.py && \
+    python /app/web/test_v86_uploader_patch.py /app/GamingShortsFactory_V85_UPLOAD_CLEANUP.py && \
     python -m py_compile /app/GamingShortsFactory_V85_UPLOAD_CLEANUP.py
 
 COPY .streamlit /app/.streamlit
