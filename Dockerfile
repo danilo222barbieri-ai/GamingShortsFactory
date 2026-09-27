@@ -26,7 +26,7 @@ RUN python -m pip install --upgrade pip && \
     python -m pip install -r /app/requirements-web.txt
 
 RUN mkdir -p /app/.cache/huggingface && \
-    python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8'); print('GSF V82 Whisper Tiny ready')"
+    python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8'); print('GSF V83 Whisper Tiny ready')"
 
 COPY src_payload /app/src_payload
 COPY web /app/web
@@ -40,9 +40,16 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v80_2_render_hotfix.py && \
     python /app/web/apply_v81_mobile_tablet_patch.py && \
     python /app/web/apply_v82_fixpack.py && \
-    python -m py_compile /app/GamingShortsFactory_V82_BETA_FIXPACK.py
+    python /app/web/apply_v83_upload_fix.py && \
+    python -m py_compile /app/GamingShortsFactory_V83_UPLOAD_FIX.py
 
 COPY .streamlit /app/.streamlit
+
+# Verifica anche Nginx durante la build: evita deploy "success" con proxy invalido.
+RUN PORT=8080 envsubst '${PORT}' < /app/web/nginx.conf.template > /tmp/gsf-nginx-test.conf && \
+    cp /tmp/gsf-nginx-test.conf /etc/nginx/conf.d/default.conf && \
+    nginx -t
+
 RUN chmod +x /app/web/start_web.sh && mkdir -p /tmp/gsf-runtime
 
 EXPOSE 8080
