@@ -26,7 +26,7 @@ RUN python -m pip install --upgrade pip && \
     python -m pip install -r /app/requirements-web.txt
 
 RUN mkdir -p /app/.cache/huggingface && \
-    python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8'); print('GSF V89 Whisper Tiny ready')"
+    python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8'); print('GSF V90 Whisper Tiny ready')"
 
 COPY src_payload /app/src_payload
 COPY web /app/web
@@ -51,7 +51,9 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/test_v88_persistent_loaded_circle.py /app/GamingShortsFactory_V88_PERSISTENT_LOADED_CIRCLE.py && \
     python /app/web/apply_v89_decoupled_upload_visual.py && \
     python /app/web/test_v89_decoupled_upload_visual.py /app/GamingShortsFactory_V89_DECOUPLED_UPLOAD_VISUAL.py && \
-    python -m py_compile /app/GamingShortsFactory_V89_DECOUPLED_UPLOAD_VISUAL.py
+    python /app/web/apply_v90_upload_visual_fix.py && \
+    python /app/web/test_v90_upload_visual_fix.py /app/GamingShortsFactory_V90_UPLOAD_VISUAL_FIX.py && \
+    python -m py_compile /app/GamingShortsFactory_V90_UPLOAD_VISUAL_FIX.py
 
 COPY .streamlit /app/.streamlit
 
