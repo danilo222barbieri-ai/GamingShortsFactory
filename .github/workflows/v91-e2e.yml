@@ -1,0 +1,195 @@
+name: V91 E2E production test
+
+on:
+  push:
+    branches:
+      - v91-e2e-test
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install browser
+        run: |
+          npm init -y
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Generate synthetic gameplay
+        run: |
+          ffmpeg -hide_banner -loglevel error -y \
+            -f lavfi -i "testsrc2=size=640x360:rate=30:duration=48" \
+            -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=48" \
+            -filter:a "volume='if(lt(mod(t,8),2),1,0.12)':eval=frame" \
+            -c:v libx264 -preset ultrafast -pix_fmt yuv420p \
+            -c:a aac -b:a 128k -shortest test_gameplay.mp4
+          ls -lh test_gameplay.mp4
+
+      - name: Run browser E2E
+        env:
+          APP_URL: https://gaming-shorts-factory-v79-production.up.railway.app/
+        run: |
+          cat > e2e.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          import fs from 'fs';
+
+          const app = process.env.APP_URL;
+          const out = 'e2e-artifacts';
+          fs.mkdirSync(out, { recursive: true });
+
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext({
+            viewport: { width: 1440, height: 1200 },
+            recordVideo: { dir: out, size: { width: 1280, height: 720 } }
+          });
+          const page = await context.newPage();
+          page.setDefaultTimeout(30000);
+
+          const errors = [];
+          page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
+          page.on('console', m => {
+            if (m.type() === 'error') errors.push('CONSOLE: ' + m.text());
+          });
+
+          const snap = async (name) => {
+            await page.screenshot({ path: `${out}/${name}.png`, fullPage: true });
+            fs.writeFileSync(`${out}/${name}.html`, await page.content());
+          };
+
+          try {
+            console.log('STEP 1 open app');
+            await page.goto(app, { waitUntil: 'domcontentloaded', timeout: 60000 });
+            await page.locator('input[type="file"]').waitFor({ state: 'attached', timeout: 60000 });
+            await snap('01-home');
+            console.log('PASS app + uploader loaded');
+
+            console.log('STEP 2 upload synthetic video');
+            await page.locator('input[type="file"]').setInputFiles('test_gameplay.mp4');
+            await page.getByText('Video caricato', { exact: false }).waitFor({ state: 'visible', timeout: 90000 });
+            await page.getByRole('button', { name: /NUOVO VIDEO/i }).waitFor({ state: 'visible', timeout: 30000 });
+            await snap('02-upload-complete');
+            console.log('PASS upload + persistent loaded circle');
+
+            const bodyAfterUpload = await page.locator('body').innerText();
+            console.log('15s visible:', /15s/i.test(bodyAfterUpload));
+            console.log('30s visible:', /30s/i.test(bodyAfterUpload));
+            console.log('Automatico visible:', /Automatico/i.test(bodyAfterUpload));
+            console.log('Momento migliore visible:', /Momento migliore/i.test(bodyAfterUpload));
+            console.log('Più azione visible:', /Più azione/i.test(bodyAfterUpload));
+            console.log('Reazioni visible:', /Reazioni/i.test(bodyAfterUpload));
+
+            const b15 = page.getByRole('button', { name: /^15s$/i });
+            if (await b15.count()) {
+              await b15.first().click();
+              await page.waitForTimeout(700);
+              console.log('PASS 15s selected');
+            } else {
+              console.log('INFO 15s button not exposed by accessibility tree; continuing with current duration');
+            }
+
+            const autoBtn = page.getByRole('button', { name: /Automatico/i });
+            if (await autoBtn.count()) {
+              await autoBtn.first().click();
+              await page.waitForTimeout(700);
+              console.log('PASS Automatico engine selected');
+            }
+
+            console.log('STEP 3 run AI');
+            const createAI = page.getByRole('button', { name: 'CREA CON AI', exact: true });
+            await createAI.waitFor({ state: 'visible', timeout: 30000 });
+            await createAI.click();
+            await page.getByText('Scegli il tuo momento', { exact: false }).waitFor({ state: 'visible', timeout: 240000 });
+            await page.waitForTimeout(1500);
+            await snap('03-ai-results');
+
+            const chooseCount = await page.getByRole('button', { name: /SCEGLI QUESTO|SELEZIONATA/i }).count();
+            console.log('AI candidate buttons:', chooseCount);
+            if (chooseCount < 3) throw new Error(`Expected 3 AI candidates, found ${chooseCount}`);
+            console.log('PASS 3 AI candidates');
+
+            console.log('STEP 4 open inline editor');
+            const edit = page.getByRole('button', { name: /MODIFICA NELL.?EDITOR/i });
+            await edit.waitFor({ state: 'visible', timeout: 120000 });
+            await edit.click();
+            await page.getByRole('button', { name: /CHIUDI EDITOR/i }).waitFor({ state: 'visible', timeout: 60000 });
+            await snap('04-editor-open');
+            console.log('PASS inline editor opened');
+
+            const inquad = page.getByRole('button', { name: /INQUADRATURA/i });
+            if (await inquad.count()) {
+              await inquad.last().click();
+              const zoom = page.getByRole('slider', { name: /Zoom/i });
+              await zoom.last().waitFor({ state: 'visible', timeout: 15000 });
+              await zoom.last().press('ArrowRight');
+              await zoom.last().press('ArrowRight');
+              await page.waitForTimeout(800);
+              console.log('PASS zoom changed in live editor');
+            } else {
+              throw new Error('INQUADRATURA control not found');
+            }
+
+            const reg = page.getByRole('button', { name: /REGOLAZIONI/i });
+            if (await reg.count()) {
+              await reg.last().click();
+              await page.getByText('Parametro', { exact: false }).last().waitFor({ state: 'visible', timeout: 15000 });
+              console.log('PASS regulation panel opens');
+            } else {
+              throw new Error('REGOLAZIONI control not found');
+            }
+            await snap('05-editor-controls');
+
+            console.log('STEP 5 select editor recipe');
+            const useChanges = page.getByRole('button', { name: /USA QUESTE MODIFICHE/i });
+            await useChanges.last().waitFor({ state: 'visible', timeout: 30000 });
+            await useChanges.last().click();
+            await page.getByText(/Modifiche pronte|MODIFICHE SELEZIONATE/i).last().waitFor({ state: 'visible', timeout: 30000 });
+            await snap('06-editor-selected');
+            console.log('PASS editor changes selected');
+
+            console.log('STEP 6 final render');
+            const finalBtn = page.getByRole('button', { name: /CREA SHORT FINALE/i });
+            await finalBtn.waitFor({ state: 'visible', timeout: 30000 });
+            await finalBtn.click();
+
+            const success = page.getByText(/scarica|download|short finale|pronto/i);
+            await success.last().waitFor({ state: 'visible', timeout: 360000 });
+            await snap('07-final-render');
+            console.log('PASS final render produced a completion/download state');
+
+            const finalText = await page.locator('body').innerText();
+            fs.writeFileSync(`${out}/final-body.txt`, finalText);
+            if (errors.length) {
+              fs.writeFileSync(`${out}/browser-errors.txt`, errors.join('\n'));
+              console.log('Browser console/page errors captured:', errors.length);
+            }
+            console.log('E2E PASS');
+          } catch (e) {
+            console.error('E2E FAIL:', e);
+            try { await snap('FAIL'); } catch {}
+            try {
+              fs.writeFileSync(`${out}/failure-body.txt`, await page.locator('body').innerText());
+            } catch {}
+            if (errors.length) fs.writeFileSync(`${out}/browser-errors.txt`, errors.join('\n'));
+            throw e;
+          } finally {
+            await context.close();
+            await browser.close();
+          }
+          EOF
+          node e2e.mjs
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v91-e2e-artifacts
+          path: e2e-artifacts/
+          if-no-files-found: warn
