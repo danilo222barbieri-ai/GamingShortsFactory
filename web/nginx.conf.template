@@ -1,6 +1,6 @@
 map $cookie_gsf_sid $gsf_session_cookie {
-    ~^[A-Za-z0-9_-]{1,80}$ $cookie_gsf_sid;
-    default                  $request_id;
+    "~^[A-Za-z0-9_-]{1,80}$" $cookie_gsf_sid;
+    default                     $request_id;
 }
 
 server {
@@ -12,8 +12,6 @@ server {
     proxy_send_timeout 86400s;
 
     # V82: serve direttamente i media della sessione anonima dal filesystem.
-    # Evita i 502 del piccolo server Python /media e, su Safari/iPadOS,
-    # impedisce che la pagina HTML d'errore venga salvata come ".mp4.html".
     location /media/ {
         alias /tmp/gsf-runtime/sessions/$gsf_session_cookie/media/;
         autoindex off;
