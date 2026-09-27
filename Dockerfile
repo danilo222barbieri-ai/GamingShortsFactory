@@ -26,7 +26,7 @@ RUN python -m pip install --upgrade pip && \
     python -m pip install -r /app/requirements-web.txt
 
 RUN mkdir -p /app/.cache/huggingface && \
-    python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8'); print('GSF V93 Whisper Tiny ready')"
+    python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8'); print('GSF V94 Whisper Tiny ready')"
 
 COPY src_payload /app/src_payload
 COPY web /app/web
@@ -59,7 +59,9 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/test_v92_ai_reaction_quality.py /app/GamingShortsFactory_V92_AI_REACTION_QUALITY.py && \
     python /app/web/apply_v93_deep_stability.py && \
     python /app/web/test_v93_deep_stability.py /app/GamingShortsFactory_V93_DEEP_STABILITY.py && \
-    python -m py_compile /app/GamingShortsFactory_V93_DEEP_STABILITY.py
+    python /app/web/apply_v94_short_quality.py && \
+    python /app/web/test_v94_short_quality.py /app/GamingShortsFactory_V94_SHORT_QUALITY.py && \
+    python -m py_compile /app/GamingShortsFactory_V94_SHORT_QUALITY.py
 
 COPY .streamlit /app/.streamlit
 
