@@ -178,7 +178,7 @@ jobs:
             const cdp=await desktopContext.newCDPSession(page);
             await cdp.send('Network.enable');
             await cdp.send('Network.emulateNetworkConditions',{
-              offline:false,latency:120,downloadThroughput:750000,uploadThroughput:120000,connectionType:'cellular3g'
+              offline:false,latency:120,downloadThroughput:750000,uploadThroughput:400000,connectionType:'cellular3g'
             });
             const input=page.locator('input[type="file"]');
             const reqPromise=page.waitForRequest(r=>r.url().includes('/_stcore/upload_file/'),{timeout:30000});
@@ -295,14 +295,18 @@ jobs:
 
             const inquad=page.getByRole('button',{name:/INQUADRATURA/i}).last();
             await inquad.click();
-            const zoom=page.getByRole('slider',{name:/Zoom/i}).last();
+            const zoomBlock=page.locator('[data-testid="stSlider"]').filter({hasText:'Zoom'}).last();
+            await zoomBlock.waitFor({state:'visible'});
+            const zoom=zoomBlock.getByRole('slider').last();
             await zoom.waitFor({state:'visible'});
-            const beforeZoom=await zoom.getAttribute('aria-valuenow');
+            const beforeZoomText=(await zoomBlock.innerText()).trim();
             await zoom.press('ArrowRight');
             await zoom.press('ArrowRight');
-            const afterZoom=await zoom.getAttribute('aria-valuenow');
-            console.log('ZOOM',beforeZoom,'->',afterZoom);
-            if(beforeZoom===afterZoom) throw new Error('Zoom did not change');
+            await page.waitForTimeout(650);
+            const afterZoomText=(await zoomBlock.innerText()).trim();
+            const zoomDom=await zoom.evaluate(el=>({tag:el.tagName,aria:el.getAttribute('aria-valuenow'),value:el.value??null,outer:el.outerHTML}));
+            console.log('ZOOM TEXT',JSON.stringify({beforeZoomText,afterZoomText,zoomDom}));
+            if(beforeZoomText===afterZoomText) throw new Error('Zoom did not change');
             await page.keyboard.press('Escape');
 
             const reg=page.getByRole('button',{name:/REGOLAZIONI/i}).last();
