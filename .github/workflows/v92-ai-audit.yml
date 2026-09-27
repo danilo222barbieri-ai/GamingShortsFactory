@@ -1,0 +1,55 @@
+name: V92 AI source audit
+
+on:
+  push:
+    branches:
+      - v92-ai-quality
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct current app source
+        run: |
+          sudo mkdir -p /app
+          sudo cp -r src_payload /app/src_payload
+          sudo cp -r web /app/web
+          sudo chown -R "$USER":"$USER" /app
+          python - <<'PY'
+          import base64,gzip,pathlib
+          p=pathlib.Path('/app/src_payload')
+          s=''.join(x.read_text() for x in sorted(p.glob('gsf_v77.py.gz.b64.part*')))
+          pathlib.Path('/app/GamingShortsFactory_V77_WEB_READY.py').write_bytes(gzip.decompress(base64.b64decode(s)))
+          PY
+          python /app/web/apply_v78_mobile_patch.py
+          python /app/web/apply_v79_session_social_patch.py
+          python /app/web/apply_v80_ui_auto_sub_patch.py
+          python /app/web/apply_v80_1_hotfix.py
+          python /app/web/apply_v80_2_render_hotfix.py
+          python /app/web/apply_v81_mobile_tablet_patch.py
+          python /app/web/apply_v82_fixpack.py
+          python /app/web/apply_v83_upload_fix.py
+          python /app/web/apply_v84_mobile_media_upload_fix.py
+          python /app/web/apply_v85_upload_cleanup.py
+          python /app/web/apply_v86_single_upload_circle.py
+          python /app/web/apply_v87_upload_persist.py
+          python /app/web/apply_v88_persistent_loaded_circle.py
+          python /app/web/apply_v89_decoupled_upload_visual.py
+          python /app/web/apply_v90_upload_visual_fix.py
+          python /app/web/apply_v91_roadmap_polish.py
+
+      - name: Print AI selection core
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('/app/GamingShortsFactory_V91_ROADMAP_POLISH.py')
+          lines=p.read_text(encoding='utf-8').splitlines()
+          for a,b,label in [
+              (5200,5650,'SELECT'),
+              (5650,6150,'RANK'),
+          ]:
+              print(f'===== {label} {a}-{b} =====')
+              for n in range(a,min(b,len(lines))+1):
+                  print(f'{n}: {lines[n-1]}')
+          PY
