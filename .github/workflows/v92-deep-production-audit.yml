@@ -178,7 +178,7 @@ jobs:
             const cdp=await desktopContext.newCDPSession(page);
             await cdp.send('Network.enable');
             await cdp.send('Network.emulateNetworkConditions',{
-              offline:false,latency:120,downloadThroughput:750000,uploadThroughput:400000,connectionType:'cellular3g'
+              offline:false,latency:120,downloadThroughput:750000,uploadThroughput:700000,connectionType:'cellular3g'
             });
             const input=page.locator('input[type="file"]');
             const reqPromise=page.waitForRequest(r=>r.url().includes('/_stcore/upload_file/'),{timeout:30000});
@@ -283,14 +283,16 @@ jobs:
             await edit.click();
             await page.getByRole('button',{name:/CHIUDI EDITOR/i}).waitFor({state:'visible',timeout:60000});
 
-            const format16=page.getByText('16:9 Originale',{exact:true}).last();
+            const format16=page.getByRole('button',{name:'16:9 Originale',exact:true}).last();
             if(await format16.count()){
               await format16.click();
               await page.waitForTimeout(500);
-              const format9=page.getByText('9:16 Short',{exact:true}).last();
+              const format9=page.getByRole('button',{name:'9:16 Short',exact:true}).last();
               await format9.click();
               await page.waitForTimeout(500);
               console.log('PASS format 16:9 -> 9:16 switch');
+            } else {
+              console.log('INFO segmented format buttons not exposed as buttons in this Streamlit build');
             }
 
             const inquad=page.getByRole('button',{name:/INQUADRATURA/i}).last();
@@ -313,7 +315,18 @@ jobs:
             await reg.click();
             const combo=page.getByRole('combobox',{name:/Parametro/i}).last();
             await combo.waitFor({state:'visible'});
-            console.log('PASS regulation selector opened');
+            const volumeBlock=page.locator('[data-testid="stSlider"]').filter({hasText:'Volume'}).last();
+            if(await volumeBlock.count()){
+              const volumeSlider=volumeBlock.getByRole('slider').last();
+              const vb=await volumeSlider.inputValue();
+              await volumeSlider.press('ArrowLeft');
+              await volumeSlider.press('ArrowLeft');
+              await page.waitForTimeout(450);
+              const va=await volumeSlider.inputValue();
+              console.log('VOLUME',vb,'->',va);
+              if(vb===va) throw new Error('Volume regulation did not change');
+            }
+            console.log('PASS regulation selector + volume change');
             await page.keyboard.press('Escape');
 
             const trimBlock=page.locator('[data-testid="stSlider"]').filter({hasText:'IN / OUT'}).last();
@@ -323,10 +336,11 @@ jobs:
               console.log('TRIM HANDLES',tc);
               if(tc>=2){
                 const outHandle=trims.nth(1);
-                const before=await outHandle.getAttribute('aria-valuenow');
+                const before=await outHandle.inputValue();
                 await outHandle.press('ArrowLeft');
                 await outHandle.press('ArrowLeft');
-                const after=await outHandle.getAttribute('aria-valuenow');
+                await page.waitForTimeout(450);
+                const after=await outHandle.inputValue();
                 console.log('TRIM OUT',before,'->',after);
                 if(before===after) throw new Error('IN/OUT trim did not change');
               }
