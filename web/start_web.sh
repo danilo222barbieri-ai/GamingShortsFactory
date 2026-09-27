@@ -19,7 +19,7 @@ rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 envsubst '${PORT}' < /app/web/nginx.conf.template > /etc/nginx/conf.d/default.conf
 nginx
 
-exec python -m streamlit run /app/GamingShortsFactory_V91_ROADMAP_POLISH.py \
+exec python -m streamlit run /app/GamingShortsFactory_V92_AI_REACTION_QUALITY.py \
   --server.address=127.0.0.1 \
   --server.port=8501 \
   --server.maxUploadSize=4096 \
