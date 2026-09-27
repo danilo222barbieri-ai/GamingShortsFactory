@@ -55,3 +55,10 @@ jobs:
               for n in range(a,min(b,len(lines))+1):
                   print(f'{n}: {lines[n-1]}')
           PY
+          python - <<'PY'
+          from pathlib import Path
+          lines=Path('/app/GamingShortsFactory_V91_ROADMAP_POLISH.py').read_text(encoding='utf-8').splitlines()
+          for n,line in enumerate(lines,1):
+              if '_gsf_ai_voice_cached' in line or 'voice_cache' in line:
+                  print(f'VOICECACHE {n}: {line}')
+          PY
