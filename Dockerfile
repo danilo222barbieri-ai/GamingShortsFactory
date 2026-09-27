@@ -53,6 +53,7 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/test_v89_decoupled_upload_visual.py /app/GamingShortsFactory_V89_DECOUPLED_UPLOAD_VISUAL.py && \
     python /app/web/apply_v90_upload_visual_fix.py && \
     python /app/web/test_v90_upload_visual_fix.py /app/GamingShortsFactory_V90_UPLOAD_VISUAL_FIX.py && \
+    python /app/web/diagnose_v91_editor_ai.py && \
     python -m py_compile /app/GamingShortsFactory_V90_UPLOAD_VISUAL_FIX.py
 
 COPY .streamlit /app/.streamlit
