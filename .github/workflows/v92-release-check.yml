@@ -67,15 +67,16 @@ jobs:
             const b15=page.getByRole('button',{name:/^15s$/i});
             if(await b15.count()) await b15.first().click();
 
-            let reaction=page.locator('.st-key-v69_engine_grid button').filter({hasText:/Auto Clip|Reazioni/i});
-            if(!(await reaction.count())){
-              const engineButtons=page.locator('.st-key-v69_engine_grid button');
-              const labels=await engineButtons.allInnerTexts();
-              console.log('ENGINE BUTTONS:',JSON.stringify(labels));
-              if((await engineButtons.count())<4) throw new Error('Reaction engine button not found');
-              reaction=engineButtons.nth(3);
+            const allButtons=await page.locator('button').allInnerTexts();
+            console.log('ALL BUTTONS:',JSON.stringify(allButtons));
+            let reactionText=page.getByText(/Reazioni/i).first();
+            if(!(await reactionText.count())) reactionText=page.getByText(/Auto Clip/i).first();
+            if(!(await reactionText.count())){
+              console.log('BODY:',(await page.locator('body').innerText()).slice(0,5000));
+              throw new Error('Reaction engine text not found');
             }
-            await reaction.first().click();
+            await reactionText.scrollIntoViewIfNeeded();
+            await reactionText.click();
 
             const create=page.getByRole('button',{name:'CREA CON AI',exact:true});
             await create.waitFor({state:'visible'});
