@@ -65,7 +65,10 @@ jobs:
             await page.getByText('Video caricato',{exact:false}).waitFor({state:'visible',timeout:90000});
 
             const b15=page.getByRole('button',{name:/^15s$/i});
-            if(await b15.count()) await b15.first().click();
+            if(await b15.count()){
+              await b15.first().click();
+              await page.waitForTimeout(900);
+            }
 
             const allButtons=await page.locator('button').allInnerTexts();
             console.log('ALL BUTTONS:',JSON.stringify(allButtons));
@@ -77,6 +80,7 @@ jobs:
             }
             await reactionText.scrollIntoViewIfNeeded();
             await reactionText.click();
+            await page.waitForTimeout(900);
 
             const create=page.getByRole('button',{name:'CREA CON AI',exact:true});
             await create.waitFor({state:'visible'});
