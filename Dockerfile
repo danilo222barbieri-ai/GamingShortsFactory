@@ -26,7 +26,7 @@ RUN python -m pip install --upgrade pip && \
     python -m pip install -r /app/requirements-web.txt
 
 RUN mkdir -p /app/.cache/huggingface && \
-    python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8'); print('GSF V80 Whisper Tiny ready')"
+    python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8'); print('GSF V81 Whisper Tiny ready')"
 
 COPY src_payload /app/src_payload
 COPY web /app/web
@@ -38,7 +38,8 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v80_ui_auto_sub_patch.py && \
     python /app/web/apply_v80_1_hotfix.py && \
     python /app/web/apply_v80_2_render_hotfix.py && \
-    python -m py_compile /app/GamingShortsFactory_V80_2_RENDER_HOTFIX.py
+    python /app/web/apply_v81_mobile_tablet_patch.py && \
+    python -m py_compile /app/GamingShortsFactory_V81_MOBILE_TABLET_POLISH.py
 
 COPY .streamlit /app/.streamlit
 RUN chmod +x /app/web/start_web.sh && mkdir -p /tmp/gsf-runtime
