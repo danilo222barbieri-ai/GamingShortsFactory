@@ -1,6 +1,5 @@
 #!/bin/sh
 set -eu
-
 export PORT="${PORT:-8080}"
 export GSF_WEB_MODE="${GSF_WEB_MODE:-1}"
 export GSF_LOW_MEMORY_WEB="${GSF_LOW_MEMORY_WEB:-1}"
@@ -17,7 +16,7 @@ rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 envsubst '${PORT}' < /app/web/nginx.conf.template > /etc/nginx/conf.d/default.conf
 nginx
 
-exec python -m streamlit run /app/GamingShortsFactory_V80_UI_AUTOSUB_BETA.py \
+exec python -m streamlit run /app/GamingShortsFactory_V80_1_HOTFIX.py \
   --server.address=127.0.0.1 \
   --server.port=8501 \
   --server.maxUploadSize=4096 \
