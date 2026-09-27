@@ -1,0 +1,129 @@
+name: V92 production reaction E2E
+
+on:
+  push:
+    branches:
+      - v92-prod-e2e
+
+jobs:
+  prod-reaction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install browser and FFmpeg
+        run: |
+          npm init -y
+          npm install playwright
+          npx playwright install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Generate gameplay sample
+        run: |
+          ffmpeg -hide_banner -loglevel error -y \
+            -f lavfi -i "testsrc2=size=640x360:rate=30:duration=48" \
+            -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=48" \
+            -filter:a "volume='if(lt(mod(t,7),2),1,0.10)':eval=frame" \
+            -c:v libx264 -preset ultrafast -pix_fmt yuv420p \
+            -c:a aac -b:a 128k -shortest reaction_prod.mp4
+
+      - name: Run production Reazioni flow
+        env:
+          APP_URL: https://gaming-shorts-factory-v79-production.up.railway.app/
+        run: |
+          cat > prod-reaction.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          import fs from 'fs';
+          const out='v92-prod-artifacts';
+          fs.mkdirSync(out,{recursive:true});
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:1280,height:1000}});
+          page.setDefaultTimeout(30000);
+          try{
+            console.log('V92 PROD STEP 1 open');
+            await page.goto(process.env.APP_URL,{waitUntil:'domcontentloaded',timeout:60000});
+            await page.locator('input[type="file"]').waitFor({state:'attached',timeout:60000});
+            await page.locator('input[type="file"]').setInputFiles('reaction_prod.mp4');
+            await page.getByText('Video caricato',{exact:false}).waitFor({state:'visible',timeout:90000});
+            console.log('PASS upload');
+
+            const b15=page.getByRole('button',{name:/^15s$/i});
+            if(await b15.count()){
+              await b15.first().click();
+              await page.waitForTimeout(900);
+            }
+
+            const reaction=page.getByText(/Reazioni/i).first();
+            await reaction.waitFor({state:'visible',timeout:30000});
+            await reaction.scrollIntoViewIfNeeded();
+            await reaction.click();
+            await page.waitForTimeout(900);
+            console.log('PASS Reazioni selected');
+
+            const create=page.getByRole('button',{name:'CREA CON AI',exact:true});
+            await create.waitFor({state:'visible'});
+            const t0=Date.now();
+            await create.click();
+            await page.getByText('Scegli il tuo momento',{exact:false}).waitFor({state:'visible',timeout:360000});
+            await page.waitForFunction(()=>{
+              const labels=[...document.querySelectorAll('button')].map(b=>(b.innerText||'').trim());
+              return labels.filter(t=>/SCEGLI QUESTO|SELEZIONATA/i.test(t)).length>=3;
+            },null,{timeout:360000});
+            const secs=(Date.now()-t0)/1000;
+            const count=await page.getByRole('button',{name:/SCEGLI QUESTO|SELEZIONATA/i}).count();
+            console.log('REACTION PROD seconds:',secs.toFixed(1));
+            console.log('REACTION PROD candidates:',count);
+            if(count<3) throw new Error('Expected 3 reaction candidates');
+            await page.screenshot({path:`${out}/01-reaction-results.png`,fullPage:true});
+
+            const edit=page.getByRole('button',{name:/MODIFICA NELL.?EDITOR/i});
+            await edit.waitFor({state:'visible',timeout:120000});
+            await edit.click();
+            await page.getByRole('button',{name:/CHIUDI EDITOR/i}).waitFor({state:'visible',timeout:60000});
+            console.log('PASS editor opens');
+
+            const useChanges=page.getByRole('button',{name:/USA QUESTE MODIFICHE/i}).last();
+            await useChanges.waitFor({state:'visible',timeout:30000});
+            await useChanges.click();
+            await page.getByText(/Modifiche pronte|MODIFICHE SELEZIONATE/i).last().waitFor({state:'visible',timeout:30000});
+
+            const finalBtn=page.getByRole('button',{name:/CREA SHORT FINALE/i});
+            await finalBtn.waitFor({state:'visible'});
+            await finalBtn.click();
+            const downloadBox=page.locator('[data-testid="stDownloadButton"]');
+            await downloadBox.last().waitFor({state:'visible',timeout:360000});
+
+            let trigger=downloadBox.last().locator('button');
+            if(!(await trigger.count())) trigger=downloadBox.last().locator('a');
+            const promise=page.waitForEvent('download',{timeout:60000});
+            await trigger.first().click();
+            const dl=await promise;
+            const finalPath=`${out}/v92-reaction-final.mp4`;
+            await dl.saveAs(finalPath);
+            const bytes=fs.statSync(finalPath).size;
+            console.log('V92 FINAL BYTES:',bytes);
+            if(bytes<10000) throw new Error('Final V92 render too small');
+            await page.screenshot({path:`${out}/02-final.png`,fullPage:true});
+            console.log('V92 PROD REACTION E2E PASS');
+          }catch(e){
+            console.error('V92 PROD REACTION E2E FAIL',e);
+            try{await page.screenshot({path:`${out}/FAIL.png`,fullPage:true});}catch{}
+            throw e;
+          }finally{
+            await browser.close();
+          }
+          EOF
+          node prod-reaction.mjs
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v92-production-reaction-e2e
+          path: v92-prod-artifacts/
+          if-no-files-found: warn
