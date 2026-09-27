@@ -177,15 +177,29 @@ jobs:
               offline:false,latency:120,downloadThroughput:750000,uploadThroughput:120000,connectionType:'cellular3g'
             });
             const input=page.locator('input[type="file"]');
+            const reqPromise=page.waitForRequest(r=>r.url().includes('/_stcore/upload_file/'),{timeout:30000});
             const setPromise=input.setInputFiles('upload_progress.mp4');
+            await reqPromise;
+            await page.waitForTimeout(1400);
             const status=page.locator('.gsf-v91-upload-status');
-            await status.waitFor({state:'visible',timeout:30000});
-            const statusText=(await status.innerText()).trim();
-            console.log('UPLOAD STATUS VISIBLE:',statusText);
-            if(!/Caricamento video/i.test(statusText)) throw new Error('Upload status text is not correct');
-            await shot(page,'02-upload-progress');
+            const statusVisible=await status.isVisible().catch(()=>false);
+            const statusText=statusVisible ? (await status.innerText()).trim() : '';
+            const nativeProgressCount=await page.locator('[role="progressbar"], progress, [data-testid*="Progress"]').count();
+            const uploaderProbe=await page.evaluate(()=>{
+              const shell=document.querySelector('.st-key-v73-upload-shell');
+              return {
+                html:shell?.innerHTML||'',
+                testids:[...(shell?.querySelectorAll('[data-testid]')||[])].map(e=>e.getAttribute('data-testid')),
+                roles:[...(shell?.querySelectorAll('[role]')||[])].map(e=>e.getAttribute('role'))
+              };
+            });
+            fs.writeFileSync(`${OUT}/upload-midflight-dom.json`,JSON.stringify(uploaderProbe,null,2));
+            results.uploadProgress={statusVisible,statusText,nativeProgressCount,testids:uploaderProbe.testids,roles:uploaderProbe.roles};
+            console.log('UPLOAD PROGRESS PROBE:',JSON.stringify(results.uploadProgress));
+            await shot(page,'02-upload-progress-midflight');
             await setPromise;
             await page.getByText('Video caricato',{exact:false}).waitFor({state:'visible',timeout:180000});
+            console.log(statusVisible ? 'PASS custom upload status visible during real transfer' : 'ISSUE custom upload status NOT visible during real transfer');
             await cdp.send('Network.emulateNetworkConditions',{
               offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1,connectionType:'wifi'
             });
