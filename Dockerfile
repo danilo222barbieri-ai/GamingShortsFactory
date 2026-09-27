@@ -26,7 +26,7 @@ RUN python -m pip install --upgrade pip && \
     python -m pip install -r /app/requirements-web.txt
 
 RUN mkdir -p /app/.cache/huggingface && \
-    python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8'); print('GSF V86 Whisper Tiny ready')"
+    python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8'); print('GSF V87 Whisper Tiny ready')"
 
 COPY src_payload /app/src_payload
 COPY web /app/web
@@ -45,7 +45,9 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v85_upload_cleanup.py && \
     python /app/web/apply_v86_single_upload_circle.py && \
     python /app/web/test_v86_uploader_patch.py /app/GamingShortsFactory_V86_SINGLE_UPLOAD_CIRCLE.py && \
-    python -m py_compile /app/GamingShortsFactory_V86_SINGLE_UPLOAD_CIRCLE.py
+    python /app/web/apply_v87_upload_persist.py && \
+    python /app/web/test_v87_upload_persist.py /app/GamingShortsFactory_V87_UPLOAD_PERSISTS.py && \
+    python -m py_compile /app/GamingShortsFactory_V87_UPLOAD_PERSISTS.py
 
 COPY .streamlit /app/.streamlit
 
