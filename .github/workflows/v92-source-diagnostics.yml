@@ -54,3 +54,11 @@ jobs:
                       print(f'SRC {m}: {lines[m-1]}')
                   print('---')
           PY
+          python - <<'PY'
+          from pathlib import Path
+          lines=Path('/app/GamingShortsFactory_V92_AI_REACTION_QUALITY.py').read_text(encoding='utf-8').splitlines()
+          for a,b,label in [(10350,10430,'DURATION'),(8520,8650,'RENDERFN'),(11610,11660,'FINALUI')]:
+              print(f'RANGE {label} {a}-{b}')
+              for n in range(a,min(b,len(lines))+1):
+                  print(f'RANGE {label} {n}: {lines[n-1]}')
+          PY
