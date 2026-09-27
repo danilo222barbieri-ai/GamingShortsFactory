@@ -169,13 +169,28 @@ jobs:
             await finalBtn.waitFor({ state: 'visible', timeout: 30000 });
             await finalBtn.click();
 
-            const success = page.getByText(/scarica|download|short finale|pronto/i);
-            await success.last().waitFor({ state: 'visible', timeout: 360000 });
+            const downloadBox = page.locator('[data-testid="stDownloadButton"]');
+            await downloadBox.last().waitFor({ state: 'visible', timeout: 360000 });
             await snap('07-final-render');
-            console.log('PASS final render produced a completion/download state');
+            const downloadLabel = (await downloadBox.last().innerText()).trim();
+            console.log('Final download control:', downloadLabel);
+            console.log('PASS final render produced a real Streamlit download control');
 
             const finalText = await page.locator('body').innerText();
             fs.writeFileSync(`${out}/final-body.txt`, finalText);
+
+            console.log('STEP 7 download rendered short');
+            let dlTrigger = downloadBox.last().locator('button');
+            if (!(await dlTrigger.count())) dlTrigger = downloadBox.last().locator('a');
+            const dlPromise = page.waitForEvent('download', { timeout: 60000 });
+            await dlTrigger.first().click();
+            const download = await dlPromise;
+            const finalPath = `${out}/final-short.mp4`;
+            await download.saveAs(finalPath);
+            const finalSize = fs.statSync(finalPath).size;
+            console.log('Downloaded final short bytes:', finalSize);
+            if (finalSize < 10000) throw new Error(`Rendered short download too small: ${finalSize} bytes`);
+            console.log('PASS final MP4 downloaded');
             if (errors.length) {
               fs.writeFileSync(`${out}/browser-errors.txt`, errors.join('\n'));
               console.log('Browser console/page errors captured:', errors.length);
