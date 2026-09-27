@@ -26,7 +26,7 @@ RUN python -m pip install --upgrade pip && \
     python -m pip install -r /app/requirements-web.txt
 
 RUN mkdir -p /app/.cache/huggingface && \
-    python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8'); print('GSF V88 Whisper Tiny ready')"
+    python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8'); print('GSF V89 Whisper Tiny ready')"
 
 COPY src_payload /app/src_payload
 COPY web /app/web
@@ -49,8 +49,9 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/test_v87_upload_persist.py /app/GamingShortsFactory_V87_UPLOAD_PERSISTS.py && \
     python /app/web/apply_v88_persistent_loaded_circle.py && \
     python /app/web/test_v88_persistent_loaded_circle.py /app/GamingShortsFactory_V88_PERSISTENT_LOADED_CIRCLE.py && \
-    python /app/web/diagnose_v88_upload_flow.py && \
-    python -m py_compile /app/GamingShortsFactory_V88_PERSISTENT_LOADED_CIRCLE.py
+    python /app/web/apply_v89_decoupled_upload_visual.py && \
+    python /app/web/test_v89_decoupled_upload_visual.py /app/GamingShortsFactory_V89_DECOUPLED_UPLOAD_VISUAL.py && \
+    python -m py_compile /app/GamingShortsFactory_V89_DECOUPLED_UPLOAD_VISUAL.py
 
 COPY .streamlit /app/.streamlit
 
