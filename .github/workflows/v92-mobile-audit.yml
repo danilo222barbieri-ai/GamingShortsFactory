@@ -1,0 +1,201 @@
+name: V92 mobile production audit
+
+on:
+  push:
+    branches:
+      - v92-mobile-audit
+
+jobs:
+  mobile-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install browser and FFmpeg
+        run: |
+          npm init -y
+          npm install playwright
+          npx playwright install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Generate synthetic gameplay
+        run: |
+          ffmpeg -hide_banner -loglevel error -y \
+            -f lavfi -i "testsrc2=size=640x360:rate=30:duration=48" \
+            -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=48" \
+            -filter:a "volume='if(lt(mod(t,8),2),1,0.12)':eval=frame" \
+            -c:v libx264 -preset ultrafast -pix_fmt yuv420p \
+            -c:a aac -b:a 128k -shortest test_gameplay.mp4
+
+      - name: Run mobile browser audit
+        env:
+          APP_URL: https://gaming-shorts-factory-v79-production.up.railway.app/
+        run: |
+          cat > mobile-audit.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          import fs from 'fs';
+
+          const out='mobile-audit-artifacts';
+          fs.mkdirSync(out,{recursive:true});
+          const browser=await chromium.launch({headless:true});
+          const context=await browser.newContext({
+            viewport:{width:390,height:844},
+            isMobile:true,
+            hasTouch:true,
+            deviceScaleFactor:1,
+            userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1',
+            recordVideo:{dir:out,size:{width:390,height:844}}
+          });
+          const page=await context.newPage();
+          page.setDefaultTimeout(30000);
+          const consoleErrors=[];
+          page.on('pageerror',e=>consoleErrors.push('PAGEERROR '+e.message));
+          page.on('console',m=>{if(m.type()==='error') consoleErrors.push('CONSOLE '+m.text());});
+
+          const metrics={};
+          const snap=async name=>{
+            await page.screenshot({path:`${out}/${name}.png`,fullPage:true});
+          };
+          const overflow=async label=>{
+            const m=await page.evaluate(()=>({
+              iw:window.innerWidth,
+              sw:document.documentElement.scrollWidth,
+              body:document.body.scrollWidth
+            }));
+            metrics[label]=m;
+            console.log('OVERFLOW',label,JSON.stringify(m));
+            if(m.sw>m.iw+8 || m.body>m.iw+8) throw new Error(`Horizontal overflow at ${label}: ${JSON.stringify(m)}`);
+          };
+
+          try{
+            console.log('MOBILE STEP 1 open');
+            await page.goto(process.env.APP_URL,{waitUntil:'domcontentloaded',timeout:60000});
+            await page.locator('input[type="file"]').waitFor({state:'attached',timeout:60000});
+            await overflow('home');
+            const circle=page.locator('.gsf-v89-upload-visual').first();
+            await circle.waitFor({state:'visible'});
+            metrics.uploadCircleBefore=await circle.boundingBox();
+            console.log('CIRCLE BEFORE',JSON.stringify(metrics.uploadCircleBefore));
+            if(!metrics.uploadCircleBefore || Math.abs(metrics.uploadCircleBefore.width-208)>8) throw new Error('Mobile upload circle is not ~208px before upload');
+            await snap('01-home-mobile');
+
+            console.log('MOBILE STEP 2 upload');
+            await page.locator('input[type="file"]').setInputFiles('test_gameplay.mp4');
+            await page.getByText('Video caricato',{exact:false}).waitFor({state:'visible',timeout:90000});
+            await overflow('upload-complete');
+            metrics.uploadCircleAfter=await page.locator('.gsf-v89-upload-visual.is-loaded').first().boundingBox();
+            console.log('CIRCLE AFTER',JSON.stringify(metrics.uploadCircleAfter));
+            if(!metrics.uploadCircleAfter || Math.abs(metrics.uploadCircleAfter.width-208)>8) throw new Error('Mobile upload circle changed size after upload');
+
+            const b15=page.getByRole('button',{name:/^15s$/i}).first();
+            const b30=page.getByRole('button',{name:/^30s$/i}).first();
+            await b15.waitFor({state:'visible'});
+            await b30.waitFor({state:'visible'});
+            const box15=await b15.boundingBox(), box30=await b30.boundingBox();
+            metrics.durationButtons={box15,box30};
+            console.log('DURATION BUTTONS',JSON.stringify(metrics.durationButtons));
+            if(!box15||!box30||Math.abs(box15.y-box30.y)>12) throw new Error('15s and 30s are not side-by-side on mobile');
+            await snap('02-upload-mobile');
+
+            console.log('MOBILE STEP 3 AI');
+            await b15.click();
+            const autoBtn=page.getByRole('button',{name:/Automatico/i}).first();
+            if(await autoBtn.count()) await autoBtn.click();
+            const createAI=page.getByRole('button',{name:'CREA CON AI',exact:true});
+            await createAI.click();
+            await page.getByText('Scegli il tuo momento',{exact:false}).waitFor({state:'visible',timeout:240000});
+            await page.waitForFunction(()=>{
+              const labels=[...document.querySelectorAll('button')].map(b=>(b.innerText||'').trim());
+              return labels.filter(t=>/SCEGLI QUESTO|SELEZIONATA/i.test(t)).length>=3;
+            },null,{timeout:240000});
+            await overflow('ai-results');
+            const cards=page.locator('[class*="v71_short_card"], [class*="v70-short-card"]');
+            metrics.aiCandidateButtons=await page.getByRole('button',{name:/SCEGLI QUESTO|SELEZIONATA/i}).count();
+            console.log('AI BUTTONS',metrics.aiCandidateButtons);
+            if(metrics.aiCandidateButtons<3) throw new Error('Less than 3 AI candidates on mobile');
+            await snap('03-ai-mobile');
+
+            console.log('MOBILE STEP 4 editor');
+            const edit=page.getByRole('button',{name:/MODIFICA NELL.?EDITOR/i});
+            await edit.waitFor({state:'visible',timeout:120000});
+            await edit.click();
+            await page.getByRole('button',{name:/CHIUDI EDITOR/i}).waitFor({state:'visible',timeout:60000});
+            await overflow('editor-open');
+
+            const liveVideo=page.locator('video').last();
+            const videoBox=await liveVideo.boundingBox();
+            metrics.liveVideo=videoBox;
+            console.log('LIVE VIDEO',JSON.stringify(videoBox));
+            if(videoBox && videoBox.width>390) throw new Error('Live editor video wider than viewport');
+
+            const inquad=page.getByRole('button',{name:/INQUADRATURA/i}).last();
+            const reg=page.getByRole('button',{name:/REGOLAZIONI/i}).last();
+            await inquad.waitFor({state:'visible'});
+            await reg.waitFor({state:'visible'});
+            metrics.editorButtons={inquad:await inquad.boundingBox(),reg:await reg.boundingBox()};
+            console.log('EDITOR BUTTONS',JSON.stringify(metrics.editorButtons));
+            await snap('04-editor-mobile');
+
+            await inquad.click();
+            const zoom=page.getByRole('slider',{name:/Zoom/i}).last();
+            await zoom.waitFor({state:'visible'});
+            await zoom.press('ArrowRight');
+            await zoom.press('ArrowRight');
+            await page.waitForTimeout(500);
+            await overflow('editor-inquadratura');
+            await snap('05-editor-inquadratura-mobile');
+
+            console.log('MOBILE STEP 5 final render');
+            const useChanges=page.getByRole('button',{name:/USA QUESTE MODIFICHE/i}).last();
+            await useChanges.waitFor({state:'visible'});
+            await useChanges.click();
+            await page.getByText(/Modifiche pronte|MODIFICHE SELEZIONATE/i).last().waitFor({state:'visible',timeout:30000});
+            const finalBtn=page.getByRole('button',{name:/CREA SHORT FINALE/i});
+            await finalBtn.waitFor({state:'visible'});
+            await finalBtn.click();
+            const downloadBox=page.locator('[data-testid="stDownloadButton"]');
+            await downloadBox.last().waitFor({state:'visible',timeout:360000});
+            await overflow('final-render');
+            await snap('06-final-mobile');
+
+            let trigger=downloadBox.last().locator('button');
+            if(!(await trigger.count())) trigger=downloadBox.last().locator('a');
+            const promise=page.waitForEvent('download',{timeout:60000});
+            await trigger.first().click();
+            const dl=await promise;
+            const p=`${out}/final-short-mobile.mp4`;
+            await dl.saveAs(p);
+            metrics.finalBytes=fs.statSync(p).size;
+            if(metrics.finalBytes<10000) throw new Error('Final downloaded MP4 too small');
+            console.log('FINAL BYTES',metrics.finalBytes);
+
+            fs.writeFileSync(`${out}/metrics.json`,JSON.stringify(metrics,null,2));
+            if(consoleErrors.length) fs.writeFileSync(`${out}/browser-errors.txt`,consoleErrors.join('\n'));
+            console.log('MOBILE E2E PASS');
+          }catch(e){
+            console.error('MOBILE E2E FAIL',e);
+            try{await snap('FAIL-mobile');}catch{}
+            try{fs.writeFileSync(`${out}/failure-body.txt`,await page.locator('body').innerText());}catch{}
+            fs.writeFileSync(`${out}/metrics.json`,JSON.stringify(metrics,null,2));
+            if(consoleErrors.length) fs.writeFileSync(`${out}/browser-errors.txt`,consoleErrors.join('\n'));
+            throw e;
+          }finally{
+            await context.close();
+            await browser.close();
+          }
+          EOF
+          node mobile-audit.mjs
+
+      - name: Upload mobile diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v92-mobile-audit
+          path: mobile-audit-artifacts/
+          if-no-files-found: warn
