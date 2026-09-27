@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.railway/
+*.zip
+*.log
+.env
+.env.*
+!/.env.example
+GSF_V77_RAILWAY_DEPLOY/

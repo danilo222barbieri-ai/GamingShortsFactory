@@ -1,0 +1,6 @@
+streamlit>=1.50,<2
+faster-whisper>=1.2
+numpy>=1.26
+google-api-python-client>=2.0
+google-auth-oauthlib>=1.2
+google-auth-httplib2>=0.2
