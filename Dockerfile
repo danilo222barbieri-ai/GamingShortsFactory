@@ -10,7 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     GSF_MEDIA_PORT=8765 \
     GSF_MEDIA_BASE_URL=/media \
     GSF_RUNTIME_ROOT=/tmp/gsf-runtime \
-    GSF_SESSION_TTL_SECONDS=7200
+    GSF_SESSION_TTL_SECONDS=21600
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ffmpeg nginx gettext-base ca-certificates \
@@ -24,7 +24,9 @@ RUN python -m pip install --upgrade pip && \
 COPY src_payload /app/src_payload
 COPY web /app/web
 RUN python -c "import base64,gzip,pathlib; p=pathlib.Path('/app/src_payload'); s=''.join(x.read_text() for x in sorted(p.glob('gsf_v77.py.gz.b64.part*'))); pathlib.Path('/app/GamingShortsFactory_V77_WEB_READY.py').write_bytes(gzip.decompress(base64.b64decode(s)))" && \
-    python /app/web/apply_v78_mobile_patch.py
+    python /app/web/apply_v78_mobile_patch.py && \
+    python /app/web/apply_v79_session_social_patch.py && \
+    python -m py_compile /app/GamingShortsFactory_V79_SESSION_SOCIAL_BETA.py
 
 COPY .streamlit /app/.streamlit
 
