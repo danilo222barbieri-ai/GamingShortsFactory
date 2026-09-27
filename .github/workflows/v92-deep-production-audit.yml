@@ -165,7 +165,7 @@ jobs:
             console.log('STEP 1: app health + initial uploader');
             await page.goto(APP,{waitUntil:'domcontentloaded',timeout:60000});
             await page.locator('input[type="file"]').waitFor({state:'attached',timeout:60000});
-            await page.getByText('Carica il tuo video',{exact:false}).waitFor({state:'visible'});
+            await page.locator('.gsf-v89-upload-visual:not(.is-loaded)').waitFor({state:'visible'});
             await assertNoOverflow(page,'desktop-home');
             await shot(page,'01-desktop-home');
             console.log('PASS initial uploader');
@@ -193,7 +193,7 @@ jobs:
 
             console.log('STEP 3: + NUOVO VIDEO reset');
             await page.getByRole('button',{name:/NUOVO VIDEO/i}).click();
-            await page.getByText('Carica il tuo video',{exact:false}).waitFor({state:'visible',timeout:30000});
+            await page.locator('.gsf-v89-upload-visual:not(.is-loaded)').waitFor({state:'visible',timeout:30000});
             const loadedAfterReset=await page.getByText('Video caricato',{exact:false}).count();
             if(loadedAfterReset!==0) throw new Error('New video reset kept loaded state');
             console.log('PASS new-video reset');
@@ -334,7 +334,7 @@ jobs:
 
             console.log('STEP 10: final desktop reset');
             await page.getByRole('button',{name:/NUOVO VIDEO/i}).click();
-            await page.getByText('Carica il tuo video',{exact:false}).waitFor({state:'visible',timeout:30000});
+            await page.locator('.gsf-v89-upload-visual:not(.is-loaded)').waitFor({state:'visible',timeout:30000});
             if(await page.getByRole('button',{name:/SCEGLI QUESTO|SELEZIONATA/i}).count()) throw new Error('AI results survived new-video reset');
             console.log('PASS final reset clears project');
           }catch(e){
