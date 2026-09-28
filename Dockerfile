@@ -91,7 +91,11 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python -m py_compile /app/GamingShortsFactory_V98_7_NEW_VIDEO_FIX.py && \
     python /app/web/apply_v98_8_upload_memory_fix.py && \
     python /app/web/test_v98_8_upload_memory_fix.py /app/GamingShortsFactory_V98_8_UPLOAD_MEMORY_FIX.py && \
-    python -m py_compile /app/GamingShortsFactory_V98_8_UPLOAD_MEMORY_FIX.py
+    python -m py_compile /app/GamingShortsFactory_V98_8_UPLOAD_MEMORY_FIX.py && \
+    python /app/web/apply_v98_9_direct_upload.py && \
+    python /app/web/test_v98_9_direct_upload.py /app/GamingShortsFactory_V98_9_DIRECT_UPLOAD.py && \
+    python -m py_compile /app/GamingShortsFactory_V98_9_DIRECT_UPLOAD.py && \
+    python -m py_compile /app/web/direct_upload_server.py
 
 COPY .streamlit /app/.streamlit
 
