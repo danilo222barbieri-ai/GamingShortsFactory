@@ -12,7 +12,9 @@ def need(ok,msg):
 
 need('Gaming Shorts Factory · V98.8 Upload Memory Fix' in s,'V98.8 marker')
 need('def _gsf_v93_release_analysis_memory():' in s,'existing low-memory helper preserved')
-need('_gsf_v93_release_analysis_memory()' in s[s.index('def _gsf_start_new_video'):s.index('_gsf_restore_persistent_state()')],'new-video callback releases AI memory')
+_nv_start=s.index('def _gsf_start_new_video():')
+_nv_tail=s.index('# Questo pulsante viene aggiunto',_nv_start)
+need('_gsf_v93_release_analysis_memory()' in s[_nv_start:_nv_tail],'new-video callback releases AI memory')
 need('globals().get("_gsf_ai_whisper_tiny")' in s,'AI Whisper cache release preserved')
 need('globals().get("_gsf_subtitle_whisper_model")' in s,'subtitle Whisper cache release preserved')
 need('ctypes.CDLL("libc.so.6").malloc_trim(0)' in s,'allocator memory trim preserved')
