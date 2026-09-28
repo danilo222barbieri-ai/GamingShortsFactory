@@ -76,7 +76,10 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python -m py_compile /app/GamingShortsFactory_V98_2_UPLOAD_RECOVERY.py && \
     python /app/web/apply_v98_3_home_compact.py && \
     python /app/web/test_v98_3_home_compact.py /app/GamingShortsFactory_V98_3_HOME_COMPACT.py && \
-    python -m py_compile /app/GamingShortsFactory_V98_3_HOME_COMPACT.py
+    python -m py_compile /app/GamingShortsFactory_V98_3_HOME_COMPACT.py && \
+    python /app/web/apply_v98_4_editor_cleanup.py && \
+    python /app/web/test_v98_4_editor_cleanup.py /app/GamingShortsFactory_V98_4_EDITOR_CLEANUP.py && \
+    python -m py_compile /app/GamingShortsFactory_V98_4_EDITOR_CLEANUP.py
 
 COPY .streamlit /app/.streamlit
 
