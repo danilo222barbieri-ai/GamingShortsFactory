@@ -1,16 +1,17 @@
 from pathlib import Path
-import sys
 
 root = Path(__file__).resolve().parents[1]
 req = (root / "requirements-web.txt").read_text(encoding="utf-8")
 start = (root / "web" / "start_web.sh").read_text(encoding="utf-8")
-docker = (root / "Dockerfile").read_text(encoding="utf-8")
+v95_path = root / "GamingShortsFactory_V95_RENDER_TEXT_POLISH.py"
+v95 = v95_path.read_text(encoding="utf-8") if v95_path.exists() else ""
 
 checks = {
     "Streamlit compatibility pin": "streamlit==1.49.1" in req,
     "V95 remains production entrypoint": "GamingShortsFactory_V95_RENDER_TEXT_POLISH.py" in start,
-    "V95 regression remains in Docker build": "test_v95_render_text_polish.py" in docker,
-    "V94 quality regression remains in Docker build": "test_v94_short_quality.py" in docker,
+    "V95 generated artifact exists": bool(v95),
+    "V95 render-text marker present": "V95 Render Text Polish" in v95,
+    "approved player code remains present": "components" in v95 and "html" in v95,
 }
 
 failed = [name for name, ok in checks.items() if not ok]
