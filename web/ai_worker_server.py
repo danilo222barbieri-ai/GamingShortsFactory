@@ -23,6 +23,10 @@ MAX_BODY=256*1024
 JOBS={}
 JOBS_LOCK=threading.Lock()
 SCAN_SEMAPHORE=threading.Semaphore(max(1,int(os.environ.get("GSF_WORKER_SCAN_SLOTS","1"))))
+RENDER_SEMAPHORE=threading.Semaphore(max(1,int(os.environ.get("GSF_WORKER_RENDER_SLOTS","1"))))
+RENDER_THREADS=max(1,min(4,int(os.environ.get("GSF_WORKER_RENDER_THREADS","2"))))
+RENDER_JOBS={}
+RENDER_JOBS_LOCK=threading.Lock()
 STORAGE_PREFIX=str(os.environ.get("GSF_STORAGE_PREFIX","") or "").strip("/")
 
 def _env_first(*names,default=""):
@@ -103,6 +107,193 @@ def _load_job_state(job_id):
     except Exception:
         pass
     return {}
+
+def _render_state_key(job_id):
+    return _prefixed_key(f"worker-jobs/render/{job_id}.json")
+
+def _save_render_state(job_id,payload):
+    state=dict(payload or {})
+    state["job_id"]=str(job_id)
+    state["updated_at"]=time.time()
+    with RENDER_JOBS_LOCK:
+        RENDER_JOBS[str(job_id)]=state
+    if _bucket_enabled():
+        try:
+            _s3().put_object(
+                Bucket=S3_BUCKET,
+                Key=_render_state_key(job_id),
+                Body=json.dumps(state,separators=(",",":"),ensure_ascii=False).encode("utf-8"),
+                ContentType="application/json",
+                CacheControl="no-store",
+            )
+        except Exception as exc:
+            print(f"GSF render state warning {job_id}: {str(exc)[:160]}",flush=True)
+    return state
+
+def _load_render_state(job_id):
+    with RENDER_JOBS_LOCK:
+        local=dict(RENDER_JOBS.get(str(job_id),{}) or {})
+    if local:
+        return local
+    if not _bucket_enabled():
+        return {}
+    try:
+        obj=_s3().get_object(Bucket=S3_BUCKET,Key=_render_state_key(job_id))
+        state=json.loads(obj["Body"].read().decode("utf-8"))
+        if isinstance(state,dict):
+            with RENDER_JOBS_LOCK:
+                RENDER_JOBS[str(job_id)]=dict(state)
+            return state
+    except Exception:
+        pass
+    return {}
+
+def _logical_key(key):
+    key=str(key or "").lstrip("/")
+    if STORAGE_PREFIX and key.startswith(STORAGE_PREFIX+"/"):
+        return key[len(STORAGE_PREFIX)+1:]
+    return key
+
+def _allowed_media_key(key):
+    logical=_logical_key(key)
+    return logical.startswith(("uploads/","render-stage/","render-results/"))
+
+def _render_job_id(result_key):
+    return hashlib.sha256(("render|"+str(result_key)).encode("utf-8")).hexdigest()[:24]
+
+def re_full_job_id(value):
+    value=str(value or "")
+    return len(value)==24 and all(ch in "0123456789abcdef" for ch in value)
+
+def _safe_render_args(args,local_files,output_path):
+    if not isinstance(args,list) or not args or len(args)>256:
+        raise ValueError("invalid ffmpeg args")
+    prepared=[]
+    replacements={
+        "{"+str(name)+"}":str(path)
+        for name,path in (local_files or {}).items()
+    }
+    replacements["{OUTPUT}"]=str(output_path)
+    for raw in args:
+        token=str(raw)
+        if not token or "\x00" in token or len(token)>12000:
+            raise ValueError("invalid ffmpeg token")
+        for marker,value in replacements.items():
+            token=token.replace(marker,value)
+        if "{FILE" in token or "{OUTPUT}" in token:
+            raise ValueError("unresolved render placeholder")
+        lower=token.lower()
+        if "http://" in lower or "https://" in lower or "pipe:" in lower:
+            raise ValueError("remote render protocol not allowed")
+        prepared.append(token)
+
+    if prepared[-1]!=str(output_path):
+        raise ValueError("render output path mismatch")
+    if "-i" not in prepared:
+        raise ValueError("render input missing")
+
+    # Keep every V104 quality/filter option intact. Only the encoder worker
+    # budget changes from the web-safe one-thread setting to the measured
+    # two-thread default (configurable 1..4).
+    thread_positions=[i for i,x in enumerate(prepared[:-1]) if x=="-threads"]
+    if thread_positions:
+        idx=thread_positions[-1]
+        if idx+1>=len(prepared):
+            raise ValueError("invalid threads option")
+        prepared[idx+1]=str(RENDER_THREADS)
+    return prepared
+
+def _run_render_job(job_id,args,files,result_key,timeout_seconds):
+    with RENDER_SEMAPHORE:
+        started=time.perf_counter()
+        work=Path(tempfile.mkdtemp(prefix="gsf_render_"))
+        output=work/"output.mp4"
+        try:
+            _save_render_state(job_id,{"state":"downloading","result_key":result_key})
+            local_files={}
+            cfg=TransferConfig(
+                multipart_threshold=8*1024*1024,
+                multipart_chunksize=16*1024*1024,
+                max_concurrency=max(1,min(8,int(os.environ.get("GSF_WORKER_DOWNLOAD_CONCURRENCY","6")))),
+                use_threads=True,
+            )
+            if not isinstance(files,dict) or not files:
+                raise ValueError("render files missing")
+            for placeholder,meta in files.items():
+                name=str(placeholder or "")
+                if not name.startswith("FILE") or not name[4:].isdigit():
+                    raise ValueError("invalid render placeholder")
+                if not isinstance(meta,dict):
+                    raise ValueError("invalid render file metadata")
+                key=str(meta.get("key") or "")
+                if not _allowed_media_key(key):
+                    raise ValueError("invalid render S3 key")
+                suffix=Path(str(meta.get("name") or key)).suffix.lower()
+                if suffix not in (".mp4",".mov",".mkv",".ass",".vtt",".srt"):
+                    suffix=".bin"
+                local=work/f"{name.lower()}{suffix}"
+                with open(local,"wb") as out:
+                    _s3().download_fileobj(S3_BUCKET,key,out,Config=cfg)
+                local_files[name]=local
+
+            safe_args=_safe_render_args(args,local_files,output)
+            _save_render_state(job_id,{"state":"rendering","result_key":result_key})
+            timeout=max(60.0,min(3600.0,float(timeout_seconds or 600)))
+            cmd=["/usr/local/bin/ffmpeg"]+safe_args
+            run_t0=time.perf_counter()
+            r=subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=timeout,
+            )
+            render_seconds=time.perf_counter()-run_t0
+            if r.returncode!=0:
+                tail=(r.stderr or b"")[-2400:].decode("utf-8","replace")
+                raise RuntimeError("ffmpeg exit "+str(r.returncode)+": "+tail[-1200:])
+            if not output.is_file() or output.stat().st_size<=1024:
+                raise RuntimeError("render output missing")
+
+            _save_render_state(job_id,{"state":"uploading","result_key":result_key})
+            _s3().upload_file(
+                str(output),S3_BUCKET,result_key,
+                ExtraArgs={"ContentType":"video/mp4","CacheControl":"no-store"},
+                Config=cfg,
+            )
+            wall=time.perf_counter()-started
+            size=output.stat().st_size
+            _save_render_state(job_id,{
+                "state":"done",
+                "result_key":result_key,
+                "size":size,
+                "render_seconds":round(render_seconds,3),
+                "wall_seconds":round(wall,3),
+                "threads":RENDER_THREADS,
+            })
+            print(
+                f"GSF_RENDER_DONE job_id={job_id} bytes={size} "
+                f"render_seconds={render_seconds:.3f} wall_seconds={wall:.3f} "
+                f"threads={RENDER_THREADS}",
+                flush=True
+            )
+        except subprocess.TimeoutExpired:
+            _save_render_state(job_id,{
+                "state":"error","result_key":result_key,
+                "error":"render timeout"
+            })
+            print(f"GSF_RENDER_ERROR job_id={job_id} error=timeout",flush=True)
+        except Exception as exc:
+            _save_render_state(job_id,{
+                "state":"error","result_key":result_key,
+                "error":str(exc)[:500]
+            })
+            print(f"GSF_RENDER_ERROR job_id={job_id} error={str(exc)[:220]}",flush=True)
+        finally:
+            try:
+                import shutil
+                shutil.rmtree(work,ignore_errors=True)
+            except Exception:
+                pass
 
 def _duration_video(path):
     cmd=[
@@ -254,10 +445,18 @@ class Handler(BaseHTTPRequestHandler):
                     pass
             _json(self,200,{"ok":True,"job":state})
             return
+        if path.path.rstrip("/")=="/render/status":
+            job_id=str((parse_qs(path.query).get("job_id") or [""])[0] or "")
+            if not re_full_job_id(job_id):
+                _json(self,400,{"ok":False,"error":"invalid render job id"})
+                return
+            _json(self,200,{"ok":True,"job":_load_render_state(job_id)})
+            return
         _json(self,404,{"ok":False,"error":"not found"})
 
     def do_POST(self):
-        if self.path.rstrip("/")!="/prescan":
+        clean=urlparse(self.path).path.rstrip("/")
+        if clean not in ("/prescan","/render"):
             _json(self,404,{"ok":False,"error":"not found"})
             return
         if not _authorized(self):
@@ -266,6 +465,41 @@ class Handler(BaseHTTPRequestHandler):
         if not _bucket_enabled():
             _json(self,503,{"ok":False,"error":"bucket unavailable"})
             return
+
+        if clean=="/render":
+            try:
+                data=_read_json(self)
+                args=data.get("args")
+                files=data.get("files")
+                result_key=str(data.get("result_key") or "")
+                timeout_seconds=float(data.get("timeout",600) or 600)
+                if not _allowed_media_key(result_key) or not _logical_key(result_key).startswith("render-results/"):
+                    raise ValueError("invalid render result key")
+                # Validate shape/placeholders before queueing. Actual local path
+                # substitution happens inside the isolated temp directory.
+                if not isinstance(args,list) or not args or len(args)>256:
+                    raise ValueError("invalid render args")
+                if not isinstance(files,dict) or not files:
+                    raise ValueError("invalid render files")
+                job_id=_render_job_id(result_key)
+                existing=_load_render_state(job_id)
+                if existing.get("state")=="done" and _object_exists(result_key):
+                    _json(self,200,{"ok":True,"cached":True,"job_id":job_id})
+                    return
+                if existing.get("state") in ("queued","downloading","rendering","uploading"):
+                    _json(self,202,{"ok":True,"queued":True,"existing":True,"job_id":job_id})
+                    return
+                _save_render_state(job_id,{"state":"queued","result_key":result_key})
+                threading.Thread(
+                    target=_run_render_job,
+                    args=(job_id,args,files,result_key,timeout_seconds),
+                    daemon=True,
+                ).start()
+                _json(self,202,{"ok":True,"queued":True,"job_id":job_id})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:240]})
+            return
+
         try:
             data=_read_json(self)
             key=str(data.get("key") or "")
