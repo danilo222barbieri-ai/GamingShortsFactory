@@ -94,11 +94,10 @@ label=labels[0]
 insert_at=label.end_lineno
 indent=re.match(r'\s*',lines[label.lineno-1]).group(0)
 spacer=(
-    indent+'st.markdown("""<style>\\n'
-    '.gsf-mobile-preview-gap{display:none;height:0}\\n'
-    '@media (max-width:768px){.gsf-mobile-preview-gap{display:block;height:12px;line-height:12px}}\\n'
+    indent+'st.markdown("""<style>.gsf-mobile-preview-gap{display:none;height:0}'
+    '@media (max-width:768px){.gsf-mobile-preview-gap{display:block;height:12px;line-height:12px}}'
     '</style><div class="gsf-mobile-preview-gap" aria-hidden="true"></div>""", '
-    'unsafe_allow_html=True)\\n'
+    'unsafe_allow_html=True)\n'
 )
 lines.insert(insert_at,spacer)
 s=''.join(lines)
