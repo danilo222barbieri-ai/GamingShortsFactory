@@ -553,7 +553,7 @@ def _tiktok_oauth_callback(handler,query):
         token["expires_at"]=now+int(token.get("expires_in",0) or 0)
         token["refresh_expires_at"]=now+int(token.get("refresh_expires_in",0) or 0)
         _tiktok_user_save(sid,token)
-        _html(handler,200,_social_page(sid,"TikTok collegato correttamente. Ora puoi tornare all'app."))
+        _redirect(handler,"/social-connect")
     except Exception as exc:
         _html(handler,500,_social_page(sid,"Collegamento TikTok fallito: "+str(exc)[:220]))
 
@@ -642,7 +642,7 @@ def _youtube_oauth_callback(handler,query):
             "scopes":scopes or [YOUTUBE_SCOPE],
         }
         _youtube_user_save(sid,token)
-        _html(handler,200,_social_page(sid,"YouTube collegato correttamente. Ora puoi tornare all'app."))
+        _redirect(handler,"/social-connect")
     except Exception as exc:
         _html(handler,500,_social_page(sid,"Collegamento YouTube fallito: "+str(exc)[:220]))
 
