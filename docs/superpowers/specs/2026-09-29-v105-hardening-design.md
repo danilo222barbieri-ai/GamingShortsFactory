@@ -112,6 +112,8 @@ Historical patch scripts remain in git for traceability, but the production Dock
 
 ### 9. Deployment and process health
 
+V105 must stop using production `main` as the first place where a risky change is exercised. Use an isolated branch and a staging deployment/service for smoke and stress testing before merging production changes. The existing legacy V78 service may be repurposed as a staging shell only after its domain/config dependencies are verified; otherwise disable it and create a dedicated staging target.
+
 Split worker build concerns from the full web image. The current worker service rebuilds/restarts on many commits that only affect later UI/social patches because both services share the same Dockerfile/repo trigger.
 
 V105 should:
@@ -152,6 +154,7 @@ A V105 candidate is not releasable until it passes:
 ## Release gates
 
 V105 can replace V104.7 only when:
+- the candidate has passed a production-equivalent staging deployment;
 - no Critical/Important regression remains;
 - production-equivalent build passes;
 - stress suite passes;
