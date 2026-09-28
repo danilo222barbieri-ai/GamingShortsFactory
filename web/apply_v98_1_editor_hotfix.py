@@ -10,7 +10,7 @@ def replace_once(old,new,label):
         raise RuntimeError(f'V98.1 patch target not found: {label}')
     s=s.replace(old,new,1)
 
-# 1) Remove restored-session bubble and keep "Nuovo video" directly under upload.
+# 1) Remove restored-session bubble and center "Nuovo video" below upload.
 replace_once(
 '''    if _gsf_recovered_source is not None:
         st.caption("Sessione beta ripristinata automaticamente.")
@@ -35,8 +35,7 @@ replace_once(
 'center new-video button and remove restored-session caption')
 
 # 2) Production uses the legacy fallback on the pinned Streamlit version.
-#    Do not show the internal compatibility warning to the user and make VAI
-#    seek to the selected subtitle even in the legacy iframe.
+#    Keep it silent and forward the requested subtitle seek time.
 replace_once(
 '''    if _GSF_LIVE_V2 is None:
         st.warning("Per il player LIVE persistente serve una versione recente di Streamlit con Components V2.")
@@ -50,9 +49,7 @@ replace_once(
 ''',
 'legacy seek and warning removal')
 
-# 3) "USA QUESTE MODIFICHE" already runs inside a Streamlit interaction.
-#    A second explicit rerun jumps the user back to the top and can make the
-#    editor look as if it lost the applied recipe. Persist state in the same run.
+# 3) Applying editor changes must not force a rerun to the top/home.
 replace_once(
 '''            st.session_state["auto_clip_scelta"]=float(editor_start)
             st.session_state["auto_clip_duration"]=float(editor_len)
@@ -63,7 +60,6 @@ replace_once(
 '''            st.session_state["auto_clip_scelta"]=float(editor_start)
             st.session_state["auto_clip_duration"]=float(editor_len)
             _main_recipe_selected=True
-            st.success("Modifiche applicate. Puoi continuare nell'Editor o creare lo Short finale.")
 
         if _main_recipe_selected:
 ''',
@@ -81,11 +77,26 @@ replace_once(
                                 "auto_clip_duration"
                             ]=float(_ilen)
                             _inline_recipe_selected=True
-                            st.success("Modifiche applicate. Puoi continuare nell'Editor o creare lo Short finale.")
 
                         if _inline_recipe_selected:
 ''',
 'inline editor apply without forced rerun')
+
+# 4) Remove the two V98 informational clouds requested during testing.
+replace_once(
+'''                        st.caption(
+                            f"IN {_istart:.1f}s · OUT {_iend:.1f}s · DURATA {_ilen:.1f}s"
+                        )
+
+''',
+'',
+'remove trim summary cloud')
+
+replace_once(
+'''                            st.caption("ANTEPRIMA LIVE · queste regolazioni sono le stesse usate dal render finale.")
+''',
+'',
+'remove preview/render info cloud')
 
 s=s.replace(
     'Gaming Shorts Factory · V98 Editor Polish',

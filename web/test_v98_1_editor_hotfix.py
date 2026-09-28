@@ -1,5 +1,5 @@
 from pathlib import Path
-import ast,sys,re
+import ast,sys
 
 p=Path(sys.argv[1])
 s=p.read_text(encoding='utf-8')
@@ -13,11 +13,14 @@ def need(ok,msg):
 
 need('Gaming Shorts Factory · V98.1 Editor Hotfix' in s,'V98.1 marker')
 
-# UI cleanup.
+# UI cleanup requested from screenshots.
 need('Sessione beta ripristinata automaticamente.' not in s,'restored-session bubble removed')
 need('gsf-v98-1-new-video-center' in s,'new-video centering CSS installed')
 need('justify-content:center' in s and 'st-key-v81_new_video' in s,'new-video button centered')
 need('Per il player LIVE persistente serve una versione recente di Streamlit con Components V2.' not in s,'Components V2 warning removed')
+need('IN {_istart:.1f}s · OUT {_iend:.1f}s · DURATA {_ilen:.1f}s' not in s,'trim info cloud removed')
+need('ANTEPRIMA LIVE · queste regolazioni sono le stesse usate dal render finale.' not in s,'preview info cloud removed')
+need('Modifiche applicate. Puoi continuare nell\\'Editor o creare lo Short finale.' not in s,'no extra apply notification cloud')
 
 # VAI must work on the actual production fallback.
 need('_legacy_seek=float(seek_target if seek_target is not None else start_seconds)' in s,'legacy player receives selected seek target')
@@ -28,16 +31,15 @@ need('st.session_state[f"inline_seek_{_this_inline_id}"]=float(_chosen_t)' in s,
 # Apply changes must persist without an extra forced rerun.
 main_anchor='st.session_state["auto_clip_duration"]=float(editor_len)'
 main_i=s.index(main_anchor)
-main_block=s[main_i:main_i+500]
+main_block=s[main_i:main_i+450]
 need('st.rerun()' not in main_block,'main apply no longer forces home/top rerun')
 need('_main_recipe_selected=True' in main_block,'main recipe remains selected after apply')
 
-inline_anchor='] =float(_ilen)' if '] =float(_ilen)' in s else ']=float(_ilen)'
+inline_anchor=']=float(_ilen)'
 inline_i=s.index(inline_anchor)
-inline_block=s[inline_i:inline_i+550]
+inline_block=s[inline_i:inline_i+500]
 need('st.rerun()' not in inline_block,'inline apply no longer forces home/top rerun')
 need('_inline_recipe_selected=True' in inline_block,'inline recipe remains selected after apply')
-need('Modifiche applicate. Puoi continuare nell\'Editor o creare lo Short finale.' in s,'apply confirmation shown')
 
 # Guardrails.
 need('def render_gsf_editor_live_player' in s,'live player system preserved')
