@@ -13,7 +13,8 @@ def need(ok,msg):
 
 def load_functions(names):
     nodes=[n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name in set(names)]
-    ns={}
+    import re
+    ns={"re":re}
     mod=ast.Module(body=nodes,type_ignores=[])
     ast.fix_missing_locations(mod)
     exec(compile(mod,str(p),'exec'),ns,ns)
