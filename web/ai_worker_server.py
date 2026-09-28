@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
-import ast
 import hashlib
 import json
-import math
 import os
-import re
 import subprocess
 import tempfile
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
@@ -19,13 +15,15 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 from boto3.s3.transfer import TransferConfig
 
+from generated_ai_scan_core import _gsf_ai_scan_base
+
 PORT=int(os.environ.get("PORT","8600"))
 WORKER_TOKEN=os.environ.get("GSF_WORKER_TOKEN","")
-AI_APP_PATH=Path(os.environ.get("GSF_AI_APP_PATH","/app/GamingShortsFactory_V99_FINAL_ARCH.py"))
 MAX_BODY=256*1024
 JOBS={}
 JOBS_LOCK=threading.Lock()
 SCAN_SEMAPHORE=threading.Semaphore(max(1,int(os.environ.get("GSF_WORKER_SCAN_SLOTS","1"))))
+STORAGE_PREFIX=str(os.environ.get("GSF_STORAGE_PREFIX","") or "").strip("/")
 
 def _env_first(*names,default=""):
     for name in names:
@@ -41,7 +39,6 @@ S3_ENDPOINT=_env_first("GSF_S3_ENDPOINT","AWS_ENDPOINT_URL","ENDPOINT")
 S3_REGION=_env_first("GSF_S3_REGION","AWS_REGION","AWS_DEFAULT_REGION","REGION",default="auto")
 S3_STYLE=_env_first("GSF_S3_ADDRESSING_STYLE",default="virtual")
 _S3=None
-_SCAN_FN=None
 
 def _bucket_enabled():
     return bool(S3_BUCKET and S3_ACCESS_KEY and S3_SECRET_KEY and S3_ENDPOINT)
@@ -63,6 +60,50 @@ def _s3():
         )
     return _S3
 
+def _prefixed_key(key):
+    key=str(key or "").lstrip("/")
+    return f"{STORAGE_PREFIX}/{key}" if STORAGE_PREFIX else key
+
+def _job_state_key(job_id):
+    return _prefixed_key(f"worker-jobs/prescan/{job_id}.json")
+
+def _save_job_state(job_id,payload):
+    state=dict(payload or {})
+    state["job_id"]=str(job_id)
+    state["updated_at"]=time.time()
+    with JOBS_LOCK:
+        JOBS[str(job_id)]=state
+    if _bucket_enabled():
+        try:
+            _s3().put_object(
+                Bucket=S3_BUCKET,
+                Key=_job_state_key(job_id),
+                Body=json.dumps(state,separators=(",",":"),ensure_ascii=False).encode("utf-8"),
+                ContentType="application/json",
+                CacheControl="no-store",
+            )
+        except Exception as exc:
+            print(f"GSF worker state warning {job_id}: {str(exc)[:160]}",flush=True)
+    return state
+
+def _load_job_state(job_id):
+    with JOBS_LOCK:
+        local=dict(JOBS.get(str(job_id),{}) or {})
+    if local:
+        return local
+    if not _bucket_enabled():
+        return {}
+    try:
+        obj=_s3().get_object(Bucket=S3_BUCKET,Key=_job_state_key(job_id))
+        state=json.loads(obj["Body"].read().decode("utf-8"))
+        if isinstance(state,dict):
+            with JOBS_LOCK:
+                JOBS[str(job_id)]=dict(state)
+            return state
+    except Exception:
+        pass
+    return {}
+
 def _duration_video(path):
     cmd=[
         "ffprobe","-v","error","-show_entries","format=duration",
@@ -70,45 +111,6 @@ def _duration_video(path):
     ]
     r=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=60)
     return float((r.stdout or "0").strip() or 0.0)
-
-def _load_scan_fn():
-    global _SCAN_FN
-    if _SCAN_FN is not None:
-        return _SCAN_FN
-    source=AI_APP_PATH.read_text(encoding="utf-8")
-    tree=ast.parse(source)
-    wanted={
-        "_gsf_ai_scan_profile_for_duration",
-        "_gsf_interpolate_motion_points",
-        "_gsf_norm_series",
-        "_gsf_ai_scan_base",
-    }
-    found={}
-    for node in tree.body:
-        if isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef)) and node.name in wanted:
-            found[node.name]=node
-    missing=wanted-set(found)
-    if missing:
-        raise RuntimeError(f"worker scan functions missing: {sorted(missing)}")
-    module=ast.Module(body=[found[name] for name in (
-        "_gsf_ai_scan_profile_for_duration",
-        "_gsf_interpolate_motion_points",
-        "_gsf_norm_series",
-        "_gsf_ai_scan_base",
-    )],type_ignores=[])
-    ast.fix_missing_locations(module)
-    ns={
-        "math":math,
-        "re":re,
-        "subprocess":subprocess,
-        "time":time,
-        "ThreadPoolExecutor":ThreadPoolExecutor,
-        "FFMPEG_PATH":"/usr/local/bin/ffmpeg",
-        "durata_video":_duration_video,
-    }
-    exec(compile(module,str(AI_APP_PATH),"exec"),ns,ns)
-    _SCAN_FN=ns["_gsf_ai_scan_base"]
-    return _SCAN_FN
 
 def _authorized(handler):
     if not WORKER_TOKEN:
@@ -148,11 +150,13 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
         started=time.perf_counter()
         local=None
         try:
-            with JOBS_LOCK:
-                JOBS[job_id]={"state":"downloading","started_at":time.time(),"analysis_key":analysis_key}
+            _save_job_state(job_id,{
+                "state":"downloading",
+                "started_at":time.time(),
+                "analysis_key":analysis_key,
+            })
             if _object_exists(analysis_key):
-                with JOBS_LOCK:
-                    JOBS[job_id]={"state":"done","cached":True,"analysis_key":analysis_key}
+                _save_job_state(job_id,{"state":"done","cached":True,"analysis_key":analysis_key})
                 return
 
             suffix=Path(name or key).suffix.lower()
@@ -174,10 +178,13 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
             if size and local.stat().st_size!=int(size):
                 raise IOError("worker download size mismatch")
 
-            with JOBS_LOCK:
-                JOBS[job_id]={"state":"scanning","download_seconds":round(download_seconds,3),"analysis_key":analysis_key}
+            _save_job_state(job_id,{
+                "state":"scanning",
+                "download_seconds":round(download_seconds,3),
+                "analysis_key":analysis_key,
+            })
 
-            scan=_load_scan_fn()(str(local))
+            scan=_gsf_ai_scan_base(str(local))
             meta=dict(scan.get("meta",{}) or {})
             meta["worker_prescan"]=True
             meta["worker_service"]=True
@@ -198,20 +205,22 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
                 Body=json.dumps(payload,separators=(",",":"),ensure_ascii=False).encode("utf-8"),
                 ContentType="application/json",
             )
-            with JOBS_LOCK:
-                JOBS[job_id]={
-                    "state":"done",
-                    "analysis_key":analysis_key,
-                    "download_seconds":round(download_seconds,3),
-                    "wall_seconds":round(wall,3),
-                }
+            _save_job_state(job_id,{
+                "state":"done",
+                "analysis_key":analysis_key,
+                "download_seconds":round(download_seconds,3),
+                "wall_seconds":round(wall,3),
+            })
             print(
                 f"GSF worker done {analysis_key} download={download_seconds:.2f}s wall={wall:.2f}s",
                 flush=True
             )
         except Exception as exc:
-            with JOBS_LOCK:
-                JOBS[job_id]={"state":"error","analysis_key":analysis_key,"error":str(exc)[:240]}
+            _save_job_state(job_id,{
+                "state":"error",
+                "analysis_key":analysis_key,
+                "error":str(exc)[:240],
+            })
             print(f"GSF worker failed {analysis_key}: {str(exc)[:240]}",flush=True)
         finally:
             if local is not None:
@@ -231,13 +240,12 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path=urlparse(self.path)
         if path.path.rstrip("/") in ("","/health"):
-            _json(self,200,{"ok":True,"bucket":_bucket_enabled(),"app":AI_APP_PATH.name})
+            _json(self,200,{"ok":True,"bucket":_bucket_enabled(),"core":"generated_ai_scan_core"})
             return
         if path.path.rstrip("/")=="/status":
             analysis_key=(parse_qs(path.query).get("analysis_key") or [""])[0]
             job_id=_job_id(analysis_key)
-            with JOBS_LOCK:
-                state=dict(JOBS.get(job_id,{}) or {})
+            state=_load_job_state(job_id)
             if not state and _bucket_enabled() and analysis_key:
                 try:
                     if _object_exists(analysis_key):
@@ -273,12 +281,11 @@ class Handler(BaseHTTPRequestHandler):
             if _object_exists(analysis_key):
                 _json(self,200,{"ok":True,"cached":True,"job_id":job_id})
                 return
-            with JOBS_LOCK:
-                existing=JOBS.get(job_id)
-                if existing and existing.get("state") in ("downloading","scanning","queued"):
-                    _json(self,202,{"ok":True,"queued":True,"job_id":job_id,"existing":True})
-                    return
-                JOBS[job_id]={"state":"queued","analysis_key":analysis_key}
+            existing=_load_job_state(job_id)
+            if existing and existing.get("state") in ("downloading","scanning","queued"):
+                _json(self,202,{"ok":True,"queued":True,"job_id":job_id,"existing":True})
+                return
+            _save_job_state(job_id,{"state":"queued","analysis_key":analysis_key})
             threading.Thread(
                 target=_run_job,
                 args=(job_id,key,analysis_key,engine_version,name,size),
@@ -289,7 +296,6 @@ class Handler(BaseHTTPRequestHandler):
             _json(self,400,{"ok":False,"error":str(exc)[:240]})
 
 if __name__=="__main__":
-    _load_scan_fn()
     server=ThreadingHTTPServer(("0.0.0.0",PORT),Handler)
     print(
         f"GSF AI worker listening on 0.0.0.0:{PORT} "
