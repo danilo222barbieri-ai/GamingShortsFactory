@@ -87,6 +87,39 @@ server {
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
     }
 
+    # V104.4: reuse the already-registered app root as TikTok OAuth callback.
+    # Only our cryptographic state prefix is diverted; ordinary "/" still goes to Streamlit.
+    location = / {
+        add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=21600; SameSite=Lax; Secure; HttpOnly" always;
+
+        error_page 418 = @gsf_tiktok_oauth_callback;
+        if ($arg_state ~ "^gsfsc_") {
+            return 418;
+        }
+
+        proxy_pass http://127.0.0.1:8501;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    location @gsf_tiktok_oauth_callback {
+        rewrite ^ /social-connect/tiktok/callback break;
+        proxy_pass http://127.0.0.1:8502;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
     location / {
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=21600; SameSite=Lax; Secure; HttpOnly" always;
 
