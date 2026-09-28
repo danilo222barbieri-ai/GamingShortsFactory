@@ -507,7 +507,7 @@ class Handler(BaseHTTPRequestHandler):
             engine_version=str(data.get("engine_version") or "")
             name=str(data.get("name") or "")
             size=int(data.get("size",0) or 0)
-            if not key.startswith("uploads/") or not analysis_key.startswith("analysis/"):
+            if not _logical_key(key).startswith("uploads/") or not _logical_key(analysis_key).startswith("analysis/"):
                 raise ValueError("invalid keys")
             if engine_version!="v52-keyframe-turbo":
                 raise ValueError("unsupported engine version")
