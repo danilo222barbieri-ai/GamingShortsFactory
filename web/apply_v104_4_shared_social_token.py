@@ -46,7 +46,7 @@ def _gsf_shared_tiktok_load():
         client,bucket=_gsf_shared_tiktok_s3()
         if client is None:
             return {}
-        obj=client.get_object(Bucket=bucket,Key="social-connections/tiktok.json")
+        obj=client.get_object(Bucket=bucket,Key=f"social-connections/{GSF_SESSION_ID}/tiktok.json")
         payload=json.loads(obj["Body"].read().decode("utf-8"))
         return payload if isinstance(payload,dict) else {}
     except Exception:
@@ -60,7 +60,7 @@ def _gsf_shared_tiktok_save(payload):
             return False
         client.put_object(
             Bucket=bucket,
-            Key="social-connections/tiktok.json",
+            Key=f"social-connections/{GSF_SESSION_ID}/tiktok.json",
             Body=json.dumps(payload,ensure_ascii=False).encode("utf-8"),
             ContentType="application/json",
             CacheControl="no-store",
@@ -125,7 +125,7 @@ s=''.join(lines[:node.lineno-1])+replacement+''.join(lines[node.end_lineno:])
 
 marker='Gaming Shorts Factory · V104.3 Memory Safe Render'
 if marker in s:
-    s=s.replace(marker,'Gaming Shorts Factory · V104.4 Shared Social',1)
+    s=s.replace(marker,'Gaming Shorts Factory · V104.4 Social Connect',1)
 
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
