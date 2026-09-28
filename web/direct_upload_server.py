@@ -47,8 +47,6 @@ WORKER_TOKEN=_env_first("GSF_WORKER_TOKEN",default="")
 PUBLIC_APP_URL=_env_first("GSF_PUBLIC_APP_URL",default="").rstrip("/")
 TIKTOK_CLIENT_KEY=_env_first("GSF_TIKTOK_CLIENT_KEY",default="")
 TIKTOK_CLIENT_SECRET=_env_first("GSF_TIKTOK_CLIENT_SECRET",default="")
-SOCIAL_CONNECT_KEY=_env_first("GSF_SOCIAL_CONNECT_KEY",default="")
-TIKTOK_SHARED_KEY="social-connections/tiktok.json"
 _S3_CLIENT=None
 _S3_LOCK=threading.Lock()
 
@@ -227,58 +225,120 @@ def _redirect(handler,url):
     handler.send_header("Cache-Control","no-store")
     handler.end_headers()
 
-def _social_key_ok(value):
-    return bool(SOCIAL_CONNECT_KEY and secrets.compare_digest(str(value or ""),SOCIAL_CONNECT_KEY))
+def _social_sid(handler):
+    return _safe_id(handler.headers.get("X-GSF-Session-ID"))
 
-def _tiktok_shared_load():
+
+def _tiktok_user_key(sid):
+    sid=_safe_id(sid)
+    return f"social-connections/{sid}/tiktok.json" if sid else ""
+
+
+def _tiktok_user_load(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return {}
+    local=ROOT/"sessions"/sid/"social"/"tiktok_token.json"
+    try:
+        payload=json.loads(local.read_text(encoding="utf-8"))
+        if isinstance(payload,dict) and payload.get("access_token"):
+            return payload
+    except Exception:
+        pass
     if not _bucket_enabled():
         return {}
     try:
-        obj=_s3().get_object(Bucket=S3_BUCKET,Key=TIKTOK_SHARED_KEY)
-        return json.loads(obj["Body"].read().decode("utf-8"))
+        obj=_s3().get_object(Bucket=S3_BUCKET,Key=_tiktok_user_key(sid))
+        payload=json.loads(obj["Body"].read().decode("utf-8"))
+        if isinstance(payload,dict):
+            _tiktok_user_write_local(sid,payload)
+            return payload
     except Exception:
-        return {}
+        pass
+    return {}
 
-def _tiktok_shared_save(payload):
+
+def _tiktok_user_write_local(sid,payload):
+    sid=_safe_id(sid)
+    if not sid:
+        return
+    social=ROOT/"sessions"/sid/"social"
+    social.mkdir(parents=True,exist_ok=True)
+    token=dict(payload or {})
+    token.setdefault("_saved_at",time.time())
+    _write_json_atomic(social/"tiktok_token.json",token)
+    _write_json_atomic(social/"tiktok_config.json",{
+        "client_key":TIKTOK_CLIENT_KEY,
+        "client_secret":TIKTOK_CLIENT_SECRET,
+    })
+
+
+def _tiktok_user_save(sid,payload):
+    sid=_safe_id(sid)
+    if not sid:
+        raise RuntimeError("sessione browser non valida")
+    _tiktok_user_write_local(sid,payload)
     if not _bucket_enabled():
         raise RuntimeError("storage persistente non disponibile")
     _s3().put_object(
         Bucket=S3_BUCKET,
-        Key=TIKTOK_SHARED_KEY,
+        Key=_tiktok_user_key(sid),
         Body=json.dumps(payload,ensure_ascii=False).encode("utf-8"),
         ContentType="application/json",
         CacheControl="no-store",
     )
 
-def _social_page(key,message=""):
-    connected=bool((_tiktok_shared_load() or {}).get("access_token"))
+
+def _social_page(sid,message=""):
+    connected=bool((_tiktok_user_load(sid) or {}).get("access_token"))
     badge="✅ TikTok collegato" if connected else "TikTok non ancora collegato"
+    button="Ricollega TikTok" if connected else "Collega TikTok"
     msg=f'<div class="msg">{html.escape(message)}</div>' if message else ""
-    safe_key=urllib.parse.quote(str(key or ""),safe="")
     return f"""<!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Gaming Shorts Factory · Social</title>
+<title>Gaming Shorts Factory · Collega social</title>
 <style>
 body{{font-family:Arial,sans-serif;background:#f5f8fc;color:#17324d;margin:0}}
-main{{max-width:620px;margin:8vh auto;padding:28px}}
+main{{max-width:720px;margin:6vh auto;padding:24px}}
 .card{{background:white;border-radius:24px;padding:30px;box-shadow:0 12px 40px #15304a18}}
 h1{{margin:0 0 8px}} p{{line-height:1.5;color:#5c7185}}
+.grid{{display:grid;grid-template-columns:1fr;gap:14px;margin-top:18px}}
+.social{{border:1px solid #dbe7f1;border-radius:18px;padding:18px}}
 .btn{{display:block;text-align:center;text-decoration:none;background:#1687ff;color:white;font-weight:700;
-padding:16px 18px;border-radius:16px;margin-top:20px}}
-.status{{padding:12px 14px;border-radius:14px;background:#eef7ff;margin:18px 0}}
+padding:15px 18px;border-radius:14px;margin-top:14px}}
+.disabled{{display:block;text-align:center;background:#f0f3f6;color:#8292a1;font-weight:650;
+padding:15px 18px;border-radius:14px;margin-top:14px}}
+.status{{padding:12px 14px;border-radius:14px;background:#eef7ff;margin:14px 0}}
 .msg{{padding:12px 14px;border-radius:14px;background:#eef8ee;margin:14px 0}}
 .small{{font-size:13px;color:#71869a}}
+.back{{display:inline-block;margin-top:22px;color:#315c80;text-decoration:none}}
 </style></head><body><main><div class="card">
-<h1>Gaming Shorts Factory</h1>
-<p>Collega il tuo account social una volta sola. Non serve caricare o creare un video.</p>
-<div class="status">{badge}</div>{msg}
-<a class="btn" href="/social-connect/tiktok/start?key={safe_key}">Collega TikTok</a>
-<p class="small">Il Client Secret e i token restano lato server.</p>
+<h1>Collega i social</h1>
+<p>Qui colleghi gli account una volta sola. Non serve caricare o creare un video.</p>
+<div class="grid">
+  <div class="social">
+    <strong>TikTok</strong>
+    <div class="status">{badge}</div>{msg}
+    <a class="btn" href="/social-connect/tiktok/start">{button}</a>
+  </div>
+  <div class="social">
+    <strong>YouTube</strong>
+    <div class="disabled">Collegamento dedicato in preparazione</div>
+  </div>
+  <div class="social">
+    <strong>Instagram</strong>
+    <div class="disabled">Collegamento dedicato in preparazione</div>
+  </div>
+</div>
+<p class="small">Client Secret e token restano sul server. Se cancelli i cookie del browser potrebbe essere necessario ricollegare l'account.</p>
+<a class="back" href="/">← Torna a Gaming Shorts Factory</a>
 </div></main></body></html>"""
 
-def _tiktok_oauth_start(handler,key):
-    if not _social_key_ok(key):
-        _html(handler,403,"Accesso non autorizzato")
+
+def _tiktok_oauth_start(handler,sid):
+    sid=_safe_id(sid)
+    if not sid:
+        _html(handler,400,"Sessione browser non valida. Riapri /social-connect.")
         return
     if not (PUBLIC_APP_URL and TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET):
         _html(handler,503,"Configurazione TikTok incompleta")
@@ -288,8 +348,10 @@ def _tiktok_oauth_start(handler,key):
     state_dir.mkdir(parents=True,exist_ok=True)
     _write_json_atomic(state_dir/(state+".json"),{
         "created":time.time(),
-        "key":str(key),
+        "sid":sid,
     })
+    # Keep the already-registered root redirect URI. Nginx intercepts only
+    # our gsfsc_ OAuth states and routes them back to this helper.
     redirect_uri=PUBLIC_APP_URL
     params={
         "client_key":TIKTOK_CLIENT_KEY,
@@ -299,6 +361,7 @@ def _tiktok_oauth_start(handler,key):
         "state":state,
     }
     _redirect(handler,"https://www.tiktok.com/v2/auth/authorize/?"+urllib.parse.urlencode(params))
+
 
 def _tiktok_oauth_callback(handler,query):
     code=str((query.get("code") or [""])[0] or "")
@@ -314,15 +377,15 @@ def _tiktok_oauth_callback(handler,query):
     except Exception:
         pass
     created=float(pending.get("created",0) or 0)
-    key=str(pending.get("key","") or "")
-    if not state or not created or time.time()-created>900 or not _social_key_ok(key):
-        _html(handler,400,"Stato OAuth scaduto o non valido. Riapri il link di collegamento.")
+    sid=_safe_id(pending.get("sid",""))
+    if not state or not sid or not created or time.time()-created>900:
+        _html(handler,400,"Stato OAuth scaduto o non valido. Riapri /social-connect.")
         return
     if err:
-        _html(handler,400,_social_page(key,"TikTok: "+err))
+        _html(handler,400,_social_page(sid,"TikTok: "+err))
         return
     if not code:
-        _html(handler,400,_social_page(key,"TikTok non ha restituito il codice di autorizzazione."))
+        _html(handler,400,_social_page(sid,"TikTok non ha restituito il codice di autorizzazione."))
         return
 
     redirect_uri=PUBLIC_APP_URL
@@ -346,13 +409,14 @@ def _tiktok_oauth_callback(handler,query):
         if not token.get("access_token"):
             raise RuntimeError(str(payload))
         now=time.time()
+        token["_saved_at"]=now
         token["saved_at"]=now
         token["expires_at"]=now+int(token.get("expires_in",0) or 0)
         token["refresh_expires_at"]=now+int(token.get("refresh_expires_in",0) or 0)
-        _tiktok_shared_save(token)
-        _html(handler,200,_social_page(key,"TikTok collegato correttamente. Puoi tornare all'app."))
+        _tiktok_user_save(sid,token)
+        _html(handler,200,_social_page(sid,"TikTok collegato correttamente. Ora puoi tornare all'app."))
     except Exception as exc:
-        _html(handler,500,_social_page(key,"Collegamento TikTok fallito: "+str(exc)[:220]))
+        _html(handler,500,_social_page(sid,"Collegamento TikTok fallito: "+str(exc)[:220]))
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -368,16 +432,14 @@ class Handler(BaseHTTPRequestHandler):
             _json(self,200,{"ok":True,"bucket":_bucket_enabled(),"worker":bool(WORKER_URL)})
             return
         if clean=="/social-connect":
-            key=str((parse_qs(path.query).get("key") or [""])[0] or "")
-            if not _social_key_ok(key):
-                _html(self,403,"Accesso non autorizzato")
+            sid=_social_sid(self)
+            if not sid:
+                _html(self,400,"Sessione browser non valida.")
                 return
-            message="TikTok collegato correttamente." if str((parse_qs(path.query).get("connected") or [""])[0])=="1" else ""
-            _html(self,200,_social_page(key,message))
+            _html(self,200,_social_page(sid))
             return
         if clean=="/social-connect/tiktok/start":
-            key=str((parse_qs(path.query).get("key") or [""])[0] or "")
-            _tiktok_oauth_start(self,key)
+            _tiktok_oauth_start(self,_social_sid(self))
             return
         if clean=="/social-connect/tiktok/callback":
             _tiktok_oauth_callback(self,parse_qs(path.query))
