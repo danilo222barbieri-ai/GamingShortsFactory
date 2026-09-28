@@ -15,7 +15,6 @@ targets={
     "_gsf_shared_instagram_save",
     "_gsf_v105_remote_render",
     "_gsf_instagram_publish_reel_file",
-    "_gsf_instagram_publish_reel_auto",
 }
 
 anchor=next(
