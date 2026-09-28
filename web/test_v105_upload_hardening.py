@@ -7,7 +7,7 @@ s=p.read_text(encoding="utf-8")
 tree=ast.parse(s)
 
 def fn(name):
-    n=next((x for x in tree.body if isinstance(x,ast.FunctionDef) and x.name==name),None)
+    n=next((x for x in ast.walk(tree) if isinstance(x,(ast.FunctionDef,ast.AsyncFunctionDef)) and x.name==name),None)
     if n is None:
         raise AssertionError(f"missing function {name}")
     return ast.get_source_segment(s,n) or ""
