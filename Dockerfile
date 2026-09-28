@@ -88,7 +88,8 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python -m py_compile /app/GamingShortsFactory_V98_6_PLAYER_SIZES.py && \
     python /app/web/apply_v98_7_new_video_fix.py && \
     python /app/web/test_v98_7_new_video_fix.py /app/GamingShortsFactory_V98_7_NEW_VIDEO_FIX.py && \
-    python -m py_compile /app/GamingShortsFactory_V98_7_NEW_VIDEO_FIX.py
+    python -m py_compile /app/GamingShortsFactory_V98_7_NEW_VIDEO_FIX.py && \
+    python /app/web/diagnose_upload_memory.py
 
 COPY .streamlit /app/.streamlit
 
