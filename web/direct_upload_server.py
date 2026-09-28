@@ -3,19 +3,89 @@ import json
 import os
 import re
 import time
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import threading
+import uuid
+import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse, parse_qs
+
+import boto3
+from botocore.config import Config
+from boto3.s3.transfer import TransferConfig
 
 ROOT=Path(os.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))
 PORT=int(os.environ.get("GSF_DIRECT_UPLOAD_PORT","8502"))
 MAX_FILE_BYTES=4*1024*1024*1024
 MAX_CHUNK_BYTES=40*1024*1024
+BUCKET_PART_BYTES=32*1024*1024
+BUCKET_CONCURRENCY=6
 ID_RE=re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 ALLOWED_EXT={".mp4",".mov",".mkv"}
 _STATE_LOCKS={}
 _STATE_LOCKS_GUARD=threading.Lock()
+
+def _env_first(*names,default=""):
+    for name in names:
+        value=os.environ.get(name)
+        if value:
+            return value
+    return default
+
+S3_BUCKET=_env_first("GSF_S3_BUCKET","S3_BUCKET","BUCKET")
+S3_ACCESS_KEY=_env_first("GSF_S3_ACCESS_KEY_ID","AWS_ACCESS_KEY_ID","ACCESS_KEY_ID")
+S3_SECRET_KEY=_env_first("GSF_S3_SECRET_ACCESS_KEY","AWS_SECRET_ACCESS_KEY","SECRET_ACCESS_KEY")
+S3_ENDPOINT=_env_first("GSF_S3_ENDPOINT","AWS_ENDPOINT_URL","ENDPOINT")
+S3_REGION=_env_first("GSF_S3_REGION","AWS_REGION","AWS_DEFAULT_REGION","REGION",default="auto")
+S3_ADDRESSING_STYLE=_env_first("GSF_S3_ADDRESSING_STYLE",default="virtual")
+PUBLIC_ORIGIN=_env_first("GSF_PUBLIC_ORIGIN",default="")
+WORKER_URL=_env_first("GSF_WORKER_URL",default="").rstrip("/")
+WORKER_TOKEN=_env_first("GSF_WORKER_TOKEN",default="")
+_S3_CLIENT=None
+_S3_LOCK=threading.Lock()
+
+def _bucket_enabled():
+    return bool(S3_BUCKET and S3_ACCESS_KEY and S3_SECRET_KEY and S3_ENDPOINT)
+
+def _s3():
+    global _S3_CLIENT
+    if not _bucket_enabled():
+        return None
+    with _S3_LOCK:
+        if _S3_CLIENT is None:
+            _S3_CLIENT=boto3.client(
+                "s3",
+                endpoint_url=S3_ENDPOINT,
+                aws_access_key_id=S3_ACCESS_KEY,
+                aws_secret_access_key=S3_SECRET_KEY,
+                region_name=S3_REGION,
+                config=Config(
+                    signature_version="s3v4",
+                    s3={"addressing_style":S3_ADDRESSING_STYLE},
+                    retries={"max_attempts":3,"mode":"standard"},
+                ),
+            )
+        return _S3_CLIENT
+
+def _ensure_bucket_cors():
+    if not _bucket_enabled() or not PUBLIC_ORIGIN:
+        return
+    try:
+        _s3().put_bucket_cors(
+            Bucket=S3_BUCKET,
+            CORSConfiguration={
+                "CORSRules":[{
+                    "AllowedHeaders":["*"],
+                    "AllowedMethods":["GET","HEAD","PUT","POST"],
+                    "AllowedOrigins":[PUBLIC_ORIGIN],
+                    "ExposeHeaders":["ETag"],
+                    "MaxAgeSeconds":3000,
+                }]
+            },
+        )
+        print(f"GSF bucket CORS ready for {PUBLIC_ORIGIN}",flush=True)
+    except Exception as exc:
+        print(f"GSF bucket CORS warning: {str(exc)[:180]}",flush=True)
 
 def _state_lock(sid,upload_id):
     key=(str(sid),str(upload_id))
@@ -30,7 +100,6 @@ def _write_json_atomic(path,payload):
     tmp=Path(str(path)+".tmp")
     tmp.write_text(json.dumps(payload,ensure_ascii=False),encoding="utf-8")
     os.replace(tmp,path)
-
 
 def _safe_id(value):
     value=str(value or "")
@@ -57,17 +126,266 @@ def _json(handler,status,payload):
     handler.end_headers()
     handler.wfile.write(body)
 
+def _read_json(handler,max_bytes=1024*1024):
+    try:
+        length=int(handler.headers.get("Content-Length","0") or 0)
+    except Exception:
+        length=0
+    if length<=0 or length>max_bytes:
+        raise ValueError("invalid body length")
+    raw=handler.rfile.read(length)
+    return json.loads(raw.decode("utf-8"))
+
+def _trigger_prescan(payload):
+    if not WORKER_URL:
+        return
+    try:
+        data=json.dumps(payload,ensure_ascii=False).encode("utf-8")
+        headers={"Content-Type":"application/json"}
+        if WORKER_TOKEN:
+            headers["X-GSF-Worker-Token"]=WORKER_TOKEN
+        req=urllib.request.Request(
+            WORKER_URL+"/prescan",
+            data=data,
+            headers=headers,
+            method="POST",
+        )
+        with urllib.request.urlopen(req,timeout=12) as resp:
+            resp.read(4096)
+        print(f"GSF worker prescan queued: {payload.get('analysis_key','')}",flush=True)
+    except Exception as exc:
+        print(f"GSF worker prescan warning: {str(exc)[:180]}",flush=True)
+
+def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,total,analysis_key):
+    media=ROOT/"sessions"/sid/"media"
+    media.mkdir(parents=True,exist_ok=True)
+    final=media/f"source_bucket_{safe_stem}_{upload_id}{ext}"
+    tmp=media/f".source_bucket_{safe_stem}_{upload_id}{ext}.tmp"
+    try:
+        cfg=TransferConfig(
+            multipart_threshold=8*1024*1024,
+            multipart_chunksize=16*1024*1024,
+            max_concurrency=8,
+            use_threads=True,
+        )
+        with open(tmp,"wb") as out:
+            _s3().download_fileobj(S3_BUCKET,key,out,Config=cfg)
+            out.flush()
+            os.fsync(out.fileno())
+        if tmp.stat().st_size!=total:
+            raise IOError(f"bucket materialization size mismatch {tmp.stat().st_size} != {total}")
+        os.replace(tmp,final)
+        marker=media/".direct_upload_ready.json"
+        _write_json_atomic(marker,{
+            "path":str(final),
+            "name":original_name,
+            "size":total,
+            "upload_id":upload_id,
+            "completed_at":time.time(),
+            "storage":"railway_bucket",
+            "bucket_key":key,
+            "analysis_key":analysis_key,
+        })
+        try:
+            os.utime(ROOT/"sessions"/sid/".active",None)
+        except Exception:
+            pass
+        print(f"GSF bucket materialized {upload_id}: {total} bytes",flush=True)
+    except Exception as exc:
+        tmp.unlink(missing_ok=True)
+        error=media/".direct_upload_error.json"
+        _write_json_atomic(error,{
+            "upload_id":upload_id,
+            "error":str(exc)[:240],
+            "failed_at":time.time(),
+        })
+        print(f"GSF bucket materialization failed {upload_id}: {str(exc)[:180]}",flush=True)
+
 class Handler(BaseHTTPRequestHandler):
-    server_version="GSFDirectUpload/1.0"
+    server_version="GSFDirectUpload/2.0"
 
     def log_message(self,fmt,*args):
         return
 
     def do_GET(self):
-        if self.path.rstrip("/") in ("","/health"):
-            _json(self,200,{"ok":True})
-        else:
-            _json(self,404,{"ok":False,"error":"not found"})
+        path=urlparse(self.path)
+        clean=path.path.rstrip("/")
+        if clean in ("","/health"):
+            _json(self,200,{"ok":True,"bucket":_bucket_enabled(),"worker":bool(WORKER_URL)})
+            return
+        if clean=="/capabilities":
+            _json(self,200,{
+                "ok":True,
+                "bucket":_bucket_enabled(),
+                "worker":bool(WORKER_URL),
+                "part_size":BUCKET_PART_BYTES,
+                "concurrency":BUCKET_CONCURRENCY,
+                "fallback_chunk_size":16*1024*1024,
+                "fallback_concurrency":6,
+            })
+            return
+        if clean=="/bucket/status":
+            sid=_safe_id(self.headers.get("X-GSF-Session-ID"))
+            upload_id=_safe_id((parse_qs(path.query).get("upload_id") or [""])[0])
+            if not sid or not upload_id:
+                _json(self,400,{"ok":False,"error":"invalid status id"})
+                return
+            media=ROOT/"sessions"/sid/"media"
+            marker=media/".direct_upload_ready.json"
+            error=media/".direct_upload_error.json"
+            if marker.is_file():
+                try:
+                    data=json.loads(marker.read_text(encoding="utf-8"))
+                    if str(data.get("upload_id",""))==upload_id:
+                        _json(self,200,{"ok":True,"ready":True})
+                        return
+                except Exception:
+                    pass
+            if error.is_file():
+                try:
+                    data=json.loads(error.read_text(encoding="utf-8"))
+                    if str(data.get("upload_id",""))==upload_id:
+                        _json(self,500,{"ok":False,"ready":False,"error":str(data.get("error","preparation failed"))})
+                        return
+                except Exception:
+                    pass
+            _json(self,200,{"ok":True,"ready":False})
+            return
+        _json(self,404,{"ok":False,"error":"not found"})
+
+    def do_POST(self):
+        path=urlparse(self.path).path.rstrip("/")
+        sid=_safe_id(self.headers.get("X-GSF-Session-ID"))
+        if not sid:
+            _json(self,400,{"ok":False,"error":"invalid session"})
+            return
+
+        if path=="/bucket/init":
+            if not _bucket_enabled():
+                _json(self,503,{"ok":False,"error":"bucket unavailable"})
+                return
+            try:
+                data=_read_json(self)
+                original_name,safe_stem,ext=_safe_filename(data.get("name"))
+                total=int(data.get("size",0))
+                content_type=str(data.get("type") or "application/octet-stream")
+                if total<=0 or total>MAX_FILE_BYTES:
+                    raise ValueError("file size not allowed")
+                upload_id=uuid.uuid4().hex[:20]
+                key=f"uploads/{sid}/{upload_id}/{safe_stem}{ext}"
+                analysis_key=f"analysis/{sid}/{upload_id}/v52-keyframe-turbo.json"
+                created=_s3().create_multipart_upload(
+                    Bucket=S3_BUCKET,
+                    Key=key,
+                    ContentType=content_type,
+                    Metadata={
+                        "gsf-upload-id":upload_id,
+                        "gsf-original-name":original_name[:200],
+                    },
+                )
+                multipart_id=created["UploadId"]
+                count=(total+BUCKET_PART_BYTES-1)//BUCKET_PART_BYTES
+                urls=[]
+                for part_number in range(1,count+1):
+                    url=_s3().generate_presigned_url(
+                        "upload_part",
+                        Params={
+                            "Bucket":S3_BUCKET,
+                            "Key":key,
+                            "UploadId":multipart_id,
+                            "PartNumber":part_number,
+                        },
+                        ExpiresIn=3600,
+                    )
+                    urls.append({"number":part_number,"url":url})
+                _json(self,200,{
+                    "ok":True,
+                    "mode":"bucket",
+                    "upload_id":upload_id,
+                    "multipart_id":multipart_id,
+                    "key":key,
+                    "analysis_key":analysis_key,
+                    "part_size":BUCKET_PART_BYTES,
+                    "concurrency":BUCKET_CONCURRENCY,
+                    "parts":urls,
+                })
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:240]})
+            return
+
+        if path=="/bucket/complete":
+            if not _bucket_enabled():
+                _json(self,503,{"ok":False,"error":"bucket unavailable"})
+                return
+            try:
+                data=_read_json(self)
+                upload_id=_safe_id(data.get("upload_id"))
+                multipart_id=str(data.get("multipart_id") or "")
+                key=str(data.get("key") or "")
+                analysis_key=str(data.get("analysis_key") or "")
+                original_name,safe_stem,ext=_safe_filename(data.get("name"))
+                total=int(data.get("size",0))
+                parts=data.get("parts") or []
+                prefix=f"uploads/{sid}/{upload_id}/"
+                expected_analysis=f"analysis/{sid}/{upload_id}/"
+                if not upload_id or not multipart_id or not key.startswith(prefix):
+                    raise ValueError("invalid multipart metadata")
+                if not analysis_key.startswith(expected_analysis):
+                    raise ValueError("invalid analysis key")
+                if total<=0 or total>MAX_FILE_BYTES:
+                    raise ValueError("invalid file size")
+                clean_parts=[]
+                for item in parts:
+                    pn=int(item.get("PartNumber",0))
+                    etag=str(item.get("ETag") or "").strip()
+                    if pn<=0 or not etag:
+                        raise ValueError("invalid multipart part")
+                    clean_parts.append({"PartNumber":pn,"ETag":etag})
+                clean_parts.sort(key=lambda x:x["PartNumber"])
+                _s3().complete_multipart_upload(
+                    Bucket=S3_BUCKET,
+                    Key=key,
+                    UploadId=multipart_id,
+                    MultipartUpload={"Parts":clean_parts},
+                )
+
+                prescan_payload={
+                    "key":key,
+                    "analysis_key":analysis_key,
+                    "engine_version":"v52-keyframe-turbo",
+                    "name":original_name,
+                    "size":total,
+                }
+                threading.Thread(
+                    target=_trigger_prescan,
+                    args=(prescan_payload,),
+                    daemon=True,
+                ).start()
+                threading.Thread(
+                    target=_materialize_bucket_object,
+                    args=(sid,upload_id,key,original_name,safe_stem,ext,total,analysis_key),
+                    daemon=True,
+                ).start()
+                _json(self,202,{"ok":True,"upload_id":upload_id,"preparing":True})
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:240]})
+            return
+
+        if path=="/bucket/abort":
+            try:
+                data=_read_json(self)
+                upload_id=_safe_id(data.get("upload_id"))
+                key=str(data.get("key") or "")
+                multipart_id=str(data.get("multipart_id") or "")
+                if not _bucket_enabled() or not upload_id or not key.startswith(f"uploads/{sid}/{upload_id}/"):
+                    raise ValueError("invalid abort metadata")
+                _s3().abort_multipart_upload(Bucket=S3_BUCKET,Key=key,UploadId=multipart_id)
+                _json(self,200,{"ok":True})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+
+        _json(self,404,{"ok":False,"error":"not found"})
 
     def do_PUT(self):
         if self.path.split("?",1)[0].rstrip("/") != "/chunk":
@@ -110,8 +428,6 @@ class Handler(BaseHTTPRequestHandler):
         lock=_state_lock(sid,upload_id)
 
         try:
-            # Register metadata under a very short lock. Network reads/writes happen
-            # outside it so up to four chunks can arrive concurrently.
             with lock:
                 if state_path.is_file():
                     state=json.loads(state_path.read_text(encoding="utf-8"))
@@ -158,7 +474,6 @@ class Handler(BaseHTTPRequestHandler):
                 state["ranges"]=ranges
                 _write_json_atomic(state_path,state)
 
-            # Positional writes avoid seek races between concurrent requests.
             fd=os.open(str(data_path),os.O_WRONLY)
             try:
                 remaining=length
@@ -201,14 +516,14 @@ class Handler(BaseHTTPRequestHandler):
                     final=media/f"source_direct_{safe_stem}_{upload_id}{ext}"
                     os.replace(data_path,final)
                     marker=media/".direct_upload_ready.json"
-                    marker_data={
+                    _write_json_atomic(marker,{
                         "path":str(final),
                         "name":original_name,
                         "size":total,
                         "upload_id":upload_id,
                         "completed_at":time.time(),
-                    }
-                    _write_json_atomic(marker,marker_data)
+                        "storage":"direct_fallback",
+                    })
                     state_path.unlink(missing_ok=True)
                     try:
                         upload_dir.rmdir()
@@ -231,6 +546,11 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__=="__main__":
     ROOT.mkdir(parents=True,exist_ok=True)
+    _ensure_bucket_cors()
     server=ThreadingHTTPServer(("127.0.0.1",PORT),Handler)
-    print(f"GSF direct upload server listening on 127.0.0.1:{PORT}",flush=True)
+    print(
+        f"GSF direct upload server listening on 127.0.0.1:{PORT} "
+        f"bucket={'on' if _bucket_enabled() else 'off'} worker={'on' if WORKER_URL else 'off'}",
+        flush=True
+    )
     server.serve_forever()
