@@ -118,6 +118,11 @@ server {
             return 419;
         }
 
+        error_page 420 = @gsf_instagram_oauth_callback;
+        if ($arg_state ~ "^gsfig_") {
+            return 420;
+        }
+
         proxy_pass http://127.0.0.1:8501;
         proxy_http_version 1.1;
         proxy_buffering off;
@@ -145,6 +150,18 @@ server {
 
     location @gsf_youtube_oauth_callback {
         rewrite ^ /social-connect/youtube/callback break;
+        add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
+        proxy_pass http://127.0.0.1:8502;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+    }
+
+    location @gsf_instagram_oauth_callback {
+        rewrite ^ /social-connect/instagram/callback break;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502;
         proxy_http_version 1.1;
