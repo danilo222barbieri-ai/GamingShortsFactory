@@ -122,8 +122,8 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python -m py_compile /app/web/direct_upload_server.py && \
     python -m py_compile /app/web/ai_worker_server.py && \
     python -m py_compile /app/web/gsf_bucket_bridge.py && \
-    python -m py_compile /app/web/direct_upload_server.py
-    && python /app/web/inspect_v100_reframe.py /app/GamingShortsFactory_V99_FINAL_ARCH.py
+    python -m py_compile /app/web/direct_upload_server.py && \
+    python /app/web/inspect_v100_reframe.py /app/GamingShortsFactory_V99_FINAL_ARCH.py
 
 COPY .streamlit /app/.streamlit
 
