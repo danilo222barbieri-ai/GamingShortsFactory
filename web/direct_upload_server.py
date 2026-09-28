@@ -22,7 +22,9 @@ PORT=int(os.environ.get("GSF_DIRECT_UPLOAD_PORT","8502"))
 MAX_FILE_BYTES=4*1024*1024*1024
 MAX_CHUNK_BYTES=40*1024*1024
 BUCKET_PART_BYTES=32*1024*1024
-BUCKET_CONCURRENCY=10
+BUCKET_CONCURRENCY_DESKTOP=max(2,min(8,int(os.environ.get("GSF_BUCKET_CONCURRENCY_DESKTOP","6"))))
+BUCKET_CONCURRENCY_MOBILE=max(2,min(4,int(os.environ.get("GSF_BUCKET_CONCURRENCY_MOBILE","3"))))
+MATERIALIZE_CONCURRENCY=max(1,min(6,int(os.environ.get("GSF_WEB_MATERIALIZE_CONCURRENCY","4"))))
 ID_RE=re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 ALLOWED_EXT={".mp4",".mov",".mkv"}
 _STATE_LOCKS={}
@@ -59,6 +61,24 @@ META_SCOPES="pages_show_list,instagram_basic,instagram_content_publish,pages_rea
 _S3_CLIENT=None
 _S3_LOCK=threading.Lock()
 
+def _allowed_cors_origins():
+    raw=_env_first("GSF_ALLOWED_ORIGINS",default="")
+    values=[]
+    for item in str(raw or "").split(","):
+        item=item.strip().rstrip("/")
+        if item and item not in values:
+            values.append(item)
+    fallback=str(PUBLIC_ORIGIN or "").strip().rstrip("/")
+    if fallback and fallback not in values:
+        values.append(fallback)
+    return values
+
+def _client_upload_concurrency(user_agent):
+    ua=str(user_agent or "").lower()
+    if any(token in ua for token in ("iphone","ipad","ipod","android","mobile")):
+        return BUCKET_CONCURRENCY_MOBILE
+    return BUCKET_CONCURRENCY_DESKTOP
+
 def _bucket_enabled():
     return bool(S3_BUCKET and S3_ACCESS_KEY and S3_SECRET_KEY and S3_ENDPOINT)
 
@@ -83,7 +103,8 @@ def _s3():
         return _S3_CLIENT
 
 def _ensure_bucket_cors():
-    if not _bucket_enabled() or not PUBLIC_ORIGIN:
+    origins=_allowed_cors_origins()
+    if not _bucket_enabled() or not origins:
         return
     try:
         _s3().put_bucket_cors(
@@ -92,13 +113,13 @@ def _ensure_bucket_cors():
                 "CORSRules":[{
                     "AllowedHeaders":["*"],
                     "AllowedMethods":["GET","HEAD","PUT","POST"],
-                    "AllowedOrigins":[PUBLIC_ORIGIN],
+                    "AllowedOrigins":_allowed_cors_origins(),
                     "ExposeHeaders":["ETag"],
                     "MaxAgeSeconds":3000,
                 }]
             },
         )
-        print(f"GSF bucket CORS ready for {PUBLIC_ORIGIN}",flush=True)
+        print("GSF_BUCKET_CORS origins="+",".join(origins),flush=True)
     except Exception as exc:
         print(f"GSF bucket CORS warning: {str(exc)[:180]}",flush=True)
 
@@ -176,19 +197,19 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
     media.mkdir(parents=True,exist_ok=True)
     final=media/f"source_bucket_{safe_stem}_{upload_id}{ext}"
     tmp=media/f".source_bucket_{safe_stem}_{upload_id}{ext}.tmp"
+    started=time.perf_counter()
     try:
         cfg=TransferConfig(
             multipart_threshold=8*1024*1024,
             multipart_chunksize=8*1024*1024,
-            max_concurrency=12,
-            max_io_queue=16,
+            max_concurrency=MATERIALIZE_CONCURRENCY,
+            max_io_queue=max(4,MATERIALIZE_CONCURRENCY*2),
             io_chunksize=1024*1024,
             use_threads=True,
         )
         with open(tmp,"wb") as out:
             _s3().download_fileobj(S3_BUCKET,key,out,Config=cfg)
             out.flush()
-            os.fsync(out.fileno())
         if tmp.stat().st_size!=total:
             raise IOError(f"bucket materialization size mismatch {tmp.stat().st_size} != {total}")
         os.replace(tmp,final)
@@ -207,7 +228,12 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
             os.utime(ROOT/"sessions"/sid/".active",None)
         except Exception:
             pass
-        print(f"GSF bucket materialized {upload_id}: {total} bytes",flush=True)
+        elapsed=time.perf_counter()-started
+        print(
+            f"GSF_MATERIALIZE_DONE upload_id={upload_id} bytes={total} "
+            f"seconds={elapsed:.3f} concurrency={MATERIALIZE_CONCURRENCY}",
+            flush=True
+        )
     except Exception as exc:
         tmp.unlink(missing_ok=True)
         error=media/".direct_upload_error.json"
@@ -216,7 +242,12 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
             "error":str(exc)[:240],
             "failed_at":time.time(),
         })
-        print(f"GSF bucket materialization failed {upload_id}: {str(exc)[:180]}",flush=True)
+        elapsed=time.perf_counter()-started
+        print(
+            f"GSF_MATERIALIZE_ERROR upload_id={upload_id} seconds={elapsed:.3f} "
+            f"error={str(exc)[:180]}",
+            flush=True
+        )
 
 
 def _html(handler,status,body):
@@ -942,9 +973,9 @@ class Handler(BaseHTTPRequestHandler):
                 "bucket":_bucket_enabled(),
                 "worker":bool(WORKER_URL),
                 "part_size":BUCKET_PART_BYTES,
-                "concurrency":BUCKET_CONCURRENCY,
+                "concurrency":_client_upload_concurrency(self.headers.get("User-Agent","")),
                 "materialize_part_size":8*1024*1024,
-                "materialize_concurrency":12,
+                "materialize_concurrency":MATERIALIZE_CONCURRENCY,
                 "fallback_chunk_size":16*1024*1024,
                 "fallback_concurrency":6,
             })
@@ -1031,7 +1062,7 @@ class Handler(BaseHTTPRequestHandler):
                     "key":key,
                     "analysis_key":analysis_key,
                     "part_size":BUCKET_PART_BYTES,
-                    "concurrency":BUCKET_CONCURRENCY,
+                    "concurrency":_client_upload_concurrency(self.headers.get("User-Agent","")),
                     "parts":urls,
                 })
             except Exception as exc:
@@ -1067,11 +1098,18 @@ class Handler(BaseHTTPRequestHandler):
                         raise ValueError("invalid multipart part")
                     clean_parts.append({"PartNumber":pn,"ETag":etag})
                 clean_parts.sort(key=lambda x:x["PartNumber"])
+                _complete_t0=time.perf_counter()
                 _s3().complete_multipart_upload(
                     Bucket=S3_BUCKET,
                     Key=key,
                     UploadId=multipart_id,
                     MultipartUpload={"Parts":clean_parts},
+                )
+                _complete_seconds=time.perf_counter()-_complete_t0
+                print(
+                    f"GSF_UPLOAD_COMPLETE upload_id={upload_id} bytes={total} "
+                    f"seconds={_complete_seconds:.3f} parts={len(clean_parts)}",
+                    flush=True
                 )
 
                 prescan_payload={
