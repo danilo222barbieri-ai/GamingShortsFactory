@@ -51,7 +51,8 @@ spoken=hook({
     'features':{'moment_category':'reaction','reaction':.72,'hook_score':.58,'speech':.70}
 })
 need('visto' in spoken.lower() and 'successo' in spoken.lower(),'real spoken reaction can become contextual hook')
-need('AZIONE PURA' not in ast.get_source_segment(s,next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='_gsf_hook_from_diag')),'generic category fallback removed')
+_hook_src=ast.get_source_segment(s,next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='_gsf_hook_from_diag')) or ''
+need('_GSF_CATEGORY_HOOKS[' not in _hook_src,'generic category fallback removed')
 
 # UI + state contract.
 need('st.toggle(\n                "Hook"' in s,'Hook ON/OFF control installed')
