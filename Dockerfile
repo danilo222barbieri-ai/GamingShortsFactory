@@ -143,6 +143,9 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v100_7_memory_safe_render.py && \
     python /app/web/test_v100_7_memory_safe_render.py /app/GamingShortsFactory_V100_7_MEMORY_SAFE_RENDER.py && \
     python -m py_compile /app/GamingShortsFactory_V100_7_MEMORY_SAFE_RENDER.py && \
+    python /app/web/apply_v100_8_fast_render.py && \
+    python /app/web/test_v100_8_fast_render.py /app/GamingShortsFactory_V100_8_FAST_RENDER.py && \
+    python -m py_compile /app/GamingShortsFactory_V100_8_FAST_RENDER.py && \
     python -m py_compile /app/web/direct_upload_server.py && \
     python -m py_compile /app/web/ai_worker_server.py && \
     python -m py_compile /app/web/gsf_bucket_bridge.py && \
