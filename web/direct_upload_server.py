@@ -283,14 +283,14 @@ def _tiktok_oauth_start(handler,key):
     if not (PUBLIC_APP_URL and TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET):
         _html(handler,503,"Configurazione TikTok incompleta")
         return
-    state=secrets.token_urlsafe(32)
+    state="gsfsc_"+secrets.token_urlsafe(28)
     state_dir=ROOT/"social_oauth"
     state_dir.mkdir(parents=True,exist_ok=True)
     _write_json_atomic(state_dir/(state+".json"),{
         "created":time.time(),
         "key":str(key),
     })
-    redirect_uri=PUBLIC_APP_URL+"/social-connect/tiktok/callback"
+    redirect_uri=PUBLIC_APP_URL
     params={
         "client_key":TIKTOK_CLIENT_KEY,
         "response_type":"code",
@@ -325,7 +325,7 @@ def _tiktok_oauth_callback(handler,query):
         _html(handler,400,_social_page(key,"TikTok non ha restituito il codice di autorizzazione."))
         return
 
-    redirect_uri=PUBLIC_APP_URL+"/social-connect/tiktok/callback"
+    redirect_uri=PUBLIC_APP_URL
     form=urllib.parse.urlencode({
         "client_key":TIKTOK_CLIENT_KEY,
         "client_secret":TIKTOK_CLIENT_SECRET,
