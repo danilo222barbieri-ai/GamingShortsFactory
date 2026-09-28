@@ -19,7 +19,7 @@ def need(ok,msg):
 
 cors=fn("_ensure_bucket_cors")
 need("def _allowed_cors_origins" in s,"multi-origin CORS helper exists")
-need("AllowedOrigins":_allowed_cors_origins()" in cors.replace(" ",""),"bucket CORS uses explicit origin list")
+need('"AllowedOrigins":_allowed_cors_origins()' in cors.replace(" ",""),"bucket CORS uses explicit origin list")
 need("[PUBLIC_ORIGIN]" not in cors,"single-origin CORS overwrite removed")
 
 need("def _client_upload_concurrency" in s,"client upload concurrency helper exists")
