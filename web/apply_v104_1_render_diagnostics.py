@@ -50,65 +50,27 @@ new='''        for encoder,cmd in attempts:
                 _diag_elapsed=time.perf_counter()-_diag_started
                 _diag_stderr=(r.stderr or "")[-5000:].replace("\\r","\\n")
                 _diag_stdout=(r.stdout or "")[-1500:].replace("\\r","\\n")
-                _diag_size=(
-                    os.path.getsize(output_path)
-                    if os.path.exists(output_path) else 0
-                )
-                print(
-                    "GSF_FINAL_RENDER_EXIT",
-                    f"encoder={encoder}",
-                    f"returncode={r.returncode}",
-                    f"elapsed={_diag_elapsed:.2f}",
-                    f"output_bytes={_diag_size}",
-                    "stderr_tail="+repr(_diag_stderr),
-                    "stdout_tail="+repr(_diag_stdout),
-                    flush=True,
-                )
+                _diag_size=(os.path.getsize(output_path) if os.path.exists(output_path) else 0)
+                print("GSF_FINAL_RENDER_EXIT",f"encoder={encoder}",f"returncode={r.returncode}",f"elapsed={_diag_elapsed:.2f}",f"output_bytes={_diag_size}","stderr_tail="+repr(_diag_stderr),"stdout_tail="+repr(_diag_stdout),flush=True)
             except subprocess.TimeoutExpired as e:
                 _diag_elapsed=time.perf_counter()-_diag_started
                 _diag_stderr=e.stderr or ""
                 _diag_stdout=e.stdout or ""
-                if isinstance(_diag_stderr,bytes):
-                    _diag_stderr=_diag_stderr.decode("utf-8","replace")
-                if isinstance(_diag_stdout,bytes):
-                    _diag_stdout=_diag_stdout.decode("utf-8","replace")
+                if isinstance(_diag_stderr,bytes): _diag_stderr=_diag_stderr.decode("utf-8","replace")
+                if isinstance(_diag_stdout,bytes): _diag_stdout=_diag_stdout.decode("utf-8","replace")
                 _diag_stderr=str(_diag_stderr)[-5000:].replace("\\r","\\n")
                 _diag_stdout=str(_diag_stdout)[-1500:].replace("\\r","\\n")
-                _diag_size=(
-                    os.path.getsize(output_path)
-                    if os.path.exists(output_path) else 0
-                )
-                print(
-                    "GSF_FINAL_RENDER_TIMEOUT",
-                    f"encoder={encoder}",
-                    f"elapsed={_diag_elapsed:.2f}",
-                    f"timeout={_diag_timeout:.1f}",
-                    f"output_bytes={_diag_size}",
-                    "stderr_tail="+repr(_diag_stderr),
-                    "stdout_tail="+repr(_diag_stdout),
-                    flush=True,
-                )
-                last_error=(
-                    f"Render timeout dopo {_diag_elapsed:.1f}s "
-                    f"(limite {_diag_timeout:.0f}s). "
-                    +(_diag_stderr[-1800:] or "FFmpeg non ha restituito altri dettagli.")
-                )
+                _diag_size=(os.path.getsize(output_path) if os.path.exists(output_path) else 0)
+                print("GSF_FINAL_RENDER_TIMEOUT",f"encoder={encoder}",f"elapsed={_diag_elapsed:.2f}",f"timeout={_diag_timeout:.1f}",f"output_bytes={_diag_size}","stderr_tail="+repr(_diag_stderr),"stdout_tail="+repr(_diag_stdout),flush=True)
+                last_error=f"Render timeout dopo {_diag_elapsed:.1f}s (limite {_diag_timeout:.0f}s). "+(_diag_stderr[-1800:] or "FFmpeg non ha restituito altri dettagli.")
                 continue
             except Exception as e:
                 _diag_elapsed=time.perf_counter()-_diag_started
-                print(
-                    "GSF_FINAL_RENDER_EXCEPTION",
-                    f"encoder={encoder}",
-                    f"elapsed={_diag_elapsed:.2f}",
-                    f"type={type(e).__name__}",
-                    "error="+repr(str(e)),
-                    flush=True,
-                )
+                print("GSF_FINAL_RENDER_EXCEPTION",f"encoder={encoder}",f"elapsed={_diag_elapsed:.2f}",f"type={type(e).__name__}","error="+repr(str(e)),flush=True)
                 last_error=str(e)
                 continue
 '''
-if old not in core:
-    raise RuntimeError('V104.1 render subprocess anchor not found')
+if old not in core: raise RuntimeError('V104.1 render subprocess anchor not found')
 core=core.replace(old,new,1)
 
 old='''            if r.returncode==0 and os.path.exists(output_path) and os.path.getsize(output_path)>0:
@@ -123,46 +85,36 @@ old='''            if r.returncode==0 and os.path.exists(output_path) and os.pat
 new='''            if r.returncode==0 and os.path.exists(output_path) and os.path.getsize(output_path)>0:
                 social_master=_gsf_validate_social_master(output_path,fmt=fmt)
                 if not social_master.get("ok"):
-                    last_error=(
-                        "Master MP4 non compatibile: "
-                        + "; ".join(social_master.get("errors") or ["verifica fallita"])
-                    )
-                    print(
-                        "GSF_FINAL_RENDER_VALIDATION_FAIL",
-                        f"encoder={encoder}",
-                        "errors="+repr(social_master.get("errors") or []),
-                        "video="+repr(social_master.get("video") or {}),
-                        "audio="+repr(social_master.get("audio") or {}),
-                        flush=True,
-                    )
+                    last_error=("Master MP4 non compatibile: "+"; ".join(social_master.get("errors") or ["verifica fallita"]))
+                    print("GSF_FINAL_RENDER_VALIDATION_FAIL",f"encoder={encoder}","errors="+repr(social_master.get("errors") or []),"video="+repr(social_master.get("video") or {}),"audio="+repr(social_master.get("audio") or {}),flush=True)
                     continue
 '''
-if old not in core:
-    raise RuntimeError('V104.1 validator anchor not found')
+if old not in core: raise RuntimeError('V104.1 validator anchor not found')
 core=core.replace(old,new,1)
-
 old='''            last_error=(r.stderr or "")[-3500:] or f"{encoder} non riuscito"
 '''
 new='''            last_error=(r.stderr or "")[-3500:] or f"{encoder} non riuscito"
-            print(
-                "GSF_FINAL_RENDER_FAIL",
-                f"encoder={encoder}",
-                f"returncode={r.returncode}",
-                "error_tail="+repr(last_error[-3500:]),
-                flush=True,
-            )
+            print("GSF_FINAL_RENDER_FAIL",f"encoder={encoder}",f"returncode={r.returncode}","error_tail="+repr(last_error[-3500:]),flush=True)
 '''
-if old not in core:
-    raise RuntimeError('V104.1 final error anchor not found')
+if old not in core: raise RuntimeError('V104.1 final error anchor not found')
 core=core.replace(old,new,1)
-
 lines=s.splitlines(keepends=True)
 s=''.join(lines[:node.lineno-1])+core.rstrip()+'\n\n'+''.join(lines[node.end_lineno:])
 
-marker='Gaming Shorts Factory · V104 Direct Social'
-if marker not in s:
-    raise RuntimeError('V104.1 marker missing')
-s=s.replace(marker,'Gaming Shorts Factory · V104.1 Render Diagnostics',1)
+# Graphic-only polish requested on mobile: give the two section transitions
+# 30px of breathing room. No widget dimensions or behavior are changed.
+final_anchor='''    if _show_final_flow:\n        st.divider()\n        st.markdown('<div class="gsf-icon-title">' + _gsf_v67_badge("play", "Crea lo Short finale", "peach") + '</div>', unsafe_allow_html=True)\n'''
+final_new='''    if _show_final_flow:\n        st.divider()\n        st.markdown('<div class="gsf-section-gap-final" style="height:30px"></div>', unsafe_allow_html=True)\n        st.markdown('<div class="gsf-icon-title">' + _gsf_v67_badge("play", "Crea lo Short finale", "peach") + '</div>', unsafe_allow_html=True)\n'''
+if final_anchor not in s: raise RuntimeError('V104.1 final spacing anchor missing')
+s=s.replace(final_anchor,final_new,1)
 
+social_anchor='''st.markdown('<div class="gsf-icon-title">' + _gsf_v67_badge("publish", "Pubblicazione diretta", "indigo") + '</div>', unsafe_allow_html=True)'''
+social_new='''st.markdown('<div class="gsf-icon-title">' + _gsf_v67_badge("publish", "Pubblicazione diretta", "indigo") + '</div>', unsafe_allow_html=True)\nst.markdown('<div class="gsf-section-gap-social" style="height:30px"></div>', unsafe_allow_html=True)'''
+if social_anchor not in s: raise RuntimeError('V104.1 social spacing anchor missing')
+s=s.replace(social_anchor,social_new,1)
+
+marker='Gaming Shorts Factory · V104 Direct Social'
+if marker not in s: raise RuntimeError('V104.1 marker missing')
+s=s.replace(marker,'Gaming Shorts Factory · V104.1 Render Diagnostics',1)
 out.write_text(s,encoding='utf-8')
-print(f'V104.1 render diagnostics applied: {out}')
+print(f'V104.1 render diagnostics + spacing applied: {out}')
