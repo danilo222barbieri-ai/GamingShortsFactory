@@ -119,11 +119,13 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/test_v99_final_arch.py /app/GamingShortsFactory_V99_FINAL_ARCH.py && \
     python /app/web/test_v99_worker_engine.py && \
     python -m py_compile /app/GamingShortsFactory_V99_FINAL_ARCH.py && \
+    python /app/web/apply_v100_smart_reframe.py && \
+    python /app/web/test_v100_smart_reframe.py /app/GamingShortsFactory_V100_SMART_REFRAME.py && \
+    python -m py_compile /app/GamingShortsFactory_V100_SMART_REFRAME.py && \
     python -m py_compile /app/web/direct_upload_server.py && \
     python -m py_compile /app/web/ai_worker_server.py && \
     python -m py_compile /app/web/gsf_bucket_bridge.py && \
-    python -m py_compile /app/web/direct_upload_server.py && \
-    python /app/web/inspect_v100_reframe.py /app/GamingShortsFactory_V99_FINAL_ARCH.py
+    python -m py_compile /app/web/direct_upload_server.py
 
 COPY .streamlit /app/.streamlit
 
