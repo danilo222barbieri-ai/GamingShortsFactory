@@ -88,9 +88,11 @@ jobs:
             const body=await page.locator('body').innerText();
             fs.writeFileSync(out+'/results-body.txt',body);
 
-            const choose=page.getByRole('button',{name:/SCEGLI QUESTO/i}).first();
-            await choose.waitFor({state:'visible',timeout:30000});
-            await choose.click();
+            // The first candidate is preselected. "USA QUESTA" confirms the
+            // selected AI moment without opening the editor.
+            const useThis=page.getByRole('button',{name:/USA QUESTA/i}).first();
+            await useThis.waitFor({state:'visible',timeout:30000});
+            await useThis.click();
             await page.waitForTimeout(1200);
 
             const finalBtn=page.getByRole('button',{name:/CREA SHORT FINALE/i});
