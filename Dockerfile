@@ -149,6 +149,7 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v101_subtitle_refinement.py && \
     python /app/web/test_v101_subtitle_refinement.py /app/GamingShortsFactory_V101_SUBTITLE_REFINEMENT.py && \
     python -m py_compile /app/GamingShortsFactory_V101_SUBTITLE_REFINEMENT.py && \
+    python /app/web/inspect_v102_hooks.py && \
     python -m py_compile /app/web/direct_upload_server.py && \
     python -m py_compile /app/web/ai_worker_server.py && \
     python -m py_compile /app/web/gsf_bucket_bridge.py && \
