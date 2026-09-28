@@ -458,7 +458,7 @@ s=replace_function(s,'_gsf_smooth_reframe_track',new_smooth)
 
 # Never reuse an old V42/V94 tracking cache after changing the algorithm.
 s,n=re.subn(
-    r'GSF_SMART_REFRAME_VERSION\s*=\s*["\\'][^"\\']+["\\']',
+    r"GSF_SMART_REFRAME_VERSION\s*=\s*['\"][^'\"]+['\"]",
     'GSF_SMART_REFRAME_VERSION = "v100-gameplay-safe"',
     s,count=1
 )
