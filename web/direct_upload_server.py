@@ -11,10 +11,26 @@ from urllib.parse import unquote
 ROOT=Path(os.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))
 PORT=int(os.environ.get("GSF_DIRECT_UPLOAD_PORT","8502"))
 MAX_FILE_BYTES=4*1024*1024*1024
-MAX_CHUNK_BYTES=64*1024*1024
+MAX_CHUNK_BYTES=40*1024*1024
 ID_RE=re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 ALLOWED_EXT={".mp4",".mov",".mkv"}
-_FINALIZE_LOCK=threading.Lock()
+_STATE_LOCKS={}
+_STATE_LOCKS_GUARD=threading.Lock()
+
+def _state_lock(sid,upload_id):
+    key=(str(sid),str(upload_id))
+    with _STATE_LOCKS_GUARD:
+        lock=_STATE_LOCKS.get(key)
+        if lock is None:
+            lock=threading.Lock()
+            _STATE_LOCKS[key]=lock
+        return lock
+
+def _write_json_atomic(path,payload):
+    tmp=Path(str(path)+".tmp")
+    tmp.write_text(json.dumps(payload,ensure_ascii=False),encoding="utf-8")
+    os.replace(tmp,path)
+
 
 def _safe_id(value):
     value=str(value or "")
@@ -86,48 +102,105 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         media=ROOT/"sessions"/sid/"media"
-        tmp_dir=ROOT/"sessions"/sid/"direct_upload"/upload_id
+        upload_dir=ROOT/"sessions"/sid/"direct_upload"/upload_id
         media.mkdir(parents=True,exist_ok=True)
-        tmp_dir.mkdir(parents=True,exist_ok=True)
-        part_path=tmp_dir/f"{index:06d}.part"
+        upload_dir.mkdir(parents=True,exist_ok=True)
+        data_path=upload_dir/"upload.tmp"
+        state_path=upload_dir/"state.json"
+        lock=_state_lock(sid,upload_id)
 
         try:
-            remaining=length
-            with open(part_path,"wb",buffering=1024*1024) as out:
+            # Register metadata under a very short lock. Network reads/writes happen
+            # outside it so up to four chunks can arrive concurrently.
+            with lock:
+                if state_path.is_file():
+                    state=json.loads(state_path.read_text(encoding="utf-8"))
+                    if (
+                        int(state.get("total",0))!=total
+                        or int(state.get("count",0))!=count
+                        or str(state.get("ext",""))!=ext
+                    ):
+                        _json(self,409,{"ok":False,"error":"upload metadata changed"})
+                        return
+                else:
+                    state={
+                        "total":total,
+                        "count":count,
+                        "name":original_name,
+                        "stem":safe_stem,
+                        "ext":ext,
+                        "ranges":{},
+                        "received":[],
+                    }
+                    with open(data_path,"wb") as seed:
+                        seed.truncate(total)
+                    _write_json_atomic(state_path,state)
+
+                ranges=dict(state.get("ranges",{}) or {})
+                this_range=[start,length]
+                existing=ranges.get(str(index))
+                if existing is not None and list(existing)!=this_range:
+                    _json(self,409,{"ok":False,"error":"chunk metadata changed"})
+                    return
+                for other_index,other_range in ranges.items():
+                    if str(other_index)==str(index):
+                        continue
+                    try:
+                        other_start=int(other_range[0])
+                        other_end=other_start+int(other_range[1])
+                    except Exception:
+                        continue
+                    this_end=start+length
+                    if start<other_end and other_start<this_end:
+                        _json(self,409,{"ok":False,"error":"overlapping chunk ranges"})
+                        return
+                ranges[str(index)]=this_range
+                state["ranges"]=ranges
+                _write_json_atomic(state_path,state)
+
+            # Positional writes avoid seek races between concurrent requests.
+            fd=os.open(str(data_path),os.O_WRONLY)
+            try:
+                remaining=length
+                offset=start
                 while remaining>0:
                     block=self.rfile.read(min(1024*1024,remaining))
                     if not block:
                         raise IOError("client disconnected")
-                    out.write(block)
+                    view=memoryview(block)
+                    written=0
+                    while written<len(view):
+                        n=os.pwrite(fd,view[written:],offset+written)
+                        if n<=0:
+                            raise IOError("short positional write")
+                        written+=n
+                    offset+=len(block)
                     remaining-=len(block)
-                out.flush()
+            finally:
+                os.close(fd)
 
             completed=False
-            with _FINALIZE_LOCK:
-                parts=[tmp_dir/f"{i:06d}.part" for i in range(count)]
-                if all(p.is_file() for p in parts):
-                    final_tmp=media/f".source_direct_{safe_stem}_{upload_id}{ext}.tmp"
-                    actual=0
-                    with open(final_tmp,"wb",buffering=4*1024*1024) as dst:
-                        for p in parts:
-                            with open(p,"rb",buffering=4*1024*1024) as src:
-                                while True:
-                                    block=src.read(4*1024*1024)
-                                    if not block:
-                                        break
-                                    dst.write(block)
-                                    actual+=len(block)
-                        dst.flush()
-                        os.fsync(dst.fileno())
-                    if actual!=total:
-                        final_tmp.unlink(missing_ok=True)
-                        _json(self,409,{"ok":False,"error":"incomplete upload","bytes":actual})
+            with lock:
+                state=json.loads(state_path.read_text(encoding="utf-8"))
+                received={int(x) for x in (state.get("received",[]) or [])}
+                received.add(index)
+                state["received"]=sorted(received)
+                _write_json_atomic(state_path,state)
+
+                if len(received)==count and received==set(range(count)):
+                    fd=os.open(str(data_path),os.O_RDONLY)
+                    try:
+                        os.fsync(fd)
+                    finally:
+                        os.close(fd)
+
+                    if data_path.stat().st_size!=total:
+                        _json(self,409,{"ok":False,"error":"incomplete upload"})
                         return
 
                     final=media/f"source_direct_{safe_stem}_{upload_id}{ext}"
-                    os.replace(final_tmp,final)
+                    os.replace(data_path,final)
                     marker=media/".direct_upload_ready.json"
-                    marker_tmp=media/".direct_upload_ready.json.tmp"
                     marker_data={
                         "path":str(final),
                         "name":original_name,
@@ -135,12 +208,10 @@ class Handler(BaseHTTPRequestHandler):
                         "upload_id":upload_id,
                         "completed_at":time.time(),
                     }
-                    marker_tmp.write_text(json.dumps(marker_data,ensure_ascii=False),encoding="utf-8")
-                    os.replace(marker_tmp,marker)
-                    for p in parts:
-                        p.unlink(missing_ok=True)
+                    _write_json_atomic(marker,marker_data)
+                    state_path.unlink(missing_ok=True)
                     try:
-                        tmp_dir.rmdir()
+                        upload_dir.rmdir()
                     except OSError:
                         pass
                     try:

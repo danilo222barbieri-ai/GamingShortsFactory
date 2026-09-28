@@ -104,6 +104,10 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v98_12_upload_64mb.py && \
     python /app/web/test_v98_12_upload_64mb.py /app/GamingShortsFactory_V98_12_UPLOAD_64MB.py && \
     python -m py_compile /app/GamingShortsFactory_V98_12_UPLOAD_64MB.py && \
+    python /app/web/apply_v98_final.py && \
+    python /app/web/test_v98_final_acceptance.py /app/GamingShortsFactory_V98_FINAL.py && \
+    python /app/web/test_v98_final_direct_upload.py && \
+    python -m py_compile /app/GamingShortsFactory_V98_FINAL.py && \
     python -m py_compile /app/web/direct_upload_server.py
 
 COPY .streamlit /app/.streamlit
