@@ -50,6 +50,9 @@ TIKTOK_CLIENT_SECRET=_env_first("GSF_TIKTOK_CLIENT_SECRET",default="")
 YOUTUBE_CLIENT_ID=_env_first("GSF_YOUTUBE_CLIENT_ID",default="")
 YOUTUBE_CLIENT_SECRET=_env_first("GSF_YOUTUBE_CLIENT_SECRET",default="")
 YOUTUBE_SCOPE="https://www.googleapis.com/auth/youtube.upload"
+META_APP_ID=_env_first("GSF_META_APP_ID",default="")
+META_APP_SECRET=_env_first("GSF_META_APP_SECRET",default="")
+META_SCOPES="pages_show_list,instagram_basic,instagram_content_publish,pages_read_engagement"
 _S3_CLIENT=None
 _S3_LOCK=threading.Lock()
 
@@ -349,14 +352,81 @@ def _youtube_user_save(sid,payload):
 
 
 
+
+def _instagram_user_key(sid):
+    sid=_safe_id(sid)
+    return f"social-connections/{sid}/instagram.json" if sid else ""
+
+
+def _instagram_user_load(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return {}
+    local=ROOT/"sessions"/sid/"social"/"instagram_config.json"
+    try:
+        payload=json.loads(local.read_text(encoding="utf-8"))
+        if isinstance(payload,dict) and payload.get("ig_user_id") and payload.get("access_token"):
+            return payload
+    except Exception:
+        pass
+    if not _bucket_enabled():
+        return {}
+    try:
+        obj=_s3().get_object(Bucket=S3_BUCKET,Key=_instagram_user_key(sid))
+        payload=json.loads(obj["Body"].read().decode("utf-8"))
+        if isinstance(payload,dict):
+            _instagram_user_write_local(sid,payload)
+            return payload
+    except Exception:
+        pass
+    return {}
+
+
+def _instagram_user_write_local(sid,payload):
+    sid=_safe_id(sid)
+    if not sid:
+        return
+    social=ROOT/"sessions"/sid/"social"
+    social.mkdir(parents=True,exist_ok=True)
+    _write_json_atomic(social/"instagram_config.json",dict(payload or {}))
+
+
+def _instagram_user_save(sid,payload):
+    sid=_safe_id(sid)
+    if not sid:
+        raise RuntimeError("sessione browser non valida")
+    _instagram_user_write_local(sid,payload)
+    if not _bucket_enabled():
+        raise RuntimeError("storage persistente non disponibile")
+    _s3().put_object(
+        Bucket=S3_BUCKET,
+        Key=_instagram_user_key(sid),
+        Body=json.dumps(payload,ensure_ascii=False).encode("utf-8"),
+        ContentType="application/json",
+        CacheControl="no-store",
+    )
+
+
+
 def _social_page(sid,message=""):
     tiktok_connected=bool((_tiktok_user_load(sid) or {}).get("access_token"))
     youtube_connected=bool((_youtube_user_load(sid) or {}).get("token"))
+    instagram_connected=bool(
+        (_instagram_user_load(sid) or {}).get("ig_user_id")
+        and (_instagram_user_load(sid) or {}).get("access_token")
+    )
     tiktok_badge="✅ TikTok collegato" if tiktok_connected else "TikTok non ancora collegato"
     youtube_badge="✅ YouTube collegato" if youtube_connected else "YouTube non ancora collegato"
+    instagram_badge="✅ Instagram collegato" if instagram_connected else "Instagram non ancora collegato"
     tiktok_button="Ricollega TikTok" if tiktok_connected else "Collega TikTok"
     youtube_button="Ricollega YouTube" if youtube_connected else "Collega YouTube"
+    instagram_button="Ricollega Instagram" if instagram_connected else "Collega Instagram"
     msg=f'<div class="msg">{html.escape(message)}</div>' if message else ""
+    instagram_note=(
+        ""
+        if META_APP_ID and META_APP_SECRET
+        else '<div class="note">Configurazione Meta non ancora presente sul server.</div>'
+    )
     return f"""<!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Gaming Shorts Factory · Collega social</title>
@@ -369,15 +439,16 @@ h1{{margin:0 0 8px}} p{{line-height:1.5;color:#5c7185}}
 .social{{border:1px solid #dbe7f1;border-radius:18px;padding:18px}}
 .btn{{display:block;text-align:center;text-decoration:none;background:#1687ff;color:white;font-weight:700;
 padding:15px 18px;border-radius:14px;margin-top:14px}}
-.disabled{{display:block;text-align:center;background:#f0f3f6;color:#8292a1;font-weight:650;
-padding:15px 18px;border-radius:14px;margin-top:14px}}
 .status{{padding:12px 14px;border-radius:14px;background:#eef7ff;margin:14px 0}}
 .msg{{padding:12px 14px;border-radius:14px;background:#eef8ee;margin:14px 0}}
+.note{{font-size:13px;color:#8a6d3b;background:#fff8e7;border-radius:10px;padding:10px 12px;margin:8px 0}}
 .small{{font-size:13px;color:#71869a}}
-.back{{display:inline-block;margin-top:22px;color:#315c80;text-decoration:none}}
+.close{{display:block;width:100%;border:0;background:#17324d;color:white;font-weight:750;padding:15px 18px;
+border-radius:14px;margin-top:22px;cursor:pointer;font-size:15px}}
+.back{{display:block;text-align:center;margin-top:12px;color:#315c80;text-decoration:none}}
 </style></head><body><main><div class="card">
 <h1>Collega i social</h1>
-<p>Qui colleghi gli account una volta sola. Non serve caricare o creare un video.</p>
+<p>Collega gli account qui. Gaming Shorts Factory resta aperta nell'altra scheda e il video non viene toccato.</p>
 {msg}
 <div class="grid">
   <div class="social">
@@ -392,11 +463,14 @@ padding:15px 18px;border-radius:14px;margin-top:14px}}
   </div>
   <div class="social">
     <strong>Instagram</strong>
-    <div class="disabled">Collegamento dedicato in preparazione</div>
+    <div class="status">{instagram_badge}</div>
+    {instagram_note}
+    <a class="btn" href="/social-connect/instagram/start">{instagram_button}</a>
   </div>
 </div>
-<p class="small">Client Secret e token restano sul server. Se cancelli i cookie del browser potrebbe essere necessario ricollegare l'account.</p>
-<a class="back" href="/">← Torna a Gaming Shorts Factory</a>
+<p class="small">Dopo il collegamento vedrai ✅. Chiudi questa scheda e torna allo Short già pronto nell'app.</p>
+<button class="close" onclick="window.close()">Chiudi questa scheda e torna all'app</button>
+<a class="back" href="/">Apri comunque Gaming Shorts Factory</a>
 </div></main></body></html>"""
 
 
@@ -573,6 +647,135 @@ def _youtube_oauth_callback(handler,query):
         _html(handler,500,_social_page(sid,"Collegamento YouTube fallito: "+str(exc)[:220]))
 
 
+def _instagram_oauth_start(handler,sid):
+    sid=_safe_id(sid)
+    if not sid:
+        _html(handler,400,"Sessione browser non valida. Riapri /social-connect.")
+        return
+    if not (PUBLIC_APP_URL and META_APP_ID and META_APP_SECRET):
+        _html(handler,503,_social_page(
+            sid,
+            "Instagram richiede GSF_META_APP_ID e GSF_META_APP_SECRET sul server."
+        ))
+        return
+    state="gsfig_"+secrets.token_urlsafe(28)
+    state_dir=ROOT/"social_oauth"
+    state_dir.mkdir(parents=True,exist_ok=True)
+    _write_json_atomic(state_dir/(state+".json"),{
+        "created":time.time(),
+        "sid":sid,
+        "platform":"Instagram",
+    })
+    params={
+        "client_id":META_APP_ID,
+        "redirect_uri":PUBLIC_APP_URL,
+        "state":state,
+        "response_type":"code",
+        "scope":META_SCOPES,
+    }
+    _redirect(handler,"https://www.facebook.com/dialog/oauth?"+urllib.parse.urlencode(params))
+
+
+def _instagram_oauth_callback(handler,query):
+    code=str((query.get("code") or [""])[0] or "")
+    state=re.sub(r"[^A-Za-z0-9_-]+","",str((query.get("state") or [""])[0] or ""))[:160]
+    err=str((query.get("error_description") or query.get("error_message") or query.get("error") or [""])[0] or "")
+    state_file=ROOT/"social_oauth"/(state+".json")
+    try:
+        pending=json.loads(state_file.read_text(encoding="utf-8"))
+    except Exception:
+        pending={}
+    try:
+        state_file.unlink(missing_ok=True)
+    except Exception:
+        pass
+    created=float(pending.get("created",0) or 0)
+    sid=_safe_id(pending.get("sid",""))
+    if not state.startswith("gsfig_") or not sid or not created or time.time()-created>900:
+        _html(handler,400,"Stato OAuth Instagram scaduto o non valido. Riapri /social-connect.")
+        return
+    if err:
+        _html(handler,400,_social_page(sid,"Instagram: "+err))
+        return
+    if not code:
+        _html(handler,400,_social_page(sid,"Instagram non ha restituito il codice di autorizzazione."))
+        return
+
+    try:
+        token_url="https://graph.facebook.com/oauth/access_token?"+urllib.parse.urlencode({
+            "client_id":META_APP_ID,
+            "client_secret":META_APP_SECRET,
+            "redirect_uri":PUBLIC_APP_URL,
+            "code":code,
+        })
+        with urllib.request.urlopen(token_url,timeout=45) as resp:
+            token_payload=json.loads(resp.read().decode("utf-8"))
+        user_token=str(token_payload.get("access_token","") or "")
+        if not user_token:
+            raise RuntimeError(str(token_payload))
+
+        # Prefer a long-lived user token when Meta allows the exchange.
+        try:
+            long_url="https://graph.facebook.com/oauth/access_token?"+urllib.parse.urlencode({
+                "grant_type":"fb_exchange_token",
+                "client_id":META_APP_ID,
+                "client_secret":META_APP_SECRET,
+                "fb_exchange_token":user_token,
+            })
+            with urllib.request.urlopen(long_url,timeout=45) as resp:
+                long_payload=json.loads(resp.read().decode("utf-8"))
+            if long_payload.get("access_token"):
+                user_token=str(long_payload.get("access_token"))
+        except Exception:
+            pass
+
+        accounts_url="https://graph.facebook.com/me/accounts?"+urllib.parse.urlencode({
+            "fields":"name,access_token,tasks,instagram_business_account",
+            "access_token":user_token,
+        })
+        with urllib.request.urlopen(accounts_url,timeout=45) as resp:
+            accounts_payload=json.loads(resp.read().decode("utf-8"))
+        pages=accounts_payload.get("data") if isinstance(accounts_payload,dict) else None
+        if not isinstance(pages,list):
+            raise RuntimeError(str(accounts_payload))
+
+        chosen=None
+        for page in pages:
+            if not isinstance(page,dict):
+                continue
+            ig=(page.get("instagram_business_account") or {})
+            ig_id=str(ig.get("id","") or "")
+            page_token=str(page.get("access_token","") or "")
+            if ig_id and page_token:
+                chosen=(ig_id,page_token)
+                break
+        if not chosen:
+            raise RuntimeError("Nessun account Instagram professionale collegato a una Pagina Facebook.")
+
+        ig_id,page_token=chosen
+        username=""
+        try:
+            info_url="https://graph.facebook.com/"+urllib.parse.quote(ig_id,safe="")+"?"+urllib.parse.urlencode({
+                "fields":"id,username",
+                "access_token":page_token,
+            })
+            with urllib.request.urlopen(info_url,timeout=30) as resp:
+                info_payload=json.loads(resp.read().decode("utf-8"))
+            username=str(info_payload.get("username","") or "")
+        except Exception:
+            pass
+
+        _instagram_user_save(sid,{
+            "ig_user_id":ig_id,
+            "access_token":page_token,
+            "username":username,
+            "saved_at":time.time(),
+        })
+        _redirect(handler,"/social-connect")
+    except Exception as exc:
+        _html(handler,500,_social_page(sid,"Collegamento Instagram fallito: "+str(exc)[:220]))
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version="GSFDirectUpload/2.0"
 
@@ -603,6 +806,12 @@ class Handler(BaseHTTPRequestHandler):
             return
         if clean=="/social-connect/youtube/callback":
             _youtube_oauth_callback(self,parse_qs(path.query))
+            return
+        if clean=="/social-connect/instagram/start":
+            _instagram_oauth_start(self,_social_sid(self))
+            return
+        if clean=="/social-connect/instagram/callback":
+            _instagram_oauth_callback(self,parse_qs(path.query))
             return
         if clean=="/capabilities":
             _json(self,200,{
