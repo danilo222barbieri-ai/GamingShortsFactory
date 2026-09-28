@@ -111,7 +111,11 @@ else:
 '''
         else:
             _diag_src='''_diag_elapsed=time.perf_counter()-_diag_started
-print("GSF_FINAL_RENDER_EXCEPTION",f"encoder={encoder}",f"elapsed={_diag_elapsed:.2f}",flush=True)
+_gsf_render_error=__import__("sys").exc_info()[1]
+if isinstance(_gsf_render_error,subprocess.TimeoutExpired):
+    print("GSF_FINAL_RENDER_TIMEOUT",f"encoder={encoder}",f"elapsed={_diag_elapsed:.2f}",flush=True)
+else:
+    print("GSF_FINAL_RENDER_EXCEPTION",f"encoder={encoder}","error="+repr(str(_gsf_render_error)),flush=True)
 '''
         _handler.body[0:0]=ast.parse(_diag_src).body
 
