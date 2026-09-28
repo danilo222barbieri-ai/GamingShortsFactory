@@ -123,6 +123,22 @@ lines=s.splitlines(keepends=True)
 replacement=legacy.rstrip()+"\n\n"+bridge.strip()+"\n\n"
 s=''.join(lines[:node.lineno-1])+replacement+''.join(lines[node.end_lineno:])
 
+# Add a permanent Social Connect entry to the existing legal/footer row.
+_footer_anchor='<a href="/privacy" target="_blank" style="color:#60788d;text-decoration:none">Privacy</a>'
+if _footer_anchor in s:
+    s=s.replace(
+        _footer_anchor,
+        '<a href="/social-connect" target="_blank" style="color:#60788d;text-decoration:none">Collega social</a>'
+        '<span style="padding:0 10px">·</span>'+_footer_anchor,
+        1
+    )
+
+# Replace the old reconnect hint with the dedicated no-video flow.
+s=s.replace(
+    "Il collegamento si apre nel browser. Terminato l'accesso, torna qui e premi di nuovo il social.",
+    "Collega TikTok una volta da Collega social in fondo alla pagina. Non serve caricare un video."
+)
+
 marker='Gaming Shorts Factory · V104.3 Memory Safe Render'
 if marker in s:
     s=s.replace(marker,'Gaming Shorts Factory · V104.4 Social Connect',1)
