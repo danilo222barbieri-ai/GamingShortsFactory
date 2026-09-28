@@ -11,9 +11,21 @@ server {
     proxy_read_timeout 86400s;
     proxy_send_timeout 86400s;
 
+    # V104.2: public legal pages used by social-provider app reviews.
+    location = /privacy {
+        alias /app/web/legal/privacy.html;
+        default_type text/html;
+        add_header Cache-Control "public, max-age=300";
+    }
+
+    location = /terms {
+        alias /app/web/legal/terms.html;
+        default_type text/html;
+        add_header Cache-Control "public, max-age=300";
+    }
+
     # V84: app media URLs are /media/<session-id>/<subdir>/<file>.
     # Map that URL directly to the matching anonymous session on disk.
-    # The session id is random and must match the browser cookie.
     location ~ "^/media/(?<gsf_media_sid>[A-Za-z0-9_-]{1,80})/(?<gsf_media_path>.+)$" {
         if ($gsf_media_sid != $gsf_session_cookie) {
             return 403;
