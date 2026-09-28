@@ -18,7 +18,7 @@ Production observations gathered on 29 September 2026:
 - Upload already goes browser → S3, but the web service then materializes the full source locally while the AI worker downloads another copy. A measured 41,179,249-byte source took roughly 10 s to materialize on web, while the worker completed its prescan in 4.36 s.
 - AI worker has 2 replicas and materially more headroom than the web process; recent 24 h peak was ~0.48 GB RAM and ~0.54 CPU against 2 vCPU.
 - Social publish still copies large video payloads into Python `bytes`, increasing peak RAM.
-- The Docker build reconstructs the app by applying more than 40 sequential patch scripts from V77. This is fragile and increases regression/build-failure surface.
+- The Docker build reconstructs the app by applying 58 sequential patch scripts from V78 through V104.7 after unpacking the V77 source. This is fragile and increases regression/build-failure surface.
 - Runtime dependencies other than Streamlit are specified with `>=`, making future builds non-reproducible.
 - A legacy V78 Railway web service is still running. Its last observed HTTP traffic was 27 September 2026 18:54 UTC and it currently consumes ~0.36 GB memory while idle.
 
@@ -98,6 +98,7 @@ Keep the current anonymous browser session recovery, but add explicit lifecycle 
 - stale local sessions are removed after TTL;
 - abandoned multipart uploads are aborted/cleaned where feasible;
 - temporary render/staging files are deleted after success or failure;
+- recovered-upload compatibility paths must not call whole-file `getvalue()`/`read_bytes()` on large sources during normal web workflows;
 - active session files are never removed while a job is running;
 - new-video reset clears transient media state without breaking social connections.
 
