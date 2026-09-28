@@ -1,30 +1,23 @@
 from pathlib import Path
 import ast
-p=Path('/app/GamingShortsFactory_V104_4_SHARED_SOCIAL.py')
+p=Path('/app/GamingShortsFactory_V104_5_YOUTUBE_SOCIAL.py')
 s=p.read_text(encoding='utf-8')
 tree=ast.parse(s)
-wanted={
-    "_gsf_youtube_save_credentials",
-    "_gsf_youtube_credentials",
-    "_gsf_youtube_client_config",
-    "_gsf_youtube_web_auth_url",
-    "_gsf_youtube_web_complete",
-    "_gsf_social_connection_status",
-    "_gsf_process_oauth_callback",
-}
-print("GSF_YOUTUBE_INSPECT_BEGIN")
+print("GSF_SOCIAL_UI_INSPECT_BEGIN")
 for n in tree.body:
-    if isinstance(n,ast.FunctionDef) and n.name in wanted:
-        print("###",n.name)
-        print(ast.get_source_segment(s,n) or "")
-        print("### END",n.name)
-print("GSF_YOUTUBE_CONTEXT")
-lines=s.splitlines()
-for i in range(8825,9255):
-    if i-1 < len(lines) and (
-        "GSF_YOUTUBE_DIR" in lines[i-1] or
-        "GSF_YOUTUBE_TOKEN" in lines[i-1] or
-        "GSF_YOUTUBE_SCOPES" in lines[i-1]
-    ):
-        print(f"{i}: {lines[i-1]}")
-print("GSF_YOUTUBE_INSPECT_END")
+    if isinstance(n,ast.FunctionDef):
+        name=n.name.lower()
+        if ("social" in name or "oauth" in name) and any(x in name for x in ("auth","connect","render","publish","platform","callback","status")):
+            print("###",n.name)
+            seg=ast.get_source_segment(s,n) or ""
+            if len(seg)<12000:
+                print(seg)
+            else:
+                for line in seg.splitlines():
+                    if any(k in line for k in ("st.", "href", "auth_url", "Collega", "platform", "link_button", "button")):
+                        print(line[:500])
+            print("### END",n.name)
+for i,line in enumerate(s.splitlines(),1):
+    if any(k in line for k in ("Collega TikTok","Collega YouTube","Collega Instagram","_gsf_social_auth","link_button","target=\"_blank\"")):
+        print(f"LINE {i}: {line[:700]}")
+print("GSF_SOCIAL_UI_INSPECT_END")
