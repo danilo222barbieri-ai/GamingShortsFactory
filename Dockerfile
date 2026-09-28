@@ -22,7 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 COPY requirements-web.txt /app/requirements-web.txt
-RUN python -m pip install --upgrade pip && python -m pip install -r /app/requirements-web.txt
+COPY constraints-v105.txt /app/constraints-v105.txt
+RUN python -m pip install --upgrade pip && python -m pip install -r /app/requirements-web.txt -c /app/constraints-v105.txt
 RUN mkdir -p /app/.cache/huggingface && python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8')"
 COPY src_payload /app/src_payload
 COPY web /app/web
@@ -30,7 +31,6 @@ COPY Dockerfile.worker /app/Dockerfile.worker
 COPY requirements-worker.txt /app/requirements-worker.txt
 COPY Dockerfile /app/Dockerfile.web
 RUN python /app/web/test_v105_build_contract.py /app
-RUN python /app/web/print_v105_dependency_versions.py
 RUN python /app/web/test_v105_upload_hardening.py /app/web/direct_upload_server.py
 RUN python /app/web/test_v105_worker_core.py /app/web/ai_worker_server.py /app
 RUN python /app/web/test_v105_render_bridge.py /app
