@@ -101,6 +101,7 @@ Keep the current anonymous browser session recovery, but add explicit lifecycle 
 - temporary render/staging files are deleted after success or failure;
 - recovered-upload compatibility paths must not call whole-file `getvalue()`/`read_bytes()` on large sources during normal web workflows;
 - active session files are never removed while a job is running;
+- persistent JSON-safe session snapshots are dirty-checked/throttled so unchanged state is not rewritten on every full Streamlit rerun;
 - new-video reset clears transient media state without breaking social connections.
 
 ### 8. Build reproducibility and source consolidation
@@ -117,7 +118,11 @@ V105 must stop using production `main` as the first place where a risky change i
 
 Split worker build concerns from the full web image. The current worker service rebuilds/restarts on many commits that only affect later UI/social patches because both services share the same Dockerfile/repo trigger. The current worker only needs the app state through `V99_FINAL_ARCH`, yet the shared Docker build applies 21 additional app patches after that checkpoint. It also AST-extracts four scan functions from a generated monolithic app file.
 
+Before staging shares infrastructure with production, storage must be environment-safe. The current direct-upload server rewrites bucket CORS at startup with one `PUBLIC_ORIGIN`; a staging instance sharing the bucket could therefore clobber production CORS.
+
 V105 should:
+- add an explicit environment/storage namespace (for example `prod/` vs `staging/`) to media/job keys and keep staging OAuth/session data isolated from production;
+- replace single-origin startup CORS mutation with an explicit allowed-origin configuration or one-time bucket configuration that safely includes production and staging;
 - extract the prescan engine into a focused shared Python module imported by both the web compatibility path and the worker, removing runtime AST extraction;
 - add a worker-specific build path/image that contains only worker/render dependencies and the code it actually consumes, not Streamlit/social/Google/Whisper dependencies unless a worker feature genuinely needs them;
 - add Railway watch patterns so unrelated documentation/UI/social changes do not redeploy the worker;
