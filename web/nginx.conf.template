@@ -11,6 +11,13 @@ server {
     proxy_read_timeout 86400s;
     proxy_send_timeout 86400s;
 
+    # TikTok URL-prefix ownership verification.
+    location = /tiktokAvCxVH6S4w3BElUktwlT3dRIBn1ECcZv.txt {
+        alias /app/web/tiktokAvCxVH6S4w3BElUktwlT3dRIBn1ECcZv.txt;
+        default_type text/plain;
+        add_header Cache-Control "no-store";
+    }
+
     # V104.2: public legal pages used by social-provider app reviews.
     location = /privacy {
         alias /app/web/legal/privacy.html;
