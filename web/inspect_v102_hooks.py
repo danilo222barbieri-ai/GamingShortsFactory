@@ -27,3 +27,9 @@ for i in hits:
     last_end=b
     shown+=1
     if shown>=70: break
+
+print('=== V102 EXACT UI 11980-12150 ===')
+lines=s.splitlines()
+print('\n'.join(lines[11979:12150]))
+print('=== V102 EXACT UI 12450-12550 ===')
+print('\n'.join(lines[12449:12550]))
