@@ -47,6 +47,9 @@ WORKER_TOKEN=_env_first("GSF_WORKER_TOKEN",default="")
 PUBLIC_APP_URL=_env_first("GSF_PUBLIC_APP_URL",default="").rstrip("/")
 TIKTOK_CLIENT_KEY=_env_first("GSF_TIKTOK_CLIENT_KEY",default="")
 TIKTOK_CLIENT_SECRET=_env_first("GSF_TIKTOK_CLIENT_SECRET",default="")
+YOUTUBE_CLIENT_ID=_env_first("GSF_YOUTUBE_CLIENT_ID",default="")
+YOUTUBE_CLIENT_SECRET=_env_first("GSF_YOUTUBE_CLIENT_SECRET",default="")
+YOUTUBE_SCOPE="https://www.googleapis.com/auth/youtube.upload"
 _S3_CLIENT=None
 _S3_LOCK=threading.Lock()
 
@@ -289,10 +292,70 @@ def _tiktok_user_save(sid,payload):
     )
 
 
+
+def _youtube_user_key(sid):
+    sid=_safe_id(sid)
+    return f"social-connections/{sid}/youtube.json" if sid else ""
+
+
+def _youtube_user_load(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return {}
+    local=ROOT/"sessions"/sid/"social"/"youtube_token.json"
+    try:
+        payload=json.loads(local.read_text(encoding="utf-8"))
+        if isinstance(payload,dict) and payload.get("token"):
+            return payload
+    except Exception:
+        pass
+    if not _bucket_enabled():
+        return {}
+    try:
+        obj=_s3().get_object(Bucket=S3_BUCKET,Key=_youtube_user_key(sid))
+        payload=json.loads(obj["Body"].read().decode("utf-8"))
+        if isinstance(payload,dict):
+            _youtube_user_write_local(sid,payload)
+            return payload
+    except Exception:
+        pass
+    return {}
+
+
+def _youtube_user_write_local(sid,payload):
+    sid=_safe_id(sid)
+    if not sid:
+        return
+    social=ROOT/"sessions"/sid/"social"
+    social.mkdir(parents=True,exist_ok=True)
+    token=dict(payload or {})
+    _write_json_atomic(social/"youtube_token.json",token)
+
+
+def _youtube_user_save(sid,payload):
+    sid=_safe_id(sid)
+    if not sid:
+        raise RuntimeError("sessione browser non valida")
+    _youtube_user_write_local(sid,payload)
+    if not _bucket_enabled():
+        raise RuntimeError("storage persistente non disponibile")
+    _s3().put_object(
+        Bucket=S3_BUCKET,
+        Key=_youtube_user_key(sid),
+        Body=json.dumps(payload,ensure_ascii=False).encode("utf-8"),
+        ContentType="application/json",
+        CacheControl="no-store",
+    )
+
+
+
 def _social_page(sid,message=""):
-    connected=bool((_tiktok_user_load(sid) or {}).get("access_token"))
-    badge="✅ TikTok collegato" if connected else "TikTok non ancora collegato"
-    button="Ricollega TikTok" if connected else "Collega TikTok"
+    tiktok_connected=bool((_tiktok_user_load(sid) or {}).get("access_token"))
+    youtube_connected=bool((_youtube_user_load(sid) or {}).get("token"))
+    tiktok_badge="✅ TikTok collegato" if tiktok_connected else "TikTok non ancora collegato"
+    youtube_badge="✅ YouTube collegato" if youtube_connected else "YouTube non ancora collegato"
+    tiktok_button="Ricollega TikTok" if tiktok_connected else "Collega TikTok"
+    youtube_button="Ricollega YouTube" if youtube_connected else "Collega YouTube"
     msg=f'<div class="msg">{html.escape(message)}</div>' if message else ""
     return f"""<!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -315,15 +378,17 @@ padding:15px 18px;border-radius:14px;margin-top:14px}}
 </style></head><body><main><div class="card">
 <h1>Collega i social</h1>
 <p>Qui colleghi gli account una volta sola. Non serve caricare o creare un video.</p>
+{msg}
 <div class="grid">
   <div class="social">
     <strong>TikTok</strong>
-    <div class="status">{badge}</div>{msg}
-    <a class="btn" href="/social-connect/tiktok/start">{button}</a>
+    <div class="status">{tiktok_badge}</div>
+    <a class="btn" href="/social-connect/tiktok/start">{tiktok_button}</a>
   </div>
   <div class="social">
     <strong>YouTube</strong>
-    <div class="disabled">Collegamento dedicato in preparazione</div>
+    <div class="status">{youtube_badge}</div>
+    <a class="btn" href="/social-connect/youtube/start">{youtube_button}</a>
   </div>
   <div class="social">
     <strong>Instagram</strong>
@@ -419,6 +484,95 @@ def _tiktok_oauth_callback(handler,query):
         _html(handler,500,_social_page(sid,"Collegamento TikTok fallito: "+str(exc)[:220]))
 
 
+def _youtube_oauth_start(handler,sid):
+    sid=_safe_id(sid)
+    if not sid:
+        _html(handler,400,"Sessione browser non valida. Riapri /social-connect.")
+        return
+    if not (PUBLIC_APP_URL and YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET):
+        _html(handler,503,_social_page(sid,"Configurazione YouTube incompleta sul server."))
+        return
+    state="gsfyt_"+secrets.token_urlsafe(28)
+    state_dir=ROOT/"social_oauth"
+    state_dir.mkdir(parents=True,exist_ok=True)
+    _write_json_atomic(state_dir/(state+".json"),{
+        "created":time.time(),
+        "sid":sid,
+        "platform":"YouTube",
+    })
+    params={
+        "client_id":YOUTUBE_CLIENT_ID,
+        "redirect_uri":PUBLIC_APP_URL,
+        "response_type":"code",
+        "scope":YOUTUBE_SCOPE,
+        "access_type":"offline",
+        "include_granted_scopes":"true",
+        "prompt":"consent",
+        "state":state,
+    }
+    _redirect(handler,"https://accounts.google.com/o/oauth2/v2/auth?"+urllib.parse.urlencode(params))
+
+
+def _youtube_oauth_callback(handler,query):
+    code=str((query.get("code") or [""])[0] or "")
+    state=re.sub(r"[^A-Za-z0-9_-]+","",str((query.get("state") or [""])[0] or ""))[:160]
+    err=str((query.get("error_description") or query.get("error") or [""])[0] or "")
+    state_file=ROOT/"social_oauth"/(state+".json")
+    try:
+        pending=json.loads(state_file.read_text(encoding="utf-8"))
+    except Exception:
+        pending={}
+    try:
+        state_file.unlink(missing_ok=True)
+    except Exception:
+        pass
+    created=float(pending.get("created",0) or 0)
+    sid=_safe_id(pending.get("sid",""))
+    if not state.startswith("gsfyt_") or not sid or not created or time.time()-created>900:
+        _html(handler,400,"Stato OAuth YouTube scaduto o non valido. Riapri /social-connect.")
+        return
+    if err:
+        _html(handler,400,_social_page(sid,"YouTube: "+err))
+        return
+    if not code:
+        _html(handler,400,_social_page(sid,"YouTube non ha restituito il codice di autorizzazione."))
+        return
+
+    form=urllib.parse.urlencode({
+        "client_id":YOUTUBE_CLIENT_ID,
+        "client_secret":YOUTUBE_CLIENT_SECRET,
+        "code":code,
+        "grant_type":"authorization_code",
+        "redirect_uri":PUBLIC_APP_URL,
+    }).encode("utf-8")
+    req=urllib.request.Request(
+        "https://oauth2.googleapis.com/token",
+        data=form,
+        headers={"Content-Type":"application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req,timeout=45) as resp:
+            payload=json.loads(resp.read().decode("utf-8"))
+        access=str(payload.get("access_token","") or "")
+        refresh=str(payload.get("refresh_token","") or "")
+        if not access:
+            raise RuntimeError(str(payload))
+        scopes=str(payload.get("scope","") or YOUTUBE_SCOPE).split()
+        token={
+            "token":access,
+            "refresh_token":refresh,
+            "token_uri":"https://oauth2.googleapis.com/token",
+            "client_id":YOUTUBE_CLIENT_ID,
+            "client_secret":YOUTUBE_CLIENT_SECRET,
+            "scopes":scopes or [YOUTUBE_SCOPE],
+        }
+        _youtube_user_save(sid,token)
+        _html(handler,200,_social_page(sid,"YouTube collegato correttamente. Ora puoi tornare all'app."))
+    except Exception as exc:
+        _html(handler,500,_social_page(sid,"Collegamento YouTube fallito: "+str(exc)[:220]))
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version="GSFDirectUpload/2.0"
 
@@ -443,6 +597,12 @@ class Handler(BaseHTTPRequestHandler):
             return
         if clean=="/social-connect/tiktok/callback":
             _tiktok_oauth_callback(self,parse_qs(path.query))
+            return
+        if clean=="/social-connect/youtube/start":
+            _youtube_oauth_start(self,_social_sid(self))
+            return
+        if clean=="/social-connect/youtube/callback":
+            _youtube_oauth_callback(self,parse_qs(path.query))
             return
         if clean=="/capabilities":
             _json(self,200,{
