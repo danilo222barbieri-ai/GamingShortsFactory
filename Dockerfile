@@ -28,6 +28,8 @@ COPY src_payload /app/src_payload
 COPY web /app/web
 COPY Dockerfile.worker /app/Dockerfile.worker
 COPY requirements-worker.txt /app/requirements-worker.txt
+COPY Dockerfile /app/Dockerfile.web
+RUN python /app/web/test_v105_build_contract.py /app
 RUN python /app/web/print_v105_dependency_versions.py
 RUN python /app/web/test_v105_upload_hardening.py /app/web/direct_upload_server.py
 RUN python /app/web/test_v105_worker_core.py /app/web/ai_worker_server.py /app
