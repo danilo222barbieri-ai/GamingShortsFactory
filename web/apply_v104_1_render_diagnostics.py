@@ -34,14 +34,24 @@ final_new='''    if _show_final_flow:\n        st.divider()\n        st.markdown
 if final_anchor in s:
     s=s.replace(final_anchor,final_new,1)
 
-social_anchor='''st.markdown('<div class="gsf-icon-title">' + _gsf_v67_badge("publish", "Pubblicazione diretta", "indigo") + '</div>', unsafe_allow_html=True)'''
-social_new='''st.markdown('<div class="gsf-icon-title">' + _gsf_v67_badge("publish", "Pubblicazione diretta", "indigo") + '</div>', unsafe_allow_html=True)\nst.markdown('<div class="gsf-section-gap-social" style="height:30px"></div>', unsafe_allow_html=True)'''
-if social_anchor in s:
-    s=s.replace(social_anchor,social_new,1)
+# Preserve the indentation of the Pubblicazione diretta block. The previous
+# substring replacement added the second st.markdown at column 0 and made the
+# generated application invalid Python.
+social_line='st.markdown(\'<div class="gsf-icon-title">\' + _gsf_v67_badge("publish", "Pubblicazione diretta", "indigo") + \'</div>\', unsafe_allow_html=True)'
+lines=s.splitlines(keepends=True)
+for i,line in enumerate(lines):
+    if social_line in line and 'gsf-section-gap-social' not in ''.join(lines[i+1:i+2]):
+        indent=line[:len(line)-len(line.lstrip())]
+        newline='\\n' if line.endswith('\\n') else ''
+        lines[i]=line.rstrip('\\n')+newline+indent+'st.markdown(\'<div class="gsf-section-gap-social" style="height:30px"></div>\', unsafe_allow_html=True)'+newline
+        break
+s=''.join(lines)
 
 marker='Gaming Shorts Factory · V104 Direct Social'
 if marker in s:
     s=s.replace(marker,'Gaming Shorts Factory · V104.1 Render Diagnostics',1)
 
+# V104.1 itself must always be valid before any later patch consumes it.
+compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
-print(f'V104.1 compatibility patch applied: {out}')
+print(f'V104.1 compatibility patch applied and compiled: {out}')
