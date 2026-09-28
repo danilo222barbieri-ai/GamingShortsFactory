@@ -63,6 +63,7 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/test_v94_short_quality.py /app/GamingShortsFactory_V94_SHORT_QUALITY.py && \
     python /app/web/apply_v95_render_text_polish.py && \
     python /app/web/test_v95_render_text_polish.py /app/GamingShortsFactory_V95_RENDER_TEXT_POLISH.py && \
+    python /app/web/test_v96_streamlit_compat.py && \
     python -m py_compile /app/GamingShortsFactory_V95_RENDER_TEXT_POLISH.py
 
 COPY .streamlit /app/.streamlit
