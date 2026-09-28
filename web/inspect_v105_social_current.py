@@ -22,3 +22,19 @@ for n in wanted:
         src=src[:9000]+"\n# ...TRUNCATED..."
     print(src)
     print("GSF_SOCIAL_FUNC_END",n.name)
+
+for marker in (
+    "_gsf_tiktok_direct_post(bytes(video)",
+    "_gsf_instagram_publish_reel_auto(bytes(video)",
+    "_gsf_youtube_upload(",
+):
+    pos=0
+    while True:
+        pos=s.find(marker,pos)
+        if pos<0:
+            break
+        a=max(0,pos-1800); b=min(len(s),pos+2600)
+        print("GSF_SOCIAL_CALLSITE",marker)
+        print(s[a:b])
+        print("GSF_SOCIAL_CALLSITE_END",marker)
+        pos+=len(marker)
