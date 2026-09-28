@@ -75,6 +75,7 @@ Keep direct browser → S3 multipart upload. Reduce duplicate server work:
 - prescan starts immediately after multipart completion;
 - upload state distinguishes `uploaded_to_s3` from `local_materialized`; the UI must not wait for a full S3→web download just to declare the upload usable;
 - source materialization on web becomes lazy/compatibility-only instead of the gate for every AI workflow;
+- benchmark/remove the forced `fsync` after S3 materialization: the S3 object is already the durable source of truth, while the Railway local copy is ephemeral. A measured 41 MB job showed ~10 s web materialization versus 0.51 s worker download from the same object, making the forced local flush a prime suspect;
 - browser preview should prefer an authenticated app endpoint that issues a short-lived signed S3 GET/redirect, preserving session isolation without proxying the video bytes through Python;
 - local materialization remains for editor paths that still require local FFmpeg access until those paths are migrated.
 
