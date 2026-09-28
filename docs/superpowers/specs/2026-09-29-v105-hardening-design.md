@@ -53,7 +53,7 @@ Extend the worker protocol with a final-render job:
 - input: source S3 key, selected segment, editor/render recipe, format, subtitle/reframe data;
 - processing: one bounded render per worker replica, with analysis and render sharing a global heavy-job semaphore;
 - output: validated MP4 written to S3;
-- status: queued/running/progress/done/error;
+- status: queued/running/progress/done/error persisted in shared storage, not only worker-process RAM, because the worker currently has 2 replicas;
 - web: poll and display progress without holding FFmpeg memory.
 
 The worker has two replicas, so this uses existing capacity while isolating the web UI from render pressure.
@@ -77,7 +77,11 @@ Keep direct browser → S3 multipart upload. Reduce duplicate server work:
 - browser preview should prefer a short-lived signed S3 URL where possible;
 - local materialization remains for editor paths that still require local FFmpeg access until those paths are migrated.
 
-Review S3 download concurrency on the 1 GB web service. Current materialization uses 12 concurrent transfer workers; V105 should benchmark a smaller bounded setting rather than assuming more concurrency is faster.
+Review both browser and server concurrency instead of assuming more lanes are faster:
+- current browser multipart configuration can request 10 concurrent 32 MB parts, which is aggressive for iPhone/Safari and weaker uplinks;
+- current web materialization uses 12 concurrent transfer workers on a 1 GB service.
+
+V105 should benchmark adaptive bounded concurrency (mobile vs desktop/network conditions) and cap in-flight work to avoid memory/network contention.
 
 ### 6. Social publishing
 
@@ -105,7 +109,18 @@ Two steps, not one risky rewrite:
 
 Historical patch scripts remain in git for traceability, but the production Docker build should eventually start from the canonical checkpoint plus only current-version patches.
 
-### 9. Observability
+### 9. Deployment and process health
+
+Split worker build concerns from the full web image. The current worker service rebuilds/restarts on many commits that only affect later UI/social patches because both services share the same Dockerfile/repo trigger.
+
+V105 should:
+- add a worker-specific build path/image that contains only worker dependencies and the AI code it actually consumes;
+- add Railway watch patterns so unrelated documentation/UI/social changes do not redeploy the worker;
+- add an explicit web healthcheck that only turns a deployment healthy once the Streamlit route is reachable;
+- use a clear restart policy for unexpected process exits;
+- keep one web replica until session/media state is sufficiently S3-native for safe horizontal scaling.
+
+### 10. Observability
 
 Add structured one-line diagnostics for:
 - upload init/complete/materialize;
@@ -130,7 +145,8 @@ A V105 candidate is not releasable until it passes:
 5. Session: refresh/reconnect, OAuth new tab, return to prepared video, new video reset.
 6. Social: connected/unconnected, token refresh, provider cancel/error, publish success without resetting Streamlit state.
 7. Compatibility: ffprobe gate confirms H.264/avc1/yuv420p-compatible, expected dimensions, <=60 fps, AAC 48 kHz stereo.
-8. Regression: all existing V104.3–V104.7 tests remain green.
+8. Deployment: a UI/social-only commit must not unnecessarily rebuild/restart the AI worker.
+9. Regression: all existing V104.3–V104.7 tests remain green.
 
 ## Release gates
 
