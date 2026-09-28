@@ -152,6 +152,7 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v102_smart_hook.py && \
     python /app/web/test_v102_smart_hook.py /app/GamingShortsFactory_V102_SMART_HOOK.py && \
     python -m py_compile /app/GamingShortsFactory_V102_SMART_HOOK.py && \
+    python /app/web/inspect_v103_render.py && \
     python -m py_compile /app/web/direct_upload_server.py && \
     python -m py_compile /app/web/ai_worker_server.py && \
     python -m py_compile /app/web/gsf_bucket_bridge.py && \
