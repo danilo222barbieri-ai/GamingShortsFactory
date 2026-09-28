@@ -16,19 +16,9 @@ export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
 export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
 mkdir -p "$GSF_RUNTIME_ROOT"
 
-# Diagnostic only: OAuth client IDs are public identifiers. Log the Google
-# project number and redirect URI so a Testing/test-user mismatch can be
-# identified without exposing the client secret.
-if [ -n "${GSF_YOUTUBE_CLIENT_ID:-}" ]; then
-  _gsf_google_project_number="${GSF_YOUTUBE_CLIENT_ID%%-*}"
-  echo "GSF YouTube OAuth project number: ${_gsf_google_project_number}"
-  echo "GSF YouTube OAuth redirect URI: ${GSF_PUBLIC_APP_URL:-<unset>}"
-else
-  echo "GSF YouTube OAuth client: not configured"
-fi
 rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 envsubst '${PORT}' < /app/web/nginx.conf.template > /etc/nginx/conf.d/default.conf
 python /app/web/direct_upload_server.py &
 nginx
-exec python -m streamlit run /app/GamingShortsFactory_V104_6_STABLE_SOCIAL_FLOW.py \
+exec python -m streamlit run /app/GamingShortsFactory_V104_7_INSTAGRAM_LOGIN.py \
   --server.address=127.0.0.1 --server.port=8501 --server.maxUploadSize=4096 --server.maxMessageSize=4096 --server.headless=true
