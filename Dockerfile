@@ -164,6 +164,9 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v104_direct_social.py && \
     python /app/web/test_v104_direct_social.py /app/GamingShortsFactory_V104_DIRECT_SOCIAL.py && \
     python -m py_compile /app/GamingShortsFactory_V104_DIRECT_SOCIAL.py && \
+    python /app/web/apply_v104_1_render_diagnostics.py && \
+    python /app/web/test_v104_1_render_diagnostics.py /app/GamingShortsFactory_V104_1_RENDER_DIAGNOSTICS.py && \
+    python -m py_compile /app/GamingShortsFactory_V104_1_RENDER_DIAGNOSTICS.py && \
     python -m py_compile /app/web/direct_upload_server.py && \
     python -m py_compile /app/web/ai_worker_server.py && \
     python -m py_compile /app/web/gsf_bucket_bridge.py && \
