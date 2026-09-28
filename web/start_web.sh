@@ -21,7 +21,7 @@ envsubst '${PORT}' < /app/web/nginx.conf.template > /etc/nginx/conf.d/default.co
 python /app/web/direct_upload_server.py &
 nginx
 
-exec python -m streamlit run /app/GamingShortsFactory_V100_3_NATIVE_CROP_HQ.py \
+exec python -m streamlit run /app/GamingShortsFactory_V100_4_RENDER_STABLE.py \
   --server.address=127.0.0.1 \
   --server.port=8501 \
   --server.maxUploadSize=4096 \

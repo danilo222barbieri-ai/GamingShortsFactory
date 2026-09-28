@@ -14,9 +14,13 @@ if not args or any(flag in args for flag in ("-version","-formats","-encoders","
 prefix=[REAL,"-filter_threads","1","-filter_complex_threads","1"]
 
 # Gaming Shorts Factory conversion commands use the final argument as output.
-# Set encoder threads immediately before that output.
+# Keep explicit encoder thread budgets (final HQ render asks for 2); otherwise
+# retain the conservative one-thread default for analysis/transcode jobs.
 if len(args)>=1:
-    cmd=prefix+args[:-1]+["-threads","1"]+[args[-1]]
+    if "-threads" in args:
+        cmd=prefix+args
+    else:
+        cmd=prefix+args[:-1]+["-threads","1"]+[args[-1]]
 else:
     cmd=prefix+args
 
