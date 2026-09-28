@@ -14,16 +14,10 @@ export HF_HOME="${HF_HOME:-/app/.cache/huggingface}"
 export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
 export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
 export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
-
 mkdir -p "$GSF_RUNTIME_ROOT"
 rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 envsubst '${PORT}' < /app/web/nginx.conf.template > /etc/nginx/conf.d/default.conf
 python /app/web/direct_upload_server.py &
 nginx
-
-exec python -m streamlit run /app/GamingShortsFactory_V104_1_RENDER_DIAGNOSTICS.py \
-  --server.address=127.0.0.1 \
-  --server.port=8501 \
-  --server.maxUploadSize=4096 \
-  --server.maxMessageSize=4096 \
-  --server.headless=true
+exec python -m streamlit run /app/GamingShortsFactory_V104_2_LEGAL_FOOTER.py \
+  --server.address=127.0.0.1 --server.port=8501 --server.maxUploadSize=4096 --server.maxMessageSize=4096 --server.headless=true
