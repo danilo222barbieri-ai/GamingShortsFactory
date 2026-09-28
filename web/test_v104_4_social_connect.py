@@ -22,6 +22,9 @@ need("return token,_gsf_app_credentials()" in app,"shared token feeds existing a
 
 need("location /social-connect/" in nginx,"nginx social-connect route exists")
 need("127.0.0.1:8502" in nginx,"social-connect bypasses Streamlit")
+need("location = /" in nginx,"root callback interception exists")
+need("@gsf_tiktok_oauth_callback" in nginx,"TikTok callback named route exists")
+need("gsfsc_" in nginx,"only standalone OAuth states are intercepted")
 
 need('"/social-connect/tiktok/start"' in server,"TikTok start endpoint exists")
 need('"/social-connect/tiktok/callback"' in server,"TikTok callback endpoint exists")
@@ -29,6 +32,8 @@ need("GSF_SOCIAL_CONNECT_KEY" in server,"social-connect admin key required")
 need("https://www.tiktok.com/v2/auth/authorize/" in server,"official TikTok authorize endpoint used")
 need("https://open.tiktokapis.com/v2/oauth/token/" in server,"official TikTok token endpoint used")
 need("user.info.basic,video.publish" in server,"required TikTok scopes requested")
+need('redirect_uri=PUBLIC_APP_URL' in server,"existing registered root redirect URI is reused")
+need('state="gsfsc_"+' in server,"standalone OAuth state is namespaced")
 need("social-connections/tiktok.json" in server,"TikTok token stored persistently")
 need("client_secret" in server and "TIKTOK_CLIENT_SECRET" in server,"client secret kept server-side")
 
