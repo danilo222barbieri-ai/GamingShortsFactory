@@ -115,10 +115,11 @@ Historical patch scripts remain in git for traceability, but the production Dock
 
 V105 must stop using production `main` as the first place where a risky change is exercised. Use an isolated branch and a staging deployment/service for smoke and stress testing before merging production changes. The existing legacy V78 service may be repurposed as a staging shell only after its domain/config dependencies are verified; otherwise disable it and create a dedicated staging target.
 
-Split worker build concerns from the full web image. The current worker service rebuilds/restarts on many commits that only affect later UI/social patches because both services share the same Dockerfile/repo trigger.
+Split worker build concerns from the full web image. The current worker service rebuilds/restarts on many commits that only affect later UI/social patches because both services share the same Dockerfile/repo trigger. The current worker only needs the app state through `V99_FINAL_ARCH`, yet the shared Docker build applies 21 additional app patches after that checkpoint. It also AST-extracts four scan functions from a generated monolithic app file.
 
 V105 should:
-- add a worker-specific build path/image that contains only worker dependencies and the AI code it actually consumes;
+- extract the prescan engine into a focused shared Python module imported by both the web compatibility path and the worker, removing runtime AST extraction;
+- add a worker-specific build path/image that contains only worker/render dependencies and the code it actually consumes, not Streamlit/social/Google/Whisper dependencies unless a worker feature genuinely needs them;
 - add Railway watch patterns so unrelated documentation/UI/social changes do not redeploy the worker;
 - add an explicit web healthcheck that only turns a deployment healthy once the Streamlit route is reachable;
 - use a clear restart policy for unexpected process exits;
