@@ -8,7 +8,7 @@ v95 = v95_path.read_text(encoding="utf-8") if v95_path.exists() else ""
 
 checks = {
     "Streamlit compatibility pin": "streamlit==1.49.1" in req,
-    "V95/V98 production lineage entrypoint": ("GamingShortsFactory_V95_RENDER_TEXT_POLISH.py" in start or "GamingShortsFactory_V98_EDITOR_POLISH.py" in start or "GamingShortsFactory_V98_1_EDITOR_HOTFIX.py" in start),
+    "V95/V98 production lineage entrypoint": ("GamingShortsFactory_V95_RENDER_TEXT_POLISH.py" in start or "GamingShortsFactory_V98_EDITOR_POLISH.py" in start or "GamingShortsFactory_V98_1_EDITOR_HOTFIX.py" in start or "GamingShortsFactory_V98_2_UPLOAD_RECOVERY.py" in start),
     "V95 generated artifact exists": bool(v95),
     "V95 render-text marker present": "V95 Render Text Polish" in v95,
     "approved player code remains present": "components" in v95 and "html" in v95,
