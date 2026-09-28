@@ -103,21 +103,16 @@ if 'GSF_FINAL_RENDER_START' not in core_before:
     for _handler in target_try.handlers:
         if _handler.name:
             _err_name=str(_handler.name)
-            _diag_src=(
-                '_diag_elapsed=time.perf_counter()-_diag_started\\n'
-                f'if isinstance({_err_name},subprocess.TimeoutExpired):\\n'
-                '    print("GSF_FINAL_RENDER_TIMEOUT",f"encoder={encoder}",'
-                'f"elapsed={_diag_elapsed:.2f}",flush=True)\\n'
-                'else:\\n'
-                '    print("GSF_FINAL_RENDER_EXCEPTION",f"encoder={encoder}",'
-                f'"error="+repr(str({_err_name})),flush=True)\\n'
-            )
+            _diag_src=f'''_diag_elapsed=time.perf_counter()-_diag_started
+if isinstance({_err_name},subprocess.TimeoutExpired):
+    print("GSF_FINAL_RENDER_TIMEOUT",f"encoder={encoder}",f"elapsed={_diag_elapsed:.2f}",flush=True)
+else:
+    print("GSF_FINAL_RENDER_EXCEPTION",f"encoder={encoder}","error="+repr(str({_err_name})),flush=True)
+'''
         else:
-            _diag_src=(
-                '_diag_elapsed=time.perf_counter()-_diag_started\\n'
-                'print("GSF_FINAL_RENDER_EXCEPTION",f"encoder={encoder}",'
-                'f"elapsed={_diag_elapsed:.2f}",flush=True)\\n'
-            )
+            _diag_src='''_diag_elapsed=time.perf_counter()-_diag_started
+print("GSF_FINAL_RENDER_EXCEPTION",f"encoder={encoder}",f"elapsed={_diag_elapsed:.2f}",flush=True)
+'''
         _handler.body[0:0]=ast.parse(_diag_src).body
 
 ast.fix_missing_locations(node)
