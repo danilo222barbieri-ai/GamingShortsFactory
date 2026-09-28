@@ -73,8 +73,9 @@ Compare wall time, peak RAM, output size and objective metrics available in FFmp
 
 Keep direct browser → S3 multipart upload. Reduce duplicate server work:
 - prescan starts immediately after multipart completion;
+- upload state distinguishes `uploaded_to_s3` from `local_materialized`; the UI must not wait for a full S3→web download just to declare the upload usable;
 - source materialization on web becomes lazy/compatibility-only instead of the gate for every AI workflow;
-- browser preview should prefer a short-lived signed S3 URL where possible;
+- browser preview should prefer an authenticated app endpoint that issues a short-lived signed S3 GET/redirect, preserving session isolation without proxying the video bytes through Python;
 - local materialization remains for editor paths that still require local FFmpeg access until those paths are migrated.
 
 Review both browser and server concurrency instead of assuming more lanes are faster:
