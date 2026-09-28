@@ -161,7 +161,9 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v103_2_canonical_format.py && \
     python /app/web/test_v103_2_canonical_format.py /app/GamingShortsFactory_V103_2_CANONICAL_FORMAT.py && \
     python -m py_compile /app/GamingShortsFactory_V103_2_CANONICAL_FORMAT.py && \
-    python /app/web/inspect_v104_social.py && \
+    python /app/web/apply_v104_direct_social.py && \
+    python /app/web/test_v104_direct_social.py /app/GamingShortsFactory_V104_DIRECT_SOCIAL.py && \
+    python -m py_compile /app/GamingShortsFactory_V104_DIRECT_SOCIAL.py && \
     python -m py_compile /app/web/direct_upload_server.py && \
     python -m py_compile /app/web/ai_worker_server.py && \
     python -m py_compile /app/web/gsf_bucket_bridge.py && \
