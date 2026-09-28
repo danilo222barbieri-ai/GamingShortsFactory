@@ -50,6 +50,9 @@ TIKTOK_CLIENT_SECRET=_env_first("GSF_TIKTOK_CLIENT_SECRET",default="")
 YOUTUBE_CLIENT_ID=_env_first("GSF_YOUTUBE_CLIENT_ID",default="")
 YOUTUBE_CLIENT_SECRET=_env_first("GSF_YOUTUBE_CLIENT_SECRET",default="")
 YOUTUBE_SCOPE="https://www.googleapis.com/auth/youtube.upload"
+INSTAGRAM_APP_ID=_env_first("GSF_INSTAGRAM_APP_ID",default="")
+INSTAGRAM_APP_SECRET=_env_first("GSF_INSTAGRAM_APP_SECRET",default="")
+INSTAGRAM_SCOPES="instagram_business_basic,instagram_business_content_publish"
 META_APP_ID=_env_first("GSF_META_APP_ID",default="")
 META_APP_SECRET=_env_first("GSF_META_APP_SECRET",default="")
 META_SCOPES="pages_show_list,instagram_basic,instagram_content_publish,pages_read_engagement"
@@ -424,8 +427,8 @@ def _social_page(sid,message=""):
     msg=f'<div class="msg">{html.escape(message)}</div>' if message else ""
     instagram_note=(
         ""
-        if META_APP_ID and META_APP_SECRET
-        else '<div class="note">Configurazione Meta non ancora presente sul server.</div>'
+        if (INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET) or (META_APP_ID and META_APP_SECRET)
+        else '<div class="note">Configurazione Instagram non ancora presente sul server.</div>'
     )
     return f"""<!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -652,12 +655,45 @@ def _instagram_oauth_start(handler,sid):
     if not sid:
         _html(handler,400,"Sessione browser non valida. Riapri /social-connect.")
         return
-    if not (PUBLIC_APP_URL and META_APP_ID and META_APP_SECRET):
+    if not PUBLIC_APP_URL:
+        _html(handler,503,_social_page(sid,"Configurazione URL pubblica Instagram incompleta sul server."))
+        return
+
+    # Prefer Meta's current Instagram Login flow. It does not require a
+    # Facebook Page and uses the Instagram App ID shown under
+    # Instagram > API setup with Instagram login.
+    if INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET:
+        mode="instagram_login"
+        state="gsfig_"+secrets.token_urlsafe(28)
+        state_dir=ROOT/"social_oauth"
+        state_dir.mkdir(parents=True,exist_ok=True)
+        _write_json_atomic(state_dir/(state+".json"),{
+            "created":time.time(),
+            "sid":sid,
+            "platform":"Instagram",
+            "mode":mode,
+        })
+        params={
+            "client_id":INSTAGRAM_APP_ID,
+            "redirect_uri":PUBLIC_APP_URL,
+            "state":state,
+            "response_type":"code",
+            "scope":INSTAGRAM_SCOPES,
+            "force_reauth":"true",
+            "enable_fb_login":"0",
+        }
+        _redirect(handler,"https://www.instagram.com/oauth/authorize?"+urllib.parse.urlencode(params))
+        return
+
+    # Backward-compatible Facebook Login path for an already configured Meta
+    # app. New installs should use Instagram Login above.
+    if not (META_APP_ID and META_APP_SECRET):
         _html(handler,503,_social_page(
             sid,
-            "Instagram richiede GSF_META_APP_ID e GSF_META_APP_SECRET sul server."
+            "Instagram richiede GSF_INSTAGRAM_APP_ID e GSF_INSTAGRAM_APP_SECRET sul server."
         ))
         return
+
     state="gsfig_"+secrets.token_urlsafe(28)
     state_dir=ROOT/"social_oauth"
     state_dir.mkdir(parents=True,exist_ok=True)
@@ -665,6 +701,7 @@ def _instagram_oauth_start(handler,sid):
         "created":time.time(),
         "sid":sid,
         "platform":"Instagram",
+        "mode":"facebook_login",
     })
     params={
         "client_id":META_APP_ID,
@@ -691,6 +728,7 @@ def _instagram_oauth_callback(handler,query):
         pass
     created=float(pending.get("created",0) or 0)
     sid=_safe_id(pending.get("sid",""))
+    mode=str(pending.get("mode","") or "")
     if not state.startswith("gsfig_") or not sid or not created or time.time()-created>900:
         _html(handler,400,"Stato OAuth Instagram scaduto o non valido. Riapri /social-connect.")
         return
@@ -701,6 +739,90 @@ def _instagram_oauth_callback(handler,query):
         _html(handler,400,_social_page(sid,"Instagram non ha restituito il codice di autorizzazione."))
         return
 
+    if mode=="instagram_login":
+        try:
+            form=urllib.parse.urlencode({
+                "client_id":INSTAGRAM_APP_ID,
+                "client_secret":INSTAGRAM_APP_SECRET,
+                "grant_type":"authorization_code",
+                "redirect_uri":PUBLIC_APP_URL,
+                "code":code,
+            }).encode("utf-8")
+            req=urllib.request.Request(
+                "https://api.instagram.com/oauth/access_token",
+                data=form,
+                headers={"Content-Type":"application/x-www-form-urlencoded"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req,timeout=45) as resp:
+                token_payload=json.loads(resp.read().decode("utf-8"))
+
+            short_token=""
+            expires_in=0
+            if isinstance(token_payload,dict):
+                short_token=str(token_payload.get("access_token","") or "")
+                expires_in=int(token_payload.get("expires_in",0) or 0)
+                if not short_token:
+                    rows=token_payload.get("data")
+                    if isinstance(rows,list) and rows and isinstance(rows[0],dict):
+                        short_token=str(rows[0].get("access_token","") or "")
+                        expires_in=int(rows[0].get("expires_in",0) or 0)
+            if not short_token:
+                raise RuntimeError("Instagram non ha restituito un access token.")
+
+            access_token=short_token
+            long_expires=expires_in
+            try:
+                long_url="https://graph.instagram.com/access_token?"+urllib.parse.urlencode({
+                    "grant_type":"ig_exchange_token",
+                    "client_secret":INSTAGRAM_APP_SECRET,
+                    "access_token":short_token,
+                })
+                with urllib.request.urlopen(long_url,timeout=45) as resp:
+                    long_payload=json.loads(resp.read().decode("utf-8"))
+                if isinstance(long_payload,dict) and long_payload.get("access_token"):
+                    access_token=str(long_payload.get("access_token"))
+                    long_expires=int(long_payload.get("expires_in",0) or 0)
+            except Exception:
+                pass
+
+            me_url="https://graph.instagram.com/me?"+urllib.parse.urlencode({
+                "fields":"user_id,username,id,account_type",
+                "access_token":access_token,
+            })
+            with urllib.request.urlopen(me_url,timeout=45) as resp:
+                me_payload=json.loads(resp.read().decode("utf-8"))
+
+            profile=me_payload
+            if isinstance(me_payload,dict) and isinstance(me_payload.get("data"),list) and me_payload["data"]:
+                profile=me_payload["data"][0]
+            if not isinstance(profile,dict):
+                raise RuntimeError(str(me_payload))
+
+            # user_id is the professional account ID needed for publishing.
+            ig_id=str(profile.get("user_id","") or profile.get("id","") or "")
+            username=str(profile.get("username","") or "")
+            account_type=str(profile.get("account_type","") or "")
+            if not ig_id:
+                raise RuntimeError("Instagram non ha restituito l'ID dell'account professionale.")
+
+            now=time.time()
+            _instagram_user_save(sid,{
+                "ig_user_id":ig_id,
+                "access_token":access_token,
+                "username":username,
+                "account_type":account_type,
+                "api_host":"https://graph.instagram.com",
+                "oauth_mode":"instagram_login",
+                "saved_at":now,
+                "expires_at":now+long_expires if long_expires else 0,
+            })
+            _redirect(handler,"/social-connect")
+        except Exception as exc:
+            _html(handler,500,_social_page(sid,"Collegamento Instagram fallito: "+str(exc)[:220]))
+        return
+
+    # Legacy Facebook Login callback.
     try:
         token_url="https://graph.facebook.com/oauth/access_token?"+urllib.parse.urlencode({
             "client_id":META_APP_ID,
@@ -714,7 +836,6 @@ def _instagram_oauth_callback(handler,query):
         if not user_token:
             raise RuntimeError(str(token_payload))
 
-        # Prefer a long-lived user token when Meta allows the exchange.
         try:
             long_url="https://graph.facebook.com/oauth/access_token?"+urllib.parse.urlencode({
                 "grant_type":"fb_exchange_token",
@@ -769,6 +890,8 @@ def _instagram_oauth_callback(handler,query):
             "ig_user_id":ig_id,
             "access_token":page_token,
             "username":username,
+            "api_host":"https://graph.facebook.com",
+            "oauth_mode":"facebook_login",
             "saved_at":time.time(),
         })
         _redirect(handler,"/social-connect")
