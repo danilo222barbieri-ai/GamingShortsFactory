@@ -20,7 +20,7 @@ need('justify-content:center' in s and 'st-key-v81_new_video' in s,'new-video bu
 need('Per il player LIVE persistente serve una versione recente di Streamlit con Components V2.' not in s,'Components V2 warning removed')
 need('IN {_istart:.1f}s · OUT {_iend:.1f}s · DURATA {_ilen:.1f}s' not in s,'trim info cloud removed')
 need('ANTEPRIMA LIVE · queste regolazioni sono le stesse usate dal render finale.' not in s,'preview info cloud removed')
-need('Modifiche applicate. Puoi continuare nell\\'Editor o creare lo Short finale.' not in s,'no extra apply notification cloud')
+need("Modifiche applicate. Puoi continuare nell'Editor o creare lo Short finale." not in s,'no extra apply notification cloud')
 
 # VAI must work on the actual production fallback.
 need('_legacy_seek=float(seek_target if seek_target is not None else start_seconds)' in s,'legacy player receives selected seek target')
