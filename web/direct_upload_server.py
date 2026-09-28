@@ -11,7 +11,7 @@ from urllib.parse import unquote
 ROOT=Path(os.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))
 PORT=int(os.environ.get("GSF_DIRECT_UPLOAD_PORT","8502"))
 MAX_FILE_BYTES=4*1024*1024*1024
-MAX_CHUNK_BYTES=40*1024*1024
+MAX_CHUNK_BYTES=64*1024*1024
 ID_RE=re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 ALLOWED_EXT={".mp4",".mov",".mkv"}
 _FINALIZE_LOCK=threading.Lock()
