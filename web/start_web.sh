@@ -19,7 +19,7 @@ rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 envsubst '${PORT}' < /app/web/nginx.conf.template > /etc/nginx/conf.d/default.conf
 nginx
 
-exec python -m streamlit run /app/GamingShortsFactory_V98_EDITOR_POLISH.py \
+exec python -m streamlit run /app/GamingShortsFactory_V98_1_EDITOR_HOTFIX.py \
   --server.address=127.0.0.1 \
   --server.port=8501 \
   --server.maxUploadSize=4096 \

@@ -67,7 +67,10 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python -m py_compile /app/GamingShortsFactory_V95_RENDER_TEXT_POLISH.py && \
     python /app/web/apply_v98_editor_polish.py && \
     python /app/web/test_v98_editor_polish.py /app/GamingShortsFactory_V98_EDITOR_POLISH.py && \
-    python -m py_compile /app/GamingShortsFactory_V98_EDITOR_POLISH.py
+    python -m py_compile /app/GamingShortsFactory_V98_EDITOR_POLISH.py && \
+    python /app/web/apply_v98_1_editor_hotfix.py && \
+    python /app/web/test_v98_1_editor_hotfix.py /app/GamingShortsFactory_V98_1_EDITOR_HOTFIX.py && \
+    python -m py_compile /app/GamingShortsFactory_V98_1_EDITOR_HOTFIX.py
 
 COPY .streamlit /app/.streamlit
 
