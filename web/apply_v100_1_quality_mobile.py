@@ -51,9 +51,9 @@ if '"-global_quality","21"' not in s:
     raise RuntimeError('V100.1 QSV quality21 target not found')
 s=s.replace('"-global_quality","21"','"-global_quality","18"',1)
 
-# Mobile-only breathing room between the user-facing "Anteprima" label and
-# the following main render_gsf_player call. Discover it from AST so no editor
-# or result player gets moved accidentally.
+# Mobile-only breathing room under the unique user-facing "Anteprima video"
+# heading. Insert immediately after that Streamlit markdown call so only the
+# main preview moves and editor/result players stay exactly where they are.
 tree=ast.parse(s)
 lines=s.splitlines(keepends=True)
 
@@ -65,39 +65,20 @@ def call_name(node):
     return ''
 
 labels=[]
-players=[]
 for node in ast.walk(tree):
-    if isinstance(node,ast.Call):
-        name=call_name(node.func)
-        if name=='render_gsf_player':
-            players.append(node)
-        if name in ('markdown','subheader','header','caption','write'):
-            vals=[
-                x.value for x in ast.walk(node)
-                if isinstance(x,ast.Constant) and isinstance(x.value,str)
-            ]
-            text=' '.join(vals)
-            low=text.lower()
-            if 'anteprima' in low and 'live' not in low:
-                labels.append(node)
+    if isinstance(node,ast.Call) and call_name(node.func)=='markdown':
+        vals=[
+            x.value for x in ast.walk(node)
+            if isinstance(x,ast.Constant) and isinstance(x.value,str)
+        ]
+        text=' '.join(vals)
+        if 'Anteprima video' in text:
+            labels.append(node)
 
-pairs=[]
-for label in labels:
-    after=[
-        p for p in players
-        if p.lineno>label.end_lineno and p.lineno-label.end_lineno<=45
-    ]
-    if after:
-        p=min(after,key=lambda x:x.lineno)
-        pairs.append((label,p))
-
-# Remove duplicate same label/player pairs from AST walk.
-unique={}
-for label,player in pairs:
-    unique[(label.lineno,player.lineno)]=(label,player)
-pairs=list(unique.values())
-
-if len(pairs)!=1:
+# AST can visit nested nodes but this call must be unique in the generated app.
+unique={(n.lineno,n.end_lineno):n for n in labels}
+labels=list(unique.values())
+if len(labels)!=1:
     contexts=[]
     for label in labels:
         contexts.append(
@@ -105,13 +86,13 @@ if len(pairs)!=1:
             ''.join(lines[max(0,label.lineno-2):min(len(lines),label.end_lineno+3)]).strip()
         )
     raise RuntimeError(
-        'V100.1 expected exactly one Anteprima -> main player pair, '
-        f'found {len(pairs)}; labels={contexts}'
+        'V100.1 expected exactly one "Anteprima video" heading, '
+        f'found {len(labels)}; labels={contexts}'
     )
 
-label,player=pairs[0]
-insert_at=player.lineno-1
-indent=re.match(r'\s*',lines[insert_at]).group(0)
+label=labels[0]
+insert_at=label.end_lineno
+indent=re.match(r'\s*',lines[label.lineno-1]).group(0)
 spacer=(
     indent+'st.markdown("""<style>\\n'
     '.gsf-mobile-preview-gap{display:none;height:0}\\n'
@@ -131,6 +112,5 @@ s=s.replace(
 
 out.write_text(s,encoding='utf-8')
 print(
-    f'V100.1 patch applied: {out} | mobile preview label line={label.lineno} '
-    f'player line={player.lineno}'
+    f'V100.1 patch applied: {out} | mobile preview label line={label.lineno}'
 )
