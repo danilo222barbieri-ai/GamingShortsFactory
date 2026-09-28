@@ -1,0 +1,11 @@
+# V105 known-good dependency set from Railway staging build 2026-09-29
+streamlit==1.49.1
+faster-whisper==1.2.1
+numpy==2.5.3
+boto3==1.43.104
+botocore==1.43.104
+google-api-python-client==2.200.0
+google-auth-oauthlib==1.4.1
+google-auth-httplib2==0.4.2
+ctranslate2==4.8.2
+av==18.1.0
