@@ -111,6 +111,7 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v98_final_6lanes.py && \
     python /app/web/test_v98_final_6lanes.py /app/GamingShortsFactory_V98_FINAL_6LANES.py && \
     python -m py_compile /app/GamingShortsFactory_V98_FINAL_6LANES.py && \
+    python /app/web/diagnose_v99_ai.py && \
     python -m py_compile /app/web/direct_upload_server.py
 
 COPY .streamlit /app/.streamlit
