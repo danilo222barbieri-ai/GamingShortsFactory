@@ -97,24 +97,28 @@ if 'GSF_FINAL_RENDER_START' not in core_before:
     ridx=target_try.body.index(render_assign)
     target_try.body[ridx+1:ridx+1]=exit_nodes
 
-    # Existing broad exception handling stays intact; add a diagnostic before it.
-    handler=next(
-        (h for h in target_try.handlers
-         if h.name=='e' and isinstance(h.type,ast.Name) and h.type.id=='Exception'),
-        None
-    )
-    if handler is None:
-        raise RuntimeError('V104.3 expected Exception as e handler missing')
-    diag_except=ast.parse(
-        '_diag_elapsed=time.perf_counter()-_diag_started\n'
-        'if isinstance(e,subprocess.TimeoutExpired):\n'
-        '    print("GSF_FINAL_RENDER_TIMEOUT",f"encoder={encoder}",'
-        'f"elapsed={_diag_elapsed:.2f}",flush=True)\n'
-        'else:\n'
-        '    print("GSF_FINAL_RENDER_EXCEPTION",f"encoder={encoder}",'
-        '"error="+repr(str(e)),flush=True)\n'
-    ).body
-    handler.body[0:0]=diag_except
+    # Keep every existing exception handler intact and prepend diagnostics.
+    if not target_try.handlers:
+        raise RuntimeError('V104.3 render try has no exception handlers')
+    for _handler in target_try.handlers:
+        if _handler.name:
+            _err_name=str(_handler.name)
+            _diag_src=(
+                '_diag_elapsed=time.perf_counter()-_diag_started\\n'
+                f'if isinstance({_err_name},subprocess.TimeoutExpired):\\n'
+                '    print("GSF_FINAL_RENDER_TIMEOUT",f"encoder={encoder}",'
+                'f"elapsed={_diag_elapsed:.2f}",flush=True)\\n'
+                'else:\\n'
+                '    print("GSF_FINAL_RENDER_EXCEPTION",f"encoder={encoder}",'
+                f'"error="+repr(str({_err_name})),flush=True)\\n'
+            )
+        else:
+            _diag_src=(
+                '_diag_elapsed=time.perf_counter()-_diag_started\\n'
+                'print("GSF_FINAL_RENDER_EXCEPTION",f"encoder={encoder}",'
+                'f"elapsed={_diag_elapsed:.2f}",flush=True)\\n'
+            )
+        _handler.body[0:0]=ast.parse(_diag_src).body
 
 ast.fix_missing_locations(node)
 new_core=ast.unparse(node)
