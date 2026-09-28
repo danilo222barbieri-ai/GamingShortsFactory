@@ -43,6 +43,7 @@ S3_SECRET_KEY=_env_first("GSF_S3_SECRET_ACCESS_KEY","AWS_SECRET_ACCESS_KEY","SEC
 S3_ENDPOINT=_env_first("GSF_S3_ENDPOINT","AWS_ENDPOINT_URL","ENDPOINT")
 S3_REGION=_env_first("GSF_S3_REGION","AWS_REGION","AWS_DEFAULT_REGION","REGION",default="auto")
 S3_ADDRESSING_STYLE=_env_first("GSF_S3_ADDRESSING_STYLE",default="virtual")
+STORAGE_PREFIX=str(_env_first("GSF_STORAGE_PREFIX",default="") or "").strip("/")
 PUBLIC_ORIGIN=_env_first("GSF_PUBLIC_ORIGIN",default="")
 WORKER_URL=_env_first("GSF_WORKER_URL",default="").rstrip("/")
 WORKER_TOKEN=_env_first("GSF_WORKER_TOKEN",default="")
@@ -78,6 +79,16 @@ def _client_upload_concurrency(user_agent):
     if any(token in ua for token in ("iphone","ipad","ipod","android","mobile")):
         return BUCKET_CONCURRENCY_MOBILE
     return BUCKET_CONCURRENCY_DESKTOP
+
+def _prefixed_key(key):
+    key=str(key or "").lstrip("/")
+    return f"{STORAGE_PREFIX}/{key}" if STORAGE_PREFIX else key
+
+def _logical_key(key):
+    key=str(key or "").lstrip("/")
+    if STORAGE_PREFIX and key.startswith(STORAGE_PREFIX+"/"):
+        return key[len(STORAGE_PREFIX)+1:]
+    return key
 
 def _bucket_enabled():
     return bool(S3_BUCKET and S3_ACCESS_KEY and S3_SECRET_KEY and S3_ENDPOINT)
@@ -271,7 +282,7 @@ def _social_sid(handler):
 
 def _tiktok_user_key(sid):
     sid=_safe_id(sid)
-    return f"social-connections/{sid}/tiktok.json" if sid else ""
+    return _prefixed_key(f"social-connections/{sid}/tiktok.json") if sid else ""
 
 
 def _tiktok_user_load(sid):
@@ -332,7 +343,7 @@ def _tiktok_user_save(sid,payload):
 
 def _youtube_user_key(sid):
     sid=_safe_id(sid)
-    return f"social-connections/{sid}/youtube.json" if sid else ""
+    return _prefixed_key(f"social-connections/{sid}/youtube.json") if sid else ""
 
 
 def _youtube_user_load(sid):
@@ -389,7 +400,7 @@ def _youtube_user_save(sid,payload):
 
 def _instagram_user_key(sid):
     sid=_safe_id(sid)
-    return f"social-connections/{sid}/instagram.json" if sid else ""
+    return _prefixed_key(f"social-connections/{sid}/instagram.json") if sid else ""
 
 
 def _instagram_user_load(sid):
@@ -1028,8 +1039,8 @@ class Handler(BaseHTTPRequestHandler):
                 if total<=0 or total>MAX_FILE_BYTES:
                     raise ValueError("file size not allowed")
                 upload_id=uuid.uuid4().hex[:20]
-                key=f"uploads/{sid}/{upload_id}/{safe_stem}{ext}"
-                analysis_key=f"analysis/{sid}/{upload_id}/v52-keyframe-turbo.json"
+                key=_prefixed_key(f"uploads/{sid}/{upload_id}/{safe_stem}{ext}")
+                analysis_key=_prefixed_key(f"analysis/{sid}/{upload_id}/v52-keyframe-turbo.json")
                 created=_s3().create_multipart_upload(
                     Bucket=S3_BUCKET,
                     Key=key,
@@ -1082,8 +1093,8 @@ class Handler(BaseHTTPRequestHandler):
                 original_name,safe_stem,ext=_safe_filename(data.get("name"))
                 total=int(data.get("size",0))
                 parts=data.get("parts") or []
-                prefix=f"uploads/{sid}/{upload_id}/"
-                expected_analysis=f"analysis/{sid}/{upload_id}/"
+                prefix=_prefixed_key(f"uploads/{sid}/{upload_id}/")
+                expected_analysis=_prefixed_key(f"analysis/{sid}/{upload_id}/")
                 if not upload_id or not multipart_id or not key.startswith(prefix):
                     raise ValueError("invalid multipart metadata")
                 if not analysis_key.startswith(expected_analysis):
@@ -1140,7 +1151,7 @@ class Handler(BaseHTTPRequestHandler):
                 upload_id=_safe_id(data.get("upload_id"))
                 key=str(data.get("key") or "")
                 multipart_id=str(data.get("multipart_id") or "")
-                if not _bucket_enabled() or not upload_id or not key.startswith(f"uploads/{sid}/{upload_id}/"):
+                if not _bucket_enabled() or not upload_id or not key.startswith(_prefixed_key(f"uploads/{sid}/{upload_id}/")):
                     raise ValueError("invalid abort metadata")
                 _s3().abort_multipart_upload(Bucket=S3_BUCKET,Key=key,UploadId=multipart_id)
                 _json(self,200,{"ok":True})
