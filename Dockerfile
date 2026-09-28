@@ -125,7 +125,9 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v100_1_quality_mobile.py && \
     python /app/web/test_v100_1_quality_mobile.py /app/GamingShortsFactory_V100_1_QUALITY_MOBILE.py && \
     python -m py_compile /app/GamingShortsFactory_V100_1_QUALITY_MOBILE.py && \
-    python /app/web/inspect_v1002_render_core.py /app/GamingShortsFactory_V100_1_QUALITY_MOBILE.py && \
+    python /app/web/apply_v100_2_master_quality.py && \
+    python /app/web/test_v100_2_master_quality.py /app/GamingShortsFactory_V100_2_MASTER_QUALITY.py && \
+    python -m py_compile /app/GamingShortsFactory_V100_2_MASTER_QUALITY.py && \
     python -m py_compile /app/web/direct_upload_server.py && \
     python -m py_compile /app/web/ai_worker_server.py && \
     python -m py_compile /app/web/gsf_bucket_bridge.py && \
