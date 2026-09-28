@@ -4,15 +4,17 @@ import os
 import re
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import threading
 from pathlib import Path
 from urllib.parse import unquote
 
 ROOT=Path(os.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))
 PORT=int(os.environ.get("GSF_DIRECT_UPLOAD_PORT","8502"))
 MAX_FILE_BYTES=4*1024*1024*1024
-MAX_CHUNK_BYTES=8*1024*1024
+MAX_CHUNK_BYTES=40*1024*1024
 ID_RE=re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 ALLOWED_EXT={".mp4",".mov",".mkv"}
+_FINALIZE_LOCK=threading.Lock()
 
 def _safe_id(value):
     value=str(value or "")
@@ -84,53 +86,75 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         media=ROOT/"sessions"/sid/"media"
-        tmp_dir=ROOT/"sessions"/sid/"direct_upload"
+        tmp_dir=ROOT/"sessions"/sid/"direct_upload"/upload_id
         media.mkdir(parents=True,exist_ok=True)
         tmp_dir.mkdir(parents=True,exist_ok=True)
-        tmp_path=tmp_dir/f"{upload_id}{ext}.part"
+        part_path=tmp_dir/f"{index:06d}.part"
 
         try:
-            mode="r+b" if tmp_path.exists() else "w+b"
             remaining=length
-            with open(tmp_path,mode) as out:
-                out.seek(start)
+            with open(part_path,"wb",buffering=1024*1024) as out:
                 while remaining>0:
-                    block=self.rfile.read(min(256*1024,remaining))
+                    block=self.rfile.read(min(1024*1024,remaining))
                     if not block:
                         raise IOError("client disconnected")
                     out.write(block)
                     remaining-=len(block)
                 out.flush()
-                os.fsync(out.fileno())
 
-            completed=(start+length>=total)
-            if completed:
-                actual=tmp_path.stat().st_size
-                if actual!=total:
-                    _json(self,409,{"ok":False,"error":"incomplete upload","bytes":actual})
-                    return
+            completed=False
+            with _FINALIZE_LOCK:
+                parts=[tmp_dir/f"{i:06d}.part" for i in range(count)]
+                if all(p.is_file() for p in parts):
+                    final_tmp=media/f".source_direct_{safe_stem}_{upload_id}{ext}.tmp"
+                    actual=0
+                    with open(final_tmp,"wb",buffering=4*1024*1024) as dst:
+                        for p in parts:
+                            with open(p,"rb",buffering=4*1024*1024) as src:
+                                while True:
+                                    block=src.read(4*1024*1024)
+                                    if not block:
+                                        break
+                                    dst.write(block)
+                                    actual+=len(block)
+                        dst.flush()
+                        os.fsync(dst.fileno())
+                    if actual!=total:
+                        final_tmp.unlink(missing_ok=True)
+                        _json(self,409,{"ok":False,"error":"incomplete upload","bytes":actual})
+                        return
 
-                final=media/f"source_direct_{safe_stem}_{upload_id}{ext}"
-                os.replace(tmp_path,final)
-                marker=media/".direct_upload_ready.json"
-                marker_tmp=media/".direct_upload_ready.json.tmp"
-                marker_data={
-                    "path":str(final),
-                    "name":original_name,
-                    "size":total,
-                    "upload_id":upload_id,
-                    "completed_at":time.time(),
-                }
-                marker_tmp.write_text(json.dumps(marker_data,ensure_ascii=False),encoding="utf-8")
-                os.replace(marker_tmp,marker)
-                try:
-                    os.utime(ROOT/"sessions"/sid/".active",None)
-                except Exception:
-                    pass
-                _json(self,200,{"ok":True,"completed":True,"bytes":total})
-                return
+                    final=media/f"source_direct_{safe_stem}_{upload_id}{ext}"
+                    os.replace(final_tmp,final)
+                    marker=media/".direct_upload_ready.json"
+                    marker_tmp=media/".direct_upload_ready.json.tmp"
+                    marker_data={
+                        "path":str(final),
+                        "name":original_name,
+                        "size":total,
+                        "upload_id":upload_id,
+                        "completed_at":time.time(),
+                    }
+                    marker_tmp.write_text(json.dumps(marker_data,ensure_ascii=False),encoding="utf-8")
+                    os.replace(marker_tmp,marker)
+                    for p in parts:
+                        p.unlink(missing_ok=True)
+                    try:
+                        tmp_dir.rmdir()
+                    except OSError:
+                        pass
+                    try:
+                        os.utime(ROOT/"sessions"/sid/".active",None)
+                    except Exception:
+                        pass
+                    completed=True
 
-            _json(self,200,{"ok":True,"completed":False,"index":index,"bytes":start+length})
+            _json(self,200,{
+                "ok":True,
+                "completed":completed,
+                "index":index,
+                "bytes":start+length
+            })
         except Exception as exc:
             _json(self,500,{"ok":False,"error":str(exc)[:160]})
 
