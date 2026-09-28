@@ -134,6 +134,9 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v100_4_render_stable.py && \
     python /app/web/test_v100_4_render_stable.py /app/GamingShortsFactory_V100_4_RENDER_STABLE.py && \
     python -m py_compile /app/GamingShortsFactory_V100_4_RENDER_STABLE.py && \
+    python /app/web/apply_v100_5_max_upload.py && \
+    python /app/web/test_v100_5_max_upload.py /app/GamingShortsFactory_V100_5_MAX_UPLOAD.py && \
+    python -m py_compile /app/GamingShortsFactory_V100_5_MAX_UPLOAD.py && \
     python -m py_compile /app/web/direct_upload_server.py && \
     python -m py_compile /app/web/ai_worker_server.py && \
     python -m py_compile /app/web/gsf_bucket_bridge.py && \

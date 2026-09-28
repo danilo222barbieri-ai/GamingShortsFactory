@@ -19,7 +19,7 @@ PORT=int(os.environ.get("GSF_DIRECT_UPLOAD_PORT","8502"))
 MAX_FILE_BYTES=4*1024*1024*1024
 MAX_CHUNK_BYTES=40*1024*1024
 BUCKET_PART_BYTES=32*1024*1024
-BUCKET_CONCURRENCY=6
+BUCKET_CONCURRENCY=10
 ID_RE=re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 ALLOWED_EXT={".mp4",".mov",".mkv"}
 _STATE_LOCKS={}
@@ -164,8 +164,10 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
     try:
         cfg=TransferConfig(
             multipart_threshold=8*1024*1024,
-            multipart_chunksize=16*1024*1024,
-            max_concurrency=8,
+            multipart_chunksize=8*1024*1024,
+            max_concurrency=12,
+            max_io_queue=16,
+            io_chunksize=1024*1024,
             use_threads=True,
         )
         with open(tmp,"wb") as out:
@@ -220,6 +222,8 @@ class Handler(BaseHTTPRequestHandler):
                 "worker":bool(WORKER_URL),
                 "part_size":BUCKET_PART_BYTES,
                 "concurrency":BUCKET_CONCURRENCY,
+                "materialize_part_size":8*1024*1024,
+                "materialize_concurrency":12,
                 "fallback_chunk_size":16*1024*1024,
                 "fallback_concurrency":6,
             })
