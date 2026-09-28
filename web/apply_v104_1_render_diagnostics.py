@@ -42,8 +42,9 @@ lines=s.splitlines(keepends=True)
 for i,line in enumerate(lines):
     if social_line in line and 'gsf-section-gap-social' not in ''.join(lines[i+1:i+2]):
         indent=line[:len(line)-len(line.lstrip())]
-        newline='\\n' if line.endswith('\\n') else ''
-        lines[i]=line.rstrip('\\n')+newline+indent+'st.markdown(\'<div class="gsf-section-gap-social" style="height:30px"></div>\', unsafe_allow_html=True)'+newline
+        had_newline=line.endswith('\n')
+        base=line.rstrip('\n')
+        lines[i]=base+'\n'+indent+'st.markdown(\'<div class="gsf-section-gap-social" style="height:30px"></div>\', unsafe_allow_html=True)+'\n'
         break
 s=''.join(lines)
 
