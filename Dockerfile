@@ -82,7 +82,10 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python -m py_compile /app/GamingShortsFactory_V98_4_EDITOR_CLEANUP.py && \
     python /app/web/apply_v98_5_style_only.py && \
     python /app/web/test_v98_5_style_only.py /app/GamingShortsFactory_V98_5_STYLE_ONLY.py && \
-    python -m py_compile /app/GamingShortsFactory_V98_5_STYLE_ONLY.py
+    python -m py_compile /app/GamingShortsFactory_V98_5_STYLE_ONLY.py && \
+    python /app/web/apply_v98_6_player_sizes.py && \
+    python /app/web/test_v98_6_player_sizes.py /app/GamingShortsFactory_V98_6_PLAYER_SIZES.py && \
+    python -m py_compile /app/GamingShortsFactory_V98_6_PLAYER_SIZES.py
 
 COPY .streamlit /app/.streamlit
 
