@@ -55,6 +55,20 @@ server {
         default_type application/octet-stream;
     }
 
+    # V104.4: standalone social-account connection flow.
+    # This bypasses Streamlit so OAuth can be completed without a loaded video.
+    location /social-connect/ {
+        proxy_pass http://127.0.0.1:8502;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
     # V98.9: chunked disk upload bypasses Streamlit's in-memory UploadedFile.
     location /direct-upload/ {
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=21600; SameSite=Lax; Secure; HttpOnly" always;
