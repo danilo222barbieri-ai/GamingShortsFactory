@@ -141,16 +141,160 @@ _TEMPLATE = r'''
 #ng27 .toast.show{opacity:1;transform:translate(-50%,0)}
 #ng27 .footNote{text-align:center;color:#7a8b99;font-size:7px;margin-top:3px;letter-spacing:.04em}
 @media(max-width:820px){
- #ng27 .cockpit{grid-template-columns:1fr}
- #ng27 .rail{flex-direction:row;justify-content:center;overflow-x:auto}
- #ng27 .rail:first-child{order:2}
- #ng27 .stageWrap{order:1}
- #ng27 .rail:last-child{order:3}
- #ng27 .railBtn{width:54px;height:54px;border-radius:16px}
- #ng27 .stage.r916{width:min(100%,285px)}
- #ng27 .captionPreview{font-size:28px}
- #ng27 .trimRow{grid-template-columns:34px 1fr 42px;row-gap:5px}
+ /* MOBILE COCKPIT — player e controlli diventano un'unica superficie */
+ #ng27{width:100%;min-height:100%}
+ #ng27 .shell,
+ #ng27.expanded .shell{
+   width:100%;
+   max-width:none;
+   margin:0 auto;
+   padding:0;
+   border-radius:20px;
+   background:transparent;
+   overflow:visible;
+ }
+ #ng27 .shell:after{display:none}
+ #ng27 .topline{position:absolute;top:8px;right:8px;z-index:40;padding:0}
+ #ng27 .zoomEditorBtn{display:none!important}
+
+ #ng27 .cockpit,
+ #ng27.expanded .cockpit{
+   display:block;
+   position:relative;
+   width:100%;
+   min-height:0;
+ }
+ #ng27 .stageWrap{
+   position:relative;
+   width:100%;
+   min-width:0;
+   margin:0 auto;
+ }
+ #ng27 .stage.r916,
+ #ng27.expanded .stage.r916{
+   width:min(100%,360px);
+   aspect-ratio:9/16;
+   border-radius:20px;
+   box-shadow:0 12px 34px rgba(28,52,70,.16);
+ }
+
+ /* Le due rail desktop diventano controlli overlay dentro il player. */
+ #ng27 .cockpit>.rail{
+   position:absolute;
+   top:50%;
+   z-index:24;
+   display:flex;
+   flex-direction:column;
+   justify-content:center;
+   gap:7px;
+   overflow:visible;
+   transform:translateY(-50%);
+   pointer-events:none;
+ }
+ #ng27 .cockpit>.rail:first-child{
+   left:max(7px,env(safe-area-inset-left));
+ }
+ #ng27 .cockpit>.rail:last-child{
+   right:max(7px,env(safe-area-inset-right));
+ }
+ #ng27 .cockpit>.rail .railBtn{
+   pointer-events:auto;
+ }
+ #ng27 .railBtn,
+ #ng27.expanded .railBtn{
+   width:43px;
+   height:43px;
+   min-width:43px;
+   min-height:43px;
+   padding:0;
+   border-radius:13px;
+   border:1px solid rgba(218,233,243,.92);
+   background:rgba(247,252,255,.82);
+   -webkit-backdrop-filter:blur(14px);
+   backdrop-filter:blur(14px);
+   box-shadow:0 6px 18px rgba(25,48,67,.16);
+   gap:2px;
+ }
+ #ng27 .railBtn .ico,
+ #ng27.expanded .railBtn .ico{width:18px;height:18px}
+ #ng27 .railBtn span,
+ #ng27.expanded .railBtn span{
+   font-size:5.6px;
+   line-height:1;
+   letter-spacing:.035em;
+   color:#5e769e;
+ }
+
+ /* Timeline sempre dentro il bordo inferiore del video. */
+ #ng27 .timeline,
+ #ng27.expanded .timeline{
+   position:absolute;
+   left:50%;
+   bottom:8px;
+   z-index:22;
+   width:calc(100% - 18px);
+   margin:0;
+   padding:6px 8px 7px;
+   transform:translateX(-50%);
+   border-radius:13px;
+   background:rgba(8,19,28,.66);
+   -webkit-backdrop-filter:blur(16px);
+   backdrop-filter:blur(16px);
+   box-shadow:0 8px 20px rgba(4,12,18,.18);
+ }
+ #ng27 .tlMeta{
+   margin-bottom:4px;
+   color:#e7f2f8;
+   font-size:6.8px;
+ }
+ #ng27 .tlMeta span:nth-child(2){display:none}
+ #ng27 .track{height:22px}
+ #ng27 .events{display:none}
+ #ng27 .trimRow{
+   grid-template-columns:23px minmax(0,1fr) 34px 23px minmax(0,1fr) 34px;
+   gap:3px;
+   margin-top:5px;
+   font-size:6.8px;
+   color:#d8e5ed;
+ }
+ #ng27 .trimValue{color:#f1f7fa}
+
+ /* I pannelli strumenti salgono sopra il gameplay senza spostare il layout. */
+ #ng27 .drawer{
+   left:55px;
+   right:55px;
+   bottom:92px;
+   z-index:34;
+   max-height:52%;
+   overflow-y:auto;
+   border-radius:16px;
+   padding:9px;
+ }
+ #ng27 .drawerHead{margin-bottom:7px}
+ #ng27 .drawerHead strong{font-size:11px}
+ #ng27 .drawerHead small{display:none}
  #ng27 .cards,#ng27 .colorGrid{grid-template-columns:1fr}
+ #ng27 .captionPreview{
+   width:64%;
+   top:69%;
+   font-size:22px;
+ }
+ #ng27 .toast{bottom:94px;z-index:38}
+ #ng27 .footNote{display:none}
+}
+
+@media(max-width:390px){
+ #ng27 .stage.r916,
+ #ng27.expanded .stage.r916{width:100%;border-radius:18px}
+ #ng27 .railBtn,
+ #ng27.expanded .railBtn{
+   width:40px;height:40px;min-width:40px;min-height:40px;border-radius:12px;
+ }
+ #ng27 .cockpit>.rail{gap:6px}
+ #ng27 .cockpit>.rail:first-child{left:5px}
+ #ng27 .cockpit>.rail:last-child{right:5px}
+ #ng27 .drawer{left:49px;right:49px}
+ #ng27 .captionPreview{width:62%;font-size:20px}
 }
 </style>
 
