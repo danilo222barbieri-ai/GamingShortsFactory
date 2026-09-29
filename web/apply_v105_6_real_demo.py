@@ -427,7 +427,7 @@ s=s.replace(_old_editor_open,_new_editor_open,1)
 
 _editor_cols_old='''                edit_col, keep_col = st.columns(2)
 '''
-_editor_cols_new='''                _edit_pad_l, edit_col, _edit_pad_r = st.columns([.80,3.40,.80])
+_editor_cols_new='''                edit_col = st.container()
 '''
 if _editor_cols_old not in s:
     raise RuntimeError("Demo editor action columns not found")
@@ -766,6 +766,65 @@ st.markdown("""
 """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _creator_hub_entry.lstrip()
+
+# Final visual override: all three milestone CTAs must be exactly the same.
+_major_cta_final_override = r'''
+st.markdown("""
+<style id="gsf-major-actions-final-override">
+.st-key-gsf-major-create-ai button,
+[class*="st-key-gsf-major-create-ai"] button,
+[class*="st-key-gsf-major-game-editor_"] button,
+.st-key-gsf-major-create-short button,
+[class*="st-key-gsf-major-create-short"] button,
+[class*="st-key-edit_ai_"] button,
+.st-key-create_final_short_v54 button,
+[class*="st-key-create_final_short_v54"] button{
+    width:100% !important;
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    padding:0 18px !important;
+    border-radius:17px !important;
+    border:1px solid rgba(255,255,255,.34) !important;
+    background:linear-gradient(135deg,#8B67E8 0%,#6557D9 100%) !important;
+    color:#FFFFFF !important;
+    font-size:15px !important;
+    font-weight:900 !important;
+    line-height:1 !important;
+    letter-spacing:.045em !important;
+    box-shadow:0 12px 28px rgba(104,84,205,.28) !important;
+}
+.st-key-gsf-major-create-ai button:hover,
+[class*="st-key-gsf-major-create-ai"] button:hover,
+[class*="st-key-gsf-major-game-editor_"] button:hover,
+.st-key-gsf-major-create-short button:hover,
+[class*="st-key-gsf-major-create-short"] button:hover,
+[class*="st-key-edit_ai_"] button:hover,
+.st-key-create_final_short_v54 button:hover,
+[class*="st-key-create_final_short_v54"] button:hover{
+    transform:translateY(-2px) !important;
+    filter:brightness(1.035) !important;
+    box-shadow:0 15px 34px rgba(104,84,205,.36) !important;
+}
+@media(max-width:750px){
+    .st-key-gsf-major-create-ai button,
+    [class*="st-key-gsf-major-create-ai"] button,
+    [class*="st-key-gsf-major-game-editor_"] button,
+    .st-key-gsf-major-create-short button,
+    [class*="st-key-gsf-major-create-short"] button,
+    [class*="st-key-edit_ai_"] button,
+    .st-key-create_final_short_v54 button,
+    [class*="st-key-create_final_short_v54"] button{
+        height:52px !important;
+        min-height:52px !important;
+        max-height:52px !important;
+        font-size:13px !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _major_cta_final_override.lstrip()
 
 
 compile(s,str(out),'exec')
