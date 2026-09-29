@@ -29,6 +29,10 @@ if "render_kwargs=_gsf_manual_render_kwargs" not in app:
     raise SystemExit("FAIL Editor 2027 state is not attached to final render recipe")
 if "editor_2027_state=dict(_gsf_manual_editor_state)" not in app:
     raise SystemExit("FAIL Editor 2027 state snapshot is not retained in recipe")
+if '"inline_editor"' not in app or "float(start)+float(_gsf_inline_rel_start)" not in app:
+    raise SystemExit("FAIL inline Editor 2027 IN/OUT is not mapped onto original AI source")
+if "render_kwargs=_gsf_inline_kwargs" not in app:
+    raise SystemExit("FAIL inline Editor 2027 settings are not attached to final AI render")
 
 sample={
     "zoom":1.4,"panX":25,"panY":-25,
