@@ -523,29 +523,21 @@ _major_action_css=r'''
 [class*="st-key-gsf-major-create-short"] button{
     min-height:56px !important;
     border-radius:17px !important;
-    border:0 !important;
+    border:1px solid rgba(255,255,255,.34) !important;
+    background:linear-gradient(135deg,#4FADE8 0%,#647FE5 100%) !important;
     color:#FFFFFF !important;
     font-size:15px !important;
     font-weight:900 !important;
     letter-spacing:.045em !important;
-    box-shadow:0 12px 28px rgba(82,111,178,.22) !important;
+    box-shadow:0 12px 28px rgba(72,113,205,.30) !important;
     transition:transform .16s ease,box-shadow .16s ease,filter .16s ease !important;
-}
-[class*="st-key-gsf-major-create-ai"] button{
-    background:linear-gradient(135deg,#59BDE4,#798FE6) !important;
-}
-[class*="st-key-gsf-major-game-editor_"] button{
-    background:linear-gradient(135deg,#738FE6,#9482E4) !important;
-}
-[class*="st-key-gsf-major-create-short"] button{
-    background:linear-gradient(135deg,#58C7B9,#5DADE0) !important;
 }
 [class*="st-key-gsf-major-create-ai"] button:hover,
 [class*="st-key-gsf-major-game-editor_"] button:hover,
 [class*="st-key-gsf-major-create-short"] button:hover{
     transform:translateY(-2px) !important;
     filter:brightness(1.025) !important;
-    box-shadow:0 15px 32px rgba(82,111,178,.27) !important;
+    box-shadow:0 15px 34px rgba(72,113,205,.36) !important;
 }
 @media(max-width:750px){
     .gsf-major-note{font-size:11px;padding:9px 12px;margin-bottom:15px}
