@@ -49,8 +49,6 @@ _TEMPLATE = r'''
 #ng27 .stageWrap{min-width:0}
 #ng27 .stage{position:relative;margin:0 auto;background:#0b1017;overflow:hidden;border:1px solid rgba(255,255,255,.1);box-shadow:0 28px 78px rgba(0,0,0,.42);transition:width .24s,aspect-ratio .24s,border-radius .24s}
 #ng27 .stage.r916{width:min(100%,420px);aspect-ratio:9/16;border-radius:32px}
-#ng27 .stage.r169{width:min(100%,720px);aspect-ratio:16/9;border-radius:27px}
-#ng27 .stage.r11{width:min(100%,520px);aspect-ratio:1;border-radius:30px}
 #ng27 video{width:100%;height:100%;object-fit:cover;display:block;background:#10141b;transform-origin:center center;transition:filter .16s,transform .16s}
 #ng27 .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(3,7,12,.46),transparent 17%,transparent 69%,rgba(3,7,12,.66))}
 #ng27 .scanlines{position:absolute;inset:0;pointer-events:none;opacity:.055;background:repeating-linear-gradient(180deg,rgba(255,255,255,.14) 0,rgba(255,255,255,.14) 1px,transparent 1px,transparent 5px)}
@@ -136,7 +134,7 @@ _TEMPLATE = r'''
  #ng27 .stageWrap{order:1}
  #ng27 .rail:last-child{order:3}
  #ng27 .railBtn{width:54px;height:54px;border-radius:16px}
- #ng27 .stage.r916,#ng27 .stage.r169,#ng27 .stage.r11{width:min(100%,470px)}
+ #ng27 .stage.r916{width:min(100%,470px)}
  #ng27 .captionPreview{font-size:28px}
  #ng27 .trimRow{grid-template-columns:34px 1fr 42px;row-gap:5px}
  #ng27 .cards,#ng27 .colorGrid{grid-template-columns:1fr}
@@ -175,7 +173,7 @@ _TEMPLATE = r'''
         <div class="hudTop">
           <div class="cluster">
             <button class="glass hudBtn" id="backBtn" title="Indietro"><svg class="ico"><use href="#i-back"/></svg></button>
-            <button class="glass formatTag" data-panel="format"><span class="signal"></span><span id="formatLabel">9:16 SHORT</span></button>
+            <div class="glass formatTag"><span class="signal"></span><span id="formatLabel">9:16 SHORT</span></div>
           </div>
           <div class="cluster">
             <button class="glass hudBtn" id="resetBtn" title="Reset"><svg class="ico"><use href="#i-reset"/></svg></button>
@@ -254,7 +252,7 @@ _TEMPLATE = r'''
  };
 
  const defaults={
-   format:'9:16',zoom:1,panX:0,panY:0,
+   zoom:1,panX:0,panY:0,
    look:'Clean',intensity:64,brightness:100,contrast:100,
    hudMode:'Off',
    captionOn:true,captionText:'NO SCOPE CLUTCH!',captionSize:36,captionY:76,
@@ -297,9 +295,8 @@ _TEMPLATE = r'''
    return 'brightness('+(s.brightness/100)+') contrast('+(s.contrast/100)+')'+extra;
  }
  function applyState(){
-   stage.classList.remove('r916','r169','r11');
-   stage.classList.add(state.format==='16:9'?'r169':state.format==='1:1'?'r11':'r916');
-   formatLabel.textContent=(state.format==='9:16'?'9:16 SHORT':state.format==='16:9'?'16:9 ORIGINAL':'1:1 SQUARE');
+   stage.classList.add('r916');
+   formatLabel.textContent='9:16 SHORT';
 
    video.style.transform='translate('+state.panX+'%,'+state.panY+'%) scale('+state.zoom+')';
    video.style.filter=filterFor(state);
@@ -374,11 +371,6 @@ _TEMPLATE = r'''
  }
  function openPanel(name,btn){
    const templates={
-    format:['Formato',
-      '<div class="strip">'+
-      '<button class="pill" data-key="format" data-value="9:16">9:16 Short</button>'+
-      '<button class="pill" data-key="format" data-value="16:9">16:9 Originale</button>'+
-      '<button class="pill" data-key="format" data-value="1:1">1:1 Square</button></div>'],
     frame:['Smart Frame',
       '<div class="strip">'+
       '<button class="pill framePreset" data-value="focus">Player Focus</button>'+
@@ -428,7 +420,6 @@ _TEMPLATE = r'''
    drawer.classList.remove('hidden');
    root.querySelectorAll('.railBtn[data-panel]').forEach(x=>x.classList.toggle('active',x===btn));
 
-   if(name==='format'){wirePills('format');choosePill(body,state.format)}
    if(name==='look'){
      wirePills('look');choosePill(body,state.look);
      wireRange('intensityR','intensity',Number);
