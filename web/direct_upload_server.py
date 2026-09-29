@@ -20,7 +20,7 @@ from boto3.s3.transfer import TransferConfig
 from gsf_perf import perf_event
 
 ROOT=Path(os.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))
-APP_ICON_B64_PATH=Path("/app/web/app_icons/official_logo_192.b64")
+APP_ICON_B64_PATH=Path("/app/web/app_icons/official_logo_180.valid.b64")
 PORT=int(os.environ.get("GSF_DIRECT_UPLOAD_PORT","8502"))
 MAX_FILE_BYTES=4*1024*1024*1024
 MAX_CHUNK_BYTES=40*1024*1024
@@ -222,7 +222,7 @@ def _app_manifest_bytes():
         "icons":[
             {
                 "src":"/app-icon.png",
-                "sizes":"192x192",
+                "sizes":"180x180",
                 "type":"image/png",
                 "purpose":"any"
             }
