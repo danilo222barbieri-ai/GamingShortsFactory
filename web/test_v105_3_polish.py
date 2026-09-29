@@ -6,7 +6,7 @@ s=p.read_text(encoding="utf-8")
 checks={
     "game detector": "def _gsf_v1053_detect_game",
     "halo detection": '"Halo Infinite"',
-    "no arc default": 'st.session_state.get("gioco", "ARC Raiders")',
+    "social uses detected game": '_game = _gsf_v1053_detect_game()',
     "social cloud removed": "controlla i dati prima di pubblicare",
     "publication spacing": 'height:16px',
     "subtitle spacing css": ".st-key-editor_sub_mode_v18",
@@ -20,7 +20,7 @@ checks={
 errors=[]
 for name,needle in checks.items():
     present=needle in s
-    if name in {"no arc default","social cloud removed","old mobile share removed"}:
+    if name in {"social cloud removed","old mobile share removed"}:
         if present: errors.append(name)
     elif not present:
         errors.append(name)
