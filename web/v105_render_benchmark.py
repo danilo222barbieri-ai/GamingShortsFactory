@@ -147,6 +147,20 @@ def _monitor_peak(stop,box):
     box["peak_bytes"]=peak or None
 
 
+def source_has_audio(path):
+    cmd=[
+        FFPROBE,"-v","error",
+        "-select_streams","a:0",
+        "-show_entries","stream=index",
+        "-of","csv=p=0",str(path),
+    ]
+    try:
+        r=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=20)
+        return r.returncode==0 and bool((r.stdout or "").strip())
+    except Exception:
+        return True
+
+
 def render_command(source,output,profile):
     cfg=PROFILES[profile]
     vf=(
@@ -155,9 +169,20 @@ def render_command(source,output,profile):
         "scale=1080:1920:flags=lanczos+accurate_rnd+full_chroma_int,"
         "unsharp=5:5:0.08:3:3:0.02"
     )
-    return [
+    has_audio=source_has_audio(source)
+    cmd=[
         FFMPEG,"-hide_banner","-loglevel","error","-y",
-        "-i",str(source),"-vf",vf,
+        "-i",str(source),
+    ]
+    if not has_audio:
+        cmd += [
+            "-f","lavfi","-i",
+            "anullsrc=channel_layout=stereo:sample_rate=48000",
+        ]
+    cmd += ["-vf",vf]
+    if not has_audio:
+        cmd += ["-map","0:v:0","-map","1:a:0"]
+    cmd += [
         "-c:v","libx264",
         "-preset",str(cfg["preset"]),
         "-crf",str(cfg["crf"]),
@@ -175,6 +200,7 @@ def render_command(source,output,profile):
         "-movflags","+faststart",
         str(output),
     ]
+    return cmd
 
 
 def _ssim(reference,candidate):
