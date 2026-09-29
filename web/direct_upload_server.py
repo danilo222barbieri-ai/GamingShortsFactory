@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import base64
 import os
 import re
 import time
@@ -19,6 +20,7 @@ from boto3.s3.transfer import TransferConfig
 from gsf_perf import perf_event
 
 ROOT=Path(os.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))
+APP_ICON_B64_PATH=Path("/app/web/app_icons/official_logo_192.b64")
 PORT=int(os.environ.get("GSF_DIRECT_UPLOAD_PORT","8502"))
 MAX_FILE_BYTES=4*1024*1024*1024
 MAX_CHUNK_BYTES=40*1024*1024
@@ -195,6 +197,38 @@ def _safe_filename(value):
         raise ValueError("unsupported extension")
     stem=re.sub(r"[^A-Za-z0-9_.-]+","_",Path(name).stem)[:80] or "video"
     return name,stem,ext
+
+def _send_bytes(handler,status,body,content_type,cache_control="public, max-age=86400"):
+    raw=bytes(body)
+    handler.send_response(status)
+    handler.send_header("Content-Type",content_type)
+    handler.send_header("Content-Length",str(len(raw)))
+    handler.send_header("Cache-Control",cache_control)
+    handler.end_headers()
+    handler.wfile.write(raw)
+
+def _official_app_icon_bytes():
+    return base64.b64decode(APP_ICON_B64_PATH.read_text(encoding="ascii").strip())
+
+def _app_manifest_bytes():
+    payload={
+        "name":"Gaming Shorts Factory",
+        "short_name":"GSF",
+        "start_url":"/",
+        "scope":"/",
+        "display":"standalone",
+        "background_color":"#f4fbff",
+        "theme_color":"#a9dcff",
+        "icons":[
+            {
+                "src":"/app-icon.png",
+                "sizes":"192x192",
+                "type":"image/png",
+                "purpose":"any"
+            }
+        ]
+    }
+    return json.dumps(payload,separators=(",",":"),ensure_ascii=False).encode("utf-8")
 
 def _json(handler,status,payload):
     body=json.dumps(payload,ensure_ascii=False).encode("utf-8")
@@ -1516,6 +1550,15 @@ class Handler(BaseHTTPRequestHandler):
         clean=path.path.rstrip("/")
         if clean in ("","/health"):
             _json(self,200,{"ok":True,"bucket":_bucket_enabled(),"worker":bool(WORKER_URL)})
+            return
+        if clean in ("/app-icon.png","/favicon.ico"):
+            try:
+                _send_bytes(self,200,_official_app_icon_bytes(),"image/png","public, max-age=604800")
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":"app icon unavailable"})
+            return
+        if clean=="/manifest.webmanifest":
+            _send_bytes(self,200,_app_manifest_bytes(),"application/manifest+json; charset=utf-8","public, max-age=3600")
             return
         if clean=="/account":
             sid=_social_sid(self)
