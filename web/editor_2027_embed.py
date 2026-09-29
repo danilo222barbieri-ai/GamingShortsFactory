@@ -75,6 +75,7 @@ _TEMPLATE = r'''
 #ng27 .hudBtn .ico{width:18px;height:18px}
 #ng27 .cluster{display:flex;gap:7px;align-items:center}
 #ng27 .formatTag{padding:0 8px;display:flex;align-items:center;gap:7px;font-size:9px;font-weight:900;letter-spacing:.09em}
+#ng27 .formatTag,#ng27 .visionBadge{display:none!important}
 #ng27 .signal{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px rgba(105,223,255,.7)}
 #ng27 .visionBadge{position:absolute;left:17px;top:62px;z-index:6;padding:6px 8px;border-radius:9px;border:1px solid rgba(89,207,238,.22);background:rgba(10,24,36,.50);backdrop-filter:blur(12px);font-size:8px;font-weight:900;letter-spacing:.11em;color:#c6f1fb;box-shadow:0 3px 9px rgba(14,35,51,.12)}
 #ng27 .focus{position:absolute;left:50%;top:43%;width:74px;height:74px;transform:translate(-50%,-50%);pointer-events:none;opacity:.34;transition:left .16s,top .16s}
