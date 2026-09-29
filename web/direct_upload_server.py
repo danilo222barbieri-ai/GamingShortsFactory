@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import base64
 import os
 import re
 import time
@@ -19,6 +20,7 @@ from boto3.s3.transfer import TransferConfig
 from gsf_perf import perf_event
 
 ROOT=Path(os.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))
+APP_ICON_B64_PATH=Path("/app/web/app_icons/official_logo_180.valid.b64")
 PORT=int(os.environ.get("GSF_DIRECT_UPLOAD_PORT","8502"))
 MAX_FILE_BYTES=4*1024*1024*1024
 MAX_CHUNK_BYTES=40*1024*1024
@@ -195,6 +197,38 @@ def _safe_filename(value):
         raise ValueError("unsupported extension")
     stem=re.sub(r"[^A-Za-z0-9_.-]+","_",Path(name).stem)[:80] or "video"
     return name,stem,ext
+
+def _send_bytes(handler,status,body,content_type,cache_control="public, max-age=86400"):
+    raw=bytes(body)
+    handler.send_response(status)
+    handler.send_header("Content-Type",content_type)
+    handler.send_header("Content-Length",str(len(raw)))
+    handler.send_header("Cache-Control",cache_control)
+    handler.end_headers()
+    handler.wfile.write(raw)
+
+def _official_app_icon_bytes():
+    return base64.b64decode(APP_ICON_B64_PATH.read_text(encoding="ascii").strip())
+
+def _app_manifest_bytes():
+    payload={
+        "name":"Gaming Shorts Factory",
+        "short_name":"GSF",
+        "start_url":"/",
+        "scope":"/",
+        "display":"standalone",
+        "background_color":"#f4fbff",
+        "theme_color":"#a9dcff",
+        "icons":[
+            {
+                "src":"/app-icon.png",
+                "sizes":"180x180",
+                "type":"image/png",
+                "purpose":"any"
+            }
+        ]
+    }
+    return json.dumps(payload,separators=(",",":"),ensure_ascii=False).encode("utf-8")
 
 def _json(handler,status,payload):
     body=json.dumps(payload,ensure_ascii=False).encode("utf-8")
@@ -512,6 +546,509 @@ def _instagram_user_save(sid,payload):
         CacheControl="no-store",
     )
 
+
+
+
+# ------------------------------------------------------------------
+# Creator Hub account foundation.
+# Account identity is separate from publish permissions: users can enter with
+# Google, Facebook or TikTok, then connect YouTube/Instagram/etc. independently.
+# ------------------------------------------------------------------
+def _creator_session_key(sid):
+    sid=_safe_id(sid)
+    return f"creator-sessions/{sid}.json" if sid else ""
+
+
+def _creator_profile_key(account_id):
+    account_id=_safe_id(account_id)
+    return f"creator-accounts/{account_id}/profile.json" if account_id else ""
+
+
+def _creator_identity_key(provider,provider_uid):
+    provider=re.sub(r"[^a-z0-9_-]+","",str(provider or "").lower())[:24]
+    provider_uid=str(provider_uid or "").strip()
+    if not provider or not provider_uid:
+        return ""
+    digest=uuid.uuid5(uuid.NAMESPACE_URL,provider+":"+provider_uid).hex
+    return f"creator-identities/{provider}/{digest}.json"
+
+
+def _creator_account_load(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return {}
+    local=ROOT/"sessions"/sid/"account.json"
+    try:
+        payload=json.loads(local.read_text(encoding="utf-8"))
+        if isinstance(payload,dict) and payload.get("account_id"):
+            return payload
+    except Exception:
+        pass
+    if not _bucket_enabled():
+        return {}
+    try:
+        obj=_s3().get_object(Bucket=S3_BUCKET,Key=_creator_session_key(sid))
+        session_payload=json.loads(obj["Body"].read().decode("utf-8"))
+        account_id=_safe_id(session_payload.get("account_id",""))
+        if not account_id:
+            return {}
+        obj=_s3().get_object(Bucket=S3_BUCKET,Key=_creator_profile_key(account_id))
+        profile=json.loads(obj["Body"].read().decode("utf-8"))
+        if isinstance(profile,dict):
+            local.parent.mkdir(parents=True,exist_ok=True)
+            _write_json_atomic(local,profile)
+            return profile
+    except Exception:
+        pass
+    return {}
+
+
+def _creator_account_save(sid,profile):
+    sid=_safe_id(sid)
+    profile=dict(profile or {})
+    account_id=_safe_id(profile.get("account_id",""))
+    if not sid or not account_id:
+        raise RuntimeError("account/session non validi")
+    local=ROOT/"sessions"/sid/"account.json"
+    local.parent.mkdir(parents=True,exist_ok=True)
+    _write_json_atomic(local,profile)
+    if _bucket_enabled():
+        _s3().put_object(
+            Bucket=S3_BUCKET,
+            Key=_creator_profile_key(account_id),
+            Body=json.dumps(profile,ensure_ascii=False).encode("utf-8"),
+            ContentType="application/json",
+            CacheControl="no-store",
+        )
+        _s3().put_object(
+            Bucket=S3_BUCKET,
+            Key=_creator_session_key(sid),
+            Body=json.dumps({"account_id":account_id,"updated_at":time.time()}).encode("utf-8"),
+            ContentType="application/json",
+            CacheControl="no-store",
+        )
+
+
+def _creator_login(sid,provider,provider_uid,display_name="",email="",avatar=""):
+    sid=_safe_id(sid)
+    provider=re.sub(r"[^a-z0-9_-]+","",str(provider or "").lower())[:24]
+    provider_uid=str(provider_uid or "").strip()
+    if not sid or not provider or not provider_uid:
+        raise RuntimeError("identità provider non valida")
+
+    current=_creator_account_load(sid)
+    account_id=_safe_id(current.get("account_id","")) if isinstance(current,dict) else ""
+
+    identity_key=_creator_identity_key(provider,provider_uid)
+    if not account_id and _bucket_enabled() and identity_key:
+        try:
+            obj=_s3().get_object(Bucket=S3_BUCKET,Key=identity_key)
+            mapped=json.loads(obj["Body"].read().decode("utf-8"))
+            account_id=_safe_id(mapped.get("account_id",""))
+        except Exception:
+            account_id=""
+
+    if not account_id:
+        account_id="usr_"+uuid.uuid4().hex[:24]
+
+    profile={}
+    if _bucket_enabled():
+        try:
+            obj=_s3().get_object(Bucket=S3_BUCKET,Key=_creator_profile_key(account_id))
+            payload=json.loads(obj["Body"].read().decode("utf-8"))
+            if isinstance(payload,dict):
+                profile=payload
+        except Exception:
+            pass
+    if not profile and isinstance(current,dict):
+        profile=dict(current)
+
+    providers=dict(profile.get("providers") or {})
+    providers[provider]={
+        "id":provider_uid,
+        "display_name":str(display_name or "").strip(),
+        "email":str(email or "").strip(),
+        "avatar":str(avatar or "").strip(),
+        "linked_at":time.time(),
+    }
+    profile.update({
+        "account_id":account_id,
+        "display_name":str(display_name or profile.get("display_name") or "Creator").strip(),
+        "email":str(email or profile.get("email") or "").strip(),
+        "avatar":str(avatar or profile.get("avatar") or "").strip(),
+        "plan":str(profile.get("plan") or "FREE"),
+        "creator_level":int(profile.get("creator_level") or 1),
+        "shorts_created":int(profile.get("shorts_created") or 0),
+        "shorts_published":int(profile.get("shorts_published") or 0),
+        "providers":providers,
+        "updated_at":time.time(),
+        "created_at":float(profile.get("created_at") or time.time()),
+    })
+    _creator_account_save(sid,profile)
+    if _bucket_enabled() and identity_key:
+        _s3().put_object(
+            Bucket=S3_BUCKET,
+            Key=identity_key,
+            Body=json.dumps({"account_id":account_id,"provider":provider}).encode("utf-8"),
+            ContentType="application/json",
+            CacheControl="no-store",
+        )
+    return profile
+
+
+def _creator_logout(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return
+    try:
+        (ROOT/"sessions"/sid/"account.json").unlink(missing_ok=True)
+    except Exception:
+        pass
+    if _bucket_enabled():
+        try:
+            _s3().delete_object(Bucket=S3_BUCKET,Key=_creator_session_key(sid))
+        except Exception:
+            pass
+
+
+def _creator_state_begin(sid,provider,prefix):
+    sid=_safe_id(sid)
+    if not sid:
+        raise RuntimeError("sessione browser non valida")
+    state=str(prefix)+secrets.token_urlsafe(28)
+    state_dir=ROOT/"social_oauth"
+    state_dir.mkdir(parents=True,exist_ok=True)
+    _write_json_atomic(state_dir/(state+".json"),{
+        "created":time.time(),
+        "sid":sid,
+        "provider":str(provider),
+    })
+    return state
+
+
+def _creator_state_finish(state,prefix):
+    state=re.sub(r"[^A-Za-z0-9_-]+","",str(state or ""))[:180]
+    if not state.startswith(prefix):
+        return {}
+    state_file=ROOT/"social_oauth"/(state+".json")
+    try:
+        pending=json.loads(state_file.read_text(encoding="utf-8"))
+    except Exception:
+        pending={}
+    try:
+        state_file.unlink(missing_ok=True)
+    except Exception:
+        pass
+    created=float(pending.get("created",0) or 0)
+    if not created or time.time()-created>900:
+        return {}
+    return pending if isinstance(pending,dict) else {}
+
+
+def _oauth_json(url,method="GET",data=None,headers=None,timeout=45):
+    req=urllib.request.Request(
+        str(url),
+        data=data,
+        headers=dict(headers or {}),
+        method=method,
+    )
+    with urllib.request.urlopen(req,timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _creator_google_start(handler,sid):
+    if not (PUBLIC_APP_URL and YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET):
+        _html(handler,503,_creator_page(sid,"Accesso Google non ancora configurato sul server."))
+        return
+    try:
+        state=_creator_state_begin(sid,"google","gsfacg_")
+    except Exception as exc:
+        _html(handler,400,str(exc))
+        return
+    params={
+        "client_id":YOUTUBE_CLIENT_ID,
+        "redirect_uri":PUBLIC_APP_URL,
+        "response_type":"code",
+        "scope":"openid email profile",
+        "access_type":"online",
+        "include_granted_scopes":"true",
+        "prompt":"select_account",
+        "state":state,
+    }
+    _redirect(handler,"https://accounts.google.com/o/oauth2/v2/auth?"+urllib.parse.urlencode(params))
+
+
+def _creator_google_callback(handler,query):
+    code=str((query.get("code") or [""])[0] or "")
+    state=str((query.get("state") or [""])[0] or "")
+    pending=_creator_state_finish(state,"gsfacg_")
+    sid=_safe_id(pending.get("sid",""))
+    if not sid:
+        _html(handler,400,"Accesso Google scaduto o non valido.")
+        return
+    err=str((query.get("error_description") or query.get("error") or [""])[0] or "")
+    if err or not code:
+        _html(handler,400,_creator_page(sid,"Google: "+(err or "autorizzazione non completata")))
+        return
+    try:
+        form=urllib.parse.urlencode({
+            "client_id":YOUTUBE_CLIENT_ID,
+            "client_secret":YOUTUBE_CLIENT_SECRET,
+            "code":code,
+            "grant_type":"authorization_code",
+            "redirect_uri":PUBLIC_APP_URL,
+        }).encode("utf-8")
+        token=_oauth_json(
+            "https://oauth2.googleapis.com/token",
+            method="POST",
+            data=form,
+            headers={"Content-Type":"application/x-www-form-urlencoded"},
+        )
+        access=str(token.get("access_token","") or "")
+        if not access:
+            raise RuntimeError("Google non ha restituito un access token")
+        info=_oauth_json(
+            "https://openidconnect.googleapis.com/v1/userinfo",
+            headers={"Authorization":"Bearer "+access},
+        )
+        uid=str(info.get("sub","") or "")
+        if not uid:
+            raise RuntimeError("Profilo Google non disponibile")
+        _creator_login(
+            sid,"google",uid,
+            display_name=info.get("name",""),
+            email=info.get("email",""),
+            avatar=info.get("picture",""),
+        )
+        _redirect(handler,"/account")
+    except Exception as exc:
+        _html(handler,500,_creator_page(sid,"Accesso Google fallito: "+str(exc)[:220]))
+
+
+def _creator_facebook_start(handler,sid):
+    if not (PUBLIC_APP_URL and META_APP_ID and META_APP_SECRET):
+        _html(handler,503,_creator_page(sid,"Accesso Facebook non ancora configurato sul server."))
+        return
+    try:
+        state=_creator_state_begin(sid,"facebook","gsfacf_")
+    except Exception as exc:
+        _html(handler,400,str(exc))
+        return
+    params={
+        "client_id":META_APP_ID,
+        "redirect_uri":PUBLIC_APP_URL,
+        "state":state,
+        "response_type":"code",
+        "scope":"public_profile,email",
+    }
+    _redirect(handler,"https://www.facebook.com/dialog/oauth?"+urllib.parse.urlencode(params))
+
+
+def _creator_facebook_callback(handler,query):
+    code=str((query.get("code") or [""])[0] or "")
+    state=str((query.get("state") or [""])[0] or "")
+    pending=_creator_state_finish(state,"gsfacf_")
+    sid=_safe_id(pending.get("sid",""))
+    if not sid:
+        _html(handler,400,"Accesso Facebook scaduto o non valido.")
+        return
+    err=str((query.get("error_description") or query.get("error") or [""])[0] or "")
+    if err or not code:
+        _html(handler,400,_creator_page(sid,"Facebook: "+(err or "autorizzazione non completata")))
+        return
+    try:
+        token_url="https://graph.facebook.com/oauth/access_token?"+urllib.parse.urlencode({
+            "client_id":META_APP_ID,
+            "client_secret":META_APP_SECRET,
+            "redirect_uri":PUBLIC_APP_URL,
+            "code":code,
+        })
+        token=_oauth_json(token_url)
+        access=str(token.get("access_token","") or "")
+        if not access:
+            raise RuntimeError("Facebook non ha restituito un access token")
+        info_url="https://graph.facebook.com/me?"+urllib.parse.urlencode({
+            "fields":"id,name,email,picture",
+            "access_token":access,
+        })
+        info=_oauth_json(info_url)
+        uid=str(info.get("id","") or "")
+        if not uid:
+            raise RuntimeError("Profilo Facebook non disponibile")
+        picture=((info.get("picture") or {}).get("data") or {}).get("url","") if isinstance(info.get("picture"),dict) else ""
+        _creator_login(
+            sid,"facebook",uid,
+            display_name=info.get("name",""),
+            email=info.get("email",""),
+            avatar=picture,
+        )
+        _redirect(handler,"/account")
+    except Exception as exc:
+        _html(handler,500,_creator_page(sid,"Accesso Facebook fallito: "+str(exc)[:220]))
+
+
+def _creator_tiktok_start(handler,sid):
+    if not (PUBLIC_APP_URL and TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET):
+        _html(handler,503,_creator_page(sid,"Accesso TikTok non ancora configurato sul server."))
+        return
+    try:
+        state=_creator_state_begin(sid,"tiktok","gsfact_")
+    except Exception as exc:
+        _html(handler,400,str(exc))
+        return
+    params={
+        "client_key":TIKTOK_CLIENT_KEY,
+        "response_type":"code",
+        "scope":"user.info.basic",
+        "redirect_uri":PUBLIC_APP_URL,
+        "state":state,
+    }
+    _redirect(handler,"https://www.tiktok.com/v2/auth/authorize/?"+urllib.parse.urlencode(params))
+
+
+def _creator_tiktok_callback(handler,query):
+    code=str((query.get("code") or [""])[0] or "")
+    state=str((query.get("state") or [""])[0] or "")
+    pending=_creator_state_finish(state,"gsfact_")
+    sid=_safe_id(pending.get("sid",""))
+    if not sid:
+        _html(handler,400,"Accesso TikTok scaduto o non valido.")
+        return
+    err=str((query.get("error_description") or query.get("error") or [""])[0] or "")
+    if err or not code:
+        _html(handler,400,_creator_page(sid,"TikTok: "+(err or "autorizzazione non completata")))
+        return
+    try:
+        form=urllib.parse.urlencode({
+            "client_key":TIKTOK_CLIENT_KEY,
+            "client_secret":TIKTOK_CLIENT_SECRET,
+            "code":code,
+            "grant_type":"authorization_code",
+            "redirect_uri":PUBLIC_APP_URL,
+        }).encode("utf-8")
+        token=_oauth_json(
+            "https://open.tiktokapis.com/v2/oauth/token/",
+            method="POST",
+            data=form,
+            headers={"Content-Type":"application/x-www-form-urlencoded"},
+        )
+        access=str(token.get("access_token","") or "")
+        uid=str(token.get("open_id","") or "")
+        name=""
+        avatar=""
+        if access:
+            try:
+                info=_oauth_json(
+                    "https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url",
+                    headers={"Authorization":"Bearer "+access},
+                )
+                user=((info.get("data") or {}).get("user") or {}) if isinstance(info,dict) else {}
+                uid=str(user.get("open_id","") or uid)
+                name=str(user.get("display_name","") or "")
+                avatar=str(user.get("avatar_url","") or "")
+            except Exception:
+                pass
+        if not access or not uid:
+            raise RuntimeError("Profilo TikTok non disponibile")
+        _creator_login(sid,"tiktok",uid,display_name=name or "TikTok Creator",avatar=avatar)
+        _redirect(handler,"/account")
+    except Exception as exc:
+        _html(handler,500,_creator_page(sid,"Accesso TikTok fallito: "+str(exc)[:220]))
+
+
+def _creator_page(sid,message=""):
+    profile=_creator_account_load(sid)
+    if not profile:
+        msg=f'<div class="notice">{html.escape(message)}</div>' if message else ""
+        google_disabled="" if (YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET) else " unavailable"
+        facebook_disabled="" if (META_APP_ID and META_APP_SECRET) else " unavailable"
+        tiktok_disabled="" if (TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET) else " unavailable"
+        return f"""<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaming Shorts Factory · Creator Hub</title>
+<style>
+*{{box-sizing:border-box}} body{{font-family:Inter,Arial,sans-serif;background:linear-gradient(180deg,#f7fbff,#eef5fb);color:#17324d;margin:0;min-height:100vh}}
+main{{max-width:720px;margin:0 auto;padding:28px 18px 44px}} .brand{{text-align:center;color:#648096;font-size:13px;font-weight:800;letter-spacing:.08em;margin-bottom:16px}}
+.card{{background:#fff;border:1px solid #dce9f3;border-radius:28px;padding:28px;box-shadow:0 18px 48px #163d5c14}}
+h1{{text-align:center;margin:2px 0 8px;font-size:30px}} .lead{{text-align:center;color:#6b8295;line-height:1.5;margin:0 auto 24px;max-width:520px}}
+.providers{{display:grid;grid-template-columns:1fr;gap:10px}} .provider{{display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;border:1px solid #d7e5ef;background:#fff;color:#1f3a50;border-radius:16px;padding:14px 16px;font-weight:850;box-shadow:0 6px 16px #325b7910}}
+.provider:hover{{transform:translateY(-1px)}} .provider .logo{{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:#eff6fb;font-weight:950}}
+.provider.unavailable{{opacity:.45;pointer-events:none}} .or{{display:flex;align-items:center;gap:10px;color:#9aabba;font-size:12px;margin:18px 0}} .or:before,.or:after{{content:"";height:1px;background:#e0eaf1;flex:1}}
+.email{{border:1px dashed #cbdde9;border-radius:16px;padding:13px;text-align:center;color:#8195a6;font-size:13px}}
+.notice{{background:#eef8ff;border:1px solid #d2e9f8;border-radius:14px;padding:11px 13px;margin:0 0 15px;color:#426a86}}
+.small{{font-size:12px;color:#8a9dab;text-align:center;line-height:1.5;margin-top:18px}} .back{{display:block;text-align:center;margin-top:16px;color:#477692;text-decoration:none;font-weight:750}}
+@media(min-width:640px){{.providers{{grid-template-columns:1fr 1fr 1fr}} .provider{{min-height:72px;flex-direction:column}}}}
+</style></head><body><main><div class="brand">GAMING SHORTS FACTORY</div><div class="card">
+<h1>Creator Hub</h1><p class="lead">Entra in pochi secondi. Il tuo profilo terrà insieme social, Short, livelli e in futuro il tuo piano.</p>
+{msg}
+<div class="providers">
+<a class="provider{google_disabled}" href="/account/google/start"><span class="logo">G</span><span>Continua con Google</span></a>
+<a class="provider{facebook_disabled}" href="/account/facebook/start"><span class="logo">f</span><span>Continua con Facebook</span></a>
+<a class="provider{tiktok_disabled}" href="/account/tiktok/start"><span class="logo">♪</span><span>Continua con TikTok</span></a>
+</div>
+<div class="or">oppure</div><div class="email">Accesso via email · lo aggiungiamo nella fase account completa</div>
+<p class="small">Google serve per entrare nel profilo; il permesso YouTube per pubblicare viene richiesto separatamente solo quando colleghi il canale.</p>
+<a class="back" href="/">← Torna a Gaming Shorts Factory</a>
+</div></main></body></html>"""
+
+    providers=dict(profile.get("providers") or {})
+    name=html.escape(str(profile.get("display_name") or "Creator"))
+    email=html.escape(str(profile.get("email") or ""))
+    plan=html.escape(str(profile.get("plan") or "FREE"))
+    level=int(profile.get("creator_level") or 1)
+    shorts_created=int(profile.get("shorts_created") or 0)
+    shorts_published=int(profile.get("shorts_published") or 0)
+    avatar=str(profile.get("avatar") or "")
+    avatar_html=(f'<img class="avatar" src="{html.escape(avatar,quote=True)}" alt="">' if avatar else '<div class="avatar fallback">C</div>')
+
+    yt=bool((_youtube_user_load(sid) or {}).get("token"))
+    tt=bool((_tiktok_user_load(sid) or {}).get("access_token"))
+    igcfg=_instagram_user_load(sid) or {}
+    ig=bool(igcfg.get("ig_user_id") and igcfg.get("access_token"))
+    fb="facebook" in providers
+    connected=sum([yt,tt,ig,fb])
+
+    def social_card(label,connected_now,url):
+        status="Collegato ✓" if connected_now else "Collega"
+        cls=" connected" if connected_now else ""
+        return f'<a class="social{cls}" href="{url}"><strong>{html.escape(label)}</strong><span>{status}</span></a>'
+
+    socials=(
+        social_card("YouTube",yt,"/social-connect/youtube/start")
+        +social_card("TikTok",tt,"/social-connect/tiktok/start")
+        +social_card("Instagram",ig,"/social-connect/instagram/start")
+        +social_card("Facebook",fb,"/account/facebook/start")
+    )
+    provider_badges="".join(
+        f'<span class="providerBadge">{html.escape(k.title())} ✓</span>'
+        for k in providers.keys()
+    ) or '<span class="providerBadge">Profilo attivo</span>'
+    msg=f'<div class="notice">{html.escape(message)}</div>' if message else ""
+
+    return f"""<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaming Shorts Factory · Creator Hub</title>
+<style>
+*{{box-sizing:border-box}} body{{font-family:Inter,Arial,sans-serif;background:linear-gradient(180deg,#f7fbff,#eef5fb);color:#17324d;margin:0;min-height:100vh}}
+main{{max-width:860px;margin:0 auto;padding:24px 16px 48px}} .top{{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}} .brand{{font-size:12px;font-weight:900;letter-spacing:.08em;color:#648096}} .back{{color:#477692;text-decoration:none;font-weight:800;font-size:13px}}
+.profile{{background:#fff;border:1px solid #dae8f2;border-radius:26px;padding:22px;box-shadow:0 16px 44px #193f5c12}} .who{{display:flex;align-items:center;gap:14px}} .avatar{{width:58px;height:58px;border-radius:18px;object-fit:cover;background:#edf6fc}} .fallback{{display:grid;place-items:center;font-weight:950;font-size:22px}}
+.name{{font-size:22px;font-weight:900}} .mail{{color:#7990a1;font-size:13px;margin-top:3px}} .badge{{display:inline-flex;margin-top:7px;background:linear-gradient(135deg,#4fade8,#647fe5);color:#fff;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:900}}
+.providerBadges{{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}} .providerBadge{{background:#eff6fb;color:#58768d;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:800}}
+.stats{{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:18px 0}} .stat{{background:#f7fbfe;border:1px solid #e0ebf3;border-radius:16px;padding:13px;text-align:center}} .stat b{{display:block;font-size:20px}} .stat span{{font-size:10px;color:#7e91a1;font-weight:800}}
+.level{{background:linear-gradient(135deg,#eff9ff,#f2efff);border:1px solid #d7e7f1;border-radius:18px;padding:14px;margin-bottom:18px}} .levelHead{{display:flex;justify-content:space-between;font-weight:850;font-size:12px}} .bar{{height:8px;background:#dbe8f1;border-radius:999px;margin-top:9px;overflow:hidden}} .bar i{{display:block;width:18%;height:100%;background:linear-gradient(90deg,#4fade8,#647fe5);border-radius:999px}}
+h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-columns:1fr 1fr;gap:9px}} .social{{text-decoration:none;color:#294a62;background:#fff;border:1px solid #dbe8f1;border-radius:16px;padding:14px;display:flex;justify-content:space-between;align-items:center;font-size:12px}} .social strong{{font-size:13px}} .social span{{color:#5a7d96;font-weight:850}} .social.connected{{background:#f1fbf7;border-color:#cfeadf}} .social.connected span{{color:#3c8968}}
+.notice{{background:#eef8ff;border:1px solid #d2e9f8;border-radius:14px;padding:11px 13px;margin:0 0 15px;color:#426a86}} .future{{border:1px dashed #cadde9;border-radius:17px;padding:14px;color:#7b90a1;font-size:12px;line-height:1.45}}
+.logout{{display:block;text-align:center;color:#8a6170;text-decoration:none;font-size:12px;font-weight:800;margin-top:22px}}
+@media(max-width:560px){{.stats{{grid-template-columns:1fr 1fr 1fr}} .stat{{padding:10px 5px}} .stat b{{font-size:17px}} .socials{{grid-template-columns:1fr}}}}
+</style></head><body><main>
+<div class="top"><div class="brand">GAMING SHORTS FACTORY</div><a class="back" href="/">Torna all'app</a></div>
+<div class="profile">{msg}<div class="who">{avatar_html}<div><div class="name">{name}</div><div class="mail">{email}</div><span class="badge">{plan}</span><div class="providerBadges">{provider_badges}</div></div></div>
+<div class="stats"><div class="stat"><b>{shorts_created}</b><span>SHORT CREATI</span></div><div class="stat"><b>{shorts_published}</b><span>PUBBLICATI</span></div><div class="stat"><b>{connected}/4</b><span>SOCIAL</span></div></div>
+<div class="level"><div class="levelHead"><span>Creator Level {level} · Rookie</span><span>18%</span></div><div class="bar"><i></i></div></div>
+<h2>I tuoi social</h2><div class="socials">{socials}</div>
+<h2>Prossimamente</h2><div class="future">Storico Short · Cloud · Piano Pro · Crediti AI · Achievement · Classifica Creator. La struttura account è già pronta per ospitarli senza rifare il profilo.</div>
+<a class="logout" href="/account/logout">Esci dal Creator Hub</a>
+</div></main></body></html>"""
 
 
 def _social_page(sid,message=""):
@@ -1013,6 +1550,45 @@ class Handler(BaseHTTPRequestHandler):
         clean=path.path.rstrip("/")
         if clean in ("","/health"):
             _json(self,200,{"ok":True,"bucket":_bucket_enabled(),"worker":bool(WORKER_URL)})
+            return
+        if clean in ("/app-icon.png","/favicon.ico"):
+            try:
+                _send_bytes(self,200,_official_app_icon_bytes(),"image/png","public, max-age=604800")
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":"app icon unavailable"})
+            return
+        if clean=="/manifest.webmanifest":
+            _send_bytes(self,200,_app_manifest_bytes(),"application/manifest+json; charset=utf-8","public, max-age=3600")
+            return
+        if clean=="/account":
+            sid=_social_sid(self)
+            if not sid:
+                _html(self,400,"Sessione browser non valida.")
+                return
+            _html(self,200,_creator_page(sid))
+            return
+        if clean=="/account/logout":
+            sid=_social_sid(self)
+            _creator_logout(sid)
+            _redirect(self,"/account")
+            return
+        if clean=="/account/google/start":
+            _creator_google_start(self,_social_sid(self))
+            return
+        if clean=="/account/google/callback":
+            _creator_google_callback(self,parse_qs(path.query))
+            return
+        if clean=="/account/facebook/start":
+            _creator_facebook_start(self,_social_sid(self))
+            return
+        if clean=="/account/facebook/callback":
+            _creator_facebook_callback(self,parse_qs(path.query))
+            return
+        if clean=="/account/tiktok/start":
+            _creator_tiktok_start(self,_social_sid(self))
+            return
+        if clean=="/account/tiktok/callback":
+            _creator_tiktok_callback(self,parse_qs(path.query))
             return
         if clean=="/social-connect":
             sid=_social_sid(self)
