@@ -613,6 +613,89 @@ s=s.replace(
 )
 
 
+# DEMO footer: social channels, visually ready while URLs are pending.
+_social_footer = r'''
+st.markdown("""
+<style>
+.gsf-social-footer{
+  margin:18px auto 6px;
+  padding:18px 12px 10px;
+  text-align:center;
+  color:#60788d;
+}
+.gsf-social-footer-title{
+  margin-bottom:11px;
+  font-size:.83rem;
+  font-weight:850;
+  letter-spacing:.035em;
+  color:#526f86;
+}
+.gsf-social-row{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.gsf-social-icon{
+  width:44px;
+  height:44px;
+  border-radius:14px;
+  display:grid;
+  place-items:center;
+  border:1px solid #D8E8F3;
+  background:linear-gradient(145deg,#F8FCFF,#EEF6FC);
+  box-shadow:0 7px 18px rgba(74,110,142,.09);
+  color:#547790;
+}
+.gsf-social-icon svg{
+  width:21px;
+  height:21px;
+  display:block;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.gsf-social-icon.youtube svg .yt-fill,
+.gsf-social-icon.tiktok svg .tt-fill{
+  fill:currentColor;
+  stroke:none;
+}
+@media(max-width:600px){
+  .gsf-social-footer{margin-top:14px;padding-top:14px}
+  .gsf-social-icon{width:42px;height:42px;border-radius:13px}
+}
+</style>
+<div class="gsf-social-footer">
+  <div class="gsf-social-footer-title">Seguici sui nostri canali</div>
+  <div class="gsf-social-row">
+    <span class="gsf-social-icon instagram" aria-label="Instagram" title="Instagram">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect>
+        <circle cx="12" cy="12" r="4"></circle>
+        <circle cx="17.5" cy="6.8" r="1"></circle>
+      </svg>
+    </span>
+    <span class="gsf-social-icon youtube" aria-label="YouTube" title="YouTube">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M21 7.2c-.2-1.4-1.3-2.5-2.7-2.7C16.6 4.2 14.3 4 12 4s-4.6.2-6.3.5C4.3 4.7 3.2 5.8 3 7.2A30 30 0 0 0 2.8 12c0 1.6.1 3.2.2 4.8.2 1.4 1.3 2.5 2.7 2.7 1.7.3 4 .5 6.3.5s4.6-.2 6.3-.5c1.4-.2 2.5-1.3 2.7-2.7.1-1.6.2-3.2.2-4.8s-.1-3.2-.2-4.8z"></path>
+        <path class="yt-fill" d="M10 8.7v6.6l5.5-3.3z"></path>
+      </svg>
+    </span>
+    <span class="gsf-social-icon tiktok" aria-label="TikTok" title="TikTok">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M14.2 4v9.1a4.2 4.2 0 1 1-3.5-4.1"></path>
+        <path d="M14.2 4c.5 2.5 2.1 4.1 4.7 4.5"></path>
+      </svg>
+    </span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _social_footer.lstrip()
+
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
 print('V106 functional demo applied:',out)
