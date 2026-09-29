@@ -54,9 +54,9 @@ def _gsf_v989_direct_upload_html(loaded=False):
 html,body{margin:0;padding:0;background:transparent;overflow:hidden;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .wrap{height:278px;display:flex;align-items:flex-start;justify-content:center;padding-top:34px;box-sizing:border-box}
 .circle{box-sizing:border-box;width:218px;height:218px;border-radius:50%;display:flex;flex-direction:column;
-align-items:center;justify-content:center;background:#FFF3E8;border:2px solid #F0C49D;
-box-shadow:0 10px 24px rgba(194,126,69,.10);color:#98633E}
-.icon{font-size:54px;font-weight:700;line-height:.82;color:#E58B48;margin-bottom:13px}
+align-items:center;justify-content:center;background:linear-gradient(145deg,#EEF9FE 0%,#F3F0FF 100%);border:2px solid #C9DFED;
+box-shadow:0 10px 24px rgba(83,126,158,.10);color:#55758A}
+.icon{font-size:54px;font-weight:700;line-height:.82;color:#7297CF;margin-bottom:13px}
 .label{width:150px;text-align:center;font-size:17px;font-weight:800;line-height:1.2}
 @media(max-width:600px){.wrap{height:260px}.circle{width:208px;height:208px}.icon{font-size:52px}.label{width:144px;font-size:16px}}
 </style></head><body><div class="wrap"><div class="circle"><div class="icon">✓</div><div class="label">Video caricato</div></div></div></body></html>
@@ -68,17 +68,17 @@ html,body{margin:0;padding:0;background:transparent;overflow:hidden;font-family:
 .wrap{height:298px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:38px;box-sizing:border-box}
 input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .circle{box-sizing:border-box;width:218px;height:218px;border-radius:50%;display:flex;flex-direction:column;
-align-items:center;justify-content:center;background:#F8F2F4;border:2px solid #E2CDD2;
-box-shadow:0 10px 24px rgba(126,92,103,.08);color:#866A71;cursor:pointer;user-select:none}
-.circle:hover{border-color:#D5B8C0;box-shadow:0 12px 28px rgba(126,92,103,.12)}
-.icon{font-size:58px;font-weight:500;line-height:.82;color:#AE7C87;margin-bottom:13px}
+align-items:center;justify-content:center;background:linear-gradient(145deg,#F1FAFE 0%,#F6F2FF 100%);border:2px solid #D0E2EE;
+box-shadow:0 10px 24px rgba(83,126,158,.09);color:#607B8F;cursor:pointer;user-select:none}
+.circle:hover{border-color:#B9D6E7;box-shadow:0 12px 28px rgba(83,126,158,.13)}
+.icon{font-size:58px;font-weight:500;line-height:.82;color:#789AD2;margin-bottom:13px}
 .label{width:150px;text-align:center;font-size:17px;font-weight:800;line-height:1.2}
-.status{display:none;margin-top:7px;width:174px;text-align:center;color:#8D6B74;font-size:12px;font-weight:800}
-.track{display:block;height:5px;margin-top:5px;border-radius:999px;background:rgba(174,124,135,.16);overflow:hidden}
-.bar{display:block;height:100%;width:0;background:#AE7C87;border-radius:999px;transition:width .12s linear}
-.circle.busy{pointer-events:none;background:#FAF5F6}
-.circle.done{background:#FFF3E8;border-color:#F0C49D;color:#98633E}
-.circle.done .icon{color:#E58B48}
+.status{display:none;margin-top:7px;width:174px;text-align:center;color:#668397;font-size:12px;font-weight:800}
+.track{display:block;height:5px;margin-top:5px;border-radius:999px;background:rgba(116,154,197,.15);overflow:hidden}
+.bar{display:block;height:100%;width:0;background:linear-gradient(90deg,#75B9DC,#978DE0);border-radius:999px;transition:width .12s linear}
+.circle.busy{pointer-events:none;background:linear-gradient(145deg,#F3FAFD,#F5F2FC)}
+.circle.done{background:linear-gradient(145deg,#EAF7FE,#F0ECFF);border-color:#C3DBEA;color:#55758A}
+.circle.done .icon{color:#718FD0}
 .error{color:#B42318}
 @media(max-width:600px){.wrap{height:286px}.circle{width:208px;height:208px}.icon{font-size:54px}.label{width:144px;font-size:16px}}
 </style></head><body>
