@@ -12,6 +12,9 @@ app_path=Path(sys.argv[1] if len(sys.argv)>1 else "/app/GamingShortsFactory_V107
 app=app_path.read_text(encoding="utf-8")
 
 for marker in (
+    'name="viewport"',
+    "viewport-fit=cover",
+    "playsinline",
     "streamlit:componentReady",
     "streamlit:render",
     "streamlit:setComponentValue",
