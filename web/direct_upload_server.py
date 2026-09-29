@@ -101,22 +101,60 @@ def _s3():
         return _S3_CLIENT
 
 def _ensure_bucket_cors():
-    if not _bucket_enabled() or not PUBLIC_ORIGIN:
+    if not _bucket_enabled():
+        return
+    configured=[]
+    for raw in [PUBLIC_ORIGIN, os.environ.get("GSF_PUBLIC_ORIGINS","")]:
+        for item in str(raw or "").replace(";",",").split(","):
+            origin=item.strip().rstrip("/")
+            if origin and origin not in configured:
+                configured.append(origin)
+    if not configured:
         return
     try:
+        existing=[]
+        try:
+            existing=list((_s3().get_bucket_cors(Bucket=S3_BUCKET) or {}).get("CORSRules") or [])
+        except Exception:
+            existing=[]
+
+        target=None
+        required_methods={"GET","HEAD","PUT","POST"}
+        for rule in existing:
+            methods=set(rule.get("AllowedMethods") or [])
+            headers=set(rule.get("AllowedHeaders") or [])
+            if required_methods.issubset(methods) and "*" in headers:
+                target=rule
+                break
+
+        if target is None:
+            target={
+                "AllowedHeaders":["*"],
+                "AllowedMethods":["GET","HEAD","PUT","POST"],
+                "AllowedOrigins":[],
+                "ExposeHeaders":["ETag"],
+                "MaxAgeSeconds":3000,
+            }
+            existing.append(target)
+
+        origins=[]
+        for origin in list(target.get("AllowedOrigins") or []) + configured:
+            origin=str(origin or "").strip().rstrip("/")
+            if origin and origin not in origins:
+                origins.append(origin)
+        target["AllowedOrigins"]=origins
+
+        exposed=list(target.get("ExposeHeaders") or [])
+        if "ETag" not in exposed:
+            exposed.append("ETag")
+        target["ExposeHeaders"]=exposed
+        target["MaxAgeSeconds"]=max(int(target.get("MaxAgeSeconds") or 0),3000)
+
         _s3().put_bucket_cors(
             Bucket=S3_BUCKET,
-            CORSConfiguration={
-                "CORSRules":[{
-                    "AllowedHeaders":["*"],
-                    "AllowedMethods":["GET","HEAD","PUT","POST"],
-                    "AllowedOrigins":[PUBLIC_ORIGIN],
-                    "ExposeHeaders":["ETag"],
-                    "MaxAgeSeconds":3000,
-                }]
-            },
+            CORSConfiguration={"CORSRules":existing},
         )
-        print(f"GSF bucket CORS ready for {PUBLIC_ORIGIN}",flush=True)
+        print(f"GSF bucket CORS ready for {', '.join(origins)}",flush=True)
     except Exception as exc:
         print(f"GSF bucket CORS warning: {str(exc)[:180]}",flush=True)
 
