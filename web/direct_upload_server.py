@@ -23,7 +23,8 @@ PORT=int(os.environ.get("GSF_DIRECT_UPLOAD_PORT","8502"))
 MAX_FILE_BYTES=4*1024*1024*1024
 MAX_CHUNK_BYTES=40*1024*1024
 BUCKET_PART_BYTES=32*1024*1024
-BUCKET_CONCURRENCY=10
+BUCKET_CONCURRENCY_DESKTOP=8
+BUCKET_CONCURRENCY_MOBILE=3
 ID_RE=re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 ALLOWED_EXT={".mp4",".mov",".mkv"}
 _STATE_LOCKS={}
@@ -62,6 +63,22 @@ _S3_LOCK=threading.Lock()
 
 def _bucket_enabled():
     return bool(S3_BUCKET and S3_ACCESS_KEY and S3_SECRET_KEY and S3_ENDPOINT)
+
+def _upload_concurrency_for_user_agent(user_agent):
+    ua=str(user_agent or "").lower()
+    mobile_markers=("iphone","ipad","ipod","android"," mobile","mobile/")
+    if any(marker in ua for marker in mobile_markers):
+        return BUCKET_CONCURRENCY_MOBILE
+    return BUCKET_CONCURRENCY_DESKTOP
+
+
+def _materialize_concurrency():
+    try:
+        value=int(os.environ.get("GSF_MATERIALIZE_CONCURRENCY","6") or 6)
+    except Exception:
+        value=6
+    return max(1,min(8,value))
+
 
 def _s3():
     global _S3_CLIENT
