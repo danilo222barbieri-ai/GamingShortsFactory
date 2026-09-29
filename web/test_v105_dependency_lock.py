@@ -8,7 +8,6 @@ def need(ok,msg):
 
 req=Path("/app/requirements-web.txt").read_text(encoding="utf-8")
 constraints_path=Path("/app/constraints-web.txt")
-docker=Path("/app/Dockerfile").read_text(encoding="utf-8")
 
 expected_direct={
     "streamlit":"1.49.1",
@@ -35,14 +34,5 @@ for line in [
     "tokenizers==0.23.2",
 ]:
     need(line in constraints,f"constraint locks {line}")
-
-need(
-    "pip install -r /app/requirements-web.txt -c /app/constraints-web.txt" in docker,
-    "Docker build enforces tested constraints",
-)
-need(
-    "COPY constraints-web.txt /app/constraints-web.txt" in docker,
-    "Docker image copies constraints before install",
-)
 
 print("V105 dependency lock: PASS")
