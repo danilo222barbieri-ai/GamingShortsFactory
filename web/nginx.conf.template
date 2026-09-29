@@ -39,6 +39,25 @@ server {
         add_header Cache-Control "public, max-age=300";
     }
 
+    # Official Gaming Shorts Factory app identity.
+    location = /app-icon.png {
+        proxy_pass http://127.0.0.1:8502/app-icon.png;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+    }
+
+    location = /favicon.ico {
+        proxy_pass http://127.0.0.1:8502/favicon.ico;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+    }
+
+    location = /manifest.webmanifest {
+        proxy_pass http://127.0.0.1:8502/manifest.webmanifest;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+    }
+
     # V84: app media URLs are /media/<session-id>/<subdir>/<file>.
     # Map that URL directly to the matching anonymous session on disk.
     location ~ "^/media/(?<gsf_media_sid>[A-Za-z0-9_-]{1,80})/(?<gsf_media_path>.+)$" {
@@ -194,6 +213,10 @@ server {
         proxy_http_version 1.1;
         proxy_buffering off;
         proxy_request_buffering off;
+        proxy_set_header Accept-Encoding "";
+        sub_filter_once on;
+        sub_filter_types text/html;
+        sub_filter '</head>' '<link rel="icon" type="image/png" href="/app-icon.png"><link rel="apple-touch-icon" href="/app-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#a9dcff"></head>';
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -282,6 +305,10 @@ server {
         proxy_http_version 1.1;
         proxy_buffering off;
         proxy_request_buffering off;
+        proxy_set_header Accept-Encoding "";
+        sub_filter_once on;
+        sub_filter_types text/html;
+        sub_filter '</head>' '<link rel="icon" type="image/png" href="/app-icon.png"><link rel="apple-touch-icon" href="/app-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#a9dcff"></head>';
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
