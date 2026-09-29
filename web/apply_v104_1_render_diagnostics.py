@@ -44,7 +44,7 @@ for i,line in enumerate(lines):
         indent=line[:len(line)-len(line.lstrip())]
         had_newline=line.endswith('\n')
         base=line.rstrip('\n')
-        lines[i]=base+'\n'+indent+'st.markdown(\'<div class="gsf-section-gap-social" style="height:30px"></div>\', unsafe_allow_html=True)+'\n'
+        lines[i]=base+'\n'+indent+'st.markdown(\'<div class="gsf-section-gap-social" style="height:30px"></div>\', unsafe_allow_html=True)'+'\n'
         break
 s=''.join(lines)
 
