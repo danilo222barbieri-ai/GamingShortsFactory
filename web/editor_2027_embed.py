@@ -171,12 +171,6 @@ _TEMPLATE = r'''
 #ng27 .toast{position:absolute;left:50%;bottom:18px;z-index:14;transform:translate(-50%,14px);opacity:0;pointer-events:none;padding:8px 12px;border-radius:11px;border:1px solid rgba(102,240,195,.18);background:rgba(5,13,17,.88);backdrop-filter:blur(14px);color:#baf7e3;font-size:9px;font-weight:900;letter-spacing:.05em;transition:.2s}
 #ng27 .toast.show{opacity:1;transform:translate(-50%,0)}
 #ng27 .footNote{text-align:center;color:#7a8b99;font-size:7px;margin-top:3px;letter-spacing:.04em}
-#ng27 .editorBridge{display:flex;align-items:center;gap:10px;margin:7px auto 9px;width:min(94%,500px);color:#62798b}
-#ng27 .editorBridge:before,#ng27 .editorBridge:after{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,rgba(126,151,169,.45),transparent)}
-#ng27 .editorBridgeCore{flex:0 1 auto;text-align:center;padding:6px 12px;border:1px solid rgba(185,207,221,.72);border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(226,237,244,.70));box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 5px 14px rgba(65,91,109,.08)}
-#ng27 .editorBridgeCore b{display:block;font-size:9px;font-weight:950;letter-spacing:.09em;color:#536d80}
-#ng27 .editorBridgeCore span{display:block;margin-top:2px;font-size:7.5px;line-height:1.25;color:#7b8e9c}
-@media(max-width:820px){#ng27 .editorBridge{width:min(88%,360px);margin:5px auto 8px}.editorBridgeCore{padding:5px 9px}#ng27 .editorBridgeCore b{font-size:8px}#ng27 .editorBridgeCore span{font-size:7px}}
 @media(max-width:820px){
  /* MOBILE COCKPIT — player e controlli diventano un'unica superficie */
  #ng27{width:100%;min-height:100%}
