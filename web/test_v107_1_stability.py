@@ -16,6 +16,8 @@ checks={
     "no session final MP4 byte cache": 'cache=st.session_state.setdefault("gsf_final_master_cache_v44",{})' not in s,
     "manual source not duplicated into publication preview": '_gsf_manual_preview_bytes=video.getvalue()' not in s,
     "pre-render memory telemetry": "GSF_PRE_RENDER_MEMORY" in s,
+    "preview QSV is hardware-gated": 'Path("/dev/dri/renderD128").exists()' in s,
+    "preview x264 is one-thread bounded": '"-threads","1"' in s,
 }
 missing=[name for name,ok in checks.items() if not ok]
 if missing:
