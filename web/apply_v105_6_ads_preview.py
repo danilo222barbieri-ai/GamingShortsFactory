@@ -9,11 +9,9 @@ count=s.count(old)
 if count < 3:
     raise RuntimeError(f'V105.6 expected at least 3 ad slots, found {count}')
 
-new='''<aside class="v67-ad gsf-v1056-ad" aria-label="Spazio pubblicitario">
-  <span class="gsf-v1056-ad-kicker">Pubblicità</span>
-  <span class="gsf-v1056-ad-preview">Anteprima</span>
-  <span class="gsf-v1056-ad-copy">Spazio annuncio responsive</span>
-</aside>'''
+# Keep the replacement on one physical Python source line: these slots live
+# inside existing st.markdown('...') calls in the generated app.
+new='<aside class="v67-ad gsf-v1056-ad" aria-label="Spazio pubblicitario"><span class="gsf-v1056-ad-kicker">Pubblicità</span><span class="gsf-v1056-ad-preview">Anteprima</span><span class="gsf-v1056-ad-copy">Spazio annuncio responsive</span></aside>'
 s=s.replace(old,new)
 
 ads_css=r'''
