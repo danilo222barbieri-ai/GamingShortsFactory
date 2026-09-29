@@ -26,5 +26,7 @@ with tempfile.TemporaryDirectory() as td:
          "benchmark injects silent stereo audio for no-audio source")
     need("-map 0:v:0 -map 1:a:0" in joined,
          "benchmark explicitly maps generated silent audio")
+    need("-shortest" in joined,
+         "benchmark bounds generated silent audio to source duration")
 
 print("V105 benchmark no-audio contract: PASS")
