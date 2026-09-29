@@ -8,3 +8,5 @@
 - Production baseline remains V104.7.
 
 - Render benchmark runner contract: GREEN. Railway benchmark execution: starting from a fresh snapshot so the configured benchmark start command is applied.
+
+- Render benchmark diagnostic: combined 15s+30s run completed all 15s profiles, then 30s fixture FFmpeg exited silently. Hypothesis test: run 30s alone on a fresh container to distinguish codec failure from accumulated container pressure.
