@@ -48,14 +48,21 @@ manifest=json.loads(body.decode("utf-8"))
 if status!=200 or manifest.get("short_name")!="GSF":
     raise SystemExit("V107 runtime smoke FAIL: manifest")
 icons=manifest.get("icons") or []
-if not icons or icons[0].get("sizes")!="180x180":
-    raise SystemExit("V107 runtime smoke FAIL: manifest icon")
+icon_sizes={str(item.get("sizes") or "") for item in icons}
+if not {"192x192","512x512"}.issubset(icon_sizes):
+    raise SystemExit("V107 runtime smoke FAIL: PWA manifest icons")
 
-for path in ("/app-icon.png","/apple-touch-icon.png","/apple-touch-icon-180x180.png"):
+for path,expected in (
+    ("/app-icon.png",(180,180)),
+    ("/apple-touch-icon.png",(180,180)),
+    ("/apple-touch-icon-180x180.png",(180,180)),
+    ("/app-icon-192.png",(192,192)),
+    ("/app-icon-512.png",(512,512)),
+):
     status,headers,body=request(path,attempts=5)
     if status!=200 or body[:8]!=b"\x89PNG\r\n\x1a\n":
         raise SystemExit(f"V107 runtime smoke FAIL: {path}")
-    if len(body)<24 or struct.unpack(">II",body[16:24])!=(180,180):
+    if len(body)<24 or struct.unpack(">II",body[16:24])!=expected:
         raise SystemExit(f"V107 runtime smoke FAIL: {path} dimensions")
 
 for path,needle in (
