@@ -11,6 +11,14 @@ server {
     proxy_read_timeout 86400s;
     proxy_send_timeout 86400s;
 
+    # V105.7: Google AdSense ownership / authorized seller declaration.
+    # The file exists only when GSF_ADSENSE_CLIENT contains a valid ca-pub id.
+    location = /ads.txt {
+        alias /tmp/gsf-ads.txt;
+        default_type text/plain;
+        add_header Cache-Control "public, max-age=300";
+    }
+
     # TikTok URL-prefix ownership verification.
     location = /tiktokAvCxVH6S4w3BElUktwlT3dRIBn1ECcZv.txt {
         alias /app/web/tiktokAvCxVH6S4w3BElUktwlT3dRIBn1ECcZv.txt;
