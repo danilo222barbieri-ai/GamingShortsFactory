@@ -710,6 +710,59 @@ st.markdown("""
 '''
 s = s.rstrip() + "\n\n" + _social_footer.lstrip()
 
+# Creator Hub entry point: always reachable without disturbing the current video/session.
+_creator_hub_entry = r'''
+st.markdown("""
+<style>
+.gsf-account-fab{
+  position:fixed;
+  top:14px;
+  right:18px;
+  z-index:999990;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  height:38px;
+  padding:0 13px;
+  border-radius:14px;
+  border:1px solid #D8E8F3;
+  background:rgba(255,255,255,.90);
+  -webkit-backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px);
+  box-shadow:0 7px 20px rgba(52,91,122,.12);
+  color:#476E8A !important;
+  text-decoration:none !important;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.025em;
+}
+.gsf-account-fab svg{
+  width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+@media(max-width:600px){
+  .gsf-account-fab{
+    top:10px;
+    right:10px;
+    width:38px;
+    padding:0;
+    justify-content:center;
+    border-radius:12px;
+  }
+  .gsf-account-fab span{display:none}
+}
+</style>
+<a class="gsf-account-fab" href="/account" target="_self" aria-label="Apri Creator Hub">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="8" r="4"></circle>
+    <path d="M4.5 20c.9-4 3.4-6 7.5-6s6.6 2 7.5 6"></path>
+  </svg>
+  <span>CREATOR HUB</span>
+</a>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _creator_hub_entry.lstrip()
+
 
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
