@@ -73,9 +73,6 @@ _TEMPLATE = r'''
 #ng27 .glass{height:30px;border-radius:12px;border:1px solid rgba(255,255,255,.26);background:rgba(15,27,39,.54);backdrop-filter:blur(16px);box-shadow:0 4px 12px rgba(7,18,29,.14);color:#f3f8fb}
 #ng27 .hudBtn{width:30px;display:grid;place-items:center}
 #ng27 .hudBtn .ico{width:18px;height:18px}
-#ng27 .stagePlayBtn{position:absolute;left:16px;bottom:16px;z-index:12;width:46px;height:46px;border-radius:15px;border:1px solid rgba(222,236,245,.88);background:rgba(247,252,255,.86);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 8px 22px rgba(12,31,45,.22);color:#5874A7;display:grid;place-items:center;transition:.16s}
-#ng27 .stagePlayBtn:hover{transform:translateY(-1px);background:rgba(255,255,255,.94);box-shadow:0 11px 26px rgba(12,31,45,.27)}
-#ng27 .stagePlayBtn .ico{width:23px;height:23px}
 #ng27 .cluster{display:flex;gap:7px;align-items:center}
 #ng27 .formatTag{padding:0 8px;display:flex;align-items:center;gap:7px;font-size:9px;font-weight:900;letter-spacing:.09em}
 #ng27 .formatTag,#ng27 .visionBadge{display:none!important}
@@ -229,15 +226,6 @@ _TEMPLATE = r'''
  }
 
  /* Timeline sempre dentro il bordo inferiore del video. */
- #ng27 .stagePlayBtn{
-   left:10px;
-   bottom:78px;
-   width:42px;
-   height:42px;
-   border-radius:13px;
- }
- #ng27 .stagePlayBtn .ico{width:20px;height:20px}
-
  #ng27 .timeline,
  #ng27.expanded .timeline{
    position:absolute;
@@ -334,7 +322,6 @@ _TEMPLATE = r'''
     <div class="stageWrap">
       <div class="stage r916" id="stage">
         <video id="video" playsinline muted loop autoplay src="data:video/mp4;base64,__VIDEO__"></video>
-        <button class="stagePlayBtn" id="stagePlayBtn" type="button" aria-label="Play/Pausa" title="Play/Pausa"><svg class="ico"><use id="stagePlayUse" href="#i-pause"/></svg></button>
         <div class="shade"></div><div class="scanlines"></div>
         <div class="corn c1"></div><div class="corn c2"></div><div class="corn c3"></div><div class="corn c4"></div>
         <div class="focus" id="focus"><div class="focusRing"></div></div>
@@ -373,7 +360,8 @@ _TEMPLATE = r'''
     </div>
 
     <div class="rail">
-      <button class="railBtn" id="playBtn"><svg class="ico"><use id="playUse" href="#i-play"/></svg><span id="playLabel">PLAY</span></button>
+      <button class="railBtn" id="playBtn"><svg class="ico"><use href="#i-play"/></svg><span>PLAY</span></button>
+      <button class="railBtn" id="pauseBtn"><svg class="ico"><use href="#i-pause"/></svg><span>PAUSA</span></button>
       <button class="railBtn" id="undoBtn"><svg class="ico"><use href="#i-undo"/></svg><span>UNDO</span></button>
       <button class="railBtn" id="redoBtn"><svg class="ico"><use href="#i-redo"/></svg><span>REDO</span></button>
       <button class="railBtn" data-panel="vision"><svg class="ico ai"><use href="#i-ai"/></svg><span>GAME AI</span></button>
@@ -394,10 +382,6 @@ _TEMPLATE = r'''
  const toast=root.querySelector('#toast');
  const caption=root.querySelector('#captionPreview');
  const focus=root.querySelector('#focus');
- const playUse=root.querySelector('#playUse');
- const playLabel=root.querySelector('#playLabel');
- const stagePlayBtn=root.querySelector('#stagePlayBtn');
- const stagePlayUse=root.querySelector('#stagePlayUse');
  const formatLabel=root.querySelector('#formatLabel');
  const visionBadge=root.querySelector('#visionBadge');
  const sysText=root.querySelector('#sysText');
@@ -672,24 +656,11 @@ _TEMPLATE = r'''
    flash(expanded?'EDITOR ESPANSO':'EDITOR COMPATTO');
  };
 
- const togglePlayback=()=>{
-   if(video.paused){
-     if(video.currentTime<state.inPoint||video.currentTime>=state.outPoint)video.currentTime=state.inPoint;
-     video.play().catch(()=>{});
-   }else video.pause();
+ root.querySelector('#playBtn').onclick=()=>{
+   if(video.currentTime<state.inPoint||video.currentTime>=state.outPoint)video.currentTime=state.inPoint;
+   video.play().catch(()=>{});
  };
- root.querySelector('#playBtn').onclick=togglePlayback;
- stagePlayBtn.onclick=togglePlayback;
- video.addEventListener('play',()=>{
-   playUse.setAttribute('href','#i-pause');
-   stagePlayUse.setAttribute('href','#i-pause');
-   playLabel.textContent='PAUSE';
- });
- video.addEventListener('pause',()=>{
-   playUse.setAttribute('href','#i-play');
-   stagePlayUse.setAttribute('href','#i-play');
-   playLabel.textContent='PLAY';
- });
+ root.querySelector('#pauseBtn').onclick=()=>video.pause();
  video.addEventListener('loadedmetadata',()=>{
    duration=Math.max(.5,Math.min(60,video.duration||15));
    state.outPoint=duration;
