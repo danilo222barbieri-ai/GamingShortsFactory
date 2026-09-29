@@ -1001,7 +1001,7 @@ class Handler(BaseHTTPRequestHandler):
                 "part_size":BUCKET_PART_BYTES,
                 "concurrency":_upload_concurrency_for_user_agent(self.headers.get("User-Agent","")),
                 "materialize_part_size":8*1024*1024,
-                "materialize_concurrency":12,
+                "materialize_concurrency":_materialize_concurrency(),
                 "fallback_chunk_size":16*1024*1024,
                 "fallback_concurrency":6,
             })
