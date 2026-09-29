@@ -24,7 +24,7 @@ from pathlib import Path
 path=Path("/tmp/gsf-ads.txt")
 path.unlink(missing_ok=True)
 client=str(os.environ.get("GSF_ADSENSE_CLIENT","") or "").strip()
-m=re.fullmatch(r"ca-(pub-\\d{10,20})",client)
+m=re.fullmatch(r"ca-(pub-\d{10,20})",client)
 if m:
     path.write_text(
         f"google.com, {m.group(1)}, DIRECT, f08c47fec0942fa0\\n",
