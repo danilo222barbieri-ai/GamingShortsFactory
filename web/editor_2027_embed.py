@@ -116,6 +116,37 @@ _TEMPLATE = r'''
 #ng27 .applyBtn{height:29px;border-radius:9px;border:1px solid rgba(89,207,238,.20);background:rgba(89,207,238,.10);color:#cff4fc;font-size:8px;font-weight:900;letter-spacing:.05em;padding:0 8px}
 #ng27 .textRow{display:flex;gap:7px;margin-top:8px}
 #ng27 .textRow input{flex:1;min-width:0;height:32px;border-radius:10px;border:1px solid rgba(255,255,255,.10);background:rgba(7,16,25,.42);color:#f0f6fa;padding:0 9px;font-size:9px}
+#ng27 .drawer{width:auto;max-width:calc(100% - 24px);overflow-x:hidden;background:linear-gradient(145deg,rgba(31,44,57,.96),rgba(17,28,39,.96));border:1px solid rgba(193,216,230,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 14px 32px rgba(6,17,25,.28)}
+#ng27 .drawerHead strong{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-weight:900;letter-spacing:.025em}
+#ng27 .drawerHead small{opacity:.68;letter-spacing:.13em}
+#ng27 .strip{flex-wrap:wrap;overflow-x:visible;align-items:center}
+#ng27 .pill{white-space:nowrap;max-width:100%}
+#ng27 .range{grid-template-columns:minmax(68px,88px) minmax(0,1fr) 38px}
+#ng27 .range input[type=range]{min-width:0}
+#ng27 .colorGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+#ng27 .colorBox{min-width:0}
+#ng27 .colorRow{flex-wrap:wrap}
+#ng27 .colorRow .applyBtn{flex:1 1 auto;min-width:58px}
+@media(min-width:821px){
+ #ng27 .drawer:has(#intensityR),#ng27 .drawer:has(#captionTextInput){left:6px;right:6px}
+}
+@media(max-width:820px){
+ #ng27 .drawer{left:55px;right:55px;width:auto;max-width:none;max-height:min(58%,430px);overflow-y:auto;overflow-x:hidden}
+ #ng27 .strip{gap:6px}
+ #ng27 .pill{padding:7px 8px;font-size:8.5px}
+ #ng27 .range{grid-template-columns:minmax(60px,76px) minmax(0,1fr) 32px;gap:5px}
+ #ng27 .colorGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ #ng27 .colorBox:last-child:nth-child(odd){grid-column:1/-1}
+ #ng27 .textRow{flex-wrap:wrap}
+ #ng27 .textRow input{flex:1 1 100%}
+ #ng27 .textRow .applyBtn{margin-left:auto}
+}
+@media(max-width:390px){
+ #ng27 .drawer{left:49px;right:49px;max-height:60%}
+ #ng27 .colorGrid{grid-template-columns:1fr}
+ #ng27 .colorBox:last-child:nth-child(odd){grid-column:auto}
+ #ng27 .range{grid-template-columns:58px minmax(0,1fr) 28px}
+}
 #ng27 .timeline{width:min(96%,500px);margin:3px auto 0;padding:5px 7px;border-radius:16px;border:0;background:transparent;box-shadow:none}
 #ng27 .tlMeta{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:7.5px;font-weight:900;letter-spacing:.09em;color:#668095}
 #ng27 .track{position:relative;height:26px;border-radius:10px;overflow:hidden;background:#111d28}
