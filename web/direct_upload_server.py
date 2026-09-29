@@ -221,8 +221,14 @@ def _app_manifest_bytes():
         "theme_color":"#a9dcff",
         "icons":[
             {
-                "src":"/app-icon.png",
-                "sizes":"180x180",
+                "src":"/app-icon-192.png",
+                "sizes":"192x192",
+                "type":"image/png",
+                "purpose":"any"
+            },
+            {
+                "src":"/app-icon-512.png",
+                "sizes":"512x512",
                 "type":"image/png",
                 "purpose":"any"
             }
