@@ -46,7 +46,9 @@ RUN mkdir -p /app/demo_assets && \
       -c:v libx264 -preset ultrafast -crf 27 -pix_fmt yuv420p -c:a aac -b:a 96k \
       -movflags +faststart /app/demo_assets/demo_final.mp4
 COPY .streamlit /app/.streamlit
-RUN PORT=8080 envsubst '${PORT}' < /app/web/nginx.conf.template > /tmp/gsf-nginx-test.conf && cp /tmp/gsf-nginx-test.conf /etc/nginx/conf.d/default.conf && nginx -t
+RUN python -m py_compile /app/web/direct_upload_server.py && \
+    PORT=8080 envsubst '${PORT}' < /app/web/nginx.conf.template > /tmp/gsf-nginx-test.conf && \
+    cp /tmp/gsf-nginx-test.conf /etc/nginx/conf.d/default.conf && nginx -t
 RUN chmod +x /app/web/start_web.sh && mkdir -p /tmp/gsf-runtime
 EXPOSE 8080
 CMD ["/app/web/start_web.sh"]
