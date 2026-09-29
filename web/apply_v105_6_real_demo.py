@@ -17,7 +17,7 @@ inject=r'''
 # ==========================================================
 _GSF_REAL_DEMO = str(os.environ.get("GSF_REAL_DEMO","0") or "0").strip().lower() in {"1","true","yes","on"}
 
-class _GSFRealDemoUpload(io.BytesIO):
+class _GSFRealDemoUpload(_gsf_demo_io.BytesIO):
     def __init__(self, data, name):
         super().__init__(data)
         self.name=str(name)
