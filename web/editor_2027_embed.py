@@ -335,8 +335,6 @@ _TEMPLATE = r'''
 }
 </style>
 
-<div class="editorBridge"><div class="editorBridgeCore"><b>🎮 PERSONALIZZA IL TUO GAMEPLAY</b><span>Regola scena, look, sottotitoli e audio prima di continuare</span></div></div>
-
 <div class="shell">
   <div class="topline">
     <div class="brand">
