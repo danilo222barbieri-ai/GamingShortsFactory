@@ -567,6 +567,17 @@ s=s.replace(
     1,
 )
 
+_engine_note_old='''    st.caption(_engine_help.get(modalita, ""))
+'''
+_engine_note_new='''    st.markdown(
+        '<div class="gsf-major-note">'+html.escape(str(_engine_help.get(modalita,"") or ""))+'</div>',
+        unsafe_allow_html=True,
+    )
+'''
+if _engine_note_old not in s:
+    raise RuntimeError("Demo engine help note anchor not found")
+s=s.replace(_engine_note_old,_engine_note_new,1)
+
 _create_ai_old='''        if st.button("CREA CON AI", use_container_width=True):
 '''
 _create_ai_new='''        with st.container(key="gsf-major-create-ai"):
@@ -685,6 +696,9 @@ st.markdown("""
 <section class="gsf-demo-publish" aria-label="Pubblicazione social">
   <div class="gsf-demo-publish-title">PUBBLICA IL TUO SHORT</div>
   <div class="gsf-demo-publish-grid">
+    <a class="gsf-demo-publish-btn" href="/account/facebook/start" target="_self">
+      <span class="gsf-demo-publish-dot"></span>Facebook
+    </a>
     <a class="gsf-demo-publish-btn" href="/social-connect/youtube/start" target="_self">
       <span class="gsf-demo-publish-dot"></span>YouTube
     </a>
@@ -693,9 +707,6 @@ st.markdown("""
     </a>
     <a class="gsf-demo-publish-btn" href="/social-connect/instagram/start" target="_self">
       <span class="gsf-demo-publish-dot"></span>Instagram
-    </a>
-    <a class="gsf-demo-publish-btn" href="/account/facebook/start" target="_self">
-      <span class="gsf-demo-publish-dot"></span>Facebook
     </a>
   </div>
   <div class="gsf-demo-publish-hint">Nella demo restano visibili anche senza account collegati.</div>
@@ -818,6 +829,7 @@ st.markdown("""
 <div class="gsf-social-footer">
   <div class="gsf-social-footer-title">Seguici sui nostri canali</div>
   <div class="gsf-social-row">
+    <span class="gsf-social-icon facebook" aria-label="Facebook" title="Facebook">f</span>
     <span class="gsf-social-icon instagram" aria-label="Instagram" title="Instagram">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect>
@@ -837,7 +849,6 @@ st.markdown("""
         <path d="M14.2 4c.5 2.5 2.1 4.1 4.7 4.5"></path>
       </svg>
     </span>
-    <span class="gsf-social-icon facebook" aria-label="Facebook" title="Facebook">f</span>
   </div>
 </div>
 """, unsafe_allow_html=True)
