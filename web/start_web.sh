@@ -20,5 +20,5 @@ rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 envsubst '${PORT}' < /app/web/nginx.conf.template > /etc/nginx/conf.d/default.conf
 python /app/web/direct_upload_server.py &
 nginx
-exec python -m streamlit run /app/GamingShortsFactory_V105_PERF_TELEMETRY.py \
+exec python -m streamlit run /app/GamingShortsFactory_V105_1_NO_AUDIO_MASTER.py \
   --server.address=127.0.0.1 --server.port=8501 --server.maxUploadSize=4096 --server.maxMessageSize=4096 --server.headless=true
