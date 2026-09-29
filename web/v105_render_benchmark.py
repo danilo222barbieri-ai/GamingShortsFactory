@@ -31,6 +31,23 @@ PROFILES={
 }
 
 
+def describe_process_failure(returncode,stderr=b""):
+    import signal
+    rc=int(returncode)
+    tail=(stderr or b"")[-800:].decode("utf-8","replace").strip()
+    if rc<0:
+        signum=-rc
+        try:
+            signame=signal.Signals(signum).name
+        except Exception:
+            signame=f"SIGNAL_{signum}"
+        base=f"returncode={rc} ({signame})"
+    else:
+        base=f"returncode={rc}"
+    if tail:
+        base+=" stderr="+tail
+    return base
+
 def synthetic_fixture_command(output,duration=15):
     return [
         FFMPEG,"-hide_banner","-loglevel","error","-y",
@@ -214,7 +231,10 @@ def run_benchmark(durations=(15,30),workdir=None):
                 stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=max(180,int(duration)*12)
             )
             if fr.returncode!=0:
-                raise RuntimeError("fixture generation failed: "+(fr.stderr or b"")[-800:].decode("utf-8","replace"))
+                raise RuntimeError(
+                    "fixture generation failed: "
+                    +describe_process_failure(fr.returncode,fr.stderr)
+                )
 
             by_name={}
             for profile in PROFILES:
