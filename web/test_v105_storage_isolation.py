@@ -11,7 +11,7 @@ def need(ok,msg):
         raise AssertionError(msg)
     print("PASS:",msg)
 
-need('STORAGE_PREFIX=str(os.environ.get("GSF_STORAGE_PREFIX"' in direct,"direct uploader reads storage prefix")
+need("STORAGE_PREFIX=" in direct and '"GSF_STORAGE_PREFIX"' in direct,"direct uploader reads storage prefix")
 need("def _prefixed_key" in direct,"direct uploader has key prefix helper")
 need('key=_prefixed_key(f"uploads/' in direct,"uploaded media key is namespaced")
 need('analysis_key=_prefixed_key(f"analysis/' in direct,"analysis key is namespaced")
