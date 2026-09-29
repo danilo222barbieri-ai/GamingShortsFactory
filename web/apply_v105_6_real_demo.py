@@ -589,7 +589,6 @@ _create_short_old='''            _v1054_create_final_clicked=st.button(
 _create_short_new='''            with st.container(key="gsf-major-create-short"):
                 _v1054_create_final_clicked=st.button(
                     "CREA SHORT FINALE",
-                    type="primary",
                     use_container_width=True,
                     key="create_final_short_v54"
                 )
@@ -616,6 +615,89 @@ s=s.replace(
     "Stable identity shared by AI, single render and batch render.",
     "",
 )
+
+
+# DEMO: full publication area is always visible, even with no connected accounts.
+_demo_social_publication = r'''
+st.markdown("""
+<style id="gsf-demo-social-publication-style">
+.gsf-demo-publish{
+  margin:26px auto 20px;
+  padding:18px;
+  border:1px solid #D9E8F3;
+  border-radius:22px;
+  background:linear-gradient(180deg,rgba(248,252,255,.98),rgba(255,255,255,.98));
+  box-shadow:0 10px 28px rgba(49,87,118,.08);
+}
+.gsf-demo-publish-title{
+  text-align:center;
+  color:#17324A;
+  font-size:15px;
+  font-weight:900;
+  letter-spacing:.025em;
+  margin-bottom:13px;
+}
+.gsf-demo-publish-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+.gsf-demo-publish-btn{
+  min-height:50px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:0 12px;
+  border:1px solid #D5E5F0;
+  border-radius:15px;
+  background:#FFFFFF;
+  box-shadow:0 7px 18px rgba(56,92,122,.08);
+  color:#315E7A !important;
+  text-decoration:none !important;
+  font-size:13px;
+  font-weight:900;
+}
+.gsf-demo-publish-btn:hover{
+  transform:translateY(-1px);
+  border-color:#BFD9EA;
+  box-shadow:0 10px 22px rgba(56,92,122,.12);
+}
+.gsf-demo-publish-dot{
+  width:9px;height:9px;border-radius:50%;background:#AFC7D8;flex:0 0 9px;
+}
+.gsf-demo-publish-hint{
+  margin-top:11px;
+  text-align:center;
+  color:#7890A2;
+  font-size:11px;
+  font-weight:700;
+}
+@media(max-width:600px){
+  .gsf-demo-publish{padding:14px;margin-top:22px}
+  .gsf-demo-publish-grid{gap:7px}
+  .gsf-demo-publish-btn{min-height:46px;padding:0 8px;font-size:11px;border-radius:13px}
+  .gsf-demo-publish-dot{width:8px;height:8px;flex-basis:8px}
+}
+</style>
+<section class="gsf-demo-publish" aria-label="Pubblicazione social">
+  <div class="gsf-demo-publish-title">PUBBLICA IL TUO SHORT</div>
+  <div class="gsf-demo-publish-grid">
+    <a class="gsf-demo-publish-btn" href="/social-connect/youtube/start" target="_self">
+      <span class="gsf-demo-publish-dot"></span>YouTube
+    </a>
+    <a class="gsf-demo-publish-btn" href="/social-connect/tiktok/start" target="_self">
+      <span class="gsf-demo-publish-dot"></span>TikTok
+    </a>
+    <a class="gsf-demo-publish-btn" href="/social-connect/instagram/start" target="_self">
+      <span class="gsf-demo-publish-dot"></span>Instagram
+    </a>
+  </div>
+  <div class="gsf-demo-publish-hint">Nella demo restano visibili anche senza account collegati.</div>
+</section>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _demo_social_publication.lstrip()
 
 
 # DEMO footer: social channels, visually ready while URLs are pending.
