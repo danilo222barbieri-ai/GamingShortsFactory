@@ -1222,12 +1222,19 @@ st.markdown("""
 s = s.rstrip() + "\n\n" + _major_cta_final_override.lstrip()
 
 
-# Temporary build diagnostic for the legacy "Scegli scena" routing.
-_gsf_scene_probe = s.lower().find("scegli scena")
-if _gsf_scene_probe >= 0:
-    print("GSF_SCENE_PROBE_BEGIN")
-    print(s[max(0,_gsf_scene_probe-1800):_gsf_scene_probe+2600])
-    print("GSF_SCENE_PROBE_END")
+# Temporary build diagnostic for the legacy Manual/Scegli scena routing.
+_gsf_manual_needle = "✋ Manuale"
+_gsf_manual_pos = 0
+_gsf_manual_idx = 0
+while True:
+    _gsf_manual_pos = s.find(_gsf_manual_needle, _gsf_manual_pos)
+    if _gsf_manual_pos < 0:
+        break
+    _gsf_manual_idx += 1
+    print(f"GSF_MANUAL_ROUTE_BEGIN_{_gsf_manual_idx}")
+    print(s[max(0,_gsf_manual_pos-1200):_gsf_manual_pos+2200])
+    print(f"GSF_MANUAL_ROUTE_END_{_gsf_manual_idx}")
+    _gsf_manual_pos += len(_gsf_manual_needle)
 
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
