@@ -78,7 +78,7 @@ if _GSF_REAL_DEMO:
                 "start":8.0,
                 "duration":15.0,
                 "source_path":str(_gsf_demo_source),
-                "manual_hook":"",
+                "manual_hook":_GSF_HOOK_OFF_V102,
             }
             st.session_state["publication_ready"]=True
             st.session_state["publication_source"]="AI"
