@@ -618,39 +618,40 @@ _social_footer = r'''
 st.markdown("""
 <style>
 .gsf-social-footer{
-  margin:18px auto 6px;
-  padding:18px 12px 10px;
+  margin:16px auto 4px;
+  padding:14px 10px 8px;
   text-align:center;
   color:#60788d;
 }
 .gsf-social-footer-title{
-  margin-bottom:11px;
-  font-size:.83rem;
+  margin-bottom:9px;
+  font-size:.80rem;
   font-weight:850;
-  letter-spacing:.035em;
+  letter-spacing:.03em;
   color:#526f86;
 }
 .gsf-social-row{
   display:flex;
   justify-content:center;
   align-items:center;
-  gap:12px;
-  flex-wrap:wrap;
+  gap:8px;
+  flex-wrap:nowrap;
 }
 .gsf-social-icon{
-  width:44px;
-  height:44px;
-  border-radius:14px;
+  width:38px;
+  height:38px;
+  flex:0 0 38px;
+  border-radius:12px;
   display:grid;
   place-items:center;
   border:1px solid #D8E8F3;
   background:linear-gradient(145deg,#F8FCFF,#EEF6FC);
-  box-shadow:0 7px 18px rgba(74,110,142,.09);
+  box-shadow:0 5px 13px rgba(74,110,142,.08);
   color:#547790;
 }
 .gsf-social-icon svg{
-  width:21px;
-  height:21px;
+  width:18px;
+  height:18px;
   display:block;
   fill:none;
   stroke:currentColor;
@@ -658,14 +659,26 @@ st.markdown("""
   stroke-linecap:round;
   stroke-linejoin:round;
 }
-.gsf-social-icon.youtube svg .yt-fill,
-.gsf-social-icon.tiktok svg .tt-fill{
+.gsf-social-icon.youtube svg .yt-fill{
   fill:currentColor;
   stroke:none;
 }
+.gsf-social-icon.facebook{
+  font-size:19px;
+  font-weight:900;
+  font-family:Arial,sans-serif;
+  line-height:1;
+}
 @media(max-width:600px){
-  .gsf-social-footer{margin-top:14px;padding-top:14px}
-  .gsf-social-icon{width:42px;height:42px;border-radius:13px}
+  .gsf-social-footer{margin-top:12px;padding-top:12px}
+  .gsf-social-row{gap:7px}
+  .gsf-social-icon{
+    width:36px;
+    height:36px;
+    flex-basis:36px;
+    border-radius:11px;
+  }
+  .gsf-social-icon svg{width:17px;height:17px}
 }
 </style>
 <div class="gsf-social-footer">
@@ -690,11 +703,13 @@ st.markdown("""
         <path d="M14.2 4c.5 2.5 2.1 4.1 4.7 4.5"></path>
       </svg>
     </span>
+    <span class="gsf-social-icon facebook" aria-label="Facebook" title="Facebook">f</span>
   </div>
 </div>
 """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _social_footer.lstrip()
+
 
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
