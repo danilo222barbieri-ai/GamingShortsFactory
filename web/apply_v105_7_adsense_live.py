@@ -71,8 +71,9 @@ def _gsf_v1057_ad_markup(index):
         return base.replace('">','" style="display:none!important">',1)+'</aside>'
 
     return (
-        base[:-1]
-        +f' gsf-v1057-live" data-ad-client="{html.escape(_GSF_V1057_ADSENSE_CLIENT,quote=True)}" '
+        f'<aside class="v67-ad gsf-v1056-ad gsf-v1057-ad gsf-v1057-slot-{idx} gsf-v1057-live" '
+        +'aria-label="Pubblicità" '
+        +f'data-ad-client="{html.escape(_GSF_V1057_ADSENSE_CLIENT,quote=True)}" '
         +f'data-ad-slot="{html.escape(slot,quote=True)}" data-gsf-placement="{idx}">'
         +'<span class="gsf-v1056-ad-kicker">Pubblicità</span>'
         +'<div class="gsf-v1057-ad-mount" aria-label="Annuncio Google"></div>'
