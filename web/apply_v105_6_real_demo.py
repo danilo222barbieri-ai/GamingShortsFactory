@@ -250,13 +250,26 @@ _choice_css=r'''
 }
 </style>
 '''
+# Center the moment-selection heading/subtitle in the demo.
+s=s.replace("Scegli il tuo momento","")
+s=s.replace("Riproduci le tre anteprime direttamente qui e scegli il momento migliore.","")
+_moment_heading = '''                st.markdown(
+                    '<div class="gsf-moment-head">'
+                    '<div class="gsf-moment-title">Scegli il tuo momento</div>'
+                    '<div class="gsf-moment-subtitle">Riproduci le tre anteprime direttamente qui e scegli il momento migliore.</div>'
+                    '</div>',
+                    unsafe_allow_html=True,
+                )
+'''
 _choice_anchor='''                with st.container(key="v71-short-grid"):
 '''
 if _choice_anchor not in s:
     raise RuntimeError('Demo three-short grid anchor not found')
 s=s.replace(
     _choice_anchor,
-    '                st.markdown(' + repr(_choice_css) + ', unsafe_allow_html=True)\n' + _choice_anchor,
+    '                st.markdown(' + repr(_choice_css) + ', unsafe_allow_html=True)\n'
+    + _moment_heading
+    + _choice_anchor,
     1,
 )
 
@@ -714,11 +727,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 with st.container(key="gsf-demo-social-form"):
-    st.markdown(
-        '<div class="v1055-social-head"><strong>Dettagli pubblicazione</strong>'
-        '<span>Anteprima completa della fase social</span></div>',
-        unsafe_allow_html=True,
-    )
     st.text_input(
         "Gioco",
         key="gsf_demo_social_game",
@@ -957,7 +965,107 @@ code,pre,kbd,samp{
 s = s.rstrip() + "\n\n" + _demo_typography.lstrip()
 
 
-# Final visual override: all three milestone CTAs must be exactly the same.
+# DEMO global metallic visual language: same cold blue-grey treatment used in the lower site.
+_demo_metallic_look = r'''
+st.markdown("""
+<style id="gsf-demo-metallic-look">
+:root{
+  --gsf-metal-0:#FBFDFF;
+  --gsf-metal-1:#F6FAFD;
+  --gsf-metal-2:#EEF5FA;
+  --gsf-metal-3:#E7F0F6;
+  --gsf-metal-border:#D3E3ED;
+  --gsf-metal-border-strong:#C3D8E5;
+  --gsf-metal-text:#536F84;
+  --gsf-metal-title:#2F526A;
+  --gsf-metal-shadow:0 8px 22px rgba(65,96,121,.10);
+  --gsf-metal-shadow-hover:0 11px 27px rgba(65,96,121,.15);
+}
+[data-testid="stAppViewContainer"]{
+  background:
+    radial-gradient(circle at 50% 0%,rgba(239,247,252,.72),transparent 38%),
+    linear-gradient(180deg,#FFFFFF 0%,#FAFCFE 45%,#F5F9FC 100%) !important;
+}
+.gsf-major-note,
+.gsf-demo-publish,
+.gsf-social-icon,
+.gsf-account-fab,
+.v71-selected-pill,
+[class*="st-key-v71_short_card_"]{
+  border-color:var(--gsf-metal-border) !important;
+  background:linear-gradient(145deg,var(--gsf-metal-0) 0%,var(--gsf-metal-2) 58%,#F3F1FA 100%) !important;
+  box-shadow:var(--gsf-metal-shadow) !important;
+  color:var(--gsf-metal-text) !important;
+}
+.gsf-major-note:before{
+  background:var(--gsf-metal-1) !important;
+  border-color:var(--gsf-metal-border) !important;
+}
+.gsf-demo-publish-btn,
+[data-testid="stButton"] button,
+[data-testid="stDownloadButton"] button{
+  border:1px solid var(--gsf-metal-border) !important;
+  background:linear-gradient(145deg,#FFFFFF 0%,var(--gsf-metal-2) 100%) !important;
+  color:var(--gsf-metal-title) !important;
+  box-shadow:0 6px 16px rgba(65,96,121,.09) !important;
+}
+.gsf-demo-publish-btn:hover,
+[data-testid="stButton"] button:hover,
+[data-testid="stDownloadButton"] button:hover{
+  border-color:var(--gsf-metal-border-strong) !important;
+  box-shadow:var(--gsf-metal-shadow-hover) !important;
+}
+[data-testid="stTextInput"] input,
+[data-testid="stTextArea"] textarea,
+[data-testid="stNumberInput"] input,
+[data-testid="stSelectbox"] > div > div,
+[data-baseweb="select"] > div{
+  border-color:var(--gsf-metal-border) !important;
+  background:linear-gradient(180deg,#FFFFFF 0%,#F7FAFC 100%) !important;
+  color:var(--gsf-metal-title) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.88),0 4px 13px rgba(65,96,121,.055) !important;
+}
+[data-testid="stExpander"],
+[data-testid="stMetric"],
+[data-testid="stVerticalBlockBorderWrapper"]{
+  border-color:var(--gsf-metal-border) !important;
+}
+.gsf-icon-title,
+.gsf-demo-publish-title,
+.gsf-social-footer-title,
+.gsf-moment-title{
+  color:var(--gsf-metal-title) !important;
+}
+.gsf-moment-head{
+  width:100%;
+  margin:8px auto 15px;
+  text-align:center;
+}
+.gsf-moment-title{
+  font-size:17px;
+  font-weight:900;
+  letter-spacing:.018em;
+  line-height:1.2;
+}
+.gsf-moment-subtitle{
+  max-width:680px;
+  margin:5px auto 0;
+  color:#718A9D;
+  font-size:12px;
+  font-weight:700;
+  line-height:1.4;
+}
+@media(max-width:600px){
+  .gsf-moment-title{font-size:15px}
+  .gsf-moment-subtitle{font-size:11px;padding:0 8px}
+}
+</style>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _demo_metallic_look.lstrip()
+
+
+# Final visual override: the four milestone CTAs must be exactly the same.
 _major_cta_final_override = r'''
 st.markdown("""
 <style id="gsf-major-actions-final-override">
@@ -968,7 +1076,10 @@ st.markdown("""
 [class*="st-key-gsf-major-create-short"] button,
 [class*="st-key-edit_ai_"] button,
 .st-key-create_final_short_v54 button,
-[class*="st-key-create_final_short_v54"] button{
+[class*="st-key-create_final_short_v54"] button,
+.st-key-gsf_demo_social_publish_preview button,
+[class*="st-key-gsf_demo_social_publish_preview"] button,
+[class*="st-key-social_publish_confirm_"] button{
     width:100% !important;
     height:56px !important;
     min-height:56px !important;
@@ -991,7 +1102,10 @@ st.markdown("""
 [class*="st-key-gsf-major-create-short"] button:hover,
 [class*="st-key-edit_ai_"] button:hover,
 .st-key-create_final_short_v54 button:hover,
-[class*="st-key-create_final_short_v54"] button:hover{
+[class*="st-key-create_final_short_v54"] button:hover,
+.st-key-gsf_demo_social_publish_preview button:hover,
+[class*="st-key-gsf_demo_social_publish_preview"] button:hover,
+[class*="st-key-social_publish_confirm_"] button:hover{
     transform:translateY(-2px) !important;
     filter:brightness(1.035) !important;
     box-shadow:0 15px 34px rgba(104,84,205,.36) !important;
@@ -1004,7 +1118,10 @@ st.markdown("""
     [class*="st-key-gsf-major-create-short"] button,
     [class*="st-key-edit_ai_"] button,
     .st-key-create_final_short_v54 button,
-    [class*="st-key-create_final_short_v54"] button{
+    [class*="st-key-create_final_short_v54"] button,
+    .st-key-gsf_demo_social_publish_preview button,
+    [class*="st-key-gsf_demo_social_publish_preview"] button,
+    [class*="st-key-social_publish_confirm_"] button{
         height:52px !important;
         min-height:52px !important;
         max-height:52px !important;
