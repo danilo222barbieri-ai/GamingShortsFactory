@@ -1323,6 +1323,8 @@ _gsf_first_body_line = _gsf_manual_lines[_gsf_body_start]
 _gsf_indent = _gsf_first_body_line[:len(_gsf_first_body_line)-len(_gsf_first_body_line.lstrip())]
 
 _gsf_new_manual_body = [
+    _gsf_indent + 'with st.container(key="v1055_ad_manual_before_editor"):\n',
+    _gsf_indent + '    st.markdown(_gsf_v1057_ad_markup(2),unsafe_allow_html=True)\n',
     _gsf_indent + 'with st.container(key="gsf-major-personalize"):\n',
     _gsf_indent + '    st.button("PERSONALIZZA IL TUO GAMEPLAY",use_container_width=True,key="gsf_personalize_visual")\n',
     _gsf_indent + 'try:\n',
@@ -1363,6 +1365,8 @@ _gsf_new_manual_body = [
     _gsf_indent + '        st.warning("Video non disponibile nel Game Editor.")\n',
     _gsf_indent + 'except Exception as _gsf_manual_editor_exc:\n',
     _gsf_indent + '    st.error("Game Editor non disponibile: "+str(_gsf_manual_editor_exc))\n',
+    _gsf_indent + 'with st.container(key="v1055_ad_manual_after_editor"):\n',
+    _gsf_indent + '    st.markdown(_gsf_v1057_ad_markup(3),unsafe_allow_html=True)\n',
 ]
 
 _gsf_manual_lines[_gsf_body_start:_gsf_body_end] = _gsf_new_manual_body
