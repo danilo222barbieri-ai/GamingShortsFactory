@@ -8,7 +8,7 @@ from editor_2027_embed import editor_2027_clip_bounds, editor_2027_render_kwargs
 
 frontend=Path("/app/web/editor_2027_component/index.html").read_text(encoding="utf-8")
 wrapper=Path("/app/web/editor_2027_embed.py").read_text(encoding="utf-8")
-app_path=Path("/app/GamingShortsFactory_V107_PRODUCTION_UI.py")
+app_path=Path(sys.argv[1] if len(sys.argv)>1 else "/app/GamingShortsFactory_V107_PRODUCTION_UI.py")
 app=app_path.read_text(encoding="utf-8")
 
 for marker in (
