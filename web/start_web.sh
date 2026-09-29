@@ -17,6 +17,21 @@ export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
 export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
 mkdir -p "$GSF_RUNTIME_ROOT"
 
+# V105.7: publish ads.txt only when a real Google publisher id is configured.
+python - <<'PY'
+import os,re
+from pathlib import Path
+path=Path("/tmp/gsf-ads.txt")
+path.unlink(missing_ok=True)
+client=str(os.environ.get("GSF_ADSENSE_CLIENT","") or "").strip()
+m=re.fullmatch(r"ca-(pub-\\d{10,20})",client)
+if m:
+    path.write_text(
+        f"google.com, {m.group(1)}, DIRECT, f08c47fec0942fa0\\n",
+        encoding="utf-8",
+    )
+PY
+
 rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 envsubst '${PORT}' < /app/web/nginx.conf.template > /etc/nginx/conf.d/default.conf
 python /app/web/direct_upload_server.py &
