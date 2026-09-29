@@ -699,6 +699,35 @@ st.markdown("""
   <div class="gsf-demo-publish-hint">Nella demo restano visibili anche senza account collegati.</div>
 </section>
 """, unsafe_allow_html=True)
+
+with st.container(key="gsf-demo-social-form"):
+    st.markdown(
+        '<div class="v1055-social-head"><strong>Dettagli pubblicazione</strong>'
+        '<span>Anteprima completa della fase social</span></div>',
+        unsafe_allow_html=True,
+    )
+    st.text_input(
+        "Titolo",
+        key="gsf_demo_social_title",
+        placeholder="Es. La giocata migliore della partita",
+    )
+    st.text_area(
+        "Descrizione",
+        key="gsf_demo_social_description",
+        placeholder="Es. Il momento decisivo del gameplay, pronto per lo Short.",
+        height=120,
+    )
+    st.text_input(
+        "Hashtag",
+        key="gsf_demo_social_hashtags",
+        placeholder="Es. #Gaming #Shorts #Gameplay",
+    )
+    if st.button(
+        "PUBBLICA",
+        use_container_width=True,
+        key="gsf_demo_social_publish_preview",
+    ):
+        st.info("Collega un account social per pubblicare davvero.")
 '''
 _demo_footer_anchor='''with st.container(key="v1053_ad_footer"):
 '''
