@@ -7,7 +7,7 @@ start=Path("/app/web/start_web.sh").read_text(encoding="utf-8")
 
 checks={
     "contact page": 'def _page(' in contact,
-    "contact send": 'def _send(' in contact,
+    "contact send": ('def _deliver(' in contact or 'def _send(' in contact),
     "gmail smtp default": 'smtp.gmail.com' in contact,
     "smtp secret env": 'GSF_SMTP_APP_PASSWORD' in contact,
     "recipient env": 'GSF_CONTACT_TO' in contact,
