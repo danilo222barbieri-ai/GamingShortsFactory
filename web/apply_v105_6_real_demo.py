@@ -555,7 +555,7 @@ _major_action_css=r'''
 }
 </style>
 '''
-_major_heading='''    st.markdown('<div class="gsf-icon-title">Scegli il tuo motore IA o crea il tuo gameplay</div>', unsafe_allow_html=True)
+_major_heading='''    st.markdown('<div class="gsf-icon-title" style="display:flex;justify-content:center;text-align:center;width:100%;">Scegli il tuo motore IA o crea il tuo gameplay</div>', unsafe_allow_html=True)
 '''
 if _major_heading not in s:
     raise RuntimeError("Demo major-action heading anchor not found")
