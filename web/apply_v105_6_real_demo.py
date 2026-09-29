@@ -555,13 +555,15 @@ _major_action_css=r'''
 }
 </style>
 '''
-_major_heading='''    st.markdown('<div class="gsf-icon-title" style="display:flex;justify-content:center;text-align:center;width:100%;">Scegli il tuo motore IA o crea il tuo gameplay</div>', unsafe_allow_html=True)
+_major_heading='''    st.markdown('<div class="gsf-icon-title">Scegli il tuo motore IA o crea il tuo gameplay</div>', unsafe_allow_html=True)
+'''
+_major_heading_centered='''    st.markdown('<div class="gsf-icon-title" style="display:flex;justify-content:center;text-align:center;width:100%;">Scegli il tuo motore IA o crea il tuo gameplay</div>', unsafe_allow_html=True)
 '''
 if _major_heading not in s:
     raise RuntimeError("Demo major-action heading anchor not found")
 s=s.replace(
     _major_heading,
-    _major_heading + '    st.markdown(' + repr(_major_action_css) + ', unsafe_allow_html=True)\n',
+    _major_heading_centered + '    st.markdown(' + repr(_major_action_css) + ', unsafe_allow_html=True)\n',
     1,
 )
 
@@ -705,6 +707,11 @@ with st.container(key="gsf-demo-social-form"):
         '<div class="v1055-social-head"><strong>Dettagli pubblicazione</strong>'
         '<span>Anteprima completa della fase social</span></div>',
         unsafe_allow_html=True,
+    )
+    st.text_input(
+        "Gioco",
+        key="gsf_demo_social_game",
+        placeholder="Es. ARC Raiders",
     )
     st.text_input(
         "Titolo",
