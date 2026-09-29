@@ -1223,6 +1223,42 @@ st.markdown("""
 s = s.rstrip() + "\n\n" + _major_cta_final_override.lstrip()
 
 
+# Manual editor heading: same visual weight as the main CREA CON IA milestone.
+_manual_editor_heading_css = r'''
+st.markdown("""
+<style id="gsf-manual-editor-heading-style">
+.gsf-personalize-major{
+    width:100%;
+    min-height:56px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin:8px auto 16px;
+    padding:0 18px;
+    border-radius:17px;
+    border:1px solid rgba(255,255,255,.34);
+    background:linear-gradient(135deg,#8B67E8 0%,#6557D9 100%);
+    color:#FFFFFF !important;
+    box-shadow:0 12px 28px rgba(104,84,205,.28);
+    font-family:var(--gsf-ui-font,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif);
+    font-size:15px;
+    font-weight:900;
+    line-height:1;
+    letter-spacing:.045em;
+    text-align:center;
+}
+@media(max-width:750px){
+    .gsf-personalize-major{
+        min-height:52px;
+        font-size:13px;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _manual_editor_heading_css.lstrip()
+
+
 # DEMO EDITOR ROUTING: "Scegli scena" / Manuale must use Editor 2027, never the legacy editor.
 _gsf_manual_tree = _gsf_patch_ast.parse(s)
 _gsf_manual_lines = s.splitlines(keepends=True)
@@ -1257,6 +1293,7 @@ _gsf_first_body_line = _gsf_manual_lines[_gsf_body_start]
 _gsf_indent = _gsf_first_body_line[:len(_gsf_first_body_line)-len(_gsf_first_body_line.lstrip())]
 
 _gsf_new_manual_body = [
+    _gsf_indent + 'st.markdown(\'<div class="gsf-personalize-major">PERSONALIZZA IL TUO GAMEPLAY</div>\', unsafe_allow_html=True)\n',
     _gsf_indent + 'try:\n',
     _gsf_indent + '    import os as _gsf_manual_os\n',
     _gsf_indent + '    import sys as _gsf_manual_sys\n',
@@ -1272,6 +1309,25 @@ _gsf_new_manual_body = [
     _gsf_indent + '            _gsf_manual_path=""\n',
     _gsf_indent + '    if _gsf_manual_path:\n',
     _gsf_indent + '        _gsf_render_manual_editor_2027(_gsf_manual_path,height=720)\n',
+    _gsf_indent + '        try:\n',
+    _gsf_indent + '            _gsf_manual_duration=float(st.session_state.get("auto_clip_duration",15.0) or 15.0)\n',
+    _gsf_indent + '            _gsf_manual_recipe=_gsf_recipe_selected(\n',
+    _gsf_indent + '                "main_editor",0.0,_gsf_manual_duration,str(_gsf_manual_path),\n',
+    _gsf_indent + '                master_token=_gsf_upload_master_token(video),\n',
+    _gsf_indent + '                subtitles_enabled=bool(st.session_state.get("project_subtitles_enabled",True)),\n',
+    _gsf_indent + '                manual_hook=_GSF_HOOK_OFF_V102,\n',
+    _gsf_indent + '            )\n',
+    _gsf_indent + '            _gsf_set_final_recipe(_gsf_manual_recipe,source_label="Editor")\n',
+    _gsf_indent + '            try:\n',
+    _gsf_indent + '                _gsf_manual_preview_bytes=video.getvalue() if hasattr(video,"getvalue") else None\n',
+    _gsf_indent + '                if _gsf_manual_preview_bytes:\n',
+    _gsf_indent + '                    st.session_state["publication_preview_bytes"]=_gsf_manual_preview_bytes\n',
+    _gsf_indent + '            except Exception:\n',
+    _gsf_indent + '                pass\n',
+    _gsf_indent + '        except Exception as _gsf_manual_recipe_exc:\n',
+    _gsf_indent + '            st.session_state["gsf_final_recipe"]={\n',
+    _gsf_indent + '                "kind":"main_editor","start":0.0,"duration":15.0,"source_path":str(_gsf_manual_path)\n',
+    _gsf_indent + '            }\n',
     _gsf_indent + '    else:\n',
     _gsf_indent + '        st.warning("Video non disponibile nel Game Editor.")\n',
     _gsf_indent + 'except Exception as _gsf_manual_editor_exc:\n',
