@@ -597,3 +597,4 @@ s=s.replace(_create_short_old,_create_short_new,1)
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
 print('V106 functional demo applied:',out)
+# ui-demo deploy trigger: Game Editor + milestone guides
