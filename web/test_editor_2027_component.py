@@ -27,8 +27,8 @@ if "declare_component(" not in wrapper:
     raise SystemExit("FAIL Editor 2027 V1 component is not declared")
 if "_editor_component_for" not in wrapper or 'src="{safe_url}"' not in wrapper:
     raise SystemExit("FAIL Editor 2027 does not bake the real video URL into the iframe HTML")
-if "Production: preserve the approved unified HTML5 source player" not in app:
-    raise SystemExit("FAIL production unified source player preservation marker missing")
+if "PLAYER HTML5 ADATTIVO DEFINITIVO" not in app:
+    raise SystemExit("FAIL approved unified HTML5 source player missing from production app")
 if "render_kwargs=_gsf_manual_render_kwargs" not in app:
     raise SystemExit("FAIL Editor 2027 state is not attached to final render recipe")
 if "editor_2027_state=dict(_gsf_manual_editor_state)" not in app:
