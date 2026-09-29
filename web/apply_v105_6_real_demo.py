@@ -639,7 +639,7 @@ st.markdown("""
 }
 .gsf-demo-publish-grid{
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-columns:repeat(4,minmax(0,1fr));
   gap:10px;
 }
 .gsf-demo-publish-btn{
@@ -675,7 +675,7 @@ st.markdown("""
 }
 @media(max-width:600px){
   .gsf-demo-publish{padding:14px;margin-top:22px}
-  .gsf-demo-publish-grid{gap:7px}
+  .gsf-demo-publish-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
   .gsf-demo-publish-btn{min-height:46px;padding:0 8px;font-size:11px;border-radius:13px}
   .gsf-demo-publish-dot{width:8px;height:8px;flex-basis:8px}
 }
@@ -691,6 +691,9 @@ st.markdown("""
     </a>
     <a class="gsf-demo-publish-btn" href="/social-connect/instagram/start" target="_self">
       <span class="gsf-demo-publish-dot"></span>Instagram
+    </a>
+    <a class="gsf-demo-publish-btn" href="/account/facebook/start" target="_self">
+      <span class="gsf-demo-publish-dot"></span>Facebook
     </a>
   </div>
   <div class="gsf-demo-publish-hint">Nella demo restano visibili anche senza account collegati.</div>
