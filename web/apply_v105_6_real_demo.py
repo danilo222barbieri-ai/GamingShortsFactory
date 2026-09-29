@@ -150,6 +150,55 @@ s=s.replace(
     'Gaming Shorts Factory · V105.6 Functional Demo'
 )
 
+
+# DEMO UX: dopo l'upload non mostrare il player dell'originale.
+# Restano invariati motori, durata, tre anteprime AI ed Editor.
+_source_preview_start='''    # PLAYER HTML5 ADATTIVO DEFINITIVO
+'''
+_source_preview_end='''    st.divider()
+    st.markdown('<div class="gsf-icon-title">Come vuoi creare?</div>', unsafe_allow_html=True)
+'''
+if _source_preview_start not in s or _source_preview_end not in s:
+    raise RuntimeError('Demo source preview block not found')
+_pre,_tail=s.split(_source_preview_start,1)
+_hidden,_post=_tail.split(_source_preview_end,1)
+s=(
+    _pre
+    + '    # DEMO: anteprima del video caricato nascosta; il file resta disponibile internamente.\\n'
+    + '    st.markdown(\\'<div style="height:6px" aria-hidden="true"></div>\\', unsafe_allow_html=True)\\n'
+    + _source_preview_end
+    + _post
+)
+
+# DEMO UX: i pulsanti delle tre clip AI devono essere visivamente distinti
+# dallo stato verde "Video caricato".
+_choice_css=r'''
+<style id="gsf-demo-choice-color">
+[class*="st-key-v71_choose_short_"] button{
+    background:linear-gradient(135deg,#6E63FF 0%,#4B9CFF 100%) !important;
+    color:#FFFFFF !important;
+    border:1px solid rgba(95,111,255,.55) !important;
+    box-shadow:0 8px 20px rgba(77,116,255,.18) !important;
+}
+[class*="st-key-v71_choose_short_"] button:hover{
+    filter:brightness(1.06) !important;
+    transform:translateY(-1px) !important;
+}
+[class*="st-key-v71_choose_short_"] button:disabled{
+    opacity:.72 !important;
+}
+</style>
+'''
+_choice_anchor='''                with st.container(key="v71-short-grid"):
+'''
+if _choice_anchor not in s:
+    raise RuntimeError('Demo three-short grid anchor not found')
+s=s.replace(
+    _choice_anchor,
+    '                st.markdown(_choice_css, unsafe_allow_html=True)\\n'+_choice_anchor,
+    1,
+)
+
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
 print('V106 functional demo applied:',out)
