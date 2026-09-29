@@ -104,7 +104,15 @@ def _ensure_bucket_cors():
     if not _bucket_enabled():
         return
     configured=[]
-    for raw in [PUBLIC_ORIGIN, os.environ.get("GSF_PUBLIC_ORIGINS","")]:
+    _default_shared_origins=(
+        "https://gaming-shorts-factory-v79-production.up.railway.app,"
+        "https://gaming-shorts-factory-demo-production.up.railway.app"
+    )
+    for raw in [
+        PUBLIC_ORIGIN,
+        os.environ.get("GSF_PUBLIC_ORIGINS",""),
+        _default_shared_origins,
+    ]:
         for item in str(raw or "").replace(";",",").split(","):
             origin=item.strip().rstrip("/")
             if origin and origin not in configured:
