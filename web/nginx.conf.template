@@ -39,6 +39,50 @@ server {
         add_header Cache-Control "public, max-age=300";
     }
 
+    # Official Gaming Shorts Factory app identity.
+    location = /app-icon.png {
+        alias /app/web/app_icons/app-icon.png;
+        default_type image/png;
+        add_header Cache-Control "no-store";
+    }
+
+    location = /favicon.ico {
+        alias /app/web/app_icons/app-icon.png;
+        default_type image/png;
+        add_header Cache-Control "no-store";
+    }
+
+    # iOS/iPadOS Home Screen icon discovery paths.
+    location = /apple-touch-icon.png {
+        alias /app/web/app_icons/apple-touch-icon.png;
+        default_type image/png;
+        add_header Cache-Control "no-store";
+    }
+
+    location = /apple-touch-icon-precomposed.png {
+        alias /app/web/app_icons/apple-touch-icon.png;
+        default_type image/png;
+        add_header Cache-Control "no-store";
+    }
+
+    location = /apple-touch-icon-180x180.png {
+        alias /app/web/app_icons/apple-touch-icon.png;
+        default_type image/png;
+        add_header Cache-Control "no-store";
+    }
+
+    location = /apple-touch-icon-152x152.png {
+        alias /app/web/app_icons/apple-touch-icon.png;
+        default_type image/png;
+        add_header Cache-Control "no-store";
+    }
+
+    location = /manifest.webmanifest {
+        proxy_pass http://127.0.0.1:8502/manifest.webmanifest;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+    }
+
     # V84: app media URLs are /media/<session-id>/<subdir>/<file>.
     # Map that URL directly to the matching anonymous session on disk.
     location ~ "^/media/(?<gsf_media_sid>[A-Za-z0-9_-]{1,80})/(?<gsf_media_path>.+)$" {
@@ -72,6 +116,35 @@ server {
         proxy_request_buffering off;
         proxy_read_timeout 30s;
         proxy_send_timeout 30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+    }
+
+    # Creator Hub: account/profile page handled by the lightweight companion server.
+    location = /account {
+        add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
+        proxy_pass http://127.0.0.1:8502;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+    }
+
+    location /account/ {
+        add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
+        proxy_pass http://127.0.0.1:8502;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
@@ -146,10 +219,28 @@ server {
             return 420;
         }
 
+        error_page 421 = @gsf_account_google_callback;
+        if ($arg_state ~ "^gsfacg_") {
+            return 421;
+        }
+
+        error_page 422 = @gsf_account_facebook_callback;
+        if ($arg_state ~ "^gsfacf_") {
+            return 422;
+        }
+
+        error_page 423 = @gsf_account_tiktok_callback;
+        if ($arg_state ~ "^gsfact_") {
+            return 423;
+        }
+
         proxy_pass http://127.0.0.1:8501;
         proxy_http_version 1.1;
         proxy_buffering off;
         proxy_request_buffering off;
+        proxy_set_header Accept-Encoding "";
+        sub_filter_once on;
+        sub_filter '</head>' '<link rel="icon" type="image/png" href="/app-icon.png?v=2"><link rel="shortcut icon" href="/favicon.ico?v=2"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png?v=2"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2"><link rel="manifest" href="/manifest.webmanifest?v=2"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#a9dcff"></head>';
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -195,6 +286,42 @@ server {
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
     }
 
+    location @gsf_account_google_callback {
+        rewrite ^ /account/google/callback break;
+        add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
+        proxy_pass http://127.0.0.1:8502;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+    }
+
+    location @gsf_account_facebook_callback {
+        rewrite ^ /account/facebook/callback break;
+        add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
+        proxy_pass http://127.0.0.1:8502;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+    }
+
+    location @gsf_account_tiktok_callback {
+        rewrite ^ /account/tiktok/callback break;
+        add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
+        proxy_pass http://127.0.0.1:8502;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+    }
+
     location / {
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
 
@@ -202,6 +329,9 @@ server {
         proxy_http_version 1.1;
         proxy_buffering off;
         proxy_request_buffering off;
+        proxy_set_header Accept-Encoding "";
+        sub_filter_once on;
+        sub_filter '</head>' '<link rel="icon" type="image/png" href="/app-icon.png?v=2"><link rel="shortcut icon" href="/favicon.ico?v=2"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png?v=2"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2"><link rel="manifest" href="/manifest.webmanifest?v=2"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#a9dcff"></head>';
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
