@@ -155,16 +155,65 @@ _choice_css=r'''
     border-color:#BFDDED !important;
     transform:translateY(-1px) !important;
 }
-[class*="st-key-v71_auto_sub_"]{
+[class*="st-key-v71_short_card_"]{
+    padding:8px 8px 10px !important;
+    border-radius:18px !important;
+}
+.v71-card-meta{
+    position:relative !important;
+    display:flex !important;
+    flex-direction:column !important;
+    gap:3px !important;
+    min-height:70px !important;
+    padding:8px 5px 7px !important;
+    margin:0 !important;
+    overflow:visible !important;
+}
+.v71-card-meta .v70-short-card-label,
+.v71-card-meta .v70-short-card-time,
+.v71-card-meta .v70-short-card-score{
+    position:static !important;
+    inset:auto !important;
+    transform:none !important;
+    float:none !important;
+    display:block !important;
+    width:auto !important;
+    max-width:100% !important;
+    margin:0 !important;
+    line-height:1.25 !important;
+}
+.v71-card-meta .v70-short-card-label{
+    min-height:18px !important;
+}
+.v71-card-meta .v70-short-card-time{
+    min-height:17px !important;
+    white-space:nowrap !important;
+}
+.v71-card-meta .v70-short-card-score{
     margin-top:2px !important;
 }
+[class*="st-key-v71_auto_sub_"]{
+    clear:both !important;
+    position:relative !important;
+    z-index:2 !important;
+    margin:6px 4px 7px !important;
+    padding:7px 7px 5px !important;
+    border-top:1px solid rgba(184,211,227,.55) !important;
+}
 [class*="st-key-v71_auto_sub_"] [data-testid="stToggle"]{
-    padding:2px 5px 0 !important;
+    padding:0 !important;
+    min-height:28px !important;
+    align-items:center !important;
 }
 [class*="st-key-v71_auto_sub_"] label{
-    font-size:11px !important;
+    font-size:10.5px !important;
+    line-height:1.15 !important;
     color:#667F92 !important;
-    font-weight:700 !important;
+    font-weight:750 !important;
+    white-space:nowrap !important;
+}
+[class*="st-key-v71_choose_short_"]{
+    margin-top:2px !important;
 }
 .v71-selected-pill{
     text-align:center;
@@ -198,6 +247,26 @@ s=s.replace(
     '                st.markdown(' + repr(_choice_css) + ', unsafe_allow_html=True)\n' + _choice_anchor,
     1,
 )
+
+_card_meta_old='''                            st.markdown(
+                                f'''<div class="v70-short-card-label">{html.escape(_card["label"])}</div>
+                                <div class="v70-short-card-time">{_card["start"]:.0f}s → {_card["end"]:.0f}s · {_card["preview_duration"]:.0f}s</div>
+                                {f'<span class="v70-short-card-score">{_quality}</span>' if _quality else ''}''',
+                                unsafe_allow_html=True,
+                            )
+'''
+_card_meta_new='''                            st.markdown(
+                                f'''<div class="v71-card-meta">
+                                <div class="v70-short-card-label">{html.escape(_card["label"])}</div>
+                                <div class="v70-short-card-time">{_card["start"]:.0f}s → {_card["end"]:.0f}s · {_card["preview_duration"]:.0f}s</div>
+                                {f'<span class="v70-short-card-score">{_quality}</span>' if _quality else ''}
+                                </div>''',
+                                unsafe_allow_html=True,
+                            )
+'''
+if _card_meta_old not in s:
+    raise RuntimeError("Demo card metadata block not found")
+s=s.replace(_card_meta_old,_card_meta_new,1)
 
 _card_choose_old='''                            if st.button(
                                 "✓ SELEZIONATA" if _is_selected else "SCEGLI QUESTO",
