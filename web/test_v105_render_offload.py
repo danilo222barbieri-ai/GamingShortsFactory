@@ -45,7 +45,9 @@ wrapper_src=ast.get_source_segment(s,wrapper) or ""
 remote_src=ast.get_source_segment(s,remote) or ""
 need("subprocess.run" in wrapper_src,"wrapper preserves exact local subprocess fallback")
 need("GSF_REMOTE_RENDER_FALLBACK" in wrapper_src,"fallback is diagnosed")
-need("worker_url+\"/render\"" in remote_src and "def _gsf_v105_worker_status" in s and "/render/status?" in s,"remote client submits and polls render job")
+remote_constants={n.value for n in ast.walk(remote) if isinstance(n,ast.Constant) and isinstance(n.value,str)}
+remote_calls={n.func.id for n in ast.walk(remote) if isinstance(n,ast.Call) and isinstance(n.func,ast.Name)}
+need("_gsf_v105_worker_request" in remote_calls and "_gsf_v105_worker_status" in remote_calls and "/render" in remote_constants,"remote client submits and polls render job")
 need("render-stage/" in remote_src and "render-results/" in remote_src,"remote render uses bounded S3 staging/results")
 need("bytes(" not in remote_src and ".read_bytes(" not in remote_src,"remote render does not whole-copy media to Python bytes")
 
