@@ -22,5 +22,5 @@ envsubst '${PORT}' < /app/web/nginx.conf.template > /etc/nginx/conf.d/default.co
 python /app/web/direct_upload_server.py &
 python /app/web/contact_server.py &
 nginx
-exec python -m streamlit run /app/GamingShortsFactory_V105_6_ADS_PREVIEW.py \
+exec python -m streamlit run /app/GamingShortsFactory_V105_7_ADSENSE_READY.py \
   --server.address=127.0.0.1 --server.port=8501 --server.maxUploadSize=4096 --server.maxMessageSize=4096 --server.headless=true
