@@ -22,7 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 COPY requirements-web.txt /app/requirements-web.txt
-RUN python -m pip install --upgrade pip && python -m pip install -r /app/requirements-web.txt
+COPY constraints-web.txt /app/constraints-web.txt
+RUN python -m pip install --upgrade pip && python -m pip install -r /app/requirements-web.txt -c /app/constraints-web.txt
 RUN mkdir -p /app/.cache/huggingface && python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8')"
 COPY src_payload /app/src_payload
 COPY web /app/web
