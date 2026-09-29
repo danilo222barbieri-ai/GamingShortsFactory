@@ -371,7 +371,7 @@ _new_inline_marker='''                # ===== GAME EDITOR INLINE DELLA CLIP AI =
                         if _gsf_ed27_path:
                             _gsf_render_editor_2027_embed(_gsf_ed27_path,height=660)
                     except Exception as _gsf_ed27_exc:
-                        st.error("Game Editor demo non disponibile: "+str(_gsf_ed27_exc))
+                        st.error("Game Editor non disponibile: "+str(_gsf_ed27_exc))
 
                 # Vecchio Editor disattivato nella demo.
                 if False and st.session_state.get("inline_editor_id")==_this_inline_id:
@@ -604,7 +604,7 @@ st.markdown("""
 }
 </style>
 <div class="gsf-social-footer">
-  <div class="gsf-social-footer-title">Seguici sui nostri canali</div>
+  <div class="gsf-social-footer-title">Social supportati</div>
   <div class="gsf-social-row">
     <span class="gsf-social-icon facebook" aria-label="Facebook" title="Facebook">f</span>
     <span class="gsf-social-icon instagram" aria-label="Instagram" title="Instagram">
