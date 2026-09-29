@@ -1119,6 +1119,40 @@ st.markdown("""
 s = s.rstrip() + "\n\n" + _demo_upload_centering.lstrip()
 
 
+# DEMO dialogs: match the site's typography and metallic language.
+_demo_dialog_style = r'''
+st.markdown("""
+<style id="gsf-demo-dialog-style">
+[data-testid="stDialog"],
+[data-testid="stDialog"] *,
+[role="dialog"],
+[role="dialog"] *{
+  font-family:var(--gsf-ui-font,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif) !important;
+}
+[data-testid="stDialog"] p,
+[data-testid="stDialog"] span,
+[role="dialog"] p,
+[role="dialog"] span{
+  color:#536F84 !important;
+  font-weight:700 !important;
+  letter-spacing:.005em !important;
+}
+[data-testid="stDialog"] h1,
+[data-testid="stDialog"] h2,
+[data-testid="stDialog"] h3,
+[role="dialog"] h1,
+[role="dialog"] h2,
+[role="dialog"] h3{
+  color:#2F526A !important;
+  font-weight:900 !important;
+  letter-spacing:.015em !important;
+}
+</style>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _demo_dialog_style.lstrip()
+
+
 # Final visual override: the four milestone CTAs must be exactly the same.
 _major_cta_final_override = r'''
 st.markdown("""
