@@ -266,30 +266,48 @@ replace_once(
 ''',
 '''                    editor_extra_tool=st.selectbox(
                         "Parametro",
-                        ["Volume","Velocità","Luminosità","Contrasto","Filtro"],
+                        ["Volume","Velocità","Luminosità","Contrasto"],
                         key="editor_extra_tool"
                     )
 ''',
 'main filter tool option')
 
 replace_once(
-'''                    elif editor_extra_tool=="Velocità":
+
+
+# V106.1 — Filters are a first-class video control, not hidden in "Parametro".
+replace_once(
+'''                        editor_contrast=st.slider("Contrasto",.70,1.50,float(st.session_state.get("editor_contrast",1.0)),.05,key="editor_contrast")
+
+            st.markdown('<div class="gsf-icon-title gsf-subtitles-title">' + _gsf_v67_badge("text", "Sottotitoli", "lilac") + '</div>', unsafe_allow_html=True)
 ''',
-'''                    elif editor_extra_tool=="Filtro":
-                        editor_filter_preset=st.selectbox(
-                            "Filtro",
-                            list(_GSF_V106_FILTER_PRESETS),
-                            key="editor_filter_preset"
-                        )
-                        editor_filter_intensity=st.slider(
-                            "Intensità filtro",0,100,
-                            int(st.session_state.get("editor_filter_intensity",70)),
-                            5,key="editor_filter_intensity",
-                            disabled=(editor_filter_preset=="Originale")
-                        )
-                    elif editor_extra_tool=="Velocità":
+'''                        editor_contrast=st.slider("Contrasto",.70,1.50,float(st.session_state.get("editor_contrast",1.0)),.05,key="editor_contrast")
+
+            st.markdown(
+                '<div class="gsf-icon-title gsf-v1061-filters-title">' +
+                _gsf_v67_badge("edit", "Filtri video", "indigo") +
+                '</div>',
+                unsafe_allow_html=True,
+                help="Modifica importante dell'immagine: il filtro resta nella preview e nel render finale."
+            )
+            editor_filter_preset=st.segmented_control(
+                "Filtro video",
+                list(_GSF_V106_FILTER_PRESETS),
+                key="editor_filter_preset",
+                label_visibility="collapsed"
+            )
+            if editor_filter_preset is None:
+                editor_filter_preset=st.session_state.get("editor_filter_preset","Originale")
+            editor_filter_intensity=st.slider(
+                "Intensità filtro",0,100,
+                int(st.session_state.get("editor_filter_intensity",70)),
+                5,key="editor_filter_intensity",
+                disabled=(str(editor_filter_preset)=="Originale")
+            )
+
+            st.markdown('<div class="gsf-icon-title gsf-subtitles-title">' + _gsf_v67_badge("text", "Sottotitoli", "lilac") + '</div>', unsafe_allow_html=True)
 ''',
-'main filter controls')
+'main prominent filters')
 
 # Project-reset protection must understand untouched filter defaults.
 replace_once(
@@ -341,37 +359,151 @@ replace_once(
 ''',
 '''                                    _reg=st.selectbox(
                                         "Parametro",
-                                        ["Volume","Luminosità","Contrasto","Velocità","Filtro"],
+                                        ["Volume","Luminosità","Contrasto","Velocità"],
                                         key=f"inline_reg_v18_{_this_inline_id}"
                                     )
 ''',
 'inline filter tool option')
 
 replace_once(
-'''                                    if _reg=="Volume":
+
+
+
+# V106.1 — Subtitle colors are draft -> explicit Apply, so the action is obvious.
+replace_once(
+'''                        c1,c2,c3=st.columns(3,gap="small")
+                        with c1:
+                            st.color_picker("Testo",st.session_state.get("subtitle_text_color_v18",st.session_state.get("subtitle_text_color","#FFFFFF")),key="subtitle_text_color_v18")
+                        with c2:
+                            st.color_picker("Attiva",st.session_state.get("subtitle_active_color_v18",st.session_state.get("subtitle_active_color","#FFD400")),key="subtitle_active_color_v18")
+                        with c3:
+                            st.color_picker("Bordo",st.session_state.get("subtitle_outline_color_v18",st.session_state.get("subtitle_outline_color","#000000")),key="subtitle_outline_color_v18")
 ''',
-'''                                    if _reg=="Filtro":
-                                        st.session_state[_filter_key]=st.selectbox(
-                                            "Filtro",
-                                            list(_GSF_V106_FILTER_PRESETS),
-                                            index=list(_GSF_V106_FILTER_PRESETS).index(
-                                                st.session_state.get(_filter_key,"Originale")
-                                                if st.session_state.get(_filter_key,"Originale") in _GSF_V106_FILTER_PRESETS
-                                                else "Originale"
-                                            ),
-                                            key=f"inline_filter_widget_v106_{_this_inline_id}"
-                                        )
-                                        st.session_state[_filter_strength_key]=st.slider(
-                                            "Intensità filtro",0,100,
-                                            int(st.session_state.get(_filter_strength_key,70)),
-                                            5,key=f"inline_filter_strength_widget_v106_{_this_inline_id}",
-                                            disabled=(st.session_state[_filter_key]=="Originale")
-                                        )
-                                        st.session_state["v106_last_inline_filter_preset"]=st.session_state[_filter_key]
-                                        st.session_state["v106_last_inline_filter_intensity"]=st.session_state[_filter_strength_key]
-                                    elif _reg=="Volume":
+'''                        _v1061_main_colors=(
+                            ("subtitle_text_color_draft_v1061","subtitle_text_color_v18","subtitle_text_color","#FFFFFF"),
+                            ("subtitle_active_color_draft_v1061","subtitle_active_color_v18","subtitle_active_color","#FFD400"),
+                            ("subtitle_outline_color_draft_v1061","subtitle_outline_color_v18","subtitle_outline_color","#000000"),
+                        )
+                        for _draft,_actual,_base,_fallback in _v1061_main_colors:
+                            _actual_value=st.session_state.get(_actual,st.session_state.get(_base,_fallback))
+                            _snap=_draft+"_applied"
+                            if _draft not in st.session_state or st.session_state.get(_snap)!=_actual_value:
+                                st.session_state[_draft]=_actual_value
+                                st.session_state[_snap]=_actual_value
+                        c1,c2,c3=st.columns(3,gap="small")
+                        with c1:
+                            st.color_picker("Testo",key="subtitle_text_color_draft_v1061")
+                            if st.button("Applica",key="apply_sub_text_color_v1061",use_container_width=True):
+                                _c=st.session_state["subtitle_text_color_draft_v1061"]
+                                st.session_state["subtitle_text_color_v18"]=_c
+                                st.session_state["subtitle_text_color"]=_c
+                                st.session_state["subtitle_text_color_draft_v1061_applied"]=_c
+                                st.rerun()
+                        with c2:
+                            st.color_picker("Attiva",key="subtitle_active_color_draft_v1061")
+                            if st.button("Applica",key="apply_sub_active_color_v1061",use_container_width=True):
+                                _c=st.session_state["subtitle_active_color_draft_v1061"]
+                                st.session_state["subtitle_active_color_v18"]=_c
+                                st.session_state["subtitle_active_color"]=_c
+                                st.session_state["subtitle_active_color_draft_v1061_applied"]=_c
+                                st.rerun()
+                        with c3:
+                            st.color_picker("Bordo",key="subtitle_outline_color_draft_v1061")
+                            if st.button("Applica",key="apply_sub_outline_color_v1061",use_container_width=True):
+                                _c=st.session_state["subtitle_outline_color_draft_v1061"]
+                                st.session_state["subtitle_outline_color_v18"]=_c
+                                st.session_state["subtitle_outline_color"]=_c
+                                st.session_state["subtitle_outline_color_draft_v1061_applied"]=_c
+                                st.rerun()
 ''',
-'inline filter controls')
+'main subtitle explicit color apply')
+
+replace_once(
+'''                                        c1,c2,c3=st.columns(3,gap="small")
+                                        with c1:
+                                            st.session_state["subtitle_text_color"]=st.color_picker("Testo",st.session_state.get("subtitle_text_color","#FFFFFF"),key=f"inline_txtcol_v18_{_this_inline_id}")
+                                        with c2:
+                                            st.session_state["subtitle_active_color"]=st.color_picker("Attiva",st.session_state.get("subtitle_active_color","#FFD400"),key=f"inline_actcol_v18_{_this_inline_id}")
+                                        with c3:
+                                            st.session_state["subtitle_outline_color"]=st.color_picker("Bordo",st.session_state.get("subtitle_outline_color","#000000"),key=f"inline_outcol_v18_{_this_inline_id}")
+''',
+'''                                        _txt_actual=f"inline_txtcol_v18_{_this_inline_id}"
+                                        _act_actual=f"inline_actcol_v18_{_this_inline_id}"
+                                        _out_actual=f"inline_outcol_v18_{_this_inline_id}"
+                                        _txt_draft=f"inline_txtcol_draft_v1061_{_this_inline_id}"
+                                        _act_draft=f"inline_actcol_draft_v1061_{_this_inline_id}"
+                                        _out_draft=f"inline_outcol_draft_v1061_{_this_inline_id}"
+                                        for _draft,_actual,_base,_fallback in (
+                                            (_txt_draft,_txt_actual,"subtitle_text_color","#FFFFFF"),
+                                            (_act_draft,_act_actual,"subtitle_active_color","#FFD400"),
+                                            (_out_draft,_out_actual,"subtitle_outline_color","#000000"),
+                                        ):
+                                            _actual_value=st.session_state.get(_actual,st.session_state.get(_base,_fallback))
+                                            _snap=_draft+"_applied"
+                                            if _draft not in st.session_state or st.session_state.get(_snap)!=_actual_value:
+                                                st.session_state[_draft]=_actual_value
+                                                st.session_state[_snap]=_actual_value
+                                        c1,c2,c3=st.columns(3,gap="small")
+                                        with c1:
+                                            st.color_picker("Testo",key=_txt_draft)
+                                            if st.button("Applica",key=f"inline_apply_txt_v1061_{_this_inline_id}",use_container_width=True):
+                                                _c=st.session_state[_txt_draft]
+                                                st.session_state[_txt_actual]=_c
+                                                st.session_state["subtitle_text_color"]=_c
+                                                st.session_state[_txt_draft+"_applied"]=_c
+                                                st.rerun()
+                                        with c2:
+                                            st.color_picker("Attiva",key=_act_draft)
+                                            if st.button("Applica",key=f"inline_apply_act_v1061_{_this_inline_id}",use_container_width=True):
+                                                _c=st.session_state[_act_draft]
+                                                st.session_state[_act_actual]=_c
+                                                st.session_state["subtitle_active_color"]=_c
+                                                st.session_state[_act_draft+"_applied"]=_c
+                                                st.rerun()
+                                        with c3:
+                                            st.color_picker("Bordo",key=_out_draft)
+                                            if st.button("Applica",key=f"inline_apply_out_v1061_{_this_inline_id}",use_container_width=True):
+                                                _c=st.session_state[_out_draft]
+                                                st.session_state[_out_actual]=_c
+                                                st.session_state["subtitle_outline_color"]=_c
+                                                st.session_state[_out_draft+"_applied"]=_c
+                                                st.rerun()
+''',
+'inline subtitle explicit color apply')
+
+# V106.1 — same first-class filter treatment in the inline editor.
+replace_once(
+'''                                        st.session_state[_spd_key]=st.select_slider("Velocità",options=[.5,.75,1.0,1.25,1.5,2.0],value=float(st.session_state[_spd_key]),key=f"inline_spd_widget_v18_{_this_inline_id}")
+
+                            st.markdown('<div class="gsf-icon-title gsf-subtitles-title">' + _gsf_v67_badge("text", "Sottotitoli", "lilac") + '</div>', unsafe_allow_html=True, help="Automatici: fa tutto l'AI. Manuali: trascrive la clip e permette di correggere testo e aspetto. Nessuno: video pulito.")
+''',
+'''                                        st.session_state[_spd_key]=st.select_slider("Velocità",options=[.5,.75,1.0,1.25,1.5,2.0],value=float(st.session_state[_spd_key]),key=f"inline_spd_widget_v18_{_this_inline_id}")
+
+                            st.markdown(
+                                '<div class="gsf-icon-title gsf-v1061-filters-title">' +
+                                _gsf_v67_badge("edit", "Filtri video", "indigo") +
+                                '</div>',
+                                unsafe_allow_html=True,
+                                help="Modifica importante dell'immagine: visibile subito e inclusa nello Short finale."
+                            )
+                            st.segmented_control(
+                                "Filtro video",
+                                list(_GSF_V106_FILTER_PRESETS),
+                                key=_filter_key,
+                                label_visibility="collapsed"
+                            )
+                            st.slider(
+                                "Intensità filtro",0,100,
+                                int(st.session_state.get(_filter_strength_key,70)),
+                                5,key=_filter_strength_key,
+                                disabled=(st.session_state.get(_filter_key,"Originale")=="Originale")
+                            )
+                            st.session_state["v106_last_inline_filter_preset"]=st.session_state.get(_filter_key,"Originale")
+                            st.session_state["v106_last_inline_filter_intensity"]=st.session_state.get(_filter_strength_key,70)
+
+                            st.markdown('<div class="gsf-icon-title gsf-subtitles-title">' + _gsf_v67_badge("text", "Sottotitoli", "lilac") + '</div>', unsafe_allow_html=True, help="Automatici: fa tutto l'AI. Manuali: trascrive la clip e permette di correggere testo e aspetto. Nessuno: video pulito.")
+''',
+'inline prominent filters')
 
 # ------------------------------------------------------------------
 # Final render filter: one-pass FFmpeg, no extra encode.
@@ -435,7 +567,7 @@ replace_once(
 # Version marker.
 s=s.replace(
     'Gaming Shorts Factory · V105.7 AdSense Ready',
-    'Gaming Shorts Factory · V106 BETA RC1',
+    'Gaming Shorts Factory · V106.1 BETA RC1',
     1,
 )
 
