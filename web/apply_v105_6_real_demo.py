@@ -132,9 +132,8 @@ s=(
 )
 
 s=s.replace(
-    '    st.markdown(\'<div class="gsf-icon-title">Come vuoi creare?</div>\', unsafe_allow_html=True)\\n',
-    '    st.markdown(\'<div class="gsf-icon-title">Scegli il tuo motore IA o crea il tuo gameplay</div>\', unsafe_allow_html=True)\\n',
-    1,
+    'Come vuoi creare?',
+    'Scegli il tuo motore IA o crea il tuo gameplay'
 )
 
 # DEMO UX: i pulsanti delle tre clip AI devono essere visivamente distinti
