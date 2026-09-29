@@ -233,7 +233,7 @@ _new_inline_marker='''                # ===== EDITOR 2027 INLINE DELLA CLIP AI =
                                 st.session_state["gsf_editor_2027_inline_open"]=False
                                 st.rerun()
                         if _gsf_ed27_path:
-                            _gsf_render_editor_2027_embed(_gsf_ed27_path,height=720)
+                            _gsf_render_editor_2027_embed(_gsf_ed27_path,height=660)
                     except Exception as _gsf_ed27_exc:
                         st.error("Editor 2027 demo non disponibile: "+str(_gsf_ed27_exc))
 
