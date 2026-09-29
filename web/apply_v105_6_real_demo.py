@@ -1325,6 +1325,7 @@ _gsf_indent = _gsf_first_body_line[:len(_gsf_first_body_line)-len(_gsf_first_bod
 _gsf_new_manual_body = [
     _gsf_indent + 'with st.container(key="v1055_ad_manual_before_editor"):\n',
     _gsf_indent + '    st.markdown(_gsf_v1057_ad_markup(2),unsafe_allow_html=True)\n',
+    _gsf_indent + 'st.markdown(\'<div style="height:26px" aria-hidden="true"></div>\',unsafe_allow_html=True)\n',
     _gsf_indent + 'with st.container(key="gsf-major-personalize"):\n',
     _gsf_indent + '    st.button("PERSONALIZZA IL TUO GAMEPLAY",use_container_width=True,key="gsf_personalize_visual")\n',
     _gsf_indent + 'try:\n',
