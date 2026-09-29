@@ -195,7 +195,7 @@ if _choice_anchor not in s:
     raise RuntimeError('Demo three-short grid anchor not found')
 s=s.replace(
     _choice_anchor,
-    '                st.markdown(_choice_css, unsafe_allow_html=True)\n'+_choice_anchor,
+    '                st.markdown(' + repr(_choice_css) + ', unsafe_allow_html=True)\n' + _choice_anchor,
     1,
 )
 
