@@ -597,6 +597,21 @@ if _create_short_old not in s:
     raise RuntimeError("Demo CREA SHORT anchor not found")
 s=s.replace(_create_short_old,_create_short_new,1)
 
+# DEMO mobile cleanup: keep only the blue primary CTA for the final Short.
+# Remove the older peach/orange heading so the action is not duplicated.
+s=s.replace(
+    '''        st.markdown('<div class="gsf-icon-title">' + _gsf_v67_badge("play", "Crea lo Short finale", "peach") + '</div>', unsafe_allow_html=True)
+''',
+    '',
+    1,
+)
+
+# Remove an internal technical caption accidentally exposed in the preview card.
+s=s.replace(
+    "Stable identity shared by AI, single render and batch render.",
+    "",
+)
+
 
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
