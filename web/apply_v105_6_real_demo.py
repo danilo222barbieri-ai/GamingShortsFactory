@@ -919,6 +919,44 @@ st.markdown("""
 '''
 s = s.rstrip() + "\n\n" + _creator_hub_entry.lstrip()
 
+# DEMO typography: one coherent UI font across the whole product.
+_demo_typography = r'''
+st.markdown("""
+<style id="gsf-demo-global-typography">
+:root{
+  --gsf-ui-font: ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+html,body,
+[data-testid="stAppViewContainer"],
+[data-testid="stAppViewContainer"] p,
+[data-testid="stAppViewContainer"] span,
+[data-testid="stAppViewContainer"] div,
+[data-testid="stAppViewContainer"] label,
+[data-testid="stAppViewContainer"] button,
+[data-testid="stAppViewContainer"] input,
+[data-testid="stAppViewContainer"] textarea,
+[data-testid="stAppViewContainer"] select,
+[data-testid="stAppViewContainer"] h1,
+[data-testid="stAppViewContainer"] h2,
+[data-testid="stAppViewContainer"] h3,
+[data-testid="stAppViewContainer"] h4,
+[data-testid="stAppViewContainer"] h5,
+[data-testid="stAppViewContainer"] h6,
+.gsf-major-note,
+.gsf-demo-publish,
+.gsf-social-footer,
+.gsf-account-fab{
+  font-family:var(--gsf-ui-font) !important;
+}
+code,pre,kbd,samp{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace !important;
+}
+</style>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _demo_typography.lstrip()
+
+
 # Final visual override: all three milestone CTAs must be exactly the same.
 _major_cta_final_override = r'''
 st.markdown("""
