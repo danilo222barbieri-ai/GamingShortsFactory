@@ -165,7 +165,7 @@ _hidden,_post=_tail.split(_source_preview_end,1)
 s=(
     _pre
     + '    # DEMO: anteprima del video caricato nascosta; il file resta disponibile internamente.\\n'
-    + '    st.markdown(\\'<div style="height:6px" aria-hidden="true"></div>\\', unsafe_allow_html=True)\\n'
+    + "    st.markdown('<div style=\"height:6px\" aria-hidden=\"true\"></div>', unsafe_allow_html=True)\\n"
     + _source_preview_end
     + _post
 )
