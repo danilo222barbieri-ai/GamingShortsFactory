@@ -43,12 +43,12 @@ _TEMPLATE = r'''
 #ng27 .sysDot,#ng27 #sysText{display:none}
 #ng27 .zoomEditorBtn{height:24px;padding:0 7px;border-radius:9px;border:1px solid rgba(255,255,255,.70);background:rgba(255,255,255,.48);backdrop-filter:blur(10px);color:#587083;display:flex;align-items:center;gap:4px;font-size:6.5px;font-weight:900;letter-spacing:.08em}
 #ng27 .zoomEditorBtn .ico{width:12px;height:12px}
-#ng27.expanded .shell{max-width:820px;padding:6px 9px}
+#ng27.expanded .shell{max-width:860px;padding:6px 9px}
 #ng27.expanded .cockpit{grid-template-columns:74px minmax(0,1fr) 74px;gap:10px}
 #ng27.expanded .railBtn{width:68px;height:68px}
 #ng27.expanded .railBtn .ico{width:25px;height:25px}
 #ng27.expanded .railBtn span{font-size:8.2px}
-#ng27.expanded .stage.r916{width:min(100%,330px)}
+#ng27.expanded .stage.r916{width:min(100%,345px)}
 #ng27.expanded .timeline{width:min(96%,700px)}
 
 #ng27 .cockpit{position:relative;z-index:2;display:grid;grid-template-columns:70px minmax(0,1fr) 70px;gap:10px;align-items:center}
