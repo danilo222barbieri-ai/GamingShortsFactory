@@ -7,5 +7,6 @@ def dump(label,a,b):
     print("\n".join(f"{j+1}: {lines[j]}" for j in range(a-1,min(len(lines),b))))
     print("V1062_BLOCK_"+label+"_END")
 
-dump("MAIN_EDITOR",12440,12780)
-dump("INLINE_EDITOR",13020,13280)
+dump("AI_CHOICE_FLOW",13150,13480)
+dump("INLINE_EDITOR",12920,13220)
+dump("UPLOAD_FLOW",11920,12280)
