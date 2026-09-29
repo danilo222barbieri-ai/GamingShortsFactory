@@ -363,17 +363,58 @@ _new_inline_marker='''                # ===== GAME EDITOR INLINE DELLA CLIP AI =
                         import sys as _gsf_ed27_sys
                         if "/app/web" not in _gsf_ed27_sys.path:
                             _gsf_ed27_sys.path.insert(0,"/app/web")
-                        from editor_2027_embed import render_editor_2027_embed as _gsf_render_editor_2027_embed
+                        from editor_2027_embed import (
+                            render_editor_2027_embed as _gsf_render_editor_2027_embed,
+                            editor_2027_state_key as _gsf_inline_state_key,
+                            editor_2027_initial_state as _gsf_inline_initial_state,
+                            editor_2027_clip_bounds as _gsf_inline_clip_bounds,
+                            editor_2027_render_kwargs as _gsf_inline_render_kwargs,
+                        )
                         _gsf_ed27_path=_gsf_bytes_to_preview(
                             st.session_state.get("preview_bytes") or b"",
                             f"editor2027_{start:.2f}"
                         )
                         if _gsf_ed27_path:
-                            _gsf_render_editor_2027_embed(_gsf_ed27_path,height=660)
+                            _gsf_inline_slot=_gsf_inline_state_key(_gsf_ed27_path)
+                            _gsf_inline_component_key=_gsf_inline_slot+"_component"
+                            _gsf_inline_saved=st.session_state.get(_gsf_inline_slot)
+                            if not isinstance(_gsf_inline_saved,dict):
+                                _gsf_inline_saved=_gsf_inline_initial_state(float(durata_effettiva))
+                            _gsf_inline_state=_gsf_render_editor_2027_embed(
+                                _gsf_ed27_path,
+                                height=660,
+                                key=_gsf_inline_component_key,
+                                initial_state=_gsf_inline_saved,
+                            )
+                            if isinstance(_gsf_inline_state,dict):
+                                st.session_state[_gsf_inline_slot]=dict(_gsf_inline_state)
+                            else:
+                                _gsf_inline_state=dict(_gsf_inline_saved)
+                            _gsf_inline_rel_start,_gsf_inline_duration=_gsf_inline_clip_bounds(
+                                _gsf_inline_state,float(durata_effettiva)
+                            )
+                            _gsf_inline_kwargs=_gsf_inline_render_kwargs(
+                                _gsf_inline_state,st.session_state
+                            )
+                            _gsf_inline_recipe=_gsf_recipe_selected(
+                                "inline_editor",
+                                float(start)+float(_gsf_inline_rel_start),
+                                float(_gsf_inline_duration),
+                                str(_source_path),
+                                master_token=_gsf_upload_master_token(video),
+                                subtitles_enabled=bool(_gsf_inline_kwargs.get("subtitles_enabled",True)),
+                                render_kwargs=_gsf_inline_kwargs,
+                                editor_2027_state=dict(_gsf_inline_state),
+                                manual_hook=_GSF_HOOK_OFF_V102,
+                            )
+                            if st.session_state.get("gsf_final_recipe")!=_gsf_inline_recipe:
+                                _gsf_set_final_recipe(
+                                    _gsf_inline_recipe,source_label="Editor 2027"
+                                )
                     except Exception as _gsf_ed27_exc:
                         st.error("Game Editor non disponibile: "+str(_gsf_ed27_exc))
 
-                # Vecchio Editor disattivato nella demo.
+                # Vecchio Editor disattivato: il Game Editor 2027 è l'unico editor inline.
                 if False and st.session_state.get("inline_editor_id")==_this_inline_id:
 '''
 if _old_inline_marker not in s:
