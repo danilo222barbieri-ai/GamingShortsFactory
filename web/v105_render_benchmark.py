@@ -181,7 +181,7 @@ def render_command(source,output,profile):
         ]
     cmd += ["-vf",vf]
     if not has_audio:
-        cmd += ["-map","0:v:0","-map","1:a:0"]
+        cmd += ["-map","0:v:0","-map","1:a:0","-shortest"]
     cmd += [
         "-c:v","libx264",
         "-preset",str(cfg["preset"]),
