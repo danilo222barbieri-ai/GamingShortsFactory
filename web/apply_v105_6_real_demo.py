@@ -215,12 +215,24 @@ _choice_css=r'''
     margin-top:2px !important;
 }
 .v71-selected-pill{
-    text-align:center;
-    margin:5px 0 2px;
-    color:#66869E;
-    font-size:10px;
-    font-weight:850;
-    letter-spacing:.035em;
+    box-sizing:border-box !important;
+    min-height:38px !important;
+    height:38px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:100% !important;
+    margin:2px 0 0 !important;
+    padding:0 10px !important;
+    border-radius:12px !important;
+    background:linear-gradient(135deg,#EDF8FE 0%,#F1EEFF 100%) !important;
+    border:1px solid #D2E5F1 !important;
+    box-shadow:0 5px 14px rgba(79,125,157,.10) !important;
+    color:#66869E !important;
+    font-size:10.5px !important;
+    line-height:1 !important;
+    font-weight:850 !important;
+    letter-spacing:.035em !important;
 }
 [class*="st-key-edit_ai_"] button{
     min-height:42px !important;
