@@ -61,6 +61,14 @@ def synthetic_fixture_command(output,duration=15):
     ]
 
 
+def long_fixture_command(seed,output,duration):
+    return [
+        FFMPEG,"-hide_banner","-loglevel","error","-y",
+        "-stream_loop","-1","-i",str(seed),
+        "-t",str(float(duration)),
+        "-c","copy","-movflags","+faststart",str(output),
+    ]
+
 def _ratio(value):
     try:
         a,b=str(value or "0/1").split("/",1)
@@ -224,11 +232,29 @@ def run_benchmark(durations=(15,30),workdir=None):
 
     results=[]
     try:
+        seed15=root/"fixture_seed_15s.mp4"
         for duration in durations:
             fixture=root/f"fixture_{int(duration)}s.mp4"
+            if float(duration)<=15.0:
+                fixture_cmd=synthetic_fixture_command(fixture,duration)
+                fixture_timeout=max(180,int(duration)*12)
+            else:
+                if not seed15.is_file():
+                    seed_run=subprocess.run(
+                        synthetic_fixture_command(seed15,15),
+                        stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=240
+                    )
+                    if seed_run.returncode!=0:
+                        raise RuntimeError(
+                            "fixture seed generation failed: "
+                            +describe_process_failure(seed_run.returncode,seed_run.stderr)
+                        )
+                fixture_cmd=long_fixture_command(seed15,fixture,duration)
+                fixture_timeout=120
+
             fr=subprocess.run(
-                synthetic_fixture_command(fixture,duration),
-                stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=max(180,int(duration)*12)
+                fixture_cmd,
+                stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=fixture_timeout
             )
             if fr.returncode!=0:
                 raise RuntimeError(
