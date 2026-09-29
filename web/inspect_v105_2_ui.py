@@ -16,6 +16,11 @@ terms=[
     "pubblicità",
     "gsf-ad",
     "editor_auto_sub_error",
+    "CREA SHORT",
+    "Creo lo Short finale",
+    "_gsf_social_pack",
+    "selected_caption",
+    "hashtags",
 ]
 seen=set()
 for term in terms:
@@ -32,3 +37,14 @@ for term in terms:
             print("\n".join(f"{j+1}: {lines[j]}" for j in range(a,b)))
     if not found:
         print("NOT FOUND")
+
+
+import ast
+tree=ast.parse(s)
+for node in tree.body:
+    if isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef)) and node.name in {
+        "_gsf_publish_social_upload","_gsf_generate_social_pack","_gsf_social_pack"
+    }:
+        print("\n===== FUNCTION",node.name,"=====")
+        a=node.lineno-1; b=node.end_lineno
+        print("\n".join(f"{j+1}: {lines[j]}" for j in range(a,b)))
