@@ -20,9 +20,17 @@ def _gsf_v1053_detect_game():
     """Best-effort game name from the current upload, never a stale default."""
     corpus_parts=[
         str(st.session_state.get("gsf_source_name","") or ""),
+        str(st.session_state.get("gsf_source_path","") or ""),
         str(st.session_state.get("editor_sub_text","") or ""),
         str(st.session_state.get("hook_testo","") or ""),
     ]
+    try:
+        _upload_obj=st.session_state.get("upload_v73")
+        _upload_name=str(getattr(_upload_obj,"name","") or "")
+        if _upload_name:
+            corpus_parts.append(_upload_name)
+    except Exception:
+        pass
     try:
         corpus_parts.append(json.dumps(
             st.session_state.get("gsf_ai_v3_diagnostics",{}) or {},
@@ -58,11 +66,8 @@ def _gsf_v1053_detect_game():
         if any(marker in corpus for marker in markers):
             return canonical
 
-    # Keep a genuinely user-selected/non-default game, but never recycle the
-    # historical ARC Raiders placeholder without evidence from this upload.
-    current=str(st.session_state.get("gioco","") or "").strip()
-    if current and current.lower() not in {"arc raiders","gaming","gioco"}:
-        return current
+    # Never reuse a stale game from a previous upload. If this video gives us
+    # no real evidence, use a neutral label instead of inventing the game.
     return "Gaming"
 
 
@@ -129,7 +134,7 @@ st.markdown("""
 <style id="gsf-v1053-spacing">
 /* A little breathing room between "Sottotitoli" and Nessuno/Automatici/Manuali. */
 .st-key-editor_sub_mode_v18{
-    margin-top:10px !important;
+    margin-top:12px !important;
 }
 /* Social cards should not touch the Pubblicazione diretta heading. */
 .st-key-v69_social_youtube,
@@ -145,15 +150,16 @@ s += "\n"+css+"\n"
 # ------------------------------------------------------------
 # 4) Ads: stable keyed containers across Streamlit reruns.
 # ------------------------------------------------------------
-old_ad='''    st.markdown('<aside class="v67-ad" aria-label="Spazio pubblicitario">Pubblicità</aside>', unsafe_allow_html=True)
+ai_ad='''    st.caption(_engine_help.get(modalita, ""))
+
+    st.markdown('<aside class="v67-ad" aria-label="Spazio pubblicitario">Pubblicità</aside>', unsafe_allow_html=True)
 '''
-# First relevant ad is the one after engine description.
-idx=s.find(old_ad)
-if idx<0:
-    raise RuntimeError('V105.3 AI ad anchor missing')
-s=s[:idx]+'''    with st.container(key="v1053_ad_ai"):
+ai_ad_new='''    st.caption(_engine_help.get(modalita, ""))
+
+    with st.container(key="v1053_ad_ai"):
         st.markdown('<aside class="v67-ad" aria-label="Spazio pubblicitario">Pubblicità</aside>', unsafe_allow_html=True)
-'''+s[idx+len(old_ad):]
+'''
+replace_once(ai_ad,ai_ad_new,'persistent AI ad')
 
 # The V105.2 ad immediately before final creation gets its own stable owner.
 old_final='''    if _show_final_flow:
