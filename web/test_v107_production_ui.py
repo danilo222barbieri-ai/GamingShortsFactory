@@ -22,6 +22,8 @@ for forbidden in [
     "/app/demo_assets/",
     "DEMO FUNZIONALE",
     "demo_gameplay.mp4",
+    "Nella demo restano visibili anche senza account collegati.",
+    "Collega un account social per pubblicare davvero.",
 ]:
     if forbidden in s:
         raise SystemExit(f"FAIL demo-only runtime leaked into production: {forbidden}")
