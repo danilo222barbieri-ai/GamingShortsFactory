@@ -12,6 +12,8 @@ st.markdown("""
   <a href="/privacy" target="_blank" style="color:#60788d;text-decoration:none">Privacy</a>
   <span style="padding:0 10px">·</span>
   <a href="/terms" target="_blank" style="color:#60788d;text-decoration:none">Termini</a>
+  <span style="padding:0 10px">·</span>
+  <a href="/contact" target="_blank" style="color:#60788d;text-decoration:none">Contatti</a>
 </div>
 """, unsafe_allow_html=True)
 '''
