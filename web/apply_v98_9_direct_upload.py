@@ -52,35 +52,35 @@ def _gsf_v989_direct_upload_html(loaded=False):
         return r"""
 <!doctype html><html><head><meta charset="utf-8"><style>
 html,body{margin:0;padding:0;background:transparent;overflow:hidden;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-.wrap{height:270px;display:flex;align-items:flex-start;justify-content:center;padding-top:26px;box-sizing:border-box}
+.wrap{height:278px;display:flex;align-items:flex-start;justify-content:center;padding-top:34px;box-sizing:border-box}
 .circle{box-sizing:border-box;width:218px;height:218px;border-radius:50%;display:flex;flex-direction:column;
-align-items:center;justify-content:center;background:#FFE8E5;border:2px solid #F28B82;
-box-shadow:0 10px 26px rgba(216,91,102,.12);color:#9F3844}
-.icon{font-size:54px;font-weight:700;line-height:.82;color:#D85B66;margin-bottom:13px}
+align-items:center;justify-content:center;background:#F7F1F3;border:2px solid #DFC9CF;
+box-shadow:0 10px 24px rgba(126,92,103,.08);color:#80656C}
+.icon{font-size:54px;font-weight:700;line-height:.82;color:#AE7C87;margin-bottom:13px}
 .label{width:150px;text-align:center;font-size:17px;font-weight:800;line-height:1.2}
-@media(max-width:600px){.wrap{height:252px}.circle{width:208px;height:208px}.icon{font-size:52px}.label{width:144px;font-size:16px}}
+@media(max-width:600px){.wrap{height:260px}.circle{width:208px;height:208px}.icon{font-size:52px}.label{width:144px;font-size:16px}}
 </style></head><body><div class="wrap"><div class="circle"><div class="icon">✓</div><div class="label">Video caricato</div></div></div></body></html>
 """
 
     return r"""
 <!doctype html><html><head><meta charset="utf-8"><style>
 html,body{margin:0;padding:0;background:transparent;overflow:hidden;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-.wrap{height:290px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:30px;box-sizing:border-box}
+.wrap{height:298px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:38px;box-sizing:border-box}
 input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .circle{box-sizing:border-box;width:218px;height:218px;border-radius:50%;display:flex;flex-direction:column;
-align-items:center;justify-content:center;background:#FFE7E3;border:2px solid #F39A90;
-box-shadow:0 10px 26px rgba(216,91,102,.12);color:#A94750;cursor:pointer;user-select:none}
-.circle:hover{border-color:#EA7E72;box-shadow:0 12px 30px rgba(216,91,102,.18)}
-.icon{font-size:58px;font-weight:500;line-height:.82;color:#D45A64;margin-bottom:13px}
+align-items:center;justify-content:center;background:#F8F2F4;border:2px solid #E2CDD2;
+box-shadow:0 10px 24px rgba(126,92,103,.08);color:#866A71;cursor:pointer;user-select:none}
+.circle:hover{border-color:#D5B8C0;box-shadow:0 12px 28px rgba(126,92,103,.12)}
+.icon{font-size:58px;font-weight:500;line-height:.82;color:#AE7C87;margin-bottom:13px}
 .label{width:150px;text-align:center;font-size:17px;font-weight:800;line-height:1.2}
-.status{display:none;margin-top:7px;width:174px;text-align:center;color:#B54A55;font-size:12px;font-weight:800}
-.track{display:block;height:5px;margin-top:5px;border-radius:999px;background:rgba(216,91,102,.18);overflow:hidden}
-.bar{display:block;height:100%;width:0;background:#D85B66;border-radius:999px;transition:width .12s linear}
-.circle.busy{pointer-events:none;background:#FFF0EE}
-.circle.done{background:#FFE8E5;border-color:#F28B82;color:#9F3844}
-.circle.done .icon{color:#D85B66}
+.status{display:none;margin-top:7px;width:174px;text-align:center;color:#8D6B74;font-size:12px;font-weight:800}
+.track{display:block;height:5px;margin-top:5px;border-radius:999px;background:rgba(174,124,135,.16);overflow:hidden}
+.bar{display:block;height:100%;width:0;background:#AE7C87;border-radius:999px;transition:width .12s linear}
+.circle.busy{pointer-events:none;background:#FAF5F6}
+.circle.done{background:#F7F1F3;border-color:#DFC9CF;color:#80656C}
+.circle.done .icon{color:#AE7C87}
 .error{color:#B42318}
-@media(max-width:600px){.wrap{height:278px}.circle{width:208px;height:208px}.icon{font-size:54px}.label{width:144px;font-size:16px}}
+@media(max-width:600px){.wrap{height:286px}.circle{width:208px;height:208px}.icon{font-size:54px}.label{width:144px;font-size:16px}}
 </style></head><body>
 <div class="wrap">
 <input id="pick" type="file" accept="video/mp4,video/quicktime,video/x-matroska,.mp4,.mov,.mkv">
@@ -190,7 +190,7 @@ with st.container(key="v73-upload-shell"):
     if GSF_WEB_MODE:
         components.html(
             _gsf_v989_direct_upload_html(video is not None),
-            height=280 if video is not None else 300,
+            height=288 if video is not None else 308,
             scrolling=False
         )
     else:
