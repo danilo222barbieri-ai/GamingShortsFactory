@@ -1,0 +1,67 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    GSF_AI_APP_PATH=/app/GamingShortsFactory_V99_FINAL_ARCH.py \
+    GSF_WORKER_SCAN_SLOTS=1 \
+    GSF_WORKER_DOWNLOAD_CONCURRENCY=8 \
+    OMP_NUM_THREADS=1 \
+    OPENBLAS_NUM_THREADS=1 \
+    MKL_NUM_THREADS=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ffmpeg ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY web/requirements-worker.txt /app/requirements-worker.txt
+RUN python -m pip install --upgrade pip && python -m pip install -r /app/requirements-worker.txt
+
+COPY src_payload /app/src_payload
+COPY web /app/web
+COPY web/ffmpeg_lowmem.py /usr/local/bin/ffmpeg
+
+RUN chmod +x /usr/local/bin/ffmpeg && \
+    python -c "import base64,gzip,pathlib; p=pathlib.Path('/app/src_payload'); s=''.join(x.read_text() for x in sorted(p.glob('gsf_v77.py.gz.b64.part*'))); pathlib.Path('/app/GamingShortsFactory_V77_WEB_READY.py').write_bytes(gzip.decompress(base64.b64decode(s)))" && \
+    python /app/web/apply_v78_mobile_patch.py && \
+    python /app/web/apply_v79_session_social_patch.py && \
+    python /app/web/apply_v80_ui_auto_sub_patch.py && \
+    python /app/web/apply_v80_1_hotfix.py && \
+    python /app/web/apply_v80_2_render_hotfix.py && \
+    python /app/web/apply_v81_mobile_tablet_patch.py && \
+    python /app/web/apply_v82_fixpack.py && \
+    python /app/web/apply_v83_upload_fix.py && \
+    python /app/web/apply_v84_mobile_media_upload_fix.py && \
+    python /app/web/apply_v85_upload_cleanup.py && \
+    python /app/web/apply_v86_single_upload_circle.py && \
+    python /app/web/apply_v87_upload_persist.py && \
+    python /app/web/apply_v88_persistent_loaded_circle.py && \
+    python /app/web/apply_v89_decoupled_upload_visual.py && \
+    python /app/web/apply_v90_upload_visual_fix.py && \
+    python /app/web/apply_v91_roadmap_polish.py && \
+    python /app/web/apply_v92_ai_reaction_quality.py && \
+    python /app/web/apply_v93_deep_stability.py && \
+    python /app/web/apply_v94_short_quality.py && \
+    python /app/web/apply_v95_render_text_polish.py && \
+    python /app/web/apply_v98_editor_polish.py && \
+    python /app/web/apply_v98_1_editor_hotfix.py && \
+    python /app/web/apply_v98_2_upload_recovery.py && \
+    python /app/web/apply_v98_3_home_compact.py && \
+    python /app/web/apply_v98_4_editor_cleanup.py && \
+    python /app/web/apply_v98_5_style_only.py && \
+    python /app/web/apply_v98_6_player_sizes.py && \
+    python /app/web/apply_v98_7_new_video_fix.py && \
+    python /app/web/apply_v98_8_upload_memory_fix.py && \
+    python /app/web/apply_v98_9_direct_upload.py && \
+    python /app/web/apply_v98_10_speed_pass1.py && \
+    python /app/web/apply_v98_11_speed_all.py && \
+    python /app/web/apply_v98_12_upload_64mb.py && \
+    python /app/web/apply_v98_final.py && \
+    python /app/web/apply_v98_final_6lanes.py && \
+    python /app/web/apply_v99_ai_turbo.py && \
+    python /app/web/apply_v99_final_arch.py && \
+    python -m py_compile /app/web/ai_worker_server.py
+
+EXPOSE 8600
+CMD ["python","/app/web/ai_worker_server.py"]

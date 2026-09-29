@@ -16,13 +16,15 @@ from urllib.parse import unquote, urlparse, parse_qs
 import boto3
 from botocore.config import Config
 from boto3.s3.transfer import TransferConfig
+from gsf_perf import perf_event
 
 ROOT=Path(os.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))
 PORT=int(os.environ.get("GSF_DIRECT_UPLOAD_PORT","8502"))
 MAX_FILE_BYTES=4*1024*1024*1024
 MAX_CHUNK_BYTES=40*1024*1024
 BUCKET_PART_BYTES=32*1024*1024
-BUCKET_CONCURRENCY=10
+BUCKET_CONCURRENCY_DESKTOP=8
+BUCKET_CONCURRENCY_MOBILE=3
 ID_RE=re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 ALLOWED_EXT={".mp4",".mov",".mkv"}
 _STATE_LOCKS={}
@@ -61,6 +63,22 @@ _S3_LOCK=threading.Lock()
 
 def _bucket_enabled():
     return bool(S3_BUCKET and S3_ACCESS_KEY and S3_SECRET_KEY and S3_ENDPOINT)
+
+def _upload_concurrency_for_user_agent(user_agent):
+    ua=str(user_agent or "").lower()
+    mobile_markers=("iphone","ipad","ipod","android"," mobile","mobile/")
+    if any(marker in ua for marker in mobile_markers):
+        return BUCKET_CONCURRENCY_MOBILE
+    return BUCKET_CONCURRENCY_DESKTOP
+
+
+def _materialize_concurrency():
+    try:
+        value=int(os.environ.get("GSF_MATERIALIZE_CONCURRENCY","6") or 6)
+    except Exception:
+        value=6
+    return max(1,min(8,value))
+
 
 def _s3():
     global _S3_CLIENT
@@ -153,7 +171,14 @@ def _read_json(handler,max_bytes=1024*1024):
 
 def _trigger_prescan(payload):
     if not WORKER_URL:
+        perf_event("prescan_queue_end",queued=False,reason="worker_url_missing")
         return
+    t0=time.perf_counter()
+    perf_event(
+        "prescan_queue_start",
+        analysis_key=str(payload.get("analysis_key","") or ""),
+        source_size=int(payload.get("size",0) or 0),
+    )
     try:
         data=json.dumps(payload,ensure_ascii=False).encode("utf-8")
         headers={"Content-Type":"application/json"}
@@ -167,11 +192,29 @@ def _trigger_prescan(payload):
         )
         with urllib.request.urlopen(req,timeout=12) as resp:
             resp.read(4096)
+        perf_event(
+            "prescan_queue_end",
+            queued=True,
+            elapsed_seconds=round(time.perf_counter()-t0,3),
+            analysis_key=str(payload.get("analysis_key","") or ""),
+        )
         print(f"GSF worker prescan queued: {payload.get('analysis_key','')}",flush=True)
     except Exception as exc:
+        perf_event(
+            "prescan_queue_end",
+            queued=False,
+            elapsed_seconds=round(time.perf_counter()-t0,3),
+            error_type=type(exc).__name__,
+        )
         print(f"GSF worker prescan warning: {str(exc)[:180]}",flush=True)
 
 def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,total,analysis_key):
+    _materialize_t0=time.perf_counter()
+    perf_event(
+        "materialize_start",
+        upload_id=str(upload_id),
+        source_size=int(total or 0),
+    )
     media=ROOT/"sessions"/sid/"media"
     media.mkdir(parents=True,exist_ok=True)
     final=media/f"source_bucket_{safe_stem}_{upload_id}{ext}"
@@ -180,7 +223,7 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
         cfg=TransferConfig(
             multipart_threshold=8*1024*1024,
             multipart_chunksize=8*1024*1024,
-            max_concurrency=12,
+            max_concurrency=_materialize_concurrency(),
             max_io_queue=16,
             io_chunksize=1024*1024,
             use_threads=True,
@@ -207,6 +250,13 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
             os.utime(ROOT/"sessions"/sid/".active",None)
         except Exception:
             pass
+        perf_event(
+            "materialize_end",
+            upload_id=str(upload_id),
+            source_size=int(total or 0),
+            elapsed_seconds=round(time.perf_counter()-_materialize_t0,3),
+            ok=True,
+        )
         print(f"GSF bucket materialized {upload_id}: {total} bytes",flush=True)
     except Exception as exc:
         tmp.unlink(missing_ok=True)
@@ -216,6 +266,13 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
             "error":str(exc)[:240],
             "failed_at":time.time(),
         })
+        perf_event(
+            "materialize_error",
+            upload_id=str(upload_id),
+            source_size=int(total or 0),
+            elapsed_seconds=round(time.perf_counter()-_materialize_t0,3),
+            error_type=type(exc).__name__,
+        )
         print(f"GSF bucket materialization failed {upload_id}: {str(exc)[:180]}",flush=True)
 
 
@@ -942,9 +999,9 @@ class Handler(BaseHTTPRequestHandler):
                 "bucket":_bucket_enabled(),
                 "worker":bool(WORKER_URL),
                 "part_size":BUCKET_PART_BYTES,
-                "concurrency":BUCKET_CONCURRENCY,
+                "concurrency":_upload_concurrency_for_user_agent(self.headers.get("User-Agent","")),
                 "materialize_part_size":8*1024*1024,
-                "materialize_concurrency":12,
+                "materialize_concurrency":_materialize_concurrency(),
                 "fallback_chunk_size":16*1024*1024,
                 "fallback_concurrency":6,
             })
@@ -1031,7 +1088,7 @@ class Handler(BaseHTTPRequestHandler):
                     "key":key,
                     "analysis_key":analysis_key,
                     "part_size":BUCKET_PART_BYTES,
-                    "concurrency":BUCKET_CONCURRENCY,
+                    "concurrency":_upload_concurrency_for_user_agent(self.headers.get("User-Agent","")),
                     "parts":urls,
                 })
             except Exception as exc:
