@@ -223,7 +223,7 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
         cfg=TransferConfig(
             multipart_threshold=8*1024*1024,
             multipart_chunksize=8*1024*1024,
-            max_concurrency=12,
+            max_concurrency=_materialize_concurrency(),
             max_io_queue=16,
             io_chunksize=1024*1024,
             use_threads=True,
@@ -999,7 +999,7 @@ class Handler(BaseHTTPRequestHandler):
                 "bucket":_bucket_enabled(),
                 "worker":bool(WORKER_URL),
                 "part_size":BUCKET_PART_BYTES,
-                "concurrency":BUCKET_CONCURRENCY,
+                "concurrency":_upload_concurrency_for_user_agent(self.headers.get("User-Agent","")),
                 "materialize_part_size":8*1024*1024,
                 "materialize_concurrency":12,
                 "fallback_chunk_size":16*1024*1024,
@@ -1088,7 +1088,7 @@ class Handler(BaseHTTPRequestHandler):
                     "key":key,
                     "analysis_key":analysis_key,
                     "part_size":BUCKET_PART_BYTES,
-                    "concurrency":BUCKET_CONCURRENCY,
+                    "concurrency":_upload_concurrency_for_user_agent(self.headers.get("User-Agent","")),
                     "parts":urls,
                 })
             except Exception as exc:
