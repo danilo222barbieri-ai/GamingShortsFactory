@@ -1,7 +1,7 @@
 from pathlib import Path
 
-src=Path('/app/GamingShortsFactory_V105_6_ADS_PREVIEW.py')
-out=Path('/app/GamingShortsFactory_V105_6_DEMO_REAL.py')
+src=Path('/app/GamingShortsFactory_V105_7_ADSENSE_READY.py')
+out=Path('/app/GamingShortsFactory_V105_7_DEMO_REAL.py')
 s=src.read_text(encoding='utf-8')
 
 anchor='\nif video:\n'
@@ -10,7 +10,7 @@ if anchor not in s:
 
 inject=r'''
 # ==========================================================
-# V105.6 REAL DEMO
+# V105.7 REAL DEMO
 # Production app/controls unchanged. Only the initial source,
 # 3 AI candidates and already-rendered final Short are seeded.
 # ==========================================================
@@ -68,7 +68,7 @@ if _GSF_REAL_DEMO:
             }
 
             # The selected first candidate is already materialized; choosing
-            # another candidate follows the normal V105.6 path.
+            # another candidate follows the normal V105.7 path.
             st.session_state["preview_bytes"]=_gsf_demo_clip_bytes
             st.session_state["preview_key"]=None
 
@@ -98,7 +98,7 @@ if _GSF_REAL_DEMO:
             '<div style="margin:8px 0 14px;padding:10px 13px;border:1px solid #B9DCEF;'
             'border-radius:16px;background:#F1F9FE;color:#376B8A;font-size:13px;font-weight:750">'
             '🧪 DEMO FUNZIONALE · video, 3 momenti AI e Short finale sono già pronti. '
-            'Pulsanti, Editor, sottotitoli, cambio motore e social usano la V105.6 reale.'
+            'Pulsanti, Editor, sottotitoli, cambio motore e social usano la V105.7 reale.'
             '</div>',
             unsafe_allow_html=True,
         )
@@ -106,10 +106,10 @@ if _GSF_REAL_DEMO:
 
 s=s.replace(anchor,'\n'+inject+'\nif video:\n',1)
 s=s.replace(
-    'Gaming Shorts Factory · V105.6 Ads Preview',
+    'Gaming Shorts Factory · V105.7 Functional Demo',
     'Gaming Shorts Factory · V105.6 Functional Demo'
 )
 
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
-print('V105.6 functional demo applied:',out)
+print('V105.7 functional demo applied:',out)
