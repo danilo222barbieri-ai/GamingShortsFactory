@@ -10,6 +10,7 @@ if anchor not in s:
 
 inject=r'''
 # ==========================================================
+# deploy retrigger: ui-demo
 # V106 REAL DEMO
 # Production app/controls unchanged. Only the initial source,
 # 3 AI candidates and already-rendered final Short are seeded.
