@@ -247,14 +247,14 @@ s=s.replace(
     1,
 )
 
-_card_meta_old='''                            st.markdown(
+_card_meta_old="""                            st.markdown(
                                 f'''<div class="v70-short-card-label">{html.escape(_card["label"])}</div>
                                 <div class="v70-short-card-time">{_card["start"]:.0f}s → {_card["end"]:.0f}s · {_card["preview_duration"]:.0f}s</div>
                                 {f'<span class="v70-short-card-score">{_quality}</span>' if _quality else ''}''',
                                 unsafe_allow_html=True,
                             )
-'''
-_card_meta_new='''                            st.markdown(
+"""
+_card_meta_new="""                            st.markdown(
                                 f'''<div class="v71-card-meta">
                                 <div class="v70-short-card-label">{html.escape(_card["label"])}</div>
                                 <div class="v70-short-card-time">{_card["start"]:.0f}s → {_card["end"]:.0f}s · {_card["preview_duration"]:.0f}s</div>
@@ -262,7 +262,7 @@ _card_meta_new='''                            st.markdown(
                                 </div>''',
                                 unsafe_allow_html=True,
                             )
-'''
+"""
 if _card_meta_old not in s:
     raise RuntimeError("Demo card metadata block not found")
 s=s.replace(_card_meta_old,_card_meta_new,1)
