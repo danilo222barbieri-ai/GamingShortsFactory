@@ -1,4 +1,5 @@
 from pathlib import Path
+import ast as _gsf_patch_ast
 
 src=Path('/app/GamingShortsFactory_V106_BETA_RC1.py')
 out=Path('/app/GamingShortsFactory_V106_DEMO_REAL.py')
@@ -1222,19 +1223,64 @@ st.markdown("""
 s = s.rstrip() + "\n\n" + _major_cta_final_override.lstrip()
 
 
-# Temporary build diagnostic for the legacy Manual/Scegli scena routing.
-_gsf_manual_needle = "✋ Manuale"
-_gsf_manual_pos = 0
-_gsf_manual_idx = 0
-while True:
-    _gsf_manual_pos = s.find(_gsf_manual_needle, _gsf_manual_pos)
-    if _gsf_manual_pos < 0:
-        break
-    _gsf_manual_idx += 1
-    print(f"GSF_MANUAL_ROUTE_BEGIN_{_gsf_manual_idx}")
-    print(s[max(0,_gsf_manual_pos-1200):_gsf_manual_pos+2200])
-    print(f"GSF_MANUAL_ROUTE_END_{_gsf_manual_idx}")
-    _gsf_manual_pos += len(_gsf_manual_needle)
+# DEMO EDITOR ROUTING: "Scegli scena" / Manuale must use Editor 2027, never the legacy editor.
+_gsf_manual_tree = _gsf_patch_ast.parse(s)
+_gsf_manual_lines = s.splitlines(keepends=True)
+_gsf_manual_candidates = []
+
+for _gsf_node in _gsf_patch_ast.walk(_gsf_manual_tree):
+    if not isinstance(_gsf_node, _gsf_patch_ast.If):
+        continue
+    _gsf_test = _gsf_patch_ast.get_source_segment(s, _gsf_node.test) or ""
+    if "Manuale" not in _gsf_test or "modalita" not in _gsf_test:
+        continue
+    if not _gsf_node.body:
+        continue
+    _gsf_body_start = _gsf_node.body[0].lineno - 1
+    _gsf_body_end = _gsf_node.body[-1].end_lineno
+    _gsf_body_text = "".join(_gsf_manual_lines[_gsf_body_start:_gsf_body_end])
+    _gsf_score = (
+        _gsf_body_text.count("editor_") * 5
+        + _gsf_body_text.count("st.") * 2
+        + _gsf_body_text.count("Scena") * 3
+        + len(_gsf_body_text) / 1000.0
+    )
+    _gsf_manual_candidates.append((_gsf_score, _gsf_node, _gsf_body_start, _gsf_body_end, _gsf_body_text))
+
+if not _gsf_manual_candidates:
+    raise RuntimeError('Demo Manual/Scegli scena editor branch not found')
+
+_gsf_manual_candidates.sort(key=lambda _x: _x[0], reverse=True)
+_gsf_score, _gsf_node, _gsf_body_start, _gsf_body_end, _gsf_old_body = _gsf_manual_candidates[0]
+
+_gsf_first_body_line = _gsf_manual_lines[_gsf_body_start]
+_gsf_indent = _gsf_first_body_line[:len(_gsf_first_body_line)-len(_gsf_first_body_line.lstrip())]
+
+_gsf_new_manual_body = [
+    _gsf_indent + 'try:\n',
+    _gsf_indent + '    import os as _gsf_manual_os\n',
+    _gsf_indent + '    import sys as _gsf_manual_sys\n',
+    _gsf_indent + '    if "/app/web" not in _gsf_manual_sys.path:\n',
+    _gsf_indent + '        _gsf_manual_sys.path.insert(0,"/app/web")\n',
+    _gsf_indent + '    from editor_2027_embed import render_editor_2027_embed as _gsf_render_manual_editor_2027\n',
+    _gsf_indent + '    _gsf_manual_path=str(st.session_state.get("gsf_source_path") or "")\n',
+    _gsf_indent + '    if not _gsf_manual_path or not _gsf_manual_os.path.isfile(_gsf_manual_path):\n',
+    _gsf_indent + '        try:\n',
+    _gsf_indent + '            _gsf_manual_bytes=video.getvalue() if hasattr(video,"getvalue") else b""\n',
+    _gsf_indent + '            _gsf_manual_path=_gsf_bytes_to_preview(_gsf_manual_bytes,"manual_scene_source") if _gsf_manual_bytes else ""\n',
+    _gsf_indent + '        except Exception:\n',
+    _gsf_indent + '            _gsf_manual_path=""\n',
+    _gsf_indent + '    if _gsf_manual_path:\n',
+    _gsf_indent + '        _gsf_render_manual_editor_2027(_gsf_manual_path,height=720)\n',
+    _gsf_indent + '    else:\n',
+    _gsf_indent + '        st.warning("Video non disponibile nel Game Editor.")\n',
+    _gsf_indent + 'except Exception as _gsf_manual_editor_exc:\n',
+    _gsf_indent + '    st.error("Game Editor non disponibile: "+str(_gsf_manual_editor_exc))\n',
+]
+
+_gsf_manual_lines[_gsf_body_start:_gsf_body_end] = _gsf_new_manual_body
+s = "".join(_gsf_manual_lines)
+print("GSF Manual/Scegli scena routed to Editor 2027")
 
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
