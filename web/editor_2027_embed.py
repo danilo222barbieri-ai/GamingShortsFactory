@@ -32,14 +32,15 @@ _TEMPLATE = r'''
 #ng27 .ico.ai{stroke-width:1.55}
 #ng27 .shell{width:100%;max-width:560px;margin:0 auto;padding:3px 5px;border-radius:18px;border:0;background:radial-gradient(ellipse at center,rgba(203,229,244,.94) 0%,rgba(219,237,247,.82) 34%,rgba(237,246,251,.56) 58%,rgba(250,253,255,.24) 78%,rgba(255,255,255,0) 100%);box-shadow:none;position:relative;overflow:hidden;transition:max-width .22s ease,padding .22s ease}
 #ng27 .shell:after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.045;background-image:linear-gradient(rgba(80,110,132,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(80,110,132,.04) 1px,transparent 1px);background-size:36px 36px}
-#ng27 .topline{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:0 2px 3px}
-#ng27 .brand{display:flex;align-items:center;gap:9px}
+#ng27 .topline{position:relative;z-index:3;display:flex;align-items:center;justify-content:flex-end;padding:0 2px 2px}
+#ng27 .brand{display:none}
 #ng27 .brandMark{width:24px;height:24px;border-radius:10px;background:linear-gradient(145deg,#ffffff,#dde6ec);border:1px solid #c8d5de;box-shadow:inset 0 1px 0 #fff,0 3px 8px rgba(83,105,123,.08);display:grid;place-items:center}
 #ng27 .brandMark .ico{width:15px;height:15px;color:#526a7c}
 #ng27 .brandText b{display:block;font-size:8px;letter-spacing:.16em}
 #ng27 .brandText span{display:block;font-size:6.5px;color:#7d8fa0;letter-spacing:.14em;margin-top:2px}
 #ng27 .sys{display:flex;align-items:center;gap:7px;font-size:8px;font-weight:900;letter-spacing:.14em;color:#6f8293}
 #ng27 .sysDot{width:6px;height:6px;border-radius:50%;background:var(--mint);box-shadow:0 0 12px rgba(102,240,195,.7)}
+#ng27 .sysDot,#ng27 #sysText{display:none}
 #ng27 .zoomEditorBtn{height:24px;padding:0 7px;border-radius:9px;border:1px solid rgba(255,255,255,.70);background:rgba(255,255,255,.48);backdrop-filter:blur(10px);color:#587083;display:flex;align-items:center;gap:4px;font-size:6.5px;font-weight:900;letter-spacing:.08em}
 #ng27 .zoomEditorBtn .ico{width:12px;height:12px}
 #ng27.expanded .shell{max-width:820px;padding:6px 9px}
