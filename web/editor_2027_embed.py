@@ -44,24 +44,24 @@ _TEMPLATE = r'''
 #ng27 .zoomEditorBtn{height:24px;padding:0 7px;border-radius:9px;border:1px solid rgba(255,255,255,.70);background:rgba(255,255,255,.48);backdrop-filter:blur(10px);color:#587083;display:flex;align-items:center;gap:4px;font-size:6.5px;font-weight:900;letter-spacing:.08em}
 #ng27 .zoomEditorBtn .ico{width:12px;height:12px}
 #ng27.expanded .shell{max-width:820px;padding:6px 9px}
-#ng27.expanded .cockpit{grid-template-columns:48px minmax(0,1fr) 48px;gap:8px}
-#ng27.expanded .railBtn{width:42px;height:42px}
-#ng27.expanded .railBtn .ico{width:16px;height:16px}
-#ng27.expanded .railBtn span{font-size:6.1px}
+#ng27.expanded .cockpit{grid-template-columns:60px minmax(0,1fr) 60px;gap:8px}
+#ng27.expanded .railBtn{width:56px;height:56px}
+#ng27.expanded .railBtn .ico{width:22px;height:22px}
+#ng27.expanded .railBtn span{font-size:7.2px}
 #ng27.expanded .stage.r916{width:min(100%,330px)}
 #ng27.expanded .timeline{width:min(96%,700px)}
 
-#ng27 .cockpit{position:relative;z-index:2;display:grid;grid-template-columns:50px minmax(0,1fr) 50px;gap:5px;align-items:center}
-#ng27 .rail{display:flex;flex-direction:column;gap:4px;align-items:center}
-#ng27 .railBtn{width:46px;height:46px;border-radius:13px;border:1px solid rgba(211,230,241,.92);background:linear-gradient(145deg,rgba(255,255,255,.88),rgba(234,246,252,.76));backdrop-filter:blur(14px);box-shadow:0 5px 13px rgba(76,120,146,.09);color:#456B83;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:.16s}
-#ng27 .railBtn .ico{width:18px;height:18px}
-#ng27 .railBtn span{font-size:6.5px;font-weight:900;letter-spacing:.08em;color:#6D8798}
-#ng27 .railBtn:hover,#ng27 .railBtn.active{border-color:rgba(89,207,238,.52);background:linear-gradient(145deg,#E7F7FD,#EEEAFE);color:#315F79;transform:translateY(-1px);box-shadow:0 6px 16px rgba(73,121,148,.13)}
-#ng27 .railBtn.active span{color:#3b718a}
+#ng27 .cockpit{position:relative;z-index:2;display:grid;grid-template-columns:58px minmax(0,1fr) 58px;gap:7px;align-items:center}
+#ng27 .rail{display:flex;flex-direction:column;gap:6px;align-items:center}
+#ng27 .railBtn{width:54px;height:54px;border-radius:16px;border:1px solid #D7E7F2;background:linear-gradient(145deg,rgba(248,253,255,.97),rgba(239,237,255,.94));backdrop-filter:blur(14px);box-shadow:0 7px 17px rgba(91,126,170,.11);color:#5B78B6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:.16s}
+#ng27 .railBtn .ico{width:21px;height:21px}
+#ng27 .railBtn span{font-size:7.2px;font-weight:900;letter-spacing:.075em;color:#667FAE}
+#ng27 .railBtn:hover,#ng27 .railBtn.active{border-color:#BDDDEF;background:linear-gradient(145deg,#E8F8FF,#ECE8FF);color:#4B69B0;transform:translateY(-1px);box-shadow:0 9px 20px rgba(100,126,183,.16)}
+#ng27 .railBtn.active span{color:#536EB3}
 #ng27 .stageWrap{min-width:0}
-#ng27 .stage{position:relative;margin:0 auto;background:#0b1017;overflow:hidden;border:1px solid rgba(255,255,255,.1);box-shadow:0 18px 48px rgba(0,0,0,.34);transition:width .24s,aspect-ratio .24s,border-radius .24s}
+#ng27 .stage{position:relative;margin:0 auto;background:transparent;overflow:hidden;border:0;box-shadow:none;transition:width .24s,aspect-ratio .24s,border-radius .24s}
 #ng27 .stage.r916{width:min(100%,285px);aspect-ratio:9/16;border-radius:22px}
-#ng27 video{width:100%;height:100%;object-fit:cover;display:block;background:#10141b;transform-origin:center center;transition:filter .16s,transform .16s}
+#ng27 video{width:100%;height:100%;object-fit:cover;display:block;background:transparent;transform-origin:center center;transition:filter .16s,transform .16s}
 #ng27 .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(3,7,12,.46),transparent 17%,transparent 69%,rgba(3,7,12,.66))}
 #ng27 .scanlines{position:absolute;inset:0;pointer-events:none;opacity:.055;background:repeating-linear-gradient(180deg,rgba(255,255,255,.14) 0,rgba(255,255,255,.14) 1px,transparent 1px,transparent 5px)}
 #ng27 .corn{position:absolute;width:38px;height:38px;z-index:4;pointer-events:none;border-color:rgba(105,223,255,.52);border-style:solid}
@@ -146,7 +146,7 @@ _TEMPLATE = r'''
  #ng27 .rail:first-child{order:2}
  #ng27 .stageWrap{order:1}
  #ng27 .rail:last-child{order:3}
- #ng27 .railBtn{width:50px;height:50px;border-radius:15px}
+ #ng27 .railBtn{width:54px;height:54px;border-radius:16px}
  #ng27 .stage.r916{width:min(100%,285px)}
  #ng27 .captionPreview{font-size:28px}
  #ng27 .trimRow{grid-template-columns:34px 1fr 42px;row-gap:5px}
@@ -185,17 +185,6 @@ _TEMPLATE = r'''
         <div class="safeZone mapZone" id="mapZone"><span>MINIMAP SAFE</span></div>
         <div class="safeZone faceZone" id="faceZone"><span>FACECAM SAFE</span></div>
         <div class="captionPreview" id="captionPreview">NO SCOPE <span class="hotWord">CLUTCH!</span></div>
-
-        <div class="hudTop">
-          <div class="cluster">
-            <button class="glass hudBtn" id="backBtn" title="Indietro"><svg class="ico"><use href="#i-back"/></svg></button>
-            <div class="glass formatTag"><span class="signal"></span><span id="formatLabel">9:16 SHORT</span></div>
-          </div>
-          <div class="cluster">
-            <button class="glass hudBtn" id="resetBtn" title="Reset"><svg class="ico"><use href="#i-reset"/></svg></button>
-            <button class="glass hudBtn" id="closeBtn" title="Chiudi pannello"><svg class="ico"><use href="#i-close"/></svg></button>
-          </div>
-        </div>
 
         <div class="visionBadge" id="visionBadge">GAME VISION · SUBJECT LOCK</div>
 
@@ -515,9 +504,6 @@ _TEMPLATE = r'''
  }
  root.querySelectorAll('[data-panel]').forEach(btn=>btn.onclick=()=>openPanel(btn.dataset.panel,btn));
  root.querySelector('#drawerClose').onclick=()=>{drawer.classList.add('hidden');root.querySelectorAll('.railBtn').forEach(x=>x.classList.remove('active'))};
- root.querySelector('#closeBtn').onclick=root.querySelector('#drawerClose').onclick;
- root.querySelector('#backBtn').onclick=()=>flash('DEMO: RITORNO NON COLLEGATO');
- root.querySelector('#resetBtn').onclick=()=>{state={...defaults};commit();applyState();flash('RESET COMPLETO')};
  root.querySelector('#undoBtn').onclick=()=>{if(historyIndex>0){historyIndex--;restore(history[historyIndex])}else flash('NESSUN UNDO')};
  root.querySelector('#redoBtn').onclick=()=>{if(historyIndex<history.length-1){historyIndex++;restore(history[historyIndex])}else flash('NESSUN REDO')};
  root.querySelector('#doneBtn').onclick=()=>flash('PREVIEW SALVATA · DEMO');

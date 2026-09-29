@@ -370,11 +370,17 @@ _old_editor_open='''                    if st.button(
                         # Un solo editor AI aperto alla volta.
                         st.rerun()
 '''
-_new_editor_open='''                    if st.button(
-                        "APRI GAME EDITOR",
-                        use_container_width=True,
-                        key=f"edit_ai_{start:.2f}_{durata_effettiva:.2f}"
-                    ):
+_new_editor_open='''                    with st.container(key=f"gsf-major-game-editor_{start:.2f}_{durata_effettiva:.2f}"):
+                        _gsf_open_game_editor=st.button(
+                            "APRI GAME EDITOR",
+                            use_container_width=True,
+                            key=f"edit_ai_{start:.2f}_{durata_effettiva:.2f}"
+                        )
+                        st.markdown(
+                            '<div class="gsf-major-note">Ritocca il gameplay nel Game Editor oppure, se ti piace già così, prosegui verso lo Short finale.</div>',
+                            unsafe_allow_html=True,
+                        )
+                    if _gsf_open_game_editor:
                         _selected_sub_key=f"v71_auto_sub_{int(_selected_card['index'])}"
                         _selected_sub_enabled=bool(
                             st.session_state.get(
@@ -409,7 +415,7 @@ s=s.replace(_old_editor_open,_new_editor_open,1)
 
 _editor_cols_old='''                edit_col, keep_col = st.columns(2)
 '''
-_editor_cols_new='''                _edit_pad_l, edit_col, _edit_pad_r = st.columns([1.20,2.60,1.20])
+_editor_cols_new='''                _edit_pad_l, edit_col, _edit_pad_r = st.columns([.80,3.40,.80])
 '''
 if _editor_cols_old not in s:
     raise RuntimeError("Demo editor action columns not found")
@@ -444,19 +450,6 @@ _new_inline_marker='''                # ===== GAME EDITOR INLINE DELLA CLIP AI =
                             st.session_state.get("preview_bytes") or b"",
                             f"editor2027_{start:.2f}"
                         )
-                        _gsf_ed27_h,_gsf_ed27_c=st.columns([.84,.16],gap="small")
-                        with _gsf_ed27_h:
-                            st.markdown(
-                                '<div style="padding:7px 10px;border-radius:12px;background:linear-gradient(90deg,#FFF1EF,#F5F1FF);'
-                                'border:1px solid #F2D2CF;color:#7E3B49;font-size:11px;font-weight:850;letter-spacing:.03em">'
-                                'GAME EDITOR · PREVIEW'
-                                '</div>',
-                                unsafe_allow_html=True,
-                            )
-                        with _gsf_ed27_c:
-                            if st.button("CHIUDI",key=f"close_ed27_{_this_inline_id}",use_container_width=True):
-                                st.session_state["gsf_editor_2027_inline_open"]=False
-                                st.rerun()
                         if _gsf_ed27_path:
                             _gsf_render_editor_2027_embed(_gsf_ed27_path,height=660)
                     except Exception as _gsf_ed27_exc:
@@ -481,6 +474,125 @@ _new_choice='''                                st.session_state["preview_key"] =
 '''
 if _old_choice in s:
     s=s.replace(_old_choice,_new_choice,1)
+
+
+# DEMO UX: i tre passaggi principali devono leggere come veri spartiacque.
+_major_action_css=r'''
+<style id="gsf-major-actions">
+.gsf-major-note{
+    position:relative;
+    max-width:620px;
+    margin:9px auto 18px;
+    padding:10px 14px;
+    border-radius:16px;
+    border:1px solid #D6E7F2;
+    background:linear-gradient(135deg,rgba(239,250,255,.97),rgba(244,241,255,.96));
+    box-shadow:0 7px 18px rgba(91,126,170,.08);
+    color:#60798E;
+    text-align:center;
+    font-size:12px;
+    font-weight:700;
+    line-height:1.35;
+}
+.gsf-major-note:before{
+    content:"";
+    position:absolute;
+    left:50%;
+    top:-6px;
+    width:11px;
+    height:11px;
+    transform:translateX(-50%) rotate(45deg);
+    background:#F1F8FE;
+    border-left:1px solid #D6E7F2;
+    border-top:1px solid #D6E7F2;
+}
+[class*="st-key-gsf-major-create-ai"] button,
+[class*="st-key-gsf-major-game-editor_"] button,
+[class*="st-key-gsf-major-create-short"] button{
+    min-height:56px !important;
+    border-radius:17px !important;
+    border:0 !important;
+    color:#FFFFFF !important;
+    font-size:15px !important;
+    font-weight:900 !important;
+    letter-spacing:.045em !important;
+    box-shadow:0 12px 28px rgba(82,111,178,.22) !important;
+    transition:transform .16s ease,box-shadow .16s ease,filter .16s ease !important;
+}
+[class*="st-key-gsf-major-create-ai"] button{
+    background:linear-gradient(135deg,#59BDE4,#798FE6) !important;
+}
+[class*="st-key-gsf-major-game-editor_"] button{
+    background:linear-gradient(135deg,#738FE6,#9482E4) !important;
+}
+[class*="st-key-gsf-major-create-short"] button{
+    background:linear-gradient(135deg,#58C7B9,#5DADE0) !important;
+}
+[class*="st-key-gsf-major-create-ai"] button:hover,
+[class*="st-key-gsf-major-game-editor_"] button:hover,
+[class*="st-key-gsf-major-create-short"] button:hover{
+    transform:translateY(-2px) !important;
+    filter:brightness(1.025) !important;
+    box-shadow:0 15px 32px rgba(82,111,178,.27) !important;
+}
+@media(max-width:750px){
+    .gsf-major-note{font-size:11px;padding:9px 12px;margin-bottom:15px}
+    [class*="st-key-gsf-major-create-ai"] button,
+    [class*="st-key-gsf-major-game-editor_"] button,
+    [class*="st-key-gsf-major-create-short"] button{
+        min-height:52px !important;
+        font-size:13px !important;
+    }
+}
+</style>
+'''
+_major_heading='''    st.markdown('<div class="gsf-icon-title">Scegli il tuo motore IA o crea il tuo gameplay</div>', unsafe_allow_html=True)
+'''
+if _major_heading not in s:
+    raise RuntimeError("Demo major-action heading anchor not found")
+s=s.replace(
+    _major_heading,
+    _major_heading + '    st.markdown(' + repr(_major_action_css) + ', unsafe_allow_html=True)\n',
+    1,
+)
+
+_create_ai_old='''        if st.button("CREA CON AI", use_container_width=True):
+'''
+_create_ai_new='''        with st.container(key="gsf-major-create-ai"):
+            _gsf_create_ai_clicked=st.button("CREA CON IA",use_container_width=True)
+            st.markdown(
+                '<div class="gsf-major-note">L’IA analizza il gameplay e ti propone i momenti migliori già pronti da scegliere.</div>',
+                unsafe_allow_html=True,
+            )
+        if _gsf_create_ai_clicked:
+'''
+if _create_ai_old not in s:
+    raise RuntimeError("Demo CREA CON IA anchor not found")
+s=s.replace(_create_ai_old,_create_ai_new,1)
+
+_create_short_old='''            _v1054_create_final_clicked=st.button(
+                "CREA SHORT FINALE",
+                type="primary",
+                use_container_width=True,
+                key="create_final_short_v54"
+            )
+'''
+_create_short_new='''            with st.container(key="gsf-major-create-short"):
+                _v1054_create_final_clicked=st.button(
+                    "CREA SHORT FINALE",
+                    type="primary",
+                    use_container_width=True,
+                    key="create_final_short_v54"
+                )
+                st.markdown(
+                    '<div class="gsf-major-note">Genera la versione finale pronta per il download e la pubblicazione sui tuoi social collegati.</div>',
+                    unsafe_allow_html=True,
+                )
+'''
+if _create_short_old not in s:
+    raise RuntimeError("Demo CREA SHORT anchor not found")
+s=s.replace(_create_short_old,_create_short_new,1)
+
 
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
