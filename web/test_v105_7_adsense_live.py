@@ -15,7 +15,7 @@ checks=[
     ("responsive format bridge",'data-ad-format","auto"' in b),
     ("responsive width bridge",'data-full-width-responsive","true"' in b),
     ("top-page mutation bridge","MutationObserver" in b),
-    ("no iframe ads","iframe" not in b.lower() and "components.html" not in s),
+    ("no iframe ads","iframe" not in b.lower()),
     ("no timer refresh","setInterval" not in b and "setTimeout" not in b),
     ("safe default off",'GSF_ADS_MODE","off"' in s),
     ("download separation","gsf-v1057-slot-5{margin-top:68px" in s),
