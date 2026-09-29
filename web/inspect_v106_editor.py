@@ -1,14 +1,13 @@
 from pathlib import Path
+import ast
 p=Path("/app/GamingShortsFactory_V105_7_ADSENSE_READY.py")
-lines=p.read_text(encoding="utf-8").splitlines()
-
-for label,a,b in [
-    ("LEGACY_PLAYER",11780,11930),
-    ("MAIN_EDITOR",12270,12580),
-    ("INLINE_EDITOR",13020,13240),
-    ("RENDER_RECIPE",11600,11720),
-]:
-    print(f"V106_RANGE_{label}_START")
-    for j in range(a-1,min(len(lines),b)):
-        print(f"{j+1}: {lines[j]}")
-    print(f"V106_RANGE_{label}_END")
+s=p.read_text(encoding="utf-8")
+tree=ast.parse(s)
+for name in ("_gsf_render_core","_gsf_render_final_recipe","render_gsf_editor_live_player"):
+    node=next((n for n in tree.body if isinstance(n,(ast.FunctionDef,ast.AsyncFunctionDef)) and n.name==name),None)
+    print("V106_FUNC_"+name+"_START")
+    if node is None:
+        print("NOT_FOUND")
+    else:
+        print(ast.get_source_segment(s,node) or "")
+    print("V106_FUNC_"+name+"_END")
