@@ -1160,6 +1160,8 @@ st.markdown("""
 <style id="gsf-major-actions-final-override">
 .st-key-gsf-major-create-ai button,
 [class*="st-key-gsf-major-create-ai"] button,
+.st-key-gsf-major-personalize button,
+[class*="st-key-gsf-major-personalize"] button,
 [class*="st-key-gsf-major-game-editor_"] button,
 .st-key-gsf-major-create-short button,
 [class*="st-key-gsf-major-create-short"] button,
@@ -1186,6 +1188,8 @@ st.markdown("""
 }
 .st-key-gsf-major-create-ai button:hover,
 [class*="st-key-gsf-major-create-ai"] button:hover,
+.st-key-gsf-major-personalize button:hover,
+[class*="st-key-gsf-major-personalize"] button:hover,
 [class*="st-key-gsf-major-game-editor_"] button:hover,
 .st-key-gsf-major-create-short button:hover,
 [class*="st-key-gsf-major-create-short"] button:hover,
@@ -1215,6 +1219,32 @@ st.markdown("""
         min-height:52px !important;
         max-height:52px !important;
         font-size:13px !important;
+    }
+}
+
+.st-key-gsf-major-personalize button,
+[class*="st-key-gsf-major-personalize"] button{
+    position:relative !important;
+    pointer-events:none !important;
+    cursor:default !important;
+}
+.st-key-gsf-major-personalize button::after,
+[class*="st-key-gsf-major-personalize"] button::after{
+    content:"→";
+    position:absolute;
+    right:20px;
+    top:50%;
+    transform:translateY(-52%);
+    font-size:20px;
+    font-weight:900;
+    line-height:1;
+    color:currentColor;
+}
+@media(max-width:750px){
+    .st-key-gsf-major-personalize button::after,
+    [class*="st-key-gsf-major-personalize"] button::after{
+        right:15px;
+        font-size:17px;
     }
 }
 </style>
@@ -1293,7 +1323,8 @@ _gsf_first_body_line = _gsf_manual_lines[_gsf_body_start]
 _gsf_indent = _gsf_first_body_line[:len(_gsf_first_body_line)-len(_gsf_first_body_line.lstrip())]
 
 _gsf_new_manual_body = [
-    _gsf_indent + 'st.markdown(\'<div class="gsf-personalize-major">PERSONALIZZA IL TUO GAMEPLAY</div>\', unsafe_allow_html=True)\n',
+    _gsf_indent + 'with st.container(key="gsf-major-personalize"):\n',
+    _gsf_indent + '    st.button("PERSONALIZZA IL TUO GAMEPLAY",use_container_width=True,key="gsf_personalize_visual")\n',
     _gsf_indent + 'try:\n',
     _gsf_indent + '    import os as _gsf_manual_os\n',
     _gsf_indent + '    import sys as _gsf_manual_sys\n',
