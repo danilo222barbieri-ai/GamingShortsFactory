@@ -85,10 +85,10 @@ if _GSF_REAL_DEMO:
             st.session_state["publication_preview_bytes"]=_gsf_demo_clip_bytes
             st.session_state["publication_final_bytes"]=_gsf_demo_final_bytes
 
-            # Do NOT pre-open publishing or editors: those must be exercised
-            # through the real production buttons to expose real bugs.
-            st.session_state.pop("show_social_publish_v53",None)
-            st.session_state.pop("show_social_publish_v54",None)
+            # Keep the social publish area visible in the functional demo so
+            # YouTube/TikTok/Instagram connection and publish controls can be tested directly.
+            st.session_state["show_social_publish_v53"]=True
+            st.session_state["show_social_publish_v54"]=True
             st.session_state.pop("current_view",None)
             st.session_state.pop("inline_editor_id",None)
 
@@ -746,14 +746,25 @@ st.markdown("""
 }
 @media(max-width:600px){
   .gsf-account-fab{
-    top:10px;
-    right:10px;
-    width:38px;
-    padding:0;
+    top:auto;
+    bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+    right:12px;
+    width:auto;
+    min-width:82px;
+    height:46px;
+    padding:0 14px;
     justify-content:center;
-    border-radius:12px;
+    border-radius:15px;
+    z-index:2147483000;
+    background:rgba(255,255,255,.96);
+    box-shadow:0 10px 26px rgba(52,91,122,.22);
   }
-  .gsf-account-fab span{display:none}
+  .gsf-account-fab svg{width:19px;height:19px}
+  .gsf-account-fab span{
+    display:inline;
+    font-size:10px;
+    letter-spacing:.035em;
+  }
 }
 </style>
 <a class="gsf-account-fab" href="/account" target="_self" aria-label="Apri Creator Hub">
