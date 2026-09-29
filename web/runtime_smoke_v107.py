@@ -109,7 +109,37 @@ with tempfile.TemporaryDirectory(prefix="gsf_v107_smoke_") as td:
     status,headers,roundtrip=request(media_path,timeout=10)
     if status!=200 or roundtrip!=raw:
         raise SystemExit("V107 runtime smoke FAIL: secure media roundtrip")
-print("V107 direct-upload/media smoke: PASS",flush=True)
+
+    # Safari, Chrome and Android players rely heavily on byte-range requests.
+    status,headers,partial=request(
+        media_path,
+        headers={"Range":"bytes=0-31"},
+        timeout=10,
+    )
+    content_range=str(headers.get("Content-Range","") or "")
+    if status!=206 or partial!=raw[:32] or not content_range.startswith("bytes 0-31/"):
+        raise SystemExit(
+            "V107 runtime smoke FAIL: media byte-range support "
+            f"status={status} range={content_range!r}"
+        )
+print("V107 direct-upload/media + Range smoke: PASS",flush=True)
+
+# Device-specific upload policy over the actual HTTP route.
+for ua,expected,label in (
+    ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/154 Safari/537.36",8,"desktop"),
+    ("Mozilla/5.0 (iPhone; CPU iPhone OS 19_0 like Mac OS X) Mobile/15E148 Safari/605.1",3,"iPhone"),
+    ("Mozilla/5.0 (iPad; CPU OS 19_0 like Mac OS X) Mobile/15E148 Safari/605.1",3,"iPad"),
+    ("Mozilla/5.0 (Linux; Android 16; Pixel 10) Chrome/154 Mobile Safari/537.36",3,"Android"),
+):
+    status,headers,body=request(
+        "/direct-upload/capabilities",
+        headers={"User-Agent":ua},
+        attempts=5,
+    )
+    device_caps=json.loads(body.decode("utf-8"))
+    if status!=200 or not device_caps.get("ok") or int(device_caps.get("concurrency",0))!=expected:
+        raise SystemExit(f"V107 runtime smoke FAIL: {label} upload policy")
+print("V107 desktop/iOS/iPadOS/Android upload policy smoke: PASS",flush=True)
 
 # If production S3 is connected, verify credentials/permissions with multipart init + abort.
 status,headers,body=request("/direct-upload/capabilities",attempts=5)
