@@ -10,6 +10,7 @@ checks=[
     ("V105.7 output marker","V105.7 AdSense Ready" in s),
     ("six renderer calls",all(f"_gsf_v1057_ad_markup({i})" in s for i in range(1,7))),
     ("publisher env","GSF_ADSENSE_CLIENT" in s),
+    ("live class inside class attribute",'gsf-v1057-slot-{idx} gsf-v1057-live"\'' in s),
     ("six slot envs","GSF_ADSENSE_SLOT_" in s and "range(1,7)" in s),
     ("responsive format bridge",'data-ad-format","auto"' in b),
     ("responsive width bridge",'data-full-width-responsive","true"' in b),
