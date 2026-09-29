@@ -530,32 +530,18 @@ _major_action_css=r'''
     letter-spacing:.045em !important;
     transition:transform .16s ease,box-shadow .16s ease,filter .16s ease !important;
 }
-[class*="st-key-gsf-major-create-ai"] button{
+[class*="st-key-gsf-major-create-ai"] button,
+[class*="st-key-gsf-major-game-editor_"] button,
+[class*="st-key-gsf-major-create-short"] button{
     background:linear-gradient(135deg,#8B67E8 0%,#6557D9 100%) !important;
     box-shadow:0 12px 28px rgba(104,84,205,.28) !important;
-}
-[class*="st-key-gsf-major-game-editor_"] button{
-    background:linear-gradient(135deg,#4FADE8 0%,#4F83E5 100%) !important;
-    box-shadow:0 12px 28px rgba(72,126,205,.28) !important;
-}
-[class*="st-key-gsf-major-create-short"] button{
-    background:linear-gradient(135deg,#35BFA6 0%,#2D9F8D 100%) !important;
-    box-shadow:0 12px 28px rgba(45,159,141,.28) !important;
 }
 [class*="st-key-gsf-major-create-ai"] button:hover,
 [class*="st-key-gsf-major-game-editor_"] button:hover,
 [class*="st-key-gsf-major-create-short"] button:hover{
     transform:translateY(-2px) !important;
     filter:brightness(1.035) !important;
-}
-[class*="st-key-gsf-major-create-ai"] button:hover{
     box-shadow:0 15px 34px rgba(104,84,205,.36) !important;
-}
-[class*="st-key-gsf-major-game-editor_"] button:hover{
-    box-shadow:0 15px 34px rgba(72,126,205,.36) !important;
-}
-[class*="st-key-gsf-major-create-short"] button:hover{
-    box-shadow:0 15px 34px rgba(45,159,141,.36) !important;
 }
 @media(max-width:750px){
     .gsf-major-note{font-size:11px;padding:9px 12px;margin-bottom:15px}
