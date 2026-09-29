@@ -700,7 +700,15 @@ st.markdown("""
 </section>
 """, unsafe_allow_html=True)
 '''
-s = s.rstrip() + "\n\n" + _demo_social_publication.lstrip()
+_demo_footer_anchor='''with st.container(key="v1053_ad_footer"):
+'''
+if _demo_footer_anchor not in s:
+    raise RuntimeError("Demo footer anchor not found for social publication")
+s=s.replace(
+    _demo_footer_anchor,
+    _demo_social_publication.lstrip()+"\n\n"+_demo_footer_anchor,
+    1,
+)
 
 
 # DEMO footer: social channels, visually ready while URLs are pending.
