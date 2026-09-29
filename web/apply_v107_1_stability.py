@@ -108,22 +108,15 @@ if _old_lock not in s:
 s=s.replace(_old_lock,'acquired=_GSF_V106_RENDER_LOCK.acquire(timeout=2.0)',1)
 
 # Manual/Scegli scena already has a durable source path.  Do not duplicate the
-# entire uploaded source into publication_preview_bytes.
-_old_manual='''            try:
-                _gsf_manual_preview_bytes=video.getvalue() if hasattr(video,"getvalue") else None
-                if _gsf_manual_preview_bytes:
-                    st.session_state["publication_preview_bytes"]=_gsf_manual_preview_bytes
-            except Exception:
-                pass
-'''
-if _old_manual not in s:
-    raise RuntimeError("V107.1 manual full-source preview anchor missing")
+# entire uploaded source into publication_preview_bytes.  Replace only the
+# unique read; leaving the surrounding try/if structure intact makes this
+# resilient to indentation changes in the generated Manual branch.
+_old_manual_read='_gsf_manual_preview_bytes=video.getvalue() if hasattr(video,"getvalue") else None'
+if _old_manual_read not in s:
+    raise RuntimeError("V107.1 manual full-source preview read missing")
 s=s.replace(
-    _old_manual,
-    '''            # V107.1: the Editor streams from _gsf_manual_path; keeping a
-            # second full-file byte copy here can exhaust mobile/web memory.
-            st.session_state.pop("publication_preview_bytes",None)
-''',
+    _old_manual_read,
+    '_gsf_manual_preview_bytes=None  # V107.1: stream from durable source path instead',
     1,
 )
 
