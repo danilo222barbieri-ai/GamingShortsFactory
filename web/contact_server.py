@@ -4,6 +4,10 @@ import os
 import re
 import smtplib
 import ssl
+import json
+import uuid
+from datetime import datetime, timezone
+from urllib.request import Request, urlopen
 import threading
 import time
 from email.message import EmailMessage
@@ -24,6 +28,13 @@ SMTP_PASSWORD=str(
     or ""
 )
 SMTP_FROM=str(os.environ.get("GSF_SMTP_FROM","") or SMTP_USER)
+RESEND_API_KEY=str(os.environ.get("GSF_RESEND_API_KEY","") or "")
+RESEND_FROM=str(os.environ.get("GSF_RESEND_FROM","") or SMTP_FROM or "Gaming Shorts Factory <onboarding@resend.dev>")
+S3_BUCKET=str(os.environ.get("GSF_S3_BUCKET","") or "")
+S3_ENDPOINT=str(os.environ.get("GSF_S3_ENDPOINT","") or "")
+S3_REGION=str(os.environ.get("GSF_S3_REGION","auto") or "auto")
+S3_ACCESS=str(os.environ.get("GSF_S3_ACCESS_KEY_ID","") or "")
+S3_SECRET=str(os.environ.get("GSF_S3_SECRET_ACCESS_KEY","") or "")
 _RATE={}
 _RATE_LOCK=threading.Lock()
 
@@ -98,39 +109,143 @@ border-radius:14px;margin-top:18px;cursor:pointer;font-size:15px}}
 </body></html>"""
 
 
-def _send(name,email_addr,message):
+def _store_message(name,email_addr,message):
+    if not (S3_BUCKET and S3_ENDPOINT and S3_ACCESS and S3_SECRET):
+        return ""
+    try:
+        import boto3
+        client=boto3.client(
+            "s3",
+            endpoint_url=S3_ENDPOINT,
+            region_name=S3_REGION,
+            aws_access_key_id=S3_ACCESS,
+            aws_secret_access_key=S3_SECRET,
+        )
+        now=datetime.now(timezone.utc)
+        key=(
+            "contact-inbox/"
+            +now.strftime("%Y/%m/%d/")
+            +now.strftime("%H%M%S-")
+            +uuid.uuid4().hex
+            +".json"
+        )
+        payload={
+            "created_at":now.isoformat(),
+            "name":name,
+            "email":email_addr,
+            "message":message,
+        }
+        client.put_object(
+            Bucket=S3_BUCKET,
+            Key=key,
+            Body=json.dumps(payload,ensure_ascii=False).encode("utf-8"),
+            ContentType="application/json",
+            CacheControl="no-store",
+        )
+        return key
+    except Exception as exc:
+        print(
+            f"GSF contact storage warning: {type(exc).__name__}: {str(exc)[:160]}",
+            flush=True,
+        )
+        return ""
+
+
+def _send_resend(name,email_addr,message):
+    if not RESEND_API_KEY:
+        return False
     recipients=_recipients()
     if not recipients:
-        raise RuntimeError("recipient not configured")
-    if not SMTP_USER or not SMTP_PASSWORD:
-        raise RuntimeError("smtp credentials not configured")
-
-    msg=EmailMessage()
-    msg["Subject"]="Gaming Shorts Factory · nuovo messaggio"
-    msg["From"]=SMTP_FROM or SMTP_USER
-    msg["To"]=", ".join(recipients)
-    msg["Reply-To"]=email_addr
-    msg.set_content(
-        "Nuovo messaggio dal modulo Contatti di Gaming Shorts Factory\n\n"
-        f"Nome: {name}\n"
-        f"Email: {email_addr}\n\n"
-        f"Messaggio:\n{message}\n"
+        return False
+    payload={
+        "from":RESEND_FROM,
+        "to":recipients,
+        "subject":"Gaming Shorts Factory · nuovo messaggio",
+        "reply_to":email_addr,
+        "text":(
+            "Nuovo messaggio dal modulo Contatti di Gaming Shorts Factory\n\n"
+            f"Nome: {name}\n"
+            f"Email: {email_addr}\n\n"
+            f"Messaggio:\n{message}\n"
+        ),
+    }
+    req=Request(
+        "https://api.resend.com/emails",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization":"Bearer "+RESEND_API_KEY,
+            "Content-Type":"application/json",
+        },
+        method="POST",
     )
+    with urlopen(req,timeout=5) as resp:
+        status=int(getattr(resp,"status",0) or 0)
+        if status not in (200,201,202):
+            raise RuntimeError(f"email api HTTP {status}")
+    return True
 
-    context=ssl.create_default_context()
-    if SMTP_PORT==465:
-        with smtplib.SMTP_SSL(
-            SMTP_HOST,SMTP_PORT,timeout=20,context=context
-        ) as smtp:
-            smtp.login(SMTP_USER,SMTP_PASSWORD)
-            smtp.send_message(msg)
-    else:
-        with smtplib.SMTP(SMTP_HOST,SMTP_PORT,timeout=20) as smtp:
-            smtp.ehlo()
-            smtp.starttls(context=context)
-            smtp.ehlo()
-            smtp.login(SMTP_USER,SMTP_PASSWORD)
-            smtp.send_message(msg)
+
+def _send_smtp_background(name,email_addr,message):
+    try:
+        recipients=_recipients()
+        if not recipients or not SMTP_USER or not SMTP_PASSWORD:
+            return
+        msg=EmailMessage()
+        msg["Subject"]="Gaming Shorts Factory · nuovo messaggio"
+        msg["From"]=SMTP_FROM or SMTP_USER
+        msg["To"]=", ".join(recipients)
+        msg["Reply-To"]=email_addr
+        msg.set_content(
+            "Nuovo messaggio dal modulo Contatti di Gaming Shorts Factory\n\n"
+            f"Nome: {name}\n"
+            f"Email: {email_addr}\n\n"
+            f"Messaggio:\n{message}\n"
+        )
+
+        context=ssl.create_default_context()
+        if SMTP_PORT==465:
+            with smtplib.SMTP_SSL(
+                SMTP_HOST,SMTP_PORT,timeout=4,context=context
+            ) as smtp:
+                smtp.login(SMTP_USER,SMTP_PASSWORD)
+                smtp.send_message(msg)
+        else:
+            with smtplib.SMTP(SMTP_HOST,SMTP_PORT,timeout=4) as smtp:
+                smtp.ehlo()
+                smtp.starttls(context=context)
+                smtp.ehlo()
+                smtp.login(SMTP_USER,SMTP_PASSWORD)
+                smtp.send_message(msg)
+    except Exception as exc:
+        print(
+            f"GSF contact smtp background warning: {type(exc).__name__}: {str(exc)[:160]}",
+            flush=True,
+        )
+
+
+def _deliver(name,email_addr,message):
+    stored_key=_store_message(name,email_addr,message)
+
+    if RESEND_API_KEY:
+        try:
+            if _send_resend(name,email_addr,message):
+                return True,stored_key,"email"
+        except Exception as exc:
+            print(
+                f"GSF contact email api warning: {type(exc).__name__}: {str(exc)[:160]}",
+                flush=True,
+            )
+
+    if SMTP_USER and SMTP_PASSWORD:
+        threading.Thread(
+            target=_send_smtp_background,
+            args=(name,email_addr,message),
+            daemon=True,
+        ).start()
+
+    if stored_key:
+        return True,stored_key,"stored"
+    return False,"","none"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -204,8 +319,14 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 return
 
-            _send(name,email_addr,message)
-            self._html(200,_page("Messaggio inviato. Grazie!",ok=True))
+            delivered,stored_key,mode=_deliver(name,email_addr,message)
+            if not delivered:
+                raise RuntimeError("contact delivery unavailable")
+            print(
+                f"GSF contact accepted mode={mode} stored={'yes' if stored_key else 'no'}",
+                flush=True,
+            )
+            self._html(200,_page("Messaggio ricevuto. Grazie!",ok=True))
         except ValueError as exc:
             self._html(400,_page(str(exc)))
         except Exception as exc:
@@ -223,7 +344,8 @@ if __name__=="__main__":
     server=ThreadingHTTPServer(("127.0.0.1",PORT),Handler)
     print(
         f"GSF contact server listening on 127.0.0.1:{PORT} "
-        f"smtp={'on' if SMTP_USER and SMTP_PASSWORD else 'off'}",
+        f"delivery={'https' if RESEND_API_KEY else 'stored'} "
+        f"smtp_fallback={'on' if SMTP_USER and SMTP_PASSWORD else 'off'}",
         flush=True,
     )
     server.serve_forever()
