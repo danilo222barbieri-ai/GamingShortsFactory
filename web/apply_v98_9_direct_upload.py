@@ -54,9 +54,9 @@ def _gsf_v989_direct_upload_html(loaded=False):
 html,body{margin:0;padding:0;background:transparent;overflow:hidden;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .wrap{height:278px;display:flex;align-items:flex-start;justify-content:center;padding-top:34px;box-sizing:border-box}
 .circle{box-sizing:border-box;width:218px;height:218px;border-radius:50%;display:flex;flex-direction:column;
-align-items:center;justify-content:center;background:#F7F1F3;border:2px solid #DFC9CF;
-box-shadow:0 10px 24px rgba(126,92,103,.08);color:#80656C}
-.icon{font-size:54px;font-weight:700;line-height:.82;color:#AE7C87;margin-bottom:13px}
+align-items:center;justify-content:center;background:#FFF3E8;border:2px solid #F0C49D;
+box-shadow:0 10px 24px rgba(194,126,69,.10);color:#98633E}
+.icon{font-size:54px;font-weight:700;line-height:.82;color:#E58B48;margin-bottom:13px}
 .label{width:150px;text-align:center;font-size:17px;font-weight:800;line-height:1.2}
 @media(max-width:600px){.wrap{height:260px}.circle{width:208px;height:208px}.icon{font-size:52px}.label{width:144px;font-size:16px}}
 </style></head><body><div class="wrap"><div class="circle"><div class="icon">✓</div><div class="label">Video caricato</div></div></div></body></html>
@@ -77,8 +77,8 @@ box-shadow:0 10px 24px rgba(126,92,103,.08);color:#866A71;cursor:pointer;user-se
 .track{display:block;height:5px;margin-top:5px;border-radius:999px;background:rgba(174,124,135,.16);overflow:hidden}
 .bar{display:block;height:100%;width:0;background:#AE7C87;border-radius:999px;transition:width .12s linear}
 .circle.busy{pointer-events:none;background:#FAF5F6}
-.circle.done{background:#F7F1F3;border-color:#DFC9CF;color:#80656C}
-.circle.done .icon{color:#AE7C87}
+.circle.done{background:#FFF3E8;border-color:#F0C49D;color:#98633E}
+.circle.done .icon{color:#E58B48}
 .error{color:#B42318}
 @media(max-width:600px){.wrap{height:286px}.circle{width:208px;height:208px}.icon{font-size:54px}.label{width:144px;font-size:16px}}
 </style></head><body>

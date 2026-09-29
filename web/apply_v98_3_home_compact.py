@@ -19,7 +19,7 @@ st.markdown("""
 .gsf-hero{
     padding-top:2px !important;
     padding-bottom:4px !important;
-    margin-top:-12px !important;
+    margin-top:-16px !important;
     margin-bottom:0 !important;
 }
 .hero-title{
@@ -34,7 +34,7 @@ st.markdown("""
 
 /* Pull the approved upload circle slightly upward; do not resize it. */
 .st-key-v73-upload-shell{
-    margin-top:-18px !important;
+    margin-top:-22px !important;
 }
 
 @media(max-width:750px){
@@ -44,14 +44,14 @@ st.markdown("""
     .gsf-hero{
         padding-top:2px !important;
         padding-bottom:3px !important;
-        margin-top:-4px !important;
+        margin-top:-8px !important;
     }
     .hero-sub{
         margin-top:5px !important;
         margin-bottom:3px !important;
     }
     .st-key-v73-upload-shell{
-        margin-top:-10px !important;
+        margin-top:-14px !important;
     }
 }
 </style>

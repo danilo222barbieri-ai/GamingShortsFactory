@@ -131,22 +131,61 @@ s=(
     + _post
 )
 
+s=s.replace(
+    '    st.markdown(\'<div class="gsf-icon-title">Come vuoi creare?</div>\', unsafe_allow_html=True)\\n',
+    '    st.markdown(\'<div class="gsf-icon-title">Scegli il tuo motore IA o crea il tuo gameplay</div>\', unsafe_allow_html=True)\\n',
+    1,
+)
+
 # DEMO UX: i pulsanti delle tre clip AI devono essere visivamente distinti
 # dallo stato verde "Video caricato".
 _choice_css=r'''
 <style id="gsf-demo-choice-color">
 [class*="st-key-v71_choose_short_"] button{
-    background:linear-gradient(135deg,#6E63FF 0%,#4B9CFF 100%) !important;
-    color:#FFFFFF !important;
-    border:1px solid rgba(95,111,255,.55) !important;
-    box-shadow:0 8px 20px rgba(77,116,255,.18) !important;
+    min-height:38px !important;
+    border-radius:12px !important;
+    background:linear-gradient(135deg,#EDF8FE 0%,#F1EEFF 100%) !important;
+    color:#446986 !important;
+    border:1px solid #D2E5F1 !important;
+    box-shadow:0 5px 14px rgba(79,125,157,.10) !important;
+    font-weight:800 !important;
 }
 [class*="st-key-v71_choose_short_"] button:hover{
-    filter:brightness(1.06) !important;
+    background:linear-gradient(135deg,#E4F5FD 0%,#EAE5FF 100%) !important;
+    border-color:#BFDDED !important;
     transform:translateY(-1px) !important;
 }
-[class*="st-key-v71_choose_short_"] button:disabled{
-    opacity:.72 !important;
+[class*="st-key-v71_auto_sub_"]{
+    margin-top:2px !important;
+}
+[class*="st-key-v71_auto_sub_"] [data-testid="stToggle"]{
+    padding:2px 5px 0 !important;
+}
+[class*="st-key-v71_auto_sub_"] label{
+    font-size:11px !important;
+    color:#667F92 !important;
+    font-weight:700 !important;
+}
+.v71-selected-pill{
+    text-align:center;
+    margin:5px 0 2px;
+    color:#66869E;
+    font-size:10px;
+    font-weight:850;
+    letter-spacing:.035em;
+}
+[class*="st-key-edit_ai_"] button{
+    min-height:42px !important;
+    border-radius:14px !important;
+    background:linear-gradient(135deg,#DDF4FE 0%,#EAE5FF 100%) !important;
+    color:#315E7A !important;
+    border:1px solid #C7E2EF !important;
+    box-shadow:0 7px 18px rgba(79,125,157,.12) !important;
+    font-weight:850 !important;
+}
+[class*="st-key-edit_ai_"] button:hover{
+    filter:brightness(1.015) !important;
+    transform:translateY(-1px) !important;
 }
 </style>
 '''
@@ -159,6 +198,83 @@ s=s.replace(
     '                st.markdown(' + repr(_choice_css) + ', unsafe_allow_html=True)\n' + _choice_anchor,
     1,
 )
+
+_card_choose_old='''                            if st.button(
+                                "✓ SELEZIONATA" if _is_selected else "SCEGLI QUESTO",
+                                key=f"v71_choose_short_{_card['index']}",
+                                type="primary" if _is_selected else "secondary",
+                                use_container_width=True,
+                            ):
+                                st.session_state.auto_clip_scelta = float(_card["start"])
+                                st.session_state["auto_clip_duration"] = float(_card["preview_duration"])
+                                st.session_state["preview_key"] = None
+                                st.session_state.pop("preview_bytes", None)
+                                st.rerun()
+'''
+_card_choose_new='''                            _sub_key=f"v71_auto_sub_{_card['index']}"
+                            if _sub_key not in st.session_state:
+                                st.session_state[_sub_key]=bool(
+                                    st.session_state.get("project_subtitles_enabled",True)
+                                )
+                            _sub_enabled=st.toggle(
+                                "Sottotitoli automatici",
+                                key=_sub_key,
+                            )
+
+                            if _is_selected:
+                                st.session_state["project_subtitles_enabled"]=bool(_sub_enabled)
+                                st.markdown(
+                                    '<div class="v71-selected-pill">✓ CLIP SCELTA</div>',
+                                    unsafe_allow_html=True,
+                                )
+                                _auto_recipe=_gsf_recipe_selected(
+                                    "auto",
+                                    float(_card["start"]),
+                                    float(_card["preview_duration"]),
+                                    str(_source_path),
+                                    master_token=_gsf_upload_master_token(video),
+                                    subtitles_enabled=bool(_sub_enabled),
+                                    manual_hook=(
+                                        st.session_state.get("hook_testo","")
+                                        if st.session_state.get("hook_enabled_v102",True)
+                                        else _GSF_HOOK_OFF_V102
+                                    )
+                                )
+                                _gsf_set_final_recipe(_auto_recipe,source_label="AI")
+                                st.session_state["publication_preview_bytes"]=_card_bytes
+                            else:
+                                if st.button(
+                                    "SCEGLI QUESTO",
+                                    key=f"v71_choose_short_{_card['index']}",
+                                    type="secondary",
+                                    use_container_width=True,
+                                ):
+                                    st.session_state.auto_clip_scelta=float(_card["start"])
+                                    st.session_state["auto_clip_duration"]=float(_card["preview_duration"])
+                                    st.session_state["project_subtitles_enabled"]=bool(_sub_enabled)
+                                    _auto_recipe=_gsf_recipe_selected(
+                                        "auto",
+                                        float(_card["start"]),
+                                        float(_card["preview_duration"]),
+                                        str(_source_path),
+                                        master_token=_gsf_upload_master_token(video),
+                                        subtitles_enabled=bool(_sub_enabled),
+                                        manual_hook=(
+                                            st.session_state.get("hook_testo","")
+                                            if st.session_state.get("hook_enabled_v102",True)
+                                            else _GSF_HOOK_OFF_V102
+                                        )
+                                    )
+                                    _gsf_set_final_recipe(_auto_recipe,source_label="AI")
+                                    st.session_state["publication_preview_bytes"]=_card_bytes
+                                    st.session_state["preview_key"]=None
+                                    st.session_state.pop("preview_bytes",None)
+                                    st.session_state["gsf_editor_2027_inline_open"]=False
+                                    st.rerun()
+'''
+if _card_choose_old not in s:
+    raise RuntimeError("Demo card chooser block not found")
+s=s.replace(_card_choose_old,_card_choose_new,1)
 
 
 # DEMO UX: Editor 2027 is the only editor shown, and only after a clip is chosen.
@@ -187,10 +303,33 @@ _old_editor_open='''                    if st.button(
                         st.rerun()
 '''
 _new_editor_open='''                    if st.button(
-                        "MODIFICA NELL’EDITOR 2027",
+                        "APRI GAME EDITOR",
                         use_container_width=True,
                         key=f"edit_ai_{start:.2f}_{durata_effettiva:.2f}"
                     ):
+                        _selected_sub_key=f"v71_auto_sub_{int(_selected_card['index'])}"
+                        _selected_sub_enabled=bool(
+                            st.session_state.get(
+                                _selected_sub_key,
+                                st.session_state.get("project_subtitles_enabled",True)
+                            )
+                        )
+                        st.session_state["project_subtitles_enabled"]=_selected_sub_enabled
+                        _auto_recipe=_gsf_recipe_selected(
+                            "auto",
+                            float(start),
+                            float(durata_effettiva),
+                            str(_source_path),
+                            master_token=_gsf_upload_master_token(video),
+                            subtitles_enabled=_selected_sub_enabled,
+                            manual_hook=(
+                                st.session_state.get("hook_testo","")
+                                if st.session_state.get("hook_enabled_v102",True)
+                                else _GSF_HOOK_OFF_V102
+                            )
+                        )
+                        _gsf_set_final_recipe(_auto_recipe,source_label="AI")
+                        st.session_state["publication_preview_bytes"]=st.session_state.get("preview_bytes")
                         st.session_state["gsf_editor_2027_inline_open"]=True
                         st.session_state["gsf_editor_2027_start"]=float(start)
                         st.session_state.pop("inline_editor_id",None)
@@ -200,11 +339,29 @@ if _old_editor_open not in s:
     raise RuntimeError("Demo old inline editor opener not found")
 s=s.replace(_old_editor_open,_new_editor_open,1)
 
+_editor_cols_old='''                edit_col, keep_col = st.columns(2)
+'''
+_editor_cols_new='''                _edit_pad_l, edit_col, _edit_pad_r = st.columns([1.20,2.60,1.20])
+'''
+if _editor_cols_old not in s:
+    raise RuntimeError("Demo editor action columns not found")
+s=s.replace(_editor_cols_old,_editor_cols_new,1)
+
+_keep_start='''                with keep_col:
+'''
+_keep_marker='''                # ===== EDITOR INLINE DELLA CLIP AI =====
+'''
+if _keep_start not in s or _keep_marker not in s:
+    raise RuntimeError("Demo old selected/keep bar not found")
+_keep_pre,_keep_tail=s.split(_keep_start,1)
+_keep_hidden,_keep_post=_keep_tail.split(_keep_marker,1)
+s=_keep_pre+_keep_marker+_keep_post
+
 _old_inline_marker='''                # ===== EDITOR INLINE DELLA CLIP AI =====
                 _this_inline_id=f"{start:.2f}_{durata_effettiva:.2f}"
                 if st.session_state.get("inline_editor_id")==_this_inline_id:
 '''
-_new_inline_marker='''                # ===== EDITOR 2027 INLINE DELLA CLIP AI =====
+_new_inline_marker='''                # ===== GAME EDITOR INLINE DELLA CLIP AI =====
                 _this_inline_id=f"{start:.2f}_{durata_effettiva:.2f}"
                 if (
                     st.session_state.get("gsf_editor_2027_inline_open",False)
@@ -224,7 +381,7 @@ _new_inline_marker='''                # ===== EDITOR 2027 INLINE DELLA CLIP AI =
                             st.markdown(
                                 '<div style="padding:7px 10px;border-radius:12px;background:linear-gradient(90deg,#FFF1EF,#F5F1FF);'
                                 'border:1px solid #F2D2CF;color:#7E3B49;font-size:11px;font-weight:850;letter-spacing:.03em">'
-                                'EDITOR 2027 · GAME PREVIEW'
+                                'GAME EDITOR · PREVIEW'
                                 '</div>',
                                 unsafe_allow_html=True,
                             )
@@ -235,7 +392,7 @@ _new_inline_marker='''                # ===== EDITOR 2027 INLINE DELLA CLIP AI =
                         if _gsf_ed27_path:
                             _gsf_render_editor_2027_embed(_gsf_ed27_path,height=660)
                     except Exception as _gsf_ed27_exc:
-                        st.error("Editor 2027 demo non disponibile: "+str(_gsf_ed27_exc))
+                        st.error("Game Editor demo non disponibile: "+str(_gsf_ed27_exc))
 
                 # Vecchio Editor disattivato nella demo.
                 if False and st.session_state.get("inline_editor_id")==_this_inline_id:
@@ -244,7 +401,7 @@ if _old_inline_marker not in s:
     raise RuntimeError("Demo old inline editor marker not found")
 s=s.replace(_old_inline_marker,_new_inline_marker,1)
 
-# Switching among the three AI clips closes any currently open Editor 2027.
+# Switching among the three AI clips closes any currently open Game Editor.
 _old_choice='''                                st.session_state["preview_key"] = None
                                 st.session_state.pop("preview_bytes", None)
                                 st.rerun()

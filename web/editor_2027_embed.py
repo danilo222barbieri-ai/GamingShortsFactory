@@ -50,12 +50,12 @@ _TEMPLATE = r'''
 #ng27.expanded .stage.r916{width:min(100%,330px)}
 #ng27.expanded .timeline{width:min(96%,700px)}
 
-#ng27 .cockpit{position:relative;z-index:2;display:grid;grid-template-columns:40px minmax(0,1fr) 40px;gap:4px;align-items:center}
+#ng27 .cockpit{position:relative;z-index:2;display:grid;grid-template-columns:46px minmax(0,1fr) 46px;gap:5px;align-items:center}
 #ng27 .rail{display:flex;flex-direction:column;gap:4px;align-items:center}
-#ng27 .railBtn{width:36px;height:36px;border-radius:13px;border:1px solid rgba(255,255,255,.72);background:linear-gradient(145deg,rgba(255,255,255,.62),rgba(210,225,236,.50));backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 5px 12px rgba(70,98,119,.10);color:#456174;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:.16s}
-#ng27 .railBtn .ico{width:14px;height:14px}
-#ng27 .railBtn span{font-size:5.4px;font-weight:900;letter-spacing:.08em;color:#6b8192}
-#ng27 .railBtn:hover,#ng27 .railBtn.active{border-color:rgba(89,207,238,.52);background:linear-gradient(145deg,rgba(226,248,253,.88),rgba(218,213,246,.78));color:#294f64;transform:translateY(-1px);box-shadow:0 6px 16px rgba(73,121,148,.13)}
+#ng27 .railBtn{width:42px;height:42px;border-radius:13px;border:1px solid rgba(211,230,241,.92);background:linear-gradient(145deg,rgba(255,255,255,.88),rgba(234,246,252,.76));backdrop-filter:blur(14px);box-shadow:0 5px 13px rgba(76,120,146,.09);color:#456B83;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:.16s}
+#ng27 .railBtn .ico{width:16px;height:16px}
+#ng27 .railBtn span{font-size:6.1px;font-weight:900;letter-spacing:.08em;color:#6D8798}
+#ng27 .railBtn:hover,#ng27 .railBtn.active{border-color:rgba(89,207,238,.52);background:linear-gradient(145deg,#E7F7FD,#EEEAFE);color:#315F79;transform:translateY(-1px);box-shadow:0 6px 16px rgba(73,121,148,.13)}
 #ng27 .railBtn.active span{color:#3b718a}
 #ng27 .stageWrap{min-width:0}
 #ng27 .stage{position:relative;margin:0 auto;background:#0b1017;overflow:hidden;border:1px solid rgba(255,255,255,.1);box-shadow:0 18px 48px rgba(0,0,0,.34);transition:width .24s,aspect-ratio .24s,border-radius .24s}
@@ -144,7 +144,7 @@ _TEMPLATE = r'''
  #ng27 .rail:first-child{order:2}
  #ng27 .stageWrap{order:1}
  #ng27 .rail:last-child{order:3}
- #ng27 .railBtn{width:54px;height:54px;border-radius:16px}
+ #ng27 .railBtn{width:46px;height:46px;border-radius:14px}
  #ng27 .stage.r916{width:min(100%,285px)}
  #ng27 .captionPreview{font-size:28px}
  #ng27 .trimRow{grid-template-columns:34px 1fr 42px;row-gap:5px}
@@ -156,10 +156,10 @@ _TEMPLATE = r'''
   <div class="topline">
     <div class="brand">
       <div class="brandMark"><svg class="ico"><use href="#i-scan"/></svg></div>
-      <div class="brandText"><b>GAMING SHORTS FACTORY</b><span>NEURAL GAME EDITOR · LIVE PREVIEW</span></div>
+      <div class="brandText"><b>GAMING SHORTS FACTORY</b><span>GAME EDITOR · LIVE PREVIEW</span></div>
     </div>
     <div class="sys">
-      <button class="zoomEditorBtn" id="zoomEditorBtn" title="Zoom Editor"><svg class="ico"><use href="#i-expand"/></svg><span>ZOOM</span></button>
+      <button class="zoomEditorBtn" id="zoomEditorBtn" title="Ingrandisci Game Editor"><svg class="ico"><use href="#i-expand"/></svg><span>ZOOM</span></button>
       <span class="sysDot"></span><span id="sysText">GAME VISION ONLINE</span>
     </div>
   </div>
