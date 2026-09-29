@@ -91,6 +91,46 @@ _release=r'''def _gsf_v93_release_analysis_memory():
 '''
 s=replace_function(s,"_gsf_v93_release_analysis_memory",_release)
 
+_preview=r'''def crea_anteprima(input_file, output_file, start, duration):
+    """Create a bounded low-memory preview without probing unavailable QSV."""
+    base = [
+        FFMPEG_PATH,
+        "-y",
+        "-ss", str(start),
+        "-i", input_file,
+        "-t", str(duration),
+        "-vf", "scale=640:-2",
+    ]
+    encoders=[]
+    try:
+        if Path("/dev/dri/renderD128").exists():
+            encoders.append(("h264_qsv",["-preset","veryfast","-global_quality","30"]))
+    except Exception:
+        pass
+    encoders.append(("libx264",["-preset","veryfast","-crf","30","-threads","1"]))
+
+    for encoder,options in encoders:
+        try:
+            if os.path.exists(output_file):
+                os.unlink(output_file)
+            risultato=subprocess.run(
+                base+["-c:v",encoder]+options+[
+                    "-c:a","aac","-b:a","96k",
+                    "-movflags","+faststart",output_file
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=max(120.0,float(duration)*15.0),
+            )
+            if risultato.returncode==0 and os.path.exists(output_file):
+                return True
+        except (OSError,subprocess.TimeoutExpired):
+            continue
+    return False
+'''
+s=replace_function(s,"crea_anteprima",_preview)
+
 # The automatic final master is already retained as publication_final_bytes
 # after a successful render.  Keeping up to six additional final MP4s in a
 # session cache can consume hundreds of MB in a 1 GB container.
