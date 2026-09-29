@@ -139,7 +139,7 @@ if _GSF_REAL_DEMO:
                 if "/app/web" not in _gsf_ed27_sys.path:
                     _gsf_ed27_sys.path.insert(0,"/app/web")
                 from editor_2027_embed import render_editor_2027_embed as _gsf_render_editor_2027_embed
-                _gsf_render_editor_2027_embed(_gsf_demo_clip,height=1080)
+                _gsf_render_editor_2027_embed(_gsf_demo_clip,height=920)
             except Exception as _gsf_ed27_exc:
                 st.error("Editor 2027 demo non disponibile: "+str(_gsf_ed27_exc))
 '''

@@ -29,7 +29,7 @@ _TEMPLATE = r'''
 #ng27 button{cursor:pointer}
 #ng27 .ico{width:22px;height:22px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
 #ng27 .ico.ai{stroke-width:1.55}
-#ng27 .shell{max-width:1210px;margin:0 auto;padding:12px;border-radius:30px;border:1px solid rgba(255,255,255,.055);background:radial-gradient(circle at 22% 18%,rgba(105,223,255,.08),transparent 26%),radial-gradient(circle at 78% 22%,rgba(140,125,255,.08),transparent 30%),#06090f;box-shadow:0 30px 90px rgba(0,0,0,.32);position:relative;overflow:hidden}
+#ng27 .shell{max-width:980px;margin:0 auto;padding:12px;border-radius:30px;border:1px solid rgba(255,255,255,.055);background:radial-gradient(circle at 22% 18%,rgba(105,223,255,.08),transparent 26%),radial-gradient(circle at 78% 22%,rgba(140,125,255,.08),transparent 30%),#06090f;box-shadow:0 30px 90px rgba(0,0,0,.32);position:relative;overflow:hidden}
 #ng27 .shell:after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.14;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:38px 38px}
 #ng27 .topline{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:2px 4px 10px}
 #ng27 .brand{display:flex;align-items:center;gap:9px}
@@ -39,18 +39,18 @@ _TEMPLATE = r'''
 #ng27 .brandText span{display:block;font-size:8px;color:#69778b;letter-spacing:.14em;margin-top:2px}
 #ng27 .sys{display:flex;align-items:center;gap:7px;font-size:8px;font-weight:900;letter-spacing:.14em;color:#74849a}
 #ng27 .sysDot{width:6px;height:6px;border-radius:50%;background:var(--mint);box-shadow:0 0 12px rgba(102,240,195,.7)}
-#ng27 .cockpit{position:relative;z-index:2;display:grid;grid-template-columns:76px minmax(0,1fr) 76px;gap:10px;align-items:center}
-#ng27 .rail{display:flex;flex-direction:column;gap:9px;align-items:center}
-#ng27 .railBtn{width:62px;height:62px;border-radius:19px;border:1px solid rgba(255,255,255,.08);background:rgba(12,18,27,.74);backdrop-filter:blur(16px);color:#dce5ef;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:.16s}
-#ng27 .railBtn .ico{width:21px;height:21px}
-#ng27 .railBtn span{font-size:7.5px;font-weight:900;letter-spacing:.08em;color:#8e9aac}
+#ng27 .cockpit{position:relative;z-index:2;display:grid;grid-template-columns:64px minmax(0,1fr) 64px;gap:10px;align-items:center}
+#ng27 .rail{display:flex;flex-direction:column;gap:7px;align-items:center}
+#ng27 .railBtn{width:52px;height:52px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(12,18,27,.74);backdrop-filter:blur(16px);color:#dce5ef;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:.16s}
+#ng27 .railBtn .ico{width:18px;height:18px}
+#ng27 .railBtn span{font-size:7px;font-weight:900;letter-spacing:.08em;color:#8e9aac}
 #ng27 .railBtn:hover,#ng27 .railBtn.active{border-color:rgba(105,223,255,.42);background:linear-gradient(145deg,rgba(105,223,255,.13),rgba(140,125,255,.13));color:#fff;transform:translateY(-1px);box-shadow:0 0 22px rgba(105,223,255,.09)}
 #ng27 .railBtn.active span{color:#c6f4ff}
 #ng27 .stageWrap{min-width:0}
 #ng27 .stage{position:relative;margin:0 auto;background:#0b1017;overflow:hidden;border:1px solid rgba(255,255,255,.1);box-shadow:0 28px 78px rgba(0,0,0,.42);transition:width .24s,aspect-ratio .24s,border-radius .24s}
-#ng27 .stage.r916{width:min(100%,500px);aspect-ratio:9/16;border-radius:32px}
-#ng27 .stage.r169{width:min(100%,820px);aspect-ratio:16/9;border-radius:27px}
-#ng27 .stage.r11{width:min(100%,620px);aspect-ratio:1;border-radius:30px}
+#ng27 .stage.r916{width:min(100%,420px);aspect-ratio:9/16;border-radius:32px}
+#ng27 .stage.r169{width:min(100%,720px);aspect-ratio:16/9;border-radius:27px}
+#ng27 .stage.r11{width:min(100%,520px);aspect-ratio:1;border-radius:30px}
 #ng27 video{width:100%;height:100%;object-fit:cover;display:block;background:#10141b;transform-origin:center center;transition:filter .16s,transform .16s}
 #ng27 .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(3,7,12,.46),transparent 17%,transparent 69%,rgba(3,7,12,.66))}
 #ng27 .scanlines{position:absolute;inset:0;pointer-events:none;opacity:.055;background:repeating-linear-gradient(180deg,rgba(255,255,255,.14) 0,rgba(255,255,255,.14) 1px,transparent 1px,transparent 5px)}
@@ -60,11 +60,11 @@ _TEMPLATE = r'''
 #ng27 .c3{bottom:12px;left:12px;border-width:0 0 1px 1px;border-radius:0 0 0 11px}
 #ng27 .c4{bottom:12px;right:12px;border-width:0 1px 1px 0;border-radius:0 0 11px 0}
 #ng27 .hudTop{position:absolute;top:15px;left:17px;right:17px;z-index:8;display:flex;justify-content:space-between;align-items:center}
-#ng27 .glass{height:40px;border-radius:13px;border:1px solid rgba(255,255,255,.11);background:rgba(7,12,19,.68);backdrop-filter:blur(16px);color:#fff}
-#ng27 .hudBtn{width:40px;display:grid;place-items:center}
+#ng27 .glass{height:36px;border-radius:13px;border:1px solid rgba(255,255,255,.11);background:rgba(7,12,19,.68);backdrop-filter:blur(16px);color:#fff}
+#ng27 .hudBtn{width:36px;display:grid;place-items:center}
 #ng27 .hudBtn .ico{width:18px;height:18px}
 #ng27 .cluster{display:flex;gap:7px;align-items:center}
-#ng27 .formatTag{padding:0 12px;display:flex;align-items:center;gap:7px;font-size:9px;font-weight:900;letter-spacing:.09em}
+#ng27 .formatTag{padding:0 10px;display:flex;align-items:center;gap:7px;font-size:9px;font-weight:900;letter-spacing:.09em}
 #ng27 .signal{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px rgba(105,223,255,.7)}
 #ng27 .visionBadge{position:absolute;left:17px;top:67px;z-index:6;padding:7px 9px;border-radius:10px;border:1px solid rgba(105,223,255,.2);background:rgba(6,12,19,.5);backdrop-filter:blur(12px);font-size:8px;font-weight:900;letter-spacing:.11em;color:#bcefff}
 #ng27 .focus{position:absolute;left:50%;top:43%;width:74px;height:74px;transform:translate(-50%,-50%);pointer-events:none;opacity:.34;transition:left .16s,top .16s}
@@ -78,7 +78,7 @@ _TEMPLATE = r'''
 #ng27 .killZone{right:16px;top:92px;width:34%;height:15%}
 #ng27 .mapZone{left:16px;bottom:90px;width:29%;height:25%}
 #ng27 .faceZone{right:16px;bottom:90px;width:28%;height:27%}
-#ng27 .captionPreview{position:absolute;z-index:7;left:50%;top:76%;transform:translate(-50%,-50%);width:82%;text-align:center;font-size:36px;font-weight:950;line-height:1.02;color:#fff;text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 4px 18px rgba(0,0,0,.55);pointer-events:none;transition:top .15s,font-size .15s,color .15s}
+#ng27 .captionPreview{position:absolute;z-index:7;left:50%;top:76%;transform:translate(-50%,-50%);width:82%;text-align:center;font-size:30px;font-weight:950;line-height:1.02;color:#fff;text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 4px 18px rgba(0,0,0,.55);pointer-events:none;transition:top .15s,font-size .15s,color .15s}
 #ng27 .captionPreview.off{display:none}
 #ng27 .captionPreview .hotWord{color:#ffd400}
 #ng27 .drawer{position:absolute;left:14px;right:14px;bottom:14px;z-index:10;background:rgba(7,12,19,.84);backdrop-filter:blur(22px);border:1px solid rgba(255,255,255,.1);border-radius:21px;padding:12px;transition:.18s}
@@ -105,16 +105,16 @@ _TEMPLATE = r'''
 #ng27 .applyBtn{height:30px;border-radius:9px;border:1px solid rgba(105,223,255,.2);background:rgba(105,223,255,.08);color:#c9f4ff;font-size:8px;font-weight:900;letter-spacing:.05em;padding:0 8px}
 #ng27 .textRow{display:flex;gap:7px;margin-top:8px}
 #ng27 .textRow input{flex:1;min-width:0;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:#0c131d;color:#fff;padding:0 10px;font-size:10px}
-#ng27 .timeline{width:min(100%,960px);margin:11px auto 0;padding:11px 13px;border-radius:17px;border:1px solid rgba(255,255,255,.07);background:#0a0f17}
+#ng27 .timeline{width:min(100%,780px);margin:11px auto 0;padding:11px 13px;border-radius:17px;border:1px solid rgba(255,255,255,.07);background:#0a0f17}
 #ng27 .tlMeta{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;font-size:8px;font-weight:900;letter-spacing:.09em;color:#738296}
-#ng27 .track{position:relative;height:50px;border-radius:11px;overflow:hidden;background:#121a25}
+#ng27 .track{position:relative;height:42px;border-radius:11px;overflow:hidden;background:#121a25}
 #ng27 .segment{position:absolute;top:0;bottom:0}
 #ng27 .s1{left:0;width:20%;background:#172637}
 #ng27 .s2{left:20%;width:20%;background:#20405a}
 #ng27 .s3{left:40%;width:17%;background:#30475d}
 #ng27 .s4{left:57%;width:22%;background:#22394e}
 #ng27 .s5{left:79%;width:21%;background:#162433}
-#ng27 .peak{position:absolute;top:5px;width:4px;height:40px;border-radius:4px;background:rgba(255,125,167,.82)}
+#ng27 .peak{position:absolute;top:5px;width:4px;height:32px;border-radius:4px;background:rgba(255,125,167,.82)}
 #ng27 .p1{left:28%}
 #ng27 .p2{left:53%}
 #ng27 .p3{left:70%}
@@ -552,7 +552,7 @@ _TEMPLATE = r'''
 </div>
 '''
 
-def render_editor_2027_embed(video_path, height=1080):
+def render_editor_2027_embed(video_path, height=920):
     p=Path(video_path)
     data=base64.b64encode(p.read_bytes()).decode("ascii") if p.is_file() else ""
     html=_TEMPLATE.replace("__VIDEO__",data)
