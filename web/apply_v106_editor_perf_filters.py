@@ -272,9 +272,6 @@ replace_once(
 ''',
 'main filter tool option')
 
-replace_once(
-
-
 # V106.1 — Filters are a first-class video control, not hidden in "Parametro".
 replace_once(
 '''                        editor_contrast=st.slider("Contrasto",.70,1.50,float(st.session_state.get("editor_contrast",1.0)),.05,key="editor_contrast")
@@ -364,10 +361,6 @@ replace_once(
                                     )
 ''',
 'inline filter tool option')
-
-replace_once(
-
-
 
 # V106.1 — Subtitle colors are draft -> explicit Apply, so the action is obvious.
 replace_once(
