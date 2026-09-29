@@ -44,18 +44,18 @@ _TEMPLATE = r'''
 #ng27 .zoomEditorBtn{height:24px;padding:0 7px;border-radius:9px;border:1px solid rgba(255,255,255,.70);background:rgba(255,255,255,.48);backdrop-filter:blur(10px);color:#587083;display:flex;align-items:center;gap:4px;font-size:6.5px;font-weight:900;letter-spacing:.08em}
 #ng27 .zoomEditorBtn .ico{width:12px;height:12px}
 #ng27.expanded .shell{max-width:820px;padding:6px 9px}
-#ng27.expanded .cockpit{grid-template-columns:60px minmax(0,1fr) 60px;gap:8px}
-#ng27.expanded .railBtn{width:56px;height:56px}
-#ng27.expanded .railBtn .ico{width:22px;height:22px}
-#ng27.expanded .railBtn span{font-size:7.2px}
+#ng27.expanded .cockpit{grid-template-columns:74px minmax(0,1fr) 74px;gap:10px}
+#ng27.expanded .railBtn{width:68px;height:68px}
+#ng27.expanded .railBtn .ico{width:25px;height:25px}
+#ng27.expanded .railBtn span{font-size:8.2px}
 #ng27.expanded .stage.r916{width:min(100%,330px)}
 #ng27.expanded .timeline{width:min(96%,700px)}
 
-#ng27 .cockpit{position:relative;z-index:2;display:grid;grid-template-columns:58px minmax(0,1fr) 58px;gap:7px;align-items:center}
+#ng27 .cockpit{position:relative;z-index:2;display:grid;grid-template-columns:70px minmax(0,1fr) 70px;gap:10px;align-items:center}
 #ng27 .rail{display:flex;flex-direction:column;gap:6px;align-items:center}
-#ng27 .railBtn{width:54px;height:54px;border-radius:16px;border:1px solid #D7E7F2;background:linear-gradient(145deg,rgba(248,253,255,.97),rgba(239,237,255,.94));backdrop-filter:blur(14px);box-shadow:0 7px 17px rgba(91,126,170,.11);color:#5B78B6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:.16s}
-#ng27 .railBtn .ico{width:21px;height:21px}
-#ng27 .railBtn span{font-size:7.2px;font-weight:900;letter-spacing:.075em;color:#667FAE}
+#ng27 .railBtn{width:64px;height:64px;border-radius:18px;border:1px solid #D7E7F2;background:linear-gradient(145deg,rgba(248,253,255,.97),rgba(239,237,255,.94));backdrop-filter:blur(14px);box-shadow:0 7px 17px rgba(91,126,170,.11);color:#5B78B6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:.16s}
+#ng27 .railBtn .ico{width:24px;height:24px}
+#ng27 .railBtn span{font-size:8.1px;font-weight:900;letter-spacing:.075em;color:#667FAE}
 #ng27 .railBtn:hover,#ng27 .railBtn.active{border-color:#BDDDEF;background:linear-gradient(145deg,#E8F8FF,#ECE8FF);color:#4B69B0;transform:translateY(-1px);box-shadow:0 9px 20px rgba(100,126,183,.16)}
 #ng27 .railBtn.active span{color:#536EB3}
 #ng27 .stageWrap{min-width:0}
@@ -73,6 +73,9 @@ _TEMPLATE = r'''
 #ng27 .glass{height:30px;border-radius:12px;border:1px solid rgba(255,255,255,.26);background:rgba(15,27,39,.54);backdrop-filter:blur(16px);box-shadow:0 4px 12px rgba(7,18,29,.14);color:#f3f8fb}
 #ng27 .hudBtn{width:30px;display:grid;place-items:center}
 #ng27 .hudBtn .ico{width:18px;height:18px}
+#ng27 .stagePlayBtn{position:absolute;left:16px;bottom:16px;z-index:12;width:46px;height:46px;border-radius:15px;border:1px solid rgba(222,236,245,.88);background:rgba(247,252,255,.86);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 8px 22px rgba(12,31,45,.22);color:#5874A7;display:grid;place-items:center;transition:.16s}
+#ng27 .stagePlayBtn:hover{transform:translateY(-1px);background:rgba(255,255,255,.94);box-shadow:0 11px 26px rgba(12,31,45,.27)}
+#ng27 .stagePlayBtn .ico{width:23px;height:23px}
 #ng27 .cluster{display:flex;gap:7px;align-items:center}
 #ng27 .formatTag{padding:0 8px;display:flex;align-items:center;gap:7px;font-size:9px;font-weight:900;letter-spacing:.09em}
 #ng27 .formatTag,#ng27 .visionBadge{display:none!important}
@@ -226,6 +229,15 @@ _TEMPLATE = r'''
  }
 
  /* Timeline sempre dentro il bordo inferiore del video. */
+ #ng27 .stagePlayBtn{
+   left:10px;
+   bottom:78px;
+   width:42px;
+   height:42px;
+   border-radius:13px;
+ }
+ #ng27 .stagePlayBtn .ico{width:20px;height:20px}
+
  #ng27 .timeline,
  #ng27.expanded .timeline{
    position:absolute;
@@ -322,6 +334,7 @@ _TEMPLATE = r'''
     <div class="stageWrap">
       <div class="stage r916" id="stage">
         <video id="video" playsinline muted loop autoplay src="data:video/mp4;base64,__VIDEO__"></video>
+        <button class="stagePlayBtn" id="stagePlayBtn" type="button" aria-label="Play/Pausa" title="Play/Pausa"><svg class="ico"><use id="stagePlayUse" href="#i-pause"/></svg></button>
         <div class="shade"></div><div class="scanlines"></div>
         <div class="corn c1"></div><div class="corn c2"></div><div class="corn c3"></div><div class="corn c4"></div>
         <div class="focus" id="focus"><div class="focusRing"></div></div>
@@ -383,6 +396,8 @@ _TEMPLATE = r'''
  const focus=root.querySelector('#focus');
  const playUse=root.querySelector('#playUse');
  const playLabel=root.querySelector('#playLabel');
+ const stagePlayBtn=root.querySelector('#stagePlayBtn');
+ const stagePlayUse=root.querySelector('#stagePlayUse');
  const formatLabel=root.querySelector('#formatLabel');
  const visionBadge=root.querySelector('#visionBadge');
  const sysText=root.querySelector('#sysText');
@@ -657,14 +672,24 @@ _TEMPLATE = r'''
    flash(expanded?'EDITOR ESPANSO':'EDITOR COMPATTO');
  };
 
- root.querySelector('#playBtn').onclick=()=>{
+ const togglePlayback=()=>{
    if(video.paused){
      if(video.currentTime<state.inPoint||video.currentTime>=state.outPoint)video.currentTime=state.inPoint;
      video.play().catch(()=>{});
    }else video.pause();
  };
- video.addEventListener('play',()=>{playUse.setAttribute('href','#i-pause');playLabel.textContent='PAUSE'});
- video.addEventListener('pause',()=>{playUse.setAttribute('href','#i-play');playLabel.textContent='PLAY'});
+ root.querySelector('#playBtn').onclick=togglePlayback;
+ stagePlayBtn.onclick=togglePlayback;
+ video.addEventListener('play',()=>{
+   playUse.setAttribute('href','#i-pause');
+   stagePlayUse.setAttribute('href','#i-pause');
+   playLabel.textContent='PAUSE';
+ });
+ video.addEventListener('pause',()=>{
+   playUse.setAttribute('href','#i-play');
+   stagePlayUse.setAttribute('href','#i-play');
+   playLabel.textContent='PLAY';
+ });
  video.addEventListener('loadedmetadata',()=>{
    duration=Math.max(.5,Math.min(60,video.duration||15));
    state.outPoint=duration;
