@@ -33,4 +33,10 @@ need("60" in " ".join(fixture),"synthetic fixture exercises 60 fps")
 need(hasattr(bench,"probe_master"),"benchmark validates rendered social master")
 need(hasattr(bench,"run_benchmark"),"benchmark exposes measured runner")
 
+need(hasattr(bench,"long_fixture_command"),"benchmark exposes memory-light long-fixture builder")
+long_cmd=bench.long_fixture_command("seed15.mp4","fixture30.mp4",30)
+joined=" ".join(long_cmd)
+need("-stream_loop" in joined,"long fixture reuses encoded seed instead of regenerating raw 1080p60")
+need("-c copy" in joined,"long fixture extension uses stream copy")
+
 print("V105 render benchmark contract: PASS")
