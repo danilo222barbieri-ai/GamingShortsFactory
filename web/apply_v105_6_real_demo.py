@@ -1188,6 +1188,13 @@ st.markdown("""
 s = s.rstrip() + "\n\n" + _major_cta_final_override.lstrip()
 
 
+# Temporary build diagnostic for the legacy "Scegli scena" routing.
+_gsf_scene_probe = s.lower().find("scegli scena")
+if _gsf_scene_probe >= 0:
+    print("GSF_SCENE_PROBE_BEGIN")
+    print(s[max(0,_gsf_scene_probe-1800):_gsf_scene_probe+2600])
+    print("GSF_SCENE_PROBE_END")
+
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
 print('V106 functional demo applied:',out)
