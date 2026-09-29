@@ -1065,6 +1065,60 @@ st.markdown("""
 s = s.rstrip() + "\n\n" + _demo_metallic_look.lstrip()
 
 
+# DEMO upload visual: lock circle and its icon/text group to the exact center.
+_demo_upload_centering = r'''
+st.markdown("""
+<style id="gsf-demo-upload-centering">
+.st-key-v73-upload-shell{
+  width:100% !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  text-align:center !important;
+}
+.gsf-v89-upload-visual{
+  left:auto !important;
+  right:auto !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  padding:0 !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:14px !important;
+  text-align:center !important;
+}
+.gsf-v89-upload-icon{
+  display:block !important;
+  width:100% !important;
+  margin:0 !important;
+  text-align:center !important;
+  line-height:1 !important;
+}
+.gsf-v89-upload-label{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:150px !important;
+  max-width:150px !important;
+  min-height:40px !important;
+  margin:0 auto !important;
+  padding:0 !important;
+  text-align:center !important;
+  line-height:1.18 !important;
+}
+@media(max-width:600px){
+  .gsf-v89-upload-visual{gap:12px !important}
+  .gsf-v89-upload-label{
+    width:144px !important;
+    max-width:144px !important;
+    min-height:38px !important;
+  }
+}
+</style>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _demo_upload_centering.lstrip()
+
+
 # Final visual override: the four milestone CTAs must be exactly the same.
 _major_cta_final_override = r'''
 st.markdown("""
