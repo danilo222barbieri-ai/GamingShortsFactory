@@ -41,13 +41,13 @@ server {
 
     # Official Gaming Shorts Factory app identity.
     location = /app-icon.png {
-        alias /app/web/app_icons/app-icon-192.png;
+        alias /app/web/app_icons/app-icon.png;
         default_type image/png;
         add_header Cache-Control "no-store";
     }
 
     location = /favicon.ico {
-        alias /app/web/app_icons/app-icon-192.png;
+        alias /app/web/app_icons/app-icon.png;
         default_type image/png;
         add_header Cache-Control "no-store";
     }
