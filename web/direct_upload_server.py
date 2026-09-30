@@ -390,7 +390,6 @@ def _push_client_bytes():
   window.GSFNotify={show:(title,body,kind)=>showToast(title,body,kind||"success")};
 
   let uploadActive=false,uploadCycle=0,uploadDoneCycle=0,lastRenderStatus="";
-  const autoOpenStorageKey="gsf-share-auto-open-token";
   window.addEventListener("message",(event)=>{
     const d=event.data||{};if(d.type!=="gsf-upload")return;const state=String(d.state||"");
     if(state==="running"){if(!uploadActive){uploadCycle+=1;uploadActive=true;}}
@@ -411,8 +410,6 @@ def _push_client_bytes():
       if(status==="ready"){
         const token=String(j.completed_at||j.started_at||"ready");
         showToast("Short completato","Il tuo Short è pronto per download e pubblicazione.","success",{token:"short-ready-"+token,persistent:true,onClick:()=>openShareHub()});
-        let opened="";try{opened=sessionStorage.getItem(autoOpenStorageKey)||"";}catch(e){}
-        if(opened!==token&&openShareHub()){try{sessionStorage.setItem(autoOpenStorageKey,token);}catch(e){}}
       }else if(status==="failed"){
         const token=String(j.failed_at||j.started_at||"failed");
         showToast("Creazione Short non riuscita","Il rendering si è fermato. Il progetto e la bozza restano disponibili.","error",{token:"short-failed-"+token,persistent:true});
