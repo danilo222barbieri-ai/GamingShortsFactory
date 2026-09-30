@@ -545,28 +545,22 @@ _create_short_old='''            _v1054_create_final_clicked=st.button(
                 key="create_final_short_v54"
             )
 '''
-_create_short_new='''            def _gsf_v107_preserve_final_context():
-                _recipe=st.session_state.get("gsf_final_recipe")
-                if isinstance(_recipe,dict):
-                    st.session_state["gsf_v107_final_recipe_snapshot"]=dict(_recipe)
-                    _src=str(_recipe.get("source_path") or st.session_state.get("gsf_source_path") or "")
-                    if _src:
-                        st.session_state["gsf_source_path"]=_src
-                        st.session_state["gsf_editor_source_path"]=_src
-                st.session_state["gsf_v107_final_click_pending"]=True
-
-            with st.container(key="gsf-major-create-short"):
+_create_short_new='''            with st.container(key="gsf-major-create-short"):
                 _v1054_create_final_clicked=st.button(
                     "CREA SHORT FINALE",
                     use_container_width=True,
-                    key="create_final_short_v54",
-                    on_click=_gsf_v107_preserve_final_context
+                    key="create_final_short_v54"
                 )
-            if st.session_state.get("gsf_v107_final_click_pending"):
-                _snap=st.session_state.get("gsf_v107_final_recipe_snapshot")
-                if isinstance(_snap,dict) and _snap:
-                    st.session_state["gsf_final_recipe"]=dict(_snap)
-                st.session_state["gsf_v107_final_click_pending"]=False
+            if _v1054_create_final_clicked:
+                try:
+                    print(
+                        "GSF_FINAL_CREATE_CLICK",
+                        "recipe="+str(bool(st.session_state.get("gsf_final_recipe"))),
+                        "source="+str(bool(st.session_state.get("gsf_source_path"))),
+                        flush=True,
+                    )
+                except Exception:
+                    pass
             st.markdown(
                 '<div class="gsf-major-note">Genera la versione finale pronta per il download e la pubblicazione sui tuoi social collegati.</div>',
                 unsafe_allow_html=True,
@@ -748,44 +742,52 @@ _creator_hub_entry = r'''
 st.markdown("""
 <style>
 .gsf-account-fab{
-  position:static;
-  width:max-content;
-  max-width:100%;
-  margin:4px auto 2px;
+  position:fixed;
+  top:14px;
+  right:18px;
+  z-index:999990;
   display:flex;
   align-items:center;
-  justify-content:center;
-  gap:5px;
-  height:30px;
-  padding:0 10px;
-  border-radius:11px;
+  gap:7px;
+  height:38px;
+  padding:0 13px;
+  border-radius:14px;
   border:1px solid #D8E8F3;
-  background:rgba(255,255,255,.82);
-  box-shadow:0 4px 12px rgba(52,91,122,.08);
-  color:#5B7890 !important;
+  background:rgba(255,255,255,.90);
+  -webkit-backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px);
+  box-shadow:0 7px 20px rgba(52,91,122,.12);
+  color:#476E8A !important;
   text-decoration:none !important;
-  font-size:9px;
+  font-size:11px;
   font-weight:900;
-  letter-spacing:.035em;
+  letter-spacing:.025em;
 }
 .gsf-account-fab svg{
-  width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;
+  width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;
   stroke-linecap:round;stroke-linejoin:round;
 }
 @media(max-width:600px){
   .gsf-account-fab{
-    position:static;
-    width:max-content;
-    min-width:0;
-    height:29px;
-    margin:3px auto 2px;
-    padding:0 9px;
-    border-radius:10px;
-    background:rgba(255,255,255,.90);
-    box-shadow:0 4px 10px rgba(52,91,122,.08);
+    top:auto;
+    bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+    right:12px;
+    width:auto;
+    min-width:82px;
+    height:46px;
+    padding:0 14px;
+    justify-content:center;
+    border-radius:15px;
+    z-index:2147483000;
+    background:rgba(255,255,255,.96);
+    box-shadow:0 10px 26px rgba(52,91,122,.22);
   }
-  .gsf-account-fab svg{width:13px;height:13px}
-  .gsf-account-fab span{display:inline;font-size:9px;letter-spacing:.035em}
+  .gsf-account-fab svg{width:19px;height:19px}
+  .gsf-account-fab span{
+    display:inline;
+    font-size:10px;
+    letter-spacing:.035em;
+  }
 }
 </style>
 <a class="gsf-account-fab" href="/account" target="_self" aria-label="Apri Creator Hub">
@@ -940,71 +942,215 @@ st.markdown("""
 '''
 s = s.rstrip() + "\n\n" + _publish_heading_cleanup.lstrip()
 
-# Final result UX — publish is always visible; social options expand in place; download stays last.
+# Final result UX — final-only, always-open publish flow; download stays last.
 _final_publish_v2 = r'''
-# Keep the existing social composer logic active as soon as a final short exists.
+# Keep the existing connected-account composer active whenever the final MP4 exists.
 s=s.replace(
     'if st.session_state.get("show_social_publish_v54", False):',
     'if _has_final:'
 )
-# Remove the obsolete intermediate PUBBLICA button/toggle where present.
+
+# Remove the obsolete intermediate launcher. Platform-level PUBBLICA buttons stay untouched.
 import re as _gsf_v107_re
 s=_gsf_v107_re.sub(
-    r'(?ms)^\s*if st\.button\(\s*["\\\'](?:➡️\\s*)?PUBBLICA["\\\'].*?show_social_publish_v54["\\\']\s*=\s*True\s*',
-    '\n',
+    r'(?ms)^\\s*if st\\.button\\(\\s*["\\\'](?:➡️\\s*)?PUBBLICA["\\\'].*?show_social_publish_v54["\\\']\\s*=\\s*True\\s*',
+    '\\n',
     s,
 )
-# Put download after the social composer rather than before it. We hide the legacy
-# placement visually and add a stable bottom download action in the final-result block.
-s += r"""
-st.markdown(
-    '<div class="gsf-final-publish-title">PUBBLICA</div>',
-    unsafe_allow_html=True,
-)
-"""
+
 st.markdown("""
 <style id="gsf-v107-final-publish">
+.gsf-final-ready{
+  margin:16px auto 4px;text-align:center;color:#3f6f62;
+  font-size:.96rem;font-weight:900;letter-spacing:.015em;
+}
 .gsf-final-publish-title{
-  margin:18px 0 10px;text-align:center;color:#17324a;
-  font-size:1.15rem;font-weight:900;letter-spacing:.08em;
+  margin:4px 0 9px;text-align:center;color:#17324a;
+  font-size:1.10rem;font-weight:950;letter-spacing:.08em;
 }
+.gsf-final-social-row{
+  display:grid !important;
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  gap:9px !important;
+  align-items:stretch !important;
+  margin:0 auto 8px !important;
+}
+.gsf-final-social-row > div,
+.gsf-final-social-row > a{
+  width:100% !important;min-width:0 !important;flex:initial !important;
+}
+.st-key-v69_social_youtube button,
+.st-key-v69_social_tiktok button,
+.st-key-v69_social_instagram button,
+.gsf-facebook-publish-icon{
+  min-height:58px !important;height:58px !important;
+  border-radius:16px !important;
+  display:flex !important;align-items:center !important;justify-content:center !important;
+  border:1px solid #cbdde9 !important;
+  background:linear-gradient(145deg,#fff,#eef5fa) !important;
+  color:#355a73 !important;
+  box-shadow:0 6px 16px rgba(65,96,121,.09) !important;
+  text-decoration:none !important;
+}
+.st-key-v69_social_youtube button p,
+.st-key-v69_social_tiktok button p,
+.st-key-v69_social_instagram button p{display:none !important}
+.st-key-v69_social_youtube button:before{content:"▶";font-size:21px;font-weight:950}
+.st-key-v69_social_tiktok button:before{content:"♪";font-size:24px;font-weight:950}
+.st-key-v69_social_instagram button:before{content:"◎";font-size:25px;font-weight:900}
+.gsf-facebook-publish-icon{font:900 25px/1 Arial,sans-serif}
+[class*="st-key-v1055_social_composer_"]{
+  margin:8px auto 10px !important;
+  padding:14px !important;
+}
+[data-testid="stDownloadButton"]{margin-top:8px !important;margin-bottom:8px !important}
 @media(max-width:600px){
-  .gsf-final-publish-title{margin:12px 0 8px;font-size:1.05rem}
-  [class*="st-key-v1054_social_composer_"]{padding:12px !important;margin-top:8px !important}
-}
-/* The old large publish launcher is no longer part of the final flow. */
-[class*="st-key-"] button[kind="primary"]:has(p:is(:only-child)){
-  /* scoped by JS below for browser compatibility */
+  .gsf-final-ready{margin:11px auto 3px;font-size:.90rem}
+  .gsf-final-publish-title{margin:3px 0 7px;font-size:1rem}
+  .gsf-final-social-row{gap:7px !important;margin-bottom:7px !important}
+  .st-key-v69_social_youtube button,
+  .st-key-v69_social_tiktok button,
+  .st-key-v69_social_instagram button,
+  .gsf-facebook-publish-icon{
+    min-height:52px !important;height:52px !important;border-radius:14px !important;
+  }
+  [class*="st-key-v1055_social_composer_"]{padding:11px !important;margin:7px auto 8px !important}
 }
 </style>
 <script>
 (()=>{
  const tune=()=>{
-   const all=[...document.querySelectorAll('button')];
-   all.forEach(b=>{
-     const t=(b.textContent||'').trim().replace(/^➡️\\s*/,'');
-     if(t==='PUBBLICA'){
-       const wrap=b.closest('[data-testid="stButton"]')||b.parentElement;
-       if(wrap) wrap.style.display='none';
+   /* Hide legacy duplicate title and launcher. */
+   document.querySelectorAll('div,p,h1,h2,h3,h4').forEach(el=>{
+     if((el.textContent||'').trim()==='Pubblicazione diretta'){
+       const block=el.closest('[data-testid="stMarkdownContainer"]')||el;
+       block.style.display='none';
      }
    });
-   /* Move the visible SCARICA action below the social composer on both desktop/mobile. */
+   document.querySelectorAll('button').forEach(b=>{
+     const t=(b.textContent||'').trim().replace(/^➡️\\s*/,'');
+     if(t==='PUBBLICA'){
+       const key=b.closest('[class*="st-key-social_publish_confirm_"]');
+       if(!key){
+         const wrap=b.closest('[data-testid="stButton"]')||b.parentElement;
+         if(wrap) wrap.style.display='none';
+       }
+     }
+   });
+
+   const y=document.querySelector('.st-key-v69_social_youtube');
+   const row=y?.closest('div[data-testid="stHorizontalBlock"]');
+   if(!row)return;
+   row.classList.add('gsf-final-social-row');
+
+   const labels=[
+     ['.st-key-v69_social_youtube','YouTube'],
+     ['.st-key-v69_social_tiktok','TikTok'],
+     ['.st-key-v69_social_instagram','Instagram']
+   ];
+   labels.forEach(([sel,name])=>{
+     const b=document.querySelector(sel+' button');
+     if(b){b.title=name;b.setAttribute('aria-label',name);}
+   });
+
+   if(!row.querySelector('.gsf-facebook-publish-icon')){
+     const fb=document.createElement('a');
+     fb.className='gsf-facebook-publish-icon';
+     fb.href='/account/facebook/start';
+     fb.target='_blank';
+     fb.rel='noopener';
+     fb.title='Facebook · collega account';
+     fb.setAttribute('aria-label','Facebook');
+     fb.textContent='f';
+     row.insertBefore(fb,row.firstChild);
+   }
+
+   if(!row.previousElementSibling?.classList.contains('gsf-final-publish-head')){
+     const head=document.createElement('div');
+     head.className='gsf-final-publish-head';
+     head.innerHTML='<div class="gsf-final-ready">✅ Short finale pronto</div><div class="gsf-final-publish-title">PUBBLICA</div>';
+     row.parentElement?.insertBefore(head,row);
+   }
+
+   /* SCARICA always follows the social row/composer and precedes ad/footer. */
    const dl=[...document.querySelectorAll('button,a')].find(x=>(x.textContent||'').trim()==='SCARICA');
-   const composers=[...document.querySelectorAll('[class*="st-key-v1054_social_composer_"]')];
-   if(dl && composers.length){
-     const dlWrap=dl.closest('[data-testid="stDownloadButton"]')||dl.parentElement;
-     const last=composers[composers.length-1];
-     const parent=last.parentElement;
-     if(dlWrap && parent && dlWrap.parentElement===parent) parent.appendChild(dlWrap);
+   if(dl){
+     const dlWrap=dl.closest('[data-testid="stDownloadButton"]')||dl.closest('[data-testid="stMarkdownContainer"]')||dl.parentElement;
+     const composers=[...document.querySelectorAll('[class*="st-key-v1055_social_composer_"]')];
+     const target=composers.length?composers[composers.length-1]:row;
+     if(dlWrap && target && target.parentElement){
+       try{target.insertAdjacentElement('afterend',dlWrap)}catch(e){}
+     }
    }
  };
- tune(); new MutationObserver(tune).observe(document.body,{childList:true,subtree:true});
+ tune();
+ new MutationObserver(tune).observe(document.body,{childList:true,subtree:true});
 })();
 </script>
 """, unsafe_allow_html=True)
 '''
-
 s = s.rstrip() + "\n\n" + _final_publish_v2.lstrip()
+
+# Web/mobile spacing hygiene and removal of leaked literal newline markers.
+_layout_hygiene = r'''
+st.markdown("""
+<style id="gsf-layout-hygiene">
+.st-key-gsf-major-create-ai,
+.st-key-gsf-major-create-short,
+[class*="st-key-gsf-major-game-editor_"],
+.st-key-gsf-major-personalize{
+  margin-top:10px !important;
+  margin-bottom:10px !important;
+}
+.gsf-major-note{
+  margin:7px auto 13px !important;
+}
+.gsf-moment-head{
+  margin:8px auto 13px !important;
+}
+.v67-ad{
+  margin-top:12px !important;
+  margin-bottom:12px !important;
+}
+[data-testid="stAppViewContainer"] hr{
+  margin-top:.55rem !important;
+  margin-bottom:.55rem !important;
+}
+@media(max-width:600px){
+  .st-key-gsf-major-create-ai,
+  .st-key-gsf-major-create-short,
+  [class*="st-key-gsf-major-game-editor_"],
+  .st-key-gsf-major-personalize{
+    margin-top:8px !important;
+    margin-bottom:8px !important;
+  }
+  .gsf-major-note{margin:6px auto 10px !important}
+  .gsf-moment-head{margin:6px auto 10px !important}
+  .v67-ad{margin-top:9px !important;margin-bottom:9px !important}
+  [data-testid="stAppViewContainer"] hr{margin:.38rem 0 !important}
+}
+</style>
+<script>
+(()=>{
+ const cleanArtifacts=()=>{
+   document.querySelectorAll('[data-testid="stMarkdownContainer"]').forEach(el=>{
+     const t=(el.textContent||'').trim();
+     if(/^(?:\\n)+$/.test(t)){
+       const host=el.parentElement||el;
+       host.style.display='none';
+       host.style.margin='0';
+       host.style.padding='0';
+       host.style.minHeight='0';
+     }
+   });
+ };
+ cleanArtifacts();
+ new MutationObserver(cleanArtifacts).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _layout_hygiene.lstrip()
 
 # DEMO typography: one coherent UI font across the whole product.
 _demo_typography = r'''
