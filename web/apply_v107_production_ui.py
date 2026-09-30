@@ -1216,6 +1216,12 @@ st.markdown("""
 s = s.rstrip() + "\n\n" + _manual_editor_heading_css.lstrip()
 
 
+# Runtime safety: suppress legacy literal newline markdown around Editor 2027.
+s=s.replace("st.markdown('\\\\n')", "st.empty()")
+s=s.replace('st.markdown("\\\\n")', "st.empty()")
+s=s.replace("st.markdown('\\\\n\\\\n')", "st.empty()")
+s=s.replace('st.markdown("\\\\n\\\\n")', "st.empty()")
+
 # DEMO EDITOR ROUTING: "Scegli scena" / Manuale must use Editor 2027, never the legacy editor.
 _gsf_manual_tree = _gsf_patch_ast.parse(s)
 _gsf_manual_lines = s.splitlines(keepends=True)
