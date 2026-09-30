@@ -54,6 +54,9 @@
 #ng27 .railBtn span{font-size:8.1px;font-weight:900;letter-spacing:.075em;color:#667FAE}
 #ng27 .railBtn:hover,#ng27 .railBtn.active{border-color:#BDDDEF;background:linear-gradient(145deg,#E8F8FF,#ECE8FF);color:#4B69B0;transform:translateY(-1px);box-shadow:0 9px 20px rgba(100,126,183,.16)}
 #ng27 .railBtn.active span{color:#536EB3}
+#ng27 .railBtn:active,#ng27 .zoomEditorBtn:active{transform:translateY(1px) scale(.965);transition-duration:.12s}
+#ng27 .pill{transition:transform .16s ease,background .18s ease,border-color .18s ease,color .18s ease}
+#ng27 .pill:active{transform:translateY(1px) scale(.97)}
 #ng27 .stageWrap{min-width:0}
 #ng27 .stage{position:relative;margin:0 auto;background:transparent;overflow:hidden;border:0;box-shadow:none;transition:width .24s,aspect-ratio .24s,border-radius .24s}
 #ng27 .stage.r916{width:min(100%,285px);aspect-ratio:9/16;border-radius:22px}
@@ -86,6 +89,22 @@
 #ng27 .killZone{right:16px;top:92px;width:34%;height:15%}
 #ng27 .mapZone{left:16px;bottom:90px;width:29%;height:25%}
 #ng27 .faceZone{right:16px;bottom:90px;width:28%;height:27%}
+#ng27 .visionScan{position:absolute;inset:0;z-index:9;pointer-events:none;opacity:0;overflow:hidden;border-radius:inherit}
+#ng27 .visionScan.run{animation:gsfVisionFade 1.45s ease both}
+#ng27 .visionSweep{position:absolute;left:0;right:0;height:1px;top:8%;opacity:0;background:linear-gradient(90deg,transparent,rgba(126,229,255,.98),transparent);box-shadow:0 0 12px rgba(126,229,255,.8)}
+#ng27 .visionScan.run .visionSweep{animation:gsfVisionSweep 1.18s cubic-bezier(.25,.8,.25,1) .08s both}
+#ng27 .visionScanStatus{position:absolute;top:14px;left:50%;transform:translateX(-50%);padding:4px 7px;border-radius:7px;background:rgba(6,20,29,.72);border:1px solid rgba(124,225,249,.25);color:#d6f7ff;font-size:6.5px;font-weight:950;letter-spacing:.10em;white-space:nowrap;backdrop-filter:blur(8px)}
+#ng27 .visionTags{position:absolute;inset:0}
+#ng27 .visionTag{position:absolute;transform:translate(-50%,-50%) scale(.94);padding:4px 6px;border-radius:7px;border:1px solid rgba(110,232,199,.44);background:rgba(8,25,32,.66);color:#bff7e7;font-size:6px;font-weight:950;letter-spacing:.075em;white-space:nowrap;opacity:0}
+#ng27 .visionScan.run .visionTag{animation:gsfVisionTag .72s ease .28s both}
+#ng27 .visionTag.event{border-color:rgba(255,179,205,.50);color:#ffd2e0}
+@keyframes gsfVisionSweep{0%{top:7%;opacity:0}12%{opacity:1}88%{opacity:1}100%{top:91%;opacity:0}}
+@keyframes gsfVisionFade{0%{opacity:0}8%{opacity:1}82%{opacity:1}100%{opacity:0}}
+@keyframes gsfVisionTag{0%{opacity:0;transform:translate(-50%,-50%) scale(.94)}35%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:.88;transform:translate(-50%,-50%) scale(1)}}
+@media(prefers-reduced-motion:reduce){
+ #ng27 .visionScan.run,#ng27 .visionScan.run .visionSweep,#ng27 .visionScan.run .visionTag{animation-duration:.01ms!important;animation-delay:0ms!important}
+ #ng27 .railBtn,#ng27 .pill,#ng27 .focus,#ng27 video{transition-duration:.01ms!important}
+}
 #ng27 .captionPreview{position:absolute;z-index:7;left:50%;top:76%;transform:translate(-50%,-50%);width:82%;text-align:center;font-size:24px;font-weight:950;line-height:1.02;color:#fff;text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 4px 18px rgba(0,0,0,.55);pointer-events:none;transition:top .15s,font-size .15s,color .15s}
 #ng27 .captionPreview.off{display:none}
 #ng27 .captionPreview .hotWord{color:#ffd400}
@@ -152,6 +171,14 @@
 #ng27 .timeline{width:min(96%,500px);margin:3px auto 0;padding:5px 7px;border-radius:16px;border:0;background:transparent;box-shadow:none}
 #ng27 .tlMeta{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:7.5px;font-weight:900;letter-spacing:.09em;color:#668095}
 #ng27 .track{position:relative;height:26px;border-radius:10px;overflow:hidden;background:#111d28}
+#ng27 .eventLayer{position:absolute;inset:0;z-index:3;pointer-events:none}
+#ng27 .eventMarker{position:absolute;bottom:3px;width:5px;min-width:5px;height:calc(7px + var(--event-score,0)*13px);padding:0;border:0;border-radius:5px;background:#73d9f0;box-shadow:0 0 8px rgba(115,217,240,.32);transform:translateX(-50%);pointer-events:auto;cursor:pointer;transition:transform .18s ease,height .18s ease,filter .18s ease,opacity .18s ease;opacity:.84}
+#ng27 .eventMarker:hover,#ng27 .eventMarker:focus-visible{transform:translateX(-50%) scaleX(1.45);filter:brightness(1.18);opacity:1;outline:none}
+#ng27 .eventMarker[data-kind="REACTION"],#ng27 .eventMarker[data-kind="AUDIO"]{background:#caa8ff;box-shadow:0 0 8px rgba(202,168,255,.34)}
+#ng27 .eventMarker[data-kind="IMPACT"],#ng27 .eventMarker[data-kind="KILL"],#ng27 .eventMarker[data-kind="GOAL"],#ng27 .eventMarker[data-kind="SHOT"]{background:#ff9fbc;box-shadow:0 0 9px rgba(255,159,188,.38)}
+#ng27 .eventMarker[data-kind="SILENCE"]{height:4px!important;background:#708291;box-shadow:none;opacity:.55}
+#ng27 .eventMarker.selected{width:8px;min-width:8px;opacity:1;background:#fff;box-shadow:0 0 0 2px rgba(105,223,255,.58),0 0 13px rgba(255,255,255,.65)}
+#ng27 .eventRank{position:absolute;left:50%;bottom:calc(100% + 2px);transform:translateX(-50%);padding:1px 3px;border-radius:4px;background:#eefaff;color:#163747;font-size:5.5px;font-weight:950;line-height:1.1;white-space:nowrap;pointer-events:none}
 #ng27 .segment{position:absolute;top:0;bottom:0}
 #ng27 .s1{left:0;width:20%;background:#1a2b3b}
 #ng27 .s2{left:20%;width:20%;background:#23435a}
@@ -523,6 +550,11 @@
         <div class="safeZone mapZone" id="mapZone"><span>MINIMAP SAFE</span></div>
         <div class="safeZone faceZone" id="faceZone"><span>FACECAM SAFE</span></div>
         <div class="captionPreview" id="captionPreview">NO SCOPE <span class="hotWord">CLUTCH!</span></div>
+        <div class="visionScan" id="visionScan" aria-hidden="true">
+          <div class="visionSweep"></div>
+          <div class="visionScanStatus" id="visionScanStatus">GAME VISION · SCAN</div>
+          <div class="visionTags" id="visionTags"></div>
+        </div>
 
         <div class="visionBadge" id="visionBadge">GAME VISION · SUBJECT LOCK</div>
 
@@ -538,7 +570,8 @@
 
       <div class="timeline">
         <div class="tlMeta"><span id="inMeta">IN · 00:00.0</span><span>TAGLIO</span><span id="outMeta">OUT · 00:15.0</span></div>
-        <div class="track">
+        <div class="track" id="eventTrack">
+          <div class="eventLayer" id="eventLayer"></div>
           <div class="select" id="selection"></div><div class="headLine" id="playhead"></div>
         </div>
         <div class="trimRow">
@@ -590,6 +623,11 @@
  const sysText=root.querySelector('#sysText');
  const selection=root.querySelector('#selection');
  const playhead=root.querySelector('#playhead');
+ const eventLayer=root.querySelector('#eventLayer');
+ const eventTrack=root.querySelector('#eventTrack');
+ const visionScan=root.querySelector('#visionScan');
+ const visionScanStatus=root.querySelector('#visionScanStatus');
+ const visionTags=root.querySelector('#visionTags');
  const inRange=root.querySelector('#inRange');
  const outRange=root.querySelector('#outRange');
  const inValue=root.querySelector('#inValue');
@@ -621,10 +659,91 @@
  let hostStateApplied=false;
  let hostVideoUrl="";
  let hostHeight=720;
+ let eventMap=[];
+ let visionProfile='Auto';
+ let visionZones=[];
+ let lastVisionScanKey='';
+
+ function eventLabel(kind){
+   return String(kind||'PEAK').replace(/_/g,' ').toUpperCase();
+ }
+ function renderEventMap(){
+   if(!eventLayer)return;
+   eventLayer.innerHTML='';
+   const d=Math.max(.1,Number(duration)||15);
+   (eventMap||[]).forEach((event,idx)=>{
+     const t=Math.max(0,Math.min(d,Number(event.time)||0));
+     const score=Math.max(0,Math.min(1,Number(event.score)||0));
+     const kind=eventLabel(event.kind);
+     const marker=document.createElement('button');
+     marker.type='button';
+     marker.className='eventMarker'+(event.selected_rank?' selected':'');
+     marker.dataset.kind=kind;
+     marker.style.left=(100*t/d)+'%';
+     marker.style.setProperty('--event-score',String(score));
+     marker.title=(event.selected_rank?'AI '+event.selected_rank+' · ':'')+kind+' · '+fmtTime(t);
+     marker.setAttribute('aria-label',marker.title);
+     if(event.selected_rank){
+       const rank=document.createElement('span');
+       rank.className='eventRank';
+       rank.textContent='AI '+event.selected_rank;
+       marker.appendChild(rank);
+     }
+     marker.onclick=(ev)=>{
+       ev.preventDefault();ev.stopPropagation();
+       video.currentTime=Math.max(0,Math.min(Math.max(0,d-.03),t));
+       flash((event.selected_rank?'AI '+event.selected_rank+' · ':'')+kind+' · '+fmtTime(t));
+     };
+     eventLayer.appendChild(marker);
+   });
+ }
+ function zonePosition(label,index){
+   const key=String(label||'').toUpperCase();
+   if(key.includes('CROSSHAIR')||key==='PLAYER'||key==='ACTION')return [50,43];
+   if(key.includes('KILLFEED'))return [77,22];
+   if(key.includes('MINIMAP'))return [23,67];
+   if(key.includes('SCOREBOARD'))return [50,18];
+   if(key.includes('VEHICLE'))return [50,61];
+   if(key==='HUD')return [72,68];
+   return [28+(index%3)*22,30+(index%2)*34];
+ }
+ function runVisionScan(force=false){
+   if(!visionScan||!visionTags)return;
+   const key=hostVideoUrl+'|'+visionProfile+'|'+(eventMap||[]).map(x=>x.kind+':'+x.time).join(',');
+   if(!force&&key===lastVisionScanKey)return;
+   lastVisionScanKey=key;
+   visionTags.innerHTML='';
+   visionScanStatus.textContent='GAME VISION · '+String(visionProfile||'AUTO').toUpperCase()+' PROFILE';
+   (visionZones||[]).slice(0,3).forEach((label,index)=>{
+     const [x,y]=zonePosition(label,index);
+     const tag=document.createElement('span');
+     tag.className='visionTag';
+     tag.style.left=x+'%';tag.style.top=y+'%';
+     const suffix=String(label).toUpperCase().includes('KILLFEED')||String(label).toUpperCase().includes('MINIMAP')||String(label).toUpperCase().includes('SCOREBOARD')||String(label).toUpperCase()==='HUD'?' SAFE':' PRIORITY';
+     tag.textContent=String(label).toUpperCase()+suffix;
+     visionTags.appendChild(tag);
+   });
+   const strongest=(eventMap||[]).filter(x=>String(x.kind||'').toUpperCase()!=='SILENCE').sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0))[0];
+   if(strongest){
+     const tag=document.createElement('span');
+     tag.className='visionTag event';
+     tag.style.left='50%';tag.style.top='82%';
+     tag.textContent=eventLabel(strongest.kind)+' · '+fmtTime(Number(strongest.time)||0);
+     visionTags.appendChild(tag);
+   }
+   visionScan.classList.remove('run');
+   void visionScan.offsetWidth;
+   visionScan.classList.add('run');
+   clearTimeout(runVisionScan.t);
+   runVisionScan.t=setTimeout(()=>visionScan.classList.remove('run'),1500);
+ }
 
  function receiveHost(args){
    args=args||{};
    hostHeight=Math.max(320,Number(args.height)||720);
+   eventMap=Array.isArray(args.event_map)?args.event_map.slice(0,18):[];
+   visionProfile=String(args.vision_profile||'Auto');
+   visionZones=Array.isArray(args.vision_zones)?args.vision_zones.slice(0,4):[];
    if(args.initial_state && typeof args.initial_state==="object"){
      state=Object.assign({},defaults,args.initial_state);
      if(!Object.prototype.hasOwnProperty.call(args.initial_state,'captionMode')){
@@ -643,6 +762,7 @@
    if(nextUrl && nextUrl!==hostVideoUrl){
      hostVideoUrl=nextUrl;
      video.src=nextUrl;
+     window.setTimeout(()=>runVisionScan(false),120);
      // metadata + a decoded frame are requested immediately so Safari/iOS,
      // Android and desktop do not show an apparently empty editor until PLAY.
      video.preload='auto';
@@ -933,11 +1053,16 @@
            state.visionEnabled=true;
            if(mode==='Auto Gaming'){state.look='Competitive';state.intensity=55;state.zoom=1.12;state.panX=0;state.panY=-2;state.framePreset='gameplay';state.hudMode='Smart Safe';state.captionSize=34}
            if(mode==='FPS'){state.look='Competitive';state.intensity=74;state.zoom=1.28;state.panX=0;state.panY=-4;state.framePreset='gameplay';state.hudMode='Smart Safe';state.captionSize=32}
-           if(mode==='Racing'){state.look='Competitive';state.intensity=48;state.zoom=1.08;state.panX=0;state.panY=5;state.framePreset='center';state.hudMode='Off';state.captionSize=30}
-           if(mode==='Sports'){state.look='Clean';state.intensity=45;state.zoom=1.08;state.panX=0;state.panY=0;state.framePreset='center';state.hudMode='Off';state.captionSize=30}
+           if(mode==='Racing'){state.look='Competitive';state.intensity=48;state.zoom=1.08;state.panX=0;state.panY=5;state.framePreset='center';state.hudMode='Smart Safe';state.captionSize=30}
+           if(mode==='Sports'){state.look='Clean';state.intensity=45;state.zoom=1.08;state.panX=0;state.panY=0;state.framePreset='center';state.hudMode='Smart Safe';state.captionSize=30}
            if(mode==='Battle Royale'){state.look='Boss Cinematic';state.intensity=62;state.zoom=1.16;state.panX=2;state.panY=-2;state.framePreset='gameplay';state.hudMode='Smart Safe';state.captionSize=34}
+           state.captionMode='Auto';state.captionOn=true;
+           state.audioMode='Game Boost';state.muted=false;if(state.volume<=0)state.volume=100;
+           state.speed=1;
          }
-         applyState();commit();openPanel('vision',btn);flash(mode==='Off'?'GAME AI OFF':mode.toUpperCase());
+         applyState();commit();openPanel('vision',btn);
+         if(mode!=='Off')runVisionScan(true);
+         flash(mode==='Off'?'GAME AI OFF':mode.toUpperCase());
        };
      });
    }
@@ -949,14 +1074,32 @@
    drawer.classList.add('hidden');
    root.querySelectorAll('.railBtn').forEach(x=>x.classList.remove('active'));
  }
- root.querySelectorAll('[data-panel]').forEach(btn=>btn.onclick=()=>openPanel(btn.dataset.panel,btn));
+ root.querySelectorAll('[data-panel]').forEach(btn=>btn.onclick=()=>{
+   if(btn.classList.contains('active')&&!drawer.classList.contains('hidden')){
+     drawer.classList.add('hidden');btn.classList.remove('active');return;
+   }
+   openPanel(btn.dataset.panel,btn);
+ });
  root.querySelector('#drawerClose').onclick=()=>{drawer.classList.add('hidden');root.querySelectorAll('.railBtn').forEach(x=>x.classList.remove('active'))};
  root.querySelector('#undoBtn').onclick=()=>{if(historyIndex>0){historyIndex--;restore(history[historyIndex])}else flash('NESSUN UNDO')};
  root.querySelector('#redoBtn').onclick=()=>{if(historyIndex<history.length-1){historyIndex++;restore(history[historyIndex])}else flash('NESSUN REDO')};
+ document.addEventListener('keydown',(event)=>{
+   const target=event.target;
+   const editing=target&&(target.tagName==='INPUT'||target.tagName==='TEXTAREA'||target.isContentEditable);
+   if(editing)return;
+   const mod=event.ctrlKey||event.metaKey;
+   if(!mod)return;
+   const key=String(event.key||'').toLowerCase();
+   if(key==='z'&&!event.shiftKey){
+     event.preventDefault();root.querySelector('#undoBtn').click();
+   }else if(key==='y'||(key==='z'&&event.shiftKey)){
+     event.preventDefault();root.querySelector('#redoBtn').click();
+   }
+ });
  root.querySelector('#doneBtn').onclick=()=>{
    commit();
    const payload=cloneState();
-   payload.editorVersion='2027.2';
+   payload.editorVersion='2027.3';
    payload.sourceDuration=duration;
    sendStateToPython(payload);
    flash('MODIFICHE APPLICATE');
@@ -1120,6 +1263,7 @@
      video.currentTime=previewTime;
    }catch(e){}
    duration=Math.max(.5,Math.min(60,video.duration||15));
+   renderEventMap();
    defaults.outPoint=duration;
    if(!hostStateApplied){
      state.outPoint=duration;
