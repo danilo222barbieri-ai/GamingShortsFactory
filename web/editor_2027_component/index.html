@@ -689,16 +689,22 @@
  let visionZones=[];
  let brainContext={};
 
+ function directorPlanFromBrain(){
+   const c=(brainContext&&typeof brainContext==='object')?brainContext:{};
+   return (c.director_plan&&typeof c.director_plan==='object')?c.director_plan:{};
+ }
  function semanticFocusFromBrain(){
    const c=(brainContext&&typeof brainContext==='object')?brainContext:{};
-   const conf=Math.max(0,Math.min(1,Number(c.focus_confidence)||0));
+   const plan=directorPlanFromBrain();
+   const framing=(plan.framing&&typeof plan.framing==='object')?plan.framing:{};
+   const conf=Math.max(0,Math.min(1,Number(framing.focus_confidence??c.focus_confidence)||0));
    return {
-     x:Math.max(8,Math.min(92,Number(c.focus_x)||50)),
-     y:Math.max(8,Math.min(92,Number(c.focus_y)||43)),
+     x:Math.max(8,Math.min(92,Number(framing.focus_x??c.focus_x)||50)),
+     y:Math.max(8,Math.min(92,Number(framing.focus_y??c.focus_y)||43)),
      confidence:conf,
      subject:String(c.subject||'').trim(),
-     hud:Array.isArray(c.hud_elements)?c.hud_elements.slice(0,8):[],
-     captionY:Math.max(15,Math.min(88,Number(c.caption_safe_y)||78))
+     hud:Array.isArray(framing.hud_elements)?framing.hud_elements.slice(0,8):(Array.isArray(c.hud_elements)?c.hud_elements.slice(0,8):[]),
+     captionY:Math.max(15,Math.min(88,Number(framing.caption_y??c.caption_safe_y)||78))
    };
  }
  function semanticHudDetections(){
@@ -1336,13 +1342,23 @@
       ['Auto Gaming','FPS','Racing','Sports','Battle Royale'].map(x=>'<button class="pill aiPreset" data-value="'+x+'">'+(x==='Auto Gaming'?'Auto':x==='Battle Royale'?'Battle Royale':x)+'</button>').join('')+
       '</div>'+
       '<div class="strip" style="margin-top:9px"><button class="pill" id="brainApply">AI CONSIGLIO</button></div>'+
-      '<div class="panelNote">'+(brainContext&&brainContext.reason?(
-        'Riconosciuto: '+escapeHtml(brainContext.reason)+
-        ' · confidenza '+Math.round((Number(brainContext.confidence)||0)*100)+'%'+
-        (brainContext.subject?' · soggetto '+escapeHtml(brainContext.subject):'')+
-        (Array.isArray(brainContext.hud_elements)&&brainContext.hud_elements.length?' · HUD '+brainContext.hud_elements.map(x=>escapeHtml(String(x).replaceAll('_',' '))).join(', '):'')+
-        '. AI cloud e Game Vision locale collaborano su inquadratura e zone sicure.'
-      ):('Game Brain analizza evento, azione, reazione, continuità e HUD. Tutte le modifiche restano manualmente regolabili.'))+'</div>']
+      '<div class="panelNote">'+(brainContext&&brainContext.reason?(()=>{
+        const plan=directorPlanFromBrain();
+        const edit=(plan.edit&&typeof plan.edit==='object')?plan.edit:{};
+        const textPlan=(plan.text&&typeof plan.text==='object')?plan.text:{};
+        const style=(plan.style&&typeof plan.style==='object')?plan.style:{};
+        let msg='Riconosciuto: '+escapeHtml(brainContext.reason)+
+          ' · confidenza '+Math.round((Number(brainContext.confidence)||0)*100)+'%';
+        if(brainContext.subject)msg+=' · soggetto '+escapeHtml(brainContext.subject);
+        if(Array.isArray(brainContext.hud_elements)&&brainContext.hud_elements.length){
+          msg+=' · HUD '+brainContext.hud_elements.map(x=>escapeHtml(String(x).replaceAll('_',' '))).join(', ');
+        }
+        if(textPlan.hook)msg+=' · hook: “'+escapeHtml(String(textPlan.hook))+'”';
+        if(edit.replay&&edit.replay.enabled)msg+=' · replay consigliato';
+        if(edit.slow_motion&&edit.slow_motion.enabled)msg+=' · slow-motion consigliato';
+        if(style.sound_accent&&style.sound_accent!=='none')msg+=' · audio '+escapeHtml(String(style.sound_accent));
+        return msg+'. AI Director, cloud e Game Vision locale collaborano sul montaggio.';
+      })():('Game Brain analizza evento, azione, reazione, continuità e HUD. Tutte le modifiche restano manualmente regolabili.'))+'</div>']
    };
    const tpl=templates[name];
    if(!tpl)return;
@@ -1469,27 +1485,50 @@
      });
      const brainApply=body.querySelector('#brainApply');
      if(brainApply){
+       const director=directorPlanFromBrain();
+       brainApply.textContent=Object.keys(director).length?'APPLICA AI DIRECTOR':'AI CONSIGLIO';
        brainApply.classList.toggle('sel',!!(brainContext&&brainContext.reason));
        brainApply.onclick=()=>{
          const sem=semanticFocusFromBrain();
+         const plan=directorPlanFromBrain();
+         const edit=(plan.edit&&typeof plan.edit==='object')?plan.edit:{};
+         const framing=(plan.framing&&typeof plan.framing==='object')?plan.framing:{};
+         const style=(plan.style&&typeof plan.style==='object')?plan.style:{};
          if(sem.confidence>=.45){
            visionPrimary={x:sem.x,y:sem.y,confidence:sem.confidence};
          }
          const auto=body.querySelector('.aiPreset[data-value="Auto Gaming"]');
          if(auto)auto.click();
-         if((Number(brainContext.semantic_confidence)||0)>=.55){
-           state.captionY=sem.captionY;
-           if(sem.hud.length)state.hudMode='Smart Safe';
-         }
-         if(sem.confidence>=.45){
-           const dx=(50-sem.x)*.32;
-           const dy=(47-sem.y)*.18;
-           state.panX=Math.max(-14,Math.min(14,state.panX+dx));
-           state.panY=Math.max(-11,Math.min(11,state.panY+dy));
-           state.framePreset='gameplay';
+
+         if(Object.keys(plan).length){
+           if(Number.isFinite(Number(edit.trim_start)))state.inPoint=Math.max(0,Math.min(duration-.5,Number(edit.trim_start)));
+           if(Number.isFinite(Number(edit.trim_end)))state.outPoint=Math.max(state.inPoint+.5,Math.min(duration,Number(edit.trim_end)));
+           if(Number.isFinite(Number(framing.zoom)))state.zoom=Math.max(.8,Math.min(2,Number(framing.zoom)));
+           if(Number.isFinite(Number(framing.pan_x)))state.panX=Math.max(-25,Math.min(25,Number(framing.pan_x)));
+           if(Number.isFinite(Number(framing.pan_y)))state.panY=Math.max(-25,Math.min(25,Number(framing.pan_y)));
+           if(Number.isFinite(Number(framing.caption_y)))state.captionY=Math.max(15,Math.min(88,Number(framing.caption_y)));
+           if(framing.hud_mode)state.hudMode=String(framing.hud_mode);
+           state.visionEnabled=framing.smart_reframe!==false;
+           if(framing.frame_preset)state.framePreset=String(framing.frame_preset);
+           if(style.look)state.look=String(style.look);
+           if(Number.isFinite(Number(style.intensity)))state.intensity=Math.max(0,Math.min(100,Number(style.intensity)));
+           if(style.audio_mode)state.audioMode=String(style.audio_mode);
+           state.aiMode='AI Director';
+         }else{
+           if((Number(brainContext.semantic_confidence)||0)>=.55){
+             state.captionY=sem.captionY;
+             if(sem.hud.length)state.hudMode='Smart Safe';
+           }
+           if(sem.confidence>=.45){
+             const dx=(50-sem.x)*.32;
+             const dy=(47-sem.y)*.18;
+             state.panX=Math.max(-14,Math.min(14,state.panX+dx));
+             state.panY=Math.max(-11,Math.min(11,state.panY+dy));
+             state.framePreset='gameplay';
+           }
          }
          applyState();commit();openPanel('vision',btn);runVisionScan(true);
-         flash(brainContext&&brainContext.reason?('AI · '+String(brainContext.reason).toUpperCase()):'AI AUTO GAMING');
+         flash(Object.keys(plan).length?'AI DIRECTOR APPLICATO':(brainContext&&brainContext.reason?('AI · '+String(brainContext.reason).toUpperCase()):'AI AUTO GAMING'));
        };
      }
    }
