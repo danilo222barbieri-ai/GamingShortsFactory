@@ -20,7 +20,7 @@ required=[
     "gsf-major-create-short",
     "Scegli il tuo motore IA o crea il tuo gameplay",
     "gsf_editor_2027_inline_open",
-    "PLAYER HTML5 ADATTIVO DEFINITIVO",
+    "Anteprima sorgente caricata nascosta per UX",
 ]
 for marker in required:
     if marker not in s:
