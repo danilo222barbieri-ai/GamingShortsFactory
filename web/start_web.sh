@@ -38,5 +38,5 @@ python /app/web/direct_upload_server.py &
 python /app/web/contact_server.py &
 nginx
 python /app/web/runtime_smoke_v107.py &
-exec python -m streamlit run /app/GamingShortsFactory_V112_GAME_BRAIN.py \
+exec python -m streamlit run /app/GamingShortsFactory_V113_GUARDIAN.py \
   --server.address=127.0.0.1 --server.port=8501 --server.maxUploadSize=4096 --server.maxMessageSize=4096 --server.headless=true
