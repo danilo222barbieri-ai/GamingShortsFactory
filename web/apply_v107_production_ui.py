@@ -748,52 +748,44 @@ _creator_hub_entry = r'''
 st.markdown("""
 <style>
 .gsf-account-fab{
-  position:fixed;
-  top:14px;
-  right:18px;
-  z-index:999990;
+  position:static;
+  width:max-content;
+  max-width:100%;
+  margin:4px auto 2px;
   display:flex;
   align-items:center;
-  gap:7px;
-  height:38px;
-  padding:0 13px;
-  border-radius:14px;
+  justify-content:center;
+  gap:5px;
+  height:30px;
+  padding:0 10px;
+  border-radius:11px;
   border:1px solid #D8E8F3;
-  background:rgba(255,255,255,.90);
-  -webkit-backdrop-filter:blur(14px);
-  backdrop-filter:blur(14px);
-  box-shadow:0 7px 20px rgba(52,91,122,.12);
-  color:#476E8A !important;
+  background:rgba(255,255,255,.82);
+  box-shadow:0 4px 12px rgba(52,91,122,.08);
+  color:#5B7890 !important;
   text-decoration:none !important;
-  font-size:11px;
+  font-size:9px;
   font-weight:900;
-  letter-spacing:.025em;
+  letter-spacing:.035em;
 }
 .gsf-account-fab svg{
-  width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;
+  width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;
   stroke-linecap:round;stroke-linejoin:round;
 }
 @media(max-width:600px){
   .gsf-account-fab{
-    top:auto;
-    bottom:calc(18px + env(safe-area-inset-bottom, 0px));
-    right:12px;
-    width:auto;
-    min-width:82px;
-    height:46px;
-    padding:0 14px;
-    justify-content:center;
-    border-radius:15px;
-    z-index:2147483000;
-    background:rgba(255,255,255,.96);
-    box-shadow:0 10px 26px rgba(52,91,122,.22);
+    position:static;
+    width:max-content;
+    min-width:0;
+    height:29px;
+    margin:3px auto 2px;
+    padding:0 9px;
+    border-radius:10px;
+    background:rgba(255,255,255,.90);
+    box-shadow:0 4px 10px rgba(52,91,122,.08);
   }
-  .gsf-account-fab svg{width:19px;height:19px}
-  .gsf-account-fab span{
-    display:inline;
-    font-size:10px;
-    letter-spacing:.035em;
-  }
+  .gsf-account-fab svg{width:13px;height:13px}
+  .gsf-account-fab span{display:inline;font-size:9px;letter-spacing:.035em}
 }
 </style>
 <a class="gsf-account-fab" href="/account" target="_self" aria-label="Apri Creator Hub">
@@ -819,10 +811,13 @@ a[href*="connect"]:not(.gsf-account-fab){
 }
 /* Pull the legal/version/social footer into a single compact visual block. */
 .gsf-social-footer{
-  margin:4px auto 0 !important;
-  padding:6px 10px 4px !important;
+  margin:2px auto 0 !important;
+  padding:3px 8px 1px !important;
 }
-.gsf-social-footer-title{margin-bottom:6px !important}
+.gsf-social-footer-title{margin:2px 0 4px !important;font-size:.72rem !important}
+.gsf-social-icon{width:32px !important;height:32px !important;flex-basis:32px !important;border-radius:10px !important}
+.gsf-social-icon svg{width:15px !important;height:15px !important}
+.gsf-legal-footer{margin-top:3px !important;padding:2px 0 1px !important}
 @media(max-width:600px){
   .gsf-social-footer{
     margin:2px auto 0 !important;
@@ -844,7 +839,14 @@ a[href*="connect"]:not(.gsf-account-fab){
 (()=>{
   const clean=()=>{
     document.querySelectorAll('a').forEach(a=>{
-      if((a.textContent||'').trim().toLowerCase()==='collega social') a.style.display='none';
+      const txt=(a.textContent||'').trim().toLowerCase();
+      if(txt==='collega social') a.style.display='none';
+      if(txt==='privacy'){
+        const p=a.previousSibling;
+        if(p && p.nodeType===3 && /^[\\s·•|]+$/.test(p.textContent||'')) p.remove();
+        const e=a.previousElementSibling;
+        if(e && /^[\\s·•|]+$/.test(e.textContent||'')) e.remove();
+      }
     });
   };
   clean();
