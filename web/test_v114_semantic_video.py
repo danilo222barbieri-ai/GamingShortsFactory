@@ -46,13 +46,17 @@ print("V114 worker semantic integration: PASS")
 semantic=Path("/app/web/semantic_video_v114.py").read_text(encoding="utf-8")
 for marker in (
     '"processing":"agentic"',
-    "background=True",
-    "client.interactions.get(interaction.id)",
+    "stream=True",
+    'event.event_type=="step.delta"',
+    'getattr(event.delta,"type",None)=="text"',
+    "json_parts.append",
     "focus_x_percent",
     "hud_elements",
     "caption_safe_y_percent",
     "focus_confidence",
 ):
     if marker not in semantic:
-        raise SystemExit("V117 semantic engine marker missing: "+marker)
-print("V117 background semantic Editor intelligence: PASS")
+        raise SystemExit("V118 semantic stream marker missing: "+marker)
+if "background=True" in semantic:
+    raise SystemExit("V118 must not use background multimodal interactions")
+print("V118 streaming semantic Editor intelligence: PASS")
