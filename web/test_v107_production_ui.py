@@ -140,3 +140,9 @@ if 'with st.container(key="gsf-save-draft")' in s:
     raise SystemExit("FAIL draft save is still always visible")
 if '_job["status"]="stale"' not in s or '"status":"failed"' not in s:
     raise SystemExit("FAIL stale/failed render release missing")
+
+if 'target="gsf_creator_hub"' not in s: raise SystemExit("FAIL Creator Hub replaces app tab")
+if "GSF_FINAL_RENDER_REUSED" not in s or "final_render.lock" not in s: raise SystemExit("FAIL final render rerun lock missing")
+if "preview_cache_v107" not in s: raise SystemExit("FAIL preview cache missing")
+if "Game Editor da ricaricare. Riprova Scegli scena." in s: raise SystemExit("FAIL editor reload warning remains")
+if "Attendi la fine dello Short in creazione" not in s: raise SystemExit("FAIL upload allowed during final render")

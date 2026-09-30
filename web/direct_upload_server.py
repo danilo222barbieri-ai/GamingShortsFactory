@@ -344,31 +344,16 @@ self.addEventListener("notificationclick",(event)=>{
 
 def _push_client_bytes():
     return r'''(()=>{
-  const toU8=(s)=>{
-    const pad="=".repeat((4-s.length%4)%4);
-    const raw=atob((s+pad).replace(/-/g,"+").replace(/_/g,"/"));
-    return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
-  };
-  const subscribe=async(promptUser)=>{
-    if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window))return false;
-    const reg=await navigator.serviceWorker.register("/gsf-sw.js?v=1",{scope:"/"});
-    let permission=Notification.permission;
-    if(permission==="default"&&promptUser)permission=await Notification.requestPermission();
-    if(permission!=="granted")return false;
-    const key=await fetch("/push/public-key",{cache:"no-store"}).then(r=>r.json()).then(x=>x.public_key||"");
-    if(!key)return false;
-    let sub=await reg.pushManager.getSubscription();
-    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:toU8(key)});
-    await fetch("/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sub.toJSON())});
-    return true;
-  };
+  const toU8=(s)=>{const pad="=".repeat((4-s.length%4)%4);const raw=atob((s+pad).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));};
+  const subscribe=async(promptUser)=>{if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window))return false;const reg=await navigator.serviceWorker.register("/gsf-sw.js?v=1",{scope:"/"});let permission=Notification.permission;if(permission==="default"&&promptUser)permission=await Notification.requestPermission();if(permission!=="granted")return false;const key=await fetch("/push/public-key",{cache:"no-store"}).then(r=>r.json()).then(x=>x.public_key||"");if(!key)return false;let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:toU8(key)});await fetch("/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sub.toJSON())});return true;};
   window.GSFPush={enable:()=>subscribe(true),ensure:()=>subscribe(false)};
-  document.addEventListener("click",(event)=>{
-    const b=event.target&&event.target.closest?event.target.closest("button"):null;
-    if(!b)return;
-    const label=(b.innerText||b.textContent||"").toUpperCase();
-    if(label.includes("CREA SHORT"))subscribe(true).catch(()=>{});
-  },true);
+  let uploadActive=false,lastRenderStatus="";
+  const ensureHud=()=>{let el=document.getElementById("gsf-activity-hud");if(el)return el;const style=document.createElement("style");style.textContent="#gsf-activity-hud{position:fixed;right:16px;bottom:18px;z-index:2147482998;display:none;align-items:center;gap:10px;max-width:min(360px,calc(100vw - 30px));padding:11px 14px;border-radius:16px;border:1px solid rgba(185,215,233,.9);background:rgba(255,255,255,.94);backdrop-filter:blur(14px);box-shadow:0 12px 30px rgba(45,83,110,.18);color:#446b84;font:800 11px/1.25 ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}#gsf-activity-hud .spin{width:17px;height:17px;border:2px solid #d5e8f3;border-top-color:#735ee2;border-radius:50%;animation:gsfSpin .8s linear infinite;flex:0 0 17px}#gsf-activity-hud.done .spin{animation:none;border:0;width:18px;height:18px}#gsf-activity-hud.done .spin:before{content:'✓';display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#daf3e7;color:#35815f;font-size:12px}@keyframes gsfSpin{to{transform:rotate(360deg)}}@media(max-width:600px){#gsf-activity-hud{right:10px;left:10px;bottom:76px;max-width:none}}";document.head.appendChild(style);el=document.createElement("div");el.id="gsf-activity-hud";el.innerHTML='<span class="spin"></span><span class="txt"></span>';document.body.appendChild(el);return el;};
+  const showHud=(txt,done=false)=>{const el=ensureHud();el.classList.toggle("done",!!done);el.querySelector(".txt").textContent=txt;el.style.display="flex";};const hideHud=()=>{const el=document.getElementById("gsf-activity-hud");if(el)el.style.display="none";};
+  window.addEventListener("message",(event)=>{const d=event.data||{};if(d.type!=="gsf-upload")return;if(d.state==="running"){uploadActive=true;showHud("Caricamento video in corso · "+Number(d.progress||0)+"%");}else if(d.state==="done"){uploadActive=false;showHud("Video caricato ✓",true);setTimeout(()=>{if(lastRenderStatus!=="running")hideHud();},1600);}else if(d.state==="error"){uploadActive=false;showHud("Upload interrotto · riprova",true);setTimeout(()=>{if(lastRenderStatus!=="running")hideHud();},2200);}});
+  window.addEventListener("beforeunload",(event)=>{if(!uploadActive)return;event.preventDefault();event.returnValue="";});
+  const pollJob=async()=>{try{const j=await fetch("/job/status",{cache:"no-store"}).then(r=>r.json());const status=String(j.render_status||"");lastRenderStatus=status;if(status==="running")showHud("Creazione Short in corso · puoi continuare a usare l’app");else if(status==="ready"&&!uploadActive){showHud("Short pronto · apri lo Share Hub",true);setTimeout(()=>{if(!uploadActive)hideHud();},2500);}else if(status==="failed"&&!uploadActive){showHud("Creazione Short interrotta · riprova",true);setTimeout(()=>{if(!uploadActive)hideHud();},3000);}else if(!uploadActive)hideHud();}catch(e){}};setInterval(pollJob,1500);pollJob();
+  document.addEventListener("click",(event)=>{const b=event.target&&event.target.closest?event.target.closest("button"):null;if(!b)return;const label=(b.innerText||b.textContent||"").toUpperCase();if(label.includes("CREA SHORT"))subscribe(true).catch(()=>{});},true);
   window.addEventListener("load",()=>subscribe(false).catch(()=>{}),{once:true});
 })();'''.encode("utf-8")
 
@@ -1354,7 +1339,7 @@ main{{max-width:860px;margin:0 auto;padding:22px 16px 34px}} .brand{{text-align:
 h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-columns:1fr 1fr;gap:9px}} .social{{color:#7890a2;background:#f8fbfe;border:1px solid #e0ebf3;border-radius:16px;padding:14px;display:flex;justify-content:space-between;align-items:center;font-size:12px}} .social strong{{font-size:13px;color:#496b83}} .social span{{font-weight:850}}
 .auto{{background:linear-gradient(135deg,#eff9ff,#f3efff);border:1px solid #d7e7f1;border-radius:18px;padding:15px}} .auto-k{{font-size:11px;font-weight:950;letter-spacing:.08em;color:#607da0}} .auto-title{{font-size:18px;font-weight:950;margin:3px 0 5px}} .auto-sub{{font-size:12px;color:#73889b;line-height:1.45}}
 .future{{border:1px dashed #cadde9;border-radius:17px;padding:14px;color:#7b90a1;font-size:12px;line-height:1.45}}
-.draftGrid{{display:grid;gap:9px}}.draftCard{{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f8fbfe;border:1px solid #dce9f2;border-radius:16px;padding:13px 14px}}.draftInfo{{display:flex;flex-direction:column;gap:3px;min-width:0}}.draftInfo strong{{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}.draftInfo span{{font-size:10px;color:#7e92a2}}.draftOpen{{text-decoration:none;color:#356f91;background:#eef8ff;border:1px solid #cfe5f3;border-radius:999px;padding:8px 10px;font-size:10px;font-weight:900}}.draftEmpty{{font-size:12px;color:#71899a;background:#f8fbfe;border:1px dashed #cbdde9;border-radius:16px;padding:14px;line-height:1.45}}.back{{display:block;text-align:center;margin:18px auto 0;color:#6d8799;text-decoration:none;font-size:11px;font-weight:800}}
+.draftGrid{{display:grid;gap:9px}}.draftCard{{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f8fbfe;border:1px solid #dce9f2;border-radius:16px;padding:13px 14px}}.draftInfo{{display:flex;flex-direction:column;gap:3px;min-width:0}}.draftInfo strong{{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}.draftInfo span{{font-size:10px;color:#7e92a2}}.draftActions{{display:flex;align-items:center;gap:6px;flex-wrap:wrap}}.draftOpen{{text-decoration:none;color:#356f91;background:linear-gradient(135deg,#eef8ff,#f1eeff);border:1px solid #cfe5f3;border-radius:12px;padding:8px 10px;font-size:10px;font-weight:900;box-shadow:0 4px 10px #345d7810}}.draftDelete{{text-decoration:none;color:#8b6170;background:linear-gradient(135deg,#fff7f9,#f8eef3);border:1px solid #ead5dd;border-radius:12px;padding:8px 10px;font-size:10px;font-weight:900;box-shadow:0 4px 10px #6f3e5110}}.draftEmpty{{font-size:12px;color:#71899a;background:#f8fbfe;border:1px dashed #cbdde9;border-radius:16px;padding:14px;line-height:1.45}}.back{{display:block;text-align:center;margin:18px auto 0;color:#6d8799;text-decoration:none;font-size:11px;font-weight:800}}
 .small{{font-size:11px;color:#8a9dab;text-align:center;line-height:1.45;margin:11px 0 0}}
 @media(min-width:640px){{.providers{{grid-template-columns:1fr 1fr 1fr}}}}
 @media(max-width:560px){{.socials{{grid-template-columns:1fr}}}}
@@ -1369,7 +1354,7 @@ h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-col
 <h2>Le tue bozze</h2>{drafts_html}<h2>I tuoi social</h2><div class="socials"><div class="social"><strong>YouTube</strong><span>Accedi per collegare</span></div><div class="social"><strong>TikTok</strong><span>Accedi per collegare</span></div><div class="social"><strong>Instagram</strong><span>Accedi per collegare</span></div><div class="social"><strong>Facebook</strong><span>Accedi per collegare</span></div></div>
 <h2>Auto Highlights</h2><div class="auto"><div class="auto-k">AUTO HIGHLIGHTS</div><div class="auto-title">Tu fai la live. GSF trova i momenti da pubblicare.</div><div class="auto-sub">Accedi al Creator Hub per collegare i tuoi account e gestire le live.</div></div>
 <h2>Prossimamente</h2><div class="future">Storico Short · Cloud · Piano Pro · Crediti AI · Achievement · Classifica Creator.</div>
-<a class="back" href="/">← Torna alla pagina principale</a>
+<a class="back" href="/" onclick="if(window.opener){window.close();return false;}">← Torna alla pagina principale</a>
 </div></main></body></html>"""
     providers=dict(profile.get("providers") or {})
     name=html.escape(str(profile.get("display_name") or "Creator"))
@@ -1419,7 +1404,7 @@ main{{max-width:860px;margin:0 auto;padding:24px 16px 48px}} .top{{display:flex;
 .level{{background:linear-gradient(135deg,#eff9ff,#f2efff);border:1px solid #d7e7f1;border-radius:18px;padding:14px;margin-bottom:18px}} .levelHead{{display:flex;justify-content:space-between;font-weight:850;font-size:12px}} .bar{{height:8px;background:#dbe8f1;border-radius:999px;margin-top:9px;overflow:hidden}} .bar i{{display:block;width:18%;height:100%;background:linear-gradient(90deg,#4fade8,#647fe5);border-radius:999px}}
 h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-columns:1fr 1fr;gap:9px}} .social{{text-decoration:none;color:#294a62;background:#fff;border:1px solid #dbe8f1;border-radius:16px;padding:14px;display:flex;justify-content:space-between;align-items:center;font-size:12px}} .social strong{{font-size:13px}} .social span{{color:#5a7d96;font-weight:850}} .social.connected{{background:#f1fbf7;border-color:#cfeadf}} .social.connected span{{color:#3c8968}}
 .notice{{background:#eef8ff;border:1px solid #d2e9f8;border-radius:14px;padding:11px 13px;margin:0 0 15px;color:#426a86}} .auto{{background:linear-gradient(135deg,#eff9ff,#f3efff);border:1px solid #d7e7f1;border-radius:18px;padding:15px}} .auto-k{{font-size:11px;font-weight:950;letter-spacing:.08em;color:#607da0}} .auto-title{{font-size:17px;font-weight:950;margin:3px 0 5px}} .auto-sub{{font-size:12px;color:#73889b;line-height:1.45}} .future{{border:1px dashed #cadde9;border-radius:17px;padding:14px;color:#7b90a1;font-size:12px;line-height:1.45}}
-.draftGrid{{display:grid;gap:9px}}.draftCard{{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f8fbfe;border:1px solid #dce9f2;border-radius:16px;padding:13px 14px}}.draftInfo{{display:flex;flex-direction:column;gap:3px;min-width:0}}.draftInfo strong{{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}.draftInfo span{{font-size:10px;color:#7e92a2}}.draftOpen{{text-decoration:none;color:#356f91;background:#eef8ff;border:1px solid #cfe5f3;border-radius:999px;padding:8px 10px;font-size:10px;font-weight:900}}.draftEmpty{{font-size:12px;color:#71899a;background:#f8fbfe;border:1px dashed #cbdde9;border-radius:16px;padding:14px;line-height:1.45}}.logout{{display:block;text-align:center;color:#8a6170;text-decoration:none;font-size:12px;font-weight:800;margin-top:18px}} .back-bottom{{display:block;text-align:center;color:#6d8799;text-decoration:none;font-size:11px;font-weight:800;margin-top:14px}}
+.draftGrid{{display:grid;gap:9px}}.draftCard{{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f8fbfe;border:1px solid #dce9f2;border-radius:16px;padding:13px 14px}}.draftInfo{{display:flex;flex-direction:column;gap:3px;min-width:0}}.draftInfo strong{{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}.draftInfo span{{font-size:10px;color:#7e92a2}}.draftActions{{display:flex;align-items:center;gap:6px;flex-wrap:wrap}}.draftOpen{{text-decoration:none;color:#356f91;background:linear-gradient(135deg,#eef8ff,#f1eeff);border:1px solid #cfe5f3;border-radius:12px;padding:8px 10px;font-size:10px;font-weight:900;box-shadow:0 4px 10px #345d7810}}.draftDelete{{text-decoration:none;color:#8b6170;background:linear-gradient(135deg,#fff7f9,#f8eef3);border:1px solid #ead5dd;border-radius:12px;padding:8px 10px;font-size:10px;font-weight:900;box-shadow:0 4px 10px #6f3e5110}}.draftEmpty{{font-size:12px;color:#71899a;background:#f8fbfe;border:1px dashed #cbdde9;border-radius:16px;padding:14px;line-height:1.45}}.logout{{display:block;text-align:center;color:#8a6170;text-decoration:none;font-size:12px;font-weight:800;margin-top:18px}} .back-bottom{{display:block;text-align:center;color:#6d8799;text-decoration:none;font-size:11px;font-weight:800;margin-top:14px}}
 @media(max-width:560px){{.stats{{grid-template-columns:1fr 1fr 1fr}} .stat{{padding:10px 5px}} .stat b{{font-size:17px}} .socials{{grid-template-columns:1fr}}}}
 </style></head><body><main>
 <div class="top"><div class="brand">GAMING SHORTS FACTORY</div></div>
@@ -1429,7 +1414,7 @@ h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-col
 <h2>Le tue bozze</h2>{drafts_html}<h2>I tuoi social</h2><div class="socials">{socials}</div>
 <h2>Auto Highlights</h2><div class="auto"><div class="auto-k">AUTO HIGHLIGHTS</div><div class="auto-title">Tu fai la live. GSF trova i momenti da pubblicare.</div><div class="auto-sub">Collega i tuoi account live per trovare automaticamente i momenti migliori e portarli nel Game Editor.</div></div>
 <h2>Prossimamente</h2><div class="future">Storico Short · Cloud · Piano Pro · Crediti AI · Achievement · Classifica Creator.</div>
-<a class="logout" href="/account/logout">Esci dal Creator Hub</a><a class="back-bottom" href="/">← Torna alla pagina principale</a>
+<a class="logout" href="/account/logout">Esci dal Creator Hub</a><a class="back-bottom" href="/" onclick="if(window.opener){window.close();return false;}">← Torna alla pagina principale</a>
 </div></main></body></html>"""
 
 
@@ -1950,6 +1935,21 @@ class Handler(BaseHTTPRequestHandler):
             return
         if clean=="/push/public-key":
             _json(self,200,{"ok":bool(VAPID_PUBLIC_KEY),"public_key":VAPID_PUBLIC_KEY})
+            return
+        if clean=="/job/status":
+            sid=_social_sid(self);payload={}
+            if sid:
+                job=ROOT/"sessions"/sid/"render_job.json"
+                if job.is_file():
+                    try:
+                        payload=json.loads(job.read_text(encoding="utf-8"))
+                        if not isinstance(payload,dict):payload={}
+                    except Exception:payload={}
+            status=str(payload.get("status") or "")
+            if status=="running":
+                started=float(payload.get("started_at") or 0.0)
+                if started and time.time()-started>900:status="stale"
+            _json(self,200,{"ok":True,"render_status":status,"started_at":payload.get("started_at"),"completed_at":payload.get("completed_at")})
             return
         if clean=="/editor-media/current":
             _editor_media_current(self,_social_sid(self))

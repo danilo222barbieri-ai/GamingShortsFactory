@@ -48,8 +48,15 @@ _choice_css=r'''
     transform:translateY(-1px) !important;
 }
 [class*="st-key-v71_short_card_"]{
-    padding:8px 8px 10px !important;
+    padding:6px 6px 9px !important;
     border-radius:18px !important;
+}
+[class*="st-key-v71_short_card_"] [data-testid="stVideo"],
+[class*="st-key-v71_short_card_"] video{
+    width:100% !important;
+    max-width:100% !important;
+    height:auto !important;
+    border-radius:14px !important;
 }
 .v71-card-meta{
     position:relative !important;
@@ -539,7 +546,13 @@ _engine_note_new='''    st.markdown(
                 _job=__import__("json").loads(_job_path.read_text(encoding="utf-8"))
             if not isinstance(_job,dict):
                 _job={}
-            _job.update({"status":"cancelled","cancelled_at":__import__("time").time(),"reason":"engine_changed"})
+            _pid=int(_job.get("pid") or 0)
+            if _pid>0:
+                try:
+                    __import__("os").kill(_pid,__import__("signal").SIGTERM)
+                except Exception:
+                    pass
+            _job.update({"status":"cancelled","cancelled_at":__import__("time").time(),"reason":"engine_changed","pid":0})
             _tmp=_job_path.with_suffix(".tmp")
             _tmp.write_text(__import__("json").dumps(_job,ensure_ascii=False,default=str),encoding="utf-8")
             __import__("os").replace(_tmp,_job_path)
@@ -755,95 +768,95 @@ _gsf_locked_render_old='''        return subprocess.run(
             timeout=timeout,
         )
 '''
-_gsf_locked_render_new='''        _gsf_locked_result=subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            timeout=timeout,
-        )
-        if _gsf_locked_result.returncode==0:
-            try:
-                _gsf_out=__import__("pathlib").Path(str(cmd[-1])).resolve()
-                if "gsf_final_v54_" in str(_gsf_out.parent):
-                    _gsf_os=__import__("os")
-                    _gsf_root=(__import__("pathlib").Path(
-                        _gsf_os.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime")
-                    )/"sessions").resolve()
-                    _gsf_rel=_gsf_out.relative_to(_gsf_root)
-                    _gsf_sid=str(_gsf_rel.parts[0]) if _gsf_rel.parts else ""
+_gsf_locked_render_new='''        _gsf_out=__import__("pathlib").Path(str(cmd[-1])).resolve()
+        _gsf_is_final=("gsf_final_v54_" in str(_gsf_out.parent))
+        _gsf_lock_handle=None
+        _gsf_sid=""
+        _gsf_root=None
+        _gsf_stable=None
+        _job_file=None
+        try:
+            if _gsf_is_final:
+                _gsf_os=__import__("os")
+                _gsf_root=(__import__("pathlib").Path(_gsf_os.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))/"sessions").resolve()
+                _gsf_rel=_gsf_out.relative_to(_gsf_root)
+                _gsf_sid=str(_gsf_rel.parts[0]) if _gsf_rel.parts else ""
+                if _gsf_sid:
+                    _gsf_media=_gsf_root/_gsf_sid/"media"
+                    _gsf_media.mkdir(parents=True,exist_ok=True)
+                    _gsf_stable=_gsf_media/"gaming_short_finale_share.mp4"
+                    _job_file=_gsf_root/_gsf_sid/"render_job.json"
+                    _gsf_lock_handle=open(_gsf_root/_gsf_sid/"final_render.lock","a+")
+                    __import__("fcntl").flock(_gsf_lock_handle.fileno(),__import__("fcntl").LOCK_EX)
+                    _job={}
+                    if _job_file.is_file():
+                        try:_job=__import__("json").loads(_job_file.read_text(encoding="utf-8"))
+                        except Exception:_job={}
+                    if not isinstance(_job,dict):_job={}
+                    if str(_job.get("status") or "")=="cancelled":
+                        return subprocess.CompletedProcess(cmd,130,"","render cancelled")
+                    _started=float(_job.get("started_at") or 0.0)
+                    if _gsf_stable.is_file() and _gsf_stable.stat().st_size>1024 and (_started<=0.0 or _gsf_stable.stat().st_mtime>=_started-1.0):
+                        __import__("shutil").copyfile(_gsf_stable,_gsf_out)
+                        print("GSF_FINAL_RENDER_REUSED","sid="+_gsf_sid,flush=True)
+                        return subprocess.CompletedProcess(cmd,0,"","")
+            if _gsf_is_final and _job_file is not None:
+                _proc=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+                try:
+                    _job={}
+                    if _job_file.is_file():
+                        try:_job=__import__("json").loads(_job_file.read_text(encoding="utf-8"))
+                        except Exception:_job={}
+                    if not isinstance(_job,dict):_job={}
+                    _job.update({"status":"running","pid":int(_proc.pid)})
+                    _tmp=_job_file.with_suffix(".tmp")
+                    _tmp.write_text(__import__("json").dumps(_job,ensure_ascii=False,default=str),encoding="utf-8")
+                    __import__("os").replace(_tmp,_job_file)
+                except Exception:pass
+                try:_stdout,_stderr=_proc.communicate(timeout=timeout)
+                except subprocess.TimeoutExpired:
+                    _proc.kill();_stdout,_stderr=_proc.communicate();raise
+                _gsf_locked_result=subprocess.CompletedProcess(cmd,int(_proc.returncode or 0),_stdout,_stderr)
+            else:
+                _gsf_locked_result=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=timeout)
+            _job={}
+            if _job_file is not None and _job_file.is_file():
+                try:_job=__import__("json").loads(_job_file.read_text(encoding="utf-8"))
+                except Exception:_job={}
+            if not isinstance(_job,dict):_job={}
+            _was_cancelled=(str(_job.get("status") or "")=="cancelled")
+            if _gsf_locked_result.returncode==0 and _gsf_is_final and not _was_cancelled:
+                try:
                     if _gsf_sid and _gsf_out.is_file() and _gsf_out.stat().st_size>1024:
-                        _gsf_media=_gsf_root/_gsf_sid/"media"
-                        _gsf_media.mkdir(parents=True,exist_ok=True)
-                        _gsf_stable=_gsf_media/"gaming_short_finale_share.mp4"
-                        _gsf_tmp=_gsf_media/"gaming_short_finale_share.mp4.tmp"
-                        __import__("shutil").copyfile(_gsf_out,_gsf_tmp)
-                        _gsf_os.replace(_gsf_tmp,_gsf_stable)
-                        print(
-                            "GSF_FINAL_STABLE_READY",
-                            "sid="+_gsf_sid,
-                            "bytes="+str(_gsf_stable.stat().st_size),
-                            flush=True,
-                        )
+                        _tmp_video=_gsf_stable.with_suffix(".mp4.tmp")
+                        __import__("shutil").copyfile(_gsf_out,_tmp_video)
+                        __import__("os").replace(_tmp_video,_gsf_stable)
+                        print("GSF_FINAL_STABLE_READY","sid="+_gsf_sid,"bytes="+str(_gsf_stable.stat().st_size),flush=True)
+                        _job.update({"status":"ready","completed_at":__import__("time").time(),"final_path":str(_gsf_stable),"final_bytes":int(_gsf_stable.stat().st_size),"pid":0})
+                        _job_tmp=_job_file.with_suffix(".tmp")
+                        _job_tmp.write_text(__import__("json").dumps(_job,ensure_ascii=False,default=str),encoding="utf-8")
+                        __import__("os").replace(_job_tmp,_job_file)
                         try:
-                            _job_file=_gsf_root/_gsf_sid/"render_job.json"
-                            _job={}
-                            if _job_file.is_file():
-                                _job=__import__("json").loads(_job_file.read_text(encoding="utf-8"))
-                            if not isinstance(_job,dict):
-                                _job={}
-                            _job.update({"status":"ready","completed_at":__import__("time").time(),"final_path":str(_gsf_stable),"final_bytes":int(_gsf_stable.stat().st_size)})
-                            _job_tmp=_job_file.with_suffix(".tmp")
-                            _job_tmp.write_text(__import__("json").dumps(_job,ensure_ascii=False,default=str),encoding="utf-8")
-                            _gsf_os.replace(_job_tmp,_job_file)
-                        except Exception as _job_exc:
-                            print("GSF_FINAL_JOB_READY_WARN",repr(str(_job_exc)),flush=True)
-                        try:
-                            _gsf_u=__import__("urllib.request",fromlist=["Request","urlopen"])
-                            _gsf_j=__import__("json")
-                            _gsf_payload=_gsf_j.dumps({
-                                "title":"Short pronto",
-                                "body":"Il tuo Short è pronto. Tocca per aprire lo Share Hub.",
-                                "url":"/#share-hub",
-                                "tag":"gsf-short-ready",
-                            }).encode("utf-8")
-                            _gsf_req=_gsf_u.Request(
-                                "http://127.0.0.1:8502/push/notify",
-                                data=_gsf_payload,
-                                headers={
-                                    "Content-Type":"application/json",
-                                    "X-GSF-Session-ID":_gsf_sid,
-                                },
-                                method="POST",
-                            )
-                            _gsf_u.urlopen(_gsf_req,timeout=4).read()
-                        except Exception as _gsf_push_exc:
-                            print("GSF_FINAL_PUSH_WARN",repr(str(_gsf_push_exc)),flush=True)
-            except Exception as _gsf_stable_exc:
-                print("GSF_FINAL_STABLE_WARN",repr(str(_gsf_stable_exc)),flush=True)
-        if _gsf_locked_result.returncode!=0:
-            try:
-                _gsf_out=__import__("pathlib").Path(str(cmd[-1])).resolve()
-                if "gsf_final_v54_" in str(_gsf_out.parent):
-                    _gsf_root=(__import__("pathlib").Path(
-                        __import__("os").environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime")
-                    )/"sessions").resolve()
-                    _gsf_rel=_gsf_out.relative_to(_gsf_root)
-                    _gsf_sid=str(_gsf_rel.parts[0]) if _gsf_rel.parts else ""
-                    if _gsf_sid:
-                        _job_file=_gsf_root/_gsf_sid/"render_job.json"
-                        _job={}
-                        if _job_file.is_file():
-                            _job=__import__("json").loads(_job_file.read_text(encoding="utf-8"))
-                        if not isinstance(_job,dict):
-                            _job={}
-                        _job.update({"status":"failed","failed_at":__import__("time").time(),"returncode":int(_gsf_locked_result.returncode)})
-                        _tmp=_job_file.with_suffix(".tmp")
-                        _tmp.write_text(__import__("json").dumps(_job,ensure_ascii=False,default=str),encoding="utf-8")
-                        __import__("os").replace(_tmp,_job_file)
-            except Exception:
-                pass
-        return _gsf_locked_result
+                            _u=__import__("urllib.request",fromlist=["Request","urlopen"])
+                            _payload=__import__("json").dumps({"title":"Short pronto","body":"Il tuo Short è pronto. Tocca per aprire lo Share Hub.","url":"/#share-hub","tag":"gsf-short-ready"}).encode("utf-8")
+                            _req=_u.Request("http://127.0.0.1:8502/push/notify",data=_payload,headers={"Content-Type":"application/json","X-GSF-Session-ID":_gsf_sid},method="POST")
+                            _u.urlopen(_req,timeout=4).read()
+                        except Exception as _push_exc:print("GSF_FINAL_PUSH_WARN",repr(str(_push_exc)),flush=True)
+                except Exception as _stable_exc:print("GSF_FINAL_STABLE_WARN",repr(str(_stable_exc)),flush=True)
+            if _gsf_locked_result.returncode!=0 and _gsf_is_final and not _was_cancelled:
+                try:
+                    _job.update({"status":"failed","failed_at":__import__("time").time(),"returncode":int(_gsf_locked_result.returncode),"pid":0})
+                    _tmp=_job_file.with_suffix(".tmp")
+                    _tmp.write_text(__import__("json").dumps(_job,ensure_ascii=False,default=str),encoding="utf-8")
+                    __import__("os").replace(_tmp,_job_file)
+                except Exception:pass
+            return _gsf_locked_result
+        finally:
+            if _gsf_lock_handle is not None:
+                try:
+                    __import__("fcntl").flock(_gsf_lock_handle.fileno(),__import__("fcntl").LOCK_UN)
+                    _gsf_lock_handle.close()
+                except Exception:pass
 '''
 if _gsf_locked_render_old not in s:
     raise RuntimeError("V107 locked renderer persistence anchor missing")
@@ -1089,7 +1102,7 @@ st.markdown("""
   }
 }
 </style>
-<a class="gsf-account-fab" href="/account" target="_self" aria-label="Apri Creator Hub">
+<a class="gsf-account-fab" href="/account" target="gsf_creator_hub" aria-label="Apri Creator Hub">
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <circle cx="12" cy="8" r="4"></circle>
     <path d="M4.5 20c.9-4 3.4-6 7.5-6s6.6 2 7.5 6"></path>
@@ -2680,7 +2693,15 @@ _gsf_new_manual_body = [
     _gsf_indent + '        st.warning("Video non disponibile nel Game Editor.")\n',
     _gsf_indent + 'except Exception as _gsf_manual_editor_exc:\n',
     _gsf_indent + '    print("GSF_MANUAL_EDITOR_ERROR",repr(str(_gsf_manual_editor_exc)),flush=True)\n',
-    _gsf_indent + '    st.warning("Game Editor da ricaricare. Riprova Scegli scena.")\n',
+    _gsf_indent + '    _rk="gsf_manual_editor_recover_once"\n',
+    _gsf_indent + '    if not st.session_state.get(_rk,False):\n',
+    _gsf_indent + '        st.session_state[_rk]=True\n',
+    _gsf_indent + '        _src_retry=str(st.session_state.get("gsf_source_path") or "")\n',
+    _gsf_indent + '        if _src_retry: st.session_state["gsf_editor_source_path"]=_src_retry\n',
+    _gsf_indent + '        st.rerun()\n',
+    _gsf_indent + '    else:\n',
+    _gsf_indent + '        st.session_state[_rk]=False\n',
+    _gsf_indent + '        st.info("Game Editor in caricamento…")\n',
     _gsf_indent + 'try:\n',
     _gsf_indent + '    with st.container(key="v1055_ad_manual_after_editor"):\n',
     _gsf_indent + '        st.markdown(_gsf_v1057_ad_markup(3),unsafe_allow_html=True)\n',
@@ -3060,6 +3081,67 @@ div[data-testid="stMarkdown"]:has(.gsf-social-footer){
 """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _sep30_polish.lstrip()
+
+_gsf_skip_parts_old='''_GSF_STATE_SKIP_PARTS = (
+    "secret", "password", "access_token", "refresh_token", "client_secret",
+    "oauth", "credential", "inline_final_bytes", "editor_output_bytes",
+    "editor_quick_bytes", "source_bytes",
+)
+'''
+_gsf_skip_parts_new='''_GSF_STATE_SKIP_PARTS = (
+    "secret", "password", "access_token", "refresh_token", "client_secret",
+    "oauth", "credential", "inline_final_bytes", "editor_output_bytes",
+    "editor_quick_bytes", "source_bytes", "component",
+)
+'''
+if _gsf_skip_parts_old in s:
+    s=s.replace(_gsf_skip_parts_old,_gsf_skip_parts_new,1)
+
+s=s.replace(
+    "pick.addEventListener('change',async()=>{\n  const file=pick.files && pick.files[0];",
+    """pick.addEventListener('change',async()=>{
+  const file=pick.files && pick.files[0];
+  if(!file)return;
+  try{
+    const jr=await fetch('/job/status',{cache:'no-store'});const js=await jr.json();
+    if(js&&js.render_status==='running'){
+      status.style.display='block';status.classList.add('error');
+      statusText.textContent='Attendi la fine dello Short in creazione';label.textContent='Short in creazione';pick.value='';return;
+    }
+  }catch(e){}
+  try{window.parent.postMessage({type:'gsf-upload',state:'running',progress:0},'*');}catch(e){}""",
+    1,
+)
+s=s.replace("statusText.textContent='Upload diretto… '+pct+'%';","statusText.textContent='Upload diretto… '+pct+'%';try{window.parent.postMessage({type:'gsf-upload',state:'running',progress:pct},'*');}catch(e){}")
+s=s.replace("statusText.textContent='Video caricato';\n      circle.classList.remove('busy');","statusText.textContent='Video caricato';try{window.parent.postMessage({type:'gsf-upload',state:'done',progress:100},'*');}catch(e){}\n      circle.classList.remove('busy');")
+s=s.replace("statusText.textContent='Upload interrotto — riprova';","statusText.textContent='Upload interrotto — riprova';try{window.parent.postMessage({type:'gsf-upload',state:'error',progress:0},'*');}catch(e){}")
+
+try:
+    _pt=_gsf_patch_ast.parse(s);_fn=None
+    for _n in _gsf_patch_ast.walk(_pt):
+        if isinstance(_n,_gsf_patch_ast.FunctionDef) and _n.name=="crea_anteprima":_fn=_n;break
+    if _fn is not None:
+        _ls=s.splitlines(keepends=True);_at=getattr(_fn,"end_lineno",_fn.lineno)
+        _cache=r"""
+_gsf_crea_anteprima_original=crea_anteprima
+def crea_anteprima(input_path,output_path,start,duration,*args,**kwargs):
+    try:
+        _src=Path(str(input_path));_out=Path(str(output_path))
+        _root=Path(str(GSF_PREVIEW_DIR))/"preview_cache_v107";_root.mkdir(parents=True,exist_ok=True)
+        _sig="|".join([str(_src.resolve()) if _src.exists() else str(_src),str(_src.stat().st_size) if _src.exists() else "0",str(int(_src.stat().st_mtime)) if _src.exists() else "0",f"{float(start or 0):.3f}",f"{float(duration or 0):.3f}",repr(args),repr(sorted(kwargs.items())),_out.suffix.lower()])
+        _key=__import__("hashlib").sha1(_sig.encode("utf-8")).hexdigest()[:24]
+        _cached=_root/("p_"+_key+(_out.suffix.lower() or ".mp4"))
+        if _cached.is_file() and _cached.stat().st_size>4096:
+            _out.parent.mkdir(parents=True,exist_ok=True);__import__("shutil").copyfile(_cached,_out);return True
+        _ok=_gsf_crea_anteprima_original(input_path,output_path,start,duration,*args,**kwargs)
+        if _out.is_file() and _out.stat().st_size>4096:
+            _tmp=_cached.with_suffix(_cached.suffix+".tmp");__import__("shutil").copyfile(_out,_tmp);__import__("os").replace(_tmp,_cached)
+        return _ok
+    except Exception:
+        return _gsf_crea_anteprima_original(input_path,output_path,start,duration,*args,**kwargs)
+"""
+        _ls[_at:_at]=["\n"+_cache+"\n"];s="".join(_ls);print("V107 preview cache wrapper: PASS")
+except Exception as _e:print("V107 preview cache wrapper warning:",repr(str(_e)),flush=True)
 
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
