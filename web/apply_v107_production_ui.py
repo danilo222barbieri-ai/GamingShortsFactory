@@ -1754,6 +1754,41 @@ s=s.replace('st.markdown("\\\\n")', "st.empty()")
 s=s.replace("st.markdown('\\\\n\\\\n')", "st.empty()")
 s=s.replace('st.markdown("\\\\n\\\\n")', "st.empty()")
 
+# Normalize the engine selector before routing. Some UI generations label the
+# manual tile "Scegli scena" while the legacy branch still expects "✋ Manuale".
+_gsf_mode_tree=_gsf_patch_ast.parse(s)
+_gsf_mode_lines=s.splitlines(keepends=True)
+_gsf_mode_nodes=[]
+for _gsf_node in _gsf_patch_ast.walk(_gsf_mode_tree):
+    if not isinstance(_gsf_node,_gsf_patch_ast.Assign):
+        continue
+    if not any(isinstance(_t,_gsf_patch_ast.Name) and _t.id=="modalita" for _t in _gsf_node.targets):
+        continue
+    _seg=_gsf_patch_ast.get_source_segment(s,_gsf_node) or ""
+    _score=(10 if "st." in _seg else 0)+(5 if any(x in _seg.lower() for x in ("radio","select","button","engine","motore")) else 0)
+    _gsf_mode_nodes.append((_score,_gsf_node))
+if not _gsf_mode_nodes:
+    raise RuntimeError("V107 modalita selector assignment not found")
+_gsf_mode_nodes.sort(key=lambda x:(x[0],-x[1].lineno),reverse=True)
+_gsf_mode_node=_gsf_mode_nodes[0][1]
+_gsf_mode_line=_gsf_mode_lines[_gsf_mode_node.lineno-1]
+_gsf_mode_indent=_gsf_mode_line[:len(_gsf_mode_line)-len(_gsf_mode_line.lstrip())]
+_gsf_mode_runtime=[
+    _gsf_mode_indent+'_gsf_mode_label=str(modalita or "")\n',
+    _gsf_mode_indent+'if "manual" in _gsf_mode_label.lower() or "scena" in _gsf_mode_label.lower():\n',
+    _gsf_mode_indent+'    modalita="✋ Manuale"\n',
+    _gsf_mode_indent+'_gsf_mode_now=str(modalita or "")\n',
+    _gsf_mode_indent+'_gsf_mode_prev=st.session_state.get("_gsf_v107_last_modalita")\n',
+    _gsf_mode_indent+'if _gsf_mode_prev is not None and str(_gsf_mode_prev)!=_gsf_mode_now:\n',
+    _gsf_mode_indent+'    for _k in ("preview_key","preview_bytes","auto_clip_scelta","auto_clip_duration","publication_preview_bytes","publication_final_bytes","publication_ready","gsf_final_recipe","inline_final_bytes","social_final_context_v53","social_final_context_v54"):\n',
+    _gsf_mode_indent+'        st.session_state.pop(_k,None)\n',
+    _gsf_mode_indent+'    st.session_state["gsf_editor_2027_inline_open"]=False\n',
+    _gsf_mode_indent+'    print("GSF_ENGINE_SWITCH",repr(str(_gsf_mode_prev)),"->",repr(_gsf_mode_now),flush=True)\n',
+    _gsf_mode_indent+'st.session_state["_gsf_v107_last_modalita"]=_gsf_mode_now\n',
+]
+_gsf_mode_lines[_gsf_mode_node.end_lineno:_gsf_mode_node.end_lineno]=_gsf_mode_runtime
+s="".join(_gsf_mode_lines)
+
 # DEMO EDITOR ROUTING: "Scegli scena" / Manuale must use Editor 2027, never the legacy editor.
 _gsf_manual_tree = _gsf_patch_ast.parse(s)
 _gsf_manual_lines = s.splitlines(keepends=True)
@@ -1795,7 +1830,7 @@ _gsf_new_manual_body = [
     _gsf_indent + '    print("GSF_MANUAL_AD_SKIP",repr(str(_gsf_manual_ad_exc)),flush=True)\n',
     _gsf_indent + 'st.markdown(\'<div style="height:26px" aria-hidden="true"></div>\',unsafe_allow_html=True)\n',
     _gsf_indent + 'with st.container(key="gsf-major-personalize"):\n',
-    _gsf_indent + '    st.markdown("<div class=\\\"gsf-personalize-major\\\">PERSONALIZZA IL TUO GAMEPLAY</div>",unsafe_allow_html=True)\n',
+    _gsf_indent + '    st.button("PERSONALIZZA IL TUO GAMEPLAY",use_container_width=True,key="gsf_personalize_display")\n',
     _gsf_indent + 'try:\n',
     _gsf_indent + '    import os as _gsf_manual_os\n',
     _gsf_indent + '    import sys as _gsf_manual_sys\n',
@@ -1895,9 +1930,14 @@ _gsf_final_node=_gsf_final_targets[0]
 _gsf_final_line=_gsf_final_lines[_gsf_final_node.lineno-1]
 _gsf_final_indent=_gsf_final_line[:len(_gsf_final_line)-len(_gsf_final_line.lstrip())]
 _gsf_final_refresh=[
-    _gsf_final_indent+'if _v1054_create_final_clicked and (st.session_state.get("publication_ready") or st.session_state.get("publication_final_bytes")):\n',
-    _gsf_final_indent+'    print("GSF_FINAL_RENDER_READY",flush=True)\n',
-    _gsf_final_indent+'    st.rerun()\n',
+    _gsf_final_indent+'if _v1054_create_final_clicked:\n',
+    _gsf_final_indent+'    _gsf_completed_final=locals().get("_final_video")\n',
+    _gsf_final_indent+'    if isinstance(_gsf_completed_final,(bytes,bytearray)) and len(_gsf_completed_final)>1024:\n',
+    _gsf_final_indent+'        st.session_state["publication_final_bytes"]=bytes(_gsf_completed_final)\n',
+    _gsf_final_indent+'        st.session_state["publication_ready"]=True\n',
+    _gsf_final_indent+'    if st.session_state.get("publication_ready") or st.session_state.get("publication_final_bytes"):\n',
+    _gsf_final_indent+'        print("GSF_FINAL_RENDER_READY",len(st.session_state.get("publication_final_bytes") or b""),flush=True)\n',
+    _gsf_final_indent+'        st.rerun()\n',
 ]
 _gsf_final_lines[_gsf_final_node.end_lineno:_gsf_final_node.end_lineno]=_gsf_final_refresh
 s="".join(_gsf_final_lines)
