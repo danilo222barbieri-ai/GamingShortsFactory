@@ -47,9 +47,19 @@ def build_zoomout_filter(
         f"crop={bg_w}:{bg_h},boxblur=20:1,scale={out_w}:{out_h},"
         "eq=brightness=-0.07000:saturation=0.86000[gsfbg2]"
     )
+    if str(fmt)=="9:16 Short":
+        # 1.00x must visually match the existing cover crop; 0.80x reaches
+        # the complete native frame. Interpolate between those two geometries.
+        t=max(0.0,min(1.0,(z-0.80)/0.20))
+        factor=(
+            f"(1+{t:.6f}*(max({out_w}/iw,{out_h}/ih)-1))"
+        )
+    else:
+        # In a native 16:9 canvas zoom-out simply scales the complete frame.
+        factor=f"{z:.6f}"
     fg=(
         f"[gsffg]scale={out_w}:{out_h}:force_original_aspect_ratio=decrease,"
-        f"scale='trunc(iw*{z:.5f}/2)*2':'trunc(ih*{z:.5f}/2)*2'[gsffg2]"
+        f"scale='trunc(iw*{factor}/2)*2':'trunc(ih*{factor}/2)*2'[gsffg2]"
     )
     overlay=(
         "[gsfbg2][gsffg2]overlay="
