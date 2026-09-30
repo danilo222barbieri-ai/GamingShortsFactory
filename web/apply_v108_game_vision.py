@@ -175,10 +175,8 @@ if _manual_old not in s:
     raise RuntimeError("V108 manual Editor 2027 call anchor missing")
 s=s.replace(_manual_old,_manual_new,1)
 
-# Version marker is deliberately additive; old stability markers remain so
-# regression tests and draft compatibility continue to work.
-s='GSF_V108_GAME_VISION = True\n'+s
-
+# Old stability markers remain so regression tests and draft compatibility
+# continue to work. The V108 marker lives beside the V108 runtime wrappers.
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
 print("V108 Game Vision/Event Map patch applied:",out)
