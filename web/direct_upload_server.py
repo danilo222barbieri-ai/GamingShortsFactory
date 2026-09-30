@@ -2321,24 +2321,62 @@ class Handler(BaseHTTPRequestHandler):
             return
         if clean=="/job/status":
             sid=_social_sid(self);payload={}
+            job=None
+            stable=None
             if sid:
-                job=ROOT/"sessions"/sid/"render_job.json"
+                session_root=ROOT/"sessions"/sid
+                job=session_root/"render_job.json"
+                stable=session_root/"media"/"gaming_short_finale_share.mp4"
                 if job.is_file():
                     try:
                         payload=json.loads(job.read_text(encoding="utf-8"))
                         if not isinstance(payload,dict):payload={}
                     except Exception:payload={}
             status=str(payload.get("status") or "")
+            started=float(payload.get("started_at") or 0.0)
+            stable_ready=False
+            stable_bytes=0
+            stable_mtime=0.0
+            try:
+                if stable is not None and stable.is_file():
+                    stable_bytes=int(stable.stat().st_size)
+                    stable_mtime=float(stable.stat().st_mtime)
+                    stable_ready=stable_bytes>1024 and started>0 and stable_mtime>=started-1.0
+            except Exception:
+                stable_ready=False
+            # Self-heal the browser-visible job state from the durable local
+            # final artifact. This closes the gap where FFmpeg succeeded but
+            # a rerun interrupted the final JSON status update.
+            if stable_ready and status!="cancelled":
+                if status!="ready":
+                    status="ready"
+                    payload.update({
+                        "status":"ready",
+                        "completed_at":payload.get("completed_at") or stable_mtime or time.time(),
+                        "final_path":str(stable),
+                        "final_bytes":stable_bytes,
+                        "pid":0,
+                    })
+                    if job is not None:
+                        try:
+                            _write_json_atomic(job,payload)
+                            print("GSF_JOB_STATUS_SELF_HEALED",sid,stable_bytes,flush=True)
+                        except Exception as exc:
+                            print("GSF_JOB_STATUS_HEAL_WARN",sid,repr(str(exc)),flush=True)
+            elif status=="ready" and not stable_ready:
+                # Never tell the UI a Short is ready if the actual file is not.
+                status="missing"
             if status=="running":
-                started=float(payload.get("started_at") or 0.0)
-                if started and time.time()-started>900:status="stale"
+                if started and time.time()-started>900:
+                    status="stale"
             _json(self,200,{
                 "ok":True,
                 "render_status":status,
                 "started_at":payload.get("started_at"),
                 "completed_at":payload.get("completed_at"),
                 "failed_at":payload.get("failed_at"),
-                "final_bytes":payload.get("final_bytes"),
+                "final_bytes":stable_bytes if stable_ready else payload.get("final_bytes"),
+                "download_ready":bool(stable_ready),
             })
             return
         if clean=="/source/restore":
