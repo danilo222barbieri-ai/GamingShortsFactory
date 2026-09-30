@@ -29,6 +29,41 @@ if meta.get("pool_size")!=5 or len(meta.get("selected") or [])!=3:
 if not all("confidence" in x and "reason" in x for x in meta["selected"]):
     raise SystemExit("V112 confidence/explanation missing")
 
+# V115: a strong semantic event absent from the local shortlist must be able
+# to enter the final top three.
+semantic_pool=[(.86,10.0),(.84,48.0),(.72,140.0)]
+semantic_diagnostics={
+    "10.0":diag("action","kill",.90,.40,.90),
+    "48.0":diag("reaction","reaction",.78,.96,.45),
+    "140.0":diag("balanced","peak",.55,.30,.50,dead=.25),
+}
+semantic_events=[
+    {
+        "time":94.0,
+        "kind":"CLUTCH",
+        "semantic":"clutch",
+        "category":"event",
+        "semantic_confidence":.97,
+        "semantic_excitement":.98,
+        "semantic_reaction":.82,
+        "semantic_score":.95,
+        "score":.95,
+        "source":"gemini-v114",
+    }
+]
+semantic_chosen,semantic_meta=rerank_moments(
+    semantic_pool,semantic_diagnostics,
+    clip_duration=15,numero_clip=3,profile="auto",genre="FPS",
+    events=semantic_events,
+)
+semantic_starts=[float(x[1]) for x in semantic_chosen]
+if not any(86.0<=x<=92.5 for x in semantic_starts):
+    raise SystemExit("V115 semantic candidate injection failed: "+repr(semantic_starts))
+if semantic_meta.get("semantic_injected_count",0)<1:
+    raise SystemExit("V115 semantic injection metadata missing")
+if not any(x.get("semantic_injected") and x.get("event")=="clutch" for x in semantic_meta.get("selected",[])):
+    raise SystemExit("V115 injected clutch did not survive final ranking")
+
 app=Path(sys.argv[1] if len(sys.argv)>1 else "/app/GamingShortsFactory_V112_GAME_BRAIN.py").read_text(encoding="utf-8")
 embed=Path("/app/web/editor_2027_embed.py").read_text(encoding="utf-8")
 front=Path("/app/web/editor_2027_component/index.html").read_text(encoding="utf-8")
