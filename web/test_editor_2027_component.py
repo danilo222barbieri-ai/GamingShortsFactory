@@ -54,6 +54,19 @@ if "GAME EVENT MAP" in frontend or "AIM LOCK · 00:03" in frontend:
 if "#ng27 .shade,#ng27 .scanlines{display:none!important}" not in frontend:
     raise SystemExit("FAIL decorative preview effects still alter the rendered look")
 
+
+# Component startup syntax guardrails added after V108 regression.
+if "if(!isMobileEditor function syncPlayToggle" in frontend:
+    raise SystemExit("FAIL Editor 2027 contains corrupted Play/Pause JavaScript")
+if frontend.count("function syncPlayToggle(){") != 1:
+    raise SystemExit("FAIL Editor 2027 Play/Pause toggle function count is not exactly one")
+if frontend.count("video.addEventListener('loadedmetadata',()=>{") != 1:
+    raise SystemExit("FAIL Editor 2027 loadedmetadata listener is missing or duplicated")
+if "sendMessage(COMPONENT_READY,{apiVersion:1});" not in frontend:
+    raise SystemExit("FAIL Editor 2027 cannot complete Streamlit component handshake")
+if frontend.index("sendMessage(COMPONENT_READY,{apiVersion:1});") > frontend.index("function syncPlayToggle(){"):
+    raise SystemExit("FAIL Streamlit component handshake moved after optional editor controls")
+
 if "components.html(" in wrapper:
     raise SystemExit("FAIL Editor 2027 still uses display-only components.html")
 if "declare_component(" not in wrapper:
