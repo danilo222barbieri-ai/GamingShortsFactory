@@ -3250,12 +3250,12 @@ s=s.replace(
       statusText.textContent='Attendi la fine dello Short in creazione';label.textContent='Short in creazione';pick.value='';return;
     }
   }catch(e){}
-  try{window.parent.postMessage({type:'gsf-upload',state:'running',progress:0},'*');}catch(e){}""",
+  try{window.parent.postMessage({type:'gsf-upload',state:'running',progress:0,name:file.name||''},'*');}catch(e){}""",
     1,
 )
-s=s.replace("statusText.textContent='Upload diretto… '+pct+'%';","statusText.textContent='Upload diretto… '+pct+'%';try{window.parent.postMessage({type:'gsf-upload',state:'running',progress:pct},'*');}catch(e){}")
-s=s.replace("statusText.textContent='Video caricato';\n      circle.classList.remove('busy');","statusText.textContent='Video caricato';try{window.parent.postMessage({type:'gsf-upload',state:'done',progress:100},'*');}catch(e){}\n      circle.classList.remove('busy');")
-s=s.replace("statusText.textContent='Upload interrotto — riprova';","statusText.textContent='Upload interrotto — riprova';try{window.parent.postMessage({type:'gsf-upload',state:'error',progress:0},'*');}catch(e){}")
+s=s.replace("statusText.textContent='Upload diretto… '+pct+'%';","statusText.textContent='Upload diretto… '+pct+'%';try{window.parent.postMessage({type:'gsf-upload',state:'running',progress:pct,name:file.name||''},'*');}catch(e){}")
+s=s.replace("statusText.textContent='Video caricato';\n      circle.classList.remove('busy');","statusText.textContent='Video caricato';try{window.parent.postMessage({type:'gsf-upload',state:'done',progress:100,name:file.name||''},'*');}catch(e){}\n      circle.classList.remove('busy');")
+s=s.replace("statusText.textContent='Upload interrotto — riprova';","statusText.textContent='Upload interrotto — riprova';try{window.parent.postMessage({type:'gsf-upload',state:'error',progress:0,name:file.name||''},'*');}catch(e){}")
 
 try:
     _pt=_gsf_patch_ast.parse(s);_fn=None
