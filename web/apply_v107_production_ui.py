@@ -1322,7 +1322,7 @@ st.markdown("""
   flex-direction:column;
   justify-content:center;
   align-items:center;
-  gap:8px;
+  gap:9px;
   color:#6d8496;
   text-align:center;
 }
@@ -1370,7 +1370,7 @@ st.markdown("""
   .gsf-footer-v4{
     margin:3px auto 5px;
     padding:6px 6px 5px;
-    gap:6px;
+    gap:7px;
   }
   .gsf-footer-v4 .version,
   .gsf-footer-v4 .legal{font-size:9px}
@@ -1385,7 +1385,7 @@ st.markdown("""
 }
 </style>
 <div class="gsf-footer-v4">
-  <div class="version">Gaming Shorts Factory · V107</div>
+  <div class="version">Gaming Shorts Factory · Beta</div>
   <div class="legal">
     <a href="/privacy" target="_blank">Privacy</a>
     <span>·</span>
