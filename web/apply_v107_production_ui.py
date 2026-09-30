@@ -549,7 +549,12 @@ _engine_note_new='''    st.markdown(
         if _render_source:
             _gsf_prev_source=_render_source
 
-    if _gsf_engine_changed:
+    _gsf_has_meaningful_work=bool(
+        _gsf_render_active
+        or (isinstance(_gsf_prev_recipe,dict) and bool(_gsf_prev_recipe))
+    )
+
+    if _gsf_engine_changed and _gsf_has_meaningful_work:
         _pending_state={}
         try:
             _gsf_save_persistent_state()
@@ -594,6 +599,10 @@ _engine_note_new='''    st.markdown(
                 pass
             st.session_state["gsf_v107_final_render_running"]=False
             st.session_state["gsf_v107_final_render_pending"]=False
+    elif _gsf_engine_changed:
+        # A fresh upload / first engine choice is not a draft. The source file
+        # alone is never enough to trigger the save-warning.
+        st.session_state.pop("gsf_v107_engine_change_draft_pending",None)
 
     _gsf_engine_pending=st.session_state.get("gsf_v107_engine_change_draft_pending")
     if isinstance(_gsf_engine_pending,dict) and _gsf_engine_pending:
@@ -639,9 +648,18 @@ _engine_note_new='''    st.markdown(
 
     st.session_state["gsf_v107_last_engine"]=_gsf_engine_now
     _gsf_current_recipe=st.session_state.get("gsf_final_recipe")
+    _gsf_current_source=str(st.session_state.get("gsf_source_path") or st.session_state.get("gsf_editor_source_path") or "")
+    _gsf_snapshot_source_before=str(st.session_state.get("gsf_v107_engine_snapshot_source") or "")
+    if (
+        _gsf_current_source
+        and _gsf_snapshot_source_before
+        and _gsf_snapshot_source_before!=_gsf_current_source
+        and not (isinstance(_gsf_current_recipe,dict) and _gsf_current_recipe)
+    ):
+        st.session_state.pop("gsf_v107_engine_snapshot_recipe",None)
+        st.session_state.pop("gsf_v107_engine_change_draft_pending",None)
     if isinstance(_gsf_current_recipe,dict) and _gsf_current_recipe:
         st.session_state["gsf_v107_engine_snapshot_recipe"]=dict(_gsf_current_recipe)
-    _gsf_current_source=str(st.session_state.get("gsf_source_path") or st.session_state.get("gsf_editor_source_path") or "")
     if _gsf_current_source:
         st.session_state["gsf_v107_engine_snapshot_source"]=_gsf_current_source
 '''
@@ -3762,6 +3780,135 @@ div[data-testid="stHorizontalBlock"]:has(.st-key-v69_social_facebook) > div[data
 """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _final_harmony_v107.lstrip()
+
+
+_social_contrast_v107 = r'''
+st.markdown("""
+<style id="gsf-social-contrast-v107">
+/* Keep the approved square layout, but restore full brand colour and contrast. */
+div[data-testid="stHorizontalBlock"]:has(.st-key-v69_social_facebook),
+div[data-testid="stHorizontalBlock"]:has(.st-key-v69_social_facebook) > div[data-testid="column"],
+.st-key-v69_social_facebook,
+.st-key-v69_social_instagram,
+.st-key-v69_social_youtube,
+.st-key-v69_social_tiktok{
+  opacity:1 !important;
+  filter:none !important;
+  visibility:visible !important;
+}
+.st-key-v69_social_facebook button,
+.st-key-v69_social_instagram button,
+.st-key-v69_social_youtube button,
+.st-key-v69_social_tiktok button,
+.st-key-v69_social_facebook button:disabled,
+.st-key-v69_social_instagram button:disabled,
+.st-key-v69_social_youtube button:disabled,
+.st-key-v69_social_tiktok button:disabled{
+  opacity:1 !important;
+  filter:none !important;
+  color:#FFFFFF !important;
+  -webkit-text-fill-color:#FFFFFF !important;
+}
+.st-key-v69_social_facebook button,
+.st-key-v69_social_facebook button[kind="primary"],
+.st-key-v69_social_facebook button[kind="secondary"]{
+  background:#1877F2 !important;
+}
+.st-key-v69_social_instagram button,
+.st-key-v69_social_instagram button[kind="primary"],
+.st-key-v69_social_instagram button[kind="secondary"]{
+  background:radial-gradient(circle at 30% 105%,#FDF497 0 5%,#FD5949 35%,#D6249F 62%,#285AEB 100%) !important;
+}
+.st-key-v69_social_youtube button,
+.st-key-v69_social_youtube button[kind="primary"],
+.st-key-v69_social_youtube button[kind="secondary"]{
+  background:#FF0000 !important;
+}
+.st-key-v69_social_tiktok button,
+.st-key-v69_social_tiktok button[kind="primary"],
+.st-key-v69_social_tiktok button[kind="secondary"]{
+  background:#000000 !important;
+}
+.st-key-v69_social_facebook button:before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M13.25 21v-8h2.75l.42-3.12h-3.17V7.9c0-.9.25-1.52 1.58-1.52h1.7V3.58c-.3-.04-1.3-.13-2.47-.13-2.45 0-4.13 1.5-4.13 4.24v2.19H7.2V13h2.73v8h3.32Z'/%3E%3C/svg%3E") !important;
+}
+.st-key-v69_social_instagram button:before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3.3' y='3.3' width='17.4' height='17.4' rx='5.1' fill='none' stroke='white' stroke-width='2.05'/%3E%3Ccircle cx='12' cy='12' r='4.15' fill='none' stroke='white' stroke-width='2.05'/%3E%3Ccircle cx='17.35' cy='6.75' r='1.15' fill='white'/%3E%3C/svg%3E") !important;
+}
+.st-key-v69_social_youtube button:before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9.2 7.5 16.7 12l-7.5 4.5v-9Z'/%3E%3C/svg%3E") !important;
+}
+.st-key-v69_social_tiktok button:before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2325F4EE' transform='translate(-.55 .28)' d='M14.2 3v9.35a4.15 4.15 0 1 1-3.48-4.1v2.7a1.63 1.63 0 1 0 .82 1.4V3h2.66c.34 1.92 1.62 3.27 3.65 3.7v2.66a6.7 6.7 0 0 1-3.65-1.3V3Z'/%3E%3Cpath fill='%23FE2C55' transform='translate(.55 -.2)' d='M14.2 3v9.35a4.15 4.15 0 1 1-3.48-4.1v2.7a1.63 1.63 0 1 0 .82 1.4V3h2.66c.34 1.92 1.62 3.27 3.65 3.7v2.66a6.7 6.7 0 0 1-3.65-1.3V3Z'/%3E%3Cpath fill='white' d='M14.2 3v9.35a4.15 4.15 0 1 1-3.48-4.1v2.7a1.63 1.63 0 1 0 .82 1.4V3h2.66c.34 1.92 1.62 3.27 3.65 3.7v2.66a6.7 6.7 0 0 1-3.65-1.3V3Z'/%3E%3C/svg%3E") !important;
+}
+
+/* Social detail card: never allow pale text on the light metallic surface. */
+[class*="st-key-v1055_social_composer_"],
+[class*="st-key-v1055_social_composer_"] [data-testid="stVerticalBlock"],
+[class*="st-key-v1055_social_composer_"] [data-testid="stElementContainer"]{
+  opacity:1 !important;
+  filter:none !important;
+}
+[class*="st-key-v1055_social_composer_"] .v1055-social-head,
+[class*="st-key-v1055_social_composer_"] .v1055-social-head *,
+[class*="st-key-v1055_social_composer_"] label,
+[class*="st-key-v1055_social_composer_"] p,
+[class*="st-key-v1055_social_composer_"] span,
+[class*="st-key-v1055_social_composer_"] strong,
+[class*="st-key-v1055_social_composer_"] small{
+  color:#244B65 !important;
+  -webkit-text-fill-color:#244B65 !important;
+  opacity:1 !important;
+}
+[class*="st-key-v1055_social_composer_"] label{
+  font-weight:800 !important;
+}
+[class*="st-key-v1055_social_composer_"] input,
+[class*="st-key-v1055_social_composer_"] textarea{
+  opacity:1 !important;
+  filter:none !important;
+  color:#173A52 !important;
+  -webkit-text-fill-color:#173A52 !important;
+  background:#FFFFFF !important;
+  border:1px solid #C8DCE8 !important;
+  caret-color:#173A52 !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 3px 10px rgba(65,96,121,.06) !important;
+}
+[class*="st-key-v1055_social_composer_"] input::placeholder,
+[class*="st-key-v1055_social_composer_"] textarea::placeholder{
+  color:#7890A1 !important;
+  -webkit-text-fill-color:#7890A1 !important;
+  opacity:1 !important;
+}
+[class*="st-key-v1055_social_composer_"] button,
+[class*="st-key-v1055_social_composer_"] button:disabled{
+  opacity:1 !important;
+  filter:none !important;
+  color:#31566E !important;
+  -webkit-text-fill-color:#31566E !important;
+}
+[class*="st-key-v1055_social_composer_"] [data-testid="stAlert"]{
+  opacity:1 !important;
+  background:#E4F4FB !important;
+  border-color:#7DB3CF !important;
+}
+[class*="st-key-v1055_social_composer_"] [data-testid="stAlert"] *{
+  color:#28516A !important;
+  -webkit-text-fill-color:#28516A !important;
+  opacity:1 !important;
+}
+[class*="st-key-social_publish_confirm_"] button,
+[class*="st-key-social_publish_confirm_"] button:disabled{
+  background:linear-gradient(135deg,#8B67E8 0%,#6557D9 100%) !important;
+  color:#FFFFFF !important;
+  -webkit-text-fill-color:#FFFFFF !important;
+  border:1px solid rgba(255,255,255,.34) !important;
+  opacity:1 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _social_contrast_v107.lstrip()
 
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
