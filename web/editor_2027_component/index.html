@@ -1238,7 +1238,6 @@
  updateZoomControl();
 
  function syncPlayToggle(){
-   if(!isMobileEditor function syncPlayToggle(){
    const playing=!video.paused&&!video.ended;
    const use=playBtn.querySelector('use');
    const span=playBtn.querySelector('span');
@@ -1259,7 +1258,9 @@
  video.addEventListener('pause',syncPlayToggle);
  video.addEventListener('ended',syncPlayToggle);
  syncPlayToggle();
- // Prime the first real frame immediately. This keeps the editor visually
+
+ video.addEventListener('loadedmetadata',()=>{
+   // Prime the first real frame immediately. This keeps the editor visually
    // populated before PLAY without autoplaying the gameplay.
    try{
      const previewTime=Math.max(0,Math.min(Number(state.inPoint)||0,Math.max(0,(video.duration||0)-0.05)));
