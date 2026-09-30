@@ -1221,20 +1221,42 @@ st.markdown("""
 </style>
 <script>
 (()=>{
+ const slashN=String.fromCharCode(92)+'n';
+ const isOnlyNewlineMarker=(value)=>{
+   let t=String(value||'').replace(/\s/g,'');
+   if(!t || !t.includes(slashN)) return false;
+   while(t.includes(slashN)) t=t.split(slashN).join('');
+   return t==='';
+ };
  const cleanArtifacts=()=>{
-   document.querySelectorAll('[data-testid="stMarkdownContainer"]').forEach(el=>{
-     const t=(el.textContent||'').trim();
-     if(/^(?:\\n)+$/.test(t)){
-       const host=el.parentElement||el;
+   /* Some legacy markers are not inside stMarkdownContainer.
+      Remove the exact visible backslash-n text wherever Streamlit mounts it. */
+   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+   const doomed=[];
+   let node;
+   while((node=walker.nextNode())){
+     const parent=node.parentElement;
+     if(!parent || ['SCRIPT','STYLE','TEXTAREA','INPUT'].includes(parent.tagName)) continue;
+     if(isOnlyNewlineMarker(node.nodeValue)) doomed.push(node);
+   }
+   doomed.forEach(node=>{
+     const parent=node.parentElement;
+     node.nodeValue='';
+     const host=parent?.closest('[data-testid="stElementContainer"]')
+       || parent?.closest('[data-testid="stMarkdownContainer"]')
+       || parent;
+     if(host && !(host.textContent||'').trim()){
        host.style.display='none';
+       host.style.height='0';
+       host.style.minHeight='0';
        host.style.margin='0';
        host.style.padding='0';
-       host.style.minHeight='0';
+       host.style.overflow='hidden';
      }
    });
  };
  cleanArtifacts();
- new MutationObserver(cleanArtifacts).observe(document.body,{childList:true,subtree:true});
+ new MutationObserver(cleanArtifacts).observe(document.body,{childList:true,subtree:true,characterData:true});
 })();
 </script>
 """, unsafe_allow_html=True)
