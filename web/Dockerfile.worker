@@ -61,6 +61,8 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v98_final_6lanes.py && \
     python /app/web/apply_v99_ai_turbo.py && \
     python /app/web/apply_v99_final_arch.py && \
+    python /app/web/test_v114_semantic_video.py && \
+    python -m py_compile /app/web/semantic_video_v114.py && \
     python -m py_compile /app/web/ai_worker_server.py
 
 EXPOSE 8600
