@@ -35,6 +35,10 @@ need('INSTAGRAM_SCOPES="instagram_business_basic,instagram_business_content_publ
      "minimal Instagram publishing scopes configured")
 need('"https://www.instagram.com/oauth/authorize?"' in server,
      "Instagram Business Login authorize endpoint used")
+need('INSTAGRAM_REDIRECT_URI=(PUBLIC_APP_URL+"/auth/instagram/callback")' in server,
+     "Instagram OAuth uses dedicated callback path")
+need('"/auth/instagram/callback"' in server,
+     "dedicated Instagram callback route is handled")
 need('"https://api.instagram.com/oauth/access_token"' in server,
      "Instagram code exchange endpoint used")
 need('"https://graph.instagram.com/access_token?"' in server,
