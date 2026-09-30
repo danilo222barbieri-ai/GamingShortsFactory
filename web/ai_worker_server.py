@@ -20,6 +20,7 @@ from botocore.exceptions import ClientError
 from boto3.s3.transfer import TransferConfig
 from game_vision_v108 import build_event_map
 from semantic_video_v114 import analyze_gameplay_video, merge_semantic_events, semantic_enabled
+from ai_director_v124 import cloud_decision
 
 PORT=int(os.environ.get("PORT","8600"))
 WORKER_TOKEN=os.environ.get("GSF_WORKER_TOKEN","")
@@ -193,18 +194,39 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
             # understanding is optional and can never make the prescan fail.
             local_events=build_event_map(scan,max_events=18)
             semantic_result={"enabled":False,"provider":"local-only","events":[]}
-            if semantic_enabled():
+            scan_meta=dict(scan.get("meta",{}) or {})
+            duration_hint=(
+                scan_meta.get("duration")
+                or scan_meta.get("duration_seconds")
+                or scan.get("duration")
+                or scan.get("duration_seconds")
+                or 999.0
+            )
+            router=cloud_decision(
+                local_events,
+                duration_seconds=duration_hint,
+                enabled=bool(semantic_enabled()),
+            )
+            if semantic_enabled() and router.get("use_cloud",True):
                 with JOBS_LOCK:
                     JOBS[job_id]={
                         "state":"semantic",
                         "download_seconds":round(download_seconds,3),
                         "analysis_key":analysis_key,
+                        "router":router,
                     }
                 semantic_result=analyze_gameplay_video(
                     str(local),
                     game_hint=name,
                     max_events=12,
                 )
+            elif semantic_enabled():
+                semantic_result={
+                    "enabled":True,
+                    "provider":"local-consensus-v124",
+                    "events":[],
+                    "skipped":"confidence-router",
+                }
             semantic_events=list(semantic_result.get("events") or [])
             scan["semantic_events_v114"]=semantic_events
             scan["event_map_v108"]=merge_semantic_events(
@@ -220,6 +242,10 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
                 "elapsed_seconds":semantic_result.get("elapsed_seconds"),
                 "fallback":bool(semantic_result.get("error") or semantic_result.get("skipped")),
                 "fallback_reason":_safe_semantic_reason(semantic_result),
+                "router":router,
+                "model":semantic_result.get("model"),
+                "model_fallback":bool(semantic_result.get("model_fallback")),
+                "model_attempts":list(semantic_result.get("model_attempts") or [])[:4],
             }
             scan["meta"]=meta
             if semantic_result.get("enabled"):
@@ -229,6 +255,7 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
                     "events="+str(len(semantic_events)),
                     "fallback="+str(bool(semantic_result.get("error") or semantic_result.get("skipped"))),
                     "reason="+json.dumps(_safe_semantic_reason(semantic_result),ensure_ascii=True),
+                    "router="+str(router.get("reason") or ""),
                     flush=True,
                 )
             wall=time.perf_counter()-started
