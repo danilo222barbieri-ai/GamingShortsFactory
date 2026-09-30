@@ -4,6 +4,105 @@ src=Path("/app/GamingShortsFactory_V113_GUARDIAN.py")
 out=Path("/app/GamingShortsFactory_V124_AI_OS.py")
 s=src.read_text(encoding="utf-8")
 
+# V124 anonymous product-learning feedback helper.
+_feedback_import_anchor="import streamlit as st\n"
+_feedback_helper=r'''
+def _gsf_v124_feedback(moment,action):
+    try:
+        if not GSF_WEB_MODE or not isinstance(moment,dict):
+            return
+        _payload={
+            "engine":"v124-ai-os",
+            "action":str(action or "selected"),
+            "rank":int(moment.get("rank") or 0),
+            "start":float(moment.get("start") or 0.0),
+            "event":str(moment.get("event") or "highlight"),
+            "brain_score":float(moment.get("brain_score") or 0.0),
+            "confidence":float(moment.get("confidence") or 0.0),
+            "semantic_injected":bool(moment.get("semantic_injected")),
+        }
+        _u=__import__("urllib.request",fromlist=["Request","urlopen"])
+        _raw=__import__("json").dumps(_payload,separators=(",",":")).encode("utf-8")
+        _req=_u.Request(
+            "http://127.0.0.1:8502/ai/feedback",
+            data=_raw,
+            headers={
+                "Content-Type":"application/json",
+                "X-GSF-Session-ID":str(GSF_SESSION_ID),
+            },
+            method="POST",
+        )
+        _u.urlopen(_req,timeout=1.5).read()
+    except Exception:
+        pass
+
+
+def _gsf_v124_moment_for_start(start):
+    try:
+        _brain=st.session_state.get("gsf_v112_brain_context") or {}
+        _rows=list(_brain.get("selected") or []) if isinstance(_brain,dict) else []
+        if not _rows:
+            return {}
+        _start=float(start or 0.0)
+        return dict(min(_rows,key=lambda row:abs(float((row or {}).get("start") or 0.0)-_start)) or {})
+    except Exception:
+        return {}
+'''
+if _feedback_import_anchor not in s:
+    raise RuntimeError("V124 feedback import anchor missing")
+s=s.replace(_feedback_import_anchor,_feedback_import_anchor+_feedback_helper,1)
+
+# ------------------------------------------------------------------
+# V124 product-learning action signals.
+# ------------------------------------------------------------------
+_choice_anchor='''                                    st.session_state.auto_clip_scelta=float(_card["start"])
+                                    st.session_state["auto_clip_duration"]=float(_card["preview_duration"])
+'''
+_choice_replacement='''                                    _gsf_v124_feedback(
+                                        _gsf_v124_moment_for_start(float(_card["start"])),
+                                        "selected",
+                                    )
+                                    st.session_state.auto_clip_scelta=float(_card["start"])
+                                    st.session_state["auto_clip_duration"]=float(_card["preview_duration"])
+'''
+if _choice_anchor not in s:
+    raise RuntimeError("V124 selected-moment feedback anchor missing")
+s=s.replace(_choice_anchor,_choice_replacement,1)
+
+_editor_anchor='''                    if _gsf_open_game_editor:
+                        _selected_sub_key=f"v71_auto_sub_{int(_selected_card['index'])}"
+'''
+_editor_replacement='''                    if _gsf_open_game_editor:
+                        _gsf_v124_feedback(
+                            _gsf_v124_moment_for_start(float(start)),
+                            "opened_editor",
+                        )
+                        _selected_sub_key=f"v71_auto_sub_{int(_selected_card['index'])}"
+'''
+if _editor_anchor not in s:
+    raise RuntimeError("V124 Editor feedback anchor missing")
+s=s.replace(_editor_anchor,_editor_replacement,1)
+
+_publish_anchor='''                                _ok, _message, _path = _gsf_publish_social_upload(
+                                    _final_video,
+                                    _selected_social,
+                                    pack_override=_edited_pack,
+                                )
+'''
+_publish_replacement=_publish_anchor+'''                            if _ok:
+                                try:
+                                    _v124_recipe=st.session_state.get("gsf_final_recipe",{}) or {}
+                                    _gsf_v124_feedback(
+                                        _gsf_v124_moment_for_start(float(_v124_recipe.get("start",0.0) or 0.0)),
+                                        "published",
+                                    )
+                                except Exception:
+                                    pass
+'''
+if _publish_anchor not in s:
+    raise RuntimeError("V124 published feedback anchor missing")
+s=s.replace(_publish_anchor,_publish_replacement,1)
+
 # ------------------------------------------------------------------
 # V124 AI OS: social copy from the exact Director plan of the selected
 # moment instead of generic/stale copy.
