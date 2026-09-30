@@ -160,6 +160,18 @@ s=s.replace(
     1,
 )
 
+# Defensive cleanup: an earlier generated V107 source can contain a leaked
+# copy of this patcher's own tail at module scope.  That leaked block starts
+# with the unique cache comment below and later executes `s=s.replace(...)`
+# inside the Streamlit app, where `s` does not exist, causing the production
+# NameError seen after startup.  The leaked copy is always appended after the
+# real application body, so trim it before compiling the final runtime file.
+_orphan_marker="\n# The automatic final master is already retained as publication_final_bytes\n"
+_orphan_pos=s.find(_orphan_marker)
+if _orphan_pos!=-1:
+    s=s[:_orphan_pos].rstrip()+"\n"
+    print("V107.1 removed leaked patcher tail from generated app")
+
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
 print("V107.1 memory/stability patch applied:",out)
