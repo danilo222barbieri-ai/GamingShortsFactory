@@ -102,3 +102,19 @@ if 'payload["processing"]="agentic"' not in inline_block:
 if '"processing":processing_mode' in inline_block:
     raise SystemExit("V120 static inline request must rely on documented default processing")
 print("V120 documented direct-inline + agentic-stream compatibility: PASS")
+
+for marker in (
+    "def _generate_content_semantic(",
+    "client.models.generate_content(",
+    "types.Content(",
+    "types.Part(",
+    "inline_data=types.Blob(",
+    "video_metadata=types.VideoMetadata(",
+    '"response_format":{"text":{"mime_type":"application/json","schema":_schema(max_events)}}',
+    'processing_mode=="static"',
+    '"generate-v121"',
+    '"agentic-stream-v121"',
+):
+    if marker not in semantic:
+        raise SystemExit("V121 native Generate Content video marker missing: "+marker)
+print("V121 native video Generate Content + long agentic split: PASS")
