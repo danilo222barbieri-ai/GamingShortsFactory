@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 _DEFAULT_MODEL="gemini-3.8-flash"
-GSF_SEMANTIC_ENGINE_VERSION="v121.2-generate-content"
+GSF_SEMANTIC_ENGINE_VERSION="v122-generate-content-config"
 
 
 def _env_bool(name,default=True):
@@ -184,20 +184,16 @@ def _generate_content_semantic(
                 types.Part(text=prompt),
             ]
         )
-    config={}
+    config=None
     if structured:
-        config={
-            "response_format":{
-                "text":{
-                    "mime_type":"application/json",
-                    "schema":_schema(max_events),
-                }
-            }
-        }
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_json_schema=_schema(max_events),
+        )
     response=client.models.generate_content(
         model=model,
         contents=contents,
-        config=config or None,
+        config=config,
     )
     raw=str(getattr(response,"text","") or "").strip()
     if not raw:
@@ -444,7 +440,7 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
         events=normalize_semantic_events(payload,max_events=max_events)
         return {
             "enabled":True,
-            "provider":model+"-"+processing_mode+"-"+input_method+("-generate-v121" if used_generate_content else "-agentic-stream-v121"),
+            "provider":model+"-"+processing_mode+"-"+input_method+("-generate-v122" if used_generate_content else "-agentic-stream-v122"),
             "events":events,
             "processing_mode":processing_mode,
             "input_method":input_method,
