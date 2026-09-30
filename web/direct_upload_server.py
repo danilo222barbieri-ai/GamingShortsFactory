@@ -1112,24 +1112,35 @@ def _draft_save(sid,payload):
     draft_id=_safe_id(payload.get("id","")) or ("draft_"+uuid.uuid4().hex[:16])
     now=time.time()
     source_name=str(payload.get("source_name") or state.get("gsf_source_name") or "Gameplay")[:160]
+    desired_source=str(state.get("gsf_source_path") or state.get("gsf_editor_source_path") or "")
     source_ref={}
     try:
         marker=ROOT/"sessions"/sid/"media"/".direct_upload_ready.json"
         if marker.is_file():
             meta=json.loads(marker.read_text(encoding="utf-8"))
             if isinstance(meta,dict):
-                source_ref={
-                    "name":str(meta.get("name") or source_name),
-                    "size":int(meta.get("size") or 0),
-                    "upload_id":str(meta.get("upload_id") or ""),
-                    "storage":str(meta.get("storage") or ""),
-                    "bucket_key":str(meta.get("bucket_key") or ""),
-                    "analysis_key":str(meta.get("analysis_key") or ""),
-                    "path":str(meta.get("path") or state.get("gsf_source_path") or ""),
-                }
+                marker_path=str(meta.get("path") or "")
+                marker_upload=_safe_id(meta.get("upload_id",""))
+                desired_match=re.search(r"_([0-9a-fA-F]{20})(\.[A-Za-z0-9]{1,10})$",Path(desired_source).name) if desired_source else None
+                desired_upload=_safe_id(desired_match.group(1)) if desired_match else ""
+                same_source=(
+                    not desired_source
+                    or (marker_path and os.path.abspath(marker_path)==os.path.abspath(desired_source))
+                    or (desired_upload and marker_upload and desired_upload==marker_upload)
+                )
+                if same_source:
+                    source_ref={
+                        "name":str(meta.get("name") or source_name),
+                        "size":int(meta.get("size") or 0),
+                        "upload_id":str(meta.get("upload_id") or ""),
+                        "storage":str(meta.get("storage") or ""),
+                        "bucket_key":str(meta.get("bucket_key") or ""),
+                        "analysis_key":str(meta.get("analysis_key") or ""),
+                        "path":str(marker_path or desired_source),
+                    }
     except Exception:
         source_ref={}
-    source_path=Path(str(state.get("gsf_source_path") or source_ref.get("path") or ""))
+    source_path=Path(str(desired_source or source_ref.get("path") or ""))
     if _bucket_enabled() and not source_ref.get("bucket_key"):
         recovered_ref=_bucket_source_ref_from_path(sid,str(source_path))
         if recovered_ref:
