@@ -1301,7 +1301,7 @@ code,pre,kbd,samp{
 s = s.rstrip() + "\n\n" + _demo_typography.lstrip()
 
 
-# Final footer override: replace the three old footer rows with one compact row.
+# Final footer override: compact three-row footer (version / legal / social).
 _footer_override_v4 = r'''
 st.markdown("""
 <style id="gsf-footer-override-v4">
@@ -1315,35 +1315,90 @@ st.markdown("""
 }
 .gsf-footer-v4{
   width:min(720px,calc(100% - 20px));
-  margin:2px auto 5px;
-  padding:5px 8px;
+  margin:4px auto 7px;
+  padding:7px 8px 6px;
   border-top:1px solid rgba(195,214,227,.65);
   display:flex;
+  flex-direction:column;
   justify-content:center;
   align-items:center;
-  gap:6px;
-  flex-wrap:wrap;
+  gap:5px;
   color:#6d8496;
-  font-size:10px;
-  line-height:1;
   text-align:center;
 }
-.gsf-footer-v4 a{color:#647f92 !important;text-decoration:none !important;font-weight:750}
-.gsf-footer-v4 .soc{font-weight:800;opacity:.85;letter-spacing:.08em}
-[data-testid="stAppViewContainer"] .block-container{padding-bottom:.45rem !important}
+.gsf-footer-v4 .version{
+  font-size:10px;
+  line-height:1.1;
+  font-weight:750;
+}
+.gsf-footer-v4 .legal{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  font-size:10px;
+  line-height:1.1;
+}
+.gsf-footer-v4 a{
+  color:#647f92 !important;
+  text-decoration:none !important;
+  font-weight:750;
+}
+.gsf-footer-v4 .socials{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+}
+.gsf-footer-v4 .social{
+  width:28px;
+  height:28px;
+  border-radius:9px;
+  border:1px solid #d6e4ed;
+  background:linear-gradient(145deg,#fff,#eef5fa);
+  display:grid;
+  place-items:center;
+  color:#5f7d92;
+  font:800 13px/1 Arial,sans-serif;
+  box-shadow:0 3px 8px rgba(65,96,121,.06);
+}
+.gsf-footer-v4 .social.yt{font-size:12px}
+.gsf-footer-v4 .social.ig{font-size:15px}
+.gsf-footer-v4 .social.tt{font-size:15px}
+[data-testid="stAppViewContainer"] .block-container{padding-bottom:.55rem !important}
 @media(max-width:600px){
-  .gsf-footer-v4{margin:1px auto 3px;padding:4px 6px;font-size:9px;gap:5px}
-  [data-testid="stAppViewContainer"] .block-container{padding-bottom:.25rem !important}
+  .gsf-footer-v4{
+    margin:3px auto 5px;
+    padding:6px 6px 5px;
+    gap:4px;
+  }
+  .gsf-footer-v4 .version,
+  .gsf-footer-v4 .legal{font-size:9px}
+  .gsf-footer-v4 .socials{gap:6px}
+  .gsf-footer-v4 .social{
+    width:26px;
+    height:26px;
+    border-radius:8px;
+    font-size:12px;
+  }
+  [data-testid="stAppViewContainer"] .block-container{padding-bottom:.35rem !important}
 }
 </style>
 <div class="gsf-footer-v4">
-  <span>Gaming Shorts Factory · Beta</span>
-  <a href="/privacy" target="_blank">Privacy</a>
-  <span>·</span>
-  <a href="/terms" target="_blank">Termini</a>
-  <span>·</span>
-  <a href="/contact" target="_blank">Contatti</a>
-  <span class="soc">f ◎ ▶ ♪</span>
+  <div class="version">Gaming Shorts Factory · V107</div>
+  <div class="legal">
+    <a href="/privacy" target="_blank">Privacy</a>
+    <span>·</span>
+    <a href="/terms" target="_blank">Termini</a>
+    <span>·</span>
+    <a href="/contact" target="_blank">Contatti</a>
+  </div>
+  <div class="socials" aria-label="Social">
+    <span class="social fb" title="Facebook">f</span>
+    <span class="social ig" title="Instagram">◎</span>
+    <span class="social yt" title="YouTube">▶</span>
+    <span class="social tt" title="TikTok">♪</span>
+  </div>
 </div>
 <script>
 (()=>{
