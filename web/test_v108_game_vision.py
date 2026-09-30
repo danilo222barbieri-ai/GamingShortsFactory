@@ -110,7 +110,7 @@ if 'scan["event_map_v108"]=build_event_map(scan,max_events=18)' not in worker:
 # -------------------------- Editor contract ------------------------------
 for marker in (
     'id="eventLayer"',
-    'class="eventMarker"',
+    "marker.className='eventMarker'",
     "renderEventMap",
     "marker.onclick",
     "video.currentTime=",
