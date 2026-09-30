@@ -1,1 +1,2 @@
 boto3==1.43.104
+google-genai==2.25.0
