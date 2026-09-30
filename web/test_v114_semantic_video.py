@@ -80,7 +80,7 @@ for marker in (
     "focus_confidence",
 ):
     if marker not in semantic:
-        raise SystemExit("V118 semantic stream marker missing: "+marker)
+        raise SystemExit("V120 semantic stream marker missing: "+marker)
 if "background=True" in semantic:
     raise SystemExit("V120 must not use background multimodal interactions")
 for marker in (
