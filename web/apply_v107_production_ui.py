@@ -1409,7 +1409,7 @@ _gsf_new_manual_body = [
     _gsf_indent + '    st.markdown(_gsf_v1057_ad_markup(2),unsafe_allow_html=True)\n',
     _gsf_indent + 'st.markdown(\'<div style="height:26px" aria-hidden="true"></div>\',unsafe_allow_html=True)\n',
     _gsf_indent + 'with st.container(key="gsf-major-personalize"):\n',
-    _gsf_indent + '    st.markdown("<div class=\"gsf-personalize-title\">PERSONALIZZA IL TUO GAMEPLAY</div>",unsafe_allow_html=True)\n',
+    _gsf_indent + '    st.markdown("<div class=\\\"gsf-personalize-title\\\">PERSONALIZZA IL TUO GAMEPLAY</div>",unsafe_allow_html=True)\n',
     _gsf_indent + 'try:\n',
     _gsf_indent + '    import os as _gsf_manual_os\n',
     _gsf_indent + '    import sys as _gsf_manual_sys\n',
