@@ -2685,12 +2685,7 @@ s="".join(_gsf_nl_lines)
 if _gsf_nl_replacements:
     print("V107 removed newline-only markdown blocks:",len(_gsf_nl_replacements))
 
-compile(s,str(out),'exec')
-out.write_text(s,encoding='utf-8')
-print('V107 production UI applied:',out)
-# V107 production UI: Editor 2027 + approved milestone guides
-
-_draft_v107_style = r"""
+_draft_v107_style = r'''
 st.markdown("""
 <style id="gsf-draft-v107-style">
 .st-key-gsf-save-draft button,[class*="st-key-gsf-save-draft"] button{
@@ -2700,5 +2695,10 @@ font-size:11px!important;font-weight:900!important;letter-spacing:.04em!importan
 box-shadow:0 6px 16px rgba(52,89,115,.08)!important}
 </style>
 """,unsafe_allow_html=True)
-"""
+'''
 s = s.rstrip() + "\n\n" + _draft_v107_style.lstrip()
+
+compile(s,str(out),'exec')
+out.write_text(s,encoding='utf-8')
+print('V107 production UI applied:',out)
+# V107 production UI: Editor 2027 + approved milestone guides
