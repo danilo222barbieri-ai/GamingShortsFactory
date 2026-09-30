@@ -916,6 +916,28 @@ st.markdown("""
 '''
 s = s.rstrip() + "\n\n" + _footer_mobile_v2.lstrip()
 
+# Hide the redundant publication heading; the social buttons are self-explanatory.
+_publish_heading_cleanup = r'''
+st.markdown("""
+<script>
+(()=>{
+ const clean=()=>{
+   document.querySelectorAll('div,p,h1,h2,h3,h4').forEach(el=>{
+     if((el.textContent||'').trim()==='Pubblicazione diretta'){
+       const block=el.closest('[data-testid="stMarkdownContainer"]') || el;
+       block.style.display='none';
+       block.style.margin='0';
+       block.style.padding='0';
+     }
+   });
+ };
+ clean(); new MutationObserver(clean).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _publish_heading_cleanup.lstrip()
+
 # DEMO typography: one coherent UI font across the whole product.
 _demo_typography = r'''
 st.markdown("""
