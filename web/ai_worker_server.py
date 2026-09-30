@@ -36,6 +36,15 @@ def _env_first(*names,default=""):
             return value
     return default
 
+def _safe_semantic_reason(result):
+    raw=str((result or {}).get("error") or (result or {}).get("skipped") or "").strip()
+    if not raw:
+        return ""
+    raw=raw.replace("\n"," ").replace("\r"," ")
+    raw=re.sub(r"(?i)(api[_ -]?key|access[_ -]?token|token|secret|key)\s*[:=]\s*[^\s,;]+",r"\1=[redacted]",raw)
+    raw=re.sub(r"AIza[A-Za-z0-9_\-]{16,}","[redacted]",raw)
+    return raw[:240]
+
 S3_BUCKET=_env_first("GSF_S3_BUCKET","S3_BUCKET","BUCKET")
 S3_ACCESS_KEY=_env_first("GSF_S3_ACCESS_KEY_ID","AWS_ACCESS_KEY_ID","ACCESS_KEY_ID")
 S3_SECRET_KEY=_env_first("GSF_S3_SECRET_ACCESS_KEY","AWS_SECRET_ACCESS_KEY","SECRET_ACCESS_KEY")
@@ -210,6 +219,7 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
                 "event_count":len(semantic_events),
                 "elapsed_seconds":semantic_result.get("elapsed_seconds"),
                 "fallback":bool(semantic_result.get("error") or semantic_result.get("skipped")),
+                "fallback_reason":_safe_semantic_reason(semantic_result),
             }
             scan["meta"]=meta
             if semantic_result.get("enabled"):
@@ -218,6 +228,7 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
                     "provider="+str(semantic_result.get("provider") or ""),
                     "events="+str(len(semantic_events)),
                     "fallback="+str(bool(semantic_result.get("error") or semantic_result.get("skipped"))),
+                    "reason="+json.dumps(_safe_semantic_reason(semantic_result),ensure_ascii=True),
                     flush=True,
                 )
             wall=time.perf_counter()-started
