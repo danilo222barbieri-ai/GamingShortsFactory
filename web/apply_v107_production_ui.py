@@ -1466,7 +1466,7 @@ for _old_success in (
     if _old_success in s:
         s=s.replace(
             _old_success,
-            'st.markdown(\'<div class="gsf-final-status"><span class="gsf-hub-state"><i></i>SHORT PRONTO</span><span class="gsf-hub-kicker">SHARE HUB</span></div>\',unsafe_allow_html=True)',
+            'st.empty()',
             1,
         )
         break
@@ -2953,7 +2953,7 @@ st.markdown("""
 <style id="gsf-sep30-polish">
 /* More air between the Editor hint cloud and Editor 2027. */
 .gsf-editor-note{
-  margin-bottom:30px !important;
+  margin-bottom:34px !important;
 }
 
 /* Secondary draft action: intentionally smaller than CREA SHORT FINALE. */
@@ -3049,7 +3049,7 @@ div[data-testid="stMarkdown"]:has(.gsf-social-footer){
 }
 
 @media(max-width:600px){
-  .gsf-editor-note{margin-bottom:26px !important}
+  .gsf-editor-note{margin-bottom:30px !important}
   .st-key-gsf_save_draft_compact_v107,
   [class*="st-key-gsf_save_draft_compact_v107"]{
     margin:2px auto 8px !important;
