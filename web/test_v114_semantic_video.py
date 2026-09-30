@@ -67,7 +67,7 @@ for marker in (
     "_inline_video_content",
     "_response_format",
     "_direct_semantic_interaction",
-    '"processing":processing_mode',
+    'candidate_video["processing"]=attempt_mode',
     '"stream":True',
     'event_type=="step.delta"',
     'getattr(event.delta,"type",None)=="text"',
