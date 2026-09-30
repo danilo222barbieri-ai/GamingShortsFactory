@@ -115,8 +115,8 @@ for marker in (
     '"mime_type":"application/json"',
     '"schema":_schema(max_events)',
     'processing_mode=="static"',
-    '"generate-v121"',
-    '"agentic-stream-v121"',
+    '"-generate-v121"',
+    '"-agentic-stream-v121"',
 ):
     if marker not in semantic:
         raise SystemExit("V121 native Generate Content video marker missing: "+marker)
