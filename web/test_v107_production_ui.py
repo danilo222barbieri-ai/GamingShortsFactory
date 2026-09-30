@@ -132,8 +132,12 @@ if '"gsf_save_draft_v107",' not in s or '"gsf_save_draft_before_engine_change_v1
     raise SystemExit("FAIL transient draft button keys are not excluded from persistent state")
 if "GSF_DRAFT_RESUME_WARN" not in s or "Bozza ripristinata." not in s:
     raise SystemExit("FAIL draft resume hydration missing")
-if "Hai cambiato motore: la creazione dello Short è stata interrotta" not in s:
-    raise SystemExit("FAIL engine-change-only warning missing")
+if "Hai cambiato motore: il lavoro precedente è ancora disponibile." not in s:
+    raise SystemExit("FAIL engine-change draft warning missing")
+if "gsf_v107_engine_change_draft_pending" not in s:
+    raise SystemExit("FAIL engine-change draft does not survive Streamlit rerun")
+if "gsf_v107_engine_snapshot_recipe" not in s or "gsf_v107_engine_snapshot_source" not in s:
+    raise SystemExit("FAIL previous-engine snapshot missing")
 if 'with st.container(key="gsf-save-draft")' in s:
     raise SystemExit("FAIL draft save is still always visible")
 if '_job["status"]="stale"' not in s or '"status":"failed"' not in s:
@@ -150,3 +154,8 @@ if "Game Editor da ricaricare. Riprova Scegli scena." in s or "Game Editor in ca
 if "GSF_MANUAL_EDITOR_SOURCE_RESTORED" not in s or "/source/restore?" not in s:
     raise SystemExit("FAIL missing-source Editor recovery missing")
 if "Attendi la fine dello Short in creazione" not in s: raise SystemExit("FAIL upload allowed during final render")
+
+if "Short pronto · apro lo Share Hub." not in s:
+    raise SystemExit("FAIL final-ready message does not match Share Hub auto-open")
+if ".gsf-editor-note{\n  margin-bottom:48px !important;" not in s:
+    raise SystemExit("FAIL requested Editor cloud/player spacing missing")
