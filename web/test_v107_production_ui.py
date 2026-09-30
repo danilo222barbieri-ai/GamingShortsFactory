@@ -112,9 +112,9 @@ for slot in (1,2,3,4,6):
 compile(s,str(path),"exec")
 print("V107 production UI/demo parity smoke: PASS")
 
-if 'st.session_state.get("gsf_v107_final_render_pending",False)' not in s:
-    raise SystemExit("FAIL final render pending state is not sticky/irreversible")
-if 'st.session_state.pop("gsf_v107_final_render_pending",False)' in s:
-    raise SystemExit("FAIL final render pending state is still consumed on rerun")
-if "gaming_short_finale_share.mp4" not in s:
-    raise SystemExit("FAIL final render is not persisted to stable session media")
+if 'st.session_state.pop("gsf_v107_final_render_pending",False)' not in s:
+    raise SystemExit("FAIL final render job is not claimed exactly once")
+if "gsf_v107_final_render_running" not in s:
+    raise SystemExit("FAIL final render does not retain independent running state")
+if "GSF_FINAL_STABLE_READY" not in s or "gaming_short_finale_share.mp4" not in s:
+    raise SystemExit("FAIL completed FFmpeg render is not persisted before Streamlit return")

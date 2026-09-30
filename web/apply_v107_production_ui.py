@@ -552,7 +552,7 @@ _create_short_old='''            _v1054_create_final_clicked=st.button(
             )
 '''
 _create_short_new='''            def _gsf_v107_queue_final_render():
-                if st.session_state.get("gsf_v107_final_render_pending"):
+                if st.session_state.get("gsf_v107_final_render_pending") or st.session_state.get("gsf_v107_final_render_running"):
                     return
                 _recipe=st.session_state.get("gsf_final_recipe")
                 if isinstance(_recipe,dict) and _recipe:
@@ -565,20 +565,51 @@ _create_short_new='''            def _gsf_v107_queue_final_render():
                 if _src:
                     st.session_state["gsf_v107_render_source_snapshot"]=_src
                 st.session_state["gsf_v107_final_render_pending"]=True
+                st.session_state["gsf_v107_final_render_running"]=True
                 st.session_state["gsf_v107_render_started_at"]=__import__("time").time()
                 st.session_state["gsf_v107_render_toast_shown"]=False
-                st.session_state["gsf_v107_render_complete_notified"]=False
+                st.session_state["gsf_v107_render_complete_notified"]=True
+
+            try:
+                _gsf_restore_src=str(
+                    st.session_state.get("gsf_v107_render_source_snapshot")
+                    or st.session_state.get("gsf_source_path")
+                    or ""
+                )
+                _gsf_restore_root=(__import__("pathlib").Path(
+                    __import__("os").environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime")
+                )/"sessions").resolve()
+                _gsf_restore_rel=__import__("pathlib").Path(_gsf_restore_src).resolve().relative_to(_gsf_restore_root)
+                _gsf_restore_sid=str(_gsf_restore_rel.parts[0]) if _gsf_restore_rel.parts else ""
+                _gsf_restore_final=_gsf_restore_root/_gsf_restore_sid/"media"/"gaming_short_finale_share.mp4"
+                _gsf_restore_started=float(st.session_state.get("gsf_v107_render_started_at",0.0) or 0.0)
+                if (
+                    _gsf_restore_sid
+                    and _gsf_restore_final.is_file()
+                    and _gsf_restore_final.stat().st_size>1024
+                    and (_gsf_restore_started<=0.0 or _gsf_restore_final.stat().st_mtime>=_gsf_restore_started-1.0)
+                ):
+                    _gsf_restored_bytes=_gsf_restore_final.read_bytes()
+                    st.session_state["publication_final_bytes"]=_gsf_restored_bytes
+                    st.session_state["publication_ready"]=True
+                    if st.session_state.get("gsf_v107_final_render_running",False):
+                        st.session_state["gsf_v107_render_done_toast"]=True
+                    st.session_state["gsf_v107_final_render_running"]=False
+                    st.session_state["gsf_v107_final_render_pending"]=False
+            except Exception:
+                pass
 
             with st.container(key="gsf-major-create-short"):
                 _v1054_create_final_clicked=st.button(
                     "CREA SHORT FINALE",
                     use_container_width=True,
                     key="create_final_short_v54",
-                    on_click=_gsf_v107_queue_final_render
+                    on_click=_gsf_v107_queue_final_render,
+                    disabled=bool(st.session_state.get("gsf_v107_final_render_running",False)),
                 )
 
             _gsf_v107_pending=bool(
-                st.session_state.get("gsf_v107_final_render_pending",False)
+                st.session_state.pop("gsf_v107_final_render_pending",False)
             )
             if st.session_state.pop("gsf_v107_render_done_toast",False):
                 st.toast("✅ Short pronto · apri lo Share Hub per condividerlo.")
@@ -615,6 +646,76 @@ _create_short_new='''            def _gsf_v107_queue_final_render():
 if _create_short_old not in s:
     raise RuntimeError("Demo CREA SHORT anchor not found")
 s=s.replace(_create_short_old,_create_short_new,1)
+
+# A Streamlit rerun can obsolete the script while FFmpeg keeps running. Persist
+# a successful final MP4 inside the locked renderer itself, before returning to
+# Streamlit, so changing UI cannot lose the result or start duplicate renders.
+_gsf_locked_render_old='''        return subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=timeout,
+        )
+'''
+_gsf_locked_render_new='''        _gsf_locked_result=subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=timeout,
+        )
+        if _gsf_locked_result.returncode==0:
+            try:
+                _gsf_out=__import__("pathlib").Path(str(cmd[-1])).resolve()
+                if "gsf_final_v54_" in str(_gsf_out.parent):
+                    _gsf_os=__import__("os")
+                    _gsf_root=(__import__("pathlib").Path(
+                        _gsf_os.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime")
+                    )/"sessions").resolve()
+                    _gsf_rel=_gsf_out.relative_to(_gsf_root)
+                    _gsf_sid=str(_gsf_rel.parts[0]) if _gsf_rel.parts else ""
+                    if _gsf_sid and _gsf_out.is_file() and _gsf_out.stat().st_size>1024:
+                        _gsf_media=_gsf_root/_gsf_sid/"media"
+                        _gsf_media.mkdir(parents=True,exist_ok=True)
+                        _gsf_stable=_gsf_media/"gaming_short_finale_share.mp4"
+                        _gsf_tmp=_gsf_media/"gaming_short_finale_share.mp4.tmp"
+                        __import__("shutil").copyfile(_gsf_out,_gsf_tmp)
+                        _gsf_os.replace(_gsf_tmp,_gsf_stable)
+                        print(
+                            "GSF_FINAL_STABLE_READY",
+                            "sid="+_gsf_sid,
+                            "bytes="+str(_gsf_stable.stat().st_size),
+                            flush=True,
+                        )
+                        try:
+                            _gsf_u=__import__("urllib.request",fromlist=["Request","urlopen"])
+                            _gsf_j=__import__("json")
+                            _gsf_payload=_gsf_j.dumps({
+                                "title":"Short pronto",
+                                "body":"Il tuo Short è pronto. Tocca per aprire lo Share Hub.",
+                                "url":"/#share-hub",
+                                "tag":"gsf-short-ready",
+                            }).encode("utf-8")
+                            _gsf_req=_gsf_u.Request(
+                                "http://127.0.0.1:8502/push/notify",
+                                data=_gsf_payload,
+                                headers={
+                                    "Content-Type":"application/json",
+                                    "X-GSF-Session-ID":_gsf_sid,
+                                },
+                                method="POST",
+                            )
+                            _gsf_u.urlopen(_gsf_req,timeout=4).read()
+                        except Exception as _gsf_push_exc:
+                            print("GSF_FINAL_PUSH_WARN",repr(str(_gsf_push_exc)),flush=True)
+            except Exception as _gsf_stable_exc:
+                print("GSF_FINAL_STABLE_WARN",repr(str(_gsf_stable_exc)),flush=True)
+        return _gsf_locked_result
+'''
+if _gsf_locked_render_old not in s:
+    raise RuntimeError("V107 locked renderer persistence anchor missing")
+s=s.replace(_gsf_locked_render_old,_gsf_locked_render_new,1)
 
 # Instrument the real V105.4 render gate so a click cannot disappear silently.
 _gsf_final_gate='''            if _v1054_create_final_clicked:
@@ -2481,40 +2582,10 @@ _gsf_final_refresh=[
     _gsf_final_indent+'    if isinstance(_gsf_completed_final,(bytes,bytearray)) and len(_gsf_completed_final)>1024:\n',
     _gsf_final_indent+'        st.session_state["publication_final_bytes"]=bytes(_gsf_completed_final)\n',
     _gsf_final_indent+'        st.session_state["publication_ready"]=True\n',
-    _gsf_final_indent+'    if st.session_state.get("publication_ready") or st.session_state.get("publication_final_bytes"):\n',
-    _gsf_final_indent+'        _gsf_ready_bytes=bytes(st.session_state.get("publication_final_bytes") or b"")\n',
-    _gsf_final_indent+'        _gsf_ready_sid=""\n',
-    _gsf_final_indent+'        try:\n',
-    _gsf_final_indent+'            _pmod=__import__("pathlib")\n',
-    _gsf_final_indent+'            _omod=__import__("os")\n',
-    _gsf_final_indent+'            _source_for_sid=str(st.session_state.get("gsf_v107_render_source_snapshot") or st.session_state.get("gsf_source_path") or "")\n',
-    _gsf_final_indent+'            _sessions_root=(_pmod.Path(_omod.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))/"sessions").resolve()\n',
-    _gsf_final_indent+'            _rel=_pmod.Path(_source_for_sid).resolve().relative_to(_sessions_root)\n',
-    _gsf_final_indent+'            _gsf_ready_sid=str(_rel.parts[0]) if _rel.parts else ""\n',
-    _gsf_final_indent+'            if _gsf_ready_sid and _gsf_ready_bytes:\n',
-    _gsf_final_indent+'                _media_dir=_sessions_root/_gsf_ready_sid/"media"\n',
-    _gsf_final_indent+'                _media_dir.mkdir(parents=True,exist_ok=True)\n',
-    _gsf_final_indent+'                _tmp_final=_media_dir/"gaming_short_finale_share.mp4.tmp"\n',
-    _gsf_final_indent+'                _stable_final=_media_dir/"gaming_short_finale_share.mp4"\n',
-    _gsf_final_indent+'                _tmp_final.write_bytes(_gsf_ready_bytes)\n',
-    _gsf_final_indent+'                _omod.replace(_tmp_final,_stable_final)\n',
-    _gsf_final_indent+'        except Exception as _gsf_persist_exc:\n',
-    _gsf_final_indent+'            print("GSF_FINAL_PERSIST_WARN",repr(str(_gsf_persist_exc)),flush=True)\n',
-    _gsf_final_indent+'        st.session_state["gsf_v107_final_render_pending"]=False\n',
+    _gsf_final_indent+'        st.session_state["gsf_v107_final_render_running"]=False\n',
     _gsf_final_indent+'        st.session_state["gsf_v107_render_done_toast"]=True\n',
-    _gsf_final_indent+'        if _gsf_ready_sid and not st.session_state.get("gsf_v107_render_complete_notified",False):\n',
-    _gsf_final_indent+'            try:\n',
-    _gsf_final_indent+'                _u=__import__("urllib.request",fromlist=["Request","urlopen"])\n',
-    _gsf_final_indent+'                _j=__import__("json")\n',
-    _gsf_final_indent+'                _payload=_j.dumps({"title":"Short pronto","body":"Il tuo Short è pronto. Tocca per aprire lo Share Hub.","url":"/#share-hub","tag":"gsf-short-ready"}).encode("utf-8")\n',
-    _gsf_final_indent+'                _req=_u.Request("http://127.0.0.1:8502/push/notify",data=_payload,headers={"Content-Type":"application/json","X-GSF-Session-ID":_gsf_ready_sid},method="POST")\n',
-    _gsf_final_indent+'                _u.urlopen(_req,timeout=4).read()\n',
-    _gsf_final_indent+'                st.session_state["gsf_v107_render_complete_notified"]=True\n',
-    _gsf_final_indent+'            except Exception as _gsf_push_exc:\n',
-    _gsf_final_indent+'                print("GSF_FINAL_PUSH_WARN",repr(str(_gsf_push_exc)),flush=True)\n',
-    _gsf_final_indent+'        print("GSF_FINAL_RENDER_READY",len(_gsf_ready_bytes),flush=True)\n',
+    _gsf_final_indent+'        print("GSF_FINAL_RENDER_READY",len(_gsf_completed_final),flush=True)\n',
     _gsf_final_indent+'        st.rerun()\n',
-]
 _gsf_final_lines[_gsf_final_node.end_lineno:_gsf_final_node.end_lineno]=_gsf_final_refresh
 s="".join(_gsf_final_lines)
 
