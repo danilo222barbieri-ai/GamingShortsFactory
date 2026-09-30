@@ -81,6 +81,16 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3, cache
         _diagnostics["__event_map__"]=_clean_events
         st.session_state["gsf_v108_event_map"]=_clean_events
         st.session_state["gsf_v112_brain_context"]=_brain
+        st.session_state["gsf_v124_director_context"]={
+            "engine":str(_brain.get("engine") or "game-brain-v124-ai-director"),
+            "selected":list(_brain.get("selected") or []),
+            "alternates":list(_brain.get("alternates") or []),
+        }
+        _top=(list(_brain.get("selected") or []) or [{}])[0]
+        _top_plan=dict((_top or {}).get("director_plan") or {})
+        st.session_state["gsf_v124_social_pack"]=dict(
+            ((_top_plan.get("text") or {}).get("social") or {})
+        )
         st.session_state["gsf_v108_chosen_moments"]=[
             {"rank":_i+1,"score":float(_item[0]),"start":float(_item[1])}
             for _i,_item in enumerate(_chosen or [])
@@ -91,11 +101,11 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3, cache
     _diagnostics["__brain_v112__"]=_brain
     _meta=_diagnostics.setdefault("__meta__",{})
     if isinstance(_meta,dict):
-        _meta["game_brain"]="v117-editor-semantic"
+        _meta["game_brain"]="v124-ai-director"
         _meta["candidate_pool"]=len(_pool or [])
         _meta["final_moments"]=len(_chosen or [])
     print(
-        "GSF_V117_GAME_BRAIN",
+        "GSF_V124_AI_DIRECTOR",
         "pool="+str(len(_pool or [])),
         "chosen="+str(len(_chosen or [])),
         "profile="+_profile,
