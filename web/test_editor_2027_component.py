@@ -72,14 +72,14 @@ if frontend.index("sendMessage(COMPONENT_READY,{apiVersion:1});") > frontend.ind
 # literals make a hand-written generic delimiter parser unreliable here.
 
 for marker in (
-    'gsf_editor_2027_v1085',
-    'gsf-editor-unsaved-v1085:',
+    'gsf_editor_2027_v1086',
+    'gsf-editor-unsaved-v1086:',
     'persistLocalState',
     'touch-action:manipulation',
     '#ng27 video{pointer-events:none!important}',
-    "payload.editorVersion='2027.5'",
+    "payload.editorVersion='2027.6'",
 ):
-    source = wrapper if marker=='gsf_editor_2027_v1085' else frontend
+    source = wrapper if marker=='gsf_editor_2027_v1086' else frontend
     if marker not in source:
         raise SystemExit("FAIL Editor 2027 mobile/desktop interaction hardening missing: "+marker)
 
@@ -87,7 +87,7 @@ for marker in (
 # Desktop control contract: three-state fullscreen, one Play/Pause, live
 # contextual panels, Undo/Redo and DONE must coexist with mobile hardening.
 for marker in (
-    'data-editor-build="2027.5-livefix"',
+    'data-editor-build="2027.6-zoomout"',
     "span.textContent='FULL'",
     "span.textContent='FULL ×2'",
     "span.textContent='RIDUCI'",
@@ -149,6 +149,19 @@ for marker in (
 ):
     if marker not in frontend:
         raise SystemExit("FAIL Editor live preview contract missing: "+marker)
+
+
+for marker in (
+    'id="videoBg"',
+    "min=\".8\" max=\"2\"",
+    "stage.classList.toggle('zoomOut',zoomOut)",
+    "video.style.objectFit=zoomOut?'contain':'cover'",
+    "syncBlurBackground",
+    'gsf_editor_2027_v1086',
+):
+    source = wrapper if marker=='gsf_editor_2027_v1086' else frontend
+    if marker not in source:
+        raise SystemExit("FAIL Editor zoom-out live contract missing: "+marker)
 
 if "components.html(" in wrapper:
     raise SystemExit("FAIL Editor 2027 still uses display-only components.html")
