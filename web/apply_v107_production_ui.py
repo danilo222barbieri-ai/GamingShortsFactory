@@ -5,15 +5,24 @@ src=Path('/app/GamingShortsFactory_V106_BETA_RC1.py')
 out=Path('/app/GamingShortsFactory_V107_PRODUCTION_UI.py')
 s=src.read_text(encoding='utf-8')
 
-# Production: preserve the approved unified HTML5 source player from V106.
-# The demo temporarily hid it, but production must keep every real player intact.
+# Approved UX: hide only the uploaded-source preview before motor selection.
+# AI candidate players, Editor 2027 and final-result players stay untouched.
 _source_preview_start='''    # PLAYER HTML5 ADATTIVO DEFINITIVO
 '''
 _source_preview_end='''    st.divider()
     st.markdown('<div class="gsf-icon-title">Come vuoi creare?</div>', unsafe_allow_html=True)
 '''
 if _source_preview_start not in s or _source_preview_end not in s:
-    raise RuntimeError('Production source preview block not found')
+    raise RuntimeError('Uploaded source preview block not found')
+_gsf_pre,_gsf_tail=s.split(_source_preview_start,1)
+_gsf_hidden,_gsf_post=_gsf_tail.split(_source_preview_end,1)
+s=(
+    _gsf_pre
+    + '    # Anteprima sorgente caricata nascosta per UX; il file resta disponibile internamente.\\n'
+    + "    st.markdown('<div style=\"height:6px\" aria-hidden=\"true\"></div>', unsafe_allow_html=True)\\n"
+    + _source_preview_end
+    + _gsf_post
+)
 
 s=s.replace(
     'Come vuoi creare?',
