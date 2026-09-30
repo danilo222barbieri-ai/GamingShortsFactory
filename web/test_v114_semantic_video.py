@@ -3,9 +3,9 @@ sys.path.insert(0,"/app/web")
 from semantic_video_v114 import normalize_semantic_events, merge_semantic_events
 
 raw={"events":[
- {"timestamp_seconds":10.2,"event":"multi_kill","category":"action","confidence":0.95,"excitement":0.98,"reaction":0.55,"reason":"three enemies eliminated"},
- {"timestamp_seconds":10.9,"event":"kill","category":"action","confidence":0.70,"excitement":0.72,"reaction":0.30,"reason":"duplicate nearby"},
- {"timestamp_seconds":48.0,"event":"reaction","category":"reaction","confidence":0.91,"excitement":0.80,"reaction":0.99,"reason":"strong vocal reaction"}
+ {"timestamp_seconds":10.2,"event":"multi_kill","category":"action","confidence":0.95,"excitement":0.98,"reaction":0.55,"reason":"three enemies eliminated","subject":"player","focus_x_percent":61,"focus_y_percent":44,"focus_confidence":0.91,"hud_elements":["killfeed","minimap"],"caption_safe_y_percent":80},
+ {"timestamp_seconds":10.9,"event":"kill","category":"action","confidence":0.70,"excitement":0.72,"reaction":0.30,"reason":"duplicate nearby","subject":"player","focus_x_percent":60,"focus_y_percent":45,"focus_confidence":0.70,"hud_elements":["killfeed"],"caption_safe_y_percent":80},
+ {"timestamp_seconds":48.0,"event":"reaction","category":"reaction","confidence":0.91,"excitement":0.80,"reaction":0.99,"reason":"strong vocal reaction","subject":"facecam","focus_x_percent":84,"focus_y_percent":76,"focus_confidence":0.86,"hud_elements":["facecam"],"caption_safe_y_percent":22}
 ]}
 events=normalize_semantic_events(raw,max_events=12)
 if len(events)!=2:
@@ -16,9 +16,15 @@ if len(merged)!=2:
     raise SystemExit("V114 merge count failed: "+repr(merged))
 if merged[0].get("semantic")!="multi_kill" or merged[1].get("semantic")!="reaction":
     raise SystemExit("V114 semantic annotation failed: "+repr(merged))
-if merged[0].get("source")!="local+gemini-v114":
-    raise SystemExit("V114 local/cloud fusion marker missing")
-print("V114 semantic video fusion: PASS")
+if merged[0].get("source")!="local+gemini-v117":
+    raise SystemExit("V117 local/cloud fusion marker missing")
+if merged[0].get("focus_x")!=61.0 or merged[0].get("focus_y")!=44.0:
+    raise SystemExit("V117 semantic focus coordinates missing")
+if merged[0].get("hud_elements")!=["killfeed","minimap"]:
+    raise SystemExit("V117 semantic HUD metadata missing")
+if merged[1].get("caption_safe_y")!=22.0 or merged[1].get("subject")!="facecam":
+    raise SystemExit("V117 Editor framing metadata missing")
+print("V117 semantic video + Editor metadata fusion: PASS")
 
 from pathlib import Path
 worker=Path("/app/web/ai_worker_server.py").read_text(encoding="utf-8")
@@ -36,3 +42,17 @@ for marker in (
 if "google-genai==" not in requirements:
     raise SystemExit("V114 google-genai worker dependency missing")
 print("V114 worker semantic integration: PASS")
+
+semantic=Path("/app/web/semantic_video_v114.py").read_text(encoding="utf-8")
+for marker in (
+    '"processing":"agentic"',
+    "background=True",
+    "client.interactions.get(interaction.id)",
+    "focus_x_percent",
+    "hud_elements",
+    "caption_safe_y_percent",
+    "focus_confidence",
+):
+    if marker not in semantic:
+        raise SystemExit("V117 semantic engine marker missing: "+marker)
+print("V117 background semantic Editor intelligence: PASS")
