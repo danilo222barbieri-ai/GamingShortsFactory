@@ -155,8 +155,10 @@ if "GSF_MANUAL_EDITOR_SOURCE_RESTORED" not in s or "/source/restore?" not in s:
     raise SystemExit("FAIL missing-source Editor recovery missing")
 if "Attendi la fine dello Short in creazione" not in s: raise SystemExit("FAIL upload allowed during final render")
 
-if "Short pronto · apro lo Share Hub." not in s:
-    raise SystemExit("FAIL final-ready message does not match Share Hub auto-open")
+if "Short completato." not in s:
+    raise SystemExit("FAIL final-ready message is not completion-only")
+if "Short pronto · apro lo Share Hub." in s:
+    raise SystemExit("FAIL obsolete automatic Share Hub wording remains")
 if ".gsf-editor-note{\n  margin-bottom:48px !important;" not in s:
     raise SystemExit("FAIL requested Editor cloud/player spacing missing")
 
