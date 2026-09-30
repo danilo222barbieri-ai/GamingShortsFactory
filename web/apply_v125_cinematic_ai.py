@@ -147,6 +147,31 @@ stable_replacement='''                        _tmp_video=_gsf_stable.with_suffix
                             print("GSF_V125_CINEMATIC_FALLBACK",repr(str(_v125_cinematic_exc))[:260],flush=True)
                         __import__("shutil").copyfile(_v125_final_source,_tmp_video)
                         __import__("os").replace(_tmp_video,_gsf_stable)
+
+                        # AI thumbnail: choose the event frame from the clean render,
+                        # before any appended replay changes final timing.
+                        try:
+                            _v125_thumb=_gsf_stable.with_name("ai_thumbnail_v125.jpg")
+                            _v125_thumb_offset=float(((_v125_edit or {}).get("thumbnail_offset") or 0.0))
+                            if _v125_plan and _v125_thumb_offset>=0:
+                                _v125_mod=__import__("cinematic_render_v125",fromlist=["extract_thumbnail"])
+                                _v125_thumb_result=_v125_mod.extract_thumbnail(
+                                    str(_gsf_out),str(_v125_thumb),_v125_thumb_offset,width=720
+                                )
+                                _job["thumbnail_v125"]={
+                                    "path":str(_v125_thumb),
+                                    "offset":_v125_thumb_result.get("offset"),
+                                    "bytes":_v125_thumb_result.get("bytes"),
+                                }
+                                print(
+                                    "GSF_V125_THUMBNAIL_READY",
+                                    "sid="+_gsf_sid,
+                                    "bytes="+str(_v125_thumb.stat().st_size if _v125_thumb.is_file() else 0),
+                                    flush=True,
+                                )
+                        except Exception as _v125_thumb_exc:
+                            print("GSF_V125_THUMBNAIL_WARN",repr(str(_v125_thumb_exc))[:220],flush=True)
+
                         try:
                             _v125_cinematic_tmp.unlink(missing_ok=True)
                         except Exception:
@@ -176,3 +201,36 @@ s=s.replace("Gaming Shorts Factory · V124 AI OS","Gaming Shorts Factory · V125
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
 print("V125 Cinematic AI applied:",out)
+
+# ===== V125 AI THUMBNAIL PREVIEW =====
+try:
+    _v125_thumb_ready=bool(
+        st.session_state.get("publication_ready",False)
+        or st.session_state.get("publication_final_bytes")
+    )
+    if _v125_thumb_ready:
+        _v125_runtime_root=Path(__import__("os").environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))
+        _v125_thumb_path=_v125_runtime_root/"sessions"/str(GSF_SESSION_ID)/"media"/"ai_thumbnail_v125.jpg"
+        if _v125_thumb_path.is_file() and _v125_thumb_path.stat().st_size>512:
+            with st.container(key="gsf-v125-ai-thumbnail"):
+                st.markdown(
+                    '<div class="gsf-v125-thumb-title"><b>THUMBNAIL AI</b>'
+                    '<span>Frame scelto sul momento chiave dal Director.</span></div>',
+                    unsafe_allow_html=True,
+                )
+                st.image(str(_v125_thumb_path),use_container_width=False,width=270)
+except Exception:
+    pass
+
+st.markdown("""
+<style id="gsf-v125-thumb-style">
+.gsf-v125-thumb-title{
+  max-width:760px;margin:16px auto 8px;display:flex;align-items:baseline;
+  gap:9px;flex-wrap:wrap;color:#708797
+}
+.gsf-v125-thumb-title b{font-size:12px;letter-spacing:.08em;color:#527389}
+.gsf-v125-thumb-title span{font-size:13px}
+div[data-testid="stImage"]{margin-left:auto;margin-right:auto}
+</style>
+""",unsafe_allow_html=True)
+# ===== /V125 AI THUMBNAIL PREVIEW =====
