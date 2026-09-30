@@ -125,6 +125,14 @@ for marker in (
     "event.ctrlKey||event.metaKey",
     "state.captionMode='Auto'",
     "state.audioMode='Game Boost'",
+    "analyzeVisionFrames",
+    "regionMetrics",
+    "motionCentroid",
+    "visionDetections",
+    "GAME VISION · ANALISI VISIVA",
+    "FACE CAM",
+    "video.videoWidth",
+    "ctx.drawImage(video,0,0,w,h)",
 ):
     if marker not in frontend:
         raise SystemExit(f"FAIL V108 Editor feature missing: {marker}")
@@ -150,3 +158,8 @@ if "event_map" in state_block or "vision_zones" in state_block:
 # Generated app must still parse cleanly.
 ast.parse(app)
 print("V108 Game Vision + Event Map contract: PASS")
+
+if "fetch(" in frontend.split("async function analyzeVisionFrames",1)[1].split("function renderVisionDetections",1)[0]:
+    raise SystemExit("FAIL visual Game Vision calls the network instead of analyzing local video frames")
+if "96,h=54" not in frontend:
+    raise SystemExit("FAIL visual Game Vision is not using the lightweight low-resolution scan")
