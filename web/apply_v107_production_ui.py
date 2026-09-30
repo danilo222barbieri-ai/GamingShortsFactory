@@ -545,12 +545,42 @@ _create_short_old='''            _v1054_create_final_clicked=st.button(
                 key="create_final_short_v54"
             )
 '''
-_create_short_new='''            with st.container(key="gsf-major-create-short"):
+_create_short_new='''            def _gsf_v107_queue_final_render():
+                _recipe=st.session_state.get("gsf_final_recipe")
+                if isinstance(_recipe,dict) and _recipe:
+                    st.session_state["gsf_v107_final_recipe_snapshot"]=dict(_recipe)
+                _src=""
+                if isinstance(_recipe,dict):
+                    _src=str(_recipe.get("source_path") or "")
+                if not _src:
+                    _src=str(st.session_state.get("gsf_source_path") or "")
+                if _src:
+                    st.session_state["gsf_v107_final_source_snapshot"]=_src
+                st.session_state["gsf_v107_final_render_pending"]=True
+
+            with st.container(key="gsf-major-create-short"):
                 _v1054_create_final_clicked=st.button(
                     "CREA SHORT FINALE",
                     use_container_width=True,
-                    key="create_final_short_v54"
+                    key="create_final_short_v54",
+                    on_click=_gsf_v107_queue_final_render
                 )
+
+            _gsf_v107_pending=bool(
+                st.session_state.pop("gsf_v107_final_render_pending",False)
+            )
+            if _gsf_v107_pending:
+                _snap=st.session_state.get("gsf_v107_final_recipe_snapshot")
+                if isinstance(_snap,dict) and _snap:
+                    st.session_state["gsf_final_recipe"]=dict(_snap)
+                _src_snap=str(st.session_state.get("gsf_v107_final_source_snapshot") or "")
+                if _src_snap:
+                    st.session_state["gsf_source_path"]=_src_snap
+                    st.session_state["gsf_editor_source_path"]=_src_snap
+
+            _v1054_create_final_clicked=bool(
+                _v1054_create_final_clicked or _gsf_v107_pending
+            )
             if _v1054_create_final_clicked:
                 try:
                     print(
@@ -569,6 +599,26 @@ _create_short_new='''            with st.container(key="gsf-major-create-short")
 if _create_short_old not in s:
     raise RuntimeError("Demo CREA SHORT anchor not found")
 s=s.replace(_create_short_old,_create_short_new,1)
+
+# Instrument the real V105.4 render gate so a click cannot disappear silently.
+_gsf_final_gate='''            if _v1054_create_final_clicked:
+                _final_dir=_gsf_session_mkdtemp("gsf_final_v54_")
+'''
+_gsf_final_gate_new='''            if _v1054_create_final_clicked:
+                try:
+                    print(
+                        "GSF_FINAL_RENDER_ENTER",
+                        "recipe="+str(bool(st.session_state.get("gsf_final_recipe"))),
+                        "source="+str(bool(st.session_state.get("gsf_source_path"))),
+                        flush=True,
+                    )
+                except Exception:
+                    pass
+                _final_dir=_gsf_session_mkdtemp("gsf_final_v54_")
+'''
+if _gsf_final_gate not in s:
+    raise RuntimeError("V107 final render gate anchor missing")
+s=s.replace(_gsf_final_gate,_gsf_final_gate_new,1)
 
 # DEMO mobile cleanup: keep only the blue primary CTA for the final Short.
 # Remove the older peach/orange heading so the action is not duplicated.
@@ -1137,6 +1187,9 @@ st.markdown("""
   margin-top:10px !important;
   margin-bottom:10px !important;
 }
+[class*="st-key-gsf-major-game-editor_"]{
+  margin-top:18px !important;
+}
 .gsf-major-note{
   margin:7px auto 13px !important;
 }
@@ -1159,6 +1212,7 @@ st.markdown("""
     margin-top:8px !important;
     margin-bottom:8px !important;
   }
+  [class*="st-key-gsf-major-game-editor_"]{margin-top:14px !important}
   .gsf-major-note{margin:6px auto 10px !important}
   .gsf-moment-head{margin:6px auto 10px !important}
   .v67-ad{margin-top:9px !important;margin-bottom:9px !important}
@@ -1739,6 +1793,42 @@ _gsf_new_manual_body = [
 _gsf_manual_lines[_gsf_body_start:_gsf_body_end] = _gsf_new_manual_body
 s = "".join(_gsf_manual_lines)
 print("GSF Manual/Scegli scena routed to Editor 2027")
+
+# Remove markdown calls that render only blank/literal newline markers.
+_gsf_nl_tree=_gsf_patch_ast.parse(s)
+_gsf_nl_lines=s.splitlines(keepends=True)
+_gsf_nl_replacements=[]
+for _node in _gsf_patch_ast.walk(_gsf_nl_tree):
+    if not isinstance(_node,_gsf_patch_ast.Expr):
+        continue
+    _call=_node.value
+    if not isinstance(_call,_gsf_patch_ast.Call):
+        continue
+    _func=_call.func
+    if not (
+        isinstance(_func,_gsf_patch_ast.Attribute)
+        and _func.attr=="markdown"
+        and isinstance(_func.value,_gsf_patch_ast.Name)
+        and _func.value.id=="st"
+        and _call.args
+        and isinstance(_call.args[0],_gsf_patch_ast.Constant)
+        and isinstance(_call.args[0].value,str)
+    ):
+        continue
+    _value=_call.args[0].value
+    _compact=_value.strip().replace("\\n","")
+    if _compact=="":
+        _start=_node.lineno-1
+        _end=getattr(_node,"end_lineno",_node.lineno)
+        _line=_gsf_nl_lines[_start]
+        _indent=_line[:len(_line)-len(_line.lstrip())]
+        _gsf_nl_replacements.append((_start,_end,_indent+"st.empty()\n"))
+
+for _start,_end,_replacement in sorted(_gsf_nl_replacements,reverse=True):
+    _gsf_nl_lines[_start:_end]=[_replacement]
+s="".join(_gsf_nl_lines)
+if _gsf_nl_replacements:
+    print("V107 removed newline-only markdown blocks:",len(_gsf_nl_replacements))
 
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
