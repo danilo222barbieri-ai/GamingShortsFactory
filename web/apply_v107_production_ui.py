@@ -949,13 +949,9 @@ s=s.replace(
     'if _has_final:'
 )
 
-# Remove only the obsolete intermediate launcher. Platform-level PUBBLICA buttons stay untouched.
-import re as _gsf_v107_re
-s=_gsf_v107_re.sub(
-    r'(?ms)^\\s*if st\\.button\\(\\s*["\\\'](?:➡️\\s*)?PUBBLICA["\\\'].*?show_social_publish_v54["\\\']\\s*=\\s*True\\s*',
-    '\\n',
-    s,
-)
+# The obsolete large PUBBLICA launcher is hidden by the scoped browser cleanup below.
+# Do not rewrite the source block here: preserving the original code avoids brittle
+# multiline regex changes while the composer is already forced open by _has_final.
 
 _final_publish_v2 = r'''
 st.markdown("""
