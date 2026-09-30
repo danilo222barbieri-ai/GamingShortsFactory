@@ -48,7 +48,13 @@ semantic_events=[
         "semantic_reaction":.82,
         "semantic_score":.95,
         "score":.95,
-        "source":"gemini-v114",
+        "subject":"player",
+        "focus_x":63.0,
+        "focus_y":41.0,
+        "focus_confidence":.93,
+        "hud_elements":["killfeed","minimap"],
+        "caption_safe_y":81.0,
+        "source":"gemini-v117",
     }
 ]
 semantic_chosen,semantic_meta=rerank_moments(
@@ -64,6 +70,17 @@ if semantic_meta.get("semantic_injected_count",0)<1:
 if not any(x.get("semantic_injected") and x.get("event")=="clutch" for x in semantic_meta.get("selected",[])):
     raise SystemExit("V115 injected clutch did not survive final ranking")
 
+clutch_rows=[x for x in semantic_meta.get("selected",[]) if x.get("event")=="clutch"]
+if not clutch_rows:
+    raise SystemExit("V117 clutch metadata row missing")
+clutch=clutch_rows[0]
+if clutch.get("focus_x")!=63.0 or clutch.get("focus_y")!=41.0 or clutch.get("focus_confidence")<.9:
+    raise SystemExit("V117 semantic focus metadata did not reach selected clip: "+repr(clutch))
+if clutch.get("hud_elements")!=["killfeed","minimap"] or clutch.get("caption_safe_y")!=81.0:
+    raise SystemExit("V117 HUD/caption-safe metadata did not reach selected clip: "+repr(clutch))
+if clutch.get("subject")!="player":
+    raise SystemExit("V117 subject metadata did not reach selected clip")
+
 app=Path(sys.argv[1] if len(sys.argv)>1 else "/app/GamingShortsFactory_V112_GAME_BRAIN.py").read_text(encoding="utf-8")
 embed=Path("/app/web/editor_2027_embed.py").read_text(encoding="utf-8")
 front=Path("/app/web/editor_2027_component/index.html").read_text(encoding="utf-8")
@@ -71,7 +88,7 @@ for marker in ("GSF_V112_GAME_BRAIN","_pool_target=max(8","__brain_v112__","gsf_
     if marker not in app: raise SystemExit("V112 app contract missing: "+marker)
 for marker in ("brain_context=_brain_hint","gsf_v112_brain_context"):
     if marker not in embed: raise SystemExit("V112 editor bridge missing: "+marker)
-for marker in ("let brainContext={};","AI CONSIGLIO","brainApply","args.brain_context"):
+for marker in ("let brainContext={};","AI CONSIGLIO","brainApply","args.brain_context","semanticFocusFromBrain","semanticHudDetections","AI+LOCALE","caption_safe_y","hud_elements"):
     if marker not in front: raise SystemExit("V112 editor UI missing: "+marker)
 compile(app,"<v112>","exec")
-print("V112 Game Brain + Editor intelligence: PASS")
+print("V117 Game Brain + semantic Editor intelligence: PASS")
