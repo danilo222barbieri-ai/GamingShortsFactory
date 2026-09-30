@@ -943,14 +943,13 @@ st.markdown("""
 s = s.rstrip() + "\n\n" + _publish_heading_cleanup.lstrip()
 
 # Final result UX — final-only, always-open publish flow; download stays last.
-_final_publish_v2 = r'''
-# Keep the existing connected-account composer active whenever the final MP4 exists.
+# These source rewrites must happen here in the patcher, never inside the generated app.
 s=s.replace(
     'if st.session_state.get("show_social_publish_v54", False):',
     'if _has_final:'
 )
 
-# Remove the obsolete intermediate launcher. Platform-level PUBBLICA buttons stay untouched.
+# Remove only the obsolete intermediate launcher. Platform-level PUBBLICA buttons stay untouched.
 import re as _gsf_v107_re
 s=_gsf_v107_re.sub(
     r'(?ms)^\\s*if st\\.button\\(\\s*["\\\'](?:➡️\\s*)?PUBBLICA["\\\'].*?show_social_publish_v54["\\\']\\s*=\\s*True\\s*',
@@ -958,6 +957,7 @@ s=_gsf_v107_re.sub(
     s,
 )
 
+_final_publish_v2 = r'''
 st.markdown("""
 <style id="gsf-v107-final-publish">
 .gsf-final-ready{
