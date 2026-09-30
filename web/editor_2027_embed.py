@@ -171,6 +171,7 @@ def render_editor_2027_embed(
         video_url=video_url,
         initial_state=state,
         event_map=_events,
+        event_duration=_window_duration,
         vision_profile=_genre,
         vision_zones=vision_zones_for_genre(_genre),
         height=int(height),
