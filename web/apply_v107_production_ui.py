@@ -583,6 +583,7 @@ _engine_note_new='''    st.markdown(
                 print("GSF_ENGINE_DRAFT_SAVE_WARN",repr(str(_draft_exc)),flush=True)
                 st.warning("Non sono riuscito a salvare la bozza. Riprova.")
     st.session_state["gsf_v107_last_engine"]=_gsf_engine_now
+'''
 if _engine_note_old not in s:
     raise RuntimeError("Demo engine help note anchor not found")
 s=s.replace(_engine_note_old,_engine_note_new,1)

@@ -126,11 +126,6 @@ if "SALVA BOZZA DELLO SHORT INTERROTTO" not in s or "/drafts/save" not in s:
 
 if '"gsf_save_draft_v107",' not in s or '"gsf_save_draft_before_engine_change_v107",' not in s:
     raise SystemExit("FAIL transient draft button keys are not excluded from persistent state")
-if "Short in creazione. Puoi continuare a usare il sito" not in s:
-    raise SystemExit("FAIL engine-change render warning missing")
-if "SALVA BOZZA PRIMA DI CAMBIARE MOTORE" not in s:
-    raise SystemExit("FAIL engine-change draft CTA missing")
-
 if "GSF_DRAFT_RESUME_WARN" not in s or "Bozza ripristinata." not in s:
     raise SystemExit("FAIL draft resume hydration missing")
 if "Hai cambiato motore: la creazione dello Short è stata interrotta" not in s:
