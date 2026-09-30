@@ -1248,10 +1248,10 @@ div[data-testid="stHorizontalBlock"]:has(.st-key-download_final_v54_fallback) > 
 .st-key-v69_social_instagram button,
 .st-key-v69_social_youtube button,
 .st-key-v69_social_tiktok button{
-  min-height:54px !important;
-  border-radius:14px !important;
+  min-height:76px !important;
+  border-radius:16px !important;
   border:1px solid #d1e1eb !important;
-  background:linear-gradient(145deg,#fff,#edf5fa) !important;
+  background:linear-gradient(145deg,#ffffff,#edf5fa) !important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 7px 17px rgba(65,96,121,.09) !important;
   font-size:11px !important;
   font-weight:850 !important;
@@ -1259,8 +1259,9 @@ div[data-testid="stHorizontalBlock"]:has(.st-key-download_final_v54_fallback) > 
   flex-direction:column !important;
   align-items:center !important;
   justify-content:center !important;
-  gap:3px !important;
-  padding:6px 7px !important;
+  gap:6px !important;
+  padding:8px 7px !important;
+  overflow:hidden !important;
 }
 .st-key-v69_social_facebook [data-testid="stBaseButton-primary"],
 .st-key-v69_social_instagram [data-testid="stBaseButton-primary"],
@@ -1279,36 +1280,55 @@ div[data-testid="stHorizontalBlock"]:has(.st-key-download_final_v54_fallback) > 
 .st-key-v69_social_instagram button:before,
 .st-key-v69_social_youtube button:before,
 .st-key-v69_social_tiktok button:before{
-  width:32px;
-  height:32px;
-  display:grid;
-  place-items:center;
-  flex:0 0 32px;
-  background:none !important;
+  width:38px !important;
+  height:38px !important;
+  min-width:38px !important;
+  min-height:38px !important;
+  flex:0 0 38px !important;
+  display:grid !important;
+  place-items:center !important;
+  border-radius:50% !important;
+  box-sizing:border-box !important;
   opacity:1 !important;
   filter:none !important;
-  text-shadow:none;
+  background-image:none !important;
+  box-shadow:0 5px 12px rgba(42,69,88,.16),inset 0 1px 0 rgba(255,255,255,.24) !important;
+  font-family:Arial,sans-serif !important;
+  text-align:center !important;
 }
 .st-key-v69_social_facebook button:before{
-  content:"f";
-  color:#1877F2 !important;
-  font:900 30px/1 Arial,sans-serif;
+  content:"f" !important;
+  background:#1877F2 !important;
+  color:#fff !important;
+  font-size:31px !important;
+  font-weight:900 !important;
+  line-height:38px !important;
 }
 .st-key-v69_social_instagram button:before{
-  content:"◎";
-  color:#D62976 !important;
-  font:900 31px/1 Arial,sans-serif;
+  content:"◎" !important;
+  background:linear-gradient(145deg,#833AB4 0%,#C13584 32%,#E1306C 55%,#F77737 78%,#FCAF45 100%) !important;
+  color:#fff !important;
+  font-size:31px !important;
+  font-weight:900 !important;
+  line-height:35px !important;
 }
 .st-key-v69_social_youtube button:before{
-  content:"▶";
-  color:#FF0000 !important;
-  font:900 26px/1 Arial,sans-serif;
+  content:"▶" !important;
+  background:#FF0000 !important;
+  color:#fff !important;
+  font-size:21px !important;
+  font-weight:900 !important;
+  line-height:38px !important;
+  padding-left:2px !important;
 }
 .st-key-v69_social_tiktok button:before{
-  content:"♪";
-  color:#111111 !important;
-  font:900 31px/1 Arial,sans-serif;
-  text-shadow:-1.5px 0 #25F4EE,1.5px 0 #FE2C55;
+  content:"♪" !important;
+  background:#111 !important;
+  color:#fff !important;
+  font-size:29px !important;
+  font-weight:900 !important;
+  line-height:38px !important;
+  text-shadow:-1.5px 0 #25F4EE,1.5px 0 #FE2C55 !important;
 }
 .st-key-v69_social_facebook button p,
 .st-key-v69_social_instagram button p,
@@ -1345,10 +1365,13 @@ div[data-testid="stHorizontalBlock"]:has(.st-key-download_final_v54_fallback) > 
 }
 .st-key-gsf-final-download-after-social button,
 [class*="st-key-gsf-final-download-after-social"] button{
-  min-height:44px !important;
-  border:1px solid #c9dce8 !important;
-  background:linear-gradient(145deg,#fff,#eef5fa) !important;
-  color:#355a73 !important;
+  min-height:48px !important;
+  border:1px solid rgba(69,165,214,.42) !important;
+  background:linear-gradient(135deg,#78D7F3 0%,#50B9E9 100%) !important;
+  color:#173B53 !important;
+  box-shadow:0 9px 21px rgba(70,164,211,.20),inset 0 1px 0 rgba(255,255,255,.45) !important;
+  font-size:13px !important;
+  font-weight:900 !important;
 }
 .st-key-download_final_v54,
 .st-key-download_final_v54_fallback,
@@ -1374,8 +1397,8 @@ div[data-testid="column"]:has(.st-key-download_final_v54_fallback),
   .st-key-v69_social_instagram button,
   .st-key-v69_social_youtube button,
   .st-key-v69_social_tiktok button{
-    min-height:52px !important;
-    border-radius:14px !important;
+    min-height:72px !important;
+    border-radius:15px !important;
   }
 }
 </style>
@@ -1407,6 +1430,9 @@ st.markdown("""
   margin-top:12px !important;
   margin-bottom:12px !important;
 }
+.st-key-v1055_ad_manual_after_editor{
+  margin-top:-24px !important;
+}
 [data-testid="stAppViewContainer"] hr{
   margin-top:.55rem !important;
   margin-bottom:.55rem !important;
@@ -1423,6 +1449,7 @@ st.markdown("""
   .gsf-major-note{margin:6px auto 10px !important}
   .gsf-moment-head{margin:6px auto 10px !important}
   .v67-ad{margin-top:9px !important;margin-bottom:9px !important}
+  .st-key-v1055_ad_manual_after_editor{margin-top:-52px !important}
   [data-testid="stAppViewContainer"] hr{margin:.38rem 0 !important}
 }
 </style>
@@ -1937,6 +1964,55 @@ st.markdown("""
 """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _major_cta_final_override.lstrip()
+
+_share_cta_exact_override = r'''
+st.markdown("""
+<style id="gsf-share-cta-exact-create-short">
+.st-key-gsf_share_download_top button,
+[class*="st-key-gsf_share_download_top"] button,
+.st-key-gsf_share_download_top button[kind="primary"],
+[class*="st-key-gsf_share_download_top"] button[kind="primary"]{
+  width:100% !important;
+  height:56px !important;
+  min-height:56px !important;
+  max-height:56px !important;
+  padding:0 18px !important;
+  border-radius:17px !important;
+  border:1px solid rgba(255,255,255,.34) !important;
+  background:linear-gradient(135deg,#8B67E8 0%,#6557D9 100%) !important;
+  color:#FFFFFF !important;
+  font-family:var(--gsf-ui-font,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif) !important;
+  font-size:15px !important;
+  font-weight:900 !important;
+  line-height:1 !important;
+  letter-spacing:.045em !important;
+  box-shadow:0 12px 28px rgba(104,84,205,.28) !important;
+}
+.st-key-gsf_share_download_top button *,
+[class*="st-key-gsf_share_download_top"] button *{
+  color:#FFFFFF !important;
+  font-family:var(--gsf-ui-font,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif) !important;
+  font-size:15px !important;
+  font-weight:900 !important;
+  letter-spacing:.045em !important;
+}
+@media(max-width:750px){
+  .st-key-gsf_share_download_top button,
+  [class*="st-key-gsf_share_download_top"] button{
+    height:52px !important;
+    min-height:52px !important;
+    max-height:52px !important;
+    font-size:13px !important;
+  }
+  .st-key-gsf_share_download_top button *,
+  [class*="st-key-gsf_share_download_top"] button *{
+    font-size:13px !important;
+  }
+}
+</style>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _share_cta_exact_override.lstrip()
 
 
 # Manual editor heading: same visual weight as the main CREA CON IA milestone.

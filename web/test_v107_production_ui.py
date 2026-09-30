@@ -72,6 +72,12 @@ if "with _download_col:" in s:
 for _icon_marker in ('content:"f"','content:"◎"','content:"▶"','content:"♪"'):
     if _icon_marker not in s:
         raise SystemExit("FAIL high-contrast social icon missing: "+_icon_marker)
+if "gsf-share-cta-exact-create-short" not in s:
+    raise SystemExit("FAIL CONDIVIDI O SCARICA does not inherit exact CREA SHORT CTA skin")
+if "background:linear-gradient(135deg,#78D7F3 0%,#50B9E9 100%)" not in s:
+    raise SystemExit("FAIL final SCARICA is not blue")
+if "st-key-v1055_ad_manual_after_editor" not in s:
+    raise SystemExit("FAIL editor-to-ad spacing reduction missing")
 if "gsf-major-publish-download" in s:
     raise SystemExit("FAIL duplicate lower CONDIVIDI O SCARICA milestone survived")
 for _ad_key in ("v1053_ad_before_final","v1054_ad_after_ai","v1055_ad_after_ai","v1054_ad_after_final_action","v1054_ad_after_final_result"):
