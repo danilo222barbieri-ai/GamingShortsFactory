@@ -1322,7 +1322,7 @@ st.markdown("""
   flex-direction:column;
   justify-content:center;
   align-items:center;
-  gap:5px;
+  gap:8px;
   color:#6d8496;
   text-align:center;
 }
@@ -1370,7 +1370,7 @@ st.markdown("""
   .gsf-footer-v4{
     margin:3px auto 5px;
     padding:6px 6px 5px;
-    gap:4px;
+    gap:6px;
   }
   .gsf-footer-v4 .version,
   .gsf-footer-v4 .legal{font-size:9px}
