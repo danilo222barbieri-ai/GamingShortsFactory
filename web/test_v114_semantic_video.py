@@ -65,6 +65,8 @@ for marker in (
     "_probe_duration_seconds",
     "choose_input_method",
     "_inline_video_content",
+    "_response_format",
+    "_direct_semantic_interaction",
     '"processing":processing_mode',
     "stream=True",
     'event_type=="step.delta"',
@@ -80,5 +82,21 @@ for marker in (
     if marker not in semantic:
         raise SystemExit("V118 semantic stream marker missing: "+marker)
 if "background=True" in semantic:
-    raise SystemExit("V118 must not use background multimodal interactions")
-print("V119 adaptive streaming semantic Editor intelligence: PASS")
+    raise SystemExit("V120 must not use background multimodal interactions")
+for marker in (
+    'return [{"type":"text"',
+    'direct_mode=(processing_mode=="static" and input_method=="inline")',
+    'if processing_mode=="agentic":',
+    'kwargs["response_format"]=_response_format(max_events)',
+    '"-direct-v120" if direct_mode else "-stream-v120"',
+):
+    if marker not in semantic:
+        raise SystemExit("V120 direct/stream compatibility marker missing: "+marker)
+inline_start=semantic.find("def _inline_video_content")
+inline_end=semantic.find("def _response_format",inline_start)
+inline_block=semantic[inline_start:inline_end]
+if 'payload["processing"]="agentic"' not in inline_block:
+    raise SystemExit("V120 inline helper must add processing only for agentic mode")
+if '"processing":processing_mode' in inline_block:
+    raise SystemExit("V120 static inline request must rely on documented default processing")
+print("V120 documented direct-inline + agentic-stream compatibility: PASS")
