@@ -1,6 +1,16 @@
 import sys
 sys.path.insert(0,"/app/web")
-from semantic_video_v114 import normalize_semantic_events, merge_semantic_events
+from semantic_video_v114 import normalize_semantic_events, merge_semantic_events, choose_processing_mode
+
+if choose_processing_mode(45.0)!="static":
+    raise SystemExit("V119 short video must use static processing")
+if choose_processing_mode(299.9)!="static":
+    raise SystemExit("V119 sub-5-minute video must use static processing")
+if choose_processing_mode(300.0)!="agentic":
+    raise SystemExit("V119 5-minute video must use agentic processing")
+if choose_processing_mode(1800.0)!="agentic":
+    raise SystemExit("V119 long video must use agentic processing")
+print("V119 adaptive video processing policy: PASS")
 
 raw={"events":[
  {"timestamp_seconds":10.2,"event":"multi_kill","category":"action","confidence":0.95,"excitement":0.98,"reaction":0.55,"reason":"three enemies eliminated","subject":"player","focus_x_percent":61,"focus_y_percent":44,"focus_confidence":0.91,"hud_elements":["killfeed","minimap"],"caption_safe_y_percent":80},
@@ -45,11 +55,15 @@ print("V114 worker semantic integration: PASS")
 
 semantic=Path("/app/web/semantic_video_v114.py").read_text(encoding="utf-8")
 for marker in (
-    '"processing":"agentic"',
+    "choose_processing_mode",
+    "_probe_duration_seconds",
+    '"processing":processing_mode',
     "stream=True",
     'event_type=="step.delta"',
     'getattr(event.delta,"type",None)=="text"',
     "json_parts.append",
+    'processing_mode=="agentic"',
+    '"static"',
     "focus_x_percent",
     "hud_elements",
     "caption_safe_y_percent",
@@ -59,4 +73,4 @@ for marker in (
         raise SystemExit("V118 semantic stream marker missing: "+marker)
 if "background=True" in semantic:
     raise SystemExit("V118 must not use background multimodal interactions")
-print("V118 streaming semantic Editor intelligence: PASS")
+print("V119 adaptive streaming semantic Editor intelligence: PASS")
