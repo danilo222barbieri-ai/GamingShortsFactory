@@ -855,6 +855,67 @@ a[href*="connect"]:not(.gsf-account-fab){
 '''
 s = s.rstrip() + "\n\n" + _footer_compact.lstrip()
 
+# Mobile footer/social polish: compact vertical rhythm and high-contrast publication icons.
+_footer_mobile_v2 = r'''
+st.markdown("""
+<style id="gsf-v107-footer-mobile-v2">
+/* Footer: remove the large dead zones visible on phones. */
+.gsf-social-footer{
+  margin:2px auto 0 !important;
+  padding:2px 8px 0 !important;
+}
+.gsf-social-footer-title{margin:4px 0 6px !important}
+@media(max-width:600px){
+  [data-testid="stAppViewContainer"] hr{margin:.28rem 0 !important}
+  [data-testid="stAppViewContainer"] footer,
+  [data-testid="stAppViewContainer"] footer > div{
+    margin:0 !important;padding:0 !important;
+  }
+  .gsf-social-footer{margin:0 auto !important;padding:0 6px !important}
+  .gsf-social-footer-title{margin:2px 0 4px !important}
+  .gsf-social-footer-icons{gap:7px !important;margin:0 !important}
+  .gsf-social-footer-icons a{width:46px !important;height:46px !important}
+  /* Publication buttons: icons were washed out on the light mobile background. */
+  [class*="st-key-"] button svg{opacity:1 !important}
+  .gsf-publish-grid button,.gsf-social-publish button{
+    color:#355a73 !important;
+    font-weight:800 !important;
+  }
+  .gsf-publish-grid button svg,.gsf-social-publish button svg{
+    stroke:#355a73 !important;fill:none !important;opacity:1 !important;
+  }
+}
+</style>
+<script>
+(()=>{
+ const enhance=()=>{
+   const heading=[...document.querySelectorAll('div,p,h1,h2,h3,h4')].find(x=>(x.textContent||'').trim()==='Pubblicazione diretta');
+   if(!heading)return;
+   const root=heading.parentElement?.parentElement?.parentElement || heading.parentElement;
+   if(root) root.classList.add('gsf-publish-grid');
+   const buttons=root?[...root.querySelectorAll('button')]:[];
+   const names=['YouTube','TikTok','Instagram'];
+   buttons.forEach((b,i)=>{ if(i<3 && !(b.textContent||'').trim()) b.setAttribute('aria-label',names[i]); });
+   /* Facebook is a visual destination placeholder until its publishing connector is implemented. */
+   if(root && !root.querySelector('[data-gsf-facebook]')){
+     const row=buttons[0]?.parentElement?.parentElement;
+     if(row){
+       const fb=document.createElement('div');
+       fb.dataset.gsfFacebook='1';
+       fb.title='Facebook';
+       fb.setAttribute('aria-label','Facebook');
+       fb.innerHTML='<div style="width:100%;height:100%;min-height:58px;border:1px solid #c9dbe8;border-radius:16px;display:flex;align-items:center;justify-content:center;font:900 26px Arial;color:#355a73;background:rgba(255,255,255,.58)">f</div>';
+       row.insertBefore(fb,row.firstChild);
+     }
+   }
+ };
+ enhance(); new MutationObserver(enhance).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _footer_mobile_v2.lstrip()
+
 # DEMO typography: one coherent UI font across the whole product.
 _demo_typography = r'''
 st.markdown("""
