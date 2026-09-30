@@ -281,4 +281,22 @@ unsupported=set(kw)-allowed
 if unsupported:
     raise SystemExit("FAIL Editor 2027 emits unsupported render args: "+",".join(sorted(unsupported)))
 
+for marker in (
+    "function semanticFocusFromBrain()",
+    "function semanticHudDetections()",
+    "brainContext.focus_confidence",
+    "brainContext.semantic_confidence",
+    "brainContext.caption_safe_y",
+    "brainContext.hud_elements",
+    "AI+LOCALE",
+    "state.captionY=sem.captionY",
+    "state.hudMode='Smart Safe'",
+    "visionPrimary={x:sem.x,y:sem.y,confidence:sem.confidence}",
+):
+    if marker not in frontend:
+        raise SystemExit("FAIL V117 semantic Editor guidance missing: "+marker)
+
+if frontend.count("let lastVisionScanKey=''") != 1:
+    raise SystemExit("FAIL V117 duplicated Editor vision scan state")
+
 print("Editor 2027 bidirectional render contract: PASS")
