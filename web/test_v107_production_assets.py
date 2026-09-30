@@ -45,3 +45,7 @@ if "gsf-share-auto-open-token" in server:
     raise SystemExit("FAIL completion still auto-opens Share Hub")
 if "onClick:()=>openShareHub()" not in server:
     raise SystemExit("FAIL Short completion toast is not optionally actionable")
+
+for marker in ("GSF_JOB_STATUS_SELF_HEALED","download_ready","stable_ready"):
+    if marker not in server:
+        raise SystemExit("FAIL final Short job self-heal missing: "+marker)
