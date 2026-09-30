@@ -104,8 +104,15 @@ for marker in (
 
 if "subprocess" in helper or "ffmpeg" in helper.lower():
     raise SystemExit("FAIL V108 Event Map helper performs media processing instead of reusing prescan")
-if 'scan["event_map_v108"]=build_event_map(scan,max_events=18)' not in worker:
-    raise SystemExit("FAIL worker does not persist V108 Event Map with prescan")
+worker_has_local_event_map = (
+    'scan["event_map_v108"]=build_event_map(scan,max_events=18)' in worker
+    or (
+        "local_events=build_event_map(scan,max_events=18)" in worker
+        and 'scan["event_map_v108"]=merge_semantic_events(' in worker
+    )
+)
+if not worker_has_local_event_map:
+    raise SystemExit("FAIL worker does not persist V108 Event Map baseline with prescan")
 
 # -------------------------- Editor contract ------------------------------
 for marker in (
