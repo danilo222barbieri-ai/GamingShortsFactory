@@ -2,6 +2,7 @@ from __future__ import annotations
 import math
 
 from ai_director_v124 import attach_director_plans, build_alternates
+from feedback_learning_v127 import load_model as _load_learning_model, event_multiplier as _learning_multiplier
 
 def _num(v,default=0.0):
     try:
@@ -50,7 +51,7 @@ def _nearest_event(events,start,duration):
         return best[1]
     return {}
 
-def _candidate(score,start,diagnostics,duration,events,genre,profile,semantic_injected=False):
+def _candidate(score,start,diagnostics,duration,events,genre,profile,semantic_injected=False,learning_model=None):
     d=_diag_for_start(diagnostics,start)
     f=(d.get("features") or {}) if isinstance(d,dict) else {}
     why=(d.get("why") or {}) if isinstance(d,dict) else {}
@@ -103,6 +104,8 @@ def _candidate(score,start,diagnostics,duration,events,genre,profile,semantic_in
     )
     if semantic_injected:
         quality+=.035*semantic_signal
+    learning_mult=_learning_multiplier(learning_model or {},event)
+    quality*=learning_mult
     quality=max(0.0,min(1.35,quality))
     signals=[base,event_score,reaction,motion,synergy,arc]
     strong=sum(1 for x in signals if x>=.62)
@@ -124,6 +127,7 @@ def _candidate(score,start,diagnostics,duration,events,genre,profile,semantic_in
         "hud_elements":hud_elements,
         "caption_safe_y":caption_safe_y,
         "subject":subject,
+        "learning_multiplier":learning_mult,
         "original":(float(score),float(start)),
     }
 
@@ -182,6 +186,7 @@ def _overlap(a,b,duration):
 
 def rerank_moments(pool,diagnostics,clip_duration=15,numero_clip=3,profile="auto",genre="Auto",events=None):
     events=events or []
+    learning_model=_load_learning_model()
     augmented_pool,injected=_inject_semantic_pool(pool,events,clip_duration,max_injected=6)
     injected_starts=[float(x["start"]) for x in injected]
     candidates=[]
@@ -189,7 +194,10 @@ def rerank_moments(pool,diagnostics,clip_duration=15,numero_clip=3,profile="auto
         try: score,start=float(item[0]),float(item[1])
         except Exception: continue
         is_injected=any(abs(start-x)<0.001 for x in injected_starts)
-        candidates.append(_candidate(score,start,diagnostics,clip_duration,events,genre,profile,semantic_injected=is_injected))
+        candidates.append(_candidate(
+            score,start,diagnostics,clip_duration,events,genre,profile,
+            semantic_injected=is_injected,learning_model=learning_model
+        ))
     candidates.sort(key=lambda x:(x["score"],x["confidence"],x["base_score"]),reverse=True)
     want=max(1,int(numero_clip or 3)); selected=[]
     while candidates and len(selected)<want:
@@ -220,13 +228,17 @@ def rerank_moments(pool,diagnostics,clip_duration=15,numero_clip=3,profile="auto
         clip_duration=clip_duration,genre=genre,profile=profile,limit=3
     )
     meta={
-        "engine":"game-brain-v124-ai-director",
+        "engine":"game-brain-v127-learning",
         "pool_size":len(pool or []),
         "augmented_pool_size":len(augmented_pool),
         "semantic_injected_count":len(injected),
         "semantic_injected":injected,
         "selected_count":len(chosen),
         "genre":str(genre or "Auto"),"profile":str(profile or "auto"),
+        "learning":{
+            "engine":str((learning_model or {}).get("engine") or "v127-learning-ranker"),
+            "total_feedback":int((learning_model or {}).get("total_feedback",0) or 0),
+        },
         "selected":[{
             "rank":i+1,"start":round(c["start"],3),"brain_score":round(c["score"],5),
             "base_score":round(c["base_score"],5),"confidence":round(c["confidence"],4),
@@ -242,6 +254,7 @@ def rerank_moments(pool,diagnostics,clip_duration=15,numero_clip=3,profile="auto
             "hud_elements":list(c.get("hud_elements") or []),
             "caption_safe_y":round(_num(c.get("caption_safe_y"),78.0),2),
             "subject":str(c.get("subject") or ""),
+            "learning_multiplier":round(_num(c.get("learning_multiplier"),1.0),6),
             "director_plan":dict(c.get("director_plan") or {}),
         } for i,c in enumerate(director_selected)],
         "alternates":[{
