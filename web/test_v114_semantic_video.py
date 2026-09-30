@@ -90,7 +90,7 @@ for marker in (
     'direct_mode=(processing_mode=="static" and input_method=="inline")',
     'if processing_mode=="agentic":',
     'kwargs["response_format"]=_response_format(max_events)',
-    '"-generate-v122" if used_generate_content else "-agentic-stream-v122"',
+    "used_generate_content",
 ):
     if marker not in semantic:
         raise SystemExit("V121 compatibility marker missing: "+marker)
@@ -114,8 +114,8 @@ for marker in (
     'response_mime_type="application/json"',
     "response_json_schema=_schema(max_events)",
     'processing_mode=="static"',
-    '"-generate-v122"',
-    '"-agentic-stream-v122"',
+    "selected_generate",
+    "selected_model",
 ):
     if marker not in semantic:
         raise SystemExit("V121 native Generate Content video marker missing: "+marker)
