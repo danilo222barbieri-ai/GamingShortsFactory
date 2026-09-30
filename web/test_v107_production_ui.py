@@ -61,6 +61,13 @@ if "gsf-v107-final-publish-v3" in s or "new MutationObserver(tune)" in s:
     raise SystemExit("FAIL final publication still injects executable JS into markdown")
 if "v69_social_facebook" not in s or "gsf_final_download_after_social" not in s:
     raise SystemExit("FAIL native Facebook/download final layout missing")
+if s.count("PUBBLICA O SCARICA") != 1:
+    raise SystemExit("FAIL final action title must appear exactly once")
+if "gsf-major-publish-download" in s:
+    raise SystemExit("FAIL duplicate lower PUBBLICA O SCARICA milestone survived")
+for _ad_key in ("v1053_ad_before_final","v1054_ad_after_final_action","v1054_ad_after_final_result"):
+    if _ad_key in s and not re.search(r"\.st-key-"+re.escape(_ad_key)+r"\s*[,\{][\s\S]{0,220}?display\s*:\s*none",s):
+        raise SystemExit("FAIL final publication ad is still visible: "+_ad_key)
 
 for forbidden in [
     "_GSF_REAL_DEMO",

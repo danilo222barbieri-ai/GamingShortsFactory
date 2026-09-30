@@ -1083,10 +1083,7 @@ s=s.replace(_gsf_social_row_old,_gsf_social_row_new,1)
 _gsf_social_selected_anchor='''                _selected_social = st.session_state.get("social_selected_v59")
                 _social_columns = st.columns(4, gap="small")
 '''
-_gsf_social_selected_new='''                with st.container(key="gsf-major-publish-download"):
-                    st.button("PUBBLICA O SCARICA",use_container_width=True,key="gsf_publish_download_display")
-                st.markdown('<div class="gsf-final-ready">Short finale pronto</div>',unsafe_allow_html=True)
-                _selected_social = st.session_state.get("social_selected_v59")
+_gsf_social_selected_new='''                _selected_social = st.session_state.get("social_selected_v59")
                 _social_columns = st.columns(4, gap="small")
 '''
 if _gsf_social_selected_anchor not in s:
@@ -1119,6 +1116,77 @@ if _gsf_auth_anchor not in s:
     raise RuntimeError("V107 Facebook composer insertion anchor missing")
 s=s.replace(_gsf_auth_anchor,_gsf_facebook_panel+_gsf_auth_anchor,1)
 
+# Collapse the legacy final action row to ONE full-width button.
+# Keep its existing visual treatment, rename it PUBBLICA O SCARICA, and remove
+# the old sibling SCARICA. The only download stays after the social composer.
+_gsf_action_tree=_gsf_patch_ast.parse(s)
+_gsf_action_lines=s.splitlines(keepends=True)
+_gsf_action_assign=[]
+_gsf_action_publish=[]
+_gsf_action_download=[]
+for _node in _gsf_patch_ast.walk(_gsf_action_tree):
+    if isinstance(_node,_gsf_patch_ast.Assign):
+        _names=set()
+        for _target in _node.targets:
+            for _x in _gsf_patch_ast.walk(_target):
+                if isinstance(_x,_gsf_patch_ast.Name):
+                    _names.add(_x.id)
+        if "_publish_col" in _names and "_download_col" in _names:
+            _gsf_action_assign.append(_node)
+    if isinstance(_node,_gsf_patch_ast.With):
+        _ctx_names=[]
+        for _item in _node.items:
+            _ctx=_item.context_expr
+            if isinstance(_ctx,_gsf_patch_ast.Name):
+                _ctx_names.append(_ctx.id)
+        _seg=_gsf_patch_ast.get_source_segment(s,_node) or ""
+        if "_publish_col" in _ctx_names and "show_social_publish_v54" in _seg:
+            _gsf_action_publish.append(_node)
+        if "_download_col" in _ctx_names and "SCARICA" in _seg:
+            _gsf_action_download.append(_node)
+if len(_gsf_action_assign)!=1 or len(_gsf_action_publish)!=1 or len(_gsf_action_download)!=1:
+    raise RuntimeError(
+        "V107 legacy final action shape mismatch "
+        +str((len(_gsf_action_assign),len(_gsf_action_publish),len(_gsf_action_download)))
+    )
+
+_gsf_pub_with=_gsf_action_publish[0]
+_gsf_pub_calls=[]
+for _call in _gsf_patch_ast.walk(_gsf_pub_with):
+    if not isinstance(_call,_gsf_patch_ast.Call):
+        continue
+    _fn=_call.func
+    if not (isinstance(_fn,_gsf_patch_ast.Attribute) and _fn.attr=="button"):
+        continue
+    if not _call.args or not isinstance(_call.args[0],_gsf_patch_ast.Constant):
+        continue
+    _label=str(_call.args[0].value or "")
+    if "PUBBLICA" in _label.upper():
+        _gsf_pub_calls.append(_call)
+if len(_gsf_pub_calls)!=1:
+    raise RuntimeError("V107 expected one legacy PUBBLICA launcher, found "+str(len(_gsf_pub_calls)))
+_gsf_pub_calls[0].args[0]=_gsf_patch_ast.Constant(value="PUBBLICA O SCARICA")
+_gsf_patch_ast.fix_missing_locations(_gsf_pub_with)
+
+_gsf_repls=[]
+_gsf_assign=_gsf_action_assign[0]
+_gsf_assign_line=_gsf_action_lines[_gsf_assign.lineno-1]
+_gsf_assign_indent=_gsf_assign_line[:len(_gsf_assign_line)-len(_gsf_assign_line.lstrip())]
+_gsf_repls.append((_gsf_assign.lineno-1,_gsf_assign.end_lineno,_gsf_assign_indent+"with st.container(key=\"gsf-final-top-action-row\"):\n"+_gsf_assign_indent+"    _publish_col=st.container()\n"))
+
+_gsf_dl=_gsf_action_download[0]
+_gsf_repls.append((_gsf_dl.lineno-1,_gsf_dl.end_lineno,""))
+
+_gsf_pub_line=_gsf_action_lines[_gsf_pub_with.lineno-1]
+_gsf_pub_indent=_gsf_pub_line[:len(_gsf_pub_line)-len(_gsf_pub_line.lstrip())]
+_gsf_pub_src=_gsf_patch_ast.unparse(_gsf_pub_with)
+_gsf_pub_src="\n".join((_gsf_pub_indent+_ln if _ln else _ln) for _ln in _gsf_pub_src.splitlines())+"\n"
+_gsf_repls.append((_gsf_pub_with.lineno-1,_gsf_pub_with.end_lineno,_gsf_pub_src))
+
+for _a,_b,_new in sorted(_gsf_repls,key=lambda x:x[0],reverse=True):
+    _gsf_action_lines[_a:_b]=[_new]
+s="".join(_gsf_action_lines)
+
 # Add one final download button at the end of the always-open social block.
 _gsf_pub_tree=_gsf_patch_ast.parse(s)
 _gsf_pub_lines=s.splitlines(keepends=True)
@@ -1145,26 +1213,13 @@ s="".join(_gsf_pub_lines)
 _final_publish_v4 = r'''
 st.markdown("""
 <style id="gsf-v107-final-publish-v4">
-.gsf-final-ready{
-  margin:0 auto 10px;
-  text-align:center;
-  color:#658091;
-  font-size:11px;
-  font-weight:750;
+.st-key-gsf-final-top-action-row{
+  width:100% !important;
 }
-.st-key-gsf-major-publish-download button,
-[class*="st-key-gsf-major-publish-download"] button{
-  min-height:56px !important;
-  border-radius:17px !important;
-  border:1px solid rgba(255,255,255,.34) !important;
-  background:linear-gradient(135deg,#8B67E8 0%,#6557D9 100%) !important;
-  color:#fff !important;
-  box-shadow:0 12px 28px rgba(104,84,205,.28) !important;
-  font-size:15px !important;
-  font-weight:900 !important;
-  letter-spacing:.045em !important;
-  pointer-events:none !important;
-  cursor:default !important;
+.st-key-gsf-final-top-action-row [data-testid="stHorizontalBlock"],
+.st-key-gsf-final-top-action-row [data-testid="column"]{
+  width:100% !important;
+  flex:1 1 100% !important;
 }
 .st-key-v69_social_facebook button,
 .st-key-v69_social_instagram button,
@@ -1183,10 +1238,35 @@ st.markdown("""
   justify-content:center !important;
   gap:4px !important;
 }
-.st-key-v69_social_facebook button:before{content:"f";font:900 27px/1 Arial,sans-serif;color:#4267A9}
-.st-key-v69_social_instagram button:before{content:"◎";font:900 28px/1 Arial,sans-serif;color:#A64C8B}
-.st-key-v69_social_youtube button:before{content:"▶";font:900 23px/1 Arial,sans-serif;color:#D84848}
-.st-key-v69_social_tiktok button:before{content:"♪";font:900 28px/1 Arial,sans-serif;color:#263C49}
+.st-key-v69_social_facebook button:before,
+.st-key-v69_social_instagram button:before,
+.st-key-v69_social_youtube button:before,
+.st-key-v69_social_tiktok button:before{
+  content:"";
+  width:29px;
+  height:29px;
+  display:block;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:contain;
+  flex:0 0 29px;
+}
+.st-key-v69_social_facebook button:before{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzE4NzdGMiIgZD0iTTEzLjcgMjJ2LTloM2wuNS0zLjVoLTMuNVY3LjNjMC0xIC4zLTEuNyAxLjgtMS43aDEuOVYyLjVjLS4zIDAtMS41LS4xLTIuOC0uMS0yLjggMC00LjcgMS43LTQuNyA0Ljh2Mi43SDd2My41aDIuOXY5aDMuOHoiLz48L3N2Zz4=")}
+.st-key-v69_social_instagram button:before{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjEiIHgyPSIxIiB5Mj0iMCI+PHN0b3Agc3RvcC1jb2xvcj0iI0ZFREE3NSIvPjxzdG9wIG9mZnNldD0iLjM1IiBzdG9wLWNvbG9yPSIjRkE3RTFFIi8+PHN0b3Agb2Zmc2V0PSIuNjUiIHN0b3AtY29sb3I9IiNENjI5NzYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM0RjVCRDUiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBmaWxsPSJ1cmwoI2cpIiBkPSJNNy40IDJoOS4yQTUuNCA1LjQgMCAwIDEgMjIgNy40djkuMmE1LjQgNS40IDAgMCAxLTUuNCA1LjRINy40QTUuNCA1LjQgMCAwIDEgMiAxNi42VjcuNEE1LjQgNS40IDAgMCAxIDcuNCAyWm0wIDJBMy40IDMuNCAwIDAgMCA0IDcuNHY5LjJBMy40IDMuNCAwIDAgMCA3LjQgMjBoOS4yYTMuNCAzLjQgMCAwIDAgMy40LTMuNFY3LjRBMy40IDMuNCAwIDAgMCAxNi42IDRINy40Wm05LjYgMS41YTEuMjUgMS4yNSAwIDEgMSAwIDIuNSAxLjI1IDEuMjUgMCAwIDEgMC0yLjVaTTEyIDdhNSA1IDAgMSAxIDAgMTAgNSA1IDAgMCAxIDAtMTBabTAgMmEzIDMgMCAxIDAgMCA2IDMgMyAwIDAgMCAwLTZaIi8+PC9zdmc+")}
+.st-key-v69_social_youtube button:before{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI0ZGMDAwMCIgZD0iTTIzIDEyczAtMy43LS41LTUuNGEzIDMgMCAwIDAtMi4xLTIuMUMxOC43IDQgMTIgNCAxMiA0cy02LjcgMC04LjQuNWEzIDMgMCAwIDAtMi4xIDIuMUMxIDguMyAxIDEyIDEgMTJzMCAzLjcuNSA1LjRhMyAzIDAgMCAwIDIuMSAyLjFDNS4zIDIwIDEyIDIwIDEyIDIwczYuNyAwIDguNC0uNWEzIDMgMCAwIDAgMi4xLTIuMUMyMyAxNS43IDIzIDEyIDIzIDEyWm0tMTMuMiAzLjRWOC42bDYgMy40LTYgMy40WiIvPjwvc3ZnPg==")}
+.st-key-v69_social_tiktok button:before{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzExMTExMSIgZD0iTTE1LjYgMmMuNCAyLjMgMS44IDMuNyA0LjEgMy45djMuM2E5LjEgOS4xIDAgMCAxLTQuMS0xdjYuNGE2LjYgNi42IDAgMSAxLTUuNy02LjV2My40YTMuMiAzLjIgMCAxIDAgMi40IDMuMVYyaDMuM1oiLz48L3N2Zz4=")}
+.st-key-v69_social_facebook button p,
+.st-key-v69_social_instagram button p,
+.st-key-v69_social_youtube button p,
+.st-key-v69_social_tiktok button p,
+.st-key-v69_social_facebook button span,
+.st-key-v69_social_instagram button span,
+.st-key-v69_social_youtube button span,
+.st-key-v69_social_tiktok button span{
+  color:#29465b !important;
+  opacity:1 !important;
+  font-weight:850 !important;
+}
 [class*="st-key-v1055_social_composer_"]{
   box-sizing:border-box !important;
   width:100% !important;
@@ -1212,6 +1292,8 @@ st.markdown("""
 }
 .st-key-download_final_v54,
 .st-key-download_final_v54_fallback,
+.st-key-v1053_ad_before_final,
+.st-key-v1054_ad_after_final_action,
 .st-key-v1054_ad_after_final_result{
   display:none !important;
 }
