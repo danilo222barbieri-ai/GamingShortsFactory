@@ -1788,8 +1788,11 @@ _gsf_first_body_line = _gsf_manual_lines[_gsf_body_start]
 _gsf_indent = _gsf_first_body_line[:len(_gsf_first_body_line)-len(_gsf_first_body_line.lstrip())]
 
 _gsf_new_manual_body = [
-    _gsf_indent + 'with st.container(key="v1055_ad_manual_before_editor"):\n',
-    _gsf_indent + '    st.markdown(_gsf_v1057_ad_markup(2),unsafe_allow_html=True)\n',
+    _gsf_indent + 'try:\n',
+    _gsf_indent + '    with st.container(key="v1055_ad_manual_before_editor"):\n',
+    _gsf_indent + '        st.markdown(_gsf_v1057_ad_markup(2),unsafe_allow_html=True)\n',
+    _gsf_indent + 'except Exception as _gsf_manual_ad_exc:\n',
+    _gsf_indent + '    print("GSF_MANUAL_AD_SKIP",repr(str(_gsf_manual_ad_exc)),flush=True)\n',
     _gsf_indent + 'st.markdown(\'<div style="height:26px" aria-hidden="true"></div>\',unsafe_allow_html=True)\n',
     _gsf_indent + 'with st.container(key="gsf-major-personalize"):\n',
     _gsf_indent + '    st.markdown("<div class=\\\"gsf-personalize-title\\\">PERSONALIZZA IL TUO GAMEPLAY</div>",unsafe_allow_html=True)\n',
@@ -1805,8 +1808,8 @@ _gsf_new_manual_body = [
     _gsf_indent + '        editor_2027_clip_bounds as _gsf_editor_2027_clip_bounds,\n',
     _gsf_indent + '        editor_2027_render_kwargs as _gsf_editor_2027_render_kwargs,\n',
     _gsf_indent + '    )\n',
-    _gsf_indent + '    _gsf_manual_path=str(st.session_state.get("gsf_source_path") or "")\n',
-    _gsf_indent + '    if not _gsf_manual_path or not _gsf_manual_os.path.isfile(_gsf_manual_path):\n',
+    _gsf_indent + '    _gsf_manual_path=str(st.session_state.get("gsf_editor_source_path") or st.session_state.get("gsf_source_path") or "")\n',
+    _gsf_indent + '    if (not _gsf_manual_path or not _gsf_manual_os.path.isfile(_gsf_manual_path)) and not GSF_WEB_MODE:\n',
     _gsf_indent + '        try:\n',
     _gsf_indent + '            _gsf_manual_bytes=video.getvalue() if hasattr(video,"getvalue") else b""\n',
     _gsf_indent + '            _gsf_manual_path=_gsf_bytes_to_preview(_gsf_manual_bytes,"manual_scene_source") if _gsf_manual_bytes else ""\n',
@@ -1838,7 +1841,7 @@ _gsf_new_manual_body = [
     _gsf_indent + '            )\n',
     _gsf_indent + '            _gsf_manual_recipe=_gsf_recipe_selected(\n',
     _gsf_indent + '                "main_editor",_gsf_manual_start,_gsf_manual_render_duration,str(_gsf_manual_path),\n',
-    _gsf_indent + '                master_token=_gsf_upload_master_token(video),\n',
+    _gsf_indent + '                master_token=(str(_gsf_manual_os.path.getsize(_gsf_manual_path))+":"+str(int(_gsf_manual_os.path.getmtime(_gsf_manual_path)))) if _gsf_manual_os.path.isfile(_gsf_manual_path) else "",\n',
     _gsf_indent + '                subtitles_enabled=bool(_gsf_manual_render_kwargs.get("subtitles_enabled",True)),\n',
     _gsf_indent + '                render_kwargs=_gsf_manual_render_kwargs,\n',
     _gsf_indent + '                editor_2027_state=dict(_gsf_manual_editor_state),\n',
@@ -1862,14 +1865,42 @@ _gsf_new_manual_body = [
     _gsf_indent + '    else:\n',
     _gsf_indent + '        st.warning("Video non disponibile nel Game Editor.")\n',
     _gsf_indent + 'except Exception as _gsf_manual_editor_exc:\n',
-    _gsf_indent + '    st.error("Game Editor non disponibile: "+str(_gsf_manual_editor_exc))\n',
-    _gsf_indent + 'with st.container(key="v1055_ad_manual_after_editor"):\n',
-    _gsf_indent + '    st.markdown(_gsf_v1057_ad_markup(3),unsafe_allow_html=True)\n',
+    _gsf_indent + '    print("GSF_MANUAL_EDITOR_ERROR",repr(str(_gsf_manual_editor_exc)),flush=True)\n',
+    _gsf_indent + '    st.warning("Game Editor da ricaricare. Riprova Scegli scena.")\n',
+    _gsf_indent + 'try:\n',
+    _gsf_indent + '    with st.container(key="v1055_ad_manual_after_editor"):\n',
+    _gsf_indent + '        st.markdown(_gsf_v1057_ad_markup(3),unsafe_allow_html=True)\n',
+    _gsf_indent + 'except Exception as _gsf_manual_ad2_exc:\n',
+    _gsf_indent + '    print("GSF_MANUAL_AD2_SKIP",repr(str(_gsf_manual_ad2_exc)),flush=True)\n',
 ]
 
 _gsf_manual_lines[_gsf_body_start:_gsf_body_end] = _gsf_new_manual_body
 s = "".join(_gsf_manual_lines)
 print("GSF Manual/Scegli scena routed to Editor 2027")
+
+# Final render completion: refresh exactly once after a successful final MP4 is stored.
+_gsf_final_tree=_gsf_patch_ast.parse(s)
+_gsf_final_lines=s.splitlines(keepends=True)
+_gsf_final_targets=[]
+for _gsf_node in _gsf_patch_ast.walk(_gsf_final_tree):
+    if not isinstance(_gsf_node,_gsf_patch_ast.If):
+        continue
+    _test=_gsf_patch_ast.get_source_segment(s,_gsf_node.test) or ""
+    _body=_gsf_patch_ast.get_source_segment(s,_gsf_node) or ""
+    if "_v1054_create_final_clicked" in _test and "_final_dir" in _body and "gsf_final_v54_" in _body:
+        _gsf_final_targets.append(_gsf_node)
+if len(_gsf_final_targets)!=1:
+    raise RuntimeError("V107 expected one final render gate, found "+str(len(_gsf_final_targets)))
+_gsf_final_node=_gsf_final_targets[0]
+_gsf_final_line=_gsf_final_lines[_gsf_final_node.lineno-1]
+_gsf_final_indent=_gsf_final_line[:len(_gsf_final_line)-len(_gsf_final_line.lstrip())]
+_gsf_final_refresh=[
+    _gsf_final_indent+'if _v1054_create_final_clicked and (st.session_state.get("publication_ready") or st.session_state.get("publication_final_bytes")):\n',
+    _gsf_final_indent+'    print("GSF_FINAL_RENDER_READY",flush=True)\n',
+    _gsf_final_indent+'    st.rerun()\n',
+]
+_gsf_final_lines[_gsf_final_node.end_lineno:_gsf_final_node.end_lineno]=_gsf_final_refresh
+s="".join(_gsf_final_lines)
 
 # Remove markdown calls that render only blank/literal newline markers.
 _gsf_nl_tree=_gsf_patch_ast.parse(s)
