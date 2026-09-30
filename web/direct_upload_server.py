@@ -382,6 +382,31 @@ def _social_sid(handler):
     return _safe_id(handler.headers.get("X-GSF-Session-ID"))
 
 
+def _editor_media_current(handler,sid):
+    sid=_safe_id(sid)
+    if not sid:
+        _json(handler,400,{"ok":False,"error":"invalid session"})
+        return
+    session_root=(ROOT/"sessions"/sid).resolve()
+    marker=session_root/"editor2027_current.txt"
+    try:
+        media=Path(marker.read_text(encoding="utf-8").strip()).resolve()
+        media.relative_to(session_root)
+        if not media.is_file():
+            raise FileNotFoundError(str(media))
+        rel=media.relative_to(session_root)
+        media_url="/media/"+urllib.parse.quote(sid,safe="")+"/"+"/".join(
+            urllib.parse.quote(part,safe="") for part in rel.parts
+        )
+        stat=media.stat()
+        stamp=str(stat.st_size)+"-"+str(int(stat.st_mtime))
+        print("GSF_EDITOR_MEDIA_REDIRECT",sid,media_url,flush=True)
+        _redirect(handler,media_url+"?v="+urllib.parse.quote(stamp,safe=""))
+    except Exception as exc:
+        print("GSF_EDITOR_MEDIA_MISSING",sid,repr(str(exc)),flush=True)
+        _json(handler,404,{"ok":False,"error":"editor media unavailable"})
+
+
 def _tiktok_user_key(sid):
     sid=_safe_id(sid)
     return f"social-connections/{sid}/tiktok.json" if sid else ""
@@ -1571,6 +1596,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if clean=="/manifest.webmanifest":
             _send_bytes(self,200,_app_manifest_bytes(),"application/manifest+json; charset=utf-8","public, max-age=3600")
+            return
+        if clean=="/editor-media/current":
+            _editor_media_current(self,_social_sid(self))
             return
         if clean=="/account":
             sid=_social_sid(self)

@@ -81,26 +81,27 @@ def _editor_video_url(video_path):
     if not p.is_file():
         return ""
 
-    # Railway/web: never push a whole gameplay file through Streamlit's
-    # component JSON. That duplicates tens of MB in RAM and, for iPhone MOV,
-    # also gives Chromium a QuickTime/HEVC data URI it may not decode.
-    # Files under the anonymous session media directory are already exposed by
-    # Nginx with byte-range support, so stream them directly from the iframe.
+    # Web/Railway: register the exact file for this browser session. The iframe
+    # then resolves it through /editor-media/current, independent of whether
+    # Streamlit delivers its first custom-component render message.
     try:
         sessions_root = (
             Path(os.environ.get("GSF_RUNTIME_ROOT", "/tmp/gsf-runtime"))
             / "sessions"
         ).resolve()
-        rel = p.resolve().relative_to(sessions_root)
-        parts = rel.parts
-        if len(parts) >= 3:
-            sid = quote(parts[0], safe="")
-            media_path = "/".join(quote(x, safe="") for x in parts[1:])
-            return f"/media/{sid}/{media_path}"
+        resolved = p.resolve()
+        rel = resolved.relative_to(sessions_root)
+        if len(rel.parts) >= 3:
+            session_root = sessions_root / rel.parts[0]
+            marker = session_root / "editor2027_current.txt"
+            marker.write_text(str(resolved), encoding="utf-8")
+            stat = resolved.stat()
+            fingerprint = f"{stat.st_size}-{int(stat.st_mtime)}"
+            return "/editor-media/current?v=" + quote(fingerprint, safe="")
     except Exception:
         pass
 
-    # Local desktop/dev fallback where Nginx /media is not present.
+    # Local desktop/dev fallback.
     mime = mimetypes.guess_type(str(p))[0] or "video/mp4"
     raw = base64.b64encode(p.read_bytes()).decode("ascii")
     return f"data:{mime};base64,{raw}"

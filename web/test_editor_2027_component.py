@@ -32,8 +32,10 @@ if "_editor_component_for" not in wrapper or '_EDITOR_2027_COMPONENT = component
     raise SystemExit("FAIL Editor 2027 does not use one stable static component")
 if 'f"gsf_editor_2027_{digest}"' in wrapper or "editor2027_components" in wrapper:
     raise SystemExit("FAIL Editor 2027 still declares dynamic per-video component assets")
-if 'return f"/media/{sid}/{media_path}"' not in wrapper:
-    raise SystemExit("FAIL Editor 2027 web source is not streamed through /media")
+if 'return "/editor-media/current?v=" + quote(fingerprint, safe="")' not in wrapper:
+    raise SystemExit("FAIL Editor 2027 web source is not registered through current-media resolver")
+if "/editor-media/current?ts=" not in frontend:
+    raise SystemExit("FAIL Editor 2027 iframe cannot self-load current media")
 if "base64.b64encode(p.read_bytes())" not in wrapper:
     raise SystemExit("FAIL Editor 2027 local fallback is missing")
 if "editor2027_manual_" not in app or "crea_anteprima(_gsf_manual_path,_gsf_manual_proxy" not in app:
@@ -42,8 +44,8 @@ if "_gsf_manual_editor_media" not in app:
     raise SystemExit("FAIL Scegli scena does not feed the browser-safe proxy to Editor 2027")
 if "\\n" in frontend:
     raise SystemExit("FAIL Editor 2027 frontend contains visible literal newline markers")
-if "gsf-personalize-major" not in app:
-    raise SystemExit("FAIL Scegli scena heading is not inside the approved milestone bar")
+if 'st.button("PERSONALIZZA IL TUO GAMEPLAY"' not in app or "gsf-major-personalize" not in app:
+    raise SystemExit("FAIL PERSONALIZZA does not use the same native CTA button structure")
 if "Anteprima sorgente caricata nascosta per UX" not in app:
     raise SystemExit("FAIL uploaded-source preview is not hidden in production")
 if "render_kwargs=_gsf_manual_render_kwargs" not in app:

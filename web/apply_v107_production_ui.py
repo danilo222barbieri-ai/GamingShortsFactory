@@ -465,6 +465,8 @@ _major_action_css=r'''
     border-left:1px solid #D6E7F2;
     border-top:1px solid #D6E7F2;
 }
+.st-key-gsf-major-personalize button,
+[class*="st-key-gsf-major-personalize"] button,
 [class*="st-key-gsf-major-create-ai"] button,
 [class*="st-key-gsf-major-game-editor_"] button,
 [class*="st-key-gsf-major-create-short"] button{
@@ -477,6 +479,8 @@ _major_action_css=r'''
     letter-spacing:.045em !important;
     transition:transform .16s ease,box-shadow .16s ease,filter .16s ease !important;
 }
+.st-key-gsf-major-personalize button,
+[class*="st-key-gsf-major-personalize"] button,
 [class*="st-key-gsf-major-create-ai"] button,
 [class*="st-key-gsf-major-game-editor_"] button,
 [class*="st-key-gsf-major-create-short"] button{
@@ -492,6 +496,8 @@ _major_action_css=r'''
 }
 @media(max-width:750px){
     .gsf-major-note{font-size:11px;padding:9px 12px;margin-bottom:15px}
+    .st-key-gsf-major-personalize button,
+    [class*="st-key-gsf-major-personalize"] button,
     [class*="st-key-gsf-major-create-ai"] button,
     [class*="st-key-gsf-major-game-editor_"] button,
     [class*="st-key-gsf-major-create-short"] button{
@@ -1823,6 +1829,8 @@ _major_cta_final_override = r'''
 st.markdown("""
 <style id="gsf-major-actions-final-override">
 .st-key-gsf-major-create-ai button,
+.st-key-gsf-major-personalize button,
+[class*="st-key-gsf-major-personalize"] button,
 [class*="st-key-gsf-major-create-ai"] button,
 .st-key-gsf-major-personalize button,
 [class*="st-key-gsf-major-personalize"] button,
@@ -1869,6 +1877,8 @@ st.markdown("""
 }
 @media(max-width:750px){
     .st-key-gsf-major-create-ai button,
+    .st-key-gsf-major-personalize button,
+    [class*="st-key-gsf-major-personalize"] button,
     [class*="st-key-gsf-major-create-ai"] button,
     [class*="st-key-gsf-major-game-editor_"] button,
     .st-key-gsf-major-create-short button,
@@ -1896,36 +1906,10 @@ s = s.rstrip() + "\n\n" + _major_cta_final_override.lstrip()
 _manual_editor_heading_css = r'''
 st.markdown("""
 <style id="gsf-manual-editor-heading-style">
-.gsf-personalize-major{
-    box-sizing:border-box !important;
-    width:100% !important;
-    height:56px !important;
-    min-height:56px !important;
-    max-height:56px !important;
-    display:flex !important;
-    align-items:center !important;
-    justify-content:center !important;
-    margin:0 auto 16px !important;
-    padding:0 18px !important;
-    border-radius:17px !important;
-    border:1px solid rgba(255,255,255,.34) !important;
-    background:linear-gradient(135deg,#8B67E8 0%,#6557D9 100%) !important;
-    color:#FFFFFF !important;
-    box-shadow:0 12px 28px rgba(104,84,205,.28) !important;
-    font-family:var(--gsf-ui-font,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif) !important;
-    font-size:15px !important;
-    font-weight:900 !important;
-    line-height:1 !important;
-    letter-spacing:.045em !important;
-    text-align:center !important;
-}
-@media(max-width:750px){
-    .gsf-personalize-major{
-        height:52px;
-        min-height:52px;
-        max-height:52px;
-        font-size:13px;
-    }
+.st-key-gsf-major-personalize button,
+[class*="st-key-gsf-major-personalize"] button{
+    pointer-events:none !important;
+    cursor:default !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -1980,7 +1964,7 @@ _gsf_new_manual_body = [
     _gsf_indent + '    print("GSF_MANUAL_AD_SKIP",repr(str(_gsf_manual_ad_exc)),flush=True)\n',
     _gsf_indent + 'st.markdown(\'<div style="height:26px" aria-hidden="true"></div>\',unsafe_allow_html=True)\n',
     _gsf_indent + 'with st.container(key="gsf-major-personalize"):\n',
-    _gsf_indent + '    st.markdown("<div class=\\\"gsf-personalize-major\\\">PERSONALIZZA IL TUO GAMEPLAY</div>",unsafe_allow_html=True)\n',
+    _gsf_indent + '    st.button("PERSONALIZZA IL TUO GAMEPLAY",use_container_width=True,key="gsf_personalize_display")\n',
     _gsf_indent + 'try:\n',
     _gsf_indent + '    import os as _gsf_manual_os\n',
     _gsf_indent + '    import sys as _gsf_manual_sys\n',

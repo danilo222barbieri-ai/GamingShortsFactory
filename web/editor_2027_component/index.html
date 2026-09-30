@@ -489,6 +489,14 @@
  });
  sendMessage(COMPONENT_READY,{apiVersion:1});
  window.setTimeout(()=>setFrameHeight(hostHeight),0);
+ window.setTimeout(()=>{
+   if(!hostVideoUrl){
+     hostVideoUrl='/editor-media/current?ts='+Date.now();
+     video.src=hostVideoUrl;
+     video.preload='auto';
+     video.load();
+   }
+ },80);
 
  const cloneState=()=>JSON.parse(JSON.stringify(state));
  function commit(){
