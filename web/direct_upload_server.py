@@ -347,13 +347,76 @@ def _push_client_bytes():
   const toU8=(s)=>{const pad="=".repeat((4-s.length%4)%4);const raw=atob((s+pad).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));};
   const subscribe=async(promptUser)=>{if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window))return false;const reg=await navigator.serviceWorker.register("/gsf-sw.js?v=1",{scope:"/"});let permission=Notification.permission;if(permission==="default"&&promptUser)permission=await Notification.requestPermission();if(permission!=="granted")return false;const key=await fetch("/push/public-key",{cache:"no-store"}).then(r=>r.json()).then(x=>x.public_key||"");if(!key)return false;let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:toU8(key)});await fetch("/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sub.toJSON())});return true;};
   window.GSFPush={enable:()=>subscribe(true),ensure:()=>subscribe(false)};
-  let uploadActive=false,lastRenderStatus="";
-  const ensureHud=()=>{let el=document.getElementById("gsf-activity-hud");if(el)return el;const style=document.createElement("style");style.textContent="#gsf-activity-hud{position:fixed;right:16px;bottom:18px;z-index:2147482998;display:none;align-items:center;gap:10px;max-width:min(360px,calc(100vw - 30px));padding:11px 14px;border-radius:16px;border:1px solid rgba(185,215,233,.9);background:rgba(255,255,255,.94);backdrop-filter:blur(14px);box-shadow:0 12px 30px rgba(45,83,110,.18);color:#446b84;font:800 11px/1.25 ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}#gsf-activity-hud .spin{width:17px;height:17px;border:2px solid #d5e8f3;border-top-color:#735ee2;border-radius:50%;animation:gsfSpin .8s linear infinite;flex:0 0 17px}#gsf-activity-hud.done .spin{animation:none;border:0;width:18px;height:18px}#gsf-activity-hud.done .spin:before{content:'✓';display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#daf3e7;color:#35815f;font-size:12px}@keyframes gsfSpin{to{transform:rotate(360deg)}}@media(max-width:600px){#gsf-activity-hud{right:10px;left:10px;bottom:76px;max-width:none}}";document.head.appendChild(style);el=document.createElement("div");el.id="gsf-activity-hud";el.innerHTML='<span class="spin"></span><span class="txt"></span>';document.body.appendChild(el);return el;};
-  const showHud=(txt,done=false)=>{const el=ensureHud();el.classList.toggle("done",!!done);el.querySelector(".txt").textContent=txt;el.style.display="flex";};const hideHud=()=>{const el=document.getElementById("gsf-activity-hud");if(el)el.style.display="none";};
-  window.addEventListener("message",(event)=>{const d=event.data||{};if(d.type!=="gsf-upload")return;if(d.state==="running"){uploadActive=true;showHud("Caricamento video in corso · "+Number(d.progress||0)+"%");}else if(d.state==="done"){uploadActive=false;showHud("Video caricato ✓",true);setTimeout(()=>{if(lastRenderStatus!=="running")hideHud();},1600);}else if(d.state==="error"){uploadActive=false;showHud("Upload interrotto · riprova",true);setTimeout(()=>{if(lastRenderStatus!=="running")hideHud();},2200);}});
-  window.addEventListener("beforeunload",(event)=>{if(!uploadActive)return;event.preventDefault();event.returnValue="";});
-  const pollJob=async()=>{try{const j=await fetch("/job/status",{cache:"no-store"}).then(r=>r.json());const status=String(j.render_status||"");lastRenderStatus=status;if(status==="running")showHud("Creazione Short in corso · puoi continuare a usare l’app");else if(status==="ready"&&!uploadActive){showHud("Short pronto · apri lo Share Hub",true);setTimeout(()=>{if(!uploadActive)hideHud();},2500);}else if(status==="failed"&&!uploadActive){showHud("Creazione Short interrotta · riprova",true);setTimeout(()=>{if(!uploadActive)hideHud();},3000);}else if(!uploadActive)hideHud();}catch(e){}};setInterval(pollJob,1500);pollJob();
-  document.addEventListener("click",(event)=>{const b=event.target&&event.target.closest?event.target.closest("button"):null;if(!b)return;const label=(b.innerText||b.textContent||"").toUpperCase();if(label.includes("CREA SHORT"))subscribe(true).catch(()=>{});},true);
+
+  let uploadActive=false;
+  let lastRenderStatus="";
+  const autoOpenStorageKey="gsf-share-auto-open-token";
+
+  window.addEventListener("message",(event)=>{
+    const d=event.data||{};
+    if(d.type!=="gsf-upload")return;
+    if(d.state==="running")uploadActive=true;
+    else if(d.state==="done"||d.state==="error")uploadActive=false;
+  });
+
+  // Keep the native leave-page warning only while a real upload is active.
+  // Switching apps/backgrounding on iOS does not trigger this path.
+  window.addEventListener("beforeunload",(event)=>{
+    if(!uploadActive)return;
+    event.preventDefault();
+    event.returnValue="";
+  });
+
+  const openShareHub=()=>{
+    const buttons=[...document.querySelectorAll("button")];
+    const target=buttons.find((b)=>{
+      const label=(b.innerText||b.textContent||"").trim().toUpperCase();
+      return label.includes("CONDIVIDI O SCARICA")||label.includes("APRI SHARE HUB");
+    });
+    if(!target||target.disabled)return false;
+    target.click();
+    return true;
+  };
+
+  const pollJob=async()=>{
+    try{
+      const j=await fetch("/job/status",{cache:"no-store"}).then(r=>r.json());
+      const status=String(j.render_status||"");
+      lastRenderStatus=status;
+      if(status==="ready"){
+        const token=String(j.completed_at||j.started_at||"ready");
+        let opened="";
+        try{opened=sessionStorage.getItem(autoOpenStorageKey)||"";}catch(e){}
+        if(opened!==token&&openShareHub()){
+          try{sessionStorage.setItem(autoOpenStorageKey,token);}catch(e){}
+        }
+      }
+    }catch(e){}
+  };
+
+  setInterval(pollJob,1500);
+  pollJob();
+
+  // Safari/iPhone can suspend JS while another app is in front. As soon as
+  // the user comes back, immediately resync the render state and reopen the
+  // Share Hub if the Short completed in the meantime.
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible"){
+      pollJob();
+      subscribe(false).catch(()=>{});
+    }
+  });
+  window.addEventListener("pageshow",()=>{
+    pollJob();
+    subscribe(false).catch(()=>{});
+  });
+
+  document.addEventListener("click",(event)=>{
+    const b=event.target&&event.target.closest?event.target.closest("button"):null;
+    if(!b)return;
+    const label=(b.innerText||b.textContent||"").toUpperCase();
+    if(label.includes("CREA SHORT"))subscribe(true).catch(()=>{});
+  },true);
   window.addEventListener("load",()=>subscribe(false).catch(()=>{}),{once:true});
 })();'''.encode("utf-8")
 
