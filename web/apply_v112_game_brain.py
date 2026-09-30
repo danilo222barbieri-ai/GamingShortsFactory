@@ -91,11 +91,11 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3, cache
     _diagnostics["__brain_v112__"]=_brain
     _meta=_diagnostics.setdefault("__meta__",{})
     if isinstance(_meta,dict):
-        _meta["game_brain"]="v115-semantic-injection"
+        _meta["game_brain"]="v117-editor-semantic"
         _meta["candidate_pool"]=len(_pool or [])
         _meta["final_moments"]=len(_chosen or [])
     print(
-        "GSF_V115_GAME_BRAIN",
+        "GSF_V117_GAME_BRAIN",
         "pool="+str(len(_pool or [])),
         "chosen="+str(len(_chosen or [])),
         "profile="+_profile,
