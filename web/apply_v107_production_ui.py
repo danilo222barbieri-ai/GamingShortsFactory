@@ -770,7 +770,7 @@ _create_short_new='''            def _gsf_v107_queue_final_render():
                 st.session_state.pop("gsf_v107_final_render_pending",False)
             )
             if st.session_state.pop("gsf_v107_render_done_toast",False):
-                st.toast("✅ Short pronto · apro lo Share Hub.")
+                st.toast("✅ Short completato.")
             if _gsf_v107_pending and not st.session_state.get("gsf_v107_render_toast_shown",False):
                 st.toast("🎬 Short in lavorazione · puoi continuare a usare l’app.")
                 st.session_state["gsf_v107_render_toast_shown"]=True
