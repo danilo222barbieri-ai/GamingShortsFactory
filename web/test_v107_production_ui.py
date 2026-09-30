@@ -88,6 +88,12 @@ if "st-key-v1055_ad_manual_after_editor" not in s:
     raise SystemExit("FAIL editor-to-ad spacing reduction missing")
 if "gsf-major-publish-download" in s:
     raise SystemExit("FAIL duplicate lower CONDIVIDI O SCARICA milestone survived")
+if "gsf-sep30-polish" not in s:
+    raise SystemExit("FAIL Sep30 final polish CSS missing")
+if "gsf-editor-note" not in s:
+    raise SystemExit("FAIL editor note spacing marker missing")
+if "gsf_save_draft_compact_v107" not in s and "SALVA BOZZA" in s:
+    raise SystemExit("FAIL ordinary draft action was not compacted")
 for _ad_key in ("v1053_ad_before_final","v1054_ad_after_ai","v1055_ad_after_ai","v1054_ad_after_final_action","v1054_ad_after_final_result"):
     if _ad_key in s and not re.search(r"\.st-key-"+re.escape(_ad_key)+r"\s*[,\{][\s\S]{0,220}?display\s*:\s*none",s):
         raise SystemExit("FAIL final publication ad is still visible: "+_ad_key)
