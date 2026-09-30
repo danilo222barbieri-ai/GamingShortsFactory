@@ -1225,6 +1225,75 @@ code,pre,kbd,samp{
 s = s.rstrip() + "\n\n" + _demo_typography.lstrip()
 
 
+# Final footer override: replace the three old footer rows with one compact row.
+_footer_override_v4 = r'''
+st.markdown("""
+<style id="gsf-footer-override-v4">
+.v67-footer,.gsf-legal-footer,.gsf-social-footer{
+  display:none !important;
+  height:0 !important;
+  min-height:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:hidden !important;
+}
+.gsf-footer-v4{
+  width:min(720px,calc(100% - 20px));
+  margin:2px auto 5px;
+  padding:5px 8px;
+  border-top:1px solid rgba(195,214,227,.65);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+  color:#6d8496;
+  font-size:10px;
+  line-height:1;
+  text-align:center;
+}
+.gsf-footer-v4 a{color:#647f92 !important;text-decoration:none !important;font-weight:750}
+.gsf-footer-v4 .soc{font-weight:800;opacity:.85;letter-spacing:.08em}
+[data-testid="stAppViewContainer"] .block-container{padding-bottom:.45rem !important}
+@media(max-width:600px){
+  .gsf-footer-v4{margin:1px auto 3px;padding:4px 6px;font-size:9px;gap:5px}
+  [data-testid="stAppViewContainer"] .block-container{padding-bottom:.25rem !important}
+}
+</style>
+<div class="gsf-footer-v4">
+  <span>Gaming Shorts Factory · Beta</span>
+  <a href="/privacy" target="_blank">Privacy</a>
+  <span>·</span>
+  <a href="/terms" target="_blank">Termini</a>
+  <span>·</span>
+  <a href="/contact" target="_blank">Contatti</a>
+  <span class="soc">f ◎ ▶ ♪</span>
+</div>
+<script>
+(()=>{
+  const clean=()=>{
+    const slashN=String.fromCharCode(92)+'n';
+    document.querySelectorAll('[data-testid="stMarkdownContainer"]').forEach(el=>{
+      const t=(el.textContent||'').replace(/\\s/g,'');
+      if(t && t.split(slashN).join('')===''){
+        const host=el.parentElement||el;
+        host.style.display='none';
+        host.style.height='0';
+        host.style.minHeight='0';
+        host.style.margin='0';
+        host.style.padding='0';
+        host.style.overflow='hidden';
+      }
+    });
+  };
+  clean();
+  new MutationObserver(clean).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _footer_override_v4.lstrip()
+
 # DEMO global metallic visual language: same cold blue-grey treatment used in the lower site.
 _demo_metallic_look = r'''
 st.markdown("""
