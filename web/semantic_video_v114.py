@@ -190,7 +190,7 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
     max_bytes=max(10*1024*1024,int(os.environ.get("GSF_SEMANTIC_MAX_BYTES",str(2*1024*1024*1024))))
     model=os.environ.get("GSF_GEMINI_MODEL",_DEFAULT_MODEL).strip() or _DEFAULT_MODEL
     if not source.is_file() or source.stat().st_size>max_bytes:
-        return {"enabled":True,"provider":model+"-agentic-v117","events":[],"skipped":"file-too-large"}
+        return {"enabled":True,"provider":model+"-agentic-stream-v118","events":[],"skipped":"file-too-large"}
 
     uploaded=None
     started=time.perf_counter()
@@ -224,7 +224,10 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
             "Do not invent precision: uncertainty must lower focus_confidence. "
             "Game/title hint: "+str(game_hint or "unknown")+"."
         )
-        interaction=client.interactions.create(
+        semantic_timeout=max(
+            60.0,float(os.environ.get("GSF_SEMANTIC_TIMEOUT_SECONDS","420") or 420)
+        )
+        stream=client.interactions.create(
             model=model,
             input=[
                 {"type":"video","uri":uploaded.uri,"mime_type":uploaded.mime_type,"processing":"agentic"},
@@ -235,24 +238,30 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
                 "mime_type":"application/json",
                 "schema":_schema(max_events),
             },
-            background=True,
+            stream=True,
+            timeout=semantic_timeout,
         )
-        interaction_deadline=time.time()+max(
-            60.0,float(os.environ.get("GSF_SEMANTIC_TIMEOUT_SECONDS","420") or 420)
-        )
-        while _interaction_status(interaction) in ("in_progress","queued"):
-            if time.time()>=interaction_deadline:
-                raise TimeoutError("Gemini semantic interaction timeout")
-            time.sleep(3)
-            interaction=client.interactions.get(interaction.id)
-        final_status=_interaction_status(interaction)
-        if final_status not in ("completed",""):
-            raise RuntimeError("Gemini semantic interaction "+final_status)
-        payload=json.loads(interaction.output_text or "{}")
+        json_parts=[]
+        completed=False
+        for event in stream:
+            event_type=str(getattr(event,"event_type","") or "")
+            if event_type=="step.delta" and getattr(event,"delta",None) is not None:
+                if getattr(event.delta,"type",None)=="text":
+                    chunk=getattr(event.delta,"text",None)
+                    if chunk:
+                        json_parts.append(str(chunk))
+            elif event_type=="interaction.completed":
+                completed=True
+            elif event_type in ("interaction.failed","interaction.cancelled"):
+                detail=str(getattr(event,"error",None) or event_type)
+                raise RuntimeError("Gemini semantic stream "+detail[:180])
+        if not completed and not json_parts:
+            raise RuntimeError("Gemini semantic stream ended without output")
+        payload=json.loads("".join(json_parts) or "{}")
         events=normalize_semantic_events(payload,max_events=max_events)
         return {
             "enabled":True,
-            "provider":model+"-agentic",
+            "provider":model+"-agentic-stream-v118",
             "events":events,
             "elapsed_seconds":round(time.perf_counter()-started,3),
         }
