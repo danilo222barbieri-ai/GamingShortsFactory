@@ -207,7 +207,7 @@
 #ng27 .toast{position:absolute;left:50%;bottom:18px;z-index:14;transform:translate(-50%,14px);opacity:0;pointer-events:none;padding:8px 12px;border-radius:11px;border:1px solid rgba(102,240,195,.18);background:rgba(5,13,17,.88);backdrop-filter:blur(14px);color:#baf7e3;font-size:9px;font-weight:900;letter-spacing:.05em;transition:.2s}
 #ng27 .toast.show{opacity:1;transform:translate(-50%,0)}
 #ng27 .footNote{text-align:center;color:#7a8b99;font-size:7px;margin-top:3px;letter-spacing:.04em}
-@media(max-width:820px){
+@media(max-width:820px) and (any-pointer:coarse){
  /* MOBILE COCKPIT — player e controlli diventano un'unica superficie */
  #ng27{width:100%;min-height:100%}
  #ng27 .shell,
@@ -375,7 +375,7 @@
  }
 }
 
-@media(max-width:390px){
+@media(max-width:390px) and (any-pointer:coarse){
  #ng27 .stage.r916,
  #ng27.expanded .stage.r916{width:100%;border-radius:18px}
  #ng27 .railBtn,
@@ -444,7 +444,7 @@
 #ng27:fullscreen .timeline,
 #ng27:-webkit-full-screen .timeline{width:min(96%,760px)}
 
-@media(max-width:820px){
+@media(max-width:820px) and (any-pointer:coarse){
  #ng27.gsfFullscreen,
  #ng27:fullscreen,
  #ng27:-webkit-full-screen{
@@ -1412,7 +1412,10 @@
    flash('MODIFICHE APPLICATE');
  };
  const playBtn=root.querySelector('#playBtn');
- const isMobileEditor=()=>window.matchMedia('(max-width:820px)').matches;
+ const isMobileEditor=()=>(
+   window.matchMedia('(max-width:820px) and (any-pointer:coarse)').matches ||
+   (Number(navigator.maxTouchPoints||0)>1 && window.innerWidth<=820)
+ );
  const ownFullscreen=()=>document.fullscreenElement===root||document.webkitFullscreenElement===root;
  const parentFullscreen=()=>{
    try{return !!(window.frameElement&&window.parent.document&&(window.parent.document.fullscreenElement===window.frameElement||window.parent.document.webkitFullscreenElement===window.frameElement));}
