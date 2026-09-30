@@ -42,6 +42,7 @@ _STATE_LOCKS={}
 _STATE_LOCKS_GUARD=threading.Lock()
 _QUALITY_CACHE={}
 _QUALITY_LOCK=threading.Lock()
+_AI_FEEDBACK_LOCK=threading.Lock()
 
 def _env_first(*names,default=""):
     for name in names:
@@ -2388,6 +2389,58 @@ def _instagram_oauth_callback(handler,query):
         _html(handler,500,_social_page(sid,"Collegamento Instagram fallito: "+str(exc)[:220]))
 
 
+def _ai_feedback_store(sid,event):
+    sid=_safe_id(sid)
+    if not sid or not isinstance(event,dict):
+        return False
+    allowed_actions={"selected","rejected","opened_editor","published","replaced","trimmed"}
+    action=str(event.get("action") or "").strip().lower()
+    if action not in allowed_actions:
+        action="selected"
+    row={
+        "created_at":time.time(),
+        "engine":str(event.get("engine") or "v124-ai-os")[:64],
+        "action":action,
+        "rank":int(event.get("rank") or 0),
+        "start":float(event.get("start") or 0.0),
+        "event":str(event.get("event") or "highlight")[:48],
+        "brain_score":float(event.get("brain_score") or 0.0),
+        "confidence":float(event.get("confidence") or 0.0),
+        "semantic_injected":bool(event.get("semantic_injected")),
+    }
+    root=ROOT/"sessions"/sid
+    root.mkdir(parents=True,exist_ok=True)
+    path=root/"ai_feedback.jsonl"
+    with _AI_FEEDBACK_LOCK:
+        existing=[]
+        if path.is_file():
+            try:
+                existing=path.read_text(encoding="utf-8").splitlines()[-499:]
+            except Exception:
+                existing=[]
+        existing.append(json.dumps(row,ensure_ascii=False,separators=(",",":")))
+        path.write_text("\n".join(existing)+"\n",encoding="utf-8")
+        if _bucket_enabled():
+            try:
+                _s3().put_object(
+                    Bucket=S3_BUCKET,
+                    Key=f"ai-feedback/{sid}/events.jsonl",
+                    Body=path.read_bytes(),
+                    ContentType="application/x-ndjson",
+                    CacheControl="no-store",
+                )
+            except Exception as exc:
+                print("GSF_V124_FEEDBACK_BUCKET_WARN",sid,repr(str(exc))[:180],flush=True)
+    print(
+        "GSF_V124_FEEDBACK",
+        sid,
+        "action="+action,
+        "rank="+str(row["rank"]),
+        "event="+row["event"],
+        flush=True,
+    )
+    return True
+
 def _quality_report_path(sid):
     sid=_safe_id(sid)
     return (ROOT/"sessions"/sid/"quality_report.json") if sid else None
@@ -2880,6 +2933,15 @@ class Handler(BaseHTTPRequestHandler):
         sid=_safe_id(self.headers.get("X-GSF-Session-ID"))
         if not sid:
             _json(self,400,{"ok":False,"error":"invalid session"})
+            return
+
+        if path=="/ai/feedback":
+            try:
+                data=_read_json(self,max_bytes=64*1024)
+                ok=_ai_feedback_store(sid,data)
+                _json(self,200,{"ok":bool(ok)})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
             return
 
         if path=="/drafts/save":
