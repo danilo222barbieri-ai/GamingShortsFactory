@@ -19,6 +19,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 from boto3.s3.transfer import TransferConfig
 from game_vision_v108 import build_event_map
+from semantic_video_v114 import analyze_gameplay_video, merge_semantic_events, semantic_enabled
 
 PORT=int(os.environ.get("PORT","8600"))
 WORKER_TOKEN=os.environ.get("GSF_WORKER_TOKEN","")
@@ -179,12 +180,46 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
                 JOBS[job_id]={"state":"scanning","download_seconds":round(download_seconds,3),"analysis_key":analysis_key}
 
             scan=_load_scan_fn()(str(local))
-            # V108 derives Event Map from the same prescan arrays. No second media pass.
-            scan["event_map_v108"]=build_event_map(scan,max_events=18)
+            # V114: local scan remains the guaranteed baseline. Cloud semantic
+            # understanding is optional and can never make the prescan fail.
+            local_events=build_event_map(scan,max_events=18)
+            semantic_result={"enabled":False,"provider":"local-only","events":[]}
+            if semantic_enabled():
+                with JOBS_LOCK:
+                    JOBS[job_id]={
+                        "state":"semantic",
+                        "download_seconds":round(download_seconds,3),
+                        "analysis_key":analysis_key,
+                    }
+                semantic_result=analyze_gameplay_video(
+                    str(local),
+                    game_hint=name,
+                    max_events=12,
+                )
+            semantic_events=list(semantic_result.get("events") or [])
+            scan["semantic_events_v114"]=semantic_events
+            scan["event_map_v108"]=merge_semantic_events(
+                local_events,semantic_events,max_events=24
+            )
             meta=dict(scan.get("meta",{}) or {})
             meta["worker_prescan"]=True
             meta["worker_service"]=True
+            meta["semantic_video_v114"]={
+                "enabled":bool(semantic_result.get("enabled")),
+                "provider":str(semantic_result.get("provider") or "local-only"),
+                "event_count":len(semantic_events),
+                "elapsed_seconds":semantic_result.get("elapsed_seconds"),
+                "fallback":bool(semantic_result.get("error") or semantic_result.get("skipped")),
+            }
             scan["meta"]=meta
+            if semantic_result.get("enabled"):
+                print(
+                    "GSF_V114_SEMANTIC",
+                    "provider="+str(semantic_result.get("provider") or ""),
+                    "events="+str(len(semantic_events)),
+                    "fallback="+str(bool(semantic_result.get("error") or semantic_result.get("skipped"))),
+                    flush=True,
+                )
             wall=time.perf_counter()-started
             payload={
                 "engine_version":engine_version,
@@ -234,7 +269,13 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path=urlparse(self.path)
         if path.path.rstrip("/") in ("","/health"):
-            _json(self,200,{"ok":True,"bucket":_bucket_enabled(),"app":AI_APP_PATH.name})
+            _json(self,200,{
+                "ok":True,
+                "bucket":_bucket_enabled(),
+                "app":AI_APP_PATH.name,
+                "semantic_video":semantic_enabled(),
+                "semantic_model":os.environ.get("GSF_GEMINI_MODEL","gemini-3.8-flash"),
+            })
             return
         if path.path.rstrip("/")=="/status":
             analysis_key=(parse_qs(path.query).get("analysis_key") or [""])[0]
