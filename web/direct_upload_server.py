@@ -627,6 +627,74 @@ def _restore_bucket_source(sid,source_path):
     return ""
 
 
+
+def _persist_fallback_source_to_bucket(sid,upload_id,source_path,original_name,total):
+    """Promote a direct-upload fallback source into persistent storage without blocking the browser."""
+    sid=_safe_id(sid); upload_id=_safe_id(upload_id)
+    source=Path(str(source_path or ""))
+    if not sid or not upload_id or not source.is_file() or not _bucket_enabled():
+        return {}
+    try:
+        original_name,safe_stem,ext=_safe_filename(original_name or source.name)
+        key=f"uploads/{sid}/{upload_id}/{safe_stem}{ext}"
+        analysis_key=f"analysis/{sid}/{upload_id}/v52-keyframe-turbo.json"
+        size=int(total or source.stat().st_size)
+        exists=False
+        try:
+            head=_s3().head_object(Bucket=S3_BUCKET,Key=key)
+            exists=int(head.get("ContentLength") or 0)==size
+        except Exception:
+            exists=False
+        if not exists:
+            cfg=TransferConfig(
+                multipart_threshold=16*1024*1024,
+                multipart_chunksize=16*1024*1024,
+                max_concurrency=max(1,min(4,_materialize_concurrency())),
+                max_io_queue=8,
+                io_chunksize=1024*1024,
+                use_threads=True,
+            )
+            _s3().upload_file(
+                str(source),S3_BUCKET,key,
+                ExtraArgs={
+                    "ContentType":"application/octet-stream",
+                    "Metadata":{
+                        "gsf-upload-id":upload_id,
+                        "gsf-original-name":original_name[:200],
+                    },
+                },
+                Config=cfg,
+            )
+        marker=ROOT/"sessions"/sid/"media"/".direct_upload_ready.json"
+        if marker.is_file():
+            try:
+                current=json.loads(marker.read_text(encoding="utf-8"))
+            except Exception:
+                current={}
+            if isinstance(current,dict) and str(current.get("upload_id") or "")==upload_id:
+                current.update({
+                    "storage":"direct_fallback_bucket",
+                    "bucket_key":key,
+                    "analysis_key":analysis_key,
+                    "persistent_at":time.time(),
+                })
+                _write_json_atomic(marker,current)
+        try:
+            _trigger_prescan({
+                "key":key,
+                "analysis_key":analysis_key,
+                "engine_version":"v52-keyframe-turbo",
+                "name":original_name,
+                "size":size,
+            })
+        except Exception:
+            pass
+        print("GSF_FALLBACK_SOURCE_PERSISTED",sid,upload_id,key,flush=True)
+        return {"bucket_key":key,"analysis_key":analysis_key}
+    except Exception as exc:
+        print("GSF_FALLBACK_SOURCE_PERSIST_WARN",sid,upload_id,repr(str(exc)),flush=True)
+        return {}
+
 def _html(handler,status,body):
     raw=str(body).encode("utf-8")
     handler.send_response(status)
@@ -935,6 +1003,91 @@ def _draft_key(sid,draft_id):
     sid=_safe_id(sid); draft_id=_safe_id(draft_id)
     return f"drafts/{sid}/{draft_id}.json" if sid and draft_id else ""
 
+def _draft_index_key(sid):
+    sid=_safe_id(sid)
+    return f"drafts/{sid}/_index.json" if sid else ""
+
+def _draft_index_path(sid):
+    return _draft_dir(sid)/"_index.json"
+
+def _draft_summary(draft):
+    draft=dict(draft or {})
+    source_ref=dict(draft.get("source_ref") or {})
+    return {
+        "id":_safe_id(draft.get("id","")),
+        "title":str(draft.get("title") or "Bozza")[:180],
+        "source_name":str(draft.get("source_name") or source_ref.get("name") or "Gameplay")[:160],
+        "created_at":float(draft.get("created_at") or 0),
+        "updated_at":float(draft.get("updated_at") or 0),
+        "source_persistent":bool(source_ref.get("bucket_key")),
+        "source_upload_id":str(source_ref.get("upload_id") or "")[:80],
+    }
+
+def _draft_index_load(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return None
+    local=_draft_index_path(sid)
+    try:
+        payload=json.loads(local.read_text(encoding="utf-8"))
+        if isinstance(payload,dict) and isinstance(payload.get("drafts"),list):
+            return list(payload["drafts"])
+    except Exception:
+        pass
+    if _bucket_enabled():
+        try:
+            obj=_s3().get_object(Bucket=S3_BUCKET,Key=_draft_index_key(sid))
+            payload=json.loads(obj["Body"].read().decode("utf-8"))
+            if isinstance(payload,dict) and isinstance(payload.get("drafts"),list):
+                _write_json_atomic(local,payload)
+                return list(payload["drafts"])
+        except Exception:
+            pass
+    return None
+
+def _draft_index_save(sid,rows):
+    sid=_safe_id(sid)
+    if not sid:
+        return
+    cleaned=[]
+    seen=set()
+    for row in sorted(list(rows or []),key=lambda x:float((x or {}).get("updated_at") or 0),reverse=True):
+        summary=_draft_summary(row)
+        did=summary.get("id")
+        if not did or did in seen:
+            continue
+        seen.add(did)
+        cleaned.append(summary)
+        if len(cleaned)>=50:
+            break
+    payload={"version":2,"updated_at":time.time(),"drafts":cleaned}
+    _write_json_atomic(_draft_index_path(sid),payload)
+    if _bucket_enabled():
+        try:
+            _s3().put_object(
+                Bucket=S3_BUCKET,Key=_draft_index_key(sid),
+                Body=json.dumps(payload,ensure_ascii=False,separators=(",",":")).encode("utf-8"),
+                ContentType="application/json",CacheControl="no-store",
+            )
+        except Exception as exc:
+            print("GSF_DRAFT_INDEX_SAVE_WARN",sid,repr(str(exc)),flush=True)
+
+def _draft_index_upsert(sid,draft):
+    rows=_draft_index_load(sid)
+    if rows is None:
+        rows=[]
+    did=_safe_id((draft or {}).get("id",""))
+    rows=[row for row in rows if _safe_id((row or {}).get("id",""))!=did]
+    rows.append(_draft_summary(draft))
+    _draft_index_save(sid,rows)
+
+def _draft_index_remove(sid,draft_id):
+    rows=_draft_index_load(sid)
+    if rows is None:
+        return
+    did=_safe_id(draft_id)
+    _draft_index_save(sid,[row for row in rows if _safe_id((row or {}).get("id",""))!=did])
+
 def _draft_save(sid,payload):
     sid=_safe_id(sid)
     if not sid:
@@ -979,6 +1132,7 @@ def _draft_save(sid,payload):
         except Exception:
             pass
     draft={
+        "version":2,
         "id":draft_id,
         "title":str(payload.get("title") or ("Bozza · "+source_name))[:180],
         "source_name":source_name,
@@ -986,15 +1140,18 @@ def _draft_save(sid,payload):
         "updated_at":now,
         "state":state,
         "source_ref":source_ref,
+        "state_bytes":len(raw_state.encode("utf-8")),
     }
     path=_draft_dir(sid)/(draft_id+".json")
     _write_json_atomic(path,draft)
     if _bucket_enabled():
         _s3().put_object(
             Bucket=S3_BUCKET,Key=_draft_key(sid,draft_id),
-            Body=json.dumps(draft,ensure_ascii=False).encode("utf-8"),
+            Body=json.dumps(draft,ensure_ascii=False,separators=(",",":")).encode("utf-8"),
             ContentType="application/json",CacheControl="no-store"
         )
+    _draft_index_upsert(sid,draft)
+    print("GSF_DRAFT_SAVED",sid,draft_id,"state_bytes="+str(draft["state_bytes"]),"persistent_source="+str(bool(source_ref.get("bucket_key"))),flush=True)
     return draft
 
 def _draft_load(sid,draft_id):
@@ -1019,11 +1176,8 @@ def _draft_load(sid,draft_id):
             pass
     return {}
 
-def _draft_list(sid):
-    sid=_safe_id(sid)
+def _draft_list_legacy(sid):
     found={}
-    if not sid:
-        return []
     try:
         for path in _draft_dir(sid).glob("draft_*.json"):
             try:
@@ -1036,10 +1190,10 @@ def _draft_list(sid):
         pass
     if _bucket_enabled():
         try:
-            rows=_s3().list_objects_v2(Bucket=S3_BUCKET,Prefix=f"drafts/{sid}/",MaxKeys=30).get("Contents") or []
+            rows=_s3().list_objects_v2(Bucket=S3_BUCKET,Prefix=f"drafts/{sid}/",MaxKeys=40).get("Contents") or []
             for row in rows:
                 key=str(row.get("Key") or "")
-                if not key.endswith(".json"):
+                if not key.endswith(".json") or key.endswith("/_index.json"):
                     continue
                 try:
                     obj=_s3().get_object(Bucket=S3_BUCKET,Key=key)
@@ -1048,9 +1202,25 @@ def _draft_list(sid):
                         found[str(data["id"])]=data
                 except Exception:
                     pass
-        except Exception:
-            pass
-    return sorted(found.values(),key=lambda x:float(x.get("updated_at") or 0),reverse=True)[:20]
+        except Exception as exc:
+            print("GSF_DRAFT_LEGACY_LIST_WARN",sid,repr(str(exc)),flush=True)
+    rows=sorted(found.values(),key=lambda x:float(x.get("updated_at") or 0),reverse=True)[:50]
+    if rows:
+        _draft_index_save(sid,rows)
+    return [_draft_summary(row) for row in rows]
+
+def _draft_list(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return []
+    rows=_draft_index_load(sid)
+    if rows is None:
+        rows=_draft_list_legacy(sid)
+    return sorted(
+        [row for row in rows if isinstance(row,dict) and _safe_id(row.get("id",""))],
+        key=lambda x:float(x.get("updated_at") or 0),
+        reverse=True,
+    )[:20]
 
 def _draft_delete(sid,draft_id):
     sid=_safe_id(sid); draft_id=_safe_id(draft_id)
@@ -1068,6 +1238,8 @@ def _draft_delete(sid,draft_id):
             _s3().delete_object(Bucket=S3_BUCKET,Key=_draft_key(sid,draft_id))
         except Exception:
             pass
+    _draft_index_remove(sid,draft_id)
+    print("GSF_DRAFT_DELETED",sid,draft_id,flush=True)
     return True
 
 def _draft_prepare_resume(sid,draft):
@@ -1079,6 +1251,19 @@ def _draft_prepare_resume(sid,draft):
         recovered_ref=_bucket_source_ref_from_path(sid,source_hint)
         if recovered_ref:
             source_ref.update(recovered_ref)
+            try:
+                healed=dict(draft)
+                healed["source_ref"]=source_ref
+                did=_safe_id(healed.get("id",""))
+                _write_json_atomic(_draft_dir(sid)/(did+".json"),healed)
+                _s3().put_object(
+                    Bucket=S3_BUCKET,Key=_draft_key(sid,did),
+                    Body=json.dumps(healed,ensure_ascii=False,separators=(",",":")).encode("utf-8"),
+                    ContentType="application/json",CacheControl="no-store",
+                )
+                _draft_index_upsert(sid,healed)
+            except Exception as exc:
+                print("GSF_DRAFT_SOURCE_REF_HEAL_WARN",sid,repr(str(exc)),flush=True)
     candidate=Path(str(source_ref.get("draft_path") or source_ref.get("path") or state.get("gsf_source_path") or ""))
     if not candidate.is_file() and _bucket_enabled() and source_ref.get("bucket_key"):
         try:
@@ -1095,30 +1280,34 @@ def _draft_prepare_resume(sid,draft):
                 candidate=Path(str(meta.get("path") or ""))
         except Exception as exc:
             print("GSF_DRAFT_RESTORE_SOURCE_WARN",repr(str(exc)),flush=True)
-    if candidate.is_file():
-        state["gsf_source_path"]=str(candidate)
-        state["gsf_editor_source_path"]=str(candidate)
-        state["gsf_source_name"]=source_name
-        state["gsf_manual_editor_open"]=True
-        try:
-            marker=ROOT/"sessions"/sid/"media"/".direct_upload_ready.json"
-            current={}
-            if marker.is_file():
-                current=json.loads(marker.read_text(encoding="utf-8"))
-                if not isinstance(current,dict):
-                    current={}
-            current.update({
-                "path":str(candidate),"name":source_name,
-                "size":int(candidate.stat().st_size),
-                "upload_id":str(source_ref.get("upload_id") or current.get("upload_id") or "draft"),
-                "completed_at":time.time(),
-                "storage":str(source_ref.get("storage") or "draft"),
-                "bucket_key":str(source_ref.get("bucket_key") or ""),
-                "analysis_key":str(source_ref.get("analysis_key") or ""),
-            })
-            _write_json_atomic(marker,current)
-        except Exception:
-            pass
+    if not candidate.is_file():
+        print("GSF_DRAFT_RESUME_BLOCKED_SOURCE",sid,_safe_id(draft.get("id","")),source_hint,flush=True)
+        return None
+
+    state["gsf_source_path"]=str(candidate)
+    state["gsf_editor_source_path"]=str(candidate)
+    state["gsf_source_name"]=source_name
+    state["gsf_manual_editor_open"]=True
+    try:
+        marker=ROOT/"sessions"/sid/"media"/".direct_upload_ready.json"
+        current={}
+        if marker.is_file():
+            current=json.loads(marker.read_text(encoding="utf-8"))
+            if not isinstance(current,dict):
+                current={}
+        current.update({
+            "path":str(candidate),"name":source_name,
+            "size":int(candidate.stat().st_size),
+            "upload_id":str(source_ref.get("upload_id") or current.get("upload_id") or "draft"),
+            "completed_at":time.time(),
+            "storage":str(source_ref.get("storage") or "draft"),
+            "bucket_key":str(source_ref.get("bucket_key") or ""),
+            "analysis_key":str(source_ref.get("analysis_key") or ""),
+        })
+        _write_json_atomic(marker,current)
+    except Exception:
+        pass
+    print("GSF_DRAFT_RESUME_READY",sid,_safe_id(draft.get("id","")),str(candidate),flush=True)
     return state
 
 def _draft_cards_html(sid):
@@ -1130,18 +1319,32 @@ def _draft_cards_html(sid):
         did=_safe_id(draft.get("id",""))
         title=html.escape(str(draft.get("title") or "Bozza"))
         source=html.escape(str(draft.get("source_name") or "Gameplay"))
+        persistent=bool(draft.get("source_persistent"))
         try:
             updated=time.strftime("%d/%m · %H:%M",time.localtime(float(draft.get("updated_at") or 0)))
         except Exception:
             updated=""
         href="/drafts/resume?id="+urllib.parse.quote(did,safe="")
         delete_href="/drafts/delete?id="+urllib.parse.quote(did,safe="")
+        safety='<span class="draftSafe">salvata</span>' if persistent else '<span class="draftSafe draftSafeSync">sincronizzazione</span>'
         rows.append(
-            '<div class="draftCard"><div class="draftInfo"><strong>'+title+'</strong><span>'+source+' · '+html.escape(updated)+
-            '</span></div><div class="draftActions"><a class="draftOpen" href="'+href+'" target="_top">RIPRENDI</a>'+
+            '<div class="draftCard"><div class="draftInfo"><strong>'+title+'</strong><span>'+source+' · '+html.escape(updated)+' · '+safety+
+            '</span></div><div class="draftActions"><a class="draftOpen" href="'+href+'" onclick="return gsfResumeDraft(event,this.href)">RIPRENDI</a>'+
             '<a class="draftDelete" href="'+delete_href+'" onclick="return confirm(\'Eliminare questa bozza?\')">ELIMINA</a></div></div>'
         )
-    return '<div class="draftGrid">'+"".join(rows)+'</div>'
+    return (
+        '<div id="draftInlineMessage" class="draftInlineMessage" aria-live="polite"></div>'
+        '<div class="draftGrid">'+"".join(rows)+'</div>'
+        '<script>'
+        'async function gsfResumeDraft(ev,url){ev.preventDefault();'
+        'const m=document.getElementById("draftInlineMessage");if(m){m.textContent="Recupero bozza…";m.className="draftInlineMessage show";}'
+        'try{const sep=url.includes("?")?"&":"?";const r=await fetch(url+sep+"json=1",{cache:"no-store",credentials:"same-origin"});const j=await r.json();'
+        'if(!r.ok||!j.ok)throw new Error(j.error||"Bozza non disponibile");'
+        'window.top.location.href=j.url||"/";}'
+        'catch(e){if(m){m.textContent=e.message||"Bozza non disponibile. Riprova.";m.className="draftInlineMessage show error";}}'
+        'return false;}'
+        '</script>'
+    )
 
 def _creator_login(sid,provider,provider_uid,display_name="",email="",avatar=""):
     sid=_safe_id(sid)
@@ -2126,17 +2329,33 @@ class Handler(BaseHTTPRequestHandler):
             return
         if clean=="/drafts/resume":
             sid=_social_sid(self)
-            draft_id=_safe_id((parse_qs(path.query).get("id") or [""])[0])
+            query=parse_qs(path.query)
+            draft_id=_safe_id((query.get("id") or [""])[0])
+            wants_json=str((query.get("json") or [""])[0])=="1"
             draft=_draft_load(sid,draft_id)
             if not sid or not isinstance(draft,dict) or not draft:
-                _html(self,404,"Bozza non trovata.")
+                if wants_json:
+                    _json(self,404,{"ok":False,"error":"Bozza non trovata."})
+                else:
+                    _html(self,404,"Bozza non trovata.")
                 return
             state=_draft_prepare_resume(sid,draft)
+            if not isinstance(state,dict):
+                message="La bozza è salva, ma il video sorgente non è ancora recuperabile. Riprova tra poco."
+                if wants_json:
+                    _json(self,409,{"ok":False,"error":message})
+                else:
+                    _html(self,409,_creator_page(sid,message))
+                return
             root=ROOT/"sessions"/sid
             root.mkdir(parents=True,exist_ok=True)
             _write_json_atomic(root/"session_state.json",state)
             _write_json_atomic(root/"draft_resume.json",{"draft_id":draft_id,"created_at":time.time()})
-            _redirect(self,"/?draft_resume="+urllib.parse.quote(draft_id,safe=""))
+            target="/?draft_resume="+urllib.parse.quote(draft_id,safe="")
+            if wants_json:
+                _json(self,200,{"ok":True,"url":target})
+            else:
+                _redirect(self,target)
             return
         if clean=="/drafts/delete":
             sid=_social_sid(self)
@@ -2545,6 +2764,12 @@ class Handler(BaseHTTPRequestHandler):
                         "completed_at":time.time(),
                         "storage":"direct_fallback",
                     })
+                    if _bucket_enabled():
+                        threading.Thread(
+                            target=_persist_fallback_source_to_bucket,
+                            args=(sid,upload_id,str(final),original_name,total),
+                            daemon=True,
+                        ).start()
                     state_path.unlink(missing_ok=True)
                     try:
                         upload_dir.rmdir()
