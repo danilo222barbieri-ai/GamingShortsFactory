@@ -1127,11 +1127,11 @@ for _node in _gsf_patch_ast.walk(_gsf_pub_tree):
     if not isinstance(_node,_gsf_patch_ast.If):
         continue
     _body=_gsf_patch_ast.get_source_segment(s,_node) or ""
-    _test=_gsf_patch_ast.get_source_segment(s,_node.test) or ""
-    if "_has_final" in _test and "social_selected_v59" in _body and "_social_columns" in _body:
+    _test=(_gsf_patch_ast.get_source_segment(s,_node.test) or "").strip()
+    if _test=="_has_final" and "social_selected_v59" in _body and "_social_columns" in _body:
         _gsf_pub_nodes.append(_node)
 if len(_gsf_pub_nodes)!=1:
-    raise RuntimeError("V107 expected one native final social block, found "+str(len(_gsf_pub_nodes)))
+    raise RuntimeError("V107 expected one exact _has_final social block, found "+str(len(_gsf_pub_nodes)))
 _gsf_pub_node=_gsf_pub_nodes[0]
 _gsf_pub_line=_gsf_pub_lines[_gsf_pub_node.lineno-1]
 _gsf_pub_indent=_gsf_pub_line[:len(_gsf_pub_line)-len(_gsf_pub_line.lstrip())]+'    '
