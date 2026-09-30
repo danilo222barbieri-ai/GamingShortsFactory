@@ -112,6 +112,11 @@
 #ng27 .applyBtn{height:29px;border-radius:9px;border:1px solid rgba(89,207,238,.20);background:rgba(89,207,238,.10);color:#cff4fc;font-size:8px;font-weight:900;letter-spacing:.05em;padding:0 8px}
 #ng27 .textRow{display:flex;gap:7px;margin-top:8px}
 #ng27 .textRow input{flex:1;min-width:0;height:32px;border-radius:10px;border:1px solid rgba(255,255,255,.10);background:rgba(7,16,25,.42);color:#f0f6fa;padding:0 9px;font-size:9px}
+#ng27 .panelNote{margin-top:7px;padding:7px 9px;border-radius:10px;background:rgba(125,201,235,.08);border:1px solid rgba(125,201,235,.13);color:#a9c4d4;font-size:8px;line-height:1.35}
+#ng27 .colorOnly{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+#ng27 .colorChip{display:flex;align-items:center;gap:5px;padding:5px 7px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
+#ng27 .colorChip span{font-size:7.5px;font-weight:900;letter-spacing:.05em;color:#afc1cd}
+#ng27 .colorChip input[type=color]{width:30px;height:26px;border:0;padding:0;background:transparent}
 #ng27 .drawer{width:auto;max-width:calc(100% - 24px);overflow-x:hidden;background:linear-gradient(145deg,rgba(31,44,57,.96),rgba(17,28,39,.96));border:1px solid rgba(193,216,230,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 14px 32px rgba(6,17,25,.28)}
 #ng27 .drawerHead strong{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-weight:900;letter-spacing:.025em}
 #ng27 .drawerHead small{opacity:.68;letter-spacing:.13em}
@@ -194,7 +199,6 @@
    backdrop-filter:blur(14px);
    color:#587083;
  }
- #ng27 #pauseBtn{display:none!important}
 
  #ng27 .cockpit,
  #ng27.expanded .cockpit{
@@ -494,7 +498,7 @@
       <div class="brandText"><b>GAMING SHORTS FACTORY</b><span>GAME EDITOR · LIVE PREVIEW</span></div>
     </div>
     <div class="sys">
-      <button class="zoomEditorBtn" id="zoomEditorBtn" title="Ingrandisci Game Editor"><svg class="ico"><use href="#i-expand"/></svg><span>ZOOM</span></button>
+      <button class="zoomEditorBtn" id="zoomEditorBtn" title="Ingrandisci Game Editor"><svg class="ico"><use href="#i-expand"/></svg><span>FULL</span></button>
       <span class="sysDot"></span><span id="sysText">GAME VISION ONLINE</span>
     </div>
   </div>
@@ -532,14 +536,9 @@
       </div>
 
       <div class="timeline">
-        <div class="tlMeta"><span id="inMeta">IN · 00:00.0</span><span>GAME EVENT MAP</span><span id="outMeta">OUT · 00:15.0</span></div>
+        <div class="tlMeta"><span id="inMeta">IN · 00:00.0</span><span>TAGLIO</span><span id="outMeta">OUT · 00:15.0</span></div>
         <div class="track">
-          <div class="segment s1"></div><div class="segment s2"></div><div class="segment s3"></div><div class="segment s4"></div><div class="segment s5"></div>
-          <div class="peak p1"></div><div class="peak p2"></div><div class="peak p3"></div>
           <div class="select" id="selection"></div><div class="headLine" id="playhead"></div>
-        </div>
-        <div class="events">
-          <span class="event">AIM LOCK · 00:03</span><span class="event hot">ACTION PEAK · 00:07</span><span class="event">KILL EVENT · 00:10</span><span class="event">VOICE REACTION · 00:13</span>
         </div>
         <div class="trimRow">
           <span>IN</span><input id="inRange" type="range" min="0" max="14.5" step="0.1" value="0"><span class="trimValue" id="inValue">00:00.0</span>
@@ -550,7 +549,6 @@
 
     <div class="rail">
       <button class="railBtn" id="playBtn"><svg class="ico"><use href="#i-play"/></svg><span>PLAY</span></button>
-      <button class="railBtn" id="pauseBtn"><svg class="ico"><use href="#i-pause"/></svg><span>PAUSA</span></button>
       <button class="railBtn" id="undoBtn"><svg class="ico"><use href="#i-undo"/></svg><span>UNDO</span></button>
       <button class="railBtn" id="redoBtn"><svg class="ico"><use href="#i-redo"/></svg><span>REDO</span></button>
       <button class="railBtn" data-panel="vision"><svg class="ico ai"><use href="#i-ai"/></svg><span>GAME AI</span></button>
@@ -606,10 +604,10 @@
 
 
  const defaults={
-   zoom:1,panX:0,panY:0,
+   zoom:1,panX:0,panY:0,framePreset:'free',
    look:'Clean',intensity:64,brightness:100,contrast:100,
    hudMode:'Off',
-   captionOn:true,captionText:'NO SCOPE CLUTCH!',captionSize:36,captionY:76,
+   captionOn:true,captionMode:'Auto',captionText:'',captionSize:36,captionY:76,
    textColor:'#ffffff',activeColor:'#ffd400',outlineColor:'#000000',
    muted:false,volume:100,speed:1,audioMode:'Originale',
    inPoint:0,outPoint:15,
@@ -628,6 +626,13 @@
    hostHeight=Math.max(320,Number(args.height)||720);
    if(args.initial_state && typeof args.initial_state==="object"){
      state=Object.assign({},defaults,args.initial_state);
+     if(!Object.prototype.hasOwnProperty.call(args.initial_state,'captionMode')){
+       state.captionMode=state.captionOn===false?'Off':'Auto';
+     }
+     if(state.look==='Neon Arena')state.look='Competitive';
+     if(state.look==='Dark Raid')state.look='Boss Cinematic';
+     if(state.hudMode!=='Off'&&state.hudMode!=='Smart Safe')state.hudMode='Smart Safe';
+     state.captionOn=state.captionMode!=='Off';
      hostStateApplied=true;
      history=[JSON.stringify(state)];
      historyIndex=0;
@@ -682,10 +687,8 @@
  function filterFor(s){
    const t=Math.max(0,Math.min(1,s.intensity/100));
    let extra='';
-   if(s.look==='Competitive') extra=' saturate('+(1+.42*t)+') contrast('+(1+.12*t)+')';
-   if(s.look==='Neon Arena') extra=' saturate('+(1+.58*t)+') hue-rotate('+(4*t)+'deg) contrast('+(1+.11*t)+')';
-   if(s.look==='Dark Raid') extra=' saturate('+(1-.18*t)+') brightness('+(1-.12*t)+') contrast('+(1+.18*t)+')';
-   if(s.look==='Boss Cinematic') extra=' saturate('+(1-.13*t)+') sepia('+(0.12*t)+') contrast('+(1+.14*t)+')';
+   if(s.look==='Competitive') extra=' saturate('+(1+.45*t)+') contrast('+(1+.08*t)+')';
+   if(s.look==='Boss Cinematic') extra=' saturate('+(1-.18*t)+') contrast('+(1+.12*t)+') sepia('+(0.08*t)+')';
    return 'brightness('+(s.brightness/100)+') contrast('+(s.contrast/100)+')'+extra;
  }
  function applyState(){
@@ -698,14 +701,17 @@
    video.volume=Math.max(0,Math.min(1,state.volume/100));
    video.playbackRate=state.speed;
 
-   const words=String(state.captionText||'').trim().split(/\s+/);
+   state.captionOn=state.captionMode!=='Off';
+   const rawCaption=String(state.captionText||'').trim();
+   const words=rawCaption?rawCaption.split(/\s+/):[];
    let html='';
-   if(words.length){
-     const last=words.pop();
-     html=(words.join(' ')+' <span class="hotWord">'+last+'</span>').trim();
+   if(state.captionMode==='Fixed'&&words.length){
+     html=words.join(' ');
+   }else if(state.captionMode==='Auto'){
+     html='CAPTION <span class="hotWord">AUTO</span>';
    }
-   caption.innerHTML=html || 'NO SCOPE <span class="hotWord">CLUTCH!</span>';
-   caption.classList.toggle('off',!state.captionOn);
+   caption.innerHTML=html;
+   caption.classList.toggle('off',!state.captionOn||!html);
    caption.style.fontSize=state.captionSize+'px';
    caption.style.top=state.captionY+'%';
    caption.style.color=state.textColor;
@@ -715,10 +721,11 @@
    caption.querySelectorAll('.hotWord').forEach(x=>x.style.color=state.activeColor);
 
    Object.values(zones).forEach(z=>z.classList.remove('show'));
-   if(state.hudMode==='Auto Detect'){zones.kill.classList.add('show');zones.map.classList.add('show');zones.face.classList.add('show')}
-   if(state.hudMode==='Killfeed Safe') zones.kill.classList.add('show');
-   if(state.hudMode==='Minimap Safe') zones.map.classList.add('show');
-   if(state.hudMode==='Facecam Safe') zones.face.classList.add('show');
+   if(state.hudMode==='Smart Safe'){
+     zones.kill.classList.add('show');
+     zones.map.classList.add('show');
+     zones.face.classList.add('show');
+   }
 
    focus.style.left=(50+state.panX*.7)+'%';
    focus.style.top=(43+state.panY*.7)+'%';
