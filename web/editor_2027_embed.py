@@ -5,7 +5,10 @@ import os
 from pathlib import Path
 from urllib.parse import quote
 
+import streamlit as st
 import streamlit.components.v1 as components
+
+from game_vision_v108 import window_event_map, vision_zones_for_genre
 
 
 _COMPONENT_DIR = Path(__file__).resolve().parent / "editor_2027_component"
@@ -132,6 +135,8 @@ def render_editor_2027_embed(
     height=720,
     key="gsf_editor_2027",
     initial_state=None,
+    clip_start=0.0,
+    source_duration=None,
 ):
     p = Path(video_path)
     state = editor_2027_initial_state(
@@ -141,9 +146,33 @@ def render_editor_2027_embed(
         initial_state,
     )
     component, video_url = _editor_component_for(p)
+
+    # V108 static intelligence metadata stays OUTSIDE mutable Editor state so
+    # Undo/Redo remains tiny and global. The timeline receives only events that
+    # actually belong to the currently loaded clip.
+    try:
+        _raw_events=st.session_state.get("gsf_v108_event_map") or []
+        _genre=str(st.session_state.get("gsf_v108_game_genre") or "Auto")
+    except Exception:
+        _raw_events=[]
+        _genre="Auto"
+    _window_duration=(
+        _clamp(source_duration,0.05,21600.0,state.get("outPoint",15.0))
+        if source_duration is not None else
+        _clamp(state.get("outPoint",15.0),0.05,21600.0,15.0)
+    )
+    _events=window_event_map(
+        _raw_events,
+        clip_start=_clamp(clip_start,0.0,21600.0,0.0),
+        clip_duration=_window_duration,
+        max_events=14,
+    )
     value = component(
         video_url=video_url,
         initial_state=state,
+        event_map=_events,
+        vision_profile=_genre,
+        vision_zones=vision_zones_for_genre(_genre),
         height=int(height),
         key=str(key),
         default=None,
