@@ -60,6 +60,7 @@
 #ng27 video{width:100%;height:100%;object-fit:cover;display:block;background:transparent;transform-origin:center center;transition:filter .16s,transform .16s}
 #ng27 .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(3,7,12,.46),transparent 17%,transparent 69%,rgba(3,7,12,.66))}
 #ng27 .scanlines{position:absolute;inset:0;pointer-events:none;opacity:.055;background:repeating-linear-gradient(180deg,rgba(255,255,255,.14) 0,rgba(255,255,255,.14) 1px,transparent 1px,transparent 5px)}
+#ng27 .shade,#ng27 .scanlines{display:none!important}
 #ng27 .corn{position:absolute;width:38px;height:38px;z-index:4;pointer-events:none;border-color:rgba(105,223,255,.52);border-style:solid}
 #ng27 .c1{top:12px;left:12px;border-width:1px 0 0 1px;border-radius:11px 0 0 0}
 #ng27 .c2{top:12px;right:12px;border-width:1px 1px 0 0;border-radius:0 11px 0 0}
@@ -666,6 +667,8 @@
  },80);
 
  const cloneState=()=>JSON.parse(JSON.stringify(state));
+ const escapeHtml=(value)=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+ const escapeAttr=(value)=>escapeHtml(value);
  function commit(){
    const snap=JSON.stringify(state);
    if(history[historyIndex]===snap) return;
@@ -706,7 +709,7 @@
    const words=rawCaption?rawCaption.split(/\s+/):[];
    let html='';
    if(state.captionMode==='Fixed'&&words.length){
-     html=words.join(' ');
+     html=escapeHtml(words.join(' '));
    }else if(state.captionMode==='Auto'){
      html='CAPTION <span class="hotWord">AUTO</span>';
    }
@@ -727,6 +730,7 @@
      zones.face.classList.add('show');
    }
 
+   focus.style.display=state.visionEnabled?'block':'none';
    focus.style.left=(50+state.panX*.7)+'%';
    focus.style.top=(43+state.panY*.7)+'%';
    const aiLive=!!state.visionEnabled;
@@ -801,7 +805,7 @@
       '<button class="pill captionModePill" data-value="Auto">Auto</button>'+
       '<button class="pill captionModePill" data-value="Fixed">Testo</button>'+
       '<button class="pill captionModePill" data-value="Off">Off</button></div>'+
-      (state.captionMode==='Fixed'?'<div class="textRow"><input id="captionTextInput" maxlength="120" placeholder="Scrivi il testo" value="'+String(state.captionText||'').replace(/"/g,'&quot;')+'"></div>':'')+
+      (state.captionMode==='Fixed'?'<div class="textRow"><input id="captionTextInput" maxlength="120" placeholder="Scrivi il testo" value="'+escapeAttr(state.captionText||'')+'"></div>':'')+
       (state.captionMode!=='Off'?'<div class="range"><span>Dimensione</span><input id="captionSizeR" type="range" min="18" max="70" step="1" value="'+state.captionSize+'"><b>'+state.captionSize+'</b></div>'+
       '<div class="range"><span>Posizione</span><input id="captionYR" type="range" min="15" max="88" step="1" value="'+state.captionY+'"><b>'+state.captionY+'</b></div>'+
       '<div class="colorOnly">'+
