@@ -1153,11 +1153,25 @@ if len(_gsf_publish_calls)!=1:
 _gsf_pub_call=_gsf_publish_calls[0]
 _gsf_old_pub_call=_gsf_patch_ast.get_source_segment(s,_gsf_pub_call) or ""
 _gsf_pub_call.args[0]=_gsf_patch_ast.Constant(value="CONDIVIDI O SCARICA")
+_gsf_pub_call.keywords=[_kw for _kw in _gsf_pub_call.keywords if _kw.arg!="key"]
+_gsf_pub_call.keywords.append(_gsf_patch_ast.keyword(arg="key",value=_gsf_patch_ast.Constant(value="gsf_share_download_top")))
 _gsf_patch_ast.fix_missing_locations(_gsf_pub_call)
 _gsf_new_pub_call=_gsf_patch_ast.unparse(_gsf_pub_call)
 if not _gsf_old_pub_call:
     raise RuntimeError("V107 could not read legacy PUBBLICA launcher")
 s=s.replace(_gsf_old_pub_call,_gsf_new_pub_call,1)
+
+_gsf_top_download='''            with _download_col:
+'''
+_gsf_top_download_i=s.find(_gsf_top_download)
+if _gsf_top_download_i<0:
+    raise RuntimeError("V107 top download block missing")
+_gsf_top_download_end=s.find('''            if _has_final:
+''',_gsf_top_download_i)
+if _gsf_top_download_end<0:
+    raise RuntimeError("V107 top download block end missing")
+_gsf_top_download_block=s[_gsf_top_download_i:_gsf_top_download_end]
+s=s[:_gsf_top_download_i]+s[_gsf_top_download_end:]
 
 # Add one final download button at the end of the always-open social block.
 _gsf_pub_tree=_gsf_patch_ast.parse(s)
@@ -1212,6 +1226,14 @@ st.markdown("""
 .st-key-gsf-final-top-action-row{
   width:100% !important;
 }
+div[data-testid="stHorizontalBlock"]:has(.st-key-gsf_share_download_top) > div[data-testid="column"]:has(.st-key-gsf_share_download_top){
+  flex:1 1 100% !important;
+  width:100% !important;
+  max-width:100% !important;
+}
+div[data-testid="stHorizontalBlock"]:has(.st-key-gsf_share_download_top) > div[data-testid="column"]:not(:has(.st-key-gsf_share_download_top)){
+  display:none !important;
+}
 .st-key-gsf-final-top-action-row [data-testid="stHorizontalBlock"],
 .st-key-gsf-final-top-action-row [data-testid="column"]{
   width:100% !important;
@@ -1243,28 +1265,51 @@ div[data-testid="stHorizontalBlock"]:has(.st-key-download_final_v54_fallback) > 
 .st-key-v69_social_facebook [data-testid="stBaseButton-primary"],
 .st-key-v69_social_instagram [data-testid="stBaseButton-primary"],
 .st-key-v69_social_youtube [data-testid="stBaseButton-primary"],
-.st-key-v69_social_tiktok [data-testid="stBaseButton-primary"]{
+.st-key-v69_social_tiktok [data-testid="stBaseButton-primary"],
+.st-key-v69_social_facebook button[kind="primary"],
+.st-key-v69_social_instagram button[kind="primary"],
+.st-key-v69_social_youtube button[kind="primary"],
+.st-key-v69_social_tiktok button[kind="primary"]{
   border-color:#9c88ea !important;
   background:linear-gradient(145deg,#f5f0ff,#ece7ff) !important;
+  color:#29465b !important;
   box-shadow:0 7px 18px rgba(104,84,205,.16) !important;
 }
 .st-key-v69_social_facebook button:before,
 .st-key-v69_social_instagram button:before,
 .st-key-v69_social_youtube button:before,
 .st-key-v69_social_tiktok button:before{
-  content:"";
-  width:23px;
-  height:23px;
-  display:block;
-  background-repeat:no-repeat;
-  background-position:center;
-  background-size:contain;
-  flex:0 0 23px;
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  flex:0 0 32px;
+  background:none !important;
+  opacity:1 !important;
+  filter:none !important;
+  text-shadow:none;
 }
-.st-key-v69_social_facebook button:before{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzE4NzdGMiIgZD0iTTEzLjcgMjJ2LTloM2wuNS0zLjVoLTMuNVY3LjNjMC0xIC4zLTEuNyAxLjgtMS43aDEuOVYyLjVjLS4zIDAtMS41LS4xLTIuOC0uMS0yLjggMC00LjcgMS43LTQuNyA0Ljh2Mi43SDd2My41aDIuOXY5aDMuOHoiLz48L3N2Zz4=")}
-.st-key-v69_social_instagram button:before{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjEiIHgyPSIxIiB5Mj0iMCI+PHN0b3Agc3RvcC1jb2xvcj0iI0ZFREE3NSIvPjxzdG9wIG9mZnNldD0iLjM1IiBzdG9wLWNvbG9yPSIjRkE3RTFFIi8+PHN0b3Agb2Zmc2V0PSIuNjUiIHN0b3AtY29sb3I9IiNENjI5NzYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM0RjVCRDUiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBmaWxsPSJ1cmwoI2cpIiBkPSJNNy40IDJoOS4yQTUuNCA1LjQgMCAwIDEgMjIgNy40djkuMmE1LjQgNS40IDAgMCAxLTUuNCA1LjRINy40QTUuNCA1LjQgMCAwIDEgMiAxNi42VjcuNEE1LjQgNS40IDAgMCAxIDcuNCAyWm0wIDJBMy40IDMuNCAwIDAgMCA0IDcuNHY5LjJBMy40IDMuNCAwIDAgMCA3LjQgMjBoOS4yYTMuNCAzLjQgMCAwIDAgMy40LTMuNFY3LjRBMy40IDMuNCAwIDAgMCAxNi42IDRINy40Wm05LjYgMS41YTEuMjUgMS4yNSAwIDEgMSAwIDIuNSAxLjI1IDEuMjUgMCAwIDEgMC0yLjVaTTEyIDdhNSA1IDAgMSAxIDAgMTAgNSA1IDAgMCAxIDAtMTBabTAgMmEzIDMgMCAxIDAgMCA2IDMgMyAwIDAgMCAwLTZaIi8+PC9zdmc+")}
-.st-key-v69_social_youtube button:before{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI0ZGMDAwMCIgZD0iTTIzIDEyczAtMy43LS41LTUuNGEzIDMgMCAwIDAtMi4xLTIuMUMxOC43IDQgMTIgNCAxMiA0cy02LjcgMC04LjQuNWEzIDMgMCAwIDAtMi4xIDIuMUMxIDguMyAxIDEyIDEgMTJzMCAzLjcuNSA1LjRhMyAzIDAgMCAwIDIuMSAyLjFDNS4zIDIwIDEyIDIwIDEyIDIwczYuNyAwIDguNC0uNWEzIDMgMCAwIDAgMi4xLTIuMUMyMyAxNS43IDIzIDEyIDIzIDEyWm0tMTMuMiAzLjRWOC42bDYgMy40LTYgMy40WiIvPjwvc3ZnPg==")}
-.st-key-v69_social_tiktok button:before{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzExMTExMSIgZD0iTTE1LjYgMmMuNCAyLjMgMS44IDMuNyA0LjEgMy45djMuM2E5LjEgOS4xIDAgMCAxLTQuMS0xdjYuNGE2LjYgNi42IDAgMSAxLTUuNy02LjV2My40YTMuMiAzLjIgMCAxIDAgMi40IDMuMVYyaDMuM1oiLz48L3N2Zz4=")}
+.st-key-v69_social_facebook button:before{
+  content:"f";
+  color:#1877F2 !important;
+  font:900 30px/1 Arial,sans-serif;
+}
+.st-key-v69_social_instagram button:before{
+  content:"◎";
+  color:#D62976 !important;
+  font:900 31px/1 Arial,sans-serif;
+}
+.st-key-v69_social_youtube button:before{
+  content:"▶";
+  color:#FF0000 !important;
+  font:900 26px/1 Arial,sans-serif;
+}
+.st-key-v69_social_tiktok button:before{
+  content:"♪";
+  color:#111111 !important;
+  font:900 31px/1 Arial,sans-serif;
+  text-shadow:-1.5px 0 #25F4EE,1.5px 0 #FE2C55;
+}
 .st-key-v69_social_facebook button p,
 .st-key-v69_social_instagram button p,
 .st-key-v69_social_youtube button p,
@@ -1808,6 +1853,8 @@ s = s.rstrip() + "\n\n" + _demo_dialog_style.lstrip()
 _major_cta_final_override = r'''
 st.markdown("""
 <style id="gsf-major-actions-final-override">
+.st-key-gsf_share_download_top button,
+[class*="st-key-gsf_share_download_top"] button,
 .st-key-gsf-final-top-action-row button,
 [class*="st-key-gsf-final-top-action-row"] button,
 .st-key-gsf-major-create-ai button,
@@ -1840,6 +1887,8 @@ st.markdown("""
     letter-spacing:.045em !important;
     box-shadow:0 12px 28px rgba(104,84,205,.28) !important;
 }
+.st-key-gsf_share_download_top button:hover,
+[class*="st-key-gsf_share_download_top"] button:hover,
 .st-key-gsf-final-top-action-row button:hover,
 [class*="st-key-gsf-final-top-action-row"] button:hover,
 .st-key-gsf-major-create-ai button:hover,
@@ -1860,6 +1909,8 @@ st.markdown("""
     box-shadow:0 15px 34px rgba(104,84,205,.36) !important;
 }
 @media(max-width:750px){
+    .st-key-gsf_share_download_top button,
+    [class*="st-key-gsf_share_download_top"] button,
     .st-key-gsf-final-top-action-row button,
     [class*="st-key-gsf-final-top-action-row"] button,
     .st-key-gsf-major-create-ai button,

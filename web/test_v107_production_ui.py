@@ -65,6 +65,13 @@ if "v69_social_facebook" not in s or "gsf_final_download_after_social" not in s:
     raise SystemExit("FAIL native Facebook/download final layout missing")
 if s.count("CONDIVIDI O SCARICA") != 1:
     raise SystemExit("FAIL final action title must appear exactly once")
+if "gsf_share_download_top" not in s:
+    raise SystemExit("FAIL final top CTA lacks stable CREA CON IA styling key")
+if "with _download_col:" in s:
+    raise SystemExit("FAIL obsolete top SCARICA block survived")
+for _icon_marker in ('content:"f"','content:"◎"','content:"▶"','content:"♪"'):
+    if _icon_marker not in s:
+        raise SystemExit("FAIL high-contrast social icon missing: "+_icon_marker)
 if "gsf-major-publish-download" in s:
     raise SystemExit("FAIL duplicate lower CONDIVIDI O SCARICA milestone survived")
 for _ad_key in ("v1053_ad_before_final","v1054_ad_after_ai","v1055_ad_after_ai","v1054_ad_after_final_action","v1054_ad_after_final_result"):
