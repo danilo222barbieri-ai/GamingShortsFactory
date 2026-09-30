@@ -48,16 +48,16 @@ def _nearest_event(events,start,duration):
         return best[1]
     return {}
 
-def _candidate(score,start,diagnostics,duration,events,genre,profile):
+def _candidate(score,start,diagnostics,duration,events,genre,profile,semantic_injected=False):
     d=_diag_for_start(diagnostics,start)
     f=(d.get("features") or {}) if isinstance(d,dict) else {}
     why=(d.get("why") or {}) if isinstance(d,dict) else {}
     near=_nearest_event(events,start,duration)
-    category=str(f.get("moment_category") or why.get("category") or "balanced").lower()
+    category=str(f.get("moment_category") or why.get("category") or near.get("category") or "balanced").lower()
     event=_event_label(f.get("event_type") or why.get("event") or near.get("semantic") or near.get("kind"))
     base=_clamp(score)
-    event_score=max(_clamp(f.get("event_score")),_clamp(near.get("score")))
-    reaction=max(_clamp(f.get("reaction")),_clamp(f.get("reaction_cue")))
+    event_score=max(_clamp(f.get("event_score")),_clamp(near.get("score")),_clamp(near.get("semantic_score")))
+    reaction=max(_clamp(f.get("reaction")),_clamp(f.get("reaction_cue")),_clamp(near.get("semantic_reaction")))
     motion=max(_clamp(f.get("motion_burst")),_clamp(f.get("motion_avg")))
     synergy=_clamp(f.get("synergy")); arc=_clamp(f.get("arc"))
     setup=_clamp(f.get("setup_score")); aftermath=_clamp(f.get("aftermath_score"))
@@ -77,11 +77,16 @@ def _candidate(score,start,diagnostics,duration,events,genre,profile):
     if g in ("FPS","Battle Royale"): gbonus=.025*motion+.025*event_score+.015*reaction
     elif g=="Sports": gbonus=.03*arc+.025*event_score+.015*aftermath
     elif g=="Racing": gbonus=.03*continuity+.025*motion+.015*arc
+    semantic_conf=_clamp(near.get("semantic_confidence"))
+    semantic_excite=_clamp(near.get("semantic_excitement"))
+    semantic_signal=max(_clamp(near.get("semantic_score")),.70*semantic_conf+.30*semantic_excite)
     quality=(
-        .46*base+.14*event_score+.08*reaction+.08*motion+.06*synergy+
+        .42*base+.14*event_score+.08*reaction+.08*motion+.06*synergy+
         .05*arc+.04*setup+.04*aftermath+.03*continuity+
-        semantic_bonus+pbonus+gbonus-.16*dead
+        .10*semantic_signal+semantic_bonus+pbonus+gbonus-.16*dead
     )
+    if semantic_injected:
+        quality+=.035*semantic_signal
     quality=max(0.0,min(1.35,quality))
     signals=[base,event_score,reaction,motion,synergy,arc]
     strong=sum(1 for x in signals if x>=.62)
@@ -92,8 +97,59 @@ def _candidate(score,start,diagnostics,duration,events,genre,profile):
     return {
         "start":_num(start),"base_score":base,"score":quality,"confidence":confidence,
         "category":category,"event":event,"reason":reason,"dead":dead,
+        "semantic_injected":bool(semantic_injected),
+        "semantic_confidence":semantic_conf,
+        "semantic_score":semantic_signal,
         "original":(float(score),float(start)),
     }
+
+def _inject_semantic_pool(pool,events,duration,max_injected=6):
+    base=[]
+    for item in pool or []:
+        try:
+            base.append((float(item[0]),float(item[1])))
+        except Exception:
+            continue
+    existing=[x[1] for x in base]
+    injected=[]
+    d=max(1.0,_num(duration,15.0))
+    lead=min(6.0,max(2.0,d*.32))
+    rows=[]
+    for e in events or []:
+        if not isinstance(e,dict):
+            continue
+        source=str(e.get("source") or "").lower()
+        if "gemini" not in source:
+            continue
+        conf=_clamp(e.get("semantic_confidence"))
+        sem=_clamp(e.get("semantic_score"))
+        excite=_clamp(e.get("semantic_excitement"))
+        signal=max(sem,.70*conf+.30*excite)
+        if conf<.62 or signal<.58:
+            continue
+        t=_num(e.get("time"),-1.0)
+        if t<0:
+            continue
+        start=max(0.0,t-lead)
+        rows.append((signal,conf,start,e))
+    rows.sort(key=lambda x:(x[0],x[1]),reverse=True)
+    min_gap=max(1.5,d*.22)
+    for signal,conf,start,event in rows:
+        if any(abs(start-old)<min_gap for old in existing):
+            continue
+        synthetic=min(.99,.70+.22*signal+.07*conf)
+        base.append((synthetic,start))
+        existing.append(start)
+        injected.append({
+            "start":start,
+            "event":_event_label(event.get("semantic") or event.get("kind")),
+            "confidence":conf,
+            "semantic_score":signal,
+            "source":str(event.get("source") or "gemini-v114"),
+        })
+        if len(injected)>=max(1,int(max_injected)):
+            break
+    return base,injected
 
 def _overlap(a,b,duration):
     d=max(1.0,_num(duration,15.0))
@@ -101,11 +157,15 @@ def _overlap(a,b,duration):
     return max(0.0,min(a1,b1)-max(a0,b0))/d
 
 def rerank_moments(pool,diagnostics,clip_duration=15,numero_clip=3,profile="auto",genre="Auto",events=None):
+    events=events or []
+    augmented_pool,injected=_inject_semantic_pool(pool,events,clip_duration,max_injected=6)
+    injected_starts=[float(x["start"]) for x in injected]
     candidates=[]
-    for item in pool or []:
+    for item in augmented_pool:
         try: score,start=float(item[0]),float(item[1])
         except Exception: continue
-        candidates.append(_candidate(score,start,diagnostics,clip_duration,events or [],genre,profile))
+        is_injected=any(abs(start-x)<0.001 for x in injected_starts)
+        candidates.append(_candidate(score,start,diagnostics,clip_duration,events,genre,profile,semantic_injected=is_injected))
     candidates.sort(key=lambda x:(x["score"],x["confidence"],x["base_score"]),reverse=True)
     want=max(1,int(numero_clip or 3)); selected=[]
     while candidates and len(selected)<want:
@@ -129,12 +189,20 @@ def rerank_moments(pool,diagnostics,clip_duration=15,numero_clip=3,profile="auto
     selected.sort(key=lambda x:x["score"],reverse=True)
     chosen=[(float(c["original"][0]),float(c["start"])) for c in selected]
     meta={
-        "engine":"game-brain-v112","pool_size":len(pool or []),"selected_count":len(chosen),
+        "engine":"game-brain-v115-semantic-injection",
+        "pool_size":len(pool or []),
+        "augmented_pool_size":len(augmented_pool),
+        "semantic_injected_count":len(injected),
+        "semantic_injected":injected,
+        "selected_count":len(chosen),
         "genre":str(genre or "Auto"),"profile":str(profile or "auto"),
         "selected":[{
             "rank":i+1,"start":round(c["start"],3),"brain_score":round(c["score"],5),
             "base_score":round(c["base_score"],5),"confidence":round(c["confidence"],4),
             "category":c["category"],"event":c["event"],"reason":c["reason"],
+            "semantic_injected":bool(c.get("semantic_injected")),
+            "semantic_confidence":round(_num(c.get("semantic_confidence")),4),
+            "semantic_score":round(_num(c.get("semantic_score")),4),
         } for i,c in enumerate(selected)],
     }
     return chosen,meta
