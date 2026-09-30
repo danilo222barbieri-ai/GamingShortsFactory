@@ -947,7 +947,7 @@
  async function runVisionScan(force=false){
    if(!visionScan||!visionTags)return;
    const key=hostVideoUrl+'|'+visionProfile+'|'+(eventMap||[]).map(x=>x.kind+':'+x.time).join(',');
-   if(!force&&key===lastVisionScanKey&&visionDetections.length){
+   if(key===lastVisionScanKey&&visionDetections.length){
      renderVisionDetections(visionDetections);
    }else{
      visionScanStatus.textContent='GAME VISION · ANALISI VISIVA';
