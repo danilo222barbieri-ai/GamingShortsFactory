@@ -132,16 +132,15 @@ def _direct_semantic_interaction(client,model,video_content,prompt,max_events,se
 
 
 def _stream_semantic_interaction(client,model,video_content,prompt,max_events,semantic_timeout,structured=True):
-    stream=client.interactions.create(
-        model=model,
-        input=[
-            video_content,
-            {"type":"text","text":prompt},
-        ],
-        response_format=_response_format(max_events) if structured else None,
-        stream=True,
-        timeout=semantic_timeout,
-    )
+    kwargs={
+        "model":model,
+        "input":[video_content,{"type":"text","text":prompt}],
+        "stream":True,
+        "timeout":semantic_timeout,
+    }
+    if structured:
+        kwargs["response_format"]=_response_format(max_events)
+    stream=client.interactions.create(**kwargs)
     json_parts=[]
     completed=False
     for event in stream:
@@ -310,6 +309,7 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
     started=time.perf_counter()
     processing_mode=choose_processing_mode(_probe_duration_seconds(source))
     input_method=choose_input_method(source.stat().st_size)
+    direct_mode=(processing_mode=="static" and input_method=="inline")
     try:
         from google import genai
         client=genai.Client(api_key=key)
@@ -353,7 +353,6 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
         semantic_timeout=max(
             60.0,float(os.environ.get("GSF_SEMANTIC_TIMEOUT_SECONDS","420") or 420)
         )
-        direct_mode=(processing_mode=="static" and input_method=="inline")
         prompt_json=prompt+(
             " Return ONLY valid JSON matching the requested events schema. "
             "If there are no meaningful highlights, return {\"events\":[]}."
