@@ -24,9 +24,10 @@ for marker in (
     "_gsf_v124_moment_for_start",
     '"opened_editor"',
     '"published"',
-    "_default_title=_ai_title",
-    "_default_description=_ai_description",
-    "_default_hashtags=",
+    '_ai_title_key=f"social_title_{_slug}_{_ctx}"',
+    'st.session_state[_ai_title_key]=_ai_title',
+    'st.session_state[_ai_description_key]=_ai_description',
+    'st.session_state[_ai_hashtags_key]=_ai_hashtags',
 ):
     if marker not in app:
         raise SystemExit("V124 app visible AI OS marker missing: "+marker)
