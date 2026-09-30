@@ -21,12 +21,11 @@ print("V108_AI_FUNCTIONS_END")
 
 interesting=[
     "_gsf_ai_scan_base",
-    "_gsf_ai_candidates",
-    "_gsf_ai_rank_candidates",
-    "_gsf_ai_pick_three",
-    "_gsf_ai_select_three",
-    "_gsf_ai_best_moments",
-    "_gsf_ai_generate_candidates",
+    "_gsf_ai_window_features",
+    "_gsf_score_ai_window",
+    "_gsf_moment_category",
+    "_gsf_ai_pick_diverse",
+    "_gsf_ai_rank_v3",
 ]
 lines=source.splitlines()
 for name in interesting:
