@@ -525,6 +525,48 @@ _engine_note_new='''    st.markdown(
         '<div class="gsf-major-note">'+html.escape(str(_engine_help.get(modalita,"") or ""))+'</div>',
         unsafe_allow_html=True,
     )
+    if st.session_state.get("gsf_v107_final_render_running",False):
+        st.warning(
+            "⚠️ Short in creazione. Puoi continuare a usare il sito, ma se cambi motore "
+            "la creazione corrente viene interrotta. Salva la bozza prima di cambiare."
+        )
+        if st.button(
+            "SALVA BOZZA PRIMA DI CAMBIARE MOTORE",
+            use_container_width=True,
+            key="gsf_save_draft_before_engine_change_v107",
+        ):
+            try:
+                _gsf_save_persistent_state()
+                _draft_state=__import__("json").loads(
+                    GSF_SESSION_STATE_FILE.read_text(encoding="utf-8")
+                )
+                _draft_payload={
+                    "title":"Bozza · "+str(st.session_state.get("gsf_source_name") or "Gameplay"),
+                    "source_name":str(st.session_state.get("gsf_source_name") or "Gameplay"),
+                    "state":_draft_state,
+                }
+                _u=__import__("urllib.request",fromlist=["Request","urlopen"])
+                _body=__import__("json").dumps(
+                    _draft_payload,ensure_ascii=False,default=str
+                ).encode("utf-8")
+                _req=_u.Request(
+                    "http://127.0.0.1:8502/drafts/save",
+                    data=_body,
+                    headers={
+                        "Content-Type":"application/json",
+                        "X-GSF-Session-ID":str(GSF_SESSION_ID),
+                    },
+                    method="POST",
+                )
+                _u.urlopen(_req,timeout=8).read()
+                st.session_state["gsf_v107_engine_change_draft_saved"]=True
+                st.toast(
+                    "💾 Bozza salvata nel Creator Hub. Ora puoi cambiare motore: "
+                    "lo Short corrente verrà interrotto."
+                )
+            except Exception as _draft_exc:
+                print("GSF_ENGINE_DRAFT_SAVE_WARN",repr(str(_draft_exc)),flush=True)
+                st.warning("Non sono riuscito a salvare la bozza. Riprova prima di cambiare motore.")
 '''
 if _engine_note_old not in s:
     raise RuntimeError("Demo engine help note anchor not found")
@@ -671,6 +713,7 @@ _create_short_new='''            def _gsf_v107_queue_final_render():
                 unsafe_allow_html=True,
             )
             with st.container(key="gsf-save-draft"):
+                st.caption("La bozza salva il lavoro corrente e la ritrovi nel Creator Hub.")
                 if st.button("SALVA BOZZA",use_container_width=True,key="gsf_save_draft_v107"):
                     try:
                         _gsf_save_persistent_state()
@@ -2701,4 +2744,21 @@ s = s.rstrip() + "\n\n" + _draft_v107_style.lstrip()
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
 print('V107 production UI applied:',out)
+# Streamlit buttons are transient widgets and must never be restored from
+# our durable JSON session state. A restored button value raises
+# StreamlitValueAssignmentNotAllowedError before the UI can render.
+_gsf_widget_skip_old='''_GSF_STATE_SKIP_EXACT = {
+    "upload_v73", "gsf_web_session_id",
+}
+'''
+_gsf_widget_skip_new='''_GSF_STATE_SKIP_EXACT = {
+    "upload_v73", "gsf_web_session_id",
+    "gsf_save_draft_v107",
+    "gsf_save_draft_before_engine_change_v107",
+}
+'''
+if _gsf_widget_skip_old not in s:
+    raise RuntimeError("V107 persistent widget skip anchor missing")
+s=s.replace(_gsf_widget_skip_old,_gsf_widget_skip_new,1)
+
 # V107 production UI: Editor 2027 + approved milestone guides

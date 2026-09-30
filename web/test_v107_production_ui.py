@@ -123,3 +123,10 @@ if "render_job.json" not in s or "GSF_FINAL_JOB_READY_WARN" not in s:
     raise SystemExit("FAIL durable final render state missing")
 if "SALVA BOZZA" not in s or "/drafts/save" not in s:
     raise SystemExit("FAIL save draft UI missing")
+
+if '"gsf_save_draft_v107",' not in s or '"gsf_save_draft_before_engine_change_v107",' not in s:
+    raise SystemExit("FAIL transient draft button keys are not excluded from persistent state")
+if "Short in creazione. Puoi continuare a usare il sito" not in s:
+    raise SystemExit("FAIL engine-change render warning missing")
+if "SALVA BOZZA PRIMA DI CAMBIARE MOTORE" not in s:
+    raise SystemExit("FAIL engine-change draft CTA missing")
