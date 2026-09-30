@@ -938,6 +938,72 @@ st.markdown("""
 '''
 s = s.rstrip() + "\n\n" + _publish_heading_cleanup.lstrip()
 
+# Final result UX — publish is always visible; social options expand in place; download stays last.
+_final_publish_v2 = r'''
+# Keep the existing social composer logic active as soon as a final short exists.
+s=s.replace(
+    'if st.session_state.get("show_social_publish_v54", False):',
+    'if _has_final:'
+)
+# Remove the obsolete intermediate PUBBLICA button/toggle where present.
+import re as _gsf_v107_re
+s=_gsf_v107_re.sub(
+    r'(?ms)^\s*if st\.button\(\s*["\\\'](?:➡️\\s*)?PUBBLICA["\\\'].*?show_social_publish_v54["\\\']\s*=\s*True\s*',
+    '\n',
+    s,
+)
+# Put download after the social composer rather than before it. We hide the legacy
+# placement visually and add a stable bottom download action in the final-result block.
+s += r"""
+st.markdown(
+    '<div class="gsf-final-publish-title">PUBBLICA</div>',
+    unsafe_allow_html=True,
+)
+"""
+st.markdown("""
+<style id="gsf-v107-final-publish">
+.gsf-final-publish-title{
+  margin:18px 0 10px;text-align:center;color:#17324a;
+  font-size:1.15rem;font-weight:900;letter-spacing:.08em;
+}
+@media(max-width:600px){
+  .gsf-final-publish-title{margin:12px 0 8px;font-size:1.05rem}
+  [class*="st-key-v1054_social_composer_"]{padding:12px !important;margin-top:8px !important}
+}
+/* The old large publish launcher is no longer part of the final flow. */
+[class*="st-key-"] button[kind="primary"]:has(p:is(:only-child)){
+  /* scoped by JS below for browser compatibility */
+}
+</style>
+<script>
+(()=>{
+ const tune=()=>{
+   const all=[...document.querySelectorAll('button')];
+   all.forEach(b=>{
+     const t=(b.textContent||'').trim().replace(/^➡️\\s*/,'');
+     if(t==='PUBBLICA'){
+       const wrap=b.closest('[data-testid="stButton"]')||b.parentElement;
+       if(wrap) wrap.style.display='none';
+     }
+   });
+   /* Move the visible SCARICA action below the social composer on both desktop/mobile. */
+   const dl=[...document.querySelectorAll('button,a')].find(x=>(x.textContent||'').trim()==='SCARICA');
+   const composers=[...document.querySelectorAll('[class*="st-key-v1054_social_composer_"]')];
+   if(dl && composers.length){
+     const dlWrap=dl.closest('[data-testid="stDownloadButton"]')||dl.parentElement;
+     const last=composers[composers.length-1];
+     const parent=last.parentElement;
+     if(dlWrap && parent && dlWrap.parentElement===parent) parent.appendChild(dlWrap);
+   }
+ };
+ tune(); new MutationObserver(tune).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+""", unsafe_allow_html=True)
+'''
+
+s = s.rstrip() + "\n\n" + _final_publish_v2.lstrip()
+
 # DEMO typography: one coherent UI font across the whole product.
 _demo_typography = r'''
 st.markdown("""
