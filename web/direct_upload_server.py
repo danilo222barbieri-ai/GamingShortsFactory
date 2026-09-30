@@ -483,6 +483,79 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
         print(f"GSF bucket materialization failed {upload_id}: {str(exc)[:180]}",flush=True)
 
 
+
+def _bucket_source_ref_from_path(sid,source_path):
+    """Recover persistent bucket metadata from a materialized source filename."""
+    sid=_safe_id(sid)
+    source_path=str(source_path or "")
+    if not sid or not source_path or not _bucket_enabled():
+        return {}
+    name=Path(source_path).name
+    match=re.search(r"_([0-9a-fA-F]{20})(\.[A-Za-z0-9]{1,10})$",name)
+    if not match:
+        return {}
+    upload_id=_safe_id(match.group(1))
+    if not upload_id:
+        return {}
+    prefix=f"uploads/{sid}/{upload_id}/"
+    try:
+        rows=_s3().list_objects_v2(Bucket=S3_BUCKET,Prefix=prefix,MaxKeys=10).get("Contents") or []
+        rows=[row for row in rows if str(row.get("Key") or "").startswith(prefix) and int(row.get("Size") or 0)>0]
+        if not rows:
+            return {}
+        row=max(rows,key=lambda x:int(x.get("Size") or 0))
+        key=str(row.get("Key") or "")
+        head=_s3().head_object(Bucket=S3_BUCKET,Key=key)
+        metadata=dict(head.get("Metadata") or {})
+        original_name=str(metadata.get("gsf-original-name") or Path(key).name)
+        original_name,safe_stem,ext=_safe_filename(original_name)
+        total=int(head.get("ContentLength") or row.get("Size") or 0)
+        if total<=0:
+            return {}
+        return {
+            "name":original_name,
+            "size":total,
+            "upload_id":upload_id,
+            "storage":"railway_bucket",
+            "bucket_key":key,
+            "analysis_key":f"analysis/{sid}/{upload_id}/v52-keyframe-turbo.json",
+            "path":source_path,
+            "safe_stem":safe_stem,
+            "ext":ext,
+        }
+    except Exception as exc:
+        print("GSF_SOURCE_REF_RECOVER_WARN",sid,repr(str(exc)),flush=True)
+        return {}
+
+
+def _restore_bucket_source(sid,source_path):
+    sid=_safe_id(sid)
+    ref=_bucket_source_ref_from_path(sid,source_path)
+    if not ref:
+        return ""
+    try:
+        _materialize_bucket_object(
+            sid,
+            str(ref["upload_id"]),
+            str(ref["bucket_key"]),
+            str(ref["name"]),
+            str(ref["safe_stem"]),
+            str(ref["ext"]),
+            int(ref["size"]),
+            str(ref["analysis_key"]),
+        )
+        marker=ROOT/"sessions"/sid/"media"/".direct_upload_ready.json"
+        if marker.is_file():
+            meta=json.loads(marker.read_text(encoding="utf-8"))
+            restored=Path(str(meta.get("path") or ""))
+            if restored.is_file() and str(meta.get("upload_id") or "")==str(ref["upload_id"]):
+                print("GSF_SOURCE_RESTORED",sid,str(restored),flush=True)
+                return str(restored)
+    except Exception as exc:
+        print("GSF_SOURCE_RESTORE_WARN",sid,repr(str(exc)),flush=True)
+    return ""
+
+
 def _html(handler,status,body):
     raw=str(body).encode("utf-8")
     handler.send_response(status)
@@ -821,6 +894,10 @@ def _draft_save(sid,payload):
     except Exception:
         source_ref={}
     source_path=Path(str(state.get("gsf_source_path") or source_ref.get("path") or ""))
+    if _bucket_enabled() and not source_ref.get("bucket_key"):
+        recovered_ref=_bucket_source_ref_from_path(sid,str(source_path))
+        if recovered_ref:
+            source_ref.update(recovered_ref)
     if source_path.is_file():
         try:
             linked=_draft_dir(sid)/(draft_id+"_source"+source_path.suffix.lower())
@@ -926,6 +1003,11 @@ def _draft_prepare_resume(sid,draft):
     state=dict(draft.get("state") or {})
     source_ref=dict(draft.get("source_ref") or {})
     source_name=str(draft.get("source_name") or source_ref.get("name") or "Gameplay")
+    source_hint=str(source_ref.get("path") or state.get("gsf_source_path") or state.get("gsf_editor_source_path") or "")
+    if _bucket_enabled() and not source_ref.get("bucket_key"):
+        recovered_ref=_bucket_source_ref_from_path(sid,source_hint)
+        if recovered_ref:
+            source_ref.update(recovered_ref)
     candidate=Path(str(source_ref.get("draft_path") or source_ref.get("path") or state.get("gsf_source_path") or ""))
     if not candidate.is_file() and _bucket_enabled() and source_ref.get("bucket_key"):
         try:
@@ -946,6 +1028,7 @@ def _draft_prepare_resume(sid,draft):
         state["gsf_source_path"]=str(candidate)
         state["gsf_editor_source_path"]=str(candidate)
         state["gsf_source_name"]=source_name
+        state["gsf_manual_editor_open"]=True
         try:
             marker=ROOT/"sessions"/sid/"media"/".direct_upload_ready.json"
             current={}
@@ -984,7 +1067,7 @@ def _draft_cards_html(sid):
         delete_href="/drafts/delete?id="+urllib.parse.quote(did,safe="")
         rows.append(
             '<div class="draftCard"><div class="draftInfo"><strong>'+title+'</strong><span>'+source+' · '+html.escape(updated)+
-            '</span></div><div class="draftActions"><a class="draftOpen" href="'+href+'">RIPRENDI</a>'+
+            '</span></div><div class="draftActions"><a class="draftOpen" href="'+href+'" target="_top">RIPRENDI</a>'+
             '<a class="draftDelete" href="'+delete_href+'" onclick="return confirm(\'Eliminare questa bozza?\')">ELIMINA</a></div></div>'
         )
     return '<div class="draftGrid">'+"".join(rows)+'</div>'
@@ -1354,7 +1437,7 @@ h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-col
 <h2>Le tue bozze</h2>{drafts_html}<h2>I tuoi social</h2><div class="socials"><div class="social"><strong>YouTube</strong><span>Accedi per collegare</span></div><div class="social"><strong>TikTok</strong><span>Accedi per collegare</span></div><div class="social"><strong>Instagram</strong><span>Accedi per collegare</span></div><div class="social"><strong>Facebook</strong><span>Accedi per collegare</span></div></div>
 <h2>Auto Highlights</h2><div class="auto"><div class="auto-k">AUTO HIGHLIGHTS</div><div class="auto-title">Tu fai la live. GSF trova i momenti da pubblicare.</div><div class="auto-sub">Accedi al Creator Hub per collegare i tuoi account e gestire le live.</div></div>
 <h2>Prossimamente</h2><div class="future">Storico Short · Cloud · Piano Pro · Crediti AI · Achievement · Classifica Creator.</div>
-<a class="back" href="/" onclick="if(window.opener){{window.close();return false;}}">← Torna alla pagina principale</a>
+<a class="back" href="/" onclick="if(window.parent!==window){{window.parent.location.hash='';return false;}}window.location.href='/';return false;">← Torna alla pagina principale</a>
 </div></main></body></html>"""
     providers=dict(profile.get("providers") or {})
     name=html.escape(str(profile.get("display_name") or "Creator"))
@@ -1414,7 +1497,7 @@ h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-col
 <h2>Le tue bozze</h2>{drafts_html}<h2>I tuoi social</h2><div class="socials">{socials}</div>
 <h2>Auto Highlights</h2><div class="auto"><div class="auto-k">AUTO HIGHLIGHTS</div><div class="auto-title">Tu fai la live. GSF trova i momenti da pubblicare.</div><div class="auto-sub">Collega i tuoi account live per trovare automaticamente i momenti migliori e portarli nel Game Editor.</div></div>
 <h2>Prossimamente</h2><div class="future">Storico Short · Cloud · Piano Pro · Crediti AI · Achievement · Classifica Creator.</div>
-<a class="logout" href="/account/logout">Esci dal Creator Hub</a><a class="back-bottom" href="/" onclick="if(window.opener){{window.close();return false;}}">← Torna alla pagina principale</a>
+<a class="logout" href="/account/logout">Esci dal Creator Hub</a><a class="back-bottom" href="/" onclick="if(window.parent!==window){{window.parent.location.hash='';return false;}}window.location.href='/';return false;">← Torna alla pagina principale</a>
 </div></main></body></html>"""
 
 
@@ -1950,6 +2033,15 @@ class Handler(BaseHTTPRequestHandler):
                 started=float(payload.get("started_at") or 0.0)
                 if started and time.time()-started>900:status="stale"
             _json(self,200,{"ok":True,"render_status":status,"started_at":payload.get("started_at"),"completed_at":payload.get("completed_at")})
+            return
+        if clean=="/source/restore":
+            sid=_social_sid(self)
+            requested=str((parse_qs(path.query).get("path") or [""])[0])
+            restored=_restore_bucket_source(sid,requested)
+            if restored:
+                _json(self,200,{"ok":True,"path":restored})
+            else:
+                _json(self,404,{"ok":False,"error":"source unavailable"})
             return
         if clean=="/editor-media/current":
             _editor_media_current(self,_social_sid(self))
