@@ -29,9 +29,9 @@ for marker in required:
 
 for marker in (
     "GSF_FINAL_CREATE_CLICK",
-    "gsf-final-ready",
     "gsf-layout-hygiene",
-    "Short finale pronto",
+    "Short pronto",
+    "gsf-final-status",
     "PUBBLICA O SCARICA",
     "v69_social_facebook",
     "Dettagli Facebook",
@@ -49,6 +49,8 @@ if 'content:"→"' in s:
     raise SystemExit("FAIL duplicate personalize arrow survived")
 if "GSF_MANUAL_EDITOR_OPEN" not in s:
     raise SystemExit("FAIL Scegli scena is not instrumented as immediate-open Editor 2027")
+if "gsf_personalize_display" in s:
+    raise SystemExit("FAIL PERSONALIZZA display button still uses forbidden explicit widget key")
 if 'st.markdown("\\\\n\\\\n")' in s or "st.markdown('\\\\n\\\\n')" in s:
     raise SystemExit("FAIL literal newline markdown survived")
 if "v1054_ad_after_final_result" in s and not re.search(
@@ -65,7 +67,7 @@ if s.count("PUBBLICA O SCARICA") != 1:
     raise SystemExit("FAIL final action title must appear exactly once")
 if "gsf-major-publish-download" in s:
     raise SystemExit("FAIL duplicate lower PUBBLICA O SCARICA milestone survived")
-for _ad_key in ("v1053_ad_before_final","v1054_ad_after_final_action","v1054_ad_after_final_result"):
+for _ad_key in ("v1053_ad_before_final","v1054_ad_after_ai","v1055_ad_after_ai","v1054_ad_after_final_action","v1054_ad_after_final_result"):
     if _ad_key in s and not re.search(r"\.st-key-"+re.escape(_ad_key)+r"\s*[,\{][\s\S]{0,220}?display\s*:\s*none",s):
         raise SystemExit("FAIL final publication ad is still visible: "+_ad_key)
 
