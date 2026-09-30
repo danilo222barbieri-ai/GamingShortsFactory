@@ -70,6 +70,19 @@ if frontend.index("sendMessage(COMPONENT_READY,{apiVersion:1});") > frontend.ind
 
 # Startup regression guards are intentionally targeted. JavaScript regex
 # literals make a hand-written generic delimiter parser unreliable here.
+
+for marker in (
+    'gsf_editor_2027_v1084',
+    'gsf-editor-unsaved-v1084:',
+    'persistLocalState',
+    'touch-action:manipulation',
+    '#ng27 video{pointer-events:none!important}',
+    "payload.editorVersion='2027.4'",
+):
+    source = wrapper if marker=='gsf_editor_2027_v1084' else frontend
+    if marker not in source:
+        raise SystemExit("FAIL Editor 2027 mobile/desktop interaction hardening missing: "+marker)
+
 if "components.html(" in wrapper:
     raise SystemExit("FAIL Editor 2027 still uses display-only components.html")
 if "declare_component(" not in wrapper:
