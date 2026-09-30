@@ -112,6 +112,90 @@ def _s3():
             )
         return _S3_CLIENT
 
+def _final_bucket_key(sid):
+    sid=_safe_id(sid)
+    return f"final-results/{sid}/latest.mp4" if sid else ""
+
+def _final_meta_key(sid):
+    sid=_safe_id(sid)
+    return f"final-results/{sid}/latest.json" if sid else ""
+
+def _final_local_paths(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return None,None
+    root=ROOT/"sessions"/sid
+    media=root/"media"
+    media.mkdir(parents=True,exist_ok=True)
+    return media/"gaming_short_finale_share.mp4", root/"render_job.json"
+
+def _final_persist_to_bucket(sid,source_path,started_at=0.0):
+    sid=_safe_id(sid)
+    if not sid or not _bucket_enabled():
+        raise RuntimeError("storage persistente non disponibile")
+    stable,job=_final_local_paths(sid)
+    source=Path(str(source_path or "")).resolve()
+    expected=stable.resolve()
+    if source!=expected or not source.is_file() or source.stat().st_size<=1024:
+        raise ValueError("finale locale non valido")
+    size=int(source.stat().st_size)
+    completed=time.time()
+    key=_final_bucket_key(sid)
+    _s3().upload_file(
+        str(source),S3_BUCKET,key,
+        ExtraArgs={"ContentType":"video/mp4","CacheControl":"no-store"},
+    )
+    meta={
+        "status":"ready",
+        "started_at":float(started_at or 0.0),
+        "completed_at":completed,
+        "final_bytes":size,
+        "bucket_key":key,
+    }
+    _s3().put_object(
+        Bucket=S3_BUCKET,Key=_final_meta_key(sid),
+        Body=json.dumps(meta,ensure_ascii=False,separators=(",",":")).encode("utf-8"),
+        ContentType="application/json",CacheControl="no-store",
+    )
+    print("GSF_FINAL_BUCKET_READY",sid,size,flush=True)
+    return meta
+
+def _final_restore_from_bucket(sid):
+    sid=_safe_id(sid)
+    if not sid or not _bucket_enabled():
+        return {}
+    stable,job=_final_local_paths(sid)
+    if stable.is_file() and stable.stat().st_size>1024:
+        return {}
+    try:
+        obj=_s3().get_object(Bucket=S3_BUCKET,Key=_final_meta_key(sid))
+        meta=json.loads(obj["Body"].read().decode("utf-8"))
+        if not isinstance(meta,dict):
+            meta={}
+        key=str(meta.get("bucket_key") or _final_bucket_key(sid))
+        tmp=stable.with_suffix(".restore.tmp")
+        tmp.unlink(missing_ok=True)
+        _s3().download_file(S3_BUCKET,key,str(tmp))
+        if not tmp.is_file() or tmp.stat().st_size<=1024:
+            tmp.unlink(missing_ok=True)
+            return {}
+        os.replace(tmp,stable)
+        payload={
+            "status":"ready",
+            "started_at":float(meta.get("started_at") or 0.0),
+            "completed_at":float(meta.get("completed_at") or stable.stat().st_mtime or time.time()),
+            "final_path":str(stable),
+            "final_bytes":int(stable.stat().st_size),
+            "pid":0,
+            "restored_from_bucket":True,
+        }
+        _write_json_atomic(job,payload)
+        print("GSF_FINAL_BUCKET_RESTORED",sid,payload["final_bytes"],flush=True)
+        return payload
+    except Exception as exc:
+        print("GSF_FINAL_BUCKET_RESTORE_WARN",sid,repr(str(exc))[:220],flush=True)
+        return {}
+
 def _ensure_bucket_cors():
     if not _bucket_enabled():
         return
@@ -404,12 +488,22 @@ def _push_client_bytes():
     if(!target||target.disabled)return false;target.click();return true;
   };
 
+  const syncReadyResult=()=>{
+    const target=document.querySelector('.st-key-gsf_final_ready_sync_v111 button,[class*="st-key-gsf_final_ready_sync_v111"] button');
+    if(!target||target.disabled)return false;
+    target.click();
+    return true;
+  };
+
   const pollJob=async()=>{
     try{
       const j=await fetch("/job/status",{cache:"no-store"}).then(r=>r.json()),status=String(j.render_status||"");
       if(status==="ready"){
         const token=String(j.completed_at||j.started_at||"ready");
         showToast("Short completato","Il tuo Short è pronto per download e pubblicazione.","success",{token:"short-ready-"+token,persistent:true,onClick:()=>openShareHub()});
+        if(lastRenderStatus!=="ready"){
+          if(!syncReadyResult())setTimeout(syncReadyResult,250);
+        }
       }else if(status==="failed"){
         const token=String(j.failed_at||j.started_at||"failed");
         showToast("Creazione Short non riuscita","Il rendering si è fermato. Il progetto e la bozza restano disponibili.","error",{token:"short-failed-"+token,persistent:true});
@@ -2333,6 +2427,11 @@ class Handler(BaseHTTPRequestHandler):
                         if not isinstance(payload,dict):payload={}
                     except Exception:payload={}
             status=str(payload.get("status") or "")
+            if sid and stable is not None and not stable.is_file() and status not in ("running","cancelled"):
+                restored=_final_restore_from_bucket(sid)
+                if restored:
+                    payload=restored
+                    status="ready"
             started=float(payload.get("started_at") or 0.0)
             stable_ready=False
             stable_bytes=0
@@ -2562,6 +2661,19 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,200,{"ok":True,"sent":bool(sent)})
             except Exception as exc:
                 _json(self,500,{"ok":False,"error":str(exc)[:180]})
+            return
+
+        if path=="/final/persist":
+            try:
+                data=_read_json(self,max_bytes=64*1024)
+                meta=_final_persist_to_bucket(
+                    sid,
+                    data.get("path"),
+                    float(data.get("started_at") or 0.0),
+                )
+                _json(self,200,{"ok":True,"final_bytes":meta.get("final_bytes"),"completed_at":meta.get("completed_at")})
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:220]})
             return
 
         if path=="/bucket/init":
