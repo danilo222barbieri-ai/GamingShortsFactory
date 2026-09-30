@@ -91,7 +91,7 @@ for marker in (
     "input_method=choose_input_method",
     'if processing_mode=="agentic":',
     'kwargs["response_format"]=_response_format(max_events)',
-    "used_generate_content",
+    "selected_generate",
 ):
     if marker not in semantic:
         raise SystemExit("V121 compatibility marker missing: "+marker)
