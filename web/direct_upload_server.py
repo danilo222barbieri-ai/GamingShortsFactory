@@ -689,6 +689,18 @@ def _persist_fallback_source_to_bucket(sid,upload_id,source_path,original_name,t
             })
         except Exception:
             pass
+        try:
+            rows=_draft_index_load(sid)
+            if isinstance(rows,list):
+                changed=False
+                for row in rows:
+                    if str((row or {}).get("source_upload_id") or "")==upload_id and not (row or {}).get("source_persistent"):
+                        row["source_persistent"]=True
+                        changed=True
+                if changed:
+                    _draft_index_save(sid,rows)
+        except Exception as exc:
+            print("GSF_DRAFT_INDEX_PERSIST_WARN",sid,upload_id,repr(str(exc)),flush=True)
         print("GSF_FALLBACK_SOURCE_PERSISTED",sid,upload_id,key,flush=True)
         return {"bucket_key":key,"analysis_key":analysis_key}
     except Exception as exc:
@@ -1019,8 +1031,8 @@ def _draft_summary(draft):
         "source_name":str(draft.get("source_name") or source_ref.get("name") or "Gameplay")[:160],
         "created_at":float(draft.get("created_at") or 0),
         "updated_at":float(draft.get("updated_at") or 0),
-        "source_persistent":bool(source_ref.get("bucket_key")),
-        "source_upload_id":str(source_ref.get("upload_id") or "")[:80],
+        "source_persistent":bool(draft.get("source_persistent") or source_ref.get("bucket_key")),
+        "source_upload_id":str(draft.get("source_upload_id") or source_ref.get("upload_id") or "")[:80],
     }
 
 def _draft_index_load(sid):
@@ -1075,7 +1087,7 @@ def _draft_index_save(sid,rows):
 def _draft_index_upsert(sid,draft):
     rows=_draft_index_load(sid)
     if rows is None:
-        rows=[]
+        rows=_draft_list_legacy(sid)
     did=_safe_id((draft or {}).get("id",""))
     rows=[row for row in rows if _safe_id((row or {}).get("id",""))!=did]
     rows.append(_draft_summary(draft))
@@ -1084,7 +1096,7 @@ def _draft_index_upsert(sid,draft):
 def _draft_index_remove(sid,draft_id):
     rows=_draft_index_load(sid)
     if rows is None:
-        return
+        rows=_draft_list_legacy(sid)
     did=_safe_id(draft_id)
     _draft_index_save(sid,[row for row in rows if _safe_id((row or {}).get("id",""))!=did])
 
@@ -1122,6 +1134,12 @@ def _draft_save(sid,payload):
         recovered_ref=_bucket_source_ref_from_path(sid,str(source_path))
         if recovered_ref:
             source_ref.update(recovered_ref)
+        elif source_path.is_file() and _safe_id(source_ref.get("upload_id","")):
+            threading.Thread(
+                target=_persist_fallback_source_to_bucket,
+                args=(sid,_safe_id(source_ref.get("upload_id","")),str(source_path),source_ref.get("name") or source_name,int(source_ref.get("size") or source_path.stat().st_size)),
+                daemon=True,
+            ).start()
     if source_path.is_file():
         try:
             linked=_draft_dir(sid)/(draft_id+"_source"+source_path.suffix.lower())
