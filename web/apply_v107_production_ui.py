@@ -1116,10 +1116,9 @@ if _gsf_auth_anchor not in s:
     raise RuntimeError("V107 Facebook composer insertion anchor missing")
 s=s.replace(_gsf_auth_anchor,_gsf_facebook_panel+_gsf_auth_anchor,1)
 
-# Collapse the legacy final action row to ONE full-width display header.
-# The generated V106 layout has changed names over time, so select by behavior:
-# one column containing SCARICA, and one non-social PUBBLICA launcher before the
-# native social selector.
+# Rename the existing upper PUBBLICA launcher without restructuring the
+# surrounding Streamlit columns. The old sibling download stays in source but
+# is hidden by CSS below; this avoids brittle source surgery.
 _gsf_action_tree=_gsf_patch_ast.parse(s)
 _gsf_social_if=None
 for _node in _gsf_patch_ast.walk(_gsf_action_tree):
@@ -1131,23 +1130,6 @@ for _node in _gsf_patch_ast.walk(_gsf_action_tree):
             break
 if _gsf_social_if is None:
     raise RuntimeError("V107 native final social block missing before action cleanup")
-
-_gsf_download_with=[]
-for _node in _gsf_patch_ast.walk(_gsf_action_tree):
-    if not isinstance(_node,_gsf_patch_ast.With):
-        continue
-    _seg=_gsf_patch_ast.get_source_segment(s,_node) or ""
-    if "SCARICA" not in _seg or _node.lineno>=_gsf_social_if.lineno:
-        continue
-    _ctx_names=[]
-    for _item in _node.items:
-        for _x in _gsf_patch_ast.walk(_item.context_expr):
-            if isinstance(_x,_gsf_patch_ast.Name):
-                _ctx_names.append(_x.id)
-    if any("download" in _name.lower() for _name in _ctx_names):
-        _gsf_download_with.append(_node)
-if len(_gsf_download_with)!=1:
-    raise RuntimeError("V107 expected one legacy pre-social download column, found "+str(len(_gsf_download_with)))
 
 _gsf_publish_calls=[]
 for _node in _gsf_patch_ast.walk(_gsf_action_tree):
@@ -1176,32 +1158,6 @@ _gsf_new_pub_call=_gsf_patch_ast.unparse(_gsf_pub_call)
 if not _gsf_old_pub_call:
     raise RuntimeError("V107 could not read legacy PUBBLICA launcher")
 s=s.replace(_gsf_old_pub_call,_gsf_new_pub_call,1)
-
-# Remove the old SCARICA column entirely.
-_gsf_dl_seg=_gsf_patch_ast.get_source_segment(s,_gsf_download_with[0]) or ""
-if not _gsf_dl_seg:
-    raise RuntimeError("V107 could not read legacy SCARICA column")
-s=s.replace(_gsf_dl_seg,"",1)
-
-# Collapse any now-empty two-column assignment that still owns the removed
-# download column. Keep the remaining column as a normal full-width container.
-_gsf_action_tree2=_gsf_patch_ast.parse(s)
-for _node in _gsf_patch_ast.walk(_gsf_action_tree2):
-    if not isinstance(_node,_gsf_patch_ast.Assign) or _node.lineno>=_gsf_social_if.lineno:
-        continue
-    _names=[]
-    for _target in _node.targets:
-        for _x in _gsf_patch_ast.walk(_target):
-            if isinstance(_x,_gsf_patch_ast.Name):
-                _names.append(_x.id)
-    _download_names=[x for x in _names if "download" in x.lower()]
-    _other_names=[x for x in _names if x not in _download_names]
-    _seg=_gsf_patch_ast.get_source_segment(s,_node) or ""
-    if _download_names and _other_names and "columns(" in _seg:
-        _line=s.splitlines(keepends=True)[_node.lineno-1]
-        _indent=_line[:len(_line)-len(_line.lstrip())]
-        s=s.replace(_seg,_other_names[0]+" = st.container()",1)
-        break
 
 # Add one final download button at the end of the always-open social block.
 _gsf_pub_tree=_gsf_patch_ast.parse(s)
@@ -1260,6 +1216,11 @@ st.markdown("""
 .st-key-gsf-final-top-action-row [data-testid="column"]{
   width:100% !important;
   flex:1 1 100% !important;
+}
+div[data-testid="stHorizontalBlock"]:has(.st-key-download_final_v54) > div[data-testid="column"]:not(:has(.st-key-download_final_v54)),
+div[data-testid="stHorizontalBlock"]:has(.st-key-download_final_v54_fallback) > div[data-testid="column"]:not(:has(.st-key-download_final_v54_fallback)){
+  flex:1 1 100% !important;
+  width:100% !important;
 }
 .st-key-v69_social_facebook button,
 .st-key-v69_social_instagram button,
@@ -1346,6 +1307,8 @@ st.markdown("""
 }
 .st-key-download_final_v54,
 .st-key-download_final_v54_fallback,
+div[data-testid="column"]:has(.st-key-download_final_v54),
+div[data-testid="column"]:has(.st-key-download_final_v54_fallback),
 .st-key-v1053_ad_before_final,
 .st-key-v1054_ad_after_ai,
 .st-key-v1055_ad_after_ai,
