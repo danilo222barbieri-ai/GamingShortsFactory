@@ -24,8 +24,8 @@ for marker in ['"sizes":"192x192"','"sizes":"512x512"','"/app-icon-192.png"','"/
 
 print("V107 production assets/routes test: PASS")
 
-for marker in ["/job/status","gsf-activity-hud"]:
+for marker in ["/job/status","gsf-activity-hud","/source/restore","GSF_SOURCE_RESTORED","target=\"_top\""]:
     if marker not in server:
-        raise SystemExit("FAIL activity status asset missing: "+marker)
+        raise SystemExit("FAIL activity/source restore asset missing: "+marker)
 if "location = /job/status {" not in nginx:
     raise SystemExit("FAIL nginx job status route missing")
