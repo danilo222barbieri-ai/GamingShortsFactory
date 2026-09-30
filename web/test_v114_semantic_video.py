@@ -47,7 +47,7 @@ semantic=Path("/app/web/semantic_video_v114.py").read_text(encoding="utf-8")
 for marker in (
     '"processing":"agentic"',
     "stream=True",
-    'event.event_type=="step.delta"',
+    'event_type=="step.delta"',
     'getattr(event.delta,"type",None)=="text"',
     "json_parts.append",
     "focus_x_percent",
