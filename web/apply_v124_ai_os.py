@@ -14,8 +14,19 @@ social_anchor='''                    _default_title = str(_base_pack.get("select
 '''
 social_replacement=social_anchor+'''                    # V124 AI Director social optimizer.
                     try:
-                        _ai_social_all=st.session_state.get("gsf_v124_social_pack") or {}
                         _ai_platform_key=str(_selected_social or "").strip().lower()
+                        _ai_social_all={}
+                        _brain=st.session_state.get("gsf_v112_brain_context") or {}
+                        _rows=list(_brain.get("selected") or []) if isinstance(_brain,dict) else []
+                        if _rows:
+                            _nearest=min(
+                                _rows,
+                                key=lambda row:abs(float((row or {}).get("start") or 0.0)-float(_start))
+                            )
+                            _plan=dict((_nearest or {}).get("director_plan") or {})
+                            _ai_social_all=dict(((_plan.get("text") or {}).get("social") or {}))
+                        if not _ai_social_all:
+                            _ai_social_all=st.session_state.get("gsf_v124_social_pack") or {}
                         _ai_social=(
                             _ai_social_all.get(_ai_platform_key)
                             if isinstance(_ai_social_all,dict)
