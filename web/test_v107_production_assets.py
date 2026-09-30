@@ -17,7 +17,7 @@ nginx=(root/"nginx.conf.template").read_text(encoding="utf-8")
 for marker in ["/account/google/start","/account/facebook/start","/account/tiktok/start","/manifest.webmanifest","/editor-media/current","GSF_EDITOR_MEDIA_REDIRECT","/gsf-sw.js","/gsf-push.js","/push/public-key","/push/subscribe","/push/notify","GSF_PUSH_SENT","/drafts/save","/drafts/resume","/drafts/delete","_draft_cards_html","_draft_prepare_resume"]:
     if marker not in server:
         raise SystemExit(f"FAIL direct server missing {marker}")
-for marker in ["location = /account {","location = /editor-media/current {","location = /gsf-sw.js {","location = /push/subscribe {","location = /drafts/resume {","location = /drafts/delete {","/gsf-push.js?v=1","@gsf_account_google_callback","@gsf_account_facebook_callback","@gsf_account_tiktok_callback","apple-touch-icon-180x180.png","location = /app-icon-192.png","location = /app-icon-512.png","mobile-web-app-capable","apple-mobile-web-app-title"]:
+for marker in ["location = /account {","location = /editor-media/current {","location = /gsf-sw.js {","location = /push/subscribe {","location = /drafts/resume {","location = /drafts/delete {","/gsf-push.js?v=2","@gsf_account_google_callback","@gsf_account_facebook_callback","@gsf_account_tiktok_callback","apple-touch-icon-180x180.png","location = /app-icon-192.png","location = /app-icon-512.png","mobile-web-app-capable","apple-mobile-web-app-title"]:
     if marker not in nginx:
         raise SystemExit(f"FAIL nginx missing {marker}")
 for marker in ['"sizes":"192x192"','"sizes":"512x512"','"/app-icon-192.png?v=4"','"/app-icon-512.png?v=4"']:
