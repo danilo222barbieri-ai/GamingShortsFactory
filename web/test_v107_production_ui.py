@@ -30,7 +30,7 @@ for marker in required:
 for marker in (
     "GSF_FINAL_CREATE_CLICK",
     "gsf-layout-hygiene",
-    "Short pronto",
+    "SHORT PRONTO",
     "gsf-final-status",
     "CONDIVIDI O SCARICA",
     "v69_social_facebook",
