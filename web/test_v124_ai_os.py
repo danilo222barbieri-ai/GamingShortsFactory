@@ -20,6 +20,10 @@ for marker in (
 for marker in (
     "AI QUALITY CHECK",
     "gsf_v124_social_pack",
+    "_gsf_v124_feedback",
+    "_gsf_v124_moment_for_start",
+    '"opened_editor"',
+    '"published"',
     "_default_title=_ai_title",
     "_default_description=_ai_description",
     "_default_hashtags=",
@@ -33,6 +37,8 @@ for marker in (
     'clean=="/quality/status"',
     "def _quality_schedule(",
     "GSF_V124_QUALITY",
+    'path=="/ai/feedback"',
+    "GSF_V124_FEEDBACK",
     '"quality_status"',
     '"guardian_diagnosis"',
 ):
