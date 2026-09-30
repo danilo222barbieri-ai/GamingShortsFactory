@@ -57,7 +57,7 @@ def choose_processing_mode(duration_seconds):
 def choose_input_method(size_bytes):
     inline_limit=max(
         1024*1024,
-        int(os.environ.get("GSF_SEMANTIC_INLINE_MAX_BYTES",str(48*1024*1024)) or 48*1024*1024),
+        int(os.environ.get("GSF_SEMANTIC_INLINE_MAX_BYTES",str(18*1024*1024)) or 18*1024*1024),
     )
     return "inline" if max(0,int(size_bytes or 0))<=inline_limit else "files"
 
@@ -158,6 +158,50 @@ def _stream_semantic_interaction(client,model,video_content,prompt,max_events,se
     if not completed and not json_parts:
         raise RuntimeError("Gemini semantic stream ended without output")
     return json.loads("".join(json_parts) or "{}")
+
+
+def _generate_content_semantic(
+    client,model,source,uploaded,prompt,max_events,semantic_timeout,structured=True,duration_seconds=0.0
+):
+    from google.genai import types
+    if uploaded is not None:
+        contents=[uploaded,prompt]
+    else:
+        gameplay_fps=max(
+            1.0,
+            min(6.0,float(os.environ.get("GSF_SEMANTIC_GAMEPLAY_FPS","3") or 3.0)),
+        )
+        contents=types.Content(
+            parts=[
+                types.Part(
+                    inline_data=types.Blob(
+                        data=Path(source).read_bytes(),
+                        mime_type=_video_mime(source),
+                    ),
+                    video_metadata=types.VideoMetadata(fps=gameplay_fps),
+                ),
+                types.Part(text=prompt),
+            ]
+        )
+    config={}
+    if structured:
+        config={
+            "response_format":{
+                "text":{
+                    "mime_type":"application/json",
+                    "schema":_schema(max_events),
+                }
+            }
+        }
+    response=client.models.generate_content(
+        model=model,
+        contents=contents,
+        config=config or None,
+    )
+    raw=str(getattr(response,"text","") or "").strip()
+    if not raw:
+        raise RuntimeError("Gemini Generate Content video response empty")
+    return json.loads(raw)
 
 
 def normalize_semantic_events(payload,max_events=12):
@@ -303,13 +347,14 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
     max_bytes=max(10*1024*1024,int(os.environ.get("GSF_SEMANTIC_MAX_BYTES",str(2*1024*1024*1024))))
     model=os.environ.get("GSF_GEMINI_MODEL",_DEFAULT_MODEL).strip() or _DEFAULT_MODEL
     if not source.is_file() or source.stat().st_size>max_bytes:
-        return {"enabled":True,"provider":model+"-agentic-stream-v118","events":[],"skipped":"file-too-large"}
+        return {"enabled":True,"provider":model+"-local-fallback-v121","events":[],"skipped":"file-too-large"}
 
     uploaded=None
     started=time.perf_counter()
     processing_mode=choose_processing_mode(_probe_duration_seconds(source))
     input_method=choose_input_method(source.stat().st_size)
     direct_mode=(processing_mode=="static" and input_method=="inline")
+    used_generate_content=(processing_mode=="static")
     try:
         from google import genai
         client=genai.Client(api_key=key)
@@ -357,10 +402,13 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
             " Return ONLY valid JSON matching the requested events schema. "
             "If there are no meaningful highlights, return {\"events\":[]}."
         )
+        duration_seconds=_probe_duration_seconds(source)
+        used_generate_content=(processing_mode=="static")
         try:
-            if direct_mode:
-                payload=_direct_semantic_interaction(
-                    client,model,video_content,prompt_json,max_events,semantic_timeout,structured=True
+            if processing_mode=="static":
+                payload=_generate_content_semantic(
+                    client,model,source,uploaded,prompt_json,max_events,semantic_timeout,
+                    structured=True,duration_seconds=duration_seconds,
                 )
             else:
                 payload=_stream_semantic_interaction(
@@ -368,33 +416,34 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
                 )
         except Exception as first_exc:
             message=str(first_exc).lower()
-            invalid=("invalid_request" in message or "invalid argument" in message)
+            invalid=(
+                "invalid_request" in message
+                or "invalid argument" in message
+                or "unsupported file uri" in message
+            )
             if not invalid:
                 raise
-            # Compatibility ladder:
-            # 1) Agentic -> static.
-            # 2) If structured output itself is rejected, keep the same media
-            #    request but ask for strict JSON in plain text.
             if processing_mode=="agentic":
+                # Long-video agentic is preferred, but Generate Content is the
+                # reliable semantic fallback if Interactions rejects the media.
                 processing_mode="static"
-                if input_method=="inline":
-                    video_content=_inline_video_content(source,processing_mode)
-                else:
-                    video_content=dict(video_content or {})
-                    video_content["processing"]="static"
-                direct_mode=(input_method=="inline")
-            if direct_mode:
-                payload=_direct_semantic_interaction(
-                    client,model,video_content,prompt_json,max_events,semantic_timeout,structured=False
+                used_generate_content=True
+                payload=_generate_content_semantic(
+                    client,model,source,uploaded,prompt_json,max_events,semantic_timeout,
+                    structured=True,duration_seconds=duration_seconds,
                 )
             else:
-                payload=_stream_semantic_interaction(
-                    client,model,video_content,prompt_json,max_events,semantic_timeout,structured=False
+                # If structured output itself is the incompatibility, retain
+                # native video understanding and ask for strict JSON in text.
+                used_generate_content=True
+                payload=_generate_content_semantic(
+                    client,model,source,uploaded,prompt_json,max_events,semantic_timeout,
+                    structured=False,duration_seconds=duration_seconds,
                 )
         events=normalize_semantic_events(payload,max_events=max_events)
         return {
             "enabled":True,
-            "provider":model+"-"+processing_mode+"-"+input_method+("-direct-v120" if direct_mode else "-stream-v120"),
+            "provider":model+"-"+processing_mode+"-"+input_method+("-generate-v121" if used_generate_content else "-agentic-stream-v121"),
             "events":events,
             "processing_mode":processing_mode,
             "input_method":input_method,
@@ -403,7 +452,7 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
     except Exception as exc:
         return {
             "enabled":True,
-            "provider":model+"-"+processing_mode+"-"+input_method+("-direct-v120" if direct_mode else "-stream-v120"),
+            "provider":model+"-"+processing_mode+"-"+input_method+("-generate-v121" if used_generate_content else "-agentic-stream-v121"),
             "events":[],
             "processing_mode":processing_mode,
             "input_method":input_method,
