@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
-<div id="ng27">
+<div id="ng27" data-editor-build="2027.4-touch">
 <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
   <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.35-5.65L4 8.7"/><path d="M4 4v4.7h4.7"/></symbol>
@@ -1034,7 +1034,9 @@
      const local=loadLocalState(nextUrlForState);
      localStateKey=local.key;
      state=Object.assign({},defaults,args.initial_state,local.state||{});
-     if(!Object.prototype.hasOwnProperty.call(state,'captionMode')){
+     const hostHasCaptionMode=Object.prototype.hasOwnProperty.call(args.initial_state||{},'captionMode');
+     const localHasCaptionMode=!!(local.state&&Object.prototype.hasOwnProperty.call(local.state,'captionMode'));
+     if(!hostHasCaptionMode&&!localHasCaptionMode){
        state.captionMode=state.captionOn===false?'Off':'Auto';
      }
      if(state.look==='Neon Arena')state.look='Competitive';
