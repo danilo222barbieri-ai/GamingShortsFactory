@@ -689,6 +689,27 @@
  let visionZones=[];
  let brainContext={};
  let lastVisionScanKey='';
+
+ function semanticFocusFromBrain(){
+   const c=(brainContext&&typeof brainContext==='object')?brainContext:{};
+   const conf=Math.max(0,Math.min(1,Number(c.focus_confidence)||0));
+   return {
+     x:Math.max(8,Math.min(92,Number(c.focus_x)||50)),
+     y:Math.max(8,Math.min(92,Number(c.focus_y)||43)),
+     confidence:conf,
+     subject:String(c.subject||'').trim(),
+     hud:Array.isArray(c.hud_elements)?c.hud_elements.slice(0,8):[],
+     captionY:Math.max(15,Math.min(88,Number(c.caption_safe_y)||78))
+   };
+ }
+ function semanticHudDetections(){
+   const sem=semanticFocusFromBrain();
+   return (sem.hud||[]).slice(0,4).map((label,index)=>{
+     const [x,y]=zonePosition(label,index);
+     return {label:String(label||'HUD').toUpperCase().replaceAll('_',' '),x,y,w:24,h:18,confidence:.82,type:'hud'};
+   });
+ }
+ let lastVisionScanKey='';
  let localStateKey='';
  let localStateTimer=0;
 
@@ -998,16 +1019,48 @@
 
  async function runVisionScan(force=false){
    if(!visionScan||!visionTags)return;
-   const key=hostVideoUrl+'|'+visionProfile+'|'+(eventMap||[]).map(x=>x.kind+':'+x.time).join(',');
+   const semanticSeed=semanticFocusFromBrain();
+   const key=hostVideoUrl+'|'+visionProfile+'|'+(eventMap||[]).map(x=>x.kind+':'+x.time).join(',')+
+     '|sem:'+semanticSeed.x+':'+semanticSeed.y+':'+semanticSeed.confidence+':'+semanticSeed.hud.join(',');
    if(key===lastVisionScanKey&&visionDetections.length){
      renderVisionDetections(visionDetections);
    }else{
      visionScanStatus.textContent='GAME VISION · ANALISI VISIVA';
-     const detections=await analyzeVisionFrames();
+     let detections=await analyzeVisionFrames();
+     detections=Array.isArray(detections)?detections.slice():[];
+     if(semanticSeed.confidence>=.55){
+       if(visionPrimary&&visionPrimary.confidence>=.12){
+         const localWeight=Math.max(.15,Number(visionPrimary.confidence)||0)*.65;
+         const semanticWeight=Math.max(.35,semanticSeed.confidence);
+         const total=localWeight+semanticWeight;
+         visionPrimary={
+           x:(visionPrimary.x*localWeight+semanticSeed.x*semanticWeight)/total,
+           y:(visionPrimary.y*localWeight+semanticSeed.y*semanticWeight)/total,
+           confidence:Math.min(1,Math.max(visionPrimary.confidence,semanticSeed.confidence))
+         };
+       }else{
+         visionPrimary={x:semanticSeed.x,y:semanticSeed.y,confidence:semanticSeed.confidence};
+       }
+       if(semanticSeed.subject){
+         detections.unshift({
+           label:'AI '+semanticSeed.subject.toUpperCase(),
+           x:semanticSeed.x,y:semanticSeed.y,w:28,h:34,
+           confidence:semanticSeed.confidence,type:'action'
+         });
+       }
+       for(const det of semanticHudDetections()){
+         if(!detections.some(x=>String(x.label||'').toUpperCase()===String(det.label||'').toUpperCase())){
+           detections.push(det);
+         }
+       }
+       detections=detections.slice(0,6);
+       visionDetections=detections;
+     }
      lastVisionScanKey=key;
      if(detections&&detections.length){
        renderVisionDetections(detections);
-       visionScanStatus.textContent='GAME VISION · '+String(visionProfile||'AUTO').toUpperCase()+' · '+detections.length+' ZONE';
+       visionScanStatus.textContent='GAME VISION · '+String(visionProfile||'AUTO').toUpperCase()+
+         (semanticSeed.confidence>=.55?' · AI+LOCALE':'')+' · '+detections.length+' ZONE';
      }else{
        const fallback=(visionZones||[]).slice(0,3).map((label,index)=>{
          const [x,y]=zonePosition(label,index);
@@ -1035,6 +1088,10 @@
    visionProfile=String(args.vision_profile||'Auto');
    visionZones=Array.isArray(args.vision_zones)?args.vision_zones.slice(0,4):[];
    brainContext=(args.brain_context&&typeof args.brain_context==='object')?args.brain_context:{};
+   const semanticSeed=semanticFocusFromBrain();
+   if(semanticSeed.confidence>=.55){
+     visionPrimary={x:semanticSeed.x,y:semanticSeed.y,confidence:semanticSeed.confidence};
+   }
    duration=Math.max(.5,Math.min(60,Number(args.event_duration)||duration));
    if(args.initial_state && typeof args.initial_state==="object"){
      const nextUrlForState=String(args.video_url||"");
@@ -1280,7 +1337,13 @@
       ['Auto Gaming','FPS','Racing','Sports','Battle Royale'].map(x=>'<button class="pill aiPreset" data-value="'+x+'">'+(x==='Auto Gaming'?'Auto':x==='Battle Royale'?'Battle Royale':x)+'</button>').join('')+
       '</div>'+
       '<div class="strip" style="margin-top:9px"><button class="pill" id="brainApply">AI CONSIGLIO</button></div>'+
-      '<div class="panelNote">'+(brainContext&&brainContext.reason?('Riconosciuto: '+escapeHtml(brainContext.reason)+' · confidenza '+Math.round((Number(brainContext.confidence)||0)*100)+'%. L’IA usa evento, azione, reazione, continuità e HUD per suggerire il preset.'):('Game Brain analizza evento, azione, reazione, continuità e HUD. Tutte le modifiche restano manualmente regolabili.'))+'</div>']
+      '<div class="panelNote">'+(brainContext&&brainContext.reason?(
+        'Riconosciuto: '+escapeHtml(brainContext.reason)+
+        ' · confidenza '+Math.round((Number(brainContext.confidence)||0)*100)+'%'+
+        (brainContext.subject?' · soggetto '+escapeHtml(brainContext.subject):'')+
+        (Array.isArray(brainContext.hud_elements)&&brainContext.hud_elements.length?' · HUD '+brainContext.hud_elements.map(x=>escapeHtml(String(x).replaceAll('_',' '))).join(', '):'')+
+        '. AI cloud e Game Vision locale collaborano su inquadratura e zone sicure.'
+      ):('Game Brain analizza evento, azione, reazione, continuità e HUD. Tutte le modifiche restano manualmente regolabili.'))+'</div>']
    };
    const tpl=templates[name];
    if(!tpl)return;
@@ -1409,8 +1472,24 @@
      if(brainApply){
        brainApply.classList.toggle('sel',!!(brainContext&&brainContext.reason));
        brainApply.onclick=()=>{
+         const sem=semanticFocusFromBrain();
+         if(sem.confidence>=.45){
+           visionPrimary={x:sem.x,y:sem.y,confidence:sem.confidence};
+         }
          const auto=body.querySelector('.aiPreset[data-value="Auto Gaming"]');
          if(auto)auto.click();
+         if((Number(brainContext.semantic_confidence)||0)>=.55){
+           state.captionY=sem.captionY;
+           if(sem.hud.length)state.hudMode='Smart Safe';
+         }
+         if(sem.confidence>=.45){
+           const dx=(50-sem.x)*.32;
+           const dy=(47-sem.y)*.18;
+           state.panX=Math.max(-14,Math.min(14,state.panX+dx));
+           state.panY=Math.max(-11,Math.min(11,state.panY+dy));
+           state.framePreset='gameplay';
+         }
+         applyState();commit();openPanel('vision',btn);runVisionScan(true);
          flash(brainContext&&brainContext.reason?('AI · '+String(brainContext.reason).toUpperCase()):'AI AUTO GAMING');
        };
      }
