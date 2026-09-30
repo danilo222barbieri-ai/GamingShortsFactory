@@ -2825,6 +2825,242 @@ if _gsf_resume_call not in s:
     raise RuntimeError("V107 draft resume call anchor missing")
 s=s.replace(_gsf_resume_call,_gsf_resume_code,1)
 
+
+# 2026-09-30 final polish requested for MAIN: editor spacing, compact draft,
+# basic social icon tiles and a tighter last-ad/footer handoff.
+
+# Give only the Editor 2027 guidance cloud extra breathing room before the player.
+s=s.replace(
+    '<div class="gsf-major-note">Modifica scena, look, sottotitoli e audio prima di continuare.</div>',
+    '<div class="gsf-major-note gsf-editor-note">Modifica scena, look, sottotitoli e audio prima di continuare.</div>',
+)
+
+# Compact the ordinary "SALVA BOZZA" action. Keep the engine-change emergency
+# draft button untouched.
+try:
+    _gsf_sep30_tree=_gsf_patch_ast.parse(s)
+    _gsf_sep30_repls=[]
+    for _node in _gsf_patch_ast.walk(_gsf_sep30_tree):
+        if not isinstance(_node,_gsf_patch_ast.Call):
+            continue
+        _fn=_node.func
+        if not (
+            isinstance(_fn,_gsf_patch_ast.Attribute)
+            and _fn.attr=="button"
+            and isinstance(_fn.value,_gsf_patch_ast.Name)
+            and _fn.value.id=="st"
+            and _node.args
+            and isinstance(_node.args[0],_gsf_patch_ast.Constant)
+            and isinstance(_node.args[0].value,str)
+        ):
+            continue
+        _label=str(_node.args[0].value or "").strip().upper()
+        if "SALVA BOZZA" not in _label or "INTERROTTO" in _label:
+            continue
+        _old=_gsf_patch_ast.get_source_segment(s,_node) or ""
+        if not _old:
+            continue
+        _new_node=__import__("copy").deepcopy(_node)
+        _new_node.keywords=[_kw for _kw in _new_node.keywords if _kw.arg not in ("use_container_width","key")]
+        _new_node.keywords.append(_gsf_patch_ast.keyword(arg="use_container_width",value=_gsf_patch_ast.Constant(value=False)))
+        _new_node.keywords.append(_gsf_patch_ast.keyword(arg="key",value=_gsf_patch_ast.Constant(value="gsf_save_draft_compact_v107")))
+        _gsf_patch_ast.fix_missing_locations(_new_node)
+        _new=_gsf_patch_ast.unparse(_new_node)
+        _gsf_sep30_repls.append((_old,_new))
+    for _old,_new in _gsf_sep30_repls:
+        s=s.replace(_old,_new,1)
+    print("V107 compact draft buttons:",len(_gsf_sep30_repls))
+except Exception as _gsf_sep30_draft_exc:
+    print("V107 compact draft rewrite warning:",repr(str(_gsf_sep30_draft_exc)),flush=True)
+
+# Remove the redundant large draft explanation card so the compact action sits
+# directly below the existing Create Short guidance cloud.
+try:
+    _gsf_sep30_tree=_gsf_patch_ast.parse(s)
+    _gsf_sep30_lines=s.splitlines(keepends=True)
+    _gsf_sep30_remove=[]
+    for _node in _gsf_patch_ast.walk(_gsf_sep30_tree):
+        if not isinstance(_node,_gsf_patch_ast.Expr) or not isinstance(_node.value,_gsf_patch_ast.Call):
+            continue
+        _seg=_gsf_patch_ast.get_source_segment(s,_node) or ""
+        if "La bozza salva il lavoro corrente e la ritrovi nel Creator Hub." not in _seg:
+            continue
+        _line=_gsf_sep30_lines[_node.lineno-1]
+        _indent=_line[:len(_line)-len(_line.lstrip())]
+        _gsf_sep30_remove.append((_node.lineno-1,getattr(_node,"end_lineno",_node.lineno),_indent+"st.empty()\n"))
+    for _a,_b,_r in sorted(_gsf_sep30_remove,reverse=True):
+        _gsf_sep30_lines[_a:_b]=[_r]
+    s="".join(_gsf_sep30_lines)
+    print("V107 removed draft helper cards:",len(_gsf_sep30_remove))
+except Exception as _gsf_sep30_helper_exc:
+    print("V107 draft helper cleanup warning:",repr(str(_gsf_sep30_helper_exc)),flush=True)
+
+# Remove legacy footer render calls entirely (not only their inner HTML) so
+# Streamlit does not reserve empty vertical slots between the last ad and V4 footer.
+try:
+    _gsf_sep30_tree=_gsf_patch_ast.parse(s)
+    _gsf_sep30_lines=s.splitlines(keepends=True)
+    _gsf_sep30_remove=[]
+    for _node in _gsf_patch_ast.walk(_gsf_sep30_tree):
+        if not isinstance(_node,_gsf_patch_ast.Expr) or not isinstance(_node.value,_gsf_patch_ast.Call):
+            continue
+        _seg=_gsf_patch_ast.get_source_segment(s,_node) or ""
+        if not any(_m in _seg for _m in (
+            '<footer class="v67-footer"',
+            '<div class="gsf-legal-footer"',
+            '<div class="gsf-social-footer"',
+        )):
+            continue
+        # Keep the new compact V4 footer.
+        if "gsf-footer-v4" in _seg:
+            continue
+        _line=_gsf_sep30_lines[_node.lineno-1]
+        _indent=_line[:len(_line)-len(_line.lstrip())]
+        _gsf_sep30_remove.append((_node.lineno-1,getattr(_node,"end_lineno",_node.lineno),_indent+"st.empty()\n"))
+    for _a,_b,_r in sorted(_gsf_sep30_remove,reverse=True):
+        _gsf_sep30_lines[_a:_b]=[_r]
+    s="".join(_gsf_sep30_lines)
+    print("V107 removed legacy footer slots:",len(_gsf_sep30_remove))
+except Exception as _gsf_sep30_footer_exc:
+    print("V107 footer slot cleanup warning:",repr(str(_gsf_sep30_footer_exc)),flush=True)
+
+_sep30_polish = r'''
+st.markdown("""
+<style id="gsf-sep30-polish">
+/* More air between the Editor hint cloud and Editor 2027. */
+.gsf-editor-note{
+  margin-bottom:30px !important;
+}
+
+/* Secondary draft action: intentionally smaller than CREA SHORT FINALE. */
+.st-key-gsf_save_draft_compact_v107,
+[class*="st-key-gsf_save_draft_compact_v107"]{
+  width:max-content !important;
+  max-width:100% !important;
+  margin:4px auto 10px !important;
+}
+.st-key-gsf_save_draft_compact_v107 button,
+[class*="st-key-gsf_save_draft_compact_v107"] button{
+  width:auto !important;
+  min-width:142px !important;
+  max-width:190px !important;
+  height:34px !important;
+  min-height:34px !important;
+  padding:0 15px !important;
+  border-radius:12px !important;
+  font-size:10px !important;
+  font-weight:850 !important;
+  letter-spacing:.055em !important;
+  box-shadow:0 4px 10px rgba(65,96,121,.07) !important;
+}
+
+/* Socials: simple filled brand tiles instead of round badges. */
+.st-key-v69_social_facebook button:before,
+.st-key-v69_social_instagram button:before,
+.st-key-v69_social_youtube button:before,
+.st-key-v69_social_tiktok button:before{
+  width:48px !important;
+  height:48px !important;
+  min-width:48px !important;
+  min-height:48px !important;
+  flex:0 0 48px !important;
+  border-radius:12px !important;
+  box-shadow:0 5px 12px rgba(42,69,88,.14),inset 0 1px 0 rgba(255,255,255,.18) !important;
+}
+.st-key-v69_social_facebook button:before{
+  content:"f" !important;
+  background:#1877F2 !important;
+  color:#fff !important;
+  font-size:38px !important;
+  font-weight:900 !important;
+  line-height:48px !important;
+}
+.st-key-v69_social_instagram button:before{
+  content:"◎" !important;
+  background:linear-gradient(145deg,#833AB4 0%,#C13584 34%,#E1306C 57%,#F77737 80%,#FCAF45 100%) !important;
+  color:#fff !important;
+  font-size:38px !important;
+  font-weight:900 !important;
+  line-height:44px !important;
+}
+.st-key-v69_social_youtube button:before{
+  content:"▶" !important;
+  background:#FF0033 !important;
+  color:#fff !important;
+  font-size:25px !important;
+  font-weight:900 !important;
+  line-height:48px !important;
+  padding-left:3px !important;
+}
+.st-key-v69_social_tiktok button:before{
+  content:"♪" !important;
+  background:#111 !important;
+  color:#fff !important;
+  font-size:35px !important;
+  font-weight:900 !important;
+  line-height:48px !important;
+  text-shadow:-2px 0 #25F4EE,2px 0 #FE2C55 !important;
+}
+
+/* Kill wrapper gaps left behind by legacy footer fragments. */
+div[data-testid="stElementContainer"]:has(.v67-footer),
+div[data-testid="stElementContainer"]:has(.gsf-legal-footer),
+div[data-testid="stElementContainer"]:has(.gsf-social-footer),
+div[data-testid="stMarkdown"]:has(.v67-footer),
+div[data-testid="stMarkdown"]:has(.gsf-legal-footer),
+div[data-testid="stMarkdown"]:has(.gsf-social-footer){
+  display:none !important;
+  height:0 !important;
+  min-height:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+[class*="st-key-v1053_ad_footer"],
+[class*="st-key-v1054_ad_after_final_result"]{
+  margin-bottom:0 !important;
+  padding-bottom:0 !important;
+}
+.gsf-footer-v4{
+  margin-top:0 !important;
+}
+
+@media(max-width:600px){
+  .gsf-editor-note{margin-bottom:26px !important}
+  .st-key-gsf_save_draft_compact_v107,
+  [class*="st-key-gsf_save_draft_compact_v107"]{
+    margin:2px auto 8px !important;
+  }
+  .st-key-gsf_save_draft_compact_v107 button,
+  [class*="st-key-gsf_save_draft_compact_v107"] button{
+    min-width:132px !important;
+    max-width:176px !important;
+    height:32px !important;
+    min-height:32px !important;
+    padding:0 13px !important;
+    font-size:9px !important;
+  }
+  .st-key-v69_social_facebook button:before,
+  .st-key-v69_social_instagram button:before,
+  .st-key-v69_social_youtube button:before,
+  .st-key-v69_social_tiktok button:before{
+    width:44px !important;
+    height:44px !important;
+    min-width:44px !important;
+    min-height:44px !important;
+    flex-basis:44px !important;
+    border-radius:11px !important;
+  }
+  .st-key-v69_social_facebook button:before{font-size:35px !important;line-height:44px !important}
+  .st-key-v69_social_instagram button:before{font-size:35px !important;line-height:40px !important}
+  .st-key-v69_social_youtube button:before{font-size:23px !important;line-height:44px !important}
+  .st-key-v69_social_tiktok button:before{font-size:32px !important;line-height:44px !important}
+  .gsf-footer-v4{margin-top:0 !important;padding-top:4px !important}
+}
+</style>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _sep30_polish.lstrip()
+
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
 print('V107 production UI applied:',out)
