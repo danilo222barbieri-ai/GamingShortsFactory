@@ -34,3 +34,18 @@ Do not eagerly render every highlight and do not persist full VOD copies unless 
 - retention/cleanup policy and quotas
 
 No production service imports this module yet.
+
+
+## V129 production engine
+
+The internal post-live ranking path is now implemented:
+
+- an existing worker analysis payload is converted into an event pool;
+- the same production Game Brain used by normal uploads performs ranking;
+- each highlight receives confidence, semantic event and AI Director plan;
+- only timestamps/metadata are written to `auto-highlights/<provider>/<account>/<broadcast>.json`;
+- `rendered_media` starts empty: no eager clip rendering.
+
+Worker endpoint: authenticated `POST /auto-highlights` with an existing `analysis_key`.
+
+Provider event detection remains an adapter concern. Twitch EventSub credentials/scopes and YouTube live-stream read scopes are required before automatic provider triggers can be enabled for an account.
