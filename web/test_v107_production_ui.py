@@ -176,6 +176,12 @@ for _brand_marker in (
         raise SystemExit("FAIL social brand artwork missing: "+_brand_marker)
 if "gsf-final-harmony-v107" not in s:
     raise SystemExit("FAIL final publish/hub harmony override missing")
+if "gsf-social-contrast-v107" not in s:
+    raise SystemExit("FAIL final social contrast override missing")
+if "_gsf_has_meaningful_work=bool(" not in s or "if _gsf_engine_changed and _gsf_has_meaningful_work:" not in s:
+    raise SystemExit("FAIL first engine switch can still create a false draft warning")
+if 'st.session_state.pop("gsf_v107_engine_change_draft_pending",None)' not in s:
+    raise SystemExit("FAIL empty engine switch does not clear stale draft warning")
 if "gsf_creator_hub_open_v107" not in s or ".gsf-creator-hub-overlay.is-open" not in s:
     raise SystemExit("FAIL Creator Hub persistent-open protection missing")
 if "mailto:danilo222barbieri@gmail.com" not in s or "Segnala bug" not in s:
