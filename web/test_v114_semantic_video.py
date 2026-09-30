@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(0,"/app/web")
-from semantic_video_v114 import normalize_semantic_events, merge_semantic_events, choose_processing_mode
+from semantic_video_v114 import normalize_semantic_events, merge_semantic_events, choose_processing_mode, choose_input_method
 
 if choose_processing_mode(45.0)!="static":
     raise SystemExit("V119 short video must use static processing")
@@ -11,6 +11,12 @@ if choose_processing_mode(300.0)!="agentic":
 if choose_processing_mode(1800.0)!="agentic":
     raise SystemExit("V119 long video must use agentic processing")
 print("V119 adaptive video processing policy: PASS")
+
+if choose_input_method(10*1024*1024)!="inline":
+    raise SystemExit("V119 small video must use inline input")
+if choose_input_method(70*1024*1024)!="files":
+    raise SystemExit("V119 large video must use Files API")
+print("V119 adaptive video input policy: PASS")
 
 raw={"events":[
  {"timestamp_seconds":10.2,"event":"multi_kill","category":"action","confidence":0.95,"excitement":0.98,"reaction":0.55,"reason":"three enemies eliminated","subject":"player","focus_x_percent":61,"focus_y_percent":44,"focus_confidence":0.91,"hud_elements":["killfeed","minimap"],"caption_safe_y_percent":80},
@@ -57,6 +63,8 @@ semantic=Path("/app/web/semantic_video_v114.py").read_text(encoding="utf-8")
 for marker in (
     "choose_processing_mode",
     "_probe_duration_seconds",
+    "choose_input_method",
+    "_inline_video_content",
     '"processing":processing_mode',
     "stream=True",
     'event_type=="step.delta"',
