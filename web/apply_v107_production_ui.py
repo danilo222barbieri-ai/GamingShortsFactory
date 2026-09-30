@@ -2586,6 +2586,7 @@ _gsf_final_refresh=[
     _gsf_final_indent+'        st.session_state["gsf_v107_render_done_toast"]=True\n',
     _gsf_final_indent+'        print("GSF_FINAL_RENDER_READY",len(_gsf_completed_final),flush=True)\n',
     _gsf_final_indent+'        st.rerun()\n',
+]
 _gsf_final_lines[_gsf_final_node.end_lineno:_gsf_final_node.end_lineno]=_gsf_final_refresh
 s="".join(_gsf_final_lines)
 
