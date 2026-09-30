@@ -96,26 +96,49 @@ def _video_mime(path):
 
 def _inline_video_content(source,processing_mode):
     encoded=base64.b64encode(Path(source).read_bytes()).decode("ascii")
-    return {
+    payload={
         "type":"video",
         "data":encoded,
         "mime_type":_video_mime(source),
-        "processing":processing_mode,
     }
+    # Static is Gemini's default for video. Omitting the field exactly matches
+    # the documented inline-video request and avoids unnecessary validation.
+    if processing_mode=="agentic":
+        payload["processing"]="agentic"
+    return payload
 
 
-def _stream_semantic_interaction(client,model,video_content,prompt,max_events,semantic_timeout):
+def _response_format(max_events):
+    return [{
+        "type":"text",
+        "mime_type":"application/json",
+        "schema":_schema(max_events),
+    }]
+
+
+def _direct_semantic_interaction(client,model,video_content,prompt,max_events,semantic_timeout,structured=True):
+    kwargs={
+        "model":model,
+        "input":[video_content,{"type":"text","text":prompt}],
+        "timeout":semantic_timeout,
+    }
+    if structured:
+        kwargs["response_format"]=_response_format(max_events)
+    interaction=client.interactions.create(**kwargs)
+    raw=str(getattr(interaction,"output_text","") or "").strip()
+    if not raw:
+        raise RuntimeError("Gemini semantic direct response empty")
+    return json.loads(raw)
+
+
+def _stream_semantic_interaction(client,model,video_content,prompt,max_events,semantic_timeout,structured=True):
     stream=client.interactions.create(
         model=model,
         input=[
             video_content,
             {"type":"text","text":prompt},
         ],
-        response_format={
-            "type":"text",
-            "mime_type":"application/json",
-            "schema":_schema(max_events),
-        },
+        response_format=_response_format(max_events) if structured else None,
         stream=True,
         timeout=semantic_timeout,
     )
@@ -330,31 +353,49 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
         semantic_timeout=max(
             60.0,float(os.environ.get("GSF_SEMANTIC_TIMEOUT_SECONDS","420") or 420)
         )
+        direct_mode=(processing_mode=="static" and input_method=="inline")
+        prompt_json=prompt+(
+            " Return ONLY valid JSON matching the requested events schema. "
+            "If there are no meaningful highlights, return {\"events\":[]}."
+        )
         try:
-            payload=_stream_semantic_interaction(
-                client,model,video_content,prompt,max_events,semantic_timeout
-            )
+            if direct_mode:
+                payload=_direct_semantic_interaction(
+                    client,model,video_content,prompt_json,max_events,semantic_timeout,structured=True
+                )
+            else:
+                payload=_stream_semantic_interaction(
+                    client,model,video_content,prompt_json,max_events,semantic_timeout,structured=True
+                )
         except Exception as first_exc:
             message=str(first_exc).lower()
-            can_retry_static=(
-                processing_mode=="agentic"
-                and ("invalid_request" in message or "invalid argument" in message)
-            )
-            if not can_retry_static:
+            invalid=("invalid_request" in message or "invalid argument" in message)
+            if not invalid:
                 raise
-            processing_mode="static"
-            if input_method=="inline":
-                video_content=_inline_video_content(source,processing_mode)
+            # Compatibility ladder:
+            # 1) Agentic -> static.
+            # 2) If structured output itself is rejected, keep the same media
+            #    request but ask for strict JSON in plain text.
+            if processing_mode=="agentic":
+                processing_mode="static"
+                if input_method=="inline":
+                    video_content=_inline_video_content(source,processing_mode)
+                else:
+                    video_content=dict(video_content or {})
+                    video_content["processing"]="static"
+                direct_mode=(input_method=="inline")
+            if direct_mode:
+                payload=_direct_semantic_interaction(
+                    client,model,video_content,prompt_json,max_events,semantic_timeout,structured=False
+                )
             else:
-                video_content=dict(video_content or {})
-                video_content["processing"]=processing_mode
-            payload=_stream_semantic_interaction(
-                client,model,video_content,prompt,max_events,semantic_timeout
-            )
+                payload=_stream_semantic_interaction(
+                    client,model,video_content,prompt_json,max_events,semantic_timeout,structured=False
+                )
         events=normalize_semantic_events(payload,max_events=max_events)
         return {
             "enabled":True,
-            "provider":model+"-"+processing_mode+"-"+input_method+"-stream-v119",
+            "provider":model+"-"+processing_mode+"-"+input_method+("-direct-v120" if direct_mode else "-stream-v120"),
             "events":events,
             "processing_mode":processing_mode,
             "input_method":input_method,
@@ -363,7 +404,7 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
     except Exception as exc:
         return {
             "enabled":True,
-            "provider":model+"-"+processing_mode+"-"+input_method+"-stream-v119",
+            "provider":model+"-"+processing_mode+"-"+input_method+("-direct-v120" if direct_mode else "-stream-v120"),
             "events":[],
             "processing_mode":processing_mode,
             "input_method":input_method,
