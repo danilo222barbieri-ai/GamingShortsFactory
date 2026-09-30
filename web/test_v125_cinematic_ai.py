@@ -22,6 +22,8 @@ for marker in (
     "GSF_V125_CINEMATIC_APPLIED",
     "ai_director_plan",
     "cinematic_render_v125",
+    "GSF_V125_THUMBNAIL_READY",
+    "THUMBNAIL AI",
 ):
     if marker not in app:
         raise SystemExit("V125 app marker missing: "+marker)
