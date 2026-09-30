@@ -791,6 +791,54 @@ st.markdown("""
 '''
 s = s.rstrip() + "\n\n" + _creator_hub_entry.lstrip()
 
+
+# Compact production footer on mobile/desktop and remove the redundant "Collega social" link.
+_footer_compact = r'''
+st.markdown("""
+<style id="gsf-v107-footer-compact">
+/* Remove the redundant first footer link while preserving Privacy, Termini and Contatti. */
+a[href*="social"]:not(.gsf-account-fab),
+a[href*="connect"]:not(.gsf-account-fab){
+  display:none !important;
+}
+/* Pull the legal/version/social footer into a single compact visual block. */
+.gsf-social-footer{
+  margin:4px auto 0 !important;
+  padding:6px 10px 4px !important;
+}
+.gsf-social-footer-title{margin-bottom:6px !important}
+@media(max-width:600px){
+  .gsf-social-footer{
+    margin:2px auto 0 !important;
+    padding:4px 8px 2px !important;
+  }
+  [data-testid="stAppViewContainer"] hr{
+    margin-top:.45rem !important;
+    margin-bottom:.45rem !important;
+  }
+  [data-testid="stAppViewContainer"] footer,
+  [data-testid="stAppViewContainer"] footer > div{
+    margin-top:0 !important;
+    padding-top:0 !important;
+    padding-bottom:0 !important;
+  }
+}
+</style>
+<script>
+(()=>{
+  const clean=()=>{
+    document.querySelectorAll('a').forEach(a=>{
+      if((a.textContent||'').trim().toLowerCase()==='collega social') a.style.display='none';
+    });
+  };
+  clean();
+  new MutationObserver(clean).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _footer_compact.lstrip()
+
 # DEMO typography: one coherent UI font across the whole product.
 _demo_typography = r'''
 st.markdown("""
