@@ -812,22 +812,42 @@ a[href*="connect"]:not(.gsf-account-fab){
   display:none !important;
 }
 /* Pull the legal/version/social footer into a single compact visual block. */
-.gsf-social-footer{
-  margin:2px auto 0 !important;
-  padding:3px 8px 1px !important;
+.v67-footer{
+  margin:4px auto 2px !important;
+  padding:2px 0 !important;
+  text-align:center !important;
+  font-size:.70rem !important;
+  line-height:1.2 !important;
+  color:#74899A !important;
 }
-.gsf-social-footer-title{margin:2px 0 4px !important;font-size:.72rem !important}
-.gsf-social-icon{width:32px !important;height:32px !important;flex-basis:32px !important;border-radius:10px !important}
-.gsf-social-icon svg{width:15px !important;height:15px !important}
-.gsf-legal-footer{margin-top:3px !important;padding:2px 0 1px !important}
+.gsf-legal-footer{
+  margin:2px auto 1px !important;
+  padding:1px 0 !important;
+  font-size:.70rem !important;
+  line-height:1.15 !important;
+}
+.gsf-legal-footer a{font-weight:700 !important}
+.gsf-social-footer{
+  margin:1px auto 0 !important;
+  padding:1px 6px 0 !important;
+}
+.gsf-social-footer-title{display:none !important}
+.gsf-social-row{gap:6px !important}
+.gsf-social-icon{
+  width:26px !important;height:26px !important;flex-basis:26px !important;
+  border-radius:8px !important;box-shadow:0 3px 8px rgba(74,110,142,.06) !important;
+}
+.gsf-social-icon svg{width:13px !important;height:13px !important}
 @media(max-width:600px){
-  .gsf-social-footer{
-    margin:2px auto 0 !important;
-    padding:4px 8px 2px !important;
-  }
+  .v67-footer{margin:3px auto 1px !important;font-size:.66rem !important}
+  .gsf-legal-footer{margin:1px auto !important;font-size:.67rem !important}
+  .gsf-social-footer{margin:0 auto !important;padding:0 4px !important}
+  .gsf-social-row{gap:5px !important}
+  .gsf-social-icon{width:24px !important;height:24px !important;flex-basis:24px !important;border-radius:7px !important}
+  .gsf-social-icon svg{width:12px !important;height:12px !important}
   [data-testid="stAppViewContainer"] hr{
-    margin-top:.45rem !important;
-    margin-bottom:.45rem !important;
+    margin-top:.24rem !important;
+    margin-bottom:.24rem !important;
   }
   [data-testid="stAppViewContainer"] footer,
   [data-testid="stAppViewContainer"] footer > div{
@@ -844,11 +864,30 @@ a[href*="connect"]:not(.gsf-account-fab){
       const txt=(a.textContent||'').trim().toLowerCase();
       if(txt==='collega social') a.style.display='none';
       if(txt==='privacy'){
-        const p=a.previousSibling;
-        if(p && p.nodeType===3 && /^[\\s·•|]+$/.test(p.textContent||'')) p.remove();
-        const e=a.previousElementSibling;
-        if(e && /^[\\s·•|]+$/.test(e.textContent||'')) e.remove();
+        /* Privacy is the first legal item: remove every leftover separator before it. */
+        let n=a.previousSibling;
+        while(n){
+          const prev=n.previousSibling;
+          const t=(n.textContent||'').trim();
+          if(t==='' || t==='·' || t==='•' || t==='|' || t==='.' || t==='-') n.remove();
+          else break;
+          n=prev;
+        }
+        const parent=a.parentElement;
+        if(parent){
+          parent.childNodes.forEach(node=>{
+            if(node===a)return;
+            if(node.compareDocumentPosition && (node.compareDocumentPosition(a)&Node.DOCUMENT_POSITION_FOLLOWING)){
+              const t=(node.textContent||'').trim();
+              if(t==='·' || t==='•' || t==='|' || t==='.') node.remove();
+            }
+          });
+        }
       }
+    });
+    /* Keep the version line compact: one line instead of two. */
+    document.querySelectorAll('.v67-footer br').forEach(br=>{
+      br.replaceWith(document.createTextNode(' · '));
     });
   };
   clean();
