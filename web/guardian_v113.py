@@ -22,6 +22,29 @@ def _write_json_atomic(path,payload):
     os.replace(tmp,path)
 
 
+def source_restore_plan(session_root):
+    """Return the deterministic bucket restore plan for a missing local source."""
+    root=Path(session_root)
+    marker=root/"media"/".direct_upload_ready.json"
+    meta=_read_json(marker)
+    if not meta:
+        return {}
+    local_path=Path(str(meta.get("path") or "")) if meta.get("path") else None
+    if local_path is not None and local_path.is_file():
+        return {}
+    key=str(meta.get("bucket_key") or "").strip()
+    if not key:
+        return {}
+    return {
+        "path":str(meta.get("path") or ""),
+        "name":str(meta.get("name") or ""),
+        "size":int(meta.get("size") or 0),
+        "upload_id":str(meta.get("upload_id") or ""),
+        "bucket_key":key,
+        "analysis_key":str(meta.get("analysis_key") or ""),
+    }
+
+
 def inspect_and_repair_local(session_root,now=None,stale_after=900):
     """Safe local self-healing for one browser session. No network, no code edits."""
     root=Path(session_root)
