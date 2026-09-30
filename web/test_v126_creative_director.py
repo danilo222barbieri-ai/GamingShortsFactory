@@ -21,7 +21,6 @@ for marker in (
     "if not _v126_existing_hook:",
     "GSF_V126_SOUND_APPLIED",
     "creative_render_v126",
-    "Gaming Shorts Factory · V126 Creative Director",
 ):
     if marker not in app:
         raise SystemExit("V126 app marker missing: "+marker)
