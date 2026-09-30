@@ -57,6 +57,7 @@ YOUTUBE_SCOPE="https://www.googleapis.com/auth/youtube.upload"
 INSTAGRAM_APP_ID=_env_first("GSF_INSTAGRAM_APP_ID",default="")
 INSTAGRAM_APP_SECRET=_env_first("GSF_INSTAGRAM_APP_SECRET",default="")
 INSTAGRAM_SCOPES="instagram_business_basic,instagram_business_content_publish"
+INSTAGRAM_REDIRECT_URI=(PUBLIC_APP_URL+"/auth/instagram/callback") if PUBLIC_APP_URL else ""
 META_APP_ID=_env_first("GSF_META_APP_ID",default="")
 META_APP_SECRET=_env_first("GSF_META_APP_SECRET",default="")
 META_SCOPES="pages_show_list,instagram_basic,instagram_content_publish,pages_read_engagement"
@@ -866,7 +867,7 @@ def _creator_facebook_callback(handler,query):
         token_url="https://graph.facebook.com/oauth/access_token?"+urllib.parse.urlencode({
             "client_id":META_APP_ID,
             "client_secret":META_APP_SECRET,
-            "redirect_uri":PUBLIC_APP_URL,
+            "redirect_uri":INSTAGRAM_REDIRECT_URI,
             "code":code,
         })
         token=_oauth_json(token_url)
@@ -1326,7 +1327,7 @@ def _instagram_oauth_start(handler,sid):
         })
         params={
             "client_id":INSTAGRAM_APP_ID,
-            "redirect_uri":PUBLIC_APP_URL,
+            "redirect_uri":INSTAGRAM_REDIRECT_URI,
             "state":state,
             "response_type":"code",
             "scope":INSTAGRAM_SCOPES,
@@ -1356,7 +1357,7 @@ def _instagram_oauth_start(handler,sid):
     })
     params={
         "client_id":META_APP_ID,
-        "redirect_uri":PUBLIC_APP_URL,
+        "redirect_uri":INSTAGRAM_REDIRECT_URI,
         "state":state,
         "response_type":"code",
         "scope":META_SCOPES,
@@ -1396,7 +1397,7 @@ def _instagram_oauth_callback(handler,query):
                 "client_id":INSTAGRAM_APP_ID,
                 "client_secret":INSTAGRAM_APP_SECRET,
                 "grant_type":"authorization_code",
-                "redirect_uri":PUBLIC_APP_URL,
+                "redirect_uri":INSTAGRAM_REDIRECT_URI,
                 "code":code,
             }).encode("utf-8")
             req=urllib.request.Request(
@@ -1623,7 +1624,7 @@ class Handler(BaseHTTPRequestHandler):
         if clean=="/social-connect/instagram/start":
             _instagram_oauth_start(self,_social_sid(self))
             return
-        if clean=="/social-connect/instagram/callback":
+        if clean in ("/social-connect/instagram/callback","/auth/instagram/callback"):
             _instagram_oauth_callback(self,parse_qs(path.query))
             return
         if clean=="/capabilities":
