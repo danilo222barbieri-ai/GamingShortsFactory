@@ -576,7 +576,7 @@ s=s.replace(
 )
 
 
-# Production keeps the real connected-account publication flow from V106.\n\n# DEMO footer: social channels, visually ready while URLs are pending.
+# Production keeps the real connected-account publication flow from V106.\n\n# Production footer: supported social channels.
 _social_footer = r'''
 st.markdown("""
 <style>
@@ -705,18 +705,18 @@ st.markdown("""
 }
 @media(max-width:600px){
   .gsf-account-fab{
-    top:auto;
-    bottom:calc(18px + env(safe-area-inset-bottom, 0px));
-    right:12px;
+    top:calc(10px + env(safe-area-inset-top, 0px));
+    bottom:auto;
+    right:10px;
     width:auto;
     min-width:82px;
-    height:46px;
-    padding:0 14px;
+    height:42px;
+    padding:0 12px;
     justify-content:center;
-    border-radius:15px;
+    border-radius:14px;
     z-index:2147483000;
     background:rgba(255,255,255,.96);
-    box-shadow:0 10px 26px rgba(52,91,122,.22);
+    box-shadow:0 8px 22px rgba(52,91,122,.18);
   }
   .gsf-account-fab svg{width:19px;height:19px}
   .gsf-account-fab span{
