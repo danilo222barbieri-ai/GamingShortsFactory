@@ -197,11 +197,8 @@ st.markdown("""
 """,unsafe_allow_html=True)
 '''
 
-s=s.replace("Gaming Shorts Factory · V124 AI OS","Gaming Shorts Factory · V125 Cinematic AI")
-compile(s,str(out),"exec")
-out.write_text(s,encoding="utf-8")
-print("V125 Cinematic AI applied:",out)
-
+# V125 thumbnail preview belongs to the generated Streamlit app.
+_thumbnail_ui = r'''
 # ===== V125 AI THUMBNAIL PREVIEW =====
 try:
     _v125_thumb_ready=bool(
@@ -218,7 +215,7 @@ try:
                     '<span>Frame scelto sul momento chiave dal Director.</span></div>',
                     unsafe_allow_html=True,
                 )
-                st.image(str(_v125_thumb_path),use_container_width=False,width=270)
+                st.image(str(_v125_thumb_path),width=270)
 except Exception:
     pass
 
@@ -234,3 +231,10 @@ div[data-testid="stImage"]{margin-left:auto;margin-right:auto}
 </style>
 """,unsafe_allow_html=True)
 # ===== /V125 AI THUMBNAIL PREVIEW =====
+'''
+s=s.rstrip()+"\n\n"+_thumbnail_ui.lstrip()
+
+s=s.replace("Gaming Shorts Factory · V124 AI OS","Gaming Shorts Factory · V125 Cinematic AI")
+compile(s,str(out),"exec")
+out.write_text(s,encoding="utf-8")
+print("V125 Cinematic AI applied:",out)
