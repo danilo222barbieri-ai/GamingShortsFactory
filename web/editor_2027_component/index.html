@@ -474,6 +474,9 @@
    if(nextUrl && nextUrl!==hostVideoUrl){
      hostVideoUrl=nextUrl;
      video.src=nextUrl;
+     // metadata + a decoded frame are requested immediately so Safari/iOS,
+     // Android and desktop do not show an apparently empty editor until PLAY.
+     video.preload='auto';
      video.load();
    }
    setFrameHeight(hostHeight);
@@ -739,6 +742,12 @@
  };
  root.querySelector('#pauseBtn').onclick=()=>video.pause();
  video.addEventListener('loadedmetadata',()=>{
+   // Prime the first real frame immediately. This keeps the editor visually
+   // populated before PLAY without autoplaying the gameplay.
+   try{
+     const previewTime=Math.max(0,Math.min(Number(state.inPoint)||0,Math.max(0,(video.duration||0)-0.05)));
+     video.currentTime=previewTime;
+   }catch(e){}
    duration=Math.max(.5,Math.min(60,video.duration||15));
    defaults.outPoint=duration;
    if(!hostStateApplied){
