@@ -39,6 +39,12 @@ for marker in (
 
 if "gsf_v107_final_click_pending" in s or "gsf_v107_final_recipe_snapshot" in s:
     raise SystemExit("FAIL obsolete V107 final-click trampoline survived")
+if "GSF_ENGINE_SWITCH" in s or "_gsf_v107_last_modalita" in s:
+    raise SystemExit("FAIL V107 must not rewrite the engine selector state")
+if 'content:"→"' in s:
+    raise SystemExit("FAIL duplicate personalize arrow survived")
+if "GSF_MANUAL_EDITOR_OPEN" not in s:
+    raise SystemExit("FAIL Scegli scena is not instrumented as immediate-open Editor 2027")
 if 'st.markdown("\\\\n\\\\n")' in s or "st.markdown('\\\\n\\\\n')" in s:
     raise SystemExit("FAIL literal newline markdown survived")
 
