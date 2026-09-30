@@ -38,6 +38,15 @@ def _pct(value,default=50.0,lo=0.0,hi=100.0):
         return max(lo,min(hi,float(default)))
 
 
+def _interaction_status(interaction):
+    value=getattr(interaction,"status","")
+    value=getattr(value,"value",None) or getattr(value,"name",None) or value
+    text=str(value or "").strip().lower()
+    if "." in text:
+        text=text.rsplit(".",1)[-1]
+    return text
+
+
 def normalize_semantic_events(payload,max_events=12):
     rows=[]
     source=(payload or {}).get("events") if isinstance(payload,dict) else []
@@ -231,12 +240,12 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
         interaction_deadline=time.time()+max(
             60.0,float(os.environ.get("GSF_SEMANTIC_TIMEOUT_SECONDS","420") or 420)
         )
-        while str(getattr(interaction,"status","") or "").lower() in ("in_progress","queued"):
+        while _interaction_status(interaction) in ("in_progress","queued"):
             if time.time()>=interaction_deadline:
                 raise TimeoutError("Gemini semantic interaction timeout")
             time.sleep(3)
             interaction=client.interactions.get(interaction.id)
-        final_status=str(getattr(interaction,"status","") or "").lower()
+        final_status=_interaction_status(interaction)
         if final_status not in ("completed",""):
             raise RuntimeError("Gemini semantic interaction "+final_status)
         payload=json.loads(interaction.output_text or "{}")
