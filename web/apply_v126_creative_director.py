@@ -39,15 +39,34 @@ if helper_anchor not in s:
     raise RuntimeError("V126 V124 moment helper anchor missing")
 s=s.replace(helper_anchor,helper_anchor+helper_add,1)
 
-old_hook='''manual_hook=(
-                                        st.session_state.get("hook_testo","")
-                                        if st.session_state.get("hook_enabled_v102",True)
-                                        else _GSF_HOOK_OFF_V102
-                                    )'''
-new_hook='''manual_hook=_gsf_v126_hook_for_start(float(_card["start"]))'''
-if s.count(old_hook)<2:
-    raise RuntimeError("V126 auto hook recipe anchors missing")
-s=s.replace(old_hook,new_hook,2)
+# V126 applies the semantic hook when the final recipe is frozen for render.
+# This is intentionally independent of the exact card/composer markup.
+queue_hook_anchor='''                        if _v125_plan:
+                            _recipe["ai_director_plan"]=_v125_plan
+                            _recipe["ai_director_event"]=str((_v125_moment or {}).get("event") or "highlight")
+                            _recipe["ai_director_rank"]=int((_v125_moment or {}).get("rank") or 0)
+                            st.session_state["gsf_final_recipe"]=_recipe
+'''
+queue_hook_replacement='''                        if _v125_plan:
+                            _recipe["ai_director_plan"]=_v125_plan
+                            _recipe["ai_director_event"]=str((_v125_moment or {}).get("event") or "highlight")
+                            _recipe["ai_director_rank"]=int((_v125_moment or {}).get("rank") or 0)
+
+                            # Manual hook and explicit OFF always win. Only an
+                            # empty automatic AI recipe receives Director copy.
+                            if str(_recipe.get("kind") or "")=="auto":
+                                _v126_existing_hook=str(_recipe.get("manual_hook","") or "")
+                                if not _v126_existing_hook:
+                                    _v126_director_hook=_gsf_v126_hook_for_start(
+                                        float(_recipe.get("start",0.0) or 0.0)
+                                    )
+                                    if _v126_director_hook:
+                                        _recipe["manual_hook"]=_v126_director_hook
+                            st.session_state["gsf_final_recipe"]=_recipe
+'''
+if queue_hook_anchor not in s:
+    raise RuntimeError("V126 Director recipe hook anchor missing")
+s=s.replace(queue_hook_anchor,queue_hook_replacement,1)
 
 # ------------------------------------------------------------------
 # 2) Event-aware sound design. Video is stream-copied; only audio is filtered.
