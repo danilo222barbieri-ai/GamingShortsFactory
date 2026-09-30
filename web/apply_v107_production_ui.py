@@ -832,10 +832,13 @@ _gsf_locked_render_new='''        _gsf_out=__import__("pathlib").Path(str(cmd[-1
                         __import__("shutil").copyfile(_gsf_out,_tmp_video)
                         __import__("os").replace(_tmp_video,_gsf_stable)
                         print("GSF_FINAL_STABLE_READY","sid="+_gsf_sid,"bytes="+str(_gsf_stable.stat().st_size),flush=True)
-                        _job.update({"status":"ready","completed_at":__import__("time").time(),"final_path":str(_gsf_stable),"final_bytes":int(_gsf_stable.stat().st_size),"pid":0})
-                        _job_tmp=_job_file.with_suffix(".tmp")
-                        _job_tmp.write_text(__import__("json").dumps(_job,ensure_ascii=False,default=str),encoding="utf-8")
-                        __import__("os").replace(_job_tmp,_job_file)
+                        try:
+                            _job.update({"status":"ready","completed_at":__import__("time").time(),"final_path":str(_gsf_stable),"final_bytes":int(_gsf_stable.stat().st_size),"pid":0})
+                            _job_tmp=_job_file.with_suffix(".tmp")
+                            _job_tmp.write_text(__import__("json").dumps(_job,ensure_ascii=False,default=str),encoding="utf-8")
+                            __import__("os").replace(_job_tmp,_job_file)
+                        except Exception as _job_exc:
+                            print("GSF_FINAL_JOB_READY_WARN",repr(str(_job_exc)),flush=True)
                         try:
                             _u=__import__("urllib.request",fromlist=["Request","urlopen"])
                             _payload=__import__("json").dumps({"title":"Short pronto","body":"Il tuo Short è pronto. Tocca per aprire lo Share Hub.","url":"/#share-hub","tag":"gsf-short-ready"}).encode("utf-8")
