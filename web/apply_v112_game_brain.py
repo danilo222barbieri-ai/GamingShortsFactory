@@ -64,6 +64,65 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3, cache
         genre=_genre,
         events=_events,
     )
+    # V125: persistent rank override. A replacement is a real ranked moment,
+    # not a cosmetic UI swap, so preview/editor/final render all receive it.
+    try:
+        _overrides=st.session_state.get("gsf_v125_rank_overrides") or {}
+        if isinstance(_overrides,dict) and _overrides:
+            _selected_rows=list((_brain or {}).get("selected") or [])
+            _alternate_rows=list((_brain or {}).get("alternates") or [])
+            for _rank_raw,_start_raw in list(_overrides.items()):
+                try:
+                    _rank=int(_rank_raw)
+                    _wanted=float(_start_raw)
+                except Exception:
+                    continue
+                _idx=_rank-1
+                if _idx<0 or _idx>=len(_selected_rows) or _idx>=len(_chosen):
+                    continue
+                _alt=None
+                for _row in _alternate_rows:
+                    if not isinstance(_row,dict):
+                        continue
+                    if abs(float(_row.get("start") or 0.0)-_wanted)<=0.35:
+                        _alt=dict(_row)
+                        break
+                if _alt is None:
+                    # The requested moment may already be selected after a rerun.
+                    for _row in _selected_rows:
+                        if isinstance(_row,dict) and abs(float(_row.get("start") or 0.0)-_wanted)<=0.35:
+                            _alt=dict(_row)
+                            break
+                if _alt is None:
+                    continue
+                _old=dict(_selected_rows[_idx] or {})
+                _alt["rank"]=_rank
+                _alt["replaced_from_start"]=float(_old.get("start") or 0.0)
+                _alt["replacement_override"]=True
+                _selected_rows[_idx]=_alt
+                _chosen[_idx]=(
+                    float(_alt.get("brain_score") or _chosen[_idx][0]),
+                    float(_alt.get("start") or _wanted),
+                )
+                _alternate_rows=[
+                    row for row in _alternate_rows
+                    if not (
+                        isinstance(row,dict)
+                        and abs(float(row.get("start") or 0.0)-float(_alt.get("start") or _wanted))<=0.35
+                    )
+                ]
+                if _old:
+                    _old["replacement_candidate"]=True
+                    _alternate_rows.insert(0,_old)
+            if isinstance(_brain,dict):
+                _brain["selected"]=_selected_rows
+                _brain["alternates"]=_alternate_rows[:4]
+                _brain["rank_overrides"]={
+                    str(k):float(v) for k,v in _overrides.items()
+                    if str(v).strip()
+                }
+    except Exception as _v125_override_exc:
+        print("GSF_V125_OVERRIDE_WARN",repr(str(_v125_override_exc))[:220],flush=True)
     try:
         _clean_events=[]
         for _event in (_events or []):
