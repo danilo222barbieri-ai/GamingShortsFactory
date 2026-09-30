@@ -1115,6 +1115,21 @@
    if(s.look==='Boss Cinematic') extra=' saturate('+(1-.18*t)+') contrast('+(1+.12*t)+') sepia('+(0.08*t)+')';
    return 'brightness('+(s.brightness/100)+') contrast('+(s.contrast/100)+')'+extra;
  }
+ function liveZoomScale(zoomValue){
+   const z=Math.max(.8,Math.min(2,Number(zoomValue)||1));
+   if(z>=.999)return z;
+   try{
+     const sw=Math.max(1,stage.clientWidth),sh=Math.max(1,stage.clientHeight);
+     const vw=Math.max(1,video.videoWidth),vh=Math.max(1,video.videoHeight);
+     const contain=Math.min(sw/vw,sh/vh);
+     const cw=vw*contain,ch=vh*contain;
+     const cover=Math.max(sw/cw,sh/ch);
+     const t=Math.max(0,Math.min(1,(z-.8)/.2));
+     return 1+t*(cover-1);
+   }catch(e){
+     return z;
+   }
+ }
  function applyState(){
    stage.classList.add('r916');
 
@@ -1124,7 +1139,8 @@
    const zoomOut=zoomValue<.999;
    stage.classList.toggle('zoomOut',zoomOut);
    video.style.objectFit=zoomOut?'contain':'cover';
-   video.style.transform='translate('+state.panX+'%,'+state.panY+'%) scale('+zoomValue+')';
+   const visualScale=liveZoomScale(zoomValue);
+   video.style.transform='translate('+state.panX+'%,'+state.panY+'%) scale('+visualScale+')';
    video.style.filter=filterFor(state);
    if(videoBg){
      videoBg.style.filter=filterFor(state)+' blur(18px) brightness(.62) saturate(.86)';
