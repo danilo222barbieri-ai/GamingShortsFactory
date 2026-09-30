@@ -1,6 +1,8 @@
 from __future__ import annotations
 import math
 
+from ai_director_v124 import attach_director_plans, build_alternates
+
 def _num(v,default=0.0):
     try:
         x=float(v)
@@ -80,6 +82,8 @@ def _candidate(score,start,diagnostics,duration,events,genre,profile,semantic_in
     semantic_conf=_clamp(near.get("semantic_confidence"))
     semantic_excite=_clamp(near.get("semantic_excitement"))
     semantic_signal=max(_clamp(near.get("semantic_score")),.70*semantic_conf+.30*semantic_excite)
+    event_time=_num(near.get("time"),_num(start)+max(1.0,_num(duration,15.0))*.52)
+    semantic_reaction=_clamp(near.get("semantic_reaction"))
     focus_conf=_clamp(near.get("focus_confidence"))
     focus_x=max(0.0,min(100.0,_num(near.get("focus_x"),50.0)))
     focus_y=max(0.0,min(100.0,_num(near.get("focus_y"),43.0)))
@@ -112,6 +116,8 @@ def _candidate(score,start,diagnostics,duration,events,genre,profile,semantic_in
         "semantic_injected":bool(semantic_injected),
         "semantic_confidence":semantic_conf,
         "semantic_score":semantic_signal,
+        "semantic_reaction":semantic_reaction,
+        "event_time":event_time,
         "focus_x":focus_x,
         "focus_y":focus_y,
         "focus_confidence":focus_conf,
@@ -206,8 +212,15 @@ def rerank_moments(pool,diagnostics,clip_duration=15,numero_clip=3,profile="auto
         selected.append(best[1]); candidates.remove(best[1])
     selected.sort(key=lambda x:x["score"],reverse=True)
     chosen=[(float(c["original"][0]),float(c["start"])) for c in selected]
+    director_selected=attach_director_plans(
+        selected,clip_duration=clip_duration,genre=genre,profile=profile
+    )
+    alternates=build_alternates(
+        candidates,director_selected,
+        clip_duration=clip_duration,genre=genre,profile=profile,limit=3
+    )
     meta={
-        "engine":"game-brain-v117-editor-semantic",
+        "engine":"game-brain-v124-ai-director",
         "pool_size":len(pool or []),
         "augmented_pool_size":len(augmented_pool),
         "semantic_injected_count":len(injected),
@@ -221,12 +234,24 @@ def rerank_moments(pool,diagnostics,clip_duration=15,numero_clip=3,profile="auto
             "semantic_injected":bool(c.get("semantic_injected")),
             "semantic_confidence":round(_num(c.get("semantic_confidence")),4),
             "semantic_score":round(_num(c.get("semantic_score")),4),
+            "semantic_reaction":round(_num(c.get("semantic_reaction")),4),
+            "event_time":round(_num(c.get("event_time"),c.get("start")),3),
             "focus_x":round(_num(c.get("focus_x"),50.0),2),
             "focus_y":round(_num(c.get("focus_y"),43.0),2),
             "focus_confidence":round(_num(c.get("focus_confidence")),4),
             "hud_elements":list(c.get("hud_elements") or []),
             "caption_safe_y":round(_num(c.get("caption_safe_y"),78.0),2),
             "subject":str(c.get("subject") or ""),
-        } for i,c in enumerate(selected)],
+            "director_plan":dict(c.get("director_plan") or {}),
+        } for i,c in enumerate(director_selected)],
+        "alternates":[{
+            "rank":i+1,
+            "start":round(_num(c.get("start")),3),
+            "brain_score":round(_num(c.get("score")),5),
+            "confidence":round(_num(c.get("confidence")),4),
+            "event":str(c.get("event") or "highlight"),
+            "reason":str(c.get("reason") or "HIGHLIGHT"),
+            "director_plan":dict(c.get("director_plan") or {}),
+        } for i,c in enumerate(alternates)],
     }
     return chosen,meta
