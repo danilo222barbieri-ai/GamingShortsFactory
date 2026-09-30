@@ -19,6 +19,7 @@ from botocore.config import Config
 from boto3.s3.transfer import TransferConfig
 from gsf_perf import perf_event
 from guardian_v113 import inspect_and_repair_local as _guardian_local, source_restore_plan as _guardian_source_plan
+from quality_control_v124 import inspect_final_video as _quality_inspect
 
 try:
     from pywebpush import webpush, WebPushException
@@ -38,6 +39,8 @@ ID_RE=re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 ALLOWED_EXT={".mp4",".mov",".mkv"}
 _STATE_LOCKS={}
 _STATE_LOCKS_GUARD=threading.Lock()
+_QUALITY_CACHE={}
+_QUALITY_LOCK=threading.Lock()
 
 def _env_first(*names,default=""):
     for name in names:
@@ -2384,6 +2387,126 @@ def _instagram_oauth_callback(handler,query):
         _html(handler,500,_social_page(sid,"Collegamento Instagram fallito: "+str(exc)[:220]))
 
 
+def _quality_report_path(sid):
+    sid=_safe_id(sid)
+    return (ROOT/"sessions"/sid/"quality_report.json") if sid else None
+
+def _quality_bucket_key(sid):
+    sid=_safe_id(sid)
+    return f"final-results/{sid}/quality.json" if sid else ""
+
+def _quality_load(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return {}
+    with _QUALITY_LOCK:
+        cached=dict(_QUALITY_CACHE.get(sid) or {})
+    if cached:
+        return cached
+    path=_quality_report_path(sid)
+    if path is not None and path.is_file():
+        try:
+            payload=json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(payload,dict):
+                with _QUALITY_LOCK:
+                    _QUALITY_CACHE[sid]=dict(payload)
+                return payload
+        except Exception:
+            pass
+    return {}
+
+def _quality_store(sid,payload):
+    sid=_safe_id(sid)
+    if not sid or not isinstance(payload,dict):
+        return
+    path=_quality_report_path(sid)
+    if path is not None:
+        try:
+            _write_json_atomic(path,payload)
+        except Exception:
+            pass
+    with _QUALITY_LOCK:
+        _QUALITY_CACHE[sid]=dict(payload)
+    if _bucket_enabled():
+        try:
+            _s3().put_object(
+                Bucket=S3_BUCKET,
+                Key=_quality_bucket_key(sid),
+                Body=json.dumps(payload,ensure_ascii=False,separators=(",",":")).encode("utf-8"),
+                ContentType="application/json",
+                CacheControl="no-store",
+            )
+        except Exception as exc:
+            print("GSF_QUALITY_BUCKET_WARN",sid,repr(str(exc))[:180],flush=True)
+
+def _quality_schedule(sid,stable):
+    sid=_safe_id(sid)
+    stable=Path(stable) if stable is not None else None
+    if not sid or stable is None or not stable.is_file() or stable.stat().st_size<=1024:
+        return {}
+    size=int(stable.stat().st_size)
+    mtime=float(stable.stat().st_mtime)
+    current=_quality_load(sid)
+    if (
+        current
+        and int(current.get("source_size") or 0)==size
+        and abs(float(current.get("source_mtime") or 0.0)-mtime)<0.01
+        and str(current.get("status") or "") in ("pass","warn","fail")
+    ):
+        return current
+    with _QUALITY_LOCK:
+        running=dict(_QUALITY_CACHE.get(sid) or {})
+        if (
+            str(running.get("status") or "")=="analyzing"
+            and int(running.get("source_size") or 0)==size
+            and abs(float(running.get("source_mtime") or 0.0)-mtime)<0.01
+        ):
+            return running
+        marker={
+            "engine":"v124-quality-control",
+            "status":"analyzing",
+            "score":None,
+            "issues":[],
+            "warnings":[],
+            "source_size":size,
+            "source_mtime":mtime,
+            "started_at":time.time(),
+        }
+        _QUALITY_CACHE[sid]=dict(marker)
+
+    def run():
+        try:
+            report=_quality_inspect(stable)
+            report["source_size"]=size
+            report["source_mtime"]=mtime
+            _quality_store(sid,report)
+            print(
+                "GSF_V124_QUALITY",
+                sid,
+                "status="+str(report.get("status") or ""),
+                "score="+str(report.get("score")),
+                "issues="+str(len(report.get("issues") or [])),
+                "warnings="+str(len(report.get("warnings") or [])),
+                flush=True,
+            )
+        except Exception as exc:
+            report={
+                "engine":"v124-quality-control",
+                "status":"error",
+                "score":0,
+                "issues":["quality_control_failed"],
+                "warnings":[],
+                "error":str(exc)[:220],
+                "source_size":size,
+                "source_mtime":mtime,
+                "checked_at":time.time(),
+            }
+            _quality_store(sid,report)
+            print("GSF_V124_QUALITY_WARN",sid,repr(str(exc))[:220],flush=True)
+
+    threading.Thread(target=run,name=f"gsf-quality-{sid[:8]}",daemon=True).start()
+    return marker
+
 _GUARDIAN_CACHE={}
 _GUARDIAN_CACHE_LOCK=threading.Lock()
 _GUARDIAN_MIN_INTERVAL=max(2.0,float(os.environ.get("GSF_GUARDIAN_MIN_INTERVAL","5") or 5))
@@ -2496,6 +2619,15 @@ class Handler(BaseHTTPRequestHandler):
         if clean=="/push/public-key":
             _json(self,200,{"ok":bool(VAPID_PUBLIC_KEY),"public_key":VAPID_PUBLIC_KEY})
             return
+        if clean=="/quality/status":
+            sid=_social_sid(self)
+            if not sid:
+                _json(self,400,{"ok":False,"error":"invalid session"})
+                return
+            stable,_job=_final_local_paths(sid)
+            report=_quality_schedule(sid,stable) if stable is not None else {}
+            _json(self,200,{"ok":True,"quality":report})
+            return
         if clean=="/guardian/status":
             sid=_social_sid(self)
             if not sid:
@@ -2566,6 +2698,9 @@ class Handler(BaseHTTPRequestHandler):
             if status=="running":
                 if started and time.time()-started>900:
                     status="stale"
+            quality={}
+            if sid and stable_ready and stable is not None:
+                quality=_quality_schedule(sid,stable)
             _json(self,200,{
                 "ok":True,
                 "render_status":status,
@@ -2574,6 +2709,10 @@ class Handler(BaseHTTPRequestHandler):
                 "failed_at":payload.get("failed_at"),
                 "final_bytes":stable_bytes if stable_ready else payload.get("final_bytes"),
                 "download_ready":bool(stable_ready),
+                "quality_status":str((quality or {}).get("status") or ""),
+                "quality_score":(quality or {}).get("score"),
+                "quality_issues":list((quality or {}).get("issues") or [])[:8],
+                "quality_warnings":list((quality or {}).get("warnings") or [])[:8],
             })
             return
         if clean=="/source/restore":
