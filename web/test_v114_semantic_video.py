@@ -68,7 +68,7 @@ for marker in (
     "_response_format",
     "_direct_semantic_interaction",
     '"processing":processing_mode',
-    "stream=True",
+    '"stream":True',
     'event_type=="step.delta"',
     'getattr(event.delta,"type",None)=="text"',
     "json_parts.append",
