@@ -90,10 +90,10 @@ for marker in (
     'direct_mode=(processing_mode=="static" and input_method=="inline")',
     'if processing_mode=="agentic":',
     'kwargs["response_format"]=_response_format(max_events)',
-    '"-direct-v120" if direct_mode else "-stream-v120"',
+    '"-generate-v121" if used_generate_content else "-agentic-stream-v121"',
 ):
     if marker not in semantic:
-        raise SystemExit("V120 direct/stream compatibility marker missing: "+marker)
+        raise SystemExit("V121 compatibility marker missing: "+marker)
 inline_start=semantic.find("def _inline_video_content")
 inline_end=semantic.find("def _response_format",inline_start)
 inline_block=semantic[inline_start:inline_end]
@@ -110,7 +110,10 @@ for marker in (
     "types.Part(",
     "inline_data=types.Blob(",
     "video_metadata=types.VideoMetadata(",
-    '"response_format":{"text":{"mime_type":"application/json","schema":_schema(max_events)}}',
+    '"response_format":{',
+    '"text":{',
+    '"mime_type":"application/json"',
+    '"schema":_schema(max_events)',
     'processing_mode=="static"',
     '"generate-v121"',
     '"agentic-stream-v121"',
