@@ -23,6 +23,7 @@ def _insert_after_function(source,name,block):
 # ---------------------------------------------------------------------------
 _v108_runtime=r'''
 # ===== V108 GAME VISION + EVENT MAP =====
+GSF_V108_GAME_VISION = True
 try:
     import sys as _gsf_v108_sys
     if "/app/web" not in _gsf_v108_sys.path:
