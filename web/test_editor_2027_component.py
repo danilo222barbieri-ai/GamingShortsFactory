@@ -24,6 +24,24 @@ for marker in (
     if marker not in frontend:
         raise SystemExit(f"FAIL Editor 2027 component protocol missing: {marker}")
 
+
+for marker in (
+    "GSF_EDITOR_FULLSCREEN_V2",
+    "gsfFullscreenFallback",
+    "enterEditorFullscreen",
+    "exitEditorFullscreen",
+    "root.classList.add('expanded')",
+    "span.textContent='FULL'",
+    "#ng27 #pauseBtn{display:none!important}",
+    "syncPlayToggle",
+    "playing?'#i-pause':'#i-play'",
+):
+    if marker not in frontend:
+        raise SystemExit(f"FAIL Editor 2027 mobile/fullscreen control missing: {marker}")
+
+if "#ng27 .zoomEditorBtn{display:none!important}" in frontend:
+    raise SystemExit("FAIL mobile Editor zoom/fullscreen control is still hidden")
+
 if "components.html(" in wrapper:
     raise SystemExit("FAIL Editor 2027 still uses display-only components.html")
 if "declare_component(" not in wrapper:
