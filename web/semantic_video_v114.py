@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 _DEFAULT_MODEL="gemini-3.8-flash"
-GSF_SEMANTIC_ENGINE_VERSION="v121.1-generate-content"
+GSF_SEMANTIC_ENGINE_VERSION="v121.2-generate-content"
 
 
 def _env_bool(name,default=True):
