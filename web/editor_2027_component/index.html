@@ -172,7 +172,7 @@
 #ng27 .tlMeta{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:7.5px;font-weight:900;letter-spacing:.09em;color:#668095}
 #ng27 .track{position:relative;height:26px;border-radius:10px;overflow:hidden;background:#111d28}
 #ng27 .eventLayer{position:absolute;inset:0;z-index:3;pointer-events:none}
-#ng27 .eventMarker{position:absolute;bottom:3px;width:5px;min-width:5px;height:calc(7px + var(--event-score,0)*13px);padding:0;border:0;border-radius:5px;background:#73d9f0;box-shadow:0 0 8px rgba(115,217,240,.32);transform:translateX(-50%);pointer-events:auto;cursor:pointer;transition:transform .18s ease,height .18s ease,filter .18s ease,opacity .18s ease;opacity:.84}
+#ng27 .eventMarker{position:absolute;bottom:3px;width:5px;min-width:5px;height:10px;padding:0;border:0;border-radius:5px;background:#73d9f0;box-shadow:0 0 8px rgba(115,217,240,.32);transform:translateX(-50%);pointer-events:auto;cursor:pointer;transition:transform .18s ease,height .18s ease,filter .18s ease,opacity .18s ease;opacity:.84}
 #ng27 .eventMarker:hover,#ng27 .eventMarker:focus-visible{transform:translateX(-50%) scaleX(1.45);filter:brightness(1.18);opacity:1;outline:none}
 #ng27 .eventMarker[data-kind="REACTION"],#ng27 .eventMarker[data-kind="AUDIO"]{background:#caa8ff;box-shadow:0 0 8px rgba(202,168,255,.34)}
 #ng27 .eventMarker[data-kind="IMPACT"],#ng27 .eventMarker[data-kind="KILL"],#ng27 .eventMarker[data-kind="GOAL"],#ng27 .eventMarker[data-kind="SHOT"]{background:#ff9fbc;box-shadow:0 0 9px rgba(255,159,188,.38)}
@@ -680,7 +680,7 @@
      marker.className='eventMarker'+(event.selected_rank?' selected':'');
      marker.dataset.kind=kind;
      marker.style.left=(100*t/d)+'%';
-     marker.style.setProperty('--event-score',String(score));
+     marker.style.height=(7+score*13)+'px';
      marker.title=(event.selected_rank?'AI '+event.selected_rank+' · ':'')+kind+' · '+fmtTime(t);
      marker.setAttribute('aria-label',marker.title);
      if(event.selected_rank){
