@@ -78,16 +78,13 @@ def _editor_video_url(video_path):
     if not p.is_file():
         return ""
 
-    runtime_root = Path(os.environ.get("GSF_RUNTIME_ROOT", "/tmp/gsf-runtime"))
-    sessions_root = (runtime_root / "sessions").resolve()
-    try:
-        rel = p.resolve().relative_to(sessions_root)
-        return "/media/" + "/".join(quote(part, safe="") for part in rel.parts)
-    except Exception:
-        mime = mimetypes.guess_type(str(p))[0] or "video/mp4"
-        raw = base64.b64encode(p.read_bytes()).decode("ascii")
-        return f"data:{mime};base64,{raw}"
-
+    # The Editor runs inside a Streamlit component iframe. On Safari/iOS and
+    # Chromium/Android a session-protected /media URL can lose the parent
+    # session context. Embed the selected clip directly so every browser gets
+    # an immediately playable source independent of cookies/range routing.
+    mime = mimetypes.guess_type(str(p))[0] or "video/mp4"
+    raw = base64.b64encode(p.read_bytes()).decode("ascii")
+    return f"data:{mime};base64,{raw}"
 
 def _editor_component_for(video_path):
     p = Path(video_path)
