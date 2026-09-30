@@ -26,8 +26,10 @@ for marker in ['"sizes":"192x192"','"sizes":"512x512"','"/app-icon-192.png?v=4"'
 
 print("V107 production assets/routes test: PASS")
 
-for marker in ["/job/status","gsf-activity-hud","/source/restore","GSF_SOURCE_RESTORED","target=\"_top\""]:
+for marker in ["/job/status","/source/restore","GSF_SOURCE_RESTORED","target=\"_top\"","gsf-share-auto-open-token","visibilitychange","pageshow","CONDIVIDI O SCARICA"]:
     if marker not in server:
-        raise SystemExit("FAIL activity/source restore asset missing: "+marker)
+        raise SystemExit("FAIL lifecycle/source restore asset missing: "+marker)
+if "gsf-activity-hud" in server:
+    raise SystemExit("FAIL obsolete bottom-right activity HUD survived")
 if "location = /job/status {" not in nginx:
     raise SystemExit("FAIL nginx job status route missing")
