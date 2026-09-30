@@ -673,6 +673,60 @@ st.markdown("""
 '''
 s = s.rstrip() + "\n\n" + _social_footer.lstrip()
 
+# Match the approved demo social area on phones: keep the three real publish
+# actions compact and side-by-side instead of Streamlit stacking them as huge cards.
+_social_mobile_demo_layout = r'''
+st.markdown("""
+<style id="gsf-v107-social-mobile-demo-layout">
+@media(max-width:600px){
+  div[data-testid="stHorizontalBlock"]:has(.st-key-v69_social_youtube),
+  div[data-testid="stHorizontalBlock"]:has(.st-key-v69_social_tiktok),
+  div[data-testid="stHorizontalBlock"]:has(.st-key-v69_social_instagram){
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:7px !important;
+    align-items:stretch !important;
+  }
+  div[data-testid="stHorizontalBlock"]:has(.st-key-v69_social_youtube) > div,
+  div[data-testid="stHorizontalBlock"]:has(.st-key-v69_social_tiktok) > div,
+  div[data-testid="stHorizontalBlock"]:has(.st-key-v69_social_instagram) > div{
+    width:100% !important;
+    min-width:0 !important;
+    flex:initial !important;
+  }
+  .st-key-v69_social_youtube,
+  .st-key-v69_social_tiktok,
+  .st-key-v69_social_instagram{
+    min-height:0 !important;
+    padding:0 !important;
+    margin:0 !important;
+  }
+  .st-key-v69_social_youtube button,
+  .st-key-v69_social_tiktok button,
+  .st-key-v69_social_instagram button{
+    min-height:54px !important;
+    height:54px !important;
+    padding:0 6px !important;
+    border-radius:14px !important;
+    font-size:11px !important;
+    line-height:1 !important;
+    box-shadow:0 6px 16px rgba(65,96,121,.09) !important;
+  }
+  .st-key-v69_social_youtube button p,
+  .st-key-v69_social_tiktok button p,
+  .st-key-v69_social_instagram button p{
+    font-size:11px !important;
+    white-space:nowrap !important;
+  }
+  .gsf-icon-title:has(.v67-badge-indigo){
+    margin-bottom:10px !important;
+  }
+}
+</style>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _social_mobile_demo_layout.lstrip()
+
 # Creator Hub entry point: always reachable without disturbing the current video/session.
 _creator_hub_entry = r'''
 st.markdown("""
@@ -705,18 +759,18 @@ st.markdown("""
 }
 @media(max-width:600px){
   .gsf-account-fab{
-    top:calc(10px + env(safe-area-inset-top, 0px));
-    bottom:auto;
-    right:10px;
+    top:auto;
+    bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+    right:12px;
     width:auto;
     min-width:82px;
-    height:42px;
-    padding:0 12px;
+    height:46px;
+    padding:0 14px;
     justify-content:center;
-    border-radius:14px;
+    border-radius:15px;
     z-index:2147483000;
     background:rgba(255,255,255,.96);
-    box-shadow:0 8px 22px rgba(52,91,122,.18);
+    box-shadow:0 10px 26px rgba(52,91,122,.22);
   }
   .gsf-account-fab svg{width:19px;height:19px}
   .gsf-account-fab span{
