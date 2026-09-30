@@ -26,6 +26,22 @@ for marker in required:
     if marker not in s:
         raise SystemExit(f"FAIL missing V107 marker: {marker}")
 
+for marker in (
+    "GSF_FINAL_CREATE_CLICK",
+    "gsf-final-ready",
+    "gsf-final-social-row",
+    "gsf-layout-hygiene",
+    "Short finale pronto",
+    "CREATOR HUB",
+):
+    if marker not in s:
+        raise SystemExit(f"FAIL missing V107 final/layout marker: {marker}")
+
+if "gsf_v107_final_click_pending" in s or "gsf_v107_final_recipe_snapshot" in s:
+    raise SystemExit("FAIL obsolete V107 final-click trampoline survived")
+if 'st.markdown("\\\\n\\\\n")' in s or "st.markdown('\\\\n\\\\n')" in s:
+    raise SystemExit("FAIL literal newline markdown survived")
+
 for forbidden in [
     "_GSF_REAL_DEMO",
     "/app/demo_assets/",
