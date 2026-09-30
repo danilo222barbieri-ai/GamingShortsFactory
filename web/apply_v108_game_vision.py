@@ -1,5 +1,6 @@
 from pathlib import Path
 import ast
+import re
 
 src=Path("/app/GamingShortsFactory_V107_1_STABILITY.py")
 out=Path("/app/GamingShortsFactory_V108_GAME_VISION.py")
@@ -158,22 +159,23 @@ if _inline_old not in s:
     raise RuntimeError("V108 inline Editor 2027 call anchor missing")
 s=s.replace(_inline_old,_inline_new,1)
 
-_manual_old='''        _gsf_manual_editor_state=_gsf_render_manual_editor_2027(
-            _gsf_manual_editor_media,height=720,key=_gsf_manual_component_key,initial_state=_gsf_manual_saved_state
-        )
-'''
-_manual_new='''        _gsf_manual_editor_state=_gsf_render_manual_editor_2027(
-            _gsf_manual_editor_media,
-            height=720,
-            key=_gsf_manual_component_key,
-            initial_state=_gsf_manual_saved_state,
-            clip_start=0.0,
-            source_duration=float(_gsf_manual_duration),
-        )
-'''
-if _manual_old not in s:
-    raise RuntimeError("V108 manual Editor 2027 call anchor missing")
-s=s.replace(_manual_old,_manual_new,1)
+_manual_pattern=r'initial_state\s*=\s*_gsf_manual_saved_state'
+_manual_replacement=(
+    'initial_state=_gsf_manual_saved_state,'
+    'clip_start=0.0,'
+    'source_duration=float(_gsf_manual_duration)'
+)
+s,_manual_n=re.subn(
+    _manual_pattern,
+    _manual_replacement,
+    s,
+    count=1,
+)
+if _manual_n!=1:
+    raise RuntimeError(
+        "V108 manual Editor 2027 state argument missing or ambiguous: "
+        +str(_manual_n)
+    )
 
 # Old stability markers remain so regression tests and draft compatibility
 # continue to work. The V108 marker lives beside the V108 runtime wrappers.
