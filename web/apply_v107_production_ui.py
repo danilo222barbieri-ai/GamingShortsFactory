@@ -548,14 +548,14 @@ _create_short_old='''            _v1054_create_final_clicked=st.button(
 _create_short_new='''            def _gsf_v107_queue_final_render():
                 _recipe=st.session_state.get("gsf_final_recipe")
                 if isinstance(_recipe,dict) and _recipe:
-                    st.session_state["gsf_v107_final_recipe_snapshot"]=dict(_recipe)
+                    st.session_state["gsf_v107_render_recipe_snapshot"]=dict(_recipe)
                 _src=""
                 if isinstance(_recipe,dict):
                     _src=str(_recipe.get("source_path") or "")
                 if not _src:
                     _src=str(st.session_state.get("gsf_source_path") or "")
                 if _src:
-                    st.session_state["gsf_v107_final_source_snapshot"]=_src
+                    st.session_state["gsf_v107_render_source_snapshot"]=_src
                 st.session_state["gsf_v107_final_render_pending"]=True
 
             with st.container(key="gsf-major-create-short"):
@@ -570,10 +570,10 @@ _create_short_new='''            def _gsf_v107_queue_final_render():
                 st.session_state.pop("gsf_v107_final_render_pending",False)
             )
             if _gsf_v107_pending:
-                _snap=st.session_state.get("gsf_v107_final_recipe_snapshot")
+                _snap=st.session_state.get("gsf_v107_render_recipe_snapshot")
                 if isinstance(_snap,dict) and _snap:
                     st.session_state["gsf_final_recipe"]=dict(_snap)
-                _src_snap=str(st.session_state.get("gsf_v107_final_source_snapshot") or "")
+                _src_snap=str(st.session_state.get("gsf_v107_render_source_snapshot") or "")
                 if _src_snap:
                     st.session_state["gsf_source_path"]=_src_snap
                     st.session_state["gsf_editor_source_path"]=_src_snap
