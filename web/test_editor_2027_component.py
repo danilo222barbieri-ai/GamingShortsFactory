@@ -77,7 +77,7 @@ for marker in (
     'persistLocalState',
     'touch-action:manipulation',
     '#ng27 video{pointer-events:none!important}',
-    "payload.editorVersion='2027.4'",
+    "payload.editorVersion='2027.5'",
 ):
     source = wrapper if marker=='gsf_editor_2027_v1084' else frontend
     if marker not in source:
@@ -87,7 +87,7 @@ for marker in (
 # Desktop control contract: three-state fullscreen, one Play/Pause, live
 # contextual panels, Undo/Redo and DONE must coexist with mobile hardening.
 for marker in (
-    'data-editor-build="2027.4-touch"',
+    'data-editor-build="2027.5-livefix"',
     "span.textContent='FULL'",
     "span.textContent='FULL ×2'",
     "span.textContent='RIDUCI'",
@@ -124,6 +124,31 @@ if "navigator.maxTouchPoints" not in frontend:
     raise SystemExit("FAIL Editor mobile detection lacks touch fallback")
 if "const isMobileEditor=()=>window.matchMedia('(max-width:820px)').matches;" in frontend:
     raise SystemExit("FAIL narrow desktop can still be misclassified as mobile")
+
+
+# Every literal root.querySelector('#id') used by the Editor must resolve to
+# a real DOM node. A stale cosmetic reference previously killed applyState()
+# before FRAME/CAPTION/HUD/GAME AI could touch the video.
+import re as _re
+_refs=_re.findall(r"""root\.querySelector\(['"]#([^'"]+)['"]\)""",frontend)
+_missing=[]
+for _id in sorted(set(_refs)):
+    if not _re.search(r"""id=['"]"""+_re.escape(_id)+r"""['"]""",frontend):
+        _missing.append(_id)
+if _missing:
+    raise SystemExit("FAIL Editor stale DOM selectors: "+",".join(_missing))
+if "formatLabel" in frontend:
+    raise SystemExit("FAIL obsolete formatLabel reference can still break live preview")
+
+for marker in (
+    "video.style.transform='translate('",
+    "video.style.filter=filterFor(state)",
+    "caption.classList.toggle('off'",
+    "if(state.hudMode==='Smart Safe')",
+    "focus.style.display=state.visionEnabled?'block':'none'",
+):
+    if marker not in frontend:
+        raise SystemExit("FAIL Editor live preview contract missing: "+marker)
 
 if "components.html(" in wrapper:
     raise SystemExit("FAIL Editor 2027 still uses display-only components.html")
