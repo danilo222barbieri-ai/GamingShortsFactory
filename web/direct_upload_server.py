@@ -20,6 +20,7 @@ from boto3.s3.transfer import TransferConfig
 from gsf_perf import perf_event
 from guardian_v113 import inspect_and_repair_local as _guardian_local, source_restore_plan as _guardian_source_plan
 from quality_control_v124 import inspect_final_video as _quality_inspect
+from guardian_intelligence_v124 import diagnose as _guardian_diagnose
 
 try:
     from pywebpush import webpush, WebPushException
@@ -2634,9 +2635,17 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,400,{"ok":False,"error":"invalid session"})
                 return
             guardian=_guardian_tick(sid,force=True)
+            quality=_quality_load(sid)
+            diagnosis=_guardian_diagnose(
+                guardian=guardian,
+                quality=quality,
+                render_status=str(guardian.get("status") or ""),
+            )
             _json(self,200,{
                 "ok":bool(guardian.get("ok")),
                 "guardian":guardian,
+                "diagnosis":diagnosis,
+                "quality":quality,
                 "bucket":_bucket_enabled(),
                 "worker_configured":bool(WORKER_URL),
             })
@@ -2713,6 +2722,11 @@ class Handler(BaseHTTPRequestHandler):
                 "quality_score":(quality or {}).get("score"),
                 "quality_issues":list((quality or {}).get("issues") or [])[:8],
                 "quality_warnings":list((quality or {}).get("warnings") or [])[:8],
+                "guardian_diagnosis":_guardian_diagnose(
+                    guardian={},
+                    quality=quality,
+                    render_status=status,
+                ),
             })
             return
         if clean=="/source/restore":
