@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(0,"/app/web")
-from semantic_video_v114 import normalize_semantic_events, merge_semantic_events, choose_processing_mode, choose_input_method
+from semantic_video_v114 import normalize_semantic_events, merge_semantic_events, choose_processing_mode, choose_input_method, semantic_model_candidates, is_quota_error
 
 if choose_processing_mode(45.0)!="static":
     raise SystemExit("V119 short video must use static processing")
@@ -134,3 +134,29 @@ generate_block=semantic[generate_start:generate_end]
 if '"response_format":' in generate_block:
     raise SystemExit("V122 Generate Content helper must not use Interactions response_format")
 print("V122 Generate Content structured config: PASS")
+
+models=semantic_model_candidates("gemini-3.8-flash")
+if models[:2]!=["gemini-3.8-flash","gemini-2.5-flash"]:
+    raise SystemExit("V123 model fallback order failed: "+repr(models))
+if len(models)!=len(set(models)):
+    raise SystemExit("V123 model fallback contains duplicates")
+if not is_quota_error("429 RESOURCE_EXHAUSTED quota exceeded"):
+    raise SystemExit("V123 quota detection failed for RESOURCE_EXHAUSTED")
+if not is_quota_error("too many requests rate limit"):
+    raise SystemExit("V123 quota detection failed for rate limit")
+if is_quota_error("invalid_argument"):
+    raise SystemExit("V123 quota detection produced false positive")
+print("V123 Gemini model fallback policy: PASS")
+
+for marker in (
+    "semantic_model_candidates(",
+    "is_quota_error(",
+    "model_attempts",
+    "model_fallback",
+    '"gemini-2.5-flash"',
+    '"-generate-v123"',
+    '"-agentic-stream-v123"',
+):
+    if marker not in semantic:
+        raise SystemExit("V123 fallback runtime marker missing: "+marker)
+print("V123 Gemini quota fallback runtime contract: PASS")
