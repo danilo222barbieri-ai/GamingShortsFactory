@@ -2388,6 +2388,50 @@ _GUARDIAN_CACHE={}
 _GUARDIAN_CACHE_LOCK=threading.Lock()
 _GUARDIAN_MIN_INTERVAL=max(2.0,float(os.environ.get("GSF_GUARDIAN_MIN_INTERVAL","5") or 5))
 
+def _guardian_restore_source_from_marker(sid):
+    sid=_safe_id(sid)
+    if not sid or not _bucket_enabled():
+        return ""
+    marker=ROOT/"sessions"/sid/"media"/".direct_upload_ready.json"
+    if not marker.is_file():
+        return ""
+    try:
+        meta=json.loads(marker.read_text(encoding="utf-8"))
+        if not isinstance(meta,dict):
+            return ""
+        local_path=Path(str(meta.get("path") or ""))
+        if local_path.is_file():
+            return str(local_path)
+        key=str(meta.get("bucket_key") or "")
+        if not key:
+            return ""
+        upload_id=_safe_id(meta.get("upload_id",""))
+        if not upload_id:
+            parts=[part for part in key.split("/") if part]
+            if len(parts)>=3 and parts[0]=="uploads" and _safe_id(parts[1])==sid:
+                upload_id=_safe_id(parts[2])
+        if not upload_id:
+            return ""
+        original_name,safe_stem,ext=_safe_filename(meta.get("name") or Path(key).name)
+        total=int(meta.get("size") or 0)
+        if total<=0:
+            head=_s3().head_object(Bucket=S3_BUCKET,Key=key)
+            total=int(head.get("ContentLength") or 0)
+        if total<=0:
+            return ""
+        analysis_key=str(meta.get("analysis_key") or f"analysis/{sid}/{upload_id}/v52-keyframe-turbo.json")
+        _materialize_bucket_object(
+            sid,upload_id,key,original_name,safe_stem,ext,total,analysis_key
+        )
+        fresh=json.loads(marker.read_text(encoding="utf-8")) if marker.is_file() else {}
+        restored=Path(str((fresh or {}).get("path") or ""))
+        if restored.is_file():
+            print("GSF_GUARDIAN_SOURCE_RESTORED",sid,str(restored),flush=True)
+            return str(restored)
+    except Exception as exc:
+        print("GSF_GUARDIAN_SOURCE_RESTORE_WARN",sid,repr(str(exc))[:220],flush=True)
+    return ""
+
 def _guardian_tick(sid,force=False):
     sid=_safe_id(sid)
     if not sid:
@@ -2401,12 +2445,22 @@ def _guardian_tick(sid,force=False):
     root.mkdir(parents=True,exist_ok=True)
     try:
         result=_guardian_local(root,now=now,stale_after=900)
+        extra_repairs=[]
         if result.get("needs_final_restore") and _bucket_enabled():
             restored=_final_restore_from_bucket(sid)
             if restored:
                 result=_guardian_local(root,now=time.time(),stale_after=900)
-                result.setdefault("repairs",[]).append("final_from_bucket")
-        repairs=list(result.get("repairs") or [])
+                extra_repairs.append("final_from_bucket")
+        if result.get("needs_source_restore") and _bucket_enabled():
+            restored_source=_guardian_restore_source_from_marker(sid)
+            if restored_source:
+                result=_guardian_local(root,now=time.time(),stale_after=900)
+                extra_repairs.append("source_from_bucket")
+        repairs=[]
+        for repair in list(result.get("repairs") or [])+extra_repairs:
+            if repair and repair not in repairs:
+                repairs.append(repair)
+        result["repairs"]=repairs
         if repairs:
             print("GSF_GUARDIAN_REPAIR",sid,",".join(repairs),flush=True)
         with _GUARDIAN_CACHE_LOCK:
