@@ -1038,135 +1038,311 @@ s=s.replace(
     'if _has_final:'
 )
 
+# Final UX owns this area: remove the legacy publication title and the ad above it.
+s=s.replace(
+    'st.markdown(\'<div class="gsf-icon-title">\' + _gsf_v67_badge("publish", "Pubblicazione diretta", "indigo") + \'</div>\', unsafe_allow_html=True)',
+    'st.empty()'
+)
+_gsf_final_ad_old='''            with st.container(key="v1054_ad_after_final_result"):
+                st.markdown(
+                    '<aside class="v67-ad" aria-label="Spazio pubblicitario">Pubblicità</aside>',
+                    unsafe_allow_html=True,
+                )
+
+'''
+s=s.replace(_gsf_final_ad_old,'',1)
+
 # The obsolete large PUBBLICA launcher is hidden by the scoped browser cleanup below.
 # Do not rewrite the source block here: preserving the original code avoids brittle
 # multiline regex changes while the composer is already forced open by _has_final.
 
-_final_publish_v2 = r'''
+_final_publish_v3 = r'''
 st.markdown("""
-<style id="gsf-v107-final-publish">
-.gsf-final-ready{
-  margin:16px auto 4px;text-align:center;color:#3f6f62;
-  font-size:.96rem;font-weight:900;letter-spacing:.015em;
+<style id="gsf-v107-final-publish-v3">
+.gsf-final-publish-shell{
+  width:100%;
+  margin:16px auto 8px;
 }
-.gsf-final-publish-title{
-  margin:4px 0 9px;text-align:center;color:#17324a;
-  font-size:1.10rem;font-weight:950;letter-spacing:.08em;
+.gsf-final-publish-head{
+  box-sizing:border-box;
+  width:100%;
+  min-height:56px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 auto 8px;
+  padding:0 18px;
+  border-radius:17px;
+  border:1px solid rgba(255,255,255,.34);
+  background:linear-gradient(135deg,#8B67E8 0%,#6557D9 100%);
+  color:#fff !important;
+  box-shadow:0 12px 28px rgba(104,84,205,.28);
+  font-family:var(--gsf-ui-font,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif);
+  font-size:15px;
+  font-weight:900;
+  line-height:1;
+  letter-spacing:.045em;
+  text-align:center;
+}
+.gsf-final-ready{
+  margin:0 auto 12px;
+  text-align:center;
+  color:#658091;
+  font-size:11px;
+  font-weight:750;
 }
 .gsf-final-social-row{
   display:grid !important;
   grid-template-columns:repeat(4,minmax(0,1fr)) !important;
-  gap:9px !important;
+  gap:10px !important;
   align-items:stretch !important;
-  margin:0 auto 8px !important;
+  margin:0 auto 10px !important;
 }
 .gsf-final-social-row > div,
-.gsf-final-social-row > a{
-  width:100% !important;min-width:0 !important;flex:initial !important;
+.gsf-final-social-row > a,
+.gsf-final-social-row > button{
+  width:100% !important;
+  min-width:0 !important;
+  flex:initial !important;
 }
 .st-key-v69_social_youtube button,
 .st-key-v69_social_tiktok button,
 .st-key-v69_social_instagram button,
 .gsf-facebook-publish-icon{
-  min-height:58px !important;height:58px !important;
-  border-radius:16px !important;
-  display:flex !important;align-items:center !important;justify-content:center !important;
-  border:1px solid #cbdde9 !important;
+  box-sizing:border-box !important;
+  width:100% !important;
+  min-height:66px !important;
+  height:66px !important;
+  padding:8px 7px !important;
+  border-radius:17px !important;
+  display:flex !important;
+  flex-direction:column !important;
+  gap:5px !important;
+  align-items:center !important;
+  justify-content:center !important;
+  border:1px solid #d1e1eb !important;
+  background:linear-gradient(145deg,#fff,#edf5fa) !important;
+  color:#46657b !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 7px 17px rgba(65,96,121,.09) !important;
+  text-decoration:none !important;
+  font-family:var(--gsf-ui-font,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif) !important;
+  cursor:pointer !important;
+  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease !important;
+}
+.st-key-v69_social_youtube button:hover,
+.st-key-v69_social_tiktok button:hover,
+.st-key-v69_social_instagram button:hover,
+.gsf-facebook-publish-icon:hover{
+  transform:translateY(-2px) !important;
+  border-color:#b8d5e7 !important;
+  box-shadow:inset 0 1px 0 #fff,0 10px 22px rgba(65,96,121,.14) !important;
+}
+.gsf-social-glyph{
+  width:27px;
+  height:27px;
+  display:grid;
+  place-items:center;
+}
+.gsf-social-glyph svg{width:27px;height:27px;display:block;fill:currentColor}
+.gsf-social-name{
+  font-size:10px;
+  line-height:1;
+  font-weight:850;
+  letter-spacing:.02em;
+}
+.gsf-final-social-row .st-key-v69_social_youtube button{color:#d04444 !important}
+.gsf-final-social-row .st-key-v69_social_tiktok button{color:#273a48 !important}
+.gsf-final-social-row .st-key-v69_social_instagram button{color:#9b4f88 !important}
+.gsf-facebook-publish-icon{color:#4267a9 !important}
+[class*="st-key-v1055_social_composer_"],
+.gsf-facebook-composer{
+  box-sizing:border-box !important;
+  width:100% !important;
+  margin:8px auto 12px !important;
+  padding:15px !important;
+  border:1px solid rgba(116,154,184,.24) !important;
+  border-radius:20px !important;
+  background:linear-gradient(180deg,rgba(247,252,255,.97),rgba(255,255,255,.99)) !important;
+  box-shadow:0 10px 28px rgba(36,85,125,.07) !important;
+}
+.gsf-facebook-composer[hidden]{display:none !important}
+.gsf-facebook-composer .fb-head{
+  margin-bottom:10px;
+  color:#385a72;
+  font-size:13px;
+  font-weight:850;
+}
+.gsf-facebook-composer label{
+  display:block;
+  margin:8px 0 4px;
+  color:#657f92;
+  font-size:10px;
+  font-weight:800;
+}
+.gsf-facebook-composer input,
+.gsf-facebook-composer textarea{
+  box-sizing:border-box;
+  width:100%;
+  border:1px solid #d7e5ee;
+  border-radius:12px;
+  background:#fff;
+  color:#17324a;
+  padding:9px 10px;
+  font:600 12px/1.3 var(--gsf-ui-font,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif);
+}
+.gsf-facebook-composer textarea{min-height:82px;resize:vertical}
+.gsf-facebook-connect{
+  margin-top:11px;
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:13px;
+  background:linear-gradient(135deg,#8B67E8 0%,#6557D9 100%);
+  color:#fff !important;
+  text-decoration:none !important;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.035em;
+}
+.gsf-facebook-note{
+  margin-top:7px;
+  color:#7890a0;
+  font-size:10px;
+  line-height:1.3;
+  text-align:center;
+}
+[class*="st-key-social_publish_confirm_"] button{
+  min-height:44px !important;
+  border-radius:13px !important;
+  background:linear-gradient(135deg,#8B67E8 0%,#6557D9 100%) !important;
+  color:#fff !important;
+  border:1px solid rgba(255,255,255,.30) !important;
+  font-weight:900 !important;
+}
+[data-testid="stDownloadButton"]{
+  width:100% !important;
+  margin:10px auto 8px !important;
+}
+[data-testid="stDownloadButton"] button{
+  min-height:50px !important;
+  border-radius:15px !important;
+  border:1px solid #c9dce8 !important;
   background:linear-gradient(145deg,#fff,#eef5fa) !important;
   color:#355a73 !important;
-  box-shadow:0 6px 16px rgba(65,96,121,.09) !important;
-  text-decoration:none !important;
+  font-size:13px !important;
+  font-weight:900 !important;
+  box-shadow:0 7px 18px rgba(65,96,121,.08) !important;
 }
-.st-key-v69_social_youtube button p,
-.st-key-v69_social_tiktok button p,
-.st-key-v69_social_instagram button p{display:none !important}
-.st-key-v69_social_youtube button:before{content:"▶";font-size:21px;font-weight:950}
-.st-key-v69_social_tiktok button:before{content:"♪";font-size:24px;font-weight:950}
-.st-key-v69_social_instagram button:before{content:"◎";font-size:25px;font-weight:900}
-.gsf-facebook-publish-icon{font:900 25px/1 Arial,sans-serif}
-[class*="st-key-v1055_social_composer_"]{
-  margin:8px auto 10px !important;
-  padding:14px !important;
-}
-[data-testid="stDownloadButton"]{margin-top:8px !important;margin-bottom:8px !important}
+.st-key-v1054_ad_after_final_result{display:none !important}
 @media(max-width:600px){
-  .gsf-final-ready{margin:11px auto 3px;font-size:.90rem}
-  .gsf-final-publish-title{margin:3px 0 7px;font-size:1rem}
-  .gsf-final-social-row{gap:7px !important;margin-bottom:7px !important}
+  .gsf-final-publish-head{min-height:52px;font-size:13px;border-radius:16px}
+  .gsf-final-ready{margin-bottom:9px;font-size:10px}
+  .gsf-final-social-row{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:8px !important}
   .st-key-v69_social_youtube button,
   .st-key-v69_social_tiktok button,
   .st-key-v69_social_instagram button,
-  .gsf-facebook-publish-icon{
-    min-height:52px !important;height:52px !important;border-radius:14px !important;
-  }
-  [class*="st-key-v1055_social_composer_"]{padding:11px !important;margin:7px auto 8px !important}
+  .gsf-facebook-publish-icon{min-height:60px !important;height:60px !important;border-radius:15px !important}
+  .gsf-social-glyph,.gsf-social-glyph svg{width:24px;height:24px}
+  [class*="st-key-v1055_social_composer_"],.gsf-facebook-composer{padding:12px !important;margin:7px auto 10px !important}
 }
 </style>
 <script>
 (()=>{
+ const icons={
+  Facebook:`<span class="gsf-social-glyph"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.7 22v-9h3l.5-3.5h-3.5V7.3c0-1 .3-1.7 1.8-1.7h1.9V2.5c-.3 0-1.5-.1-2.8-.1-2.8 0-4.7 1.7-4.7 4.8v2.7H7v3.5h2.9v9h3.8z"/></svg></span><span class="gsf-social-name">Facebook</span>`,
+  Instagram:`<span class="gsf-social-glyph"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.4 2h9.2A5.4 5.4 0 0 1 22 7.4v9.2a5.4 5.4 0 0 1-5.4 5.4H7.4A5.4 5.4 0 0 1 2 16.6V7.4A5.4 5.4 0 0 1 7.4 2Zm0 2A3.4 3.4 0 0 0 4 7.4v9.2A3.4 3.4 0 0 0 7.4 20h9.2a3.4 3.4 0 0 0 3.4-3.4V7.4A3.4 3.4 0 0 0 16.6 4H7.4Zm9.6 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg></span><span class="gsf-social-name">Instagram</span>`,
+  YouTube:`<span class="gsf-social-glyph"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23 12s0-3.7-.5-5.4a3 3 0 0 0-2.1-2.1C18.7 4 12 4 12 4s-6.7 0-8.4.5a3 3 0 0 0-2.1 2.1C1 8.3 1 12 1 12s0 3.7.5 5.4a3 3 0 0 0 2.1 2.1C5.3 20 12 20 12 20s6.7 0 8.4-.5a3 3 0 0 0 2.1-2.1C23 15.7 23 12 23 12Zm-13.2 3.4V8.6l6 3.4-6 3.4Z"/></svg></span><span class="gsf-social-name">YouTube</span>`,
+  TikTok:`<span class="gsf-social-glyph"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.6 2c.4 2.3 1.8 3.7 4.1 3.9v3.3a9.1 9.1 0 0 1-4.1-1v6.4a6.6 6.6 0 1 1-5.7-6.5v3.4a3.2 3.2 0 1 0 2.4 3.1V2h3.3Z"/></svg></span><span class="gsf-social-name">TikTok</span>`
+ };
+ const hideFacebook=()=>{const p=document.querySelector('.gsf-facebook-composer');if(p)p.hidden=true;};
  const tune=()=>{
-   /* Hide legacy duplicate title and launcher. */
-   document.querySelectorAll('div,p,h1,h2,h3,h4').forEach(el=>{
-     if((el.textContent||'').trim()==='Pubblicazione diretta'){
-       const block=el.closest('[data-testid="stMarkdownContainer"]')||el;
-       block.style.display='none';
-     }
-   });
-   document.querySelectorAll('button').forEach(b=>{
-     const t=(b.textContent||'').trim().replace(/^➡️\\s*/,'');
-     if(t==='PUBBLICA'){
-       const key=b.closest('[class*="st-key-social_publish_confirm_"]');
-       if(!key){
-         const wrap=b.closest('[data-testid="stButton"]')||b.parentElement;
-         if(wrap) wrap.style.display='none';
-       }
-     }
-   });
+  document.querySelectorAll('div,p,h1,h2,h3,h4').forEach(el=>{
+    const t=(el.textContent||'').trim();
+    if(t==='Pubblicazione diretta'){
+      const block=el.closest('[data-testid="stMarkdownContainer"]')||el;
+      block.style.display='none';
+    }
+  });
+  document.querySelectorAll('button').forEach(b=>{
+    const t=(b.textContent||'').trim().replace(/^➡️\\s*/,'');
+    if(t==='PUBBLICA'){
+      const key=b.closest('[class*="st-key-social_publish_confirm_"]');
+      if(!key){
+        const wrap=b.closest('[data-testid="stButton"]')||b.parentElement;
+        if(wrap)wrap.style.display='none';
+      }
+    }
+  });
 
-   const y=document.querySelector('.st-key-v69_social_youtube');
-   const row=y?.closest('div[data-testid="stHorizontalBlock"]');
-   if(!row)return;
-   row.classList.add('gsf-final-social-row');
+  const y=document.querySelector('.st-key-v69_social_youtube');
+  const row=y?.closest('div[data-testid="stHorizontalBlock"]');
+  if(!row)return;
+  row.classList.add('gsf-final-social-row');
 
-   const labels=[
-     ['.st-key-v69_social_youtube','YouTube'],
-     ['.st-key-v69_social_tiktok','TikTok'],
-     ['.st-key-v69_social_instagram','Instagram']
-   ];
-   labels.forEach(([sel,name])=>{
-     const b=document.querySelector(sel+' button');
-     if(b){b.title=name;b.setAttribute('aria-label',name);}
-   });
+  const native=[
+    ['.st-key-v69_social_youtube','YouTube'],
+    ['.st-key-v69_social_tiktok','TikTok'],
+    ['.st-key-v69_social_instagram','Instagram']
+  ];
+  native.forEach(([sel,name])=>{
+    const b=document.querySelector(sel+' button');
+    if(!b)return;
+    if(!b.dataset.gsfFinalIcon){
+      b.innerHTML=icons[name];
+      b.dataset.gsfFinalIcon='1';
+      b.title=name;b.setAttribute('aria-label',name);
+      b.addEventListener('click',hideFacebook);
+    }
+  });
 
-   if(!row.querySelector('.gsf-facebook-publish-icon')){
-     const fb=document.createElement('a');
-     fb.className='gsf-facebook-publish-icon';
-     fb.href='/account/facebook/start';
-     fb.target='_blank';
-     fb.rel='noopener';
-     fb.title='Facebook · collega account';
-     fb.setAttribute('aria-label','Facebook');
-     fb.textContent='f';
-     row.insertBefore(fb,row.firstChild);
-   }
+  let fb=row.querySelector('.gsf-facebook-publish-icon');
+  if(!fb){
+    fb=document.createElement('button');
+    fb.type='button';
+    fb.className='gsf-facebook-publish-icon';
+    fb.innerHTML=icons.Facebook;
+    fb.title='Facebook';
+    fb.setAttribute('aria-label','Facebook');
+    row.insertBefore(fb,row.firstChild);
+  }
 
-   if(!row.previousElementSibling?.classList.contains('gsf-final-publish-head')){
-     const head=document.createElement('div');
-     head.className='gsf-final-publish-head';
-     head.innerHTML='<div class="gsf-final-ready">✅ Short finale pronto</div><div class="gsf-final-publish-title">PUBBLICA</div>';
-     row.parentElement?.insertBefore(head,row);
-   }
+  let shell=row.previousElementSibling;
+  if(!shell || !shell.classList.contains('gsf-final-publish-shell')){
+    shell=document.createElement('div');
+    shell.className='gsf-final-publish-shell';
+    shell.innerHTML='<div class="gsf-final-publish-head">PUBBLICA O SCARICA</div><div class="gsf-final-ready">Short finale pronto</div>';
+    row.parentElement?.insertBefore(shell,row);
+  }
 
-   /* SCARICA always follows the social row/composer and precedes ad/footer. */
-   const dl=[...document.querySelectorAll('button,a')].find(x=>(x.textContent||'').trim()==='SCARICA');
-   if(dl){
-     const dlWrap=dl.closest('[data-testid="stDownloadButton"]')||dl.closest('[data-testid="stMarkdownContainer"]')||dl.parentElement;
-     const composers=[...document.querySelectorAll('[class*="st-key-v1055_social_composer_"]')];
-     const target=composers.length?composers[composers.length-1]:row;
-     if(dlWrap && target && target.parentElement){
-       try{target.insertAdjacentElement('afterend',dlWrap)}catch(e){}
-     }
-   }
+  let fbPanel=document.querySelector('.gsf-facebook-composer');
+  if(!fbPanel){
+    fbPanel=document.createElement('div');
+    fbPanel.className='gsf-facebook-composer';
+    fbPanel.hidden=true;
+    fbPanel.innerHTML='<div class="fb-head">Dettagli Facebook</div><label>Titolo</label><input type="text" placeholder="Titolo del post"><label>Descrizione</label><textarea placeholder="Descrizione del post"></textarea><label>Hashtag</label><input type="text" placeholder="#gaming #shorts"><a class="gsf-facebook-connect" href="/account/facebook/start" target="_blank" rel="noopener">COLLEGA FACEBOOK</a><div class="gsf-facebook-note">Il collegamento Facebook usa il Creator Hub. La pubblicazione diretta del video richiede i permessi Meta della Pagina.</div>';
+    row.insertAdjacentElement('afterend',fbPanel);
+  }
+  if(!fb.dataset.gsfBound){
+    fb.dataset.gsfBound='1';
+    fb.addEventListener('click',()=>{
+      document.querySelectorAll('[class*="st-key-v1055_social_composer_"]').forEach(x=>x.style.display='none');
+      fbPanel.hidden=!fbPanel.hidden;
+    });
+  }
+
+  const composers=[...document.querySelectorAll('[class*="st-key-v1055_social_composer_"]')];
+  composers.forEach(x=>{if(fbPanel && !fbPanel.hidden)x.style.display='none';else x.style.display='';});
+
+  const dl=[...document.querySelectorAll('button,a')].find(x=>(x.textContent||'').trim()==='SCARICA');
+  if(dl){
+    const dlWrap=dl.closest('[data-testid="stDownloadButton"]')||dl.closest('[data-testid="stMarkdownContainer"]')||dl.parentElement;
+    const visibleComposer=composers.find(x=>x.offsetParent!==null);
+    const target=(!fbPanel.hidden?fbPanel:(visibleComposer||row));
+    if(dlWrap && target && target.parentElement){
+      try{target.insertAdjacentElement('afterend',dlWrap)}catch(e){}
+    }
+  }
  };
  tune();
  new MutationObserver(tune).observe(document.body,{childList:true,subtree:true});
@@ -1174,7 +1350,7 @@ st.markdown("""
 </script>
 """, unsafe_allow_html=True)
 '''
-s = s.rstrip() + "\n\n" + _final_publish_v2.lstrip()
+s = s.rstrip() + "\n\n" + _final_publish_v3.lstrip()
 
 # Web/mobile spacing hygiene and removal of leaked literal newline markers.
 _layout_hygiene = r'''

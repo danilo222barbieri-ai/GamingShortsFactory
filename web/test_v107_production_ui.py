@@ -32,6 +32,10 @@ for marker in (
     "gsf-final-social-row",
     "gsf-layout-hygiene",
     "Short finale pronto",
+    "PUBBLICA O SCARICA",
+    "gsf-facebook-publish-icon",
+    "Dettagli Facebook",
+    "COLLEGA FACEBOOK",
     "CREATOR HUB",
 ):
     if marker not in s:
@@ -47,6 +51,8 @@ if "GSF_MANUAL_EDITOR_OPEN" not in s:
     raise SystemExit("FAIL Scegli scena is not instrumented as immediate-open Editor 2027")
 if 'st.markdown("\\\\n\\\\n")' in s or "st.markdown('\\\\n\\\\n')" in s:
     raise SystemExit("FAIL literal newline markdown survived")
+if "v1054_ad_after_final_result" in s and "st-key-v1054_ad_after_final_result{display:none" not in s:
+    raise SystemExit("FAIL final publication ad is still visible")
 
 for forbidden in [
     "_GSF_REAL_DEMO",
