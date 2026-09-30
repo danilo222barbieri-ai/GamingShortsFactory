@@ -15,7 +15,7 @@ _COMPONENT_DIR = Path(__file__).resolve().parent / "editor_2027_component"
 # One stable component name/path for every clip. Dynamic per-video component
 # folders caused intermittent asset 404s behind Railway/Streamlit.
 _EDITOR_2027_COMPONENT = components.declare_component(
-    "gsf_editor_2027_v1085",
+    "gsf_editor_2027_v1086",
     path=str(_COMPONENT_DIR),
 )
 
@@ -244,7 +244,7 @@ def editor_2027_render_kwargs(state, session_state=None):
 
     return {
         "fmt": fmt,
-        "zoom": _clamp(state.get("zoom"), 1.0, 2.0, 1.0),
+        "zoom": _clamp(state.get("zoom"), 0.8, 2.0, 1.0),
         "x_pos": _clamp(state.get("panX"), -25.0, 25.0, 0.0) * 4.0,
         "y_pos": _clamp(state.get("panY"), -25.0, 25.0, 0.0) * 4.0,
         "brightness": (_clamp(state.get("brightness"), 70, 130, 100) - 100.0) / 100.0,
