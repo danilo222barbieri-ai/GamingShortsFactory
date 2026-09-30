@@ -729,8 +729,9 @@
 
    focus.style.left=(50+state.panX*.7)+'%';
    focus.style.top=(43+state.panY*.7)+'%';
-   visionBadge.textContent='GAME VISION · '+(state.aiMode==='Auto Gaming'?'SUBJECT LOCK':state.aiMode.toUpperCase());
-   sysText.textContent='GAME VISION · '+state.aiMode.toUpperCase();
+   const aiLive=!!state.visionEnabled;
+   visionBadge.textContent=aiLive?'GAME VISION · '+(state.aiMode==='Auto Gaming'?'SUBJECT LOCK':String(state.aiMode||'AUTO').toUpperCase()):'GAME VISION · OFF';
+   sysText.textContent=aiLive?'GAME VISION · '+String(state.aiMode||'AUTO').toUpperCase():'GAME VISION · OFF';
 
    inRange.max=Math.max(.5,duration-.5);
    outRange.max=duration;
@@ -772,50 +773,60 @@
  }
  function openPanel(name,btn){
    const templates={
-    frame:['Smart Frame',
+    frame:['Frame',
       '<div class="strip">'+
-      '<button class="pill framePreset" data-value="focus">Player Focus</button>'+
-      '<button class="pill framePreset" data-value="cross">Crosshair Lock</button>'+
-      '<button class="pill framePreset" data-value="face">Facecam Anchor</button>'+
-      '<button class="pill framePreset" data-value="free">Free</button></div>'+
-      '<div class="range"><span>Zoom</span><input id="zoomR" type="range" min="1" max="2" step=".05" value="'+state.zoom+'"><b>'+state.zoom.toFixed(2)+'</b></div>'+
+      '<button class="pill framePreset" data-value="center">Centro</button>'+
+      '<button class="pill framePreset" data-value="gameplay">Gameplay</button>'+
+      '<button class="pill framePreset" data-value="face">Facecam</button>'+
+      '<button class="pill framePreset" data-value="free">Libero</button></div>'+
+      '<div class="range"><span>Zoom</span><input id="zoomR" type="range" min="1" max="2" step=".05" value="'+state.zoom+'"><b>'+Number(state.zoom).toFixed(2)+'</b></div>'+
       '<div class="range"><span>Orizzontale</span><input id="panXR" type="range" min="-25" max="25" step="1" value="'+state.panX+'"><b>'+state.panX+'</b></div>'+
-      '<div class="range"><span>Verticale</span><input id="panYR" type="range" min="-25" max="25" step="1" value="'+state.panY+'"><b>'+state.panY+'</b></div>'],
-    look:['Game Look',
+      '<div class="range"><span>Verticale</span><input id="panYR" type="range" min="-25" max="25" step="1" value="'+state.panY+'"><b>'+state.panY+'</b></div>'+
+      '<div class="panelNote">Preset e slider agiscono subito sulla preview e sul render finale.</div>'],
+    look:['Look',
       '<div class="strip">'+
-      ['Clean','Competitive','Neon Arena','Dark Raid','Boss Cinematic'].map(x=>'<button class="pill" data-key="look" data-value="'+x+'">'+x+'</button>').join('')+
-      '</div>'+
+      '<button class="pill" data-key="look" data-value="Clean">Originale</button>'+
+      '<button class="pill" data-key="look" data-value="Competitive">Gaming</button>'+
+      '<button class="pill" data-key="look" data-value="Boss Cinematic">Cinema</button></div>'+
       '<div class="range"><span>Intensità</span><input id="intensityR" type="range" min="0" max="100" step="1" value="'+state.intensity+'"><b>'+state.intensity+'</b></div>'+
       '<div class="range"><span>Luce</span><input id="brightR" type="range" min="70" max="130" step="1" value="'+state.brightness+'"><b>'+state.brightness+'</b></div>'+
       '<div class="range"><span>Contrasto</span><input id="contrastR" type="range" min="70" max="150" step="1" value="'+state.contrast+'"><b>'+state.contrast+'</b></div>'],
-    hud:['HUD Awareness',
+    hud:['HUD Safe',
       '<div class="strip">'+
-      ['Off','Auto Detect','Killfeed Safe','Minimap Safe','Facecam Safe'].map(x=>'<button class="pill" data-key="hudMode" data-value="'+x+'">'+x+'</button>').join('')+
-      '</div><div class="cards"><div class="card"><b>KILLFEED</b>zona protetta</div><div class="card"><b>MINIMAP</b>sempre visibile</div><div class="card"><b>FACECAM</b>ancoraggio smart</div></div>'],
-    caption:['Gaming Captions',
-      '<div class="strip"><button class="pill" data-key="captionOn" data-value="true">Attivi</button><button class="pill" data-key="captionOn" data-value="false">Nessuno</button></div>'+
-      '<div class="textRow"><input id="captionTextInput" value="'+String(state.captionText).replace(/"/g,'&quot;')+'"><button class="applyBtn" id="captionApply">APPLICA TESTO</button></div>'+
-      '<div class="range"><span>Dimensione</span><input id="captionSizeR" type="range" min="18" max="70" step="1" value="'+state.captionSize+'"><b>'+state.captionSize+'</b></div>'+
+      '<button class="pill hudModePill" data-value="Off">Off</button>'+
+      '<button class="pill hudModePill" data-value="Smart Safe">Smart Safe</button></div>'+
+      '<div class="panelNote">Smart Safe attiva il reframe gameplay-aware e riduce il peso di minimappa, killfeed e facecam nel movimento dell’inquadratura.</div>'],
+    caption:['Caption',
+      '<div class="strip">'+
+      '<button class="pill captionModePill" data-value="Auto">Auto</button>'+
+      '<button class="pill captionModePill" data-value="Fixed">Testo</button>'+
+      '<button class="pill captionModePill" data-value="Off">Off</button></div>'+
+      (state.captionMode==='Fixed'?'<div class="textRow"><input id="captionTextInput" maxlength="120" placeholder="Scrivi il testo" value="'+String(state.captionText||'').replace(/"/g,'&quot;')+'"></div>':'')+
+      (state.captionMode!=='Off'?'<div class="range"><span>Dimensione</span><input id="captionSizeR" type="range" min="18" max="70" step="1" value="'+state.captionSize+'"><b>'+state.captionSize+'</b></div>'+
       '<div class="range"><span>Posizione</span><input id="captionYR" type="range" min="15" max="88" step="1" value="'+state.captionY+'"><b>'+state.captionY+'</b></div>'+
-      '<div class="colorGrid">'+
-        '<div class="colorBox"><label>TESTO</label><div class="colorRow"><input id="textColorDraft" type="color" value="'+state.textColor+'"><button class="applyBtn" data-color="text">APPLICA</button></div></div>'+
-        '<div class="colorBox"><label>PAROLA ATTIVA</label><div class="colorRow"><input id="activeColorDraft" type="color" value="'+state.activeColor+'"><button class="applyBtn" data-color="active">APPLICA</button></div></div>'+
-        '<div class="colorBox"><label>BORDO</label><div class="colorRow"><input id="outlineColorDraft" type="color" value="'+state.outlineColor+'"><button class="applyBtn" data-color="outline">APPLICA</button></div></div>'+
-      '</div>'],
-    audio:['Game Audio',
+      '<div class="colorOnly">'+
+        '<label class="colorChip"><span>TESTO</span><input id="textColorLive" type="color" value="'+state.textColor+'"></label>'+
+        (state.captionMode==='Auto'?'<label class="colorChip"><span>ATTIVA</span><input id="activeColorLive" type="color" value="'+state.activeColor+'"></label>':'')+
+        '<label class="colorChip"><span>BORDO</span><input id="outlineColorLive" type="color" value="'+state.outlineColor+'"></label>'+
+      '</div>':'')+
+      '<div class="panelNote">'+(state.captionMode==='Auto'?'Usa la trascrizione reale. Se non c’è voce, non inserisce testo finto.':state.captionMode==='Fixed'?'Il testo scritto qui resta fisso nel video finale.':'Nessuna caption nel render finale.')+'</div>'],
+    audio:['Audio',
       '<div class="strip">'+
       '<button class="pill audioPreset" data-value="mute">Muto</button>'+
       '<button class="pill audioPreset" data-value="original">Originale</button>'+
-      '<button class="pill audioPreset" data-value="boost">Game Boost</button></div>'+
+      '<button class="pill audioPreset" data-value="boost">Boost</button></div>'+
       '<div class="range"><span>Volume</span><input id="volumeR" type="range" min="0" max="100" step="1" value="'+state.volume+'"><b>'+state.volume+'</b></div>'+
-      '<div class="strip" style="margin-top:9px">'+[.5,.75,1,1.25,1.5,2].map(x=>'<button class="pill speedPill" data-value="'+x+'">'+x+'×</button>').join('')+'</div>'],
-    vision:['Game Vision AI',
-      '<div class="cards"><div class="card"><b>ACTION FOCUS</b>segue la zona di gameplay più importante</div><div class="card"><b>HUD AWARENESS</b>protegge killfeed e minimap</div><div class="card"><b>REACTION SYNC</b>adatta look e caption al tipo di gioco</div></div>'+
-      '<div class="strip" style="margin-top:8px">'+
-      ['Auto Gaming','FPS','Racing','Sports','Battle Royale'].map(x=>'<button class="pill aiPreset" data-value="'+x+'">'+x+'</button>').join('')+
-      '</div>']
+      '<div class="strip" style="margin-top:9px">'+[.75,1,1.25,1.5].map(x=>'<button class="pill speedPill" data-value="'+x+'">'+x+'×</button>').join('')+'</div>'+
+      '<div class="panelNote">Boost normalizza l’audio nel render finale. La velocità modifica preview e Short finale.</div>'],
+    vision:['Game AI',
+      '<div class="strip">'+
+      '<button class="pill aiPreset" data-value="Off">Off</button>'+
+      ['Auto Gaming','FPS','Racing','Sports','Battle Royale'].map(x=>'<button class="pill aiPreset" data-value="'+x+'">'+(x==='Auto Gaming'?'Auto':x==='Battle Royale'?'Battle Royale':x)+'</button>').join('')+
+      '</div>'+
+      '<div class="panelNote">Un solo preset regola insieme Frame, Look e protezione HUD. Tutte le modifiche restano modificabili a mano.</div>']
    };
    const tpl=templates[name];
+   if(!tpl)return;
    title.textContent=tpl[0];
    body.innerHTML=tpl[1];
    drawer.classList.remove('hidden');
@@ -827,46 +838,76 @@
      wireRange('brightR','brightness',Number);
      wireRange('contrastR','contrast',Number);
    }
-   if(name==='hud'){wirePills('hudMode');choosePill(body,state.hudMode)}
-   if(name==='frame'){
-     wireRange('zoomR','zoom',Number);
-     wireRange('panXR','panX',Number);
-     wireRange('panYR','panY',Number);
-     body.querySelectorAll('.framePreset').forEach(p=>p.onclick=()=>{
-       const v=p.dataset.value;
-       if(v==='focus'){state.zoom=1.18;state.panX=0;state.panY=0}
-       if(v==='cross'){state.zoom=1.32;state.panX=0;state.panY=-4}
-       if(v==='face'){state.zoom=1.12;state.panX=-10;state.panY=8}
-       if(v==='free'){state.zoom=1;state.panX=0;state.panY=0}
-       applyState();commit();openPanel('frame',btn);flash(v.toUpperCase()+' ATTIVO');
+
+   if(name==='hud'){
+     body.querySelectorAll('.hudModePill').forEach(p=>{
+       p.classList.toggle('sel',p.dataset.value===state.hudMode);
+       p.onclick=()=>{
+         state.hudMode=p.dataset.value;
+         applyState();commit();openPanel('hud',btn);flash(state.hudMode==='Off'?'HUD SAFE OFF':'HUD SMART SAFE');
+       };
      });
    }
-   if(name==='caption'){
-     body.querySelectorAll('.pill[data-key="captionOn"]').forEach(p=>{
-       p.classList.toggle('sel',String(state.captionOn)===p.dataset.value);
-       p.onclick=()=>{state.captionOn=p.dataset.value==='true';applyState();commit();openPanel('caption',btn);flash()};
+
+   if(name==='frame'){
+     const markFree=()=>{state.framePreset='free'};
+     wireRange('zoomR','zoom',Number,markFree);
+     wireRange('panXR','panX',Number,markFree);
+     wireRange('panYR','panY',Number,markFree);
+     body.querySelectorAll('.framePreset').forEach(p=>{
+       p.classList.toggle('sel',p.dataset.value===state.framePreset);
+       p.onclick=()=>{
+         const v=p.dataset.value;
+         state.framePreset=v;
+         if(v==='center'){state.zoom=1.10;state.panX=0;state.panY=0}
+         if(v==='gameplay'){state.zoom=1.26;state.panX=0;state.panY=-3}
+         if(v==='face'){state.zoom=1.12;state.panX=-10;state.panY=8}
+         if(v==='free'){state.zoom=1;state.panX=0;state.panY=0}
+         applyState();commit();openPanel('frame',btn);flash(v.toUpperCase());
+       };
      });
-     body.querySelector('#captionApply').onclick=()=>{
-       state.captionText=body.querySelector('#captionTextInput').value||'NO SCOPE CLUTCH!';
-       applyState();commit();flash('TESTO APPLICATO');
-     };
+   }
+
+   if(name==='caption'){
+     body.querySelectorAll('.captionModePill').forEach(p=>{
+       p.classList.toggle('sel',p.dataset.value===state.captionMode);
+       p.onclick=()=>{
+         state.captionMode=p.dataset.value;
+         state.captionOn=state.captionMode!=='Off';
+         applyState();commit();openPanel('caption',btn);flash('CAPTION '+state.captionMode.toUpperCase());
+       };
+     });
+     const textInput=body.querySelector('#captionTextInput');
+     if(textInput){
+       textInput.oninput=()=>{state.captionText=textInput.value.slice(0,120);applyState()};
+       textInput.onchange=()=>{commit();flash('TESTO AGGIORNATO')};
+     }
      wireRange('captionSizeR','captionSize',Number);
      wireRange('captionYR','captionY',Number);
-     body.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{
-       const kind=b.dataset.color;
-       if(kind==='text')state.textColor=body.querySelector('#textColorDraft').value;
-       if(kind==='active')state.activeColor=body.querySelector('#activeColorDraft').value;
-       if(kind==='outline')state.outlineColor=body.querySelector('#outlineColorDraft').value;
-       applyState();commit();flash('COLORE APPLICATO');
+     const liveColors=[
+       ['textColorLive','textColor'],
+       ['activeColorLive','activeColor'],
+       ['outlineColorLive','outlineColor']
+     ];
+     liveColors.forEach(([id,key])=>{
+       const el=body.querySelector('#'+id);
+       if(!el)return;
+       el.oninput=()=>{state[key]=el.value;applyState()};
+       el.onchange=()=>{commit();flash('COLORE AGGIORNATO')};
      });
    }
+
    if(name==='audio'){
-     body.querySelectorAll('.audioPreset').forEach(p=>p.onclick=()=>{
+     body.querySelectorAll('.audioPreset').forEach(p=>{
        const v=p.dataset.value;
-       if(v==='mute'){state.muted=true;state.audioMode='Muto'}
-       if(v==='original'){state.muted=false;state.volume=100;state.audioMode='Originale'}
-       if(v==='boost'){state.muted=false;state.volume=100;state.audioMode='Game Boost'}
-       applyState();commit();openPanel('audio',btn);video.play().catch(()=>{});flash();
+       const selected=(v==='mute'&&state.muted)||(v==='boost'&&!state.muted&&state.audioMode==='Game Boost')||(v==='original'&&!state.muted&&state.audioMode==='Originale');
+       p.classList.toggle('sel',selected);
+       p.onclick=()=>{
+         if(v==='mute'){state.muted=true;state.volume=0;state.audioMode='Muto'}
+         if(v==='original'){state.muted=false;if(state.volume<=0)state.volume=100;state.audioMode='Originale'}
+         if(v==='boost'){state.muted=false;if(state.volume<=0)state.volume=100;state.audioMode='Game Boost'}
+         applyState();commit();openPanel('audio',btn);flash(v==='boost'?'AUDIO BOOST':v==='mute'?'AUDIO MUTO':'AUDIO ORIGINALE');
+       };
      });
      wireRange('volumeR','volume',Number,v=>{state.muted=v===0;state.audioMode=(v===0?'Muto':'Personalizzato')});
      body.querySelectorAll('.speedPill').forEach(p=>{
@@ -874,17 +915,25 @@
        p.onclick=()=>{state.speed=Number(p.dataset.value);applyState();commit();openPanel('audio',btn);flash('VELOCITÀ '+state.speed+'×')};
      });
    }
+
    if(name==='vision'){
      body.querySelectorAll('.aiPreset').forEach(p=>{
-       p.classList.toggle('sel',p.dataset.value===state.aiMode);
+       p.classList.toggle('sel',p.dataset.value===(state.visionEnabled?state.aiMode:'Off'));
        p.onclick=()=>{
-         const mode=p.dataset.value;state.aiMode=mode;state.visionEnabled=true;
-         if(mode==='Auto Gaming'){state.look='Competitive';state.intensity=55;state.zoom=1.12;state.panX=0;state.panY=-2;state.hudMode='Auto Detect';state.captionSize=34}
-         if(mode==='FPS'){state.look='Competitive';state.intensity=74;state.zoom=1.28;state.panX=0;state.panY=-4;state.hudMode='Killfeed Safe';state.captionSize=32}
-         if(mode==='Racing'){state.look='Neon Arena';state.intensity=58;state.zoom=1.08;state.panX=0;state.panY=5;state.hudMode='Off';state.captionSize=30}
-         if(mode==='Sports'){state.look='Clean';state.intensity=45;state.zoom=1.08;state.panX=0;state.panY=0;state.hudMode='Off';state.captionSize=30}
-         if(mode==='Battle Royale'){state.look='Dark Raid';state.intensity=62;state.zoom=1.16;state.panX=2;state.panY=-2;state.hudMode='Minimap Safe';state.captionSize=34}
-         applyState();commit();openPanel('vision',btn);flash(mode.toUpperCase()+' PRESET');
+         const mode=p.dataset.value;
+         if(mode==='Off'){
+           state.visionEnabled=false;
+           state.aiMode='Off';
+         }else{
+           state.aiMode=mode;
+           state.visionEnabled=true;
+           if(mode==='Auto Gaming'){state.look='Competitive';state.intensity=55;state.zoom=1.12;state.panX=0;state.panY=-2;state.framePreset='gameplay';state.hudMode='Smart Safe';state.captionSize=34}
+           if(mode==='FPS'){state.look='Competitive';state.intensity=74;state.zoom=1.28;state.panX=0;state.panY=-4;state.framePreset='gameplay';state.hudMode='Smart Safe';state.captionSize=32}
+           if(mode==='Racing'){state.look='Competitive';state.intensity=48;state.zoom=1.08;state.panX=0;state.panY=5;state.framePreset='center';state.hudMode='Off';state.captionSize=30}
+           if(mode==='Sports'){state.look='Clean';state.intensity=45;state.zoom=1.08;state.panX=0;state.panY=0;state.framePreset='center';state.hudMode='Off';state.captionSize=30}
+           if(mode==='Battle Royale'){state.look='Boss Cinematic';state.intensity=62;state.zoom=1.16;state.panX=2;state.panY=-2;state.framePreset='gameplay';state.hudMode='Smart Safe';state.captionSize=34}
+         }
+         applyState();commit();openPanel('vision',btn);flash(mode==='Off'?'GAME AI OFF':mode.toUpperCase());
        };
      });
    }
