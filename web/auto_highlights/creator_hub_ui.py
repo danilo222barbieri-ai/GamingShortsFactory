@@ -5,7 +5,8 @@ the UX before wiring OAuth, storage and the worker.
 """
 from __future__ import annotations
 
-def render_auto_highlights_prototype(st, *, connected_twitch=False, connected_youtube=False, folders=None):
+def render_auto_highlights_prototype(st, *, connected_twitch=False, connected_youtube=False, folders=None,
+                                     on_open_highlight=None):
     folders=folders or []
     st.markdown("""
     <style>
@@ -41,10 +42,10 @@ def render_auto_highlights_prototype(st, *, connected_twitch=False, connected_yo
             items=folder.get("highlights") or []
             with st.expander(f"🎮 {title} · {len(items)} momenti"):
                 for item in items:
-                    score=item.get("score_percent",0)
-                    reason=item.get("reason","momento")
-                    start=item.get("start_seconds",0)
+                    score=item.get("score_percent",0); reason=item.get("reason","momento"); start=item.get("start_seconds",0)
                     st.markdown(f'<div class="gsf-ah-live"><span class="gsf-ah-score">🔥 {score}%</span> · '
                                 f'{reason} · {int(start//60):02d}:{int(start%60):02d}</div>',unsafe_allow_html=True)
-                    st.button("APRI NEL GAME EDITOR",key=f"ah_proto_open_{item.get('id',start)}",use_container_width=True)
+                    if st.button("APRI NEL GAME EDITOR",key=f"ah_proto_open_{item.get('id',start)}",use_container_width=True):
+                        if callable(on_open_highlight):
+                            on_open_highlight(folder,item)
     return {"enabled":enabled,"target_highlights":count,"target_duration":duration,"engine":engine}
