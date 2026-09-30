@@ -268,7 +268,7 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
     except Exception as exc:
         return {
             "enabled":True,
-            "provider":model+"-agentic",
+            "provider":model+"-agentic-stream-v118",
             "events":[],
             "error":str(exc)[:240],
             "elapsed_seconds":round(time.perf_counter()-started,3),
