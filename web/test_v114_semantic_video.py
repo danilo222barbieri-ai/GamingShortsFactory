@@ -137,7 +137,7 @@ if '"response_format":' in generate_block:
 print("V122 Generate Content structured config: PASS")
 
 models=semantic_model_candidates("gemini-3.8-flash")
-if models[:2]!=["gemini-3.8-flash","gemini-2.5-flash"]:
+if models[:2]!=["gemini-3.8-flash","gemini-3.7-flash"]:
     raise SystemExit("V123 model fallback order failed: "+repr(models))
 if len(models)!=len(set(models)):
     raise SystemExit("V123 model fallback contains duplicates")
@@ -154,7 +154,7 @@ for marker in (
     "is_quota_error(",
     "model_attempts",
     "model_fallback",
-    '"gemini-2.5-flash"',
+    '"gemini-3.7-flash"',
     '"-generate-v123"',
     '"-agentic-stream-v123"',
 ):
