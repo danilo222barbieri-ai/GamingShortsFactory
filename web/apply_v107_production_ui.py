@@ -545,12 +545,28 @@ _create_short_old='''            _v1054_create_final_clicked=st.button(
                 key="create_final_short_v54"
             )
 '''
-_create_short_new='''            with st.container(key="gsf-major-create-short"):
+_create_short_new='''            def _gsf_v107_preserve_final_context():
+                _recipe=st.session_state.get("gsf_final_recipe")
+                if isinstance(_recipe,dict):
+                    st.session_state["gsf_v107_final_recipe_snapshot"]=dict(_recipe)
+                    _src=str(_recipe.get("source_path") or st.session_state.get("gsf_source_path") or "")
+                    if _src:
+                        st.session_state["gsf_source_path"]=_src
+                        st.session_state["gsf_editor_source_path"]=_src
+                st.session_state["gsf_v107_final_click_pending"]=True
+
+            with st.container(key="gsf-major-create-short"):
                 _v1054_create_final_clicked=st.button(
                     "CREA SHORT FINALE",
                     use_container_width=True,
-                    key="create_final_short_v54"
+                    key="create_final_short_v54",
+                    on_click=_gsf_v107_preserve_final_context
                 )
+            if st.session_state.get("gsf_v107_final_click_pending"):
+                _snap=st.session_state.get("gsf_v107_final_recipe_snapshot")
+                if isinstance(_snap,dict) and _snap:
+                    st.session_state["gsf_final_recipe"]=dict(_snap)
+                st.session_state["gsf_v107_final_click_pending"]=False
                 st.markdown(
                     '<div class="gsf-major-note">Genera la versione finale pronta per il download e la pubblicazione sui tuoi social collegati.</div>',
                     unsafe_allow_html=True,
@@ -1259,6 +1275,9 @@ _gsf_new_manual_body = [
     _gsf_indent + '        except Exception:\n',
     _gsf_indent + '            _gsf_manual_path=""\n',
     _gsf_indent + '    if _gsf_manual_path:\n',
+    _gsf_indent + '        # Persist the exact Editor source across component/button reruns.\n',
+    _gsf_indent + '        st.session_state["gsf_source_path"]=str(_gsf_manual_path)\n',
+    _gsf_indent + '        st.session_state["gsf_editor_source_path"]=str(_gsf_manual_path)\n',
     _gsf_indent + '        _gsf_manual_duration=float(st.session_state.get("auto_clip_duration",15.0) or 15.0)\n',
     _gsf_indent + '        _gsf_manual_state_slot=_gsf_editor_2027_state_key(_gsf_manual_path)\n',
     _gsf_indent + '        _gsf_manual_component_key=_gsf_manual_state_slot+"_component"\n',
