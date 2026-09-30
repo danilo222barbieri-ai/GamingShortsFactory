@@ -974,29 +974,33 @@ def _creator_page(sid,message=""):
 <title>Gaming Shorts Factory · Creator Hub</title>
 <style>
 *{{box-sizing:border-box}} body{{font-family:Inter,Arial,sans-serif;background:linear-gradient(180deg,#f7fbff,#eef5fb);color:#17324d;margin:0;min-height:100vh}}
-main{{max-width:720px;margin:0 auto;padding:28px 18px 44px}} .brand{{text-align:center;color:#648096;font-size:13px;font-weight:800;letter-spacing:.08em;margin-bottom:16px}}
-.card{{background:#fff;border:1px solid #dce9f3;border-radius:28px;padding:28px;box-shadow:0 18px 48px #163d5c14}}
-h1{{text-align:center;margin:2px 0 8px;font-size:30px}} .lead{{text-align:center;color:#6b8295;line-height:1.5;margin:0 auto 24px;max-width:520px}}
-.providers{{display:grid;grid-template-columns:1fr;gap:10px}} .provider{{display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;border:1px solid #d7e5ef;background:#fff;color:#1f3a50;border-radius:16px;padding:14px 16px;font-weight:850;box-shadow:0 6px 16px #325b7910}}
-.provider:hover{{transform:translateY(-1px)}} .provider .logo{{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:#eff6fb;font-weight:950}}
-.provider.unavailable{{opacity:.45;pointer-events:none}} .or{{display:flex;align-items:center;gap:10px;color:#9aabba;font-size:12px;margin:18px 0}} .or:before,.or:after{{content:"";height:1px;background:#e0eaf1;flex:1}}
-.email{{border:1px dashed #cbdde9;border-radius:16px;padding:13px;text-align:center;color:#8195a6;font-size:13px}}
+main{{max-width:860px;margin:0 auto;padding:22px 16px 34px}} .brand{{text-align:center;color:#648096;font-size:12px;font-weight:900;letter-spacing:.08em;margin-bottom:12px}}
+.profile{{background:#fff;border:1px solid #dae8f2;border-radius:26px;padding:22px;box-shadow:0 16px 44px #193f5c12}}
+.hero{{text-align:center;padding:4px 0 8px}} h1{{margin:0 0 6px;font-size:28px}} .lead{{color:#6b8295;line-height:1.45;margin:0 auto 16px;max-width:560px}}
 .notice{{background:#eef8ff;border:1px solid #d2e9f8;border-radius:14px;padding:11px 13px;margin:0 0 15px;color:#426a86}}
-.small{{font-size:12px;color:#8a9dab;text-align:center;line-height:1.5;margin-top:18px}} .back{{display:block;text-align:center;margin-top:16px;color:#477692;text-decoration:none;font-weight:750}}
-@media(min-width:640px){{.providers{{grid-template-columns:1fr 1fr 1fr}} .provider{{min-height:72px;flex-direction:column}}}}
-</style></head><body><main><div class="brand">GAMING SHORTS FACTORY</div><div class="card">
-<h1>Creator Hub</h1><p class="lead">Entra in pochi secondi. Il tuo profilo terrà insieme social, Short, livelli e in futuro il tuo piano.</p>
+.loginbox{{background:#f8fbfe;border:1px solid #e0ebf3;border-radius:18px;padding:14px}} .login-title{{font-size:13px;font-weight:900;text-align:center;margin-bottom:10px;color:#58768d}}
+.providers{{display:grid;grid-template-columns:1fr;gap:9px}} .provider{{display:flex;align-items:center;justify-content:center;gap:9px;text-decoration:none;border:1px solid #d7e5ef;background:#fff;color:#1f3a50;border-radius:14px;padding:12px 14px;font-weight:850;box-shadow:0 5px 14px #325b7910}}
+.provider .logo{{width:23px;height:23px;border-radius:8px;display:grid;place-items:center;background:#eff6fb;font-weight:950}} .provider.unavailable{{opacity:.45;pointer-events:none}}
+h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-columns:1fr 1fr;gap:9px}} .social{{color:#7890a2;background:#f8fbfe;border:1px solid #e0ebf3;border-radius:16px;padding:14px;display:flex;justify-content:space-between;align-items:center;font-size:12px}} .social strong{{font-size:13px;color:#496b83}} .social span{{font-weight:850}}
+.auto{{background:linear-gradient(135deg,#eff9ff,#f3efff);border:1px solid #d7e7f1;border-radius:18px;padding:15px}} .auto-k{{font-size:11px;font-weight:950;letter-spacing:.08em;color:#607da0}} .auto-title{{font-size:18px;font-weight:950;margin:3px 0 5px}} .auto-sub{{font-size:12px;color:#73889b;line-height:1.45}}
+.future{{border:1px dashed #cadde9;border-radius:17px;padding:14px;color:#7b90a1;font-size:12px;line-height:1.45}}
+.back{{display:block;text-align:center;margin:18px auto 0;color:#6d8799;text-decoration:none;font-size:11px;font-weight:800}}
+.small{{font-size:11px;color:#8a9dab;text-align:center;line-height:1.45;margin:11px 0 0}}
+@media(min-width:640px){{.providers{{grid-template-columns:1fr 1fr 1fr}}}}
+@media(max-width:560px){{.socials{{grid-template-columns:1fr}}}}
+</style></head><body><main><div class="brand">GAMING SHORTS FACTORY</div><div class="profile">
+<div class="hero"><h1>Creator Hub</h1><p class="lead">Il tuo spazio per profilo, social, Short, livelli e Auto Highlights.</p></div>
 {msg}
-<div class="providers">
-<a class="provider{google_disabled}" href="/account/google/start"><span class="logo">G</span><span>Continua con Google</span></a>
-<a class="provider{facebook_disabled}" href="/account/facebook/start"><span class="logo">f</span><span>Continua con Facebook</span></a>
-<a class="provider{tiktok_disabled}" href="/account/tiktok/start"><span class="logo">♪</span><span>Continua con TikTok</span></a>
-</div>
-<div class="or">oppure</div><div class="email">Accesso via email · lo aggiungiamo nella fase account completa</div>
-<p class="small">Google serve per entrare nel profilo; il permesso YouTube per pubblicare viene richiesto separatamente solo quando colleghi il canale.</p>
-<a class="back" href="/">← Torna a Gaming Shorts Factory</a>
+<div class="loginbox"><div class="login-title">ACCEDI AL CREATOR HUB</div><div class="providers">
+<a class="provider{google_disabled}" href="/account/google/start"><span class="logo">G</span><span>Google</span></a>
+<a class="provider{facebook_disabled}" href="/account/facebook/start"><span class="logo">f</span><span>Facebook</span></a>
+<a class="provider{tiktok_disabled}" href="/account/tiktok/start"><span class="logo">♪</span><span>TikTok</span></a>
+</div><p class="small">Il permesso YouTube per pubblicare viene richiesto separatamente quando colleghi il canale.</p></div>
+<h2>I tuoi social</h2><div class="socials"><div class="social"><strong>YouTube</strong><span>Accedi per collegare</span></div><div class="social"><strong>TikTok</strong><span>Accedi per collegare</span></div><div class="social"><strong>Instagram</strong><span>Accedi per collegare</span></div><div class="social"><strong>Facebook</strong><span>Accedi per collegare</span></div></div>
+<h2>Auto Highlights</h2><div class="auto"><div class="auto-k">AUTO HIGHLIGHTS</div><div class="auto-title">Tu fai la live. GSF trova i momenti da pubblicare.</div><div class="auto-sub">Accedi al Creator Hub per collegare i tuoi account e gestire le live.</div></div>
+<h2>Prossimamente</h2><div class="future">Storico Short · Cloud · Piano Pro · Crediti AI · Achievement · Classifica Creator.</div>
+<a class="back" href="/">← Torna alla pagina principale</a>
 </div></main></body></html>"""
-
     providers=dict(profile.get("providers") or {})
     name=html.escape(str(profile.get("display_name") or "Creator"))
     email=html.escape(str(profile.get("email") or ""))
