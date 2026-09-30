@@ -117,6 +117,14 @@ for marker in (
     if marker not in frontend:
         raise SystemExit("FAIL Editor mobile touch target hardening missing: "+marker)
 
+
+if "(max-width:820px) and (any-pointer:coarse)" not in frontend:
+    raise SystemExit("FAIL Editor mobile cockpit is not touch-specific")
+if "navigator.maxTouchPoints" not in frontend:
+    raise SystemExit("FAIL Editor mobile detection lacks touch fallback")
+if "const isMobileEditor=()=>window.matchMedia('(max-width:820px)').matches;" in frontend:
+    raise SystemExit("FAIL narrow desktop can still be misclassified as mobile")
+
 if "components.html(" in wrapper:
     raise SystemExit("FAIL Editor 2027 still uses display-only components.html")
 if "declare_component(" not in wrapper:
