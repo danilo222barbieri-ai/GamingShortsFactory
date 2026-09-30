@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 _DEFAULT_MODEL="gemini-3.8-flash"
-GSF_SEMANTIC_ENGINE_VERSION="v122.1-generate-content-config"
+GSF_SEMANTIC_ENGINE_VERSION="v123-model-fallback"
 
 
 def _env_bool(name,default=True):
@@ -61,6 +61,26 @@ def choose_input_method(size_bytes):
         int(os.environ.get("GSF_SEMANTIC_INLINE_MAX_BYTES",str(18*1024*1024)) or 18*1024*1024),
     )
     return "inline" if max(0,int(size_bytes or 0))<=inline_limit else "files"
+
+
+def semantic_model_candidates(primary=None):
+    primary=str(primary or os.environ.get("GSF_GEMINI_MODEL",_DEFAULT_MODEL) or _DEFAULT_MODEL).strip()
+    raw=str(os.environ.get("GSF_GEMINI_FALLBACK_MODELS","gemini-2.5-flash") or "")
+    rows=[primary]+[x.strip() for x in raw.split(",") if x.strip()]
+    out=[]
+    for model in rows:
+        if model and model not in out:
+            out.append(model)
+    return out
+
+
+def is_quota_error(value):
+    text=str(value or "").lower()
+    markers=(
+        "429","resource_exhausted","resource exhausted","quota exceeded",
+        "exceeded your current quota","rate limit","too many requests",
+    )
+    return any(marker in text for marker in markers)
 
 
 def _probe_duration_seconds(path):
@@ -340,30 +360,54 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
     key=os.environ.get("GEMINI_API_KEY","").strip()
     if not key or not semantic_enabled():
         return {"enabled":False,"provider":"local-only","events":[],"skipped":"not-configured"}
+
     source=Path(path)
-    max_bytes=max(10*1024*1024,int(os.environ.get("GSF_SEMANTIC_MAX_BYTES",str(2*1024*1024*1024))))
-    model=os.environ.get("GSF_GEMINI_MODEL",_DEFAULT_MODEL).strip() or _DEFAULT_MODEL
+    max_bytes=max(
+        10*1024*1024,
+        int(os.environ.get("GSF_SEMANTIC_MAX_BYTES",str(2*1024*1024*1024))),
+    )
+    models=semantic_model_candidates()
+    primary_model=models[0] if models else _DEFAULT_MODEL
     if not source.is_file() or source.stat().st_size>max_bytes:
-        return {"enabled":True,"provider":model+"-local-fallback-v121","events":[],"skipped":"file-too-large"}
+        return {
+            "enabled":True,
+            "provider":primary_model+"-local-fallback-v123",
+            "events":[],
+            "skipped":"file-too-large",
+            "model_attempts":[],
+            "model_fallback":False,
+        }
 
     uploaded=None
+    client=None
     started=time.perf_counter()
-    processing_mode=choose_processing_mode(_probe_duration_seconds(source))
+    base_processing_mode=choose_processing_mode(_probe_duration_seconds(source))
     input_method=choose_input_method(source.stat().st_size)
-    direct_mode=(processing_mode=="static" and input_method=="inline")
-    used_generate_content=(processing_mode=="static")
+    duration_seconds=_probe_duration_seconds(source)
+    semantic_timeout=max(
+        60.0,float(os.environ.get("GSF_SEMANTIC_TIMEOUT_SECONDS","420") or 420)
+    )
+    model_attempts=[]
+    selected_model=primary_model
+    selected_mode=base_processing_mode
+    selected_generate=(base_processing_mode=="static")
+
     try:
         from google import genai
         client=genai.Client(api_key=key)
+
         video_content=None
         if input_method=="inline":
-            video_content=_inline_video_content(source,processing_mode)
+            video_content=_inline_video_content(source,base_processing_mode)
         else:
             uploaded=client.files.upload(file=str(source))
             deadline=time.time()+180
             while time.time()<deadline:
                 uploaded=client.files.get(name=uploaded.name)
-                state=str(getattr(getattr(uploaded,"state",None),"name",getattr(uploaded,"state","")) or "")
+                state=str(
+                    getattr(getattr(uploaded,"state",None),"name",getattr(uploaded,"state",""))
+                    or ""
+                )
                 if state=="ACTIVE":
                     break
                 if state=="FAILED":
@@ -375,7 +419,7 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
                 "type":"video",
                 "uri":uploaded.uri,
                 "mime_type":uploaded.mime_type,
-                "processing":processing_mode,
+                "processing":base_processing_mode,
             }
 
         prompt=(
@@ -392,72 +436,116 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
             "Do not invent precision: uncertainty must lower focus_confidence. "
             "Game/title hint: "+str(game_hint or "unknown")+"."
         )
-        semantic_timeout=max(
-            60.0,float(os.environ.get("GSF_SEMANTIC_TIMEOUT_SECONDS","420") or 420)
-        )
         prompt_json=prompt+(
             " Return ONLY valid JSON matching the requested events schema. "
             "If there are no meaningful highlights, return {\"events\":[]}."
         )
-        duration_seconds=_probe_duration_seconds(source)
-        used_generate_content=(processing_mode=="static")
-        try:
-            if processing_mode=="static":
-                payload=_generate_content_semantic(
-                    client,model,source,uploaded,prompt_json,max_events,semantic_timeout,
-                    structured=True,duration_seconds=duration_seconds,
-                )
-            else:
-                payload=_stream_semantic_interaction(
-                    client,model,video_content,prompt_json,max_events,semantic_timeout,structured=True
-                )
-        except Exception as first_exc:
-            message=str(first_exc).lower()
-            invalid=(
-                "invalid_request" in message
-                or "invalid argument" in message
-                or "unsupported file uri" in message
-            )
-            if not invalid:
+
+        payload=None
+        last_exc=None
+        for index,candidate_model in enumerate(models):
+            attempt_mode=base_processing_mode if index==0 else "static"
+            attempt_generate=(attempt_mode=="static")
+            try:
+                try:
+                    if attempt_mode=="static":
+                        payload=_generate_content_semantic(
+                            client,candidate_model,source,uploaded,prompt_json,max_events,
+                            semantic_timeout,structured=True,duration_seconds=duration_seconds,
+                        )
+                    else:
+                        candidate_video=dict(video_content or {})
+                        if input_method=="inline":
+                            candidate_video=_inline_video_content(source,attempt_mode)
+                        else:
+                            candidate_video["processing"]=attempt_mode
+                        payload=_stream_semantic_interaction(
+                            client,candidate_model,candidate_video,prompt_json,max_events,
+                            semantic_timeout,structured=True,
+                        )
+                except Exception as first_exc:
+                    message=str(first_exc).lower()
+                    invalid=(
+                        "invalid_request" in message
+                        or "invalid argument" in message
+                        or "unsupported file uri" in message
+                    )
+                    if not invalid:
+                        raise
+                    attempt_mode="static"
+                    attempt_generate=True
+                    try:
+                        payload=_generate_content_semantic(
+                            client,candidate_model,source,uploaded,prompt_json,max_events,
+                            semantic_timeout,structured=True,duration_seconds=duration_seconds,
+                        )
+                    except Exception as structured_exc:
+                        structured_message=str(structured_exc).lower()
+                        structured_invalid=(
+                            "invalid_request" in structured_message
+                            or "invalid argument" in structured_message
+                        )
+                        if not structured_invalid:
+                            raise
+                        payload=_generate_content_semantic(
+                            client,candidate_model,source,uploaded,prompt_json,max_events,
+                            semantic_timeout,structured=False,duration_seconds=duration_seconds,
+                        )
+
+                selected_model=candidate_model
+                selected_mode=attempt_mode
+                selected_generate=attempt_generate
+                model_attempts.append({
+                    "model":candidate_model,
+                    "status":"ok",
+                    "fallback":bool(index>0),
+                })
+                break
+            except Exception as exc:
+                last_exc=exc
+                quota=is_quota_error(exc)
+                model_attempts.append({
+                    "model":candidate_model,
+                    "status":"quota" if quota else "error",
+                    "fallback":bool(index>0),
+                    "reason":str(exc)[:120],
+                })
+                if quota and index+1<len(models):
+                    continue
                 raise
-            if processing_mode=="agentic":
-                # Long-video agentic is preferred, but Generate Content is the
-                # reliable semantic fallback if Interactions rejects the media.
-                processing_mode="static"
-                used_generate_content=True
-                payload=_generate_content_semantic(
-                    client,model,source,uploaded,prompt_json,max_events,semantic_timeout,
-                    structured=True,duration_seconds=duration_seconds,
-                )
-            else:
-                # If structured output itself is the incompatibility, retain
-                # native video understanding and ask for strict JSON in text.
-                used_generate_content=True
-                payload=_generate_content_semantic(
-                    client,model,source,uploaded,prompt_json,max_events,semantic_timeout,
-                    structured=False,duration_seconds=duration_seconds,
-                )
+
+        if payload is None:
+            raise last_exc or RuntimeError("Gemini semantic analysis produced no payload")
+
         events=normalize_semantic_events(payload,max_events=max_events)
         return {
             "enabled":True,
-            "provider":model+"-"+processing_mode+"-"+input_method+("-generate-v122" if used_generate_content else "-agentic-stream-v122"),
+            "provider":selected_model+"-"+selected_mode+"-"+input_method+
+                ("-generate-v123" if selected_generate else "-agentic-stream-v123"),
             "events":events,
-            "processing_mode":processing_mode,
+            "processing_mode":selected_mode,
             "input_method":input_method,
+            "model":selected_model,
+            "model_attempts":model_attempts,
+            "model_fallback":bool(selected_model!=primary_model),
             "elapsed_seconds":round(time.perf_counter()-started,3),
         }
     except Exception as exc:
         return {
             "enabled":True,
-            "provider":model+"-"+processing_mode+"-"+input_method+("-generate-v121" if used_generate_content else "-agentic-stream-v121"),
+            "provider":selected_model+"-"+selected_mode+"-"+input_method+
+                ("-generate-v123" if selected_generate else "-agentic-stream-v123"),
             "events":[],
-            "processing_mode":processing_mode,
+            "processing_mode":selected_mode,
             "input_method":input_method,
+            "model":selected_model,
+            "model_attempts":model_attempts,
+            "model_fallback":bool(selected_model!=primary_model),
             "error":str(exc)[:240],
             "elapsed_seconds":round(time.perf_counter()-started,3),
         }
     finally:
-        if uploaded is not None:
+        if uploaded is not None and client is not None:
             try:
                 client.files.delete(name=uploaded.name)
             except Exception:
