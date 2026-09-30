@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 _DEFAULT_MODEL="gemini-3.8-flash"
-GSF_SEMANTIC_ENGINE_VERSION="v123.2-model-fallback"
+GSF_SEMANTIC_ENGINE_VERSION="v125-cinematic-ai"
 
 
 def _env_bool(name,default=True):
@@ -65,7 +65,7 @@ def choose_input_method(size_bytes):
 
 def semantic_model_candidates(primary=None):
     primary=str(primary or os.environ.get("GSF_GEMINI_MODEL",_DEFAULT_MODEL) or _DEFAULT_MODEL).strip()
-    raw=str(os.environ.get("GSF_GEMINI_FALLBACK_MODELS","gemini-2.5-flash") or "")
+    raw=str(os.environ.get("GSF_GEMINI_FALLBACK_MODELS","gemini-3.7-flash") or "")
     rows=[primary]+[x.strip() for x in raw.split(",") if x.strip()]
     out=[]
     for model in rows:
