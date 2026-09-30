@@ -145,7 +145,7 @@ s=s.replace(_old_cache,'cache={}  # V107.1: disk/session output is the cache; do
 _old_lock='acquired=_GSF_V106_RENDER_LOCK.acquire(timeout=max(30.0,float(timeout or 600.0)))'
 if _old_lock not in s:
     raise RuntimeError("V107.1 render-lock anchor missing")
-s=s.replace(_old_lock,'acquired=_GSF_V106_RENDER_LOCK.acquire(timeout=2.0)',1)
+s=s.replace(_old_lock,'acquired=_GSF_V106_RENDER_LOCK.acquire(timeout=15.0)',1)
 
 # Manual/Scegli scena already has a durable source path.  Do not duplicate the
 # entire uploaded source into publication_preview_bytes.  Replace only the
