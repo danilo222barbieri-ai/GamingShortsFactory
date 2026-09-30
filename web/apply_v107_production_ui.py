@@ -18,8 +18,8 @@ _gsf_pre,_gsf_tail=s.split(_source_preview_start,1)
 _gsf_hidden,_gsf_post=_gsf_tail.split(_source_preview_end,1)
 s=(
     _gsf_pre
-    + '    # Anteprima sorgente caricata nascosta per UX; il file resta disponibile internamente.\\n'
-    + "    st.markdown('<div style=\"height:6px\" aria-hidden=\"true\"></div>', unsafe_allow_html=True)\\n"
+    + '    # Anteprima sorgente caricata nascosta per UX; il file resta disponibile internamente.\n'
+    + "    st.markdown('<div style=\"height:6px\" aria-hidden=\"true\"></div>', unsafe_allow_html=True)\n"
     + _source_preview_end
     + _gsf_post
 )
