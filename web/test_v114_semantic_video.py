@@ -84,7 +84,9 @@ for marker in (
 if "background=True" in semantic:
     raise SystemExit("V120 must not use background multimodal interactions")
 for marker in (
-    'return [{"type":"text"',
+    "def _response_format(max_events):",
+    '"mime_type":"application/json"',
+    '"schema":_schema(max_events)',
     'direct_mode=(processing_mode=="static" and input_method=="inline")',
     'if processing_mode=="agentic":',
     'kwargs["response_format"]=_response_format(max_events)',
