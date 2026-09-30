@@ -36,13 +36,15 @@ def editor_2027_initial_state(duration=15.0, saved=None):
         "zoom": 1.0,
         "panX": 0.0,
         "panY": 0.0,
+        "framePreset": "free",
         "look": "Clean",
         "intensity": 64,
         "brightness": 100,
         "contrast": 100,
         "hudMode": "Off",
         "captionOn": True,
-        "captionText": "NO SCOPE CLUTCH!",
+        "captionMode": "Auto",
+        "captionText": "",
         "captionSize": 36,
         "captionY": 76,
         "textColor": "#ffffff",
@@ -59,6 +61,17 @@ def editor_2027_initial_state(duration=15.0, saved=None):
     }
     if isinstance(saved, dict):
         state.update(saved)
+        if "captionMode" not in saved:
+            state["captionMode"] = "Off" if saved.get("captionOn") is False else "Auto"
+    if state.get("look") == "Neon Arena":
+        state["look"] = "Competitive"
+    if state.get("look") == "Dark Raid":
+        state["look"] = "Boss Cinematic"
+    if str(state.get("hudMode") or "Off") not in {"Off", "Smart Safe"}:
+        state["hudMode"] = "Smart Safe"
+    if str(state.get("captionMode") or "Auto") not in {"Auto", "Fixed", "Off"}:
+        state["captionMode"] = "Auto"
+    state["captionOn"] = state["captionMode"] != "Off"
     state["inPoint"] = _clamp(state.get("inPoint"), 0.0, 59.5, 0.0)
     state["outPoint"] = max(
         state["inPoint"] + 0.5,
@@ -149,12 +162,13 @@ def editor_2027_render_kwargs(state, session_state=None):
     filter_map = {
         "Clean": "Originale",
         "Competitive": "Gaming / Vibrante",
-        "Neon Arena": "Gaming / Vibrante",
-        "Dark Raid": "Cinematico",
         "Boss Cinematic": "Cinematico",
     }
     audio_mode = str(state.get("audioMode") or "Originale")
-    caption_on = bool(state.get("captionOn", True))
+    caption_mode = str(state.get("captionMode") or ("Auto" if state.get("captionOn", True) else "Off"))
+    if caption_mode not in {"Auto", "Fixed", "Off"}:
+        caption_mode = "Auto"
+    caption_on = caption_mode != "Off"
 
     subtitle_words = None
     try:
@@ -175,14 +189,28 @@ def editor_2027_render_kwargs(state, session_state=None):
         subtitle_mode = "Automatici"
         subtitle_font = "Arial"
 
-    if not caption_on:
+    # AUTO only burns real transcribed words. FIXED deliberately ignores the
+    # transcription and uses the user's text. OFF burns nothing.
+    if caption_mode == "Off":
         subtitle_mode = "Nessuno"
+        subtitle_words = None
+        subtitle_text = ""
+    elif caption_mode == "Fixed":
+        subtitle_mode = "Manuale"
+        subtitle_words = None
+        subtitle_text = str(state.get("captionText") or "").strip()
+    else:
+        subtitle_text = ""
 
     fmt = str(state.get("format") or "9:16 Short")
     if "16:9" in fmt:
         fmt = "16:9 Originale"
     else:
         fmt = "9:16 Short"
+
+    hud_mode = str(state.get("hudMode") or "Off")
+    hud_safe = hud_mode != "Off"
+    smart_reframe = bool(state.get("visionEnabled", False) or hud_safe)
 
     return {
         "fmt": fmt,
@@ -196,7 +224,7 @@ def editor_2027_render_kwargs(state, session_state=None):
         "subtitles_enabled": caption_on,
         "subtitle_mode": str(subtitle_mode),
         "subtitle_words": subtitle_words,
-        "subtitle_text": str(state.get("captionText") or ""),
+        "subtitle_text": subtitle_text,
         "subtitle_font": str(subtitle_font),
         "subtitle_size": int(round(_clamp(state.get("captionSize"), 18, 70, 36) * 2.55)),
         "subtitle_x": 50,
@@ -205,7 +233,7 @@ def editor_2027_render_kwargs(state, session_state=None):
         "active_color": str(state.get("activeColor") or "#ffd400"),
         "outline_color": str(state.get("outlineColor") or "#000000"),
         "normalize_audio": audio_mode in {"Game Boost", "Personalizzato"},
-        "smart_reframe": bool(state.get("visionEnabled", False)),
+        "smart_reframe": smart_reframe,
         "polish_audio": True,
         "filter_preset": filter_map.get(look, "Originale"),
         "filter_intensity": int(round(_clamp(state.get("intensity"), 0, 100, 64))),
