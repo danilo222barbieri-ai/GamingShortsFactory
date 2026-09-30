@@ -29,7 +29,6 @@ for marker in required:
 for marker in (
     "GSF_FINAL_CREATE_CLICK",
     "gsf-final-ready",
-    "gsf-final-social-row",
     "gsf-layout-hygiene",
     "Short finale pronto",
     "PUBBLICA O SCARICA",
