@@ -30,8 +30,6 @@ for marker in required:
 for marker in (
     "GSF_FINAL_CREATE_CLICK",
     "gsf-layout-hygiene",
-    "SHORT PRONTO",
-    "gsf-final-status",
     "CONDIVIDI O SCARICA",
     "v69_social_facebook",
     "Dettagli Facebook",
@@ -80,8 +78,8 @@ if "gsf-share-cta-exact-create-short" not in s:
     raise SystemExit("FAIL CONDIVIDI O SCARICA does not inherit exact CREA SHORT CTA skin")
 if "gsf-share-hub-glass" not in s or "gsfHubIn" not in s:
     raise SystemExit("FAIL futuristic glass Share Hub skin missing")
-if "SHARE HUB" not in s or "gsf-hub-state" not in s:
-    raise SystemExit("FAIL Share Hub notification state missing")
+if "SHORT PRONTO" in s:
+    raise SystemExit("FAIL obsolete final short-ready badge survived")
 if "background:linear-gradient(135deg,#78D7F3 0%,#50B9E9 100%)" not in s:
     raise SystemExit("FAIL final SCARICA is not blue")
 if "st-key-v1055_ad_manual_after_editor" not in s:
