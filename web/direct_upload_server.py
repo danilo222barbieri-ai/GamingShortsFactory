@@ -21,6 +21,7 @@ from gsf_perf import perf_event
 from guardian_v113 import inspect_and_repair_local as _guardian_local, source_restore_plan as _guardian_source_plan
 from quality_control_v124 import inspect_final_video as _quality_inspect
 from guardian_intelligence_v124 import diagnose as _guardian_diagnose
+from guardian_watchdog_v128 import ProactiveGuardian as _ProactiveGuardian
 from feedback_learning_v127 import (
     load_model as _learning_load_model,
     save_model as _learning_save_model,
@@ -50,6 +51,7 @@ _QUALITY_LOCK=threading.Lock()
 _AI_FEEDBACK_LOCK=threading.Lock()
 _AI_LEARNING_PATH=ROOT/"ai_learning_v127.json"
 _AI_LEARNING_BUCKET_KEY="ai-feedback/global/model.json"
+_GUARDIAN_WATCHDOG=None
 
 def _env_first(*names,default=""):
     for name in names:
@@ -2697,6 +2699,42 @@ def _guardian_tick(sid,force=False):
         print("GSF_GUARDIAN_WARN",sid,repr(str(exc))[:220],flush=True)
         return result
 
+def _guardian_quality_for_sid(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return {}
+    stable,_job=_final_local_paths(sid)
+    if stable is None or not stable.is_file():
+        return {}
+    return _quality_schedule(sid,stable)
+
+def _start_proactive_guardian():
+    global _GUARDIAN_WATCHDOG
+    if _GUARDIAN_WATCHDOG is not None:
+        return _GUARDIAN_WATCHDOG
+    enabled=str(os.environ.get("GSF_PROACTIVE_GUARDIAN","1") or "1").strip().lower() not in ("0","false","off","no")
+    if not enabled:
+        print("GSF_V128_GUARDIAN disabled",flush=True)
+        return None
+    _GUARDIAN_WATCHDOG=_ProactiveGuardian(
+        ROOT,
+        _guardian_tick,
+        quality_fn=_guardian_quality_for_sid,
+        interval=max(15.0,float(os.environ.get("GSF_GUARDIAN_WATCHDOG_INTERVAL","60") or 60)),
+        active_window=max(300.0,float(os.environ.get("GSF_GUARDIAN_ACTIVE_WINDOW","21600") or 21600)),
+        max_sessions=max(1,int(os.environ.get("GSF_GUARDIAN_MAX_SESSIONS","24") or 24)),
+        failure_limit=3,
+        breaker_seconds=300.0,
+    )
+    _GUARDIAN_WATCHDOG.start()
+    print(
+        "GSF_V128_GUARDIAN started",
+        "interval="+str(_GUARDIAN_WATCHDOG.interval),
+        "max_sessions="+str(_GUARDIAN_WATCHDOG.max_sessions),
+        flush=True,
+    )
+    return _GUARDIAN_WATCHDOG
+
 class Handler(BaseHTTPRequestHandler):
     server_version="GSFDirectUpload/2.0"
 
@@ -2707,7 +2745,13 @@ class Handler(BaseHTTPRequestHandler):
         path=urlparse(self.path)
         clean=path.path.rstrip("/")
         if clean in ("","/health"):
-            _json(self,200,{"ok":True,"bucket":_bucket_enabled(),"worker":bool(WORKER_URL)})
+            _json(self,200,{
+                "ok":True,
+                "bucket":_bucket_enabled(),
+                "worker":bool(WORKER_URL),
+                "proactive_guardian":bool(_GUARDIAN_WATCHDOG is not None),
+                "guardian_last_run":float(getattr(_GUARDIAN_WATCHDOG,"last_run",0.0) or 0.0),
+            })
             return
         if clean in ("/app-icon.png","/favicon.ico"):
             try:
@@ -2735,6 +2779,14 @@ class Handler(BaseHTTPRequestHandler):
             stable,_job=_final_local_paths(sid)
             report=_quality_schedule(sid,stable) if stable is not None else {}
             _json(self,200,{"ok":True,"quality":report})
+            return
+        if clean=="/guardian/watchdog":
+            summary=dict(getattr(_GUARDIAN_WATCHDOG,"last_summary",{}) or {})
+            _json(self,200,{
+                "ok":True,
+                "enabled":bool(_GUARDIAN_WATCHDOG is not None),
+                "summary":summary,
+            })
             return
         if clean=="/guardian/status":
             sid=_social_sid(self)
@@ -3337,6 +3389,7 @@ if __name__=="__main__":
     ROOT.mkdir(parents=True,exist_ok=True)
     _ensure_bucket_cors()
     _ai_learning_restore()
+    _start_proactive_guardian()
     server=ThreadingHTTPServer(("127.0.0.1",PORT),Handler)
     print(
         f"GSF direct upload server listening on 127.0.0.1:{PORT} "
