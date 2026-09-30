@@ -159,3 +159,24 @@ if "Short pronto · apro lo Share Hub." not in s:
     raise SystemExit("FAIL final-ready message does not match Share Hub auto-open")
 if ".gsf-editor-note{\n  margin-bottom:48px !important;" not in s:
     raise SystemExit("FAIL requested Editor cloud/player spacing missing")
+
+if "gsf-social-brand-tiles-v107" not in s:
+    raise SystemExit("FAIL original-brand social tile override missing")
+for _brand_marker in (
+    "background:#1877F2 !important",
+    "background:#FF0000 !important",
+    "radial-gradient(circle at 30% 105%",
+    "fill='%2325F4EE'",
+):
+    if _brand_marker not in s:
+        raise SystemExit("FAIL social brand artwork missing: "+_brand_marker)
+if "GSF_SOCIAL_META_READY" not in s:
+    raise SystemExit("FAIL social metadata normalization missing")
+for _meta_marker in (
+    '"selected_title":_gsf_meta_title',
+    '"selected_description":_gsf_meta_youtube_description',
+    '"selected_hashtags":_gsf_meta_hash_text',
+    '"selected_caption":_gsf_meta_caption',
+):
+    if _meta_marker not in s:
+        raise SystemExit("FAIL social metadata mapping missing: "+_meta_marker)
