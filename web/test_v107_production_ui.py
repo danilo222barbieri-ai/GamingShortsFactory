@@ -118,3 +118,8 @@ if "gsf_v107_final_render_running" not in s:
     raise SystemExit("FAIL final render does not retain independent running state")
 if "GSF_FINAL_STABLE_READY" not in s or "gaming_short_finale_share.mp4" not in s:
     raise SystemExit("FAIL completed FFmpeg render is not persisted before Streamlit return")
+
+if "render_job.json" not in s or "GSF_FINAL_JOB_READY_WARN" not in s:
+    raise SystemExit("FAIL durable final render state missing")
+if "SALVA BOZZA" not in s or "/drafts/save" not in s:
+    raise SystemExit("FAIL save draft UI missing")

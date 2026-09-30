@@ -569,6 +569,34 @@ _create_short_new='''            def _gsf_v107_queue_final_render():
                 st.session_state["gsf_v107_render_started_at"]=__import__("time").time()
                 st.session_state["gsf_v107_render_toast_shown"]=False
                 st.session_state["gsf_v107_render_complete_notified"]=True
+                try:
+                    _job_path=GSF_SESSION_ROOT/"render_job.json"
+                    _job_tmp=GSF_SESSION_ROOT/"render_job.json.tmp"
+                    _job_tmp.write_text(__import__("json").dumps({
+                        "status":"running",
+                        "started_at":st.session_state["gsf_v107_render_started_at"],
+                        "source_path":_src,
+                        "recipe":dict(_recipe) if isinstance(_recipe,dict) else {},
+                    },ensure_ascii=False,default=str),encoding="utf-8")
+                    __import__("os").replace(_job_tmp,_job_path)
+                except Exception as _job_exc:
+                    print("GSF_FINAL_JOB_WRITE_WARN",repr(str(_job_exc)),flush=True)
+
+            try:
+                _job_path=GSF_SESSION_ROOT/"render_job.json"
+                if _job_path.is_file():
+                    _job=__import__("json").loads(_job_path.read_text(encoding="utf-8"))
+                    if isinstance(_job,dict) and str(_job.get("status") or "")=="running":
+                        st.session_state["gsf_v107_final_render_running"]=True
+                        st.session_state["gsf_v107_render_started_at"]=float(_job.get("started_at") or 0.0)
+                        _job_recipe=_job.get("recipe")
+                        _job_src=str(_job.get("source_path") or "")
+                        if isinstance(_job_recipe,dict) and _job_recipe:
+                            st.session_state["gsf_v107_render_recipe_snapshot"]=dict(_job_recipe)
+                        if _job_src:
+                            st.session_state["gsf_v107_render_source_snapshot"]=_job_src
+            except Exception:
+                pass
 
             try:
                 _gsf_restore_src=str(
@@ -642,6 +670,24 @@ _create_short_new='''            def _gsf_v107_queue_final_render():
                 '<div class="gsf-major-note">Genera la versione finale pronta per il download e la pubblicazione sui tuoi social collegati.</div>',
                 unsafe_allow_html=True,
             )
+            with st.container(key="gsf-save-draft"):
+                if st.button("SALVA BOZZA",use_container_width=True,key="gsf_save_draft_v107"):
+                    try:
+                        _gsf_save_persistent_state()
+                        _draft_state=__import__("json").loads(GSF_SESSION_STATE_FILE.read_text(encoding="utf-8"))
+                        _draft_payload={
+                            "title":"Bozza · "+str(st.session_state.get("gsf_source_name") or "Gameplay"),
+                            "source_name":str(st.session_state.get("gsf_source_name") or "Gameplay"),
+                            "state":_draft_state,
+                        }
+                        _u=__import__("urllib.request",fromlist=["Request","urlopen"])
+                        _body=__import__("json").dumps(_draft_payload,ensure_ascii=False,default=str).encode("utf-8")
+                        _req=_u.Request("http://127.0.0.1:8502/drafts/save",data=_body,headers={"Content-Type":"application/json","X-GSF-Session-ID":str(GSF_SESSION_ID)},method="POST")
+                        _u.urlopen(_req,timeout=8).read()
+                        st.toast("💾 Bozza salvata · la trovi nel Creator Hub.")
+                    except Exception as _draft_exc:
+                        print("GSF_DRAFT_SAVE_WARN",repr(str(_draft_exc)),flush=True)
+                        st.warning("Non sono riuscito a salvare la bozza. Riprova.")
 '''
 if _create_short_old not in s:
     raise RuntimeError("Demo CREA SHORT anchor not found")
@@ -688,6 +734,19 @@ _gsf_locked_render_new='''        _gsf_locked_result=subprocess.run(
                             "bytes="+str(_gsf_stable.stat().st_size),
                             flush=True,
                         )
+                        try:
+                            _job_file=_gsf_root/_gsf_sid/"render_job.json"
+                            _job={}
+                            if _job_file.is_file():
+                                _job=__import__("json").loads(_job_file.read_text(encoding="utf-8"))
+                            if not isinstance(_job,dict):
+                                _job={}
+                            _job.update({"status":"ready","completed_at":__import__("time").time(),"final_path":str(_gsf_stable),"final_bytes":int(_gsf_stable.stat().st_size)})
+                            _job_tmp=_job_file.with_suffix(".tmp")
+                            _job_tmp.write_text(__import__("json").dumps(_job,ensure_ascii=False,default=str),encoding="utf-8")
+                            _gsf_os.replace(_job_tmp,_job_file)
+                        except Exception as _job_exc:
+                            print("GSF_FINAL_JOB_READY_WARN",repr(str(_job_exc)),flush=True)
                         try:
                             _gsf_u=__import__("urllib.request",fromlist=["Request","urlopen"])
                             _gsf_j=__import__("json")
@@ -2630,3 +2689,16 @@ compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
 print('V107 production UI applied:',out)
 # V107 production UI: Editor 2027 + approved milestone guides
+
+_draft_v107_style = r"""
+st.markdown("""
+<style id="gsf-draft-v107-style">
+.st-key-gsf-save-draft button,[class*="st-key-gsf-save-draft"] button{
+min-height:40px!important;border-radius:14px!important;border:1px solid #cfe0eb!important;
+background:linear-gradient(145deg,#fff,#eef6fb)!important;color:#496b82!important;
+font-size:11px!important;font-weight:900!important;letter-spacing:.04em!important;
+box-shadow:0 6px 16px rgba(52,89,115,.08)!important}
+</style>
+""",unsafe_allow_html=True)
+"""
+s = s.rstrip() + "\n\n" + _draft_v107_style.lstrip()

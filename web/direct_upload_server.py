@@ -796,6 +796,118 @@ def _creator_account_save(sid,profile):
         )
 
 
+def _draft_dir(sid):
+    sid=_safe_id(sid)
+    root=ROOT/"sessions"/sid/"drafts"
+    root.mkdir(parents=True,exist_ok=True)
+    return root
+
+def _draft_key(sid,draft_id):
+    sid=_safe_id(sid); draft_id=_safe_id(draft_id)
+    return f"drafts/{sid}/{draft_id}.json" if sid and draft_id else ""
+
+def _draft_save(sid,payload):
+    sid=_safe_id(sid)
+    if not sid:
+        raise ValueError("sessione non valida")
+    payload=dict(payload or {})
+    state=payload.get("state") if isinstance(payload.get("state"),dict) else {}
+    raw_state=json.dumps(state,ensure_ascii=False,separators=(",",":"),default=str)
+    if len(raw_state)>900000:
+        raise ValueError("bozza troppo grande")
+    draft_id=_safe_id(payload.get("id","")) or ("draft_"+uuid.uuid4().hex[:16])
+    now=time.time()
+    source_name=str(payload.get("source_name") or state.get("gsf_source_name") or "Gameplay")[:160]
+    draft={
+        "id":draft_id,
+        "title":str(payload.get("title") or ("Bozza · "+source_name))[:180],
+        "source_name":source_name,
+        "created_at":float(payload.get("created_at") or now),
+        "updated_at":now,
+        "state":state,
+    }
+    path=_draft_dir(sid)/(draft_id+".json")
+    _write_json_atomic(path,draft)
+    if _bucket_enabled():
+        _s3().put_object(
+            Bucket=S3_BUCKET,Key=_draft_key(sid,draft_id),
+            Body=json.dumps(draft,ensure_ascii=False).encode("utf-8"),
+            ContentType="application/json",CacheControl="no-store"
+        )
+    return draft
+
+def _draft_load(sid,draft_id):
+    sid=_safe_id(sid); draft_id=_safe_id(draft_id)
+    if not sid or not draft_id:
+        return {}
+    path=_draft_dir(sid)/(draft_id+".json")
+    try:
+        data=json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(data,dict):
+            return data
+    except Exception:
+        pass
+    if _bucket_enabled():
+        try:
+            obj=_s3().get_object(Bucket=S3_BUCKET,Key=_draft_key(sid,draft_id))
+            data=json.loads(obj["Body"].read().decode("utf-8"))
+            if isinstance(data,dict):
+                _write_json_atomic(path,data)
+                return data
+        except Exception:
+            pass
+    return {}
+
+def _draft_list(sid):
+    sid=_safe_id(sid)
+    found={}
+    if not sid:
+        return []
+    try:
+        for path in _draft_dir(sid).glob("draft_*.json"):
+            try:
+                data=json.loads(path.read_text(encoding="utf-8"))
+                if isinstance(data,dict) and data.get("id"):
+                    found[str(data["id"])]=data
+            except Exception:
+                pass
+    except Exception:
+        pass
+    if _bucket_enabled():
+        try:
+            rows=_s3().list_objects_v2(Bucket=S3_BUCKET,Prefix=f"drafts/{sid}/",MaxKeys=30).get("Contents") or []
+            for row in rows:
+                key=str(row.get("Key") or "")
+                if not key.endswith(".json"):
+                    continue
+                try:
+                    obj=_s3().get_object(Bucket=S3_BUCKET,Key=key)
+                    data=json.loads(obj["Body"].read().decode("utf-8"))
+                    if isinstance(data,dict) and data.get("id"):
+                        found[str(data["id"])]=data
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    return sorted(found.values(),key=lambda x:float(x.get("updated_at") or 0),reverse=True)[:20]
+
+def _draft_cards_html(sid):
+    drafts=_draft_list(sid)
+    if not drafts:
+        return '<div class="draftEmpty">Nessuna bozza salvata. Usa <b>SALVA BOZZA</b> nell’app per ritrovarla qui.</div>'
+    rows=[]
+    for draft in drafts:
+        did=_safe_id(draft.get("id",""))
+        title=html.escape(str(draft.get("title") or "Bozza"))
+        source=html.escape(str(draft.get("source_name") or "Gameplay"))
+        try:
+            updated=time.strftime("%d/%m · %H:%M",time.localtime(float(draft.get("updated_at") or 0)))
+        except Exception:
+            updated=""
+        href="/drafts/resume?id="+urllib.parse.quote(did,safe="")
+        rows.append('<div class="draftCard"><div class="draftInfo"><strong>'+title+'</strong><span>'+source+' · '+html.escape(updated)+'</span></div><a class="draftOpen" href="'+href+'">RIPRENDI</a></div>')
+    return '<div class="draftGrid">'+"".join(rows)+'</div>'
+
 def _creator_login(sid,provider,provider_uid,display_name="",email="",avatar=""):
     sid=_safe_id(sid)
     provider=re.sub(r"[^a-z0-9_-]+","",str(provider or "").lower())[:24]
@@ -1127,6 +1239,7 @@ def _creator_page(sid,message=""):
     profile=_creator_account_load(sid)
     if not profile:
         msg=f'<div class="notice">{html.escape(message)}</div>' if message else ""
+        drafts_html=_draft_cards_html(sid)
         google_disabled="" if (YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET) else " unavailable"
         facebook_disabled="" if (META_APP_ID and META_APP_SECRET) else " unavailable"
         tiktok_disabled="" if (TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET) else " unavailable"
@@ -1145,7 +1258,7 @@ main{{max-width:860px;margin:0 auto;padding:22px 16px 34px}} .brand{{text-align:
 h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-columns:1fr 1fr;gap:9px}} .social{{color:#7890a2;background:#f8fbfe;border:1px solid #e0ebf3;border-radius:16px;padding:14px;display:flex;justify-content:space-between;align-items:center;font-size:12px}} .social strong{{font-size:13px;color:#496b83}} .social span{{font-weight:850}}
 .auto{{background:linear-gradient(135deg,#eff9ff,#f3efff);border:1px solid #d7e7f1;border-radius:18px;padding:15px}} .auto-k{{font-size:11px;font-weight:950;letter-spacing:.08em;color:#607da0}} .auto-title{{font-size:18px;font-weight:950;margin:3px 0 5px}} .auto-sub{{font-size:12px;color:#73889b;line-height:1.45}}
 .future{{border:1px dashed #cadde9;border-radius:17px;padding:14px;color:#7b90a1;font-size:12px;line-height:1.45}}
-.back{{display:block;text-align:center;margin:18px auto 0;color:#6d8799;text-decoration:none;font-size:11px;font-weight:800}}
+.draftGrid{{display:grid;gap:9px}}.draftCard{{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f8fbfe;border:1px solid #dce9f2;border-radius:16px;padding:13px 14px}}.draftInfo{{display:flex;flex-direction:column;gap:3px;min-width:0}}.draftInfo strong{{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}.draftInfo span{{font-size:10px;color:#7e92a2}}.draftOpen{{text-decoration:none;color:#356f91;background:#eef8ff;border:1px solid #cfe5f3;border-radius:999px;padding:8px 10px;font-size:10px;font-weight:900}}.draftEmpty{{font-size:12px;color:#71899a;background:#f8fbfe;border:1px dashed #cbdde9;border-radius:16px;padding:14px;line-height:1.45}}.back{{display:block;text-align:center;margin:18px auto 0;color:#6d8799;text-decoration:none;font-size:11px;font-weight:800}}
 .small{{font-size:11px;color:#8a9dab;text-align:center;line-height:1.45;margin:11px 0 0}}
 @media(min-width:640px){{.providers{{grid-template-columns:1fr 1fr 1fr}}}}
 @media(max-width:560px){{.socials{{grid-template-columns:1fr}}}}
@@ -1157,7 +1270,7 @@ h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-col
 <a class="provider{facebook_disabled}" href="/account/facebook/start"><span class="logo">f</span><span>Facebook</span></a>
 <a class="provider{tiktok_disabled}" href="/account/tiktok/start"><span class="logo">♪</span><span>TikTok</span></a>
 </div><p class="small">Il permesso YouTube per pubblicare viene richiesto separatamente quando colleghi il canale.</p></div>
-<h2>I tuoi social</h2><div class="socials"><div class="social"><strong>YouTube</strong><span>Accedi per collegare</span></div><div class="social"><strong>TikTok</strong><span>Accedi per collegare</span></div><div class="social"><strong>Instagram</strong><span>Accedi per collegare</span></div><div class="social"><strong>Facebook</strong><span>Accedi per collegare</span></div></div>
+<h2>Le tue bozze</h2>{drafts_html}<h2>I tuoi social</h2><div class="socials"><div class="social"><strong>YouTube</strong><span>Accedi per collegare</span></div><div class="social"><strong>TikTok</strong><span>Accedi per collegare</span></div><div class="social"><strong>Instagram</strong><span>Accedi per collegare</span></div><div class="social"><strong>Facebook</strong><span>Accedi per collegare</span></div></div>
 <h2>Auto Highlights</h2><div class="auto"><div class="auto-k">AUTO HIGHLIGHTS</div><div class="auto-title">Tu fai la live. GSF trova i momenti da pubblicare.</div><div class="auto-sub">Accedi al Creator Hub per collegare i tuoi account e gestire le live.</div></div>
 <h2>Prossimamente</h2><div class="future">Storico Short · Cloud · Piano Pro · Crediti AI · Achievement · Classifica Creator.</div>
 <a class="back" href="/">← Torna alla pagina principale</a>
@@ -1195,6 +1308,7 @@ h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-col
         for k in providers.keys()
     ) or '<span class="providerBadge">Profilo attivo</span>'
     msg=f'<div class="notice">{html.escape(message)}</div>' if message else ""
+    drafts_html=_draft_cards_html(sid)
 
     return f"""<!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1209,14 +1323,14 @@ main{{max-width:860px;margin:0 auto;padding:24px 16px 48px}} .top{{display:flex;
 .level{{background:linear-gradient(135deg,#eff9ff,#f2efff);border:1px solid #d7e7f1;border-radius:18px;padding:14px;margin-bottom:18px}} .levelHead{{display:flex;justify-content:space-between;font-weight:850;font-size:12px}} .bar{{height:8px;background:#dbe8f1;border-radius:999px;margin-top:9px;overflow:hidden}} .bar i{{display:block;width:18%;height:100%;background:linear-gradient(90deg,#4fade8,#647fe5);border-radius:999px}}
 h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-columns:1fr 1fr;gap:9px}} .social{{text-decoration:none;color:#294a62;background:#fff;border:1px solid #dbe8f1;border-radius:16px;padding:14px;display:flex;justify-content:space-between;align-items:center;font-size:12px}} .social strong{{font-size:13px}} .social span{{color:#5a7d96;font-weight:850}} .social.connected{{background:#f1fbf7;border-color:#cfeadf}} .social.connected span{{color:#3c8968}}
 .notice{{background:#eef8ff;border:1px solid #d2e9f8;border-radius:14px;padding:11px 13px;margin:0 0 15px;color:#426a86}} .auto{{background:linear-gradient(135deg,#eff9ff,#f3efff);border:1px solid #d7e7f1;border-radius:18px;padding:15px}} .auto-k{{font-size:11px;font-weight:950;letter-spacing:.08em;color:#607da0}} .auto-title{{font-size:17px;font-weight:950;margin:3px 0 5px}} .auto-sub{{font-size:12px;color:#73889b;line-height:1.45}} .future{{border:1px dashed #cadde9;border-radius:17px;padding:14px;color:#7b90a1;font-size:12px;line-height:1.45}}
-.logout{{display:block;text-align:center;color:#8a6170;text-decoration:none;font-size:12px;font-weight:800;margin-top:18px}} .back-bottom{{display:block;text-align:center;color:#6d8799;text-decoration:none;font-size:11px;font-weight:800;margin-top:14px}}
+.draftGrid{{display:grid;gap:9px}}.draftCard{{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f8fbfe;border:1px solid #dce9f2;border-radius:16px;padding:13px 14px}}.draftInfo{{display:flex;flex-direction:column;gap:3px;min-width:0}}.draftInfo strong{{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}.draftInfo span{{font-size:10px;color:#7e92a2}}.draftOpen{{text-decoration:none;color:#356f91;background:#eef8ff;border:1px solid #cfe5f3;border-radius:999px;padding:8px 10px;font-size:10px;font-weight:900}}.draftEmpty{{font-size:12px;color:#71899a;background:#f8fbfe;border:1px dashed #cbdde9;border-radius:16px;padding:14px;line-height:1.45}}.logout{{display:block;text-align:center;color:#8a6170;text-decoration:none;font-size:12px;font-weight:800;margin-top:18px}} .back-bottom{{display:block;text-align:center;color:#6d8799;text-decoration:none;font-size:11px;font-weight:800;margin-top:14px}}
 @media(max-width:560px){{.stats{{grid-template-columns:1fr 1fr 1fr}} .stat{{padding:10px 5px}} .stat b{{font-size:17px}} .socials{{grid-template-columns:1fr}}}}
 </style></head><body><main>
 <div class="top"><div class="brand">GAMING SHORTS FACTORY</div></div>
 <div class="profile">{msg}<div class="who">{avatar_html}<div><div class="name">{name}</div><div class="mail">{email}</div><span class="badge">{plan}</span><div class="providerBadges">{provider_badges}</div></div></div>
 <div class="stats"><div class="stat"><b>{shorts_created}</b><span>SHORT CREATI</span></div><div class="stat"><b>{shorts_published}</b><span>PUBBLICATI</span></div><div class="stat"><b>{connected}/4</b><span>SOCIAL</span></div></div>
 <div class="level"><div class="levelHead"><span>Creator Level {level} · Rookie</span><span>18%</span></div><div class="bar"><i></i></div></div>
-<h2>I tuoi social</h2><div class="socials">{socials}</div>
+<h2>Le tue bozze</h2>{drafts_html}<h2>I tuoi social</h2><div class="socials">{socials}</div>
 <h2>Auto Highlights</h2><div class="auto"><div class="auto-k">AUTO HIGHLIGHTS</div><div class="auto-title">Tu fai la live. GSF trova i momenti da pubblicare.</div><div class="auto-sub">Collega i tuoi account live per trovare automaticamente i momenti migliori e portarli nel Game Editor.</div></div>
 <h2>Prossimamente</h2><div class="future">Storico Short · Cloud · Piano Pro · Crediti AI · Achievement · Classifica Creator.</div>
 <a class="logout" href="/account/logout">Esci dal Creator Hub</a><a class="back-bottom" href="/">← Torna alla pagina principale</a>
@@ -1744,6 +1858,19 @@ class Handler(BaseHTTPRequestHandler):
         if clean=="/editor-media/current":
             _editor_media_current(self,_social_sid(self))
             return
+        if clean=="/drafts/resume":
+            sid=_social_sid(self)
+            draft_id=_safe_id((parse_qs(path.query).get("id") or [""])[0])
+            draft=_draft_load(sid,draft_id)
+            state=draft.get("state") if isinstance(draft,dict) else None
+            if not sid or not isinstance(state,dict):
+                _html(self,404,"Bozza non trovata.")
+                return
+            root=ROOT/"sessions"/sid
+            root.mkdir(parents=True,exist_ok=True)
+            _write_json_atomic(root/"session_state.json",state)
+            _redirect(self,"/")
+            return
         if clean=="/account":
             sid=_social_sid(self)
             if not sid:
@@ -1846,6 +1973,15 @@ class Handler(BaseHTTPRequestHandler):
         sid=_safe_id(self.headers.get("X-GSF-Session-ID"))
         if not sid:
             _json(self,400,{"ok":False,"error":"invalid session"})
+            return
+
+        if path=="/drafts/save":
+            try:
+                data=_read_json(self,max_bytes=1024*1024)
+                draft=_draft_save(sid,data)
+                _json(self,200,{"ok":True,"id":draft.get("id"),"title":draft.get("title")})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
             return
 
         if path=="/push/subscribe":
