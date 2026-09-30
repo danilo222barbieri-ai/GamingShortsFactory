@@ -19,3 +19,20 @@ if merged[0].get("semantic")!="multi_kill" or merged[1].get("semantic")!="reacti
 if merged[0].get("source")!="local+gemini-v114":
     raise SystemExit("V114 local/cloud fusion marker missing")
 print("V114 semantic video fusion: PASS")
+
+from pathlib import Path
+worker=Path("/app/web/ai_worker_server.py").read_text(encoding="utf-8")
+requirements=Path("/app/web/requirements-worker.txt").read_text(encoding="utf-8")
+for marker in (
+    "analyze_gameplay_video",
+    "merge_semantic_events",
+    "semantic_events_v114",
+    "semantic_video_v114",
+    "semantic_video",
+    "GSF_V114_SEMANTIC",
+):
+    if marker not in worker:
+        raise SystemExit("V114 worker integration missing: "+marker)
+if "google-genai==" not in requirements:
+    raise SystemExit("V114 google-genai worker dependency missing")
+print("V114 worker semantic integration: PASS")
