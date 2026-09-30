@@ -3287,4 +3287,168 @@ except Exception as _e:print("V107 preview cache wrapper warning:",repr(str(_e))
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
 print('V107 production UI applied:',out)
+
+# 2026-09-30 social publish polish: real brand tiles + complete metadata contract.
+_gsf_social_meta_anchor='''                        _edited_pack = _gsf_social_pack_for_upload(
+                            _base_pack,
+                            _title,
+                            _description,
+                            _hashtags,
+                        )
+'''
+if _gsf_social_meta_anchor not in s:
+    raise RuntimeError("V107 social metadata pack anchor missing")
+_gsf_social_meta_new=_gsf_social_meta_anchor+'''                        _gsf_meta_title=str(_title or "").strip()
+                        _gsf_meta_description=str(_description or "").strip()
+                        _gsf_meta_tags=[]
+                        _gsf_meta_seen=set()
+                        for _gsf_raw_tag in __import__("re").split(r"[\\s,]+",str(_hashtags or "").strip()):
+                            _gsf_tag=str(_gsf_raw_tag or "").strip()
+                            if not _gsf_tag:
+                                continue
+                            if not _gsf_tag.startswith("#"):
+                                _gsf_tag="#"+_gsf_tag
+                            _gsf_tag="#"+__import__("re").sub(r"[^0-9A-Za-zÀ-ÿ_]+","",_gsf_tag[1:])
+                            if len(_gsf_tag)<=1:
+                                continue
+                            _gsf_key=_gsf_tag.casefold()
+                            if _gsf_key in _gsf_meta_seen:
+                                continue
+                            _gsf_meta_seen.add(_gsf_key)
+                            _gsf_meta_tags.append(_gsf_tag)
+                        _gsf_meta_hash_text=" ".join(_gsf_meta_tags)
+                        _gsf_meta_youtube_description="\\n\\n".join(
+                            _gsf_piece for _gsf_piece in (_gsf_meta_description,_gsf_meta_hash_text)
+                            if _gsf_piece
+                        ).strip()
+                        _gsf_meta_caption="\\n\\n".join(
+                            _gsf_piece for _gsf_piece in (_gsf_meta_title,_gsf_meta_description,_gsf_meta_hash_text)
+                            if _gsf_piece
+                        ).strip()
+                        if not isinstance(_edited_pack,dict):
+                            _edited_pack={}
+                        _edited_pack.update({
+                            "title":_gsf_meta_title,
+                            "selected_title":_gsf_meta_title,
+                            "description":_gsf_meta_youtube_description,
+                            "selected_description":_gsf_meta_youtube_description,
+                            "hashtags":list(_gsf_meta_tags),
+                            "selected_hashtags":_gsf_meta_hash_text,
+                            "caption":_gsf_meta_caption,
+                            "selected_caption":_gsf_meta_caption,
+                        })
+                        print(
+                            "GSF_SOCIAL_META_READY",
+                            _selected_social,
+                            "title="+str(bool(_gsf_meta_title)),
+                            "description="+str(bool(_gsf_meta_description)),
+                            "hashtags="+str(len(_gsf_meta_tags)),
+                            flush=True,
+                        )
+'''
+s=s.replace(_gsf_social_meta_anchor,_gsf_social_meta_new,1)
+
+_social_brand_tiles_v107=r'''
+st.markdown("""
+<style id="gsf-social-brand-tiles-v107">
+.st-key-v69_social_facebook,
+.st-key-v69_social_instagram,
+.st-key-v69_social_youtube,
+.st-key-v69_social_tiktok{
+  display:flex !important;
+  justify-content:center !important;
+}
+.st-key-v69_social_facebook button,
+.st-key-v69_social_instagram button,
+.st-key-v69_social_youtube button,
+.st-key-v69_social_tiktok button{
+  width:min(100%,108px) !important;
+  max-width:108px !important;
+  aspect-ratio:1 / 1 !important;
+  min-height:0 !important;
+  height:auto !important;
+  padding:0 !important;
+  margin:0 auto !important;
+  border-radius:20px !important;
+  border:0 !important;
+  overflow:hidden !important;
+  box-shadow:0 9px 22px rgba(42,69,88,.17),inset 0 1px 0 rgba(255,255,255,.22) !important;
+  font-size:0 !important;
+  color:transparent !important;
+  gap:0 !important;
+}
+.st-key-v69_social_facebook button p,
+.st-key-v69_social_instagram button p,
+.st-key-v69_social_youtube button p,
+.st-key-v69_social_tiktok button p{
+  display:none !important;
+}
+.st-key-v69_social_facebook button:before,
+.st-key-v69_social_instagram button:before,
+.st-key-v69_social_youtube button:before,
+.st-key-v69_social_tiktok button:before{
+  content:"" !important;
+  display:block !important;
+  width:68% !important;
+  height:68% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  flex:0 0 auto !important;
+  border-radius:0 !important;
+  background-color:transparent !important;
+  background-repeat:no-repeat !important;
+  background-position:center !important;
+  background-size:contain !important;
+  box-shadow:none !important;
+  text-shadow:none !important;
+  padding:0 !important;
+  margin:0 !important;
+}
+.st-key-v69_social_facebook button{background:#1877F2 !important}
+.st-key-v69_social_facebook button:before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M13.7 22v-9h3.05l.46-3.52H13.7V7.24c0-1.02.28-1.71 1.76-1.71h1.88V2.38c-.33-.04-1.44-.14-2.74-.14-2.71 0-4.57 1.65-4.57 4.69v2.55H6.96V13h3.07v9h3.67Z'/%3E%3C/svg%3E") !important;
+}
+.st-key-v69_social_instagram button{
+  background:radial-gradient(circle at 30% 105%,#fdf497 0 5%,#fd5949 35%,#d6249f 62%,#285AEB 100%) !important;
+}
+.st-key-v69_social_instagram button:before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='18' height='18' rx='5.4' fill='none' stroke='white' stroke-width='2.2'/%3E%3Ccircle cx='12' cy='12' r='4.2' fill='none' stroke='white' stroke-width='2.2'/%3E%3Ccircle cx='17.45' cy='6.65' r='1.25' fill='white'/%3E%3C/svg%3E") !important;
+}
+.st-key-v69_social_youtube button{background:#FF0000 !important}
+.st-key-v69_social_youtube button:before{
+  width:60% !important;
+  height:60% !important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9.4 7.4 17 12l-7.6 4.6V7.4Z'/%3E%3C/svg%3E") !important;
+}
+.st-key-v69_social_tiktok button{background:#000 !important}
+.st-key-v69_social_tiktok button:before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2325F4EE' transform='translate(-.65 .35)' d='M14.1 3v9.7a4.35 4.35 0 1 1-3.6-4.28v2.75a1.72 1.72 0 1 0 .86 1.49V3h2.74c.38 2.06 1.72 3.48 3.9 3.92v2.73a7.1 7.1 0 0 1-3.9-1.45V3Z'/%3E%3Cpath fill='%23FE2C55' transform='translate(.65 -.2)' d='M14.1 3v9.7a4.35 4.35 0 1 1-3.6-4.28v2.75a1.72 1.72 0 1 0 .86 1.49V3h2.74c.38 2.06 1.72 3.48 3.9 3.92v2.73a7.1 7.1 0 0 1-3.9-1.45V3Z'/%3E%3Cpath fill='white' d='M14.1 3v9.7a4.35 4.35 0 1 1-3.6-4.28v2.75a1.72 1.72 0 1 0 .86 1.49V3h2.74c.38 2.06 1.72 3.48 3.9 3.92v2.73a7.1 7.1 0 0 1-3.9-1.45V3Z'/%3E%3C/svg%3E") !important;
+}
+.st-key-v69_social_facebook button[kind="primary"],
+.st-key-v69_social_instagram button[kind="primary"],
+.st-key-v69_social_youtube button[kind="primary"],
+.st-key-v69_social_tiktok button[kind="primary"],
+.st-key-v69_social_facebook [data-testid="stBaseButton-primary"],
+.st-key-v69_social_instagram [data-testid="stBaseButton-primary"],
+.st-key-v69_social_youtube [data-testid="stBaseButton-primary"],
+.st-key-v69_social_tiktok [data-testid="stBaseButton-primary"]{
+  outline:3px solid rgba(105,84,205,.55) !important;
+  outline-offset:3px !important;
+}
+@media(max-width:600px){
+  .st-key-v69_social_facebook button,
+  .st-key-v69_social_instagram button,
+  .st-key-v69_social_youtube button,
+  .st-key-v69_social_tiktok button{
+    width:min(100%,82px) !important;
+    max-width:82px !important;
+    border-radius:17px !important;
+  }
+}
+</style>
+""",unsafe_allow_html=True)
+'''
+s=s.rstrip()+"\\n\\n"+_social_brand_tiles_v107.lstrip()
+
+
 # V107 production UI: Editor 2027 + approved milestone guides
