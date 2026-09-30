@@ -18,6 +18,7 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from boto3.s3.transfer import TransferConfig
+from game_vision_v108 import build_event_map
 
 PORT=int(os.environ.get("PORT","8600"))
 WORKER_TOKEN=os.environ.get("GSF_WORKER_TOKEN","")
@@ -178,6 +179,8 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
                 JOBS[job_id]={"state":"scanning","download_seconds":round(download_seconds,3),"analysis_key":analysis_key}
 
             scan=_load_scan_fn()(str(local))
+            # V108 derives Event Map from the same prescan arrays. No second media pass.
+            scan["event_map_v108"]=build_event_map(scan,max_events=18)
             meta=dict(scan.get("meta",{}) or {})
             meta["worker_prescan"]=True
             meta["worker_service"]=True
