@@ -30,6 +30,8 @@ if "declare_component(" not in wrapper:
     raise SystemExit("FAIL Editor 2027 V1 component is not declared")
 if "_editor_component_for" not in wrapper or 'src="{safe_url}"' not in wrapper:
     raise SystemExit("FAIL Editor 2027 does not bake the real video URL into the iframe HTML")
+if "base64.b64encode(p.read_bytes())" not in wrapper or 'return f"data:{mime};base64,{raw}"' not in wrapper:
+    raise SystemExit("FAIL Editor 2027 mobile source is not self-contained")
 if "Anteprima sorgente caricata nascosta per UX" not in app:
     raise SystemExit("FAIL uploaded-source preview is not hidden in production")
 if "render_kwargs=_gsf_manual_render_kwargs" not in app:
