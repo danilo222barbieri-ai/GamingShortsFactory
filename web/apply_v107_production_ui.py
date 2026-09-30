@@ -536,33 +536,70 @@ _engine_note_new='''    st.markdown(
     _gsf_engine_prev=str(st.session_state.get("gsf_v107_last_engine") or "")
     _gsf_engine_changed=bool(_gsf_engine_prev and _gsf_engine_prev!=_gsf_engine_now)
     _gsf_render_active=bool(st.session_state.get("gsf_v107_final_render_running",False))
-    if _gsf_engine_changed and _gsf_render_active:
-        _snap_recipe=st.session_state.get("gsf_v107_render_recipe_snapshot")
-        _snap_source=str(st.session_state.get("gsf_v107_render_source_snapshot") or "")
+
+    # Keep a snapshot from the PREVIOUS engine. Streamlit reruns on selector
+    # changes, so the save action must survive the next rerun too.
+    _gsf_prev_recipe=st.session_state.get("gsf_v107_engine_snapshot_recipe")
+    _gsf_prev_source=str(st.session_state.get("gsf_v107_engine_snapshot_source") or "")
+    if _gsf_render_active:
+        _render_recipe=st.session_state.get("gsf_v107_render_recipe_snapshot")
+        _render_source=str(st.session_state.get("gsf_v107_render_source_snapshot") or "")
+        if isinstance(_render_recipe,dict) and _render_recipe:
+            _gsf_prev_recipe=dict(_render_recipe)
+        if _render_source:
+            _gsf_prev_source=_render_source
+
+    if _gsf_engine_changed:
+        _pending_state={}
         try:
-            _job_path=GSF_SESSION_ROOT/"render_job.json"
-            _job={}
-            if _job_path.is_file():
-                _job=__import__("json").loads(_job_path.read_text(encoding="utf-8"))
-            if not isinstance(_job,dict):
-                _job={}
-            _pid=int(_job.get("pid") or 0)
-            if _pid>0:
-                try:
-                    __import__("os").kill(_pid,__import__("signal").SIGTERM)
-                except Exception:
-                    pass
-            _job.update({"status":"cancelled","cancelled_at":__import__("time").time(),"reason":"engine_changed","pid":0})
-            _tmp=_job_path.with_suffix(".tmp")
-            _tmp.write_text(__import__("json").dumps(_job,ensure_ascii=False,default=str),encoding="utf-8")
-            __import__("os").replace(_tmp,_job_path)
+            _gsf_save_persistent_state()
+            if GSF_SESSION_STATE_FILE.is_file():
+                _pending_state=__import__("json").loads(GSF_SESSION_STATE_FILE.read_text(encoding="utf-8"))
+            if not isinstance(_pending_state,dict):
+                _pending_state={}
         except Exception:
-            pass
-        st.session_state["gsf_v107_final_render_running"]=False
-        st.session_state["gsf_v107_final_render_pending"]=False
+            _pending_state={}
+        if isinstance(_gsf_prev_recipe,dict) and _gsf_prev_recipe:
+            _pending_state["gsf_final_recipe"]=dict(_gsf_prev_recipe)
+        if _gsf_prev_source:
+            _pending_state["gsf_source_path"]=_gsf_prev_source
+            _pending_state["gsf_editor_source_path"]=_gsf_prev_source
+        st.session_state["gsf_v107_engine_change_draft_pending"]={
+            "from_engine":_gsf_engine_prev,
+            "to_engine":_gsf_engine_now,
+            "source":_gsf_prev_source,
+            "recipe":dict(_gsf_prev_recipe) if isinstance(_gsf_prev_recipe,dict) else {},
+            "state":_pending_state,
+        }
+
+        if _gsf_render_active:
+            try:
+                _job_path=GSF_SESSION_ROOT/"render_job.json"
+                _job={}
+                if _job_path.is_file():
+                    _job=__import__("json").loads(_job_path.read_text(encoding="utf-8"))
+                if not isinstance(_job,dict):
+                    _job={}
+                _pid=int(_job.get("pid") or 0)
+                if _pid>0:
+                    try:
+                        __import__("os").kill(_pid,__import__("signal").SIGTERM)
+                    except Exception:
+                        pass
+                _job.update({"status":"cancelled","cancelled_at":__import__("time").time(),"reason":"engine_changed","pid":0})
+                _tmp=_job_path.with_suffix(".tmp")
+                _tmp.write_text(__import__("json").dumps(_job,ensure_ascii=False,default=str),encoding="utf-8")
+                __import__("os").replace(_tmp,_job_path)
+            except Exception:
+                pass
+            st.session_state["gsf_v107_final_render_running"]=False
+            st.session_state["gsf_v107_final_render_pending"]=False
+
+    _gsf_engine_pending=st.session_state.get("gsf_v107_engine_change_draft_pending")
+    if isinstance(_gsf_engine_pending,dict) and _gsf_engine_pending:
         st.warning(
-            "⚠️ Hai cambiato motore: la creazione dello Short è stata interrotta. "
-            "Se vuoi conservare quel lavoro, salvalo come bozza."
+            "⚠️ Hai cambiato motore: il lavoro precedente è ancora disponibile. "
+            "Puoi salvarlo come bozza prima di continuare."
         )
         if st.button(
             "SALVA BOZZA DELLO SHORT INTERROTTO",
@@ -570,8 +607,11 @@ _engine_note_new='''    st.markdown(
             key="gsf_save_draft_before_engine_change_v107",
         ):
             try:
-                _gsf_save_persistent_state()
-                _draft_state=__import__("json").loads(GSF_SESSION_STATE_FILE.read_text(encoding="utf-8"))
+                _draft_state=_gsf_engine_pending.get("state") or {}
+                if not isinstance(_draft_state,dict):
+                    _draft_state={}
+                _snap_recipe=_gsf_engine_pending.get("recipe")
+                _snap_source=str(_gsf_engine_pending.get("source") or "")
                 if isinstance(_snap_recipe,dict) and _snap_recipe:
                     _draft_state["gsf_final_recipe"]=dict(_snap_recipe)
                 if _snap_source:
@@ -591,11 +631,19 @@ _engine_note_new='''    st.markdown(
                     method="POST",
                 )
                 _u.urlopen(_req,timeout=8).read()
+                st.session_state.pop("gsf_v107_engine_change_draft_pending",None)
                 st.toast("💾 Bozza salvata nel Creator Hub.")
             except Exception as _draft_exc:
                 print("GSF_ENGINE_DRAFT_SAVE_WARN",repr(str(_draft_exc)),flush=True)
                 st.warning("Non sono riuscito a salvare la bozza. Riprova.")
+
     st.session_state["gsf_v107_last_engine"]=_gsf_engine_now
+    _gsf_current_recipe=st.session_state.get("gsf_final_recipe")
+    if isinstance(_gsf_current_recipe,dict) and _gsf_current_recipe:
+        st.session_state["gsf_v107_engine_snapshot_recipe"]=dict(_gsf_current_recipe)
+    _gsf_current_source=str(st.session_state.get("gsf_source_path") or st.session_state.get("gsf_editor_source_path") or "")
+    if _gsf_current_source:
+        st.session_state["gsf_v107_engine_snapshot_source"]=_gsf_current_source
 '''
 if _engine_note_old not in s:
     raise RuntimeError("Demo engine help note anchor not found")
@@ -722,7 +770,7 @@ _create_short_new='''            def _gsf_v107_queue_final_render():
                 st.session_state.pop("gsf_v107_final_render_pending",False)
             )
             if st.session_state.pop("gsf_v107_render_done_toast",False):
-                st.toast("✅ Short pronto · apri lo Share Hub per condividerlo.")
+                st.toast("✅ Short pronto · apro lo Share Hub.")
             if _gsf_v107_pending and not st.session_state.get("gsf_v107_render_toast_shown",False):
                 st.toast("🎬 Short in lavorazione · puoi continuare a usare l’app.")
                 st.session_state["gsf_v107_render_toast_shown"]=True
