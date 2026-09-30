@@ -197,12 +197,13 @@ def build_event_map(scan, max_events=18):
     # six nearly identical markers.
     active.sort(key=lambda x:x["score"],reverse=True)
     kept=[]
+    active_limit=max(4,int(max_events)-3)
     min_gap=max(1.5,step*3.0)
     for event in active:
         if any(abs(event["time"]-old["time"])<min_gap for old in kept):
             continue
         kept.append(event)
-        if len(kept)>=max(4,int(max_events)):
+        if len(kept)>=active_limit:
             break
 
     # Long genuinely quiet stretches are useful navigation landmarks too.
