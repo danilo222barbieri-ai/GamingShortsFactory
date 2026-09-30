@@ -11,7 +11,7 @@ for node in tree.body:
         continue
     name=node.name
     low=name.lower()
-    if any(k in low for k in ("ai_","scan","moment","candidate","rank","scene","clip","best")):
+    if any(k in low for k in ("ai_","scan","moment","candidate","rank","scene","clip","best","event","signal")):
         args=[a.arg for a in node.args.args]
         rows.append((node.lineno,node.end_lineno,name,args))
 print("V108_AI_FUNCTIONS_BEGIN")
@@ -26,6 +26,9 @@ interesting=[
     "_gsf_moment_category",
     "_gsf_ai_pick_diverse",
     "_gsf_ai_rank_v3",
+    "_gsf_detect_signal_event",
+    "_gsf_merge_semantic_and_signal_event",
+    "_gsf_smart_event_start",
 ]
 lines=source.splitlines()
 for name in interesting:
@@ -36,3 +39,11 @@ for name in interesting:
     chunk="\n".join(lines[node.lineno-1:min(node.end_lineno,node.lineno+220)])
     print(chunk)
     print(f"V108_SOURCE_END {name}")
+
+# Tail of the main ranker: output/diagnostics contract.
+rank=next((n for n in tree.body if isinstance(n,(ast.FunctionDef,ast.AsyncFunctionDef)) and n.name=="_gsf_ai_rank_v3"),None)
+if rank:
+    print("V108_RANK_TAIL_BEGIN")
+    start=max(rank.lineno-1,rank.end_lineno-105)
+    print("\n".join(lines[start:rank.end_lineno]))
+    print("V108_RANK_TAIL_END")
