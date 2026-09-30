@@ -1051,11 +1051,12 @@
          }else{
            state.aiMode=mode;
            state.visionEnabled=true;
-           if(mode==='Auto Gaming'){state.look='Competitive';state.intensity=55;state.zoom=1.12;state.panX=0;state.panY=-2;state.framePreset='gameplay';state.hudMode='Smart Safe';state.captionSize=34}
-           if(mode==='FPS'){state.look='Competitive';state.intensity=74;state.zoom=1.28;state.panX=0;state.panY=-4;state.framePreset='gameplay';state.hudMode='Smart Safe';state.captionSize=32}
-           if(mode==='Racing'){state.look='Competitive';state.intensity=48;state.zoom=1.08;state.panX=0;state.panY=5;state.framePreset='center';state.hudMode='Smart Safe';state.captionSize=30}
-           if(mode==='Sports'){state.look='Clean';state.intensity=45;state.zoom=1.08;state.panX=0;state.panY=0;state.framePreset='center';state.hudMode='Smart Safe';state.captionSize=30}
-           if(mode==='Battle Royale'){state.look='Boss Cinematic';state.intensity=62;state.zoom=1.16;state.panX=2;state.panY=-2;state.framePreset='gameplay';state.hudMode='Smart Safe';state.captionSize=34}
+           const preset=(mode==='Auto Gaming'&&['FPS','Racing','Sports','Battle Royale'].includes(visionProfile))?visionProfile:mode;
+           if(preset==='Auto Gaming'){state.look='Competitive';state.intensity=55;state.zoom=1.12;state.panX=0;state.panY=-2;state.framePreset='gameplay';state.hudMode='Smart Safe';state.captionSize=34}
+           if(preset==='FPS'){state.look='Competitive';state.intensity=74;state.zoom=1.28;state.panX=0;state.panY=-4;state.framePreset='gameplay';state.hudMode='Smart Safe';state.captionSize=32}
+           if(preset==='Racing'){state.look='Competitive';state.intensity=48;state.zoom=1.08;state.panX=0;state.panY=5;state.framePreset='center';state.hudMode='Smart Safe';state.captionSize=30}
+           if(preset==='Sports'){state.look='Clean';state.intensity=45;state.zoom=1.08;state.panX=0;state.panY=0;state.framePreset='center';state.hudMode='Smart Safe';state.captionSize=30}
+           if(preset==='Battle Royale'){state.look='Boss Cinematic';state.intensity=62;state.zoom=1.16;state.panX=2;state.panY=-2;state.framePreset='gameplay';state.hudMode='Smart Safe';state.captionSize=34}
            state.captionMode='Auto';state.captionOn=true;
            state.audioMode='Game Boost';state.muted=false;if(state.volume<=0)state.volume=100;
            state.speed=1;
