@@ -30,7 +30,7 @@ for marker in required:
 for marker in (
     "GSF_FINAL_CREATE_CLICK",
     "gsf-layout-hygiene",
-    "CONDIVIDI O SCARICA",
+    "PUBBLICA",
     "v69_social_facebook",
     "Dettagli Facebook",
     "COLLEGA FACEBOOK",
@@ -65,8 +65,10 @@ if "gsf-v107-final-publish-v3" in s or "new MutationObserver(tune)" in s:
     raise SystemExit("FAIL final publication still injects executable JS into markdown")
 if "v69_social_facebook" not in s or "gsf_final_download_after_social" not in s:
     raise SystemExit("FAIL native Facebook/download final layout missing")
-if s.count("CONDIVIDI O SCARICA") != 1:
-    raise SystemExit("FAIL final action title must appear exactly once")
+if s.count("PUBBLICA") < 1:
+    raise SystemExit("FAIL final PUBBLICA action missing")
+if "CONDIVIDI O SCARICA" in s:
+    raise SystemExit("FAIL obsolete CONDIVIDI O SCARICA action survived")
 if "gsf_share_download_top" not in s:
     raise SystemExit("FAIL final top CTA lacks stable CREA CON IA styling key")
 if "with _download_col:" in s:
@@ -75,7 +77,7 @@ for _icon_marker in ('content:"f"','content:"◎"','content:"▶"','content:"♪
     if _icon_marker not in s:
         raise SystemExit("FAIL high-contrast social icon missing: "+_icon_marker)
 if "gsf-share-cta-exact-create-short" not in s:
-    raise SystemExit("FAIL CONDIVIDI O SCARICA does not inherit exact CREA SHORT CTA skin")
+    raise SystemExit("FAIL PUBBLICA does not inherit exact CREA SHORT CTA skin")
 if "gsf-share-hub-glass" not in s or "gsfHubIn" not in s:
     raise SystemExit("FAIL futuristic glass Share Hub skin missing")
 if "SHORT PRONTO" in s:
@@ -85,7 +87,7 @@ if "background:linear-gradient(135deg,#78D7F3 0%,#50B9E9 100%)" not in s:
 if "st-key-v1055_ad_manual_after_editor" not in s:
     raise SystemExit("FAIL editor-to-ad spacing reduction missing")
 if "gsf-major-publish-download" in s:
-    raise SystemExit("FAIL duplicate lower CONDIVIDI O SCARICA milestone survived")
+    raise SystemExit("FAIL duplicate lower publication milestone survived")
 if "gsf-sep30-polish" not in s:
     raise SystemExit("FAIL Sep30 final polish CSS missing")
 if "gsf-editor-note" not in s:
@@ -172,6 +174,16 @@ for _brand_marker in (
 ):
     if _brand_marker not in s:
         raise SystemExit("FAIL social brand artwork missing: "+_brand_marker)
+if "gsf-final-harmony-v107" not in s:
+    raise SystemExit("FAIL final publish/hub harmony override missing")
+if "gsf_creator_hub_open_v107" not in s or ".gsf-creator-hub-overlay.is-open" not in s:
+    raise SystemExit("FAIL Creator Hub persistent-open protection missing")
+if "mailto:danilo222barbieri@gmail.com" not in s or "Segnala bug" not in s:
+    raise SystemExit("FAIL footer bug-report mail link missing")
+if "min-height:220px !important" not in s:
+    raise SystemExit("FAIL enlarged three-preview players missing")
+if "width:76px !important" not in s or "width:min(620px,100%)" not in s:
+    raise SystemExit("FAIL compact social destination layout missing")
 if "GSF_SOCIAL_META_READY" not in s:
     raise SystemExit("FAIL social metadata normalization missing")
 for _meta_marker in (
