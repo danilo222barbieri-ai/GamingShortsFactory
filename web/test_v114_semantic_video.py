@@ -121,3 +121,17 @@ for marker in (
     if marker not in semantic:
         raise SystemExit("V121 native Generate Content video marker missing: "+marker)
 print("V121 native video Generate Content + long agentic split: PASS")
+
+for marker in (
+    "types.GenerateContentConfig(",
+    'response_mime_type="application/json"',
+    "response_json_schema=_schema(max_events)",
+):
+    if marker not in semantic:
+        raise SystemExit("V122 Generate Content config marker missing: "+marker)
+generate_start=semantic.find("def _generate_content_semantic(")
+generate_end=semantic.find("def normalize_semantic_events",generate_start)
+generate_block=semantic[generate_start:generate_end]
+if '"response_format":' in generate_block:
+    raise SystemExit("V122 Generate Content helper must not use Interactions response_format")
+print("V122 Generate Content structured config: PASS")
