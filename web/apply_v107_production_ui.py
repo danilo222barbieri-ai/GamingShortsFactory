@@ -3284,10 +3284,6 @@ def crea_anteprima(input_path,output_path,start,duration,*args,**kwargs):
         _ls[_at:_at]=["\n"+_cache+"\n"];s="".join(_ls);print("V107 preview cache wrapper: PASS")
 except Exception as _e:print("V107 preview cache wrapper warning:",repr(str(_e)),flush=True)
 
-compile(s,str(out),'exec')
-out.write_text(s,encoding='utf-8')
-print('V107 production UI applied:',out)
-
 # 2026-09-30 social publish polish: real brand tiles + complete metadata contract.
 _gsf_social_meta_anchor='''                        _edited_pack = _gsf_social_pack_for_upload(
                             _base_pack,
@@ -3450,5 +3446,8 @@ st.markdown("""
 '''
 s=s.rstrip()+"\\n\\n"+_social_brand_tiles_v107.lstrip()
 
+compile(s,str(out),'exec')
+out.write_text(s,encoding='utf-8')
+print('V107 production UI applied:',out)
 
 # V107 production UI: Editor 2027 + approved milestone guides
