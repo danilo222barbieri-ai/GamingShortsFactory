@@ -1317,11 +1317,6 @@ div[data-testid="column"]:has(.st-key-download_final_v54_fallback),
   display:none !important;
 }
 @media(max-width:600px){
-  .st-key-gsf-major-publish-download button,
-  [class*="st-key-gsf-major-publish-download"] button{
-    min-height:52px !important;
-    font-size:13px !important;
-  }
   div[data-testid="stHorizontalBlock"]:has(.st-key-v69_social_facebook){
     display:grid !important;
     grid-template-columns:repeat(2,minmax(0,1fr)) !important;
