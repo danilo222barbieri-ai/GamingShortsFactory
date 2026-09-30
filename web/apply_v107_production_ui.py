@@ -1085,7 +1085,7 @@ _gsf_social_selected_anchor='''                _selected_social = st.session_sta
 '''
 _gsf_social_selected_new='''                with st.container(key="gsf-major-publish-download"):
                     st.button("PUBBLICA O SCARICA",use_container_width=True,key="gsf_publish_download_display")
-                st.caption("Short finale pronto")
+                st.markdown('<div class="gsf-final-ready">Short finale pronto</div>',unsafe_allow_html=True)
                 _selected_social = st.session_state.get("social_selected_v59")
                 _social_columns = st.columns(4, gap="small")
 '''
@@ -1145,6 +1145,13 @@ s="".join(_gsf_pub_lines)
 _final_publish_v4 = r'''
 st.markdown("""
 <style id="gsf-v107-final-publish-v4">
+.gsf-final-ready{
+  margin:0 auto 10px;
+  text-align:center;
+  color:#658091;
+  font-size:11px;
+  font-weight:750;
+}
 .st-key-gsf-major-publish-download button,
 [class*="st-key-gsf-major-publish-download"] button{
   min-height:56px !important;
