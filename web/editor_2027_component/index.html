@@ -744,6 +744,7 @@
    eventMap=Array.isArray(args.event_map)?args.event_map.slice(0,18):[];
    visionProfile=String(args.vision_profile||'Auto');
    visionZones=Array.isArray(args.vision_zones)?args.vision_zones.slice(0,4):[];
+   duration=Math.max(.5,Math.min(60,Number(args.event_duration)||duration));
    if(args.initial_state && typeof args.initial_state==="object"){
      state=Object.assign({},defaults,args.initial_state);
      if(!Object.prototype.hasOwnProperty.call(args.initial_state,'captionMode')){
@@ -768,6 +769,7 @@
      video.preload='auto';
      video.load();
    }
+   renderEventMap();
    setFrameHeight(hostHeight);
  }
  window.addEventListener("message",(event)=>{
