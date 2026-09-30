@@ -21,6 +21,11 @@ from gsf_perf import perf_event
 from guardian_v113 import inspect_and_repair_local as _guardian_local, source_restore_plan as _guardian_source_plan
 from quality_control_v124 import inspect_final_video as _quality_inspect
 from guardian_intelligence_v124 import diagnose as _guardian_diagnose
+from feedback_learning_v127 import (
+    load_model as _learning_load_model,
+    save_model as _learning_save_model,
+    update_model as _learning_update_model,
+)
 
 try:
     from pywebpush import webpush, WebPushException
@@ -43,6 +48,8 @@ _STATE_LOCKS_GUARD=threading.Lock()
 _QUALITY_CACHE={}
 _QUALITY_LOCK=threading.Lock()
 _AI_FEEDBACK_LOCK=threading.Lock()
+_AI_LEARNING_PATH=ROOT/"ai_learning_v127.json"
+_AI_LEARNING_BUCKET_KEY="ai-feedback/global/model.json"
 
 def _env_first(*names,default=""):
     for name in names:
@@ -2389,6 +2396,42 @@ def _instagram_oauth_callback(handler,query):
         _html(handler,500,_social_page(sid,"Collegamento Instagram fallito: "+str(exc)[:220]))
 
 
+def _ai_learning_restore():
+    if _AI_LEARNING_PATH.is_file() or not _bucket_enabled():
+        return _learning_load_model(_AI_LEARNING_PATH)
+    try:
+        obj=_s3().get_object(Bucket=S3_BUCKET,Key=_AI_LEARNING_BUCKET_KEY)
+        raw=obj["Body"].read()
+        payload=json.loads(raw.decode("utf-8"))
+        if isinstance(payload,dict):
+            _learning_save_model(_AI_LEARNING_PATH,payload)
+            print(
+                "GSF_V127_LEARNING_RESTORED",
+                "feedback="+str(int(payload.get("total_feedback",0) or 0)),
+                flush=True,
+            )
+            return payload
+    except Exception:
+        pass
+    return _learning_load_model(_AI_LEARNING_PATH)
+
+def _ai_learning_update(row):
+    model=_learning_load_model(_AI_LEARNING_PATH)
+    model=_learning_update_model(model,row)
+    _learning_save_model(_AI_LEARNING_PATH,model)
+    if _bucket_enabled():
+        try:
+            _s3().put_object(
+                Bucket=S3_BUCKET,
+                Key=_AI_LEARNING_BUCKET_KEY,
+                Body=json.dumps(model,ensure_ascii=False,separators=(",",":")).encode("utf-8"),
+                ContentType="application/json",
+                CacheControl="no-store",
+            )
+        except Exception as exc:
+            print("GSF_V127_LEARNING_BUCKET_WARN",repr(str(exc))[:180],flush=True)
+    return model
+
 def _ai_feedback_store(sid,event):
     sid=_safe_id(sid)
     if not sid or not isinstance(event,dict):
@@ -2431,6 +2474,17 @@ def _ai_feedback_store(sid,event):
                 )
             except Exception as exc:
                 print("GSF_V124_FEEDBACK_BUCKET_WARN",sid,repr(str(exc))[:180],flush=True)
+        try:
+            model=_ai_learning_update(row)
+            print(
+                "GSF_V127_LEARNING",
+                "feedback="+str(int(model.get("total_feedback",0) or 0)),
+                "event="+str(row.get("event") or ""),
+                "action="+str(row.get("action") or ""),
+                flush=True,
+            )
+        except Exception as exc:
+            print("GSF_V127_LEARNING_WARN",repr(str(exc))[:180],flush=True)
     print(
         "GSF_V124_FEEDBACK",
         sid,
@@ -3282,6 +3336,7 @@ class Handler(BaseHTTPRequestHandler):
 if __name__=="__main__":
     ROOT.mkdir(parents=True,exist_ok=True)
     _ensure_bucket_cors()
+    _ai_learning_restore()
     server=ThreadingHTTPServer(("127.0.0.1",PORT),Handler)
     print(
         f"GSF direct upload server listening on 127.0.0.1:{PORT} "
