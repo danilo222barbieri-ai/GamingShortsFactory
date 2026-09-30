@@ -1207,7 +1207,7 @@ for _old_success in (
     if _old_success in s:
         s=s.replace(
             _old_success,
-            'st.markdown(\'<div class="gsf-final-status">✅ Short pronto</div>\',unsafe_allow_html=True)',
+            'st.markdown(\'<div class="gsf-final-status"><span class="gsf-hub-state"><i></i>SHORT PRONTO</span><span class="gsf-hub-kicker">SHARE HUB</span></div>\',unsafe_allow_html=True)',
             1,
         )
         break
@@ -1405,6 +1405,219 @@ div[data-testid="column"]:has(.st-key-download_final_v54_fallback),
 """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _final_publish_v4.lstrip()
+
+_share_hub_glass = r'''
+st.markdown("""
+<style id="gsf-share-hub-glass">
+@keyframes gsfHubIn{
+  from{opacity:0;transform:translateY(8px) scale(.988)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.gsf-final-status{
+  width:max-content !important;
+  max-width:100% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:16px !important;
+  margin:4px 0 10px !important;
+  padding:8px 12px !important;
+  border:1px solid rgba(181,216,235,.28) !important;
+  border-radius:999px !important;
+  background:linear-gradient(145deg,rgba(29,44,58,.70),rgba(52,66,83,.50)) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(1.2) !important;
+  backdrop-filter:blur(18px) saturate(1.2) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 10px 24px rgba(30,54,72,.12) !important;
+  color:#E9F6FC !important;
+  animation:gsfHubIn .28s ease-out both;
+}
+.gsf-hub-state{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.11em;
+  color:#EAF9F3 !important;
+}
+.gsf-hub-state i{
+  width:7px;
+  height:7px;
+  display:block;
+  border-radius:50%;
+  background:#62D6B2;
+  box-shadow:0 0 12px rgba(98,214,178,.85);
+}
+.gsf-hub-kicker{
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.16em;
+  color:#8FDDF0 !important;
+  opacity:.94;
+}
+div[data-testid="stHorizontalBlock"]:has(.st-key-v69_social_facebook){
+  position:relative !important;
+  margin:2px 0 10px !important;
+  padding:12px !important;
+  border:1px solid rgba(181,216,235,.22) !important;
+  border-radius:26px !important;
+  background:
+    radial-gradient(circle at 18% 0%,rgba(89,207,238,.14),transparent 34%),
+    radial-gradient(circle at 84% 100%,rgba(138,127,232,.15),transparent 38%),
+    linear-gradient(145deg,rgba(25,39,53,.78),rgba(48,61,79,.60)) !important;
+  -webkit-backdrop-filter:blur(24px) saturate(1.25) !important;
+  backdrop-filter:blur(24px) saturate(1.25) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.11),
+    0 18px 42px rgba(20,45,64,.16) !important;
+  overflow:hidden !important;
+  animation:gsfHubIn .30s ease-out both;
+}
+.st-key-v69_social_facebook button,
+.st-key-v69_social_instagram button,
+.st-key-v69_social_youtube button,
+.st-key-v69_social_tiktok button{
+  min-height:74px !important;
+  border-radius:18px !important;
+  border:1px solid rgba(219,238,248,.14) !important;
+  background:linear-gradient(145deg,rgba(255,255,255,.105),rgba(255,255,255,.045)) !important;
+  color:#EDF7FC !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 8px 20px rgba(6,20,30,.12) !important;
+  -webkit-backdrop-filter:blur(12px) !important;
+  backdrop-filter:blur(12px) !important;
+  transition:transform .16s ease,border-color .16s ease,background .16s ease,box-shadow .16s ease !important;
+}
+.st-key-v69_social_facebook button:hover,
+.st-key-v69_social_instagram button:hover,
+.st-key-v69_social_youtube button:hover,
+.st-key-v69_social_tiktok button:hover{
+  transform:translateY(-2px) !important;
+  border-color:rgba(120,219,244,.36) !important;
+  background:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.07)) !important;
+}
+.st-key-v69_social_facebook [data-testid="stBaseButton-primary"],
+.st-key-v69_social_instagram [data-testid="stBaseButton-primary"],
+.st-key-v69_social_youtube [data-testid="stBaseButton-primary"],
+.st-key-v69_social_tiktok [data-testid="stBaseButton-primary"],
+.st-key-v69_social_facebook button[kind="primary"],
+.st-key-v69_social_instagram button[kind="primary"],
+.st-key-v69_social_youtube button[kind="primary"],
+.st-key-v69_social_tiktok button[kind="primary"]{
+  border-color:rgba(105,223,255,.66) !important;
+  background:
+    linear-gradient(145deg,rgba(89,207,238,.24),rgba(138,127,232,.22)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.13),
+    0 0 0 1px rgba(105,223,255,.10),
+    0 12px 28px rgba(89,207,238,.13) !important;
+}
+.st-key-v69_social_facebook button p,
+.st-key-v69_social_instagram button p,
+.st-key-v69_social_youtube button p,
+.st-key-v69_social_tiktok button p,
+.st-key-v69_social_facebook button span,
+.st-key-v69_social_instagram button span,
+.st-key-v69_social_youtube button span,
+.st-key-v69_social_tiktok button span{
+  color:#EEF8FC !important;
+  opacity:1 !important;
+  font-size:10px !important;
+  font-weight:850 !important;
+  letter-spacing:.025em !important;
+}
+.st-key-v69_social_facebook button:before,
+.st-key-v69_social_instagram button:before,
+.st-key-v69_social_youtube button:before,
+.st-key-v69_social_tiktok button:before{
+  width:42px !important;
+  height:42px !important;
+  min-width:42px !important;
+  min-height:42px !important;
+  flex:0 0 42px !important;
+  border:1px solid rgba(255,255,255,.18) !important;
+  box-shadow:0 8px 18px rgba(4,16,25,.26),inset 0 1px 0 rgba(255,255,255,.26) !important;
+}
+[class*="st-key-v1055_social_composer_"]{
+  margin:8px 0 12px !important;
+  padding:16px !important;
+  border:1px solid rgba(181,216,235,.20) !important;
+  border-radius:24px !important;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(138,127,232,.12),transparent 34%),
+    linear-gradient(145deg,rgba(25,39,53,.82),rgba(47,61,78,.66)) !important;
+  -webkit-backdrop-filter:blur(24px) saturate(1.20) !important;
+  backdrop-filter:blur(24px) saturate(1.20) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 18px 38px rgba(20,45,64,.14) !important;
+  animation:gsfHubIn .24s ease-out both;
+}
+[class*="st-key-v1055_social_composer_"] label,
+[class*="st-key-v1055_social_composer_"] p,
+[class*="st-key-v1055_social_composer_"] span,
+[class*="st-key-v1055_social_composer_"] .v1055-social-head{
+  color:#EAF5FA !important;
+}
+[class*="st-key-v1055_social_composer_"] input,
+[class*="st-key-v1055_social_composer_"] textarea{
+  border:1px solid rgba(203,229,242,.16) !important;
+  background:rgba(6,16,25,.32) !important;
+  color:#F2FAFD !important;
+  -webkit-backdrop-filter:blur(10px) !important;
+  backdrop-filter:blur(10px) !important;
+}
+[class*="st-key-v1055_social_composer_"] input::placeholder,
+[class*="st-key-v1055_social_composer_"] textarea::placeholder{
+  color:#95A9B7 !important;
+  opacity:.95 !important;
+}
+.st-key-gsf-final-download-after-social,
+[class*="st-key-gsf-final-download-after-social"]{
+  margin-top:10px !important;
+  animation:gsfHubIn .30s ease-out both;
+}
+.st-key-gsf-final-download-after-social button,
+[class*="st-key-gsf-final-download-after-social"] button{
+  min-height:46px !important;
+  border-radius:16px !important;
+  border:1px solid rgba(105,223,255,.34) !important;
+  background:linear-gradient(135deg,rgba(89,207,238,.94),rgba(76,161,222,.94)) !important;
+  color:#102E42 !important;
+  box-shadow:0 10px 24px rgba(66,166,215,.20),inset 0 1px 0 rgba(255,255,255,.42) !important;
+}
+@media(max-width:600px){
+  .gsf-final-status{padding:7px 10px !important;gap:12px !important}
+  .gsf-hub-state{font-size:9px}
+  .gsf-hub-kicker{font-size:7px}
+  div[data-testid="stHorizontalBlock"]:has(.st-key-v69_social_facebook){
+    padding:9px !important;
+    gap:8px !important;
+    border-radius:22px !important;
+  }
+  .st-key-v69_social_facebook button,
+  .st-key-v69_social_instagram button,
+  .st-key-v69_social_youtube button,
+  .st-key-v69_social_tiktok button{
+    min-height:68px !important;
+    border-radius:16px !important;
+  }
+  .st-key-v69_social_facebook button:before,
+  .st-key-v69_social_instagram button:before,
+  .st-key-v69_social_youtube button:before,
+  .st-key-v69_social_tiktok button:before{
+    width:38px !important;
+    height:38px !important;
+    min-width:38px !important;
+    min-height:38px !important;
+    flex-basis:38px !important;
+  }
+  [class*="st-key-v1055_social_composer_"]{
+    padding:13px !important;
+    border-radius:20px !important;
+  }
+}
+</style>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _share_hub_glass.lstrip()
 
 # Web/mobile spacing hygiene and removal of leaked literal newline markers.
 _layout_hygiene = r'''

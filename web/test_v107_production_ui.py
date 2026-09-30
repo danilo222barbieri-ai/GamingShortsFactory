@@ -74,6 +74,10 @@ for _icon_marker in ('content:"f"','content:"◎"','content:"▶"','content:"♪
         raise SystemExit("FAIL high-contrast social icon missing: "+_icon_marker)
 if "gsf-share-cta-exact-create-short" not in s:
     raise SystemExit("FAIL CONDIVIDI O SCARICA does not inherit exact CREA SHORT CTA skin")
+if "gsf-share-hub-glass" not in s or "gsfHubIn" not in s:
+    raise SystemExit("FAIL futuristic glass Share Hub skin missing")
+if "SHARE HUB" not in s or "gsf-hub-state" not in s:
+    raise SystemExit("FAIL Share Hub notification state missing")
 if "background:linear-gradient(135deg,#78D7F3 0%,#50B9E9 100%)" not in s:
     raise SystemExit("FAIL final SCARICA is not blue")
 if "st-key-v1055_ad_manual_after_editor" not in s:
