@@ -16,7 +16,9 @@ creative=Path("/app/web/creative_render_v126.py").read_text(encoding="utf-8")
 
 for marker in (
     "def _gsf_v126_hook_for_start",
-    "_gsf_v126_hook_for_start(float(_card",
+    "_v126_director_hook=_gsf_v126_hook_for_start(",
+    'str(_recipe.get("kind") or "")=="auto"',
+    "if not _v126_existing_hook:",
     "GSF_V126_SOUND_APPLIED",
     "creative_render_v126",
     "Gaming Shorts Factory · V126 Creative Director",
