@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import base64
 import json
 import os
+import subprocess
 import time
 from pathlib import Path
 
@@ -45,6 +47,95 @@ def _interaction_status(interaction):
     if "." in text:
         text=text.rsplit(".",1)[-1]
     return text
+
+
+def choose_processing_mode(duration_seconds):
+    duration=max(0.0,_num(duration_seconds))
+    return "static" if 0.0<duration<300.0 else "agentic"
+
+
+def choose_input_method(size_bytes):
+    inline_limit=max(
+        1024*1024,
+        int(os.environ.get("GSF_SEMANTIC_INLINE_MAX_BYTES",str(48*1024*1024)) or 48*1024*1024),
+    )
+    return "inline" if max(0,int(size_bytes or 0))<=inline_limit else "files"
+
+
+def _probe_duration_seconds(path):
+    try:
+        proc=subprocess.run(
+            [
+                "/usr/bin/ffprobe","-v","error",
+                "-show_entries","format=duration",
+                "-of","default=noprint_wrappers=1:nokey=1",
+                str(path),
+            ],
+            capture_output=True,text=True,timeout=20,check=False,
+        )
+        if proc.returncode==0:
+            return max(0.0,float((proc.stdout or "0").strip() or 0.0))
+    except Exception:
+        pass
+    return 0.0
+
+
+def _video_mime(path):
+    ext=Path(path).suffix.lower()
+    return {
+        ".mp4":"video/mp4",
+        ".mov":"video/quicktime",
+        ".m4v":"video/x-m4v",
+        ".webm":"video/webm",
+        ".mkv":"video/x-matroska",
+        ".avi":"video/x-msvideo",
+        ".mpeg":"video/mpeg",
+        ".mpg":"video/mpeg",
+    }.get(ext,"video/mp4")
+
+
+def _inline_video_content(source,processing_mode):
+    encoded=base64.b64encode(Path(source).read_bytes()).decode("ascii")
+    return {
+        "type":"video",
+        "data":encoded,
+        "mime_type":_video_mime(source),
+        "processing":processing_mode,
+    }
+
+
+def _stream_semantic_interaction(client,model,video_content,prompt,max_events,semantic_timeout):
+    stream=client.interactions.create(
+        model=model,
+        input=[
+            video_content,
+            {"type":"text","text":prompt},
+        ],
+        response_format={
+            "type":"text",
+            "mime_type":"application/json",
+            "schema":_schema(max_events),
+        },
+        stream=True,
+        timeout=semantic_timeout,
+    )
+    json_parts=[]
+    completed=False
+    for event in stream:
+        event_type=str(getattr(event,"event_type","") or "")
+        if event_type=="step.delta" and getattr(event,"delta",None) is not None:
+            if getattr(event.delta,"type",None)=="text":
+                chunk=getattr(event.delta,"text",None)
+                if chunk:
+                    json_parts.append(str(chunk))
+        elif event_type=="interaction.completed":
+            completed=True
+        elif event_type in ("interaction.failed","interaction.cancelled","error"):
+            detail=str(getattr(event,"error",None) or event_type)
+            raise RuntimeError("Gemini semantic stream "+detail[:180])
+    if not completed and not json_parts:
+        raise RuntimeError("Gemini semantic stream ended without output")
+    return json.loads("".join(json_parts) or "{}")
 
 
 def normalize_semantic_events(payload,max_events=12):
@@ -194,21 +285,33 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
 
     uploaded=None
     started=time.perf_counter()
+    processing_mode=choose_processing_mode(_probe_duration_seconds(source))
+    input_method=choose_input_method(source.stat().st_size)
     try:
         from google import genai
         client=genai.Client(api_key=key)
-        uploaded=client.files.upload(file=str(source))
-        deadline=time.time()+180
-        while time.time()<deadline:
-            uploaded=client.files.get(name=uploaded.name)
-            state=str(getattr(getattr(uploaded,"state",None),"name",getattr(uploaded,"state","")) or "")
-            if state=="ACTIVE":
-                break
-            if state=="FAILED":
-                raise RuntimeError("Gemini file processing failed")
-            time.sleep(2)
+        video_content=None
+        if input_method=="inline":
+            video_content=_inline_video_content(source,processing_mode)
         else:
-            raise TimeoutError("Gemini file processing timeout")
+            uploaded=client.files.upload(file=str(source))
+            deadline=time.time()+180
+            while time.time()<deadline:
+                uploaded=client.files.get(name=uploaded.name)
+                state=str(getattr(getattr(uploaded,"state",None),"name",getattr(uploaded,"state","")) or "")
+                if state=="ACTIVE":
+                    break
+                if state=="FAILED":
+                    raise RuntimeError("Gemini file processing failed")
+                time.sleep(2)
+            else:
+                raise TimeoutError("Gemini file processing timeout")
+            video_content={
+                "type":"video",
+                "uri":uploaded.uri,
+                "mime_type":uploaded.mime_type,
+                "processing":processing_mode,
+            }
 
         prompt=(
             "Analyze this gameplay as a professional short-form gaming highlight editor. "
@@ -227,49 +330,43 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
         semantic_timeout=max(
             60.0,float(os.environ.get("GSF_SEMANTIC_TIMEOUT_SECONDS","420") or 420)
         )
-        stream=client.interactions.create(
-            model=model,
-            input=[
-                {"type":"video","uri":uploaded.uri,"mime_type":uploaded.mime_type,"processing":"agentic"},
-                {"type":"text","text":prompt},
-            ],
-            response_format={
-                "type":"text",
-                "mime_type":"application/json",
-                "schema":_schema(max_events),
-            },
-            stream=True,
-            timeout=semantic_timeout,
-        )
-        json_parts=[]
-        completed=False
-        for event in stream:
-            event_type=str(getattr(event,"event_type","") or "")
-            if event_type=="step.delta" and getattr(event,"delta",None) is not None:
-                if getattr(event.delta,"type",None)=="text":
-                    chunk=getattr(event.delta,"text",None)
-                    if chunk:
-                        json_parts.append(str(chunk))
-            elif event_type=="interaction.completed":
-                completed=True
-            elif event_type in ("interaction.failed","interaction.cancelled"):
-                detail=str(getattr(event,"error",None) or event_type)
-                raise RuntimeError("Gemini semantic stream "+detail[:180])
-        if not completed and not json_parts:
-            raise RuntimeError("Gemini semantic stream ended without output")
-        payload=json.loads("".join(json_parts) or "{}")
+        try:
+            payload=_stream_semantic_interaction(
+                client,model,video_content,prompt,max_events,semantic_timeout
+            )
+        except Exception as first_exc:
+            message=str(first_exc).lower()
+            can_retry_static=(
+                processing_mode=="agentic"
+                and ("invalid_request" in message or "invalid argument" in message)
+            )
+            if not can_retry_static:
+                raise
+            processing_mode="static"
+            if input_method=="inline":
+                video_content=_inline_video_content(source,processing_mode)
+            else:
+                video_content=dict(video_content or {})
+                video_content["processing"]=processing_mode
+            payload=_stream_semantic_interaction(
+                client,model,video_content,prompt,max_events,semantic_timeout
+            )
         events=normalize_semantic_events(payload,max_events=max_events)
         return {
             "enabled":True,
-            "provider":model+"-agentic-stream-v118",
+            "provider":model+"-"+processing_mode+"-"+input_method+"-stream-v119",
             "events":events,
+            "processing_mode":processing_mode,
+            "input_method":input_method,
             "elapsed_seconds":round(time.perf_counter()-started,3),
         }
     except Exception as exc:
         return {
             "enabled":True,
-            "provider":model+"-agentic-stream-v118",
+            "provider":model+"-"+processing_mode+"-"+input_method+"-stream-v119",
             "events":[],
+            "processing_mode":processing_mode,
+            "input_method":input_method,
             "error":str(exc)[:240],
             "elapsed_seconds":round(time.perf_counter()-started,3),
         }
