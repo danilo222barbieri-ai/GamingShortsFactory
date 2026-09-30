@@ -818,6 +818,33 @@ def _draft_save(sid,payload):
     draft_id=_safe_id(payload.get("id","")) or ("draft_"+uuid.uuid4().hex[:16])
     now=time.time()
     source_name=str(payload.get("source_name") or state.get("gsf_source_name") or "Gameplay")[:160]
+    source_ref={}
+    try:
+        marker=ROOT/"sessions"/sid/"media"/".direct_upload_ready.json"
+        if marker.is_file():
+            meta=json.loads(marker.read_text(encoding="utf-8"))
+            if isinstance(meta,dict):
+                source_ref={
+                    "name":str(meta.get("name") or source_name),
+                    "size":int(meta.get("size") or 0),
+                    "upload_id":str(meta.get("upload_id") or ""),
+                    "storage":str(meta.get("storage") or ""),
+                    "bucket_key":str(meta.get("bucket_key") or ""),
+                    "analysis_key":str(meta.get("analysis_key") or ""),
+                    "path":str(meta.get("path") or state.get("gsf_source_path") or ""),
+                }
+    except Exception:
+        source_ref={}
+    source_path=Path(str(state.get("gsf_source_path") or source_ref.get("path") or ""))
+    if source_path.is_file():
+        try:
+            linked=_draft_dir(sid)/(draft_id+"_source"+source_path.suffix.lower())
+            if not linked.exists():
+                os.link(source_path,linked)
+            source_ref["draft_path"]=str(linked)
+            source_ref.setdefault("path",str(source_path))
+        except Exception:
+            pass
     draft={
         "id":draft_id,
         "title":str(payload.get("title") or ("Bozza · "+source_name))[:180],
@@ -825,6 +852,7 @@ def _draft_save(sid,payload):
         "created_at":float(payload.get("created_at") or now),
         "updated_at":now,
         "state":state,
+        "source_ref":source_ref,
     }
     path=_draft_dir(sid)/(draft_id+".json")
     _write_json_atomic(path,draft)
@@ -891,10 +919,73 @@ def _draft_list(sid):
             pass
     return sorted(found.values(),key=lambda x:float(x.get("updated_at") or 0),reverse=True)[:20]
 
+def _draft_delete(sid,draft_id):
+    sid=_safe_id(sid); draft_id=_safe_id(draft_id)
+    if not sid or not draft_id:
+        return False
+    root=_draft_dir(sid)
+    try:
+        (root/(draft_id+".json")).unlink(missing_ok=True)
+        for p in root.glob(draft_id+"_source.*"):
+            p.unlink(missing_ok=True)
+    except Exception:
+        pass
+    if _bucket_enabled():
+        try:
+            _s3().delete_object(Bucket=S3_BUCKET,Key=_draft_key(sid,draft_id))
+        except Exception:
+            pass
+    return True
+
+def _draft_prepare_resume(sid,draft):
+    state=dict(draft.get("state") or {})
+    source_ref=dict(draft.get("source_ref") or {})
+    source_name=str(draft.get("source_name") or source_ref.get("name") or "Gameplay")
+    candidate=Path(str(source_ref.get("draft_path") or source_ref.get("path") or state.get("gsf_source_path") or ""))
+    if not candidate.is_file() and _bucket_enabled() and source_ref.get("bucket_key"):
+        try:
+            original_name,safe_stem,ext=_safe_filename(source_ref.get("name") or source_name)
+            upload_id=_safe_id(source_ref.get("upload_id","")) or uuid.uuid4().hex[:20]
+            _materialize_bucket_object(
+                sid,upload_id,str(source_ref.get("bucket_key") or ""),
+                original_name,safe_stem,ext,int(source_ref.get("size") or 0),
+                str(source_ref.get("analysis_key") or "")
+            )
+            marker=ROOT/"sessions"/sid/"media"/".direct_upload_ready.json"
+            if marker.is_file():
+                meta=json.loads(marker.read_text(encoding="utf-8"))
+                candidate=Path(str(meta.get("path") or ""))
+        except Exception as exc:
+            print("GSF_DRAFT_RESTORE_SOURCE_WARN",repr(str(exc)),flush=True)
+    if candidate.is_file():
+        state["gsf_source_path"]=str(candidate)
+        state["gsf_editor_source_path"]=str(candidate)
+        state["gsf_source_name"]=source_name
+        try:
+            marker=ROOT/"sessions"/sid/"media"/".direct_upload_ready.json"
+            current={}
+            if marker.is_file():
+                current=json.loads(marker.read_text(encoding="utf-8"))
+                if not isinstance(current,dict):
+                    current={}
+            current.update({
+                "path":str(candidate),"name":source_name,
+                "size":int(candidate.stat().st_size),
+                "upload_id":str(source_ref.get("upload_id") or current.get("upload_id") or "draft"),
+                "completed_at":time.time(),
+                "storage":str(source_ref.get("storage") or "draft"),
+                "bucket_key":str(source_ref.get("bucket_key") or ""),
+                "analysis_key":str(source_ref.get("analysis_key") or ""),
+            })
+            _write_json_atomic(marker,current)
+        except Exception:
+            pass
+    return state
+
 def _draft_cards_html(sid):
     drafts=_draft_list(sid)
     if not drafts:
-        return '<div class="draftEmpty">Nessuna bozza salvata. Usa <b>SALVA BOZZA</b> nell’app per ritrovarla qui.</div>'
+        return '<div class="draftEmpty">Nessuna bozza salvata.</div>'
     rows=[]
     for draft in drafts:
         did=_safe_id(draft.get("id",""))
@@ -905,7 +996,12 @@ def _draft_cards_html(sid):
         except Exception:
             updated=""
         href="/drafts/resume?id="+urllib.parse.quote(did,safe="")
-        rows.append('<div class="draftCard"><div class="draftInfo"><strong>'+title+'</strong><span>'+source+' · '+html.escape(updated)+'</span></div><a class="draftOpen" href="'+href+'">RIPRENDI</a></div>')
+        delete_href="/drafts/delete?id="+urllib.parse.quote(did,safe="")
+        rows.append(
+            '<div class="draftCard"><div class="draftInfo"><strong>'+title+'</strong><span>'+source+' · '+html.escape(updated)+
+            '</span></div><div class="draftActions"><a class="draftOpen" href="'+href+'">RIPRENDI</a>'+
+            '<a class="draftDelete" href="'+delete_href+'" onclick="return confirm(\'Eliminare questa bozza?\')">ELIMINA</a></div></div>'
+        )
     return '<div class="draftGrid">'+"".join(rows)+'</div>'
 
 def _creator_login(sid,provider,provider_uid,display_name="",email="",avatar=""):
@@ -1862,14 +1958,22 @@ class Handler(BaseHTTPRequestHandler):
             sid=_social_sid(self)
             draft_id=_safe_id((parse_qs(path.query).get("id") or [""])[0])
             draft=_draft_load(sid,draft_id)
-            state=draft.get("state") if isinstance(draft,dict) else None
-            if not sid or not isinstance(state,dict):
+            if not sid or not isinstance(draft,dict) or not draft:
                 _html(self,404,"Bozza non trovata.")
                 return
+            state=_draft_prepare_resume(sid,draft)
             root=ROOT/"sessions"/sid
             root.mkdir(parents=True,exist_ok=True)
             _write_json_atomic(root/"session_state.json",state)
-            _redirect(self,"/")
+            _write_json_atomic(root/"draft_resume.json",{"draft_id":draft_id,"created_at":time.time()})
+            _redirect(self,"/?draft_resume="+urllib.parse.quote(draft_id,safe=""))
+            return
+        if clean=="/drafts/delete":
+            sid=_social_sid(self)
+            draft_id=_safe_id((parse_qs(path.query).get("id") or [""])[0])
+            if sid and draft_id:
+                _draft_delete(sid,draft_id)
+            _redirect(self,"/account")
             return
         if clean=="/account":
             sid=_social_sid(self)

@@ -121,8 +121,8 @@ if "GSF_FINAL_STABLE_READY" not in s or "gaming_short_finale_share.mp4" not in s
 
 if "render_job.json" not in s or "GSF_FINAL_JOB_READY_WARN" not in s:
     raise SystemExit("FAIL durable final render state missing")
-if "SALVA BOZZA" not in s or "/drafts/save" not in s:
-    raise SystemExit("FAIL save draft UI missing")
+if "SALVA BOZZA DELLO SHORT INTERROTTO" not in s or "/drafts/save" not in s:
+    raise SystemExit("FAIL engine-change draft UI missing")
 
 if '"gsf_save_draft_v107",' not in s or '"gsf_save_draft_before_engine_change_v107",' not in s:
     raise SystemExit("FAIL transient draft button keys are not excluded from persistent state")
@@ -130,3 +130,12 @@ if "Short in creazione. Puoi continuare a usare il sito" not in s:
     raise SystemExit("FAIL engine-change render warning missing")
 if "SALVA BOZZA PRIMA DI CAMBIARE MOTORE" not in s:
     raise SystemExit("FAIL engine-change draft CTA missing")
+
+if "GSF_DRAFT_RESUME_WARN" not in s or "Bozza ripristinata." not in s:
+    raise SystemExit("FAIL draft resume hydration missing")
+if "Hai cambiato motore: la creazione dello Short è stata interrotta" not in s:
+    raise SystemExit("FAIL engine-change-only warning missing")
+if 'with st.container(key="gsf-save-draft")' in s:
+    raise SystemExit("FAIL draft save is still always visible")
+if '_job["status"]="stale"' not in s or '"status":"failed"' not in s:
+    raise SystemExit("FAIL stale/failed render release missing")

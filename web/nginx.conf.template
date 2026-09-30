@@ -181,6 +181,14 @@ server {
     }
 
     # Creator Hub: account/profile page handled by the lightweight companion server.
+    location = /drafts/delete {
+        add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
+        proxy_pass http://127.0.0.1:8502/drafts/delete$is_args$args;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+    }
+
     location = /drafts/resume {
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502/drafts/resume$is_args$args;
