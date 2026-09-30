@@ -1082,6 +1082,75 @@ st.markdown("""
   width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;
   stroke-linecap:round;stroke-linejoin:round;
 }
+.gsf-creator-hub-overlay{
+  position:fixed;
+  inset:0;
+  z-index:2147483200;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:opacity .18s ease,visibility .18s ease;
+}
+.gsf-creator-hub-overlay:target{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+.gsf-creator-hub-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(23,48,70,.34);
+  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(10px);
+}
+.gsf-creator-hub-shell{
+  position:relative;
+  z-index:1;
+  width:min(920px,calc(100vw - 28px));
+  height:min(820px,calc(100vh - 34px));
+  border:1px solid rgba(216,232,243,.95);
+  border-radius:24px;
+  overflow:hidden;
+  background:#f7fbff;
+  box-shadow:0 28px 80px rgba(28,60,83,.28);
+}
+.gsf-creator-hub-head{
+  height:48px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 12px 0 16px;
+  background:rgba(255,255,255,.96);
+  border-bottom:1px solid #dce9f2;
+  color:#52758c;
+  font-size:11px;
+  font-weight:950;
+  letter-spacing:.055em;
+}
+.gsf-creator-hub-close{
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  border-radius:11px;
+  border:1px solid #d9e8f1;
+  background:#f7fbfe;
+  color:#55758a !important;
+  text-decoration:none !important;
+  font-size:21px;
+  line-height:1;
+}
+.gsf-creator-hub-frame{
+  display:block;
+  width:100%;
+  height:calc(100% - 48px);
+  border:0;
+  background:#f7fbff;
+}
 @media(max-width:600px){
   .gsf-account-fab{
     top:auto;
@@ -1098,20 +1167,32 @@ st.markdown("""
     box-shadow:0 10px 26px rgba(52,91,122,.22);
   }
   .gsf-account-fab svg{width:19px;height:19px}
-  .gsf-account-fab span{
-    display:inline;
-    font-size:10px;
-    letter-spacing:.035em;
+  .gsf-account-fab span{display:inline;font-size:10px;letter-spacing:.035em}
+  .gsf-creator-hub-overlay{padding:7px}
+  .gsf-creator-hub-shell{
+    width:calc(100vw - 14px);
+    height:calc(100vh - 14px);
+    border-radius:20px;
   }
 }
 </style>
-<a class="gsf-account-fab" href="/account" target="gsf_creator_hub" aria-label="Apri Creator Hub">
+<a class="gsf-account-fab" href="#gsf-creator-hub-panel" aria-label="Apri Creator Hub">
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <circle cx="12" cy="8" r="4"></circle>
     <path d="M4.5 20c.9-4 3.4-6 7.5-6s6.6 2 7.5 6"></path>
   </svg>
   <span>CREATOR HUB</span>
 </a>
+<div id="gsf-creator-hub-panel" class="gsf-creator-hub-overlay">
+  <a class="gsf-creator-hub-backdrop" href="#" aria-label="Chiudi Creator Hub"></a>
+  <section class="gsf-creator-hub-shell" role="dialog" aria-modal="true" aria-label="Creator Hub">
+    <div class="gsf-creator-hub-head">
+      <span>CREATOR HUB</span>
+      <a class="gsf-creator-hub-close" href="#" aria-label="Chiudi">×</a>
+    </div>
+    <iframe class="gsf-creator-hub-frame" src="/account?embedded=1" loading="lazy" title="Creator Hub"></iframe>
+  </section>
+</div>
 """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _creator_hub_entry.lstrip()
@@ -2625,13 +2706,29 @@ _gsf_new_manual_body = [
     _gsf_indent + '        editor_2027_render_kwargs as _gsf_editor_2027_render_kwargs,\n',
     _gsf_indent + '    )\n',
     _gsf_indent + '    _gsf_manual_path=str(st.session_state.get("gsf_editor_source_path") or st.session_state.get("gsf_source_path") or "")\n',
+    _gsf_indent + '    if _gsf_manual_path and not _gsf_manual_os.path.isfile(_gsf_manual_path) and GSF_WEB_MODE:\n',
+    _gsf_indent + '        try:\n',
+    _gsf_indent + '            import urllib.parse as _gsf_restore_parse\n',
+    _gsf_indent + '            import urllib.request as _gsf_restore_request\n',
+    _gsf_indent + '            _gsf_restore_url="http://127.0.0.1:8502/source/restore?"+_gsf_restore_parse.urlencode({"path":_gsf_manual_path})\n',
+    _gsf_indent + '            _gsf_restore_req=_gsf_restore_request.Request(_gsf_restore_url,headers={"X-GSF-Session-ID":str(GSF_SESSION_ID)})\n',
+    _gsf_indent + '            with st.spinner("Recupero Game Editor..."):\n',
+    _gsf_indent + '                _gsf_restore_payload=__import__("json").loads(_gsf_restore_request.urlopen(_gsf_restore_req,timeout=180).read().decode("utf-8"))\n',
+    _gsf_indent + '            _gsf_restored_path=str(_gsf_restore_payload.get("path") or "") if isinstance(_gsf_restore_payload,dict) else ""\n',
+    _gsf_indent + '            if _gsf_restored_path and _gsf_manual_os.path.isfile(_gsf_restored_path):\n',
+    _gsf_indent + '                _gsf_manual_path=_gsf_restored_path\n',
+    _gsf_indent + '                st.session_state["gsf_source_path"]=_gsf_manual_path\n',
+    _gsf_indent + '                st.session_state["gsf_editor_source_path"]=_gsf_manual_path\n',
+    _gsf_indent + '                print("GSF_MANUAL_EDITOR_SOURCE_RESTORED",_gsf_manual_path,flush=True)\n',
+    _gsf_indent + '        except Exception as _gsf_restore_exc:\n',
+    _gsf_indent + '            print("GSF_MANUAL_EDITOR_SOURCE_RESTORE_WARN",repr(str(_gsf_restore_exc)),flush=True)\n',
     _gsf_indent + '    if (not _gsf_manual_path or not _gsf_manual_os.path.isfile(_gsf_manual_path)) and not GSF_WEB_MODE:\n',
     _gsf_indent + '        try:\n',
     _gsf_indent + '            _gsf_manual_bytes=video.getvalue() if hasattr(video,"getvalue") else b""\n',
     _gsf_indent + '            _gsf_manual_path=_gsf_bytes_to_preview(_gsf_manual_bytes,"manual_scene_source") if _gsf_manual_bytes else ""\n',
     _gsf_indent + '        except Exception:\n',
     _gsf_indent + '            _gsf_manual_path=""\n',
-    _gsf_indent + '    if _gsf_manual_path:\n',
+    _gsf_indent + '    if _gsf_manual_path and _gsf_manual_os.path.isfile(_gsf_manual_path):\n',
     _gsf_indent + '        print("GSF_MANUAL_EDITOR_OPEN",_gsf_manual_path,"exists="+str(_gsf_manual_os.path.isfile(_gsf_manual_path)),flush=True)\n',
     _gsf_indent + '        st.session_state["gsf_manual_editor_open"]=True\n',
     _gsf_indent + '        # Persist the exact Editor source across component/button reruns.\n',
@@ -2696,15 +2793,8 @@ _gsf_new_manual_body = [
     _gsf_indent + '        st.warning("Video non disponibile nel Game Editor.")\n',
     _gsf_indent + 'except Exception as _gsf_manual_editor_exc:\n',
     _gsf_indent + '    print("GSF_MANUAL_EDITOR_ERROR",repr(str(_gsf_manual_editor_exc)),flush=True)\n',
-    _gsf_indent + '    _rk="gsf_manual_editor_recover_once"\n',
-    _gsf_indent + '    if not st.session_state.get(_rk,False):\n',
-    _gsf_indent + '        st.session_state[_rk]=True\n',
-    _gsf_indent + '        _src_retry=str(st.session_state.get("gsf_source_path") or "")\n',
-    _gsf_indent + '        if _src_retry: st.session_state["gsf_editor_source_path"]=_src_retry\n',
-    _gsf_indent + '        st.rerun()\n',
-    _gsf_indent + '    else:\n',
-    _gsf_indent + '        st.session_state[_rk]=False\n',
-    _gsf_indent + '        st.info("Game Editor in caricamento…")\n',
+    _gsf_indent + '    st.session_state["gsf_manual_editor_recover_once"]=False\n',
+    _gsf_indent + '    st.warning("Game Editor non disponibile: recupero del video non riuscito.")\n',
     _gsf_indent + 'try:\n',
     _gsf_indent + '    with st.container(key="v1055_ad_manual_after_editor"):\n',
     _gsf_indent + '        st.markdown(_gsf_v1057_ad_markup(3),unsafe_allow_html=True)\n',
