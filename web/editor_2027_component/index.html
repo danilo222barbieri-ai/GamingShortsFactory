@@ -96,8 +96,15 @@
 #ng27 .visionScanStatus{position:absolute;top:14px;left:50%;transform:translateX(-50%);padding:4px 7px;border-radius:7px;background:rgba(6,20,29,.72);border:1px solid rgba(124,225,249,.25);color:#d6f7ff;font-size:6.5px;font-weight:950;letter-spacing:.10em;white-space:nowrap;backdrop-filter:blur(8px)}
 #ng27 .visionTags{position:absolute;inset:0}
 #ng27 .visionTag{position:absolute;transform:translate(-50%,-50%) scale(.94);padding:4px 6px;border-radius:7px;border:1px solid rgba(110,232,199,.44);background:rgba(8,25,32,.66);color:#bff7e7;font-size:6px;font-weight:950;letter-spacing:.075em;white-space:nowrap;opacity:0}
+#ng27 .visionBox{position:absolute;border:1px solid rgba(110,232,199,.45);border-radius:9px;background:rgba(64,211,179,.025);box-shadow:0 0 0 1px rgba(7,24,31,.10) inset,0 0 14px rgba(105,223,255,.06);opacity:0;transform:scale(.97);transform-origin:center;transition:opacity .18s ease,transform .18s ease}
+#ng27 .visionBox.action{border-color:rgba(105,223,255,.58);background:rgba(105,223,255,.025)}
+#ng27 .visionBox.event{border-color:rgba(255,179,205,.52);background:rgba(255,179,205,.025)}
+#ng27 .visionBoxLabel{position:absolute;left:5px;top:5px;padding:3px 5px;border-radius:6px;background:rgba(7,23,31,.76);color:#c9f7e8;font-size:5.7px;font-weight:950;letter-spacing:.07em;white-space:nowrap}
+#ng27 .visionBox.action .visionBoxLabel{color:#d8f8ff}
 #ng27 .visionScan.run .visionTag{animation:gsfVisionTag .72s ease .28s both}
+#ng27 .visionScan.run .visionBox{animation:gsfVisionBox .72s ease .24s both}
 #ng27 .visionTag.event{border-color:rgba(255,179,205,.50);color:#ffd2e0}
+@keyframes gsfVisionBox{0%{opacity:0;transform:scale(.97)}34%{opacity:.92;transform:scale(1)}100%{opacity:.72;transform:scale(1)}}
 @keyframes gsfVisionSweep{0%{top:7%;opacity:0}12%{opacity:1}88%{opacity:1}100%{top:91%;opacity:0}}
 @keyframes gsfVisionFade{0%{opacity:0}8%{opacity:1}82%{opacity:1}100%{opacity:0}}
 @keyframes gsfVisionTag{0%{opacity:0;transform:translate(-50%,-50%) scale(.94)}35%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:.88;transform:translate(-50%,-50%) scale(1)}}
@@ -707,35 +714,266 @@
    if(key==='HUD')return [72,68];
    return [28+(index%3)*22,30+(index%2)*34];
  }
- function runVisionScan(force=false){
-   if(!visionScan||!visionTags)return;
-   const key=hostVideoUrl+'|'+visionProfile+'|'+(eventMap||[]).map(x=>x.kind+':'+x.time).join(',');
-   if(!force&&key===lastVisionScanKey)return;
-   lastVisionScanKey=key;
+
+ let visionDetections=[];
+ let visionAnalyzeBusy=false;
+ let visionPrimary={x:50,y:43,confidence:0};
+
+ function clamp01(v){return Math.max(0,Math.min(1,Number(v)||0))}
+ function waitForSeek(target){
+   return new Promise((resolve)=>{
+     const limit=Math.max(0,Math.min(Math.max(0,(video.duration||0)-.04),Number(target)||0));
+     if(video.readyState>=2&&Math.abs((video.currentTime||0)-limit)<.035){resolve(true);return}
+     let done=false;
+     const finish=(ok)=>{if(done)return;done=true;clearTimeout(timer);video.removeEventListener('seeked',onSeek);video.removeEventListener('error',onError);resolve(ok)};
+     const onSeek=()=>finish(true),onError=()=>finish(false);
+     const timer=setTimeout(()=>finish(false),650);
+     video.addEventListener('seeked',onSeek,{once:true});
+     video.addEventListener('error',onError,{once:true});
+     try{video.currentTime=limit}catch(e){finish(false)}
+   });
+ }
+
+ function frameGray(ctx,w,h){
+   const rgba=ctx.getImageData(0,0,w,h).data;
+   const gray=new Float32Array(w*h);
+   for(let i=0,p=0;i<rgba.length;i+=4,p++){
+     gray[p]=(0.299*rgba[i]+0.587*rgba[i+1]+0.114*rgba[i+2])/255;
+   }
+   return {gray,rgba:new Uint8ClampedArray(rgba)};
+ }
+
+ function regionMetrics(frames,w,h,box){
+   const x0=Math.max(0,Math.floor(box.x*w)),x1=Math.min(w,Math.ceil((box.x+box.w)*w));
+   const y0=Math.max(0,Math.floor(box.y*h)),y1=Math.min(h,Math.ceil((box.y+box.h)*h));
+   let n=0,edge=0,motion=0,mean=0,m2=0,skin=0;
+   const mid=frames[Math.floor(frames.length/2)];
+   for(let y=y0;y<y1;y++){
+     for(let x=x0;x<x1;x++){
+       const p=y*w+x;
+       const g=mid.gray[p];
+       n++;mean+=g;m2+=g*g;
+       if(x+1<x1)edge+=Math.abs(g-mid.gray[p+1]);
+       if(y+1<y1)edge+=Math.abs(g-mid.gray[p+w]);
+       if(frames.length>1){
+         let delta=0;
+         for(let k=1;k<frames.length;k++)delta+=Math.abs(frames[k].gray[p]-frames[k-1].gray[p]);
+         motion+=delta/(frames.length-1);
+       }
+       const j=p*4,r=mid.rgba[j],gg=mid.rgba[j+1],b=mid.rgba[j+2];
+       const mx=Math.max(r,gg,b),mn=Math.min(r,gg,b);
+       if(r>92&&gg>38&&b>18&&(mx-mn)>14&&Math.abs(r-gg)>12&&r>gg&&r>b)skin++;
+     }
+   }
+   if(!n)return {edge:0,motion:0,variance:0,stability:0,skin:0};
+   mean/=n;m2/=n;
+   edge=Math.min(1,edge/(n*0.55));
+   motion=Math.min(1,motion/(n*0.38));
+   const variance=Math.min(1,Math.max(0,m2-mean*mean)/0.085);
+   return {edge,motion,variance,stability:1-motion,skin:skin/n};
+ }
+
+ function motionCentroid(frames,w,h){
+   if(frames.length<2)return {x:50,y:43,confidence:0};
+   let sum=0,sx=0,sy=0,maxMotion=0;
+   for(let y=2;y<h-2;y++){
+     for(let x=2;x<w-2;x++){
+       const p=y*w+x;
+       let d=0;
+       for(let k=1;k<frames.length;k++)d+=Math.abs(frames[k].gray[p]-frames[k-1].gray[p]);
+       d/=(frames.length-1);
+       if(d<.08)continue;
+       const centerWeight=0.72+0.28*(1-Math.min(1,Math.abs(x/w-.5)*1.25));
+       const weight=d*centerWeight;
+       sum+=weight;sx+=x*weight;sy+=y*weight;maxMotion=Math.max(maxMotion,d);
+     }
+   }
+   if(sum<=.001)return {x:50,y:43,confidence:0};
+   return {
+     x:Math.max(12,Math.min(88,(sx/sum)/w*100)),
+     y:Math.max(12,Math.min(88,(sy/sum)/h*100)),
+     confidence:Math.min(1,maxMotion/.42)
+   };
+ }
+
+ function detectionBox(label,box,confidence,type='hud'){
+   return {
+     label:String(label||'HUD').toUpperCase(),
+     x:(box.x+box.w/2)*100,y:(box.y+box.h/2)*100,
+     w:box.w*100,h:box.h*100,
+     confidence:Math.max(0,Math.min(1,Number(confidence)||0)),
+     type
+   };
+ }
+
+ async function analyzeVisionFrames(){
+   if(visionAnalyzeBusy||video.readyState<2||!video.videoWidth||!video.videoHeight)return visionDetections;
+   visionAnalyzeBusy=true;
+   const wasPaused=video.paused;
+   const savedTime=Number(video.currentTime)||0;
+   const w=96,h=54;
+   const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+   const ctx=canvas.getContext('2d',{willReadFrequently:true});
+   const start=Math.max(0,Math.min(Number(state.inPoint)||0,Math.max(0,(video.duration||0)-.1)));
+   const end=Math.max(start+.1,Math.min(Number(state.outPoint)||video.duration||15,video.duration||15));
+   const span=Math.max(.15,end-start);
+   const sampleTimes=[start+span*.18,start+span*.50,start+span*.82].map(t=>Math.min(Math.max(0,(video.duration||0)-.05),t));
+   const frames=[];
+   try{
+     video.pause();
+     for(const t of sampleTimes){
+       const ok=await waitForSeek(t);
+       if(!ok||video.readyState<2)continue;
+       try{
+         ctx.drawImage(video,0,0,w,h);
+         frames.push(frameGray(ctx,w,h));
+       }catch(e){}
+     }
+   }finally{
+     try{video.currentTime=Math.max(0,Math.min(Math.max(0,(video.duration||0)-.05),savedTime))}catch(e){}
+     if(!wasPaused)video.play().catch(()=>{});
+     visionAnalyzeBusy=false;
+   }
+   if(frames.length<2)return visionDetections;
+
+   const boxes={
+     topLeft:{x:.03,y:.04,w:.31,h:.27},
+     topCenter:{x:.30,y:.035,w:.40,h:.23},
+     topRight:{x:.66,y:.04,w:.31,h:.27},
+     bottomLeft:{x:.03,y:.66,w:.31,h:.30},
+     bottomCenter:{x:.30,y:.57,w:.40,h:.38},
+     bottomRight:{x:.66,y:.66,w:.31,h:.30},
+     center:{x:.32,y:.22,w:.36,h:.48},
+     centerSmall:{x:.44,y:.35,w:.12,h:.20}
+   };
+   const metrics={};
+   Object.entries(boxes).forEach(([key,box])=>metrics[key]=regionMetrics(frames,w,h,box));
+   const hudScore=(m)=>clamp01(.48*m.edge+.34*m.stability+.18*m.variance);
+   const detections=[];
+   const profile=String(visionProfile||'Auto');
+   const action=motionCentroid(frames,w,h);
+   visionPrimary=action;
+
+   const add=(label,key,score,type='hud',min=.28)=>{
+     if(!boxes[key])return;
+     const confidence=clamp01(score);
+     if(confidence<min)return;
+     detections.push(detectionBox(label,boxes[key],confidence,type));
+   };
+   const bestOf=(keys)=>{
+     return keys.map(key=>({key,score:hudScore(metrics[key])})).sort((x,y)=>y.score-x.score)[0];
+   };
+
+   if(profile==='FPS'){
+     const cross=clamp01(.52*metrics.centerSmall.edge+.30*metrics.centerSmall.stability+.18*metrics.centerSmall.variance);
+     add('CROSSHAIR','centerSmall',cross,'action',.26);
+     add('KILLFEED','topRight',hudScore(metrics.topRight),'hud',.30);
+     const mini=bestOf(['topLeft','bottomLeft']);
+     add('MINIMAP',mini.key,mini.score,'hud',.29);
+   }else if(profile==='Battle Royale'){
+     add('KILLFEED','topRight',hudScore(metrics.topRight),'hud',.29);
+     const mini=bestOf(['topLeft','bottomLeft']);
+     add('MINIMAP',mini.key,mini.score,'hud',.27);
+   }else if(profile==='Sports'){
+     const board=bestOf(['topLeft','topCenter','topRight']);
+     add('SCOREBOARD',board.key,board.score,'hud',.26);
+   }else if(profile==='Racing'){
+     const hud=bestOf(['bottomLeft','bottomRight','topRight']);
+     add('HUD',hud.key,hud.score,'hud',.26);
+     const vehicleScore=clamp01(.62*metrics.bottomCenter.motion+.20*metrics.bottomCenter.edge+.18*metrics.bottomCenter.variance);
+     add('VEHICLE','bottomCenter',vehicleScore,'action',.22);
+   }else{
+     const hud=bestOf(['topLeft','topRight','bottomLeft','bottomRight']);
+     add('HUD',hud.key,hud.score,'hud',.32);
+   }
+
+   // A true motion centroid is the primary gameplay subject/action region.
+   if(action.confidence>=.12){
+     const aw=profile==='Racing'?34:28,ah=profile==='Racing'?30:36;
+     detections.push({
+       label:profile==='Racing'?'VEHICLE':profile==='Sports'?'ACTION':'PLAYER',
+       x:action.x,y:action.y,w:aw,h:ah,
+       confidence:action.confidence,type:'action'
+     });
+   }
+
+   // Conservative face-cam heuristic: sustained skin-tone pixels plus motion
+   // in a corner. It is intentionally omitted unless confidence is strong.
+   const faceCandidates=['bottomRight','bottomLeft','topRight','topLeft']
+     .map(key=>{
+       const m=metrics[key];
+       return {key,score:clamp01(.50*Math.min(1,m.skin/.16)+.30*m.motion+.20*m.edge)};
+     })
+     .sort((a,b)=>b.score-a.score);
+   if(faceCandidates[0]&&faceCandidates[0].score>=.62){
+     add('FACE CAM',faceCandidates[0].key,faceCandidates[0].score,'hud',.62);
+   }
+
+   const dedup=[];
+   for(const det of detections.sort((a,b)=>b.confidence-a.confidence)){
+     if(dedup.some(x=>x.label===det.label))continue;
+     dedup.push(det);
+     if(dedup.length>=4)break;
+   }
+   visionDetections=dedup;
+   return visionDetections;
+ }
+
+ function renderVisionDetections(detections){
    visionTags.innerHTML='';
-   visionScanStatus.textContent='GAME VISION · '+String(visionProfile||'AUTO').toUpperCase()+' PROFILE';
-   (visionZones||[]).slice(0,3).forEach((label,index)=>{
-     const [x,y]=zonePosition(label,index);
-     const tag=document.createElement('span');
-     tag.className='visionTag';
-     tag.style.left=x+'%';tag.style.top=y+'%';
-     const suffix=String(label).toUpperCase().includes('KILLFEED')||String(label).toUpperCase().includes('MINIMAP')||String(label).toUpperCase().includes('SCOREBOARD')||String(label).toUpperCase()==='HUD'?' SAFE':' PRIORITY';
-     tag.textContent=String(label).toUpperCase()+suffix;
-     visionTags.appendChild(tag);
+   (detections||[]).forEach(det=>{
+     const box=document.createElement('div');
+     box.className='visionBox '+(det.type==='action'?'action':'');
+     box.style.left=Math.max(0,det.x-det.w/2)+'%';
+     box.style.top=Math.max(0,det.y-det.h/2)+'%';
+     box.style.width=Math.min(100,det.w)+'%';
+     box.style.height=Math.min(100,det.h)+'%';
+     const label=document.createElement('span');
+     label.className='visionBoxLabel';
+     label.textContent=det.label;
+     box.appendChild(label);
+     visionTags.appendChild(box);
    });
    const strongest=(eventMap||[]).filter(x=>String(x.kind||'').toUpperCase()!=='SILENCE').sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0))[0];
    if(strongest){
      const tag=document.createElement('span');
      tag.className='visionTag event';
-     tag.style.left='50%';tag.style.top='82%';
+     tag.style.left='50%';tag.style.top='84%';
      tag.textContent=eventLabel(strongest.kind)+' · '+fmtTime(Number(strongest.time)||0);
      visionTags.appendChild(tag);
+   }
+ }
+
+ async function runVisionScan(force=false){
+   if(!visionScan||!visionTags)return;
+   const key=hostVideoUrl+'|'+visionProfile+'|'+(eventMap||[]).map(x=>x.kind+':'+x.time).join(',');
+   if(!force&&key===lastVisionScanKey&&visionDetections.length){
+     renderVisionDetections(visionDetections);
+   }else{
+     visionScanStatus.textContent='GAME VISION · ANALISI VISIVA';
+     const detections=await analyzeVisionFrames();
+     lastVisionScanKey=key;
+     if(detections&&detections.length){
+       renderVisionDetections(detections);
+       visionScanStatus.textContent='GAME VISION · '+String(visionProfile||'AUTO').toUpperCase()+' · '+detections.length+' ZONE';
+     }else{
+       const fallback=(visionZones||[]).slice(0,3).map((label,index)=>{
+         const [x,y]=zonePosition(label,index);
+         return {label:String(label).toUpperCase(),x,y,w:24,h:18,confidence:.25,type:'hud'};
+       });
+       renderVisionDetections(fallback);
+       visionScanStatus.textContent='GAME VISION · '+String(visionProfile||'AUTO').toUpperCase();
+     }
+   }
+   if(visionPrimary&&visionPrimary.confidence>=.12){
+     focus.style.left=visionPrimary.x+'%';
+     focus.style.top=visionPrimary.y+'%';
    }
    visionScan.classList.remove('run');
    void visionScan.offsetWidth;
    visionScan.classList.add('run');
    clearTimeout(runVisionScan.t);
-   runVisionScan.t=setTimeout(()=>visionScan.classList.remove('run'),1500);
+   runVisionScan.t=setTimeout(()=>visionScan.classList.remove('run'),1650);
  }
 
  function receiveHost(args){
@@ -762,8 +1000,10 @@
    const nextUrl=String(args.video_url||"");
    if(nextUrl && nextUrl!==hostVideoUrl){
      hostVideoUrl=nextUrl;
+     visionDetections=[];
+     visionPrimary={x:50,y:43,confidence:0};
+     lastVisionScanKey='';
      video.src=nextUrl;
-     window.setTimeout(()=>runVisionScan(false),120);
      // metadata + a decoded frame are requested immediately so Safari/iOS,
      // Android and desktop do not show an apparently empty editor until PLAY.
      video.preload='auto';
@@ -853,8 +1093,9 @@
    }
 
    focus.style.display=state.visionEnabled?'block':'none';
-   focus.style.left=(50+state.panX*.7)+'%';
-   focus.style.top=(43+state.panY*.7)+'%';
+   const detectedFocus=(visionPrimary&&visionPrimary.confidence>=.12)?visionPrimary:null;
+   focus.style.left=(detectedFocus?detectedFocus.x:(50+state.panX*.7))+'%';
+   focus.style.top=(detectedFocus?detectedFocus.y:(43+state.panY*.7))+'%';
    const aiLive=!!state.visionEnabled;
    visionBadge.textContent=aiLive?'GAME VISION · '+(state.aiMode==='Auto Gaming'?'SUBJECT LOCK':String(state.aiMode||'AUTO').toUpperCase()):'GAME VISION · OFF';
    sysText.textContent=aiLive?'GAME VISION · '+String(state.aiMode||'AUTO').toUpperCase():'GAME VISION · OFF';
@@ -1063,6 +1304,12 @@
            state.audioMode='Game Boost';state.muted=false;if(state.volume<=0)state.volume=100;
            state.speed=1;
          }
+         if(mode!=='Off'&&visionPrimary&&visionPrimary.confidence>=.18){
+           const dx=(50-visionPrimary.x)*.32;
+           const dy=(47-visionPrimary.y)*.18;
+           state.panX=Math.max(-12,Math.min(12,state.panX+dx));
+           state.panY=Math.max(-10,Math.min(10,state.panY+dy));
+         }
          applyState();commit();openPanel('vision',btn);
          if(mode!=='Off')runVisionScan(true);
          flash(mode==='Off'?'GAME AI OFF':mode.toUpperCase());
@@ -1268,6 +1515,7 @@
    }catch(e){}
    duration=Math.max(.5,Math.min(60,video.duration||15));
    renderEventMap();
+   window.setTimeout(()=>runVisionScan(false),90);
    defaults.outPoint=duration;
    if(!hostStateApplied){
      state.outPoint=duration;
