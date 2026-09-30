@@ -83,6 +83,30 @@ for marker in (
     if marker not in source:
         raise SystemExit("FAIL Editor 2027 mobile/desktop interaction hardening missing: "+marker)
 
+
+# Desktop control contract: three-state fullscreen, one Play/Pause, live
+# contextual panels, Undo/Redo and DONE must coexist with mobile hardening.
+for marker in (
+    'data-editor-build="2027.4-touch"',
+    "span.textContent='FULL'",
+    "span.textContent='FULL ×2'",
+    "span.textContent='RIDUCI'",
+    "root.classList.add('expanded')",
+    "root.classList.remove('expanded')",
+    "playing?'#i-pause':'#i-play'",
+    "root.querySelector('#undoBtn').onclick",
+    "root.querySelector('#redoBtn').onclick",
+    "root.querySelector('#doneBtn').onclick",
+    "openPanel(btn.dataset.panel,btn)",
+    "applyState(); commit(); flash()",
+):
+    if marker not in frontend:
+        raise SystemExit("FAIL Editor desktop interaction contract missing: "+marker)
+if frontend.count('id="playBtn"') != 1:
+    raise SystemExit("FAIL desktop Editor does not have exactly one Play/Pause button")
+if 'id="pauseBtn"' in frontend:
+    raise SystemExit("FAIL desktop Editor still exposes a separate Pause button")
+
 if "components.html(" in wrapper:
     raise SystemExit("FAIL Editor 2027 still uses display-only components.html")
 if "declare_component(" not in wrapper:
