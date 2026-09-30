@@ -80,6 +80,18 @@ def _candidate(score,start,diagnostics,duration,events,genre,profile,semantic_in
     semantic_conf=_clamp(near.get("semantic_confidence"))
     semantic_excite=_clamp(near.get("semantic_excitement"))
     semantic_signal=max(_clamp(near.get("semantic_score")),.70*semantic_conf+.30*semantic_excite)
+    focus_conf=_clamp(near.get("focus_confidence"))
+    focus_x=max(0.0,min(100.0,_num(near.get("focus_x"),50.0)))
+    focus_y=max(0.0,min(100.0,_num(near.get("focus_y"),43.0)))
+    caption_safe_y=max(15.0,min(88.0,_num(near.get("caption_safe_y"),78.0)))
+    hud_elements=[]
+    for label in near.get("hud_elements") or []:
+        label=str(label or "").strip().lower().replace(" ","_")[:32]
+        if label and label not in hud_elements:
+            hud_elements.append(label)
+        if len(hud_elements)>=8:
+            break
+    subject=str(near.get("subject") or "")[:80]
     quality=(
         .42*base+.14*event_score+.08*reaction+.08*motion+.06*synergy+
         .05*arc+.04*setup+.04*aftermath+.03*continuity+
@@ -100,6 +112,12 @@ def _candidate(score,start,diagnostics,duration,events,genre,profile,semantic_in
         "semantic_injected":bool(semantic_injected),
         "semantic_confidence":semantic_conf,
         "semantic_score":semantic_signal,
+        "focus_x":focus_x,
+        "focus_y":focus_y,
+        "focus_confidence":focus_conf,
+        "hud_elements":hud_elements,
+        "caption_safe_y":caption_safe_y,
+        "subject":subject,
         "original":(float(score),float(start)),
     }
 
@@ -189,7 +207,7 @@ def rerank_moments(pool,diagnostics,clip_duration=15,numero_clip=3,profile="auto
     selected.sort(key=lambda x:x["score"],reverse=True)
     chosen=[(float(c["original"][0]),float(c["start"])) for c in selected]
     meta={
-        "engine":"game-brain-v115-semantic-injection",
+        "engine":"game-brain-v117-editor-semantic",
         "pool_size":len(pool or []),
         "augmented_pool_size":len(augmented_pool),
         "semantic_injected_count":len(injected),
@@ -203,6 +221,12 @@ def rerank_moments(pool,diagnostics,clip_duration=15,numero_clip=3,profile="auto
             "semantic_injected":bool(c.get("semantic_injected")),
             "semantic_confidence":round(_num(c.get("semantic_confidence")),4),
             "semantic_score":round(_num(c.get("semantic_score")),4),
+            "focus_x":round(_num(c.get("focus_x"),50.0),2),
+            "focus_y":round(_num(c.get("focus_y"),43.0),2),
+            "focus_confidence":round(_num(c.get("focus_confidence")),4),
+            "hud_elements":list(c.get("hud_elements") or []),
+            "caption_safe_y":round(_num(c.get("caption_safe_y"),78.0),2),
+            "subject":str(c.get("subject") or ""),
         } for i,c in enumerate(selected)],
     }
     return chosen,meta
