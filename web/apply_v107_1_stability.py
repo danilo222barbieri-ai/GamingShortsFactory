@@ -160,17 +160,51 @@ s=s.replace(
     1,
 )
 
-# Defensive cleanup: an earlier generated V107 source can contain a leaked
-# copy of this patcher's own tail at module scope.  That leaked block starts
-# with the unique cache comment below and later executes `s=s.replace(...)`
-# inside the Streamlit app, where `s` does not exist, causing the production
-# NameError seen after startup.  The leaked copy is always appended after the
-# real application body, so trim it before compiling the final runtime file.
-_orphan_marker="\n# The automatic final master is already retained as publication_final_bytes\n"
-_orphan_pos=s.find(_orphan_marker)
-if _orphan_pos!=-1:
-    s=s[:_orphan_pos].rstrip()+"\n"
-    print("V107.1 removed leaked patcher tail from generated app")
+# Defensive cleanup: some older generated V107 sources can contain patcher
+# statements at module scope.  They compile, but crash at runtime because the
+# Streamlit app has no variable named `s`.  Detect the actual AST pattern
+# instead of depending on one exact comment marker.
+_gsf_tree=ast.parse(s)
+_gsf_bad=[]
+for _gsf_node in _gsf_tree.body:
+    if not isinstance(_gsf_node,ast.Assign):
+        continue
+    if not any(isinstance(_t,ast.Name) and _t.id=="s" for _t in _gsf_node.targets):
+        continue
+    _v=_gsf_node.value
+    if (
+        isinstance(_v,ast.Call)
+        and isinstance(_v.func,ast.Attribute)
+        and _v.func.attr=="replace"
+        and isinstance(_v.func.value,ast.Name)
+        and _v.func.value.id=="s"
+    ):
+        _gsf_bad.append(_gsf_node)
+
+if _gsf_bad:
+    _gsf_lines=s.splitlines(keepends=True)
+    _gsf_first=_gsf_bad[0].lineno-1
+    if _gsf_first < int(len(_gsf_lines)*0.75):
+        raise RuntimeError(f"V107.1 unexpected runtime s=s.replace at line {_gsf_first+1}")
+    _gsf_cut=_gsf_first
+    for _i in range(_gsf_first-1,max(-1,_gsf_first-100),-1):
+        _line=_gsf_lines[_i]
+        if (
+            "_old_cache=" in _line
+            or "_old_lock=" in _line
+            or "_old_manual_read=" in _line
+            or "automatic final master is already retained" in _line
+            or "duplicate Streamlit rerun" in _line
+            or "Manual/Scegli scena already has a durable source path" in _line
+        ):
+            _gsf_cut=_i
+    print("V107.1 leaked runtime patch tail detected at",_gsf_first+1,"trimming from",_gsf_cut+1)
+    s="".join(_gsf_lines[:_gsf_cut]).rstrip()+"\n"
+
+# Build must fail here if any leaked patcher self-replacement survived.
+if "s=s.replace(" in s:
+    _remaining=[i+1 for i,l in enumerate(s.splitlines()) if "s=s.replace(" in l]
+    raise RuntimeError(f"V107.1 leaked runtime patch statements remain: {_remaining[-10:]}")
 
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
