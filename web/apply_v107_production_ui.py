@@ -1152,7 +1152,7 @@ if len(_gsf_publish_calls)!=1:
 
 _gsf_pub_call=_gsf_publish_calls[0]
 _gsf_old_pub_call=_gsf_patch_ast.get_source_segment(s,_gsf_pub_call) or ""
-_gsf_pub_call.args[0]=_gsf_patch_ast.Constant(value="PUBBLICA O SCARICA")
+_gsf_pub_call.args[0]=_gsf_patch_ast.Constant(value="CONDIVIDI O SCARICA")
 _gsf_patch_ast.fix_missing_locations(_gsf_pub_call)
 _gsf_new_pub_call=_gsf_patch_ast.unparse(_gsf_pub_call)
 if not _gsf_old_pub_call:
@@ -1808,6 +1808,8 @@ s = s.rstrip() + "\n\n" + _demo_dialog_style.lstrip()
 _major_cta_final_override = r'''
 st.markdown("""
 <style id="gsf-major-actions-final-override">
+.st-key-gsf-final-top-action-row button,
+[class*="st-key-gsf-final-top-action-row"] button,
 .st-key-gsf-major-create-ai button,
 .st-key-gsf-major-personalize button,
 [class*="st-key-gsf-major-personalize"] button,
@@ -1838,6 +1840,8 @@ st.markdown("""
     letter-spacing:.045em !important;
     box-shadow:0 12px 28px rgba(104,84,205,.28) !important;
 }
+.st-key-gsf-final-top-action-row button:hover,
+[class*="st-key-gsf-final-top-action-row"] button:hover,
 .st-key-gsf-major-create-ai button:hover,
 [class*="st-key-gsf-major-create-ai"] button:hover,
 .st-key-gsf-major-personalize button:hover,
@@ -1856,6 +1860,8 @@ st.markdown("""
     box-shadow:0 15px 34px rgba(104,84,205,.36) !important;
 }
 @media(max-width:750px){
+    .st-key-gsf-final-top-action-row button,
+    [class*="st-key-gsf-final-top-action-row"] button,
     .st-key-gsf-major-create-ai button,
     .st-key-gsf-major-personalize button,
     [class*="st-key-gsf-major-personalize"] button,
