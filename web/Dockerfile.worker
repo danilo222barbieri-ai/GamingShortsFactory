@@ -65,3 +65,5 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
 
 EXPOSE 8600
 CMD ["python","/app/web/ai_worker_server.py"]
+
+# V108 Game Vision Event Map worker
