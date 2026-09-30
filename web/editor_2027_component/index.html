@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
-<div id="ng27" data-editor-build="2027.4-touch">
+<div id="ng27" data-editor-build="2027.5-livefix">
 <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
   <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.35-5.65L4 8.7"/><path d="M4 4v4.7h4.7"/></symbol>
@@ -639,7 +639,6 @@
  const toast=root.querySelector('#toast');
  const caption=root.querySelector('#captionPreview');
  const focus=root.querySelector('#focus');
- const formatLabel=root.querySelector('#formatLabel');
  const visionBadge=root.querySelector('#visionBadge');
  const sysText=root.querySelector('#sysText');
  const selection=root.querySelector('#selection');
@@ -1112,13 +1111,14 @@
  }
  function applyState(){
    stage.classList.add('r916');
-   formatLabel.textContent='9:16 SHORT';
 
+   // Core preview first: FRAME / LOOK / AUDIO must never be blocked by a
+   // missing cosmetic label or overlay.
    video.style.transform='translate('+state.panX+'%,'+state.panY+'%) scale('+state.zoom+')';
    video.style.filter=filterFor(state);
-   video.muted=state.muted;
-   video.volume=Math.max(0,Math.min(1,state.volume/100));
-   video.playbackRate=state.speed;
+   try{video.muted=!!state.muted}catch(e){}
+   try{video.volume=Math.max(0,Math.min(1,Number(state.volume)/100))}catch(e){}
+   try{video.playbackRate=Math.max(.5,Math.min(2,Number(state.speed)||1))}catch(e){}
 
    state.captionOn=state.captionMode!=='Off';
    const rawCaption=String(state.captionText||'').trim();
@@ -1139,11 +1139,11 @@
       ',-2px 2px 0 '+state.outlineColor+',2px 2px 0 '+state.outlineColor+',0 4px 18px rgba(0,0,0,.55)';
    caption.querySelectorAll('.hotWord').forEach(x=>x.style.color=state.activeColor);
 
-   Object.values(zones).forEach(z=>z.classList.remove('show'));
+   Object.values(zones).filter(Boolean).forEach(z=>z.classList.remove('show'));
    if(state.hudMode==='Smart Safe'){
-     zones.kill.classList.add('show');
-     zones.map.classList.add('show');
-     zones.face.classList.add('show');
+     if(zones.kill)zones.kill.classList.add('show');
+     if(zones.map)zones.map.classList.add('show');
+     if(zones.face)zones.face.classList.add('show');
    }
 
    focus.style.display=state.visionEnabled?'block':'none';
@@ -1151,8 +1151,8 @@
    focus.style.left=(detectedFocus?detectedFocus.x:(50+state.panX*.7))+'%';
    focus.style.top=(detectedFocus?detectedFocus.y:(43+state.panY*.7))+'%';
    const aiLive=!!state.visionEnabled;
-   visionBadge.textContent=aiLive?'GAME VISION · '+(state.aiMode==='Auto Gaming'?'SUBJECT LOCK':String(state.aiMode||'AUTO').toUpperCase()):'GAME VISION · OFF';
-   sysText.textContent=aiLive?'GAME VISION · '+String(state.aiMode||'AUTO').toUpperCase():'GAME VISION · OFF';
+   if(visionBadge)visionBadge.textContent=aiLive?'GAME VISION · '+(state.aiMode==='Auto Gaming'?'SUBJECT LOCK':String(state.aiMode||'AUTO').toUpperCase()):'GAME VISION · OFF';
+   if(sysText)sysText.textContent=aiLive?'GAME VISION · '+String(state.aiMode||'AUTO').toUpperCase():'GAME VISION · OFF';
 
    inRange.max=Math.max(.5,duration-.5);
    outRange.max=duration;
@@ -1405,7 +1405,7 @@
  root.querySelector('#doneBtn').onclick=()=>{
    commit();
    const payload=cloneState();
-   payload.editorVersion='2027.4';
+   payload.editorVersion='2027.5';
    payload.sourceDuration=duration;
    sendStateToPython(payload);
    clearLocalState();
