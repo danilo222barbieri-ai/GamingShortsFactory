@@ -567,10 +567,10 @@ _create_short_new='''            def _gsf_v107_preserve_final_context():
                 if isinstance(_snap,dict) and _snap:
                     st.session_state["gsf_final_recipe"]=dict(_snap)
                 st.session_state["gsf_v107_final_click_pending"]=False
-                st.markdown(
-                    '<div class="gsf-major-note">Genera la versione finale pronta per il download e la pubblicazione sui tuoi social collegati.</div>',
-                    unsafe_allow_html=True,
-                )
+            st.markdown(
+                '<div class="gsf-major-note">Genera la versione finale pronta per il download e la pubblicazione sui tuoi social collegati.</div>',
+                unsafe_allow_html=True,
+            )
 '''
 if _create_short_old not in s:
     raise RuntimeError("Demo CREA SHORT anchor not found")
