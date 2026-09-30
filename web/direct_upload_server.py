@@ -18,7 +18,7 @@ import boto3
 from botocore.config import Config
 from boto3.s3.transfer import TransferConfig
 from gsf_perf import perf_event
-from guardian_v113 import inspect_and_repair_local as _guardian_local
+from guardian_v113 import inspect_and_repair_local as _guardian_local, source_restore_plan as _guardian_source_plan
 
 try:
     from pywebpush import webpush, WebPushException
@@ -2393,18 +2393,11 @@ def _guardian_restore_source_from_marker(sid):
     if not sid or not _bucket_enabled():
         return ""
     marker=ROOT/"sessions"/sid/"media"/".direct_upload_ready.json"
-    if not marker.is_file():
-        return ""
     try:
-        meta=json.loads(marker.read_text(encoding="utf-8"))
-        if not isinstance(meta,dict):
+        meta=_guardian_source_plan(ROOT/"sessions"/sid)
+        if not meta:
             return ""
-        local_path=Path(str(meta.get("path") or ""))
-        if local_path.is_file():
-            return str(local_path)
         key=str(meta.get("bucket_key") or "")
-        if not key:
-            return ""
         upload_id=_safe_id(meta.get("upload_id",""))
         if not upload_id:
             parts=[part for part in key.split("/") if part]
