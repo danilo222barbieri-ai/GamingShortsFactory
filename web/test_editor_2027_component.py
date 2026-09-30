@@ -284,9 +284,9 @@ if unsupported:
 for marker in (
     "function semanticFocusFromBrain()",
     "function semanticHudDetections()",
-    "brainContext.focus_confidence",
+    "c.focus_confidence",
     "brainContext.semantic_confidence",
-    "brainContext.caption_safe_y",
+    "c.caption_safe_y",
     "brainContext.hud_elements",
     "AI+LOCALE",
     "state.captionY=sem.captionY",
