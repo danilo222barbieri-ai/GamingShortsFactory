@@ -107,6 +107,16 @@ if frontend.count('id="playBtn"') != 1:
 if 'id="pauseBtn"' in frontend:
     raise SystemExit("FAIL desktop Editor still exposes a separate Pause button")
 
+
+for marker in (
+    "width:46px;",
+    "height:46px;",
+    "width:48px;height:48px",
+    "min-width:48px;",
+):
+    if marker not in frontend:
+        raise SystemExit("FAIL Editor mobile touch target hardening missing: "+marker)
+
 if "components.html(" in wrapper:
     raise SystemExit("FAIL Editor 2027 still uses display-only components.html")
 if "declare_component(" not in wrapper:
