@@ -2741,12 +2741,9 @@ box-shadow:0 6px 16px rgba(52,89,115,.08)!important}
 '''
 s = s.rstrip() + "\n\n" + _draft_v107_style.lstrip()
 
-compile(s,str(out),'exec')
-out.write_text(s,encoding='utf-8')
-print('V107 production UI applied:',out)
 # Streamlit buttons are transient widgets and must never be restored from
-# our durable JSON session state. A restored button value raises
-# StreamlitValueAssignmentNotAllowedError before the UI can render.
+# our durable JSON session state. Apply this BEFORE compiling/writing the
+# generated app, otherwise the fix never reaches production.
 _gsf_widget_skip_old='''_GSF_STATE_SKIP_EXACT = {
     "upload_v73", "gsf_web_session_id",
 }
@@ -2761,4 +2758,7 @@ if _gsf_widget_skip_old not in s:
     raise RuntimeError("V107 persistent widget skip anchor missing")
 s=s.replace(_gsf_widget_skip_old,_gsf_widget_skip_new,1)
 
+compile(s,str(out),'exec')
+out.write_text(s,encoding='utf-8')
+print('V107 production UI applied:',out)
 # V107 production UI: Editor 2027 + approved milestone guides
