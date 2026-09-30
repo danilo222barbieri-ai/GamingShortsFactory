@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import sys
 
 path=Path(sys.argv[1] if len(sys.argv)>1 else "/app/GamingShortsFactory_V107_PRODUCTION_UI.py")
@@ -50,7 +51,11 @@ if "GSF_MANUAL_EDITOR_OPEN" not in s:
     raise SystemExit("FAIL Scegli scena is not instrumented as immediate-open Editor 2027")
 if 'st.markdown("\\\\n\\\\n")' in s or "st.markdown('\\\\n\\\\n')" in s:
     raise SystemExit("FAIL literal newline markdown survived")
-if "v1054_ad_after_final_result" in s and "st-key-v1054_ad_after_final_result{display:none" not in s:
+if "v1054_ad_after_final_result" in s and not re.search(
+    r"\.st-key-v1054_ad_after_final_result\s*\{[^}]*display\s*:\s*none",
+    s,
+    flags=re.S,
+):
     raise SystemExit("FAIL final publication ad is still visible")
 if "gsf-v107-final-publish-v3" in s or "new MutationObserver(tune)" in s:
     raise SystemExit("FAIL final publication still injects executable JS into markdown")
