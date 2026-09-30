@@ -260,14 +260,14 @@
  #ng27 .cockpit>.rail{
    position:absolute;
    top:50%;
-   z-index:24;
+   z-index:52;
    display:flex;
    flex-direction:column;
    justify-content:center;
    gap:7px;
    overflow:visible;
    transform:translateY(-50%);
-   pointer-events:none;
+   pointer-events:auto;
  }
  #ng27 .cockpit>.rail:first-child{
    left:max(7px,env(safe-area-inset-left));
@@ -277,6 +277,10 @@
  }
  #ng27 .cockpit>.rail .railBtn{
    pointer-events:auto;
+   touch-action:manipulation;
+   -webkit-tap-highlight-color:transparent;
+   -webkit-user-select:none;
+   user-select:none;
  }
  #ng27 .railBtn,
  #ng27.expanded .railBtn{
@@ -309,7 +313,7 @@
    position:absolute;
    left:50%;
    bottom:8px;
-   z-index:22;
+   z-index:44;
    width:calc(100% - 18px);
    margin:0;
    padding:6px 8px 7px;
@@ -342,7 +346,7 @@
    left:55px;
    right:55px;
    bottom:92px;
-   z-index:34;
+   z-index:70;
    max-height:52%;
    overflow-y:auto;
    border-radius:16px;
@@ -359,6 +363,15 @@
  }
  #ng27 .toast{bottom:94px;z-index:38}
  #ng27 .footNote{display:none}
+ #ng27 video{pointer-events:none!important}
+ #ng27 .pill,#ng27 .drawerClose,#ng27 .zoomEditorBtn,#ng27 .eventMarker{
+   touch-action:manipulation;
+   -webkit-tap-highlight-color:transparent;
+ }
+ #ng27 input[type=range]{
+   min-height:28px;
+   touch-action:none;
+ }
 }
 
 @media(max-width:390px){
@@ -670,6 +683,39 @@
  let visionProfile='Auto';
  let visionZones=[];
  let lastVisionScanKey='';
+ let localStateKey='';
+ let localStateTimer=0;
+
+ function localStateStorageKey(url){
+   return 'gsf-editor-unsaved-v1084:'+String(url||'').slice(-180);
+ }
+ function persistLocalState(){
+   if(!localStateKey)return;
+   clearTimeout(localStateTimer);
+   localStateTimer=setTimeout(()=>{
+     try{
+       sessionStorage.setItem(localStateKey,JSON.stringify({
+         state:state,
+         savedAt:Date.now()
+       }));
+     }catch(e){}
+   },90);
+ }
+ function loadLocalState(url){
+   const key=localStateStorageKey(url);
+   try{
+     const raw=sessionStorage.getItem(key);
+     const payload=raw?JSON.parse(raw):null;
+     if(payload&&payload.state&&typeof payload.state==='object'){
+       return {key,state:payload.state};
+     }
+   }catch(e){}
+   return {key,state:null};
+ }
+ function clearLocalState(){
+   if(!localStateKey)return;
+   try{sessionStorage.removeItem(localStateKey)}catch(e){}
+ }
 
  function eventLabel(kind){
    return String(kind||'PEAK').replace(/_/g,' ').toUpperCase();
@@ -984,8 +1030,11 @@
    visionZones=Array.isArray(args.vision_zones)?args.vision_zones.slice(0,4):[];
    duration=Math.max(.5,Math.min(60,Number(args.event_duration)||duration));
    if(args.initial_state && typeof args.initial_state==="object"){
-     state=Object.assign({},defaults,args.initial_state);
-     if(!Object.prototype.hasOwnProperty.call(args.initial_state,'captionMode')){
+     const nextUrlForState=String(args.video_url||"");
+     const local=loadLocalState(nextUrlForState);
+     localStateKey=local.key;
+     state=Object.assign({},defaults,args.initial_state,local.state||{});
+     if(!Object.prototype.hasOwnProperty.call(state,'captionMode')){
        state.captionMode=state.captionOn===false?'Off':'Auto';
      }
      if(state.look==='Neon Arena')state.look='Competitive';
@@ -1033,10 +1082,12 @@
  const escapeAttr=(value)=>escapeHtml(value);
  function commit(){
    const snap=JSON.stringify(state);
-   if(history[historyIndex]===snap) return;
-   history=history.slice(0,historyIndex+1);
-   history.push(snap);
-   historyIndex=history.length-1;
+   if(history[historyIndex]!==snap){
+     history=history.slice(0,historyIndex+1);
+     history.push(snap);
+     historyIndex=history.length-1;
+   }
+   persistLocalState();
  }
  function flash(msg='PREVIEW AGGIORNATA'){
    toast.textContent=msg;
@@ -1135,6 +1186,7 @@
      if(b)b.textContent=String(state[key]);
      if(after)after(state[key]);
      applyState();
+     persistLocalState();
    };
    el.onchange=()=>{commit();flash()};
  }
@@ -1246,7 +1298,7 @@
      });
      const textInput=body.querySelector('#captionTextInput');
      if(textInput){
-       textInput.oninput=()=>{state.captionText=textInput.value.slice(0,120);applyState()};
+       textInput.oninput=()=>{state.captionText=textInput.value.slice(0,120);applyState();persistLocalState()};
        textInput.onchange=()=>{commit();flash('TESTO AGGIORNATO')};
      }
      wireRange('captionSizeR','captionSize',Number);
@@ -1259,7 +1311,7 @@
      liveColors.forEach(([id,key])=>{
        const el=body.querySelector('#'+id);
        if(!el)return;
-       el.oninput=()=>{state[key]=el.value;applyState()};
+       el.oninput=()=>{state[key]=el.value;applyState();persistLocalState()};
        el.onchange=()=>{commit();flash('COLORE AGGIORNATO')};
      });
    }
@@ -1320,6 +1372,7 @@
  function restore(snapshot){
    state=JSON.parse(snapshot);
    applyState();
+   persistLocalState();
    flash('STATO RIPRISTINATO');
    drawer.classList.add('hidden');
    root.querySelectorAll('.railBtn').forEach(x=>x.classList.remove('active'));
@@ -1349,9 +1402,10 @@
  root.querySelector('#doneBtn').onclick=()=>{
    commit();
    const payload=cloneState();
-   payload.editorVersion='2027.3';
+   payload.editorVersion='2027.4';
    payload.sourceDuration=duration;
    sendStateToPython(payload);
+   clearLocalState();
    flash('MODIFICHE APPLICATE');
  };
  const playBtn=root.querySelector('#playBtn');
