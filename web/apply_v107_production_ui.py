@@ -552,6 +552,8 @@ _create_short_old='''            _v1054_create_final_clicked=st.button(
             )
 '''
 _create_short_new='''            def _gsf_v107_queue_final_render():
+                if st.session_state.get("gsf_v107_final_render_pending"):
+                    return
                 _recipe=st.session_state.get("gsf_final_recipe")
                 if isinstance(_recipe,dict) and _recipe:
                     st.session_state["gsf_v107_render_recipe_snapshot"]=dict(_recipe)
@@ -563,6 +565,9 @@ _create_short_new='''            def _gsf_v107_queue_final_render():
                 if _src:
                     st.session_state["gsf_v107_render_source_snapshot"]=_src
                 st.session_state["gsf_v107_final_render_pending"]=True
+                st.session_state["gsf_v107_render_started_at"]=__import__("time").time()
+                st.session_state["gsf_v107_render_toast_shown"]=False
+                st.session_state["gsf_v107_render_complete_notified"]=False
 
             with st.container(key="gsf-major-create-short"):
                 _v1054_create_final_clicked=st.button(
@@ -573,8 +578,13 @@ _create_short_new='''            def _gsf_v107_queue_final_render():
                 )
 
             _gsf_v107_pending=bool(
-                st.session_state.pop("gsf_v107_final_render_pending",False)
+                st.session_state.get("gsf_v107_final_render_pending",False)
             )
+            if st.session_state.pop("gsf_v107_render_done_toast",False):
+                st.toast("✅ Short pronto · apri lo Share Hub per condividerlo.")
+            if _gsf_v107_pending and not st.session_state.get("gsf_v107_render_toast_shown",False):
+                st.toast("🎬 Short in lavorazione · puoi continuare a usare l’app.")
+                st.session_state["gsf_v107_render_toast_shown"]=True
             if _gsf_v107_pending:
                 _snap=st.session_state.get("gsf_v107_render_recipe_snapshot")
                 if isinstance(_snap,dict) and _snap:
@@ -2227,6 +2237,67 @@ st.markdown("""
 '''
 s = s.rstrip() + "\n\n" + _share_cta_exact_override.lstrip()
 
+_irreversible_share_ux = r'''
+st.markdown("""
+<style id="gsf-irreversible-share-ux">
+[data-testid="stToast"]{
+  border:1px solid rgba(181,216,235,.26) !important;
+  border-radius:18px !important;
+  background:linear-gradient(145deg,rgba(29,44,58,.88),rgba(50,64,81,.78)) !important;
+  -webkit-backdrop-filter:blur(22px) saturate(1.22) !important;
+  backdrop-filter:blur(22px) saturate(1.22) !important;
+  box-shadow:0 18px 40px rgba(20,45,64,.22),inset 0 1px 0 rgba(255,255,255,.10) !important;
+}
+[data-testid="stToast"] *{color:#F0F8FC !important;font-weight:750 !important}
+.st-key-v69_social_facebook button,
+.st-key-v69_social_instagram button,
+.st-key-v69_social_youtube button,
+.st-key-v69_social_tiktok button,
+.st-key-v69_social_facebook button[kind="secondary"],
+.st-key-v69_social_instagram button[kind="secondary"],
+.st-key-v69_social_youtube button[kind="secondary"],
+.st-key-v69_social_tiktok button[kind="secondary"]{
+  min-height:72px !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:6px !important;
+  padding:8px !important;
+  border:1px solid rgba(218,237,247,.15) !important;
+  border-radius:17px !important;
+  background:linear-gradient(145deg,rgba(255,255,255,.10),rgba(255,255,255,.045)) !important;
+  color:#EEF8FC !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 8px 20px rgba(6,20,30,.10) !important;
+}
+.st-key-v69_social_facebook button[kind="primary"],
+.st-key-v69_social_instagram button[kind="primary"],
+.st-key-v69_social_youtube button[kind="primary"],
+.st-key-v69_social_tiktok button[kind="primary"],
+.st-key-v69_social_facebook [data-testid="stBaseButton-primary"],
+.st-key-v69_social_instagram [data-testid="stBaseButton-primary"],
+.st-key-v69_social_youtube [data-testid="stBaseButton-primary"],
+.st-key-v69_social_tiktok [data-testid="stBaseButton-primary"]{
+  border-color:rgba(105,223,255,.74) !important;
+  background:linear-gradient(145deg,rgba(89,207,238,.20),rgba(138,127,232,.22)) !important;
+  box-shadow:0 0 0 1px rgba(105,223,255,.12),0 0 24px rgba(105,223,255,.18),inset 0 1px 0 rgba(255,255,255,.13) !important;
+  transform:translateY(-1px) !important;
+}
+.st-key-v69_social_facebook button p,
+.st-key-v69_social_instagram button p,
+.st-key-v69_social_youtube button p,
+.st-key-v69_social_tiktok button p{
+  width:100% !important;
+  margin:0 !important;
+  text-align:center !important;
+  color:#EEF8FC !important;
+  opacity:1 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _irreversible_share_ux.lstrip()
+
 
 # Manual editor heading: same visual weight as the main CREA CON IA milestone.
 _manual_editor_heading_css = r'''
@@ -2291,6 +2362,7 @@ _gsf_new_manual_body = [
     _gsf_indent + 'st.markdown(\'<div style="height:26px" aria-hidden="true"></div>\',unsafe_allow_html=True)\n',
     _gsf_indent + 'with st.container(key="gsf-major-personalize"):\n',
     _gsf_indent + '    st.button("PERSONALIZZA IL TUO GAMEPLAY",use_container_width=True)\n',
+    _gsf_indent + 'st.markdown(\'<div class="gsf-major-note">Modifica scena, look, sottotitoli e audio prima di continuare.</div>\',unsafe_allow_html=True)\n',
     _gsf_indent + 'try:\n',
     _gsf_indent + '    import os as _gsf_manual_os\n',
     _gsf_indent + '    import sys as _gsf_manual_sys\n',
@@ -2410,7 +2482,37 @@ _gsf_final_refresh=[
     _gsf_final_indent+'        st.session_state["publication_final_bytes"]=bytes(_gsf_completed_final)\n',
     _gsf_final_indent+'        st.session_state["publication_ready"]=True\n',
     _gsf_final_indent+'    if st.session_state.get("publication_ready") or st.session_state.get("publication_final_bytes"):\n',
-    _gsf_final_indent+'        print("GSF_FINAL_RENDER_READY",len(st.session_state.get("publication_final_bytes") or b""),flush=True)\n',
+    _gsf_final_indent+'        _gsf_ready_bytes=bytes(st.session_state.get("publication_final_bytes") or b"")\n',
+    _gsf_final_indent+'        _gsf_ready_sid=""\n',
+    _gsf_final_indent+'        try:\n',
+    _gsf_final_indent+'            _pmod=__import__("pathlib")\n',
+    _gsf_final_indent+'            _omod=__import__("os")\n',
+    _gsf_final_indent+'            _source_for_sid=str(st.session_state.get("gsf_v107_render_source_snapshot") or st.session_state.get("gsf_source_path") or "")\n',
+    _gsf_final_indent+'            _sessions_root=(_pmod.Path(_omod.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))/"sessions").resolve()\n',
+    _gsf_final_indent+'            _rel=_pmod.Path(_source_for_sid).resolve().relative_to(_sessions_root)\n',
+    _gsf_final_indent+'            _gsf_ready_sid=str(_rel.parts[0]) if _rel.parts else ""\n',
+    _gsf_final_indent+'            if _gsf_ready_sid and _gsf_ready_bytes:\n',
+    _gsf_final_indent+'                _media_dir=_sessions_root/_gsf_ready_sid/"media"\n',
+    _gsf_final_indent+'                _media_dir.mkdir(parents=True,exist_ok=True)\n',
+    _gsf_final_indent+'                _tmp_final=_media_dir/"gaming_short_finale_share.mp4.tmp"\n',
+    _gsf_final_indent+'                _stable_final=_media_dir/"gaming_short_finale_share.mp4"\n',
+    _gsf_final_indent+'                _tmp_final.write_bytes(_gsf_ready_bytes)\n',
+    _gsf_final_indent+'                _omod.replace(_tmp_final,_stable_final)\n',
+    _gsf_final_indent+'        except Exception as _gsf_persist_exc:\n',
+    _gsf_final_indent+'            print("GSF_FINAL_PERSIST_WARN",repr(str(_gsf_persist_exc)),flush=True)\n',
+    _gsf_final_indent+'        st.session_state["gsf_v107_final_render_pending"]=False\n',
+    _gsf_final_indent+'        st.session_state["gsf_v107_render_done_toast"]=True\n',
+    _gsf_final_indent+'        if _gsf_ready_sid and not st.session_state.get("gsf_v107_render_complete_notified",False):\n',
+    _gsf_final_indent+'            try:\n',
+    _gsf_final_indent+'                _u=__import__("urllib.request",fromlist=["Request","urlopen"])\n',
+    _gsf_final_indent+'                _j=__import__("json")\n',
+    _gsf_final_indent+'                _payload=_j.dumps({"title":"Short pronto","body":"Il tuo Short è pronto. Tocca per aprire lo Share Hub.","url":"/#share-hub","tag":"gsf-short-ready"}).encode("utf-8")\n',
+    _gsf_final_indent+'                _req=_u.Request("http://127.0.0.1:8502/push/notify",data=_payload,headers={"Content-Type":"application/json","X-GSF-Session-ID":_gsf_ready_sid},method="POST")\n',
+    _gsf_final_indent+'                _u.urlopen(_req,timeout=4).read()\n',
+    _gsf_final_indent+'                st.session_state["gsf_v107_render_complete_notified"]=True\n',
+    _gsf_final_indent+'            except Exception as _gsf_push_exc:\n',
+    _gsf_final_indent+'                print("GSF_FINAL_PUSH_WARN",repr(str(_gsf_push_exc)),flush=True)\n',
+    _gsf_final_indent+'        print("GSF_FINAL_RENDER_READY",len(_gsf_ready_bytes),flush=True)\n',
     _gsf_final_indent+'        st.rerun()\n',
 ]
 _gsf_final_lines[_gsf_final_node.end_lineno:_gsf_final_node.end_lineno]=_gsf_final_refresh

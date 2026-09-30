@@ -37,6 +37,10 @@ for marker in (
     "Dettagli Facebook",
     "COLLEGA FACEBOOK",
     "CREATOR HUB",
+    "Modifica scena, look, sottotitoli e audio prima di continuare.",
+    "gsf-irreversible-share-ux",
+    "Short in lavorazione",
+    "push/notify",
 ):
     if marker not in s:
         raise SystemExit(f"FAIL missing V107 final/layout marker: {marker}")
@@ -107,3 +111,10 @@ for slot in (1,2,3,4,6):
 
 compile(s,str(path),"exec")
 print("V107 production UI/demo parity smoke: PASS")
+
+if 'st.session_state.get("gsf_v107_final_render_pending",False)' not in s:
+    raise SystemExit("FAIL final render pending state is not sticky/irreversible")
+if 'st.session_state.pop("gsf_v107_final_render_pending",False)' in s:
+    raise SystemExit("FAIL final render pending state is still consumed on rerun")
+if "gaming_short_finale_share.mp4" not in s:
+    raise SystemExit("FAIL final render is not persisted to stable session media")

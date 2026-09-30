@@ -95,6 +95,38 @@ server {
         proxy_set_header Host $host;
     }
 
+    location = /gsf-sw.js {
+        proxy_pass http://127.0.0.1:8502/gsf-sw.js;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        add_header Service-Worker-Allowed "/" always;
+        add_header Cache-Control "no-cache" always;
+    }
+
+    location = /gsf-push.js {
+        proxy_pass http://127.0.0.1:8502/gsf-push.js;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        add_header Cache-Control "no-cache" always;
+    }
+
+    location = /push/public-key {
+        proxy_pass http://127.0.0.1:8502/push/public-key;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        add_header Cache-Control "no-store" always;
+    }
+
+    location = /push/subscribe {
+        add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
+        proxy_pass http://127.0.0.1:8502/push/subscribe;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_set_header Host $host;
+        proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+    }
+
     # V84: app media URLs are /media/<session-id>/<subdir>/<file>.
     # Map that URL directly to the matching anonymous session on disk.
     location ~ "^/media/(?<gsf_media_sid>[A-Za-z0-9_-]{1,80})/(?<gsf_media_path>.+)$" {
@@ -281,7 +313,7 @@ server {
         proxy_request_buffering off;
         proxy_set_header Accept-Encoding "";
         sub_filter_once on;
-        sub_filter '</head>' '<link rel="icon" type="image/png" href="/app-icon.png?v=3"><link rel="shortcut icon" href="/favicon.ico?v=3"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png?v=3"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3"><link rel="manifest" href="/manifest.webmanifest?v=3"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Gaming Shorts Factory"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="mobile-web-app-capable" content="yes"><meta name="theme-color" content="#a9dcff"></head>';
+        sub_filter '</head>' '<link rel="icon" type="image/png" href="/app-icon.png?v=3"><link rel="shortcut icon" href="/favicon.ico?v=3"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png?v=3"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3"><link rel="manifest" href="/manifest.webmanifest?v=3"><script defer src="/gsf-push.js?v=1"></script><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Gaming Shorts Factory"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="mobile-web-app-capable" content="yes"><meta name="theme-color" content="#a9dcff"></head>';
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -372,7 +404,7 @@ server {
         proxy_request_buffering off;
         proxy_set_header Accept-Encoding "";
         sub_filter_once on;
-        sub_filter '</head>' '<link rel="icon" type="image/png" href="/app-icon.png?v=3"><link rel="shortcut icon" href="/favicon.ico?v=3"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png?v=3"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3"><link rel="manifest" href="/manifest.webmanifest?v=3"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Gaming Shorts Factory"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="mobile-web-app-capable" content="yes"><meta name="theme-color" content="#a9dcff"></head>';
+        sub_filter '</head>' '<link rel="icon" type="image/png" href="/app-icon.png?v=3"><link rel="shortcut icon" href="/favicon.ico?v=3"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png?v=3"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3"><link rel="manifest" href="/manifest.webmanifest?v=3"><script defer src="/gsf-push.js?v=1"></script><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Gaming Shorts Factory"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="mobile-web-app-capable" content="yes"><meta name="theme-color" content="#a9dcff"></head>';
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

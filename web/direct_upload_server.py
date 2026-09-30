@@ -19,6 +19,12 @@ from botocore.config import Config
 from boto3.s3.transfer import TransferConfig
 from gsf_perf import perf_event
 
+try:
+    from pywebpush import webpush, WebPushException
+except Exception:
+    webpush=None
+    WebPushException=Exception
+
 ROOT=Path(os.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))
 APP_ICON_B64_PATH=Path("/app/web/app_icons/official_logo_180.valid.b64")
 PORT=int(os.environ.get("GSF_DIRECT_UPLOAD_PORT","8502"))
@@ -49,6 +55,9 @@ PUBLIC_ORIGIN=_env_first("GSF_PUBLIC_ORIGIN",default="")
 WORKER_URL=_env_first("GSF_WORKER_URL",default="").rstrip("/")
 WORKER_TOKEN=_env_first("GSF_WORKER_TOKEN",default="")
 PUBLIC_APP_URL=_env_first("GSF_PUBLIC_APP_URL",default="").rstrip("/")
+VAPID_PRIVATE_KEY=_env_first("GSF_VAPID_PRIVATE_KEY",default="")
+VAPID_PUBLIC_KEY=_env_first("GSF_VAPID_PUBLIC_KEY",default="")
+VAPID_SUBJECT=_env_first("GSF_VAPID_SUBJECT",default="mailto:notifications@gamingshortsfactory.app")
 TIKTOK_CLIENT_KEY=_env_first("GSF_TIKTOK_CLIENT_KEY",default="")
 TIKTOK_CLIENT_SECRET=_env_first("GSF_TIKTOK_CLIENT_SECRET",default="")
 YOUTUBE_CLIENT_ID=_env_first("GSF_YOUTUBE_CLIENT_ID",default="")
@@ -236,6 +245,132 @@ def _app_manifest_bytes():
         ]
     }
     return json.dumps(payload,separators=(",",":"),ensure_ascii=False).encode("utf-8")
+
+def _push_subscription_path(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return None
+    root=ROOT/"sessions"/sid
+    root.mkdir(parents=True,exist_ok=True)
+    return root/".push_subscription.json"
+
+def _push_save_subscription(sid,payload):
+    path=_push_subscription_path(sid)
+    if path is None:
+        raise ValueError("invalid session")
+    endpoint=str((payload or {}).get("endpoint") or "")
+    keys=dict((payload or {}).get("keys") or {})
+    if not endpoint.startswith("https://") or not keys.get("p256dh") or not keys.get("auth"):
+        raise ValueError("invalid push subscription")
+    tmp=path.with_suffix(".tmp")
+    tmp.write_text(json.dumps({"endpoint":endpoint,"keys":keys},ensure_ascii=False),encoding="utf-8")
+    os.replace(tmp,path)
+    return True
+
+def _push_private_key_path():
+    if not VAPID_PRIVATE_KEY:
+        return None
+    root=ROOT/"push"
+    root.mkdir(parents=True,exist_ok=True)
+    path=root/"vapid_private.pem"
+    if not path.is_file() or path.read_text(encoding="utf-8")!=VAPID_PRIVATE_KEY:
+        path.write_text(VAPID_PRIVATE_KEY,encoding="utf-8")
+        try:
+            os.chmod(path,0o600)
+        except Exception:
+            pass
+    return path
+
+def _push_notify_sid(sid,title="Short pronto",body="Il tuo Short è pronto da condividere.",url="/",tag="gsf-short-ready"):
+    sid=_safe_id(sid)
+    sub_path=_push_subscription_path(sid)
+    key_path=_push_private_key_path()
+    if not sid or sub_path is None or not sub_path.is_file() or not key_path or webpush is None:
+        return False
+    try:
+        subscription=json.loads(sub_path.read_text(encoding="utf-8"))
+        payload=json.dumps({
+            "title":str(title or "Short pronto")[:90],
+            "body":str(body or "")[:220],
+            "url":str(url or "/")[:500],
+            "tag":str(tag or "gsf-short-ready")[:80],
+        },ensure_ascii=False)
+        webpush(
+            subscription_info=subscription,
+            data=payload,
+            vapid_private_key=str(key_path),
+            vapid_claims={"sub":VAPID_SUBJECT},
+            ttl=600,
+        )
+        print("GSF_PUSH_SENT",sid,flush=True)
+        return True
+    except Exception as exc:
+        status=getattr(getattr(exc,"response",None),"status_code",None)
+        print("GSF_PUSH_ERROR",sid,status,repr(str(exc))[:240],flush=True)
+        if status in (404,410):
+            try:
+                sub_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+        return False
+
+def _push_service_worker_bytes():
+    return r'''self.addEventListener("push",(event)=>{
+  let data={};
+  try{data=event.data?event.data.json():{};}catch(e){}
+  event.waitUntil(self.registration.showNotification(data.title||"Gaming Shorts Factory",{
+    body:data.body||"Il tuo Short è pronto.",
+    icon:"/app-icon-192.png",
+    badge:"/app-icon-192.png",
+    tag:data.tag||"gsf-short-ready",
+    renotify:true,
+    data:{url:data.url||"/"},
+    vibrate:[120,70,120]
+  }));
+});
+self.addEventListener("notificationclick",(event)=>{
+  event.notification.close();
+  const target=(event.notification.data&&event.notification.data.url)||"/";
+  event.waitUntil(clients.matchAll({type:"window",includeUncontrolled:true}).then((items)=>{
+    for(const client of items){
+      if("focus" in client){
+        try{client.navigate(target);}catch(e){}
+        return client.focus();
+      }
+    }
+    return clients.openWindow?clients.openWindow(target):undefined;
+  }));
+});'''.encode("utf-8")
+
+def _push_client_bytes():
+    return r'''(()=>{
+  const toU8=(s)=>{
+    const pad="=".repeat((4-s.length%4)%4);
+    const raw=atob((s+pad).replace(/-/g,"+").replace(/_/g,"/"));
+    return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+  };
+  const subscribe=async(promptUser)=>{
+    if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window))return false;
+    const reg=await navigator.serviceWorker.register("/gsf-sw.js?v=1",{scope:"/"});
+    let permission=Notification.permission;
+    if(permission==="default"&&promptUser)permission=await Notification.requestPermission();
+    if(permission!=="granted")return false;
+    const key=await fetch("/push/public-key",{cache:"no-store"}).then(r=>r.json()).then(x=>x.public_key||"");
+    if(!key)return false;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:toU8(key)});
+    await fetch("/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sub.toJSON())});
+    return true;
+  };
+  window.GSFPush={enable:()=>subscribe(true),ensure:()=>subscribe(false)};
+  document.addEventListener("click",(event)=>{
+    const b=event.target&&event.target.closest?event.target.closest("button"):null;
+    if(!b)return;
+    const label=(b.innerText||b.textContent||"").toUpperCase();
+    if(label.includes("CREA SHORT"))subscribe(true).catch(()=>{});
+  },true);
+  window.addEventListener("load",()=>subscribe(false).catch(()=>{}),{once:true});
+})();'''.encode("utf-8")
 
 def _json(handler,status,payload):
     body=json.dumps(payload,ensure_ascii=False).encode("utf-8")
@@ -1597,6 +1732,15 @@ class Handler(BaseHTTPRequestHandler):
         if clean=="/manifest.webmanifest":
             _send_bytes(self,200,_app_manifest_bytes(),"application/manifest+json; charset=utf-8","public, max-age=3600")
             return
+        if clean=="/gsf-sw.js":
+            _send_bytes(self,200,_push_service_worker_bytes(),"application/javascript; charset=utf-8","no-cache")
+            return
+        if clean=="/gsf-push.js":
+            _send_bytes(self,200,_push_client_bytes(),"application/javascript; charset=utf-8","no-cache")
+            return
+        if clean=="/push/public-key":
+            _json(self,200,{"ok":bool(VAPID_PUBLIC_KEY),"public_key":VAPID_PUBLIC_KEY})
+            return
         if clean=="/editor-media/current":
             _editor_media_current(self,_social_sid(self))
             return
@@ -1702,6 +1846,29 @@ class Handler(BaseHTTPRequestHandler):
         sid=_safe_id(self.headers.get("X-GSF-Session-ID"))
         if not sid:
             _json(self,400,{"ok":False,"error":"invalid session"})
+            return
+
+        if path=="/push/subscribe":
+            try:
+                _push_save_subscription(sid,_read_json(self,max_bytes=64*1024))
+                _json(self,200,{"ok":True})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+
+        if path=="/push/notify":
+            try:
+                data=_read_json(self,max_bytes=64*1024)
+                sent=_push_notify_sid(
+                    sid,
+                    title=data.get("title") or "Short pronto",
+                    body=data.get("body") or "Il tuo Short è pronto da condividere.",
+                    url=data.get("url") or "/",
+                    tag=data.get("tag") or "gsf-short-ready",
+                )
+                _json(self,200,{"ok":True,"sent":bool(sent)})
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:180]})
             return
 
         if path=="/bucket/init":
