@@ -3910,6 +3910,144 @@ div[data-testid="stHorizontalBlock"]:has(.st-key-v69_social_facebook) > div[data
 '''
 s = s.rstrip() + "\n\n" + _social_contrast_v107.lstrip()
 
+
+_final_social_and_hub_lock_v107 = r'''
+st.markdown("""
+<style id="gsf-final-social-metallic-v107">
+.st-key-v69_social_facebook button,
+.st-key-v69_social_instagram button,
+.st-key-v69_social_youtube button,
+.st-key-v69_social_tiktok button,
+.st-key-v69_social_facebook button[kind="primary"],
+.st-key-v69_social_instagram button[kind="primary"],
+.st-key-v69_social_youtube button[kind="primary"],
+.st-key-v69_social_tiktok button[kind="primary"],
+.st-key-v69_social_facebook button[kind="secondary"],
+.st-key-v69_social_instagram button[kind="secondary"],
+.st-key-v69_social_youtube button[kind="secondary"],
+.st-key-v69_social_tiktok button[kind="secondary"]{
+  background:linear-gradient(145deg,#FFFFFF 0%,#F5F9FC 32%,#EAF2F7 68%,#F1EEF8 100%) !important;
+  border:1px solid #C9DBE7 !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 rgba(157,181,197,.20),0 8px 20px rgba(65,96,121,.12) !important;
+  opacity:1 !important;
+  filter:none !important;
+}
+.st-key-v69_social_facebook button:hover,
+.st-key-v69_social_instagram button:hover,
+.st-key-v69_social_youtube button:hover,
+.st-key-v69_social_tiktok button:hover{
+  background:linear-gradient(145deg,#FFFFFF 0%,#EEF6FB 42%,#E5EFF5 70%,#EEEAF7 100%) !important;
+  border-color:#B9D0DE !important;
+  transform:translateY(-1px) !important;
+}
+.st-key-v69_social_facebook button:before,
+.st-key-v69_social_instagram button:before,
+.st-key-v69_social_youtube button:before,
+.st-key-v69_social_tiktok button:before{
+  width:52% !important;
+  height:52% !important;
+  background-color:transparent !important;
+  background-repeat:no-repeat !important;
+  background-position:center !important;
+  background-size:contain !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.96)) drop-shadow(0 2px 3px rgba(59,88,109,.18)) !important;
+  opacity:1 !important;
+}
+.st-key-v69_social_facebook button:before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%235D778B' d='M13.25 21v-8h2.75l.42-3.12h-3.17V7.9c0-.9.25-1.52 1.58-1.52h1.7V3.58c-.3-.04-1.3-.13-2.47-.13-2.45 0-4.13 1.5-4.13 4.24v2.19H7.2V13h2.73v8h3.32Z'/%3E%3C/svg%3E") !important;
+}
+.st-key-v69_social_instagram button:before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3.3' y='3.3' width='17.4' height='17.4' rx='5.1' fill='none' stroke='%235D778B' stroke-width='2.05'/%3E%3Ccircle cx='12' cy='12' r='4.15' fill='none' stroke='%235D778B' stroke-width='2.05'/%3E%3Ccircle cx='17.35' cy='6.75' r='1.15' fill='%235D778B'/%3E%3C/svg%3E") !important;
+}
+.st-key-v69_social_youtube button:before{
+  width:56% !important;
+  height:56% !important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%235D778B' d='M21.3 7.1a2.8 2.8 0 0 0-2-2C17.7 4.7 12 4.7 12 4.7s-5.7 0-7.3.4a2.8 2.8 0 0 0-2 2C2.3 8.7 2.3 12 2.3 12s0 3.3.4 4.9a2.8 2.8 0 0 0 2 2c1.6.4 7.3.4 7.3.4s5.7 0 7.3-.4a2.8 2.8 0 0 0 2-2c.4-1.6.4-4.9.4-4.9s0-3.3-.4-4.9ZM10.1 15.8V8.2l6.3 3.8-6.3 3.8Z'/%3E%3C/svg%3E") !important;
+}
+.st-key-v69_social_tiktok button:before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%235D778B' d='M15.6 2c.4 2.3 1.8 3.7 4.1 3.9v3.3a9.1 9.1 0 0 1-4.1-1v6.4a6.6 6.6 0 1 1-5.7-6.5v3.4a3.2 3.2 0 1 0 2.4 3.1V2h3.3Z'/%3E%3C/svg%3E") !important;
+}
+.st-key-v69_social_facebook button[kind="primary"],
+.st-key-v69_social_instagram button[kind="primary"],
+.st-key-v69_social_youtube button[kind="primary"],
+.st-key-v69_social_tiktok button[kind="primary"],
+.st-key-v69_social_facebook [data-testid="stBaseButton-primary"],
+.st-key-v69_social_instagram [data-testid="stBaseButton-primary"],
+.st-key-v69_social_youtube [data-testid="stBaseButton-primary"],
+.st-key-v69_social_tiktok [data-testid="stBaseButton-primary"]{
+  outline:2px solid rgba(126,155,177,.62) !important;
+  outline-offset:3px !important;
+}
+</style>
+<script>
+(()=>{
+  const HOST_ID='gsf-creator-hub-portal-v107';
+  const STYLE_ID='gsf-creator-hub-portal-style-v107';
+  if(!document.getElementById(STYLE_ID)){
+    const st=document.createElement('style');
+    st.id=STYLE_ID;
+    const p='#'+HOST_ID+' ';
+    st.textContent=
+      '#'+HOST_ID+'{position:relative!important;z-index:2147483000!important;opacity:1!important;filter:none!important}'+
+      p+'.gsf-account-fab{z-index:2147483500!important;opacity:1!important;visibility:visible!important;filter:none!important;mix-blend-mode:normal!important}'+
+      p+'.gsf-creator-hub-overlay{position:fixed!important;inset:0!important;z-index:2147483600!important;filter:none!important;mix-blend-mode:normal!important}'+
+      p+'.gsf-creator-hub-overlay.is-open,'+p+'.gsf-creator-hub-overlay:target{opacity:1!important;visibility:visible!important;pointer-events:auto!important}'+
+      p+'.gsf-creator-hub-backdrop{background:rgba(27,48,64,.72)!important;-webkit-backdrop-filter:blur(12px)!important;backdrop-filter:blur(12px)!important;opacity:1!important}'+
+      p+'.gsf-creator-hub-shell{background:#F7FBFF!important;opacity:1!important;filter:none!important;mix-blend-mode:normal!important;isolation:isolate!important;border:1px solid #D3E3ED!important;box-shadow:0 30px 86px rgba(19,45,65,.38)!important}'+
+      p+'.gsf-creator-hub-head{background:#FFFFFF!important;opacity:1!important;filter:none!important}'+
+      p+'.gsf-creator-hub-frame{background:#F7FBFF!important;opacity:1!important;filter:none!important;mix-blend-mode:normal!important;color-scheme:light!important}';
+    document.head.appendChild(st);
+  }
+
+  let host=document.getElementById(HOST_ID);
+  if(!host){
+    host=document.createElement('div');
+    host.id=HOST_ID;
+    document.body.appendChild(host);
+  }
+
+  const sync=()=>{
+    let panel=host.querySelector('#gsf-creator-hub-panel');
+    let fab=host.querySelector('.gsf-account-fab');
+    const freshPanels=[...document.querySelectorAll('#gsf-creator-hub-panel')].filter(x=>!host.contains(x));
+    const freshFabs=[...document.querySelectorAll('.gsf-account-fab')].filter(x=>!host.contains(x));
+
+    if(!panel && freshPanels.length){panel=freshPanels.shift();host.appendChild(panel);}
+    freshPanels.forEach(x=>x.remove());
+    if(!fab && freshFabs.length){fab=freshFabs.shift();host.appendChild(fab);}
+    freshFabs.forEach(x=>x.remove());
+
+    if(panel){
+      let keep=false;
+      try{keep=sessionStorage.getItem('gsf_creator_hub_open_v107')==='1'}catch(e){}
+      if(location.hash==='#gsf-creator-hub-panel')keep=true;
+      panel.classList.toggle('is-open',keep);
+      panel.style.opacity=keep?'1':'0';
+      panel.style.visibility=keep?'visible':'hidden';
+      panel.style.pointerEvents=keep?'auto':'none';
+    }
+    if(fab){
+      fab.style.opacity='1';
+      fab.style.visibility='visible';
+      fab.style.filter='none';
+    }
+  };
+  sync();
+  let raf=0;
+  new MutationObserver(()=>{
+    if(raf)return;
+    raf=requestAnimationFrame(()=>{raf=0;sync();});
+  }).observe(document.body,{childList:true,subtree:true});
+  window.addEventListener('hashchange',sync);
+})();
+</script>
+""", unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _final_social_and_hub_lock_v107.lstrip()
+
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
 print('V107 production UI applied:',out)
