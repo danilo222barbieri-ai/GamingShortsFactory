@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
-<div id="ng27" data-editor-build="2027.5-livefix">
+<div id="ng27" data-editor-build="2027.6-zoomout">
 <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
   <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.35-5.65L4 8.7"/><path d="M4 4v4.7h4.7"/></symbol>
@@ -61,6 +61,9 @@
 #ng27 .stage{position:relative;margin:0 auto;background:transparent;overflow:hidden;border:0;box-shadow:none;transition:width .24s,aspect-ratio .24s,border-radius .24s}
 #ng27 .stage.r916{width:min(100%,285px);aspect-ratio:9/16;border-radius:22px}
 #ng27 video{width:100%;height:100%;object-fit:cover;display:block;background:transparent;transform-origin:center center;transition:filter .16s,transform .16s}
+#ng27 #videoBg{position:absolute;inset:0;z-index:0;object-fit:cover;pointer-events:none;opacity:0;transform:scale(1.12);filter:blur(18px) brightness(.62) saturate(.86);transition:opacity .18s ease}
+#ng27 #video{position:relative;z-index:1}
+#ng27 .stage.zoomOut #videoBg{opacity:1}
 #ng27 .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(3,7,12,.46),transparent 17%,transparent 69%,rgba(3,7,12,.66))}
 #ng27 .scanlines{position:absolute;inset:0;pointer-events:none;opacity:.055;background:repeating-linear-gradient(180deg,rgba(255,255,255,.14) 0,rgba(255,255,255,.14) 1px,transparent 1px,transparent 5px)}
 #ng27 .shade,#ng27 .scanlines{display:none!important}
@@ -563,6 +566,7 @@
 
     <div class="stageWrap">
       <div class="stage r916" id="stage">
+        <video id="videoBg" playsinline muted loop preload="metadata" src="" aria-hidden="true"></video>
         <video id="video" playsinline muted loop preload="metadata" src=""></video>
         <div class="shade"></div><div class="scanlines"></div>
         <div class="corn c1"></div><div class="corn c2"></div><div class="corn c3"></div><div class="corn c4"></div>
@@ -633,6 +637,7 @@
  const root=document.getElementById('ng27');
  const stage=root.querySelector('#stage');
  const video=root.querySelector('#video');
+ const videoBg=root.querySelector('#videoBg');
  const drawer=root.querySelector('#drawer');
  const title=root.querySelector('#drawerTitle');
  const body=root.querySelector('#drawerBody');
@@ -687,7 +692,7 @@
  let localStateTimer=0;
 
  function localStateStorageKey(url){
-   return 'gsf-editor-unsaved-v1085:'+String(url||'').slice(-180);
+   return 'gsf-editor-unsaved-v1086:'+String(url||'').slice(-180);
  }
  function persistLocalState(){
    if(!localStateKey)return;
@@ -1055,6 +1060,7 @@
      visionPrimary={x:50,y:43,confidence:0};
      lastVisionScanKey='';
      video.src=nextUrl;
+     if(videoBg){videoBg.src=nextUrl;try{videoBg.load()}catch(e){}}
      // metadata + a decoded frame are requested immediately so Safari/iOS,
      // Android and desktop do not show an apparently empty editor until PLAY.
      video.preload='auto';
@@ -1114,11 +1120,21 @@
 
    // Core preview first: FRAME / LOOK / AUDIO must never be blocked by a
    // missing cosmetic label or overlay.
-   video.style.transform='translate('+state.panX+'%,'+state.panY+'%) scale('+state.zoom+')';
+   const zoomValue=Math.max(.8,Math.min(2,Number(state.zoom)||1));
+   const zoomOut=zoomValue<.999;
+   stage.classList.toggle('zoomOut',zoomOut);
+   video.style.objectFit=zoomOut?'contain':'cover';
+   video.style.transform='translate('+state.panX+'%,'+state.panY+'%) scale('+zoomValue+')';
    video.style.filter=filterFor(state);
+   if(videoBg){
+     videoBg.style.filter=filterFor(state)+' blur(18px) brightness(.62) saturate(.86)';
+     videoBg.style.transform='scale(1.12)';
+     videoBg.style.opacity=zoomOut?'1':'0';
+   }
    try{video.muted=!!state.muted}catch(e){}
    try{video.volume=Math.max(0,Math.min(1,Number(state.volume)/100))}catch(e){}
    try{video.playbackRate=Math.max(.5,Math.min(2,Number(state.speed)||1))}catch(e){}
+   try{if(videoBg)videoBg.playbackRate=Math.max(.5,Math.min(2,Number(state.speed)||1))}catch(e){}
 
    state.captionOn=state.captionMode!=='Off';
    const rawCaption=String(state.captionText||'').trim();
@@ -1201,7 +1217,7 @@
       '<button class="pill framePreset" data-value="gameplay">Gameplay</button>'+
       '<button class="pill framePreset" data-value="face">Facecam</button>'+
       '<button class="pill framePreset" data-value="free">Libero</button></div>'+
-      '<div class="range"><span>Zoom</span><input id="zoomR" type="range" min="1" max="2" step=".05" value="'+state.zoom+'"><b>'+Number(state.zoom).toFixed(2)+'</b></div>'+
+      '<div class="range"><span>Zoom</span><input id="zoomR" type="range" min=".8" max="2" step=".05" value="'+state.zoom+'"><b>'+Number(state.zoom).toFixed(2)+'</b></div>'+
       '<div class="range"><span>Orizzontale</span><input id="panXR" type="range" min="-25" max="25" step="1" value="'+state.panX+'"><b>'+state.panX+'</b></div>'+
       '<div class="range"><span>Verticale</span><input id="panYR" type="range" min="-25" max="25" step="1" value="'+state.panY+'"><b>'+state.panY+'</b></div>'+
       '<div class="panelNote">Preset e slider agiscono subito sulla preview e sul render finale.</div>'],
@@ -1405,7 +1421,7 @@
  root.querySelector('#doneBtn').onclick=()=>{
    commit();
    const payload=cloneState();
-   payload.editorVersion='2027.5';
+   payload.editorVersion='2027.6';
    payload.sourceDuration=duration;
    sendStateToPython(payload);
    clearLocalState();
@@ -1544,6 +1560,15 @@
  window.addEventListener('resize',updateZoomControl);
  updateZoomControl();
 
+ function syncBlurBackground(force=false){
+   if(!videoBg)return;
+   try{
+     const target=Number(video.currentTime)||0;
+     if(force||Math.abs((Number(videoBg.currentTime)||0)-target)>.12){
+       videoBg.currentTime=target;
+     }
+   }catch(e){}
+ }
  function syncPlayToggle(){
    const playing=!video.paused&&!video.ended;
    const use=playBtn.querySelector('use');
@@ -1561,9 +1586,10 @@
    if(video.currentTime<state.inPoint||video.currentTime>=state.outPoint)video.currentTime=state.inPoint;
    video.play().catch(()=>{});
  };
- video.addEventListener('play',syncPlayToggle);
- video.addEventListener('pause',syncPlayToggle);
- video.addEventListener('ended',syncPlayToggle);
+ video.addEventListener('play',()=>{syncPlayToggle();syncBlurBackground(true);if(stage.classList.contains('zoomOut')&&videoBg)videoBg.play().catch(()=>{})});
+ video.addEventListener('pause',()=>{syncPlayToggle();if(videoBg)videoBg.pause()});
+ video.addEventListener('ended',()=>{syncPlayToggle();if(videoBg)videoBg.pause()});
+ video.addEventListener('seeked',()=>syncBlurBackground(true));
  syncPlayToggle();
 
  video.addEventListener('loadedmetadata',()=>{
@@ -1574,6 +1600,7 @@
      video.currentTime=previewTime;
    }catch(e){}
    duration=Math.max(.5,Math.min(60,video.duration||15));
+   syncBlurBackground(true);
    renderEventMap();
    window.setTimeout(()=>runVisionScan(false),90);
    defaults.outPoint=duration;
@@ -1591,6 +1618,7 @@
    if(video.currentTime>state.outPoint+.04||video.currentTime<state.inPoint-.1){
      video.currentTime=state.inPoint;
    }
+   if(stage.classList.contains('zoomOut'))syncBlurBackground(false);
    playhead.style.left=Math.max(0,Math.min(100,(video.currentTime/duration)*100))+'%';
  });
  inRange.oninput=()=>{
