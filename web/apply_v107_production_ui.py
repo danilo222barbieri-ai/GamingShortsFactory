@@ -3091,7 +3091,7 @@ st.markdown("""
 <style id="gsf-sep30-polish">
 /* More air between the Editor hint cloud and Editor 2027. */
 .gsf-editor-note{
-  margin-bottom:34px !important;
+  margin-bottom:48px !important;
 }
 
 /* Secondary draft action: intentionally smaller than CREA SHORT FINALE. */
