@@ -686,7 +686,7 @@
  let hostHeight=720;
  let eventMap=[];
  let visionProfile='Auto';
- let visionZones=[];
+ let visionZones=[];\n let brainContext={};
  let lastVisionScanKey='';
  let localStateKey='';
  let localStateTimer=0;
@@ -1033,6 +1033,7 @@
    eventMap=Array.isArray(args.event_map)?args.event_map.slice(0,18):[];
    visionProfile=String(args.vision_profile||'Auto');
    visionZones=Array.isArray(args.vision_zones)?args.vision_zones.slice(0,4):[];
+   brainContext=(args.brain_context&&typeof args.brain_context==='object')?args.brain_context:{};
    duration=Math.max(.5,Math.min(60,Number(args.event_duration)||duration));
    if(args.initial_state && typeof args.initial_state==="object"){
      const nextUrlForState=String(args.video_url||"");
@@ -1277,7 +1278,8 @@
       '<button class="pill aiPreset" data-value="Off">Off</button>'+
       ['Auto Gaming','FPS','Racing','Sports','Battle Royale'].map(x=>'<button class="pill aiPreset" data-value="'+x+'">'+(x==='Auto Gaming'?'Auto':x==='Battle Royale'?'Battle Royale':x)+'</button>').join('')+
       '</div>'+
-      '<div class="panelNote">Un solo preset regola insieme Frame, Look e protezione HUD. Tutte le modifiche restano modificabili a mano.</div>']
+      '<div class="strip" style="margin-top:9px"><button class="pill" id="brainApply">AI CONSIGLIO</button></div>'+
+      '<div class="panelNote">'+(brainContext&&brainContext.reason?('Riconosciuto: '+escapeHtml(brainContext.reason)+' · confidenza '+Math.round((Number(brainContext.confidence)||0)*100)+'%. L’IA usa evento, azione, reazione, continuità e HUD per suggerire il preset.'):('Game Brain analizza evento, azione, reazione, continuità e HUD. Tutte le modifiche restano manualmente regolabili.'))+'</div>']
    };
    const tpl=templates[name];
    if(!tpl)return;
@@ -1402,6 +1404,15 @@
          flash(mode==='Off'?'GAME AI OFF':mode.toUpperCase());
        };
      });
+     const brainApply=body.querySelector('#brainApply');
+     if(brainApply){
+       brainApply.classList.toggle('sel',!!(brainContext&&brainContext.reason));
+       brainApply.onclick=()=>{
+         const auto=body.querySelector('.aiPreset[data-value="Auto Gaming"]');
+         if(auto)auto.click();
+         flash(brainContext&&brainContext.reason?('AI · '+String(brainContext.reason).toUpperCase()):'AI AUTO GAMING');
+       };
+     }
    }
  }
  function restore(snapshot){

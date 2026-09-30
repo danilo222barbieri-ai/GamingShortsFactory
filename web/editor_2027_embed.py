@@ -167,6 +167,20 @@ def render_editor_2027_embed(
         clip_duration=_window_duration,
         max_events=14,
     )
+    _brain_hint={}
+    try:
+        _brain=st.session_state.get("gsf_v112_brain_context") or {}
+        _selected=list(_brain.get("selected") or []) if isinstance(_brain,dict) else []
+        if _selected:
+            _clip_start=float(clip_start or 0.0)
+            _nearest=min(_selected,key=lambda row:abs(float((row or {}).get("start") or 0.0)-_clip_start))
+            _distance=abs(float((_nearest or {}).get("start") or 0.0)-_clip_start)
+            if _distance<=max(1.5,min(5.0,_window_duration*0.25)):
+                _brain_hint=dict(_nearest or {})
+                _brain_hint["engine"]=str(_brain.get("engine") or "game-brain-v112")
+                _brain_hint["genre"]=str(_brain.get("genre") or _genre)
+    except Exception:
+        _brain_hint={}
     value = component(
         video_url=video_url,
         initial_state=state,
@@ -174,6 +188,7 @@ def render_editor_2027_embed(
         event_duration=_window_duration,
         vision_profile=_genre,
         vision_zones=vision_zones_for_genre(_genre),
+        brain_context=_brain_hint,
         height=int(height),
         key=str(key),
         default=None,
