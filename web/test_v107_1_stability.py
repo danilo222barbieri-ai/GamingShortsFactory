@@ -12,7 +12,7 @@ checks={
     "publication preview bytes released": '"publication_preview_bytes"' in s,
     "final master byte cache released": '"gsf_final_master_cache_v44"' in s,
     "temporary preview aliases released": '"_mini_preview_bytes"' in s and '"_card_bytes"' in s,
-    "short render-lock wait": '_GSF_V106_RENDER_LOCK.acquire(timeout=2.0)' in s,
+    "short render-lock wait": '_GSF_V106_RENDER_LOCK.acquire(timeout=15.0)' in s,
     "no session final MP4 byte cache": 'cache=st.session_state.setdefault("gsf_final_master_cache_v44",{})' not in s,
     "manual source not duplicated into publication preview": '_gsf_manual_preview_bytes=video.getvalue()' not in s,
     "pre-render memory telemetry": "GSF_PRE_RENDER_MEMORY" in s,
