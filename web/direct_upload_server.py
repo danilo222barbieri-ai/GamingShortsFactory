@@ -342,81 +342,89 @@ self.addEventListener("notificationclick",(event)=>{
   }));
 });'''.encode("utf-8")
 
+
 def _push_client_bytes():
     return r'''(()=>{
+  if(window.__GSF_GLOBAL_NOTIFICATIONS_V2__)return;
+  window.__GSF_GLOBAL_NOTIFICATIONS_V2__=true;
   const toU8=(s)=>{const pad="=".repeat((4-s.length%4)%4);const raw=atob((s+pad).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));};
   const subscribe=async(promptUser)=>{if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window))return false;const reg=await navigator.serviceWorker.register("/gsf-sw.js?v=1",{scope:"/"});let permission=Notification.permission;if(permission==="default"&&promptUser)permission=await Notification.requestPermission();if(permission!=="granted")return false;const key=await fetch("/push/public-key",{cache:"no-store"}).then(r=>r.json()).then(x=>x.public_key||"");if(!key)return false;let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:toU8(key)});await fetch("/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sub.toJSON())});return true;};
+
+  const ensureToastUi=()=>{
+    let host=document.getElementById("gsf-site-toast-stack");
+    if(host)return host;
+    const style=document.createElement("style");
+    style.id="gsf-site-toast-style";
+    style.textContent="#gsf-site-toast-stack{position:fixed;top:max(14px,env(safe-area-inset-top,0px));right:14px;z-index:2147483640;width:min(360px,calc(100vw - 28px));display:flex;flex-direction:column;gap:9px;pointer-events:none;font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}.gsf-site-toast{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) 24px;gap:10px;align-items:center;padding:10px 10px 10px 11px;border:1px solid rgba(194,219,236,.92);border-radius:18px;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 15px 38px rgba(37,72,101,.18),inset 0 1px 0 rgba(255,255,255,.86);color:#24475f;pointer-events:auto;overflow:hidden;opacity:0;transform:translateY(-12px) scale(.98);transition:opacity .22s ease,transform .22s ease}.gsf-site-toast.gsf-show{opacity:1;transform:translateY(0) scale(1)}.gsf-site-toast.gsf-hide{opacity:0;transform:translateY(-9px) scale(.985)}.gsf-site-toast-icon{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,#eaf8ff,#bfe8ff);box-shadow:inset 0 1px 0 rgba(255,255,255,.88)}.gsf-site-toast-icon img{width:34px;height:34px;border-radius:10px;display:block}.gsf-site-toast-copy{min-width:0}.gsf-site-toast-title{font-size:13px;font-weight:900;line-height:1.15;color:#315b75;letter-spacing:.005em}.gsf-site-toast-body{margin-top:3px;font-size:11px;font-weight:650;line-height:1.3;color:#668195;white-space:normal}.gsf-site-toast-close{border:0;background:transparent;color:#86a0b1;width:24px;height:24px;border-radius:8px;font-size:18px;line-height:20px;padding:0;cursor:pointer}.gsf-site-toast-bar{position:absolute;left:0;bottom:0;height:3px;width:100%;background:linear-gradient(90deg,#8bd9f8,#8cc9ff);transform-origin:left center;animation:gsfToastLife 5.8s linear forwards}.gsf-site-toast[data-kind=error]{border-color:rgba(235,187,187,.9)}.gsf-site-toast[data-kind=error] .gsf-site-toast-icon{background:linear-gradient(145deg,#fff0f0,#ffd8d8)}.gsf-site-toast[data-kind=error] .gsf-site-toast-bar{background:linear-gradient(90deg,#ff9d9d,#ffc0c0)}@keyframes gsfToastLife{from{transform:scaleX(1)}to{transform:scaleX(0)}}@media(max-width:600px){#gsf-site-toast-stack{top:max(10px,env(safe-area-inset-top,0px));right:10px;width:calc(100vw - 20px)}.gsf-site-toast{grid-template-columns:42px minmax(0,1fr) 22px;border-radius:16px}.gsf-site-toast-icon{width:42px;height:42px}.gsf-site-toast-icon img{width:32px;height:32px}}";
+    document.head.appendChild(style);
+    host=document.createElement("div");
+    host.id="gsf-site-toast-stack";
+    host.setAttribute("aria-live","polite");
+    document.body.appendChild(host);
+    return host;
+  };
+
+  const seenPersistent=(token)=>{if(!token)return false;try{return localStorage.getItem("gsf-site-notice:"+token)==="1";}catch(e){return false;}};
+  const markPersistent=(token)=>{if(!token)return;try{localStorage.setItem("gsf-site-notice:"+token,"1");}catch(e){}};
+  const showToast=(title,body,kind="success",opts={})=>{
+    const token=String(opts.token||"");
+    if(opts.persistent&&token&&seenPersistent(token))return false;
+    if(opts.persistent&&token)markPersistent(token);
+    const host=ensureToastUi(),el=document.createElement("div");
+    el.className="gsf-site-toast";el.dataset.kind=kind;
+    const icon=document.createElement("div");icon.className="gsf-site-toast-icon";
+    const img=document.createElement("img");img.src="/app-icon.png?v=4";img.alt="";icon.appendChild(img);
+    const copy=document.createElement("div");copy.className="gsf-site-toast-copy";
+    const strong=document.createElement("div");strong.className="gsf-site-toast-title";strong.textContent=String(title||"Gaming Shorts Factory");
+    const small=document.createElement("div");small.className="gsf-site-toast-body";small.textContent=String(body||"");copy.append(strong,small);
+    const close=document.createElement("button");close.className="gsf-site-toast-close";close.type="button";close.setAttribute("aria-label","Chiudi");close.textContent="×";
+    const bar=document.createElement("div");bar.className="gsf-site-toast-bar";el.append(icon,copy,close,bar);host.prepend(el);
+    while(host.children.length>3)host.lastElementChild?.remove();
+    const remove=()=>{if(!el.isConnected)return;el.classList.add("gsf-hide");setTimeout(()=>el.remove(),240);};
+    close.onclick=(ev)=>{ev.stopPropagation();remove();};
+    if(typeof opts.onClick==="function"){el.style.cursor="pointer";el.addEventListener("click",(ev)=>{if(ev.target===close)return;opts.onClick();remove();});}
+    requestAnimationFrame(()=>el.classList.add("gsf-show"));setTimeout(remove,5800);return true;
+  };
+
   window.GSFPush={enable:()=>subscribe(true),ensure:()=>subscribe(false)};
+  window.GSFNotify={show:(title,body,kind)=>showToast(title,body,kind||"success")};
 
-  let uploadActive=false;
-  let lastRenderStatus="";
+  let uploadActive=false,uploadCycle=0,uploadDoneCycle=0,lastRenderStatus="";
   const autoOpenStorageKey="gsf-share-auto-open-token";
-
   window.addEventListener("message",(event)=>{
-    const d=event.data||{};
-    if(d.type!=="gsf-upload")return;
-    if(d.state==="running")uploadActive=true;
-    else if(d.state==="done"||d.state==="error")uploadActive=false;
+    const d=event.data||{};if(d.type!=="gsf-upload")return;const state=String(d.state||"");
+    if(state==="running"){if(!uploadActive){uploadCycle+=1;uploadActive=true;}}
+    else if(state==="done"){uploadActive=false;if(uploadDoneCycle!==uploadCycle){uploadDoneCycle=uploadCycle;const name=String(d.name||"").trim();showToast("Upload completato",name?name+" è pronto per essere lavorato.":"Il video è pronto per essere lavorato.","success");}}
+    else if(state==="error"){const wasActive=uploadActive;uploadActive=false;if(wasActive)showToast("Upload interrotto","Il caricamento non è stato completato. Puoi riprovare senza perdere il resto del lavoro.","error");}
   });
 
-  // Keep the native leave-page warning only while a real upload is active.
-  // Switching apps/backgrounding on iOS does not trigger this path.
-  window.addEventListener("beforeunload",(event)=>{
-    if(!uploadActive)return;
-    event.preventDefault();
-    event.returnValue="";
-  });
+  window.addEventListener("beforeunload",(event)=>{if(!uploadActive)return;event.preventDefault();event.returnValue="";});
 
   const openShareHub=()=>{
-    const buttons=[...document.querySelectorAll("button")];
-    const target=buttons.find((b)=>{
-      const label=(b.innerText||b.textContent||"").trim().toUpperCase();
-      return label.includes("CONDIVIDI O SCARICA")||label.includes("APRI SHARE HUB");
-    });
-    if(!target||target.disabled)return false;
-    target.click();
-    return true;
+    const target=[...document.querySelectorAll("button")].find((b)=>{const label=(b.innerText||b.textContent||"").trim().toUpperCase();return label.includes("CONDIVIDI O SCARICA")||label.includes("APRI SHARE HUB");});
+    if(!target||target.disabled)return false;target.click();return true;
   };
 
   const pollJob=async()=>{
     try{
-      const j=await fetch("/job/status",{cache:"no-store"}).then(r=>r.json());
-      const status=String(j.render_status||"");
-      lastRenderStatus=status;
+      const j=await fetch("/job/status",{cache:"no-store"}).then(r=>r.json()),status=String(j.render_status||"");
       if(status==="ready"){
         const token=String(j.completed_at||j.started_at||"ready");
-        let opened="";
-        try{opened=sessionStorage.getItem(autoOpenStorageKey)||"";}catch(e){}
-        if(opened!==token&&openShareHub()){
-          try{sessionStorage.setItem(autoOpenStorageKey,token);}catch(e){}
-        }
+        showToast("Short completato","Il tuo Short è pronto per download e pubblicazione.","success",{token:"short-ready-"+token,persistent:true,onClick:()=>openShareHub()});
+        let opened="";try{opened=sessionStorage.getItem(autoOpenStorageKey)||"";}catch(e){}
+        if(opened!==token&&openShareHub()){try{sessionStorage.setItem(autoOpenStorageKey,token);}catch(e){}}
+      }else if(status==="failed"){
+        const token=String(j.failed_at||j.started_at||"failed");
+        showToast("Creazione Short non riuscita","Il rendering si è fermato. Il progetto e la bozza restano disponibili.","error",{token:"short-failed-"+token,persistent:true});
       }
+      lastRenderStatus=status;
     }catch(e){}
   };
 
-  setInterval(pollJob,1500);
-  pollJob();
-
-  // Safari/iPhone can suspend JS while another app is in front. As soon as
-  // the user comes back, immediately resync the render state and reopen the
-  // Share Hub if the Short completed in the meantime.
-  document.addEventListener("visibilitychange",()=>{
-    if(document.visibilityState==="visible"){
-      pollJob();
-      subscribe(false).catch(()=>{});
-    }
-  });
-  window.addEventListener("pageshow",()=>{
-    pollJob();
-    subscribe(false).catch(()=>{});
-  });
-
-  document.addEventListener("click",(event)=>{
-    const b=event.target&&event.target.closest?event.target.closest("button"):null;
-    if(!b)return;
-    const label=(b.innerText||b.textContent||"").toUpperCase();
-    if(label.includes("CREA SHORT"))subscribe(true).catch(()=>{});
-  },true);
+  setInterval(pollJob,1500);pollJob();
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){pollJob();subscribe(false).catch(()=>{});}});
+  window.addEventListener("pageshow",()=>{pollJob();subscribe(false).catch(()=>{});});
+  document.addEventListener("click",(event)=>{const b=event.target&&event.target.closest?event.target.closest("button"):null;if(!b)return;const label=(b.innerText||b.textContent||"").toUpperCase();if(label.includes("CREA SHORT"))subscribe(true).catch(()=>{});},true);
   window.addEventListener("load",()=>subscribe(false).catch(()=>{}),{once:true});
 })();'''.encode("utf-8")
 
@@ -2095,7 +2103,14 @@ class Handler(BaseHTTPRequestHandler):
             if status=="running":
                 started=float(payload.get("started_at") or 0.0)
                 if started and time.time()-started>900:status="stale"
-            _json(self,200,{"ok":True,"render_status":status,"started_at":payload.get("started_at"),"completed_at":payload.get("completed_at")})
+            _json(self,200,{
+                "ok":True,
+                "render_status":status,
+                "started_at":payload.get("started_at"),
+                "completed_at":payload.get("completed_at"),
+                "failed_at":payload.get("failed_at"),
+                "final_bytes":payload.get("final_bytes"),
+            })
             return
         if clean=="/source/restore":
             sid=_social_sid(self)
