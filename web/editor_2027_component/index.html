@@ -181,8 +181,20 @@
    overflow:visible;
  }
  #ng27 .shell:after{display:none}
- #ng27 .topline{position:absolute;top:8px;right:8px;z-index:40;padding:0}
- #ng27 .zoomEditorBtn{display:none!important}
+ #ng27 .topline{position:absolute;top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));z-index:40;padding:0}
+ #ng27 .zoomEditorBtn{
+   display:flex!important;
+   height:34px;
+   padding:0 10px;
+   border-radius:11px;
+   background:rgba(247,252,255,.88);
+   border:1px solid rgba(218,233,243,.92);
+   box-shadow:0 6px 18px rgba(25,48,67,.16);
+   -webkit-backdrop-filter:blur(14px);
+   backdrop-filter:blur(14px);
+   color:#587083;
+ }
+ #ng27 #pauseBtn{display:none!important}
 
  #ng27 .cockpit,
  #ng27.expanded .cockpit{
@@ -322,6 +334,156 @@
  #ng27 .cockpit>.rail:last-child{right:5px}
  #ng27 .drawer{left:49px;right:49px}
  #ng27 .captionPreview{width:62%;font-size:20px}
+}
+
+/* GSF_EDITOR_FULLSCREEN_V2 — fullscreen always contains the whole editor UI. */
+#ng27.gsfFullscreen,
+#ng27:fullscreen,
+#ng27:-webkit-full-screen{
+  box-sizing:border-box;
+  width:100vw;
+  height:100dvh;
+  min-height:100vh;
+  margin:0;
+  padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
+  overflow:auto;
+  background:radial-gradient(circle at 50% 12%,#f8fdff 0%,#e9f5fb 48%,#e7eef7 100%);
+}
+#ng27.gsfFullscreen .shell,
+#ng27:fullscreen .shell,
+#ng27:-webkit-full-screen .shell{
+  width:100%;
+  max-width:1120px;
+  min-height:calc(100dvh - 20px);
+  margin:0 auto;
+  padding:8px 12px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  overflow:visible;
+}
+#ng27.gsfFullscreen .cockpit,
+#ng27:fullscreen .cockpit,
+#ng27:-webkit-full-screen .cockpit{
+  width:100%;
+  grid-template-columns:84px minmax(0,1fr) 84px;
+  gap:14px;
+}
+#ng27.gsfFullscreen .railBtn,
+#ng27:fullscreen .railBtn,
+#ng27:-webkit-full-screen .railBtn{
+  width:74px;
+  height:74px;
+}
+#ng27.gsfFullscreen .railBtn .ico,
+#ng27:fullscreen .railBtn .ico,
+#ng27:-webkit-full-screen .railBtn .ico{width:27px;height:27px}
+#ng27.gsfFullscreen .railBtn span,
+#ng27:fullscreen .railBtn span,
+#ng27:-webkit-full-screen .railBtn span{font-size:8.6px}
+#ng27.gsfFullscreen .stage.r916,
+#ng27:fullscreen .stage.r916,
+#ng27:-webkit-full-screen .stage.r916{
+  width:min(100%,calc(72dvh * 9 / 16),430px);
+  max-height:72dvh;
+}
+#ng27.gsfFullscreen .timeline,
+#ng27:fullscreen .timeline,
+#ng27:-webkit-full-screen .timeline{width:min(96%,760px)}
+
+@media(max-width:820px){
+ #ng27.gsfFullscreen,
+ #ng27:fullscreen,
+ #ng27:-webkit-full-screen{
+   padding:0;
+   overflow:hidden;
+   background:#08131c;
+ }
+ #ng27.gsfFullscreen .shell,
+ #ng27:fullscreen .shell,
+ #ng27:-webkit-full-screen .shell{
+   width:100vw;
+   height:100dvh;
+   min-height:100dvh;
+   max-width:none;
+   padding:0;
+   border-radius:0;
+   justify-content:center;
+ }
+ #ng27.gsfFullscreen .topline,
+ #ng27:fullscreen .topline,
+ #ng27:-webkit-full-screen .topline{
+   top:max(10px,env(safe-area-inset-top));
+   right:max(10px,env(safe-area-inset-right));
+ }
+ #ng27.gsfFullscreen .cockpit,
+ #ng27:fullscreen .cockpit,
+ #ng27:-webkit-full-screen .cockpit{
+   display:block;
+   width:100vw;
+   height:100dvh;
+ }
+ #ng27.gsfFullscreen .stageWrap,
+ #ng27:fullscreen .stageWrap,
+ #ng27:-webkit-full-screen .stageWrap{
+   display:flex;
+   align-items:center;
+   justify-content:center;
+   width:100vw;
+   height:100dvh;
+ }
+ #ng27.gsfFullscreen .stage.r916,
+ #ng27:fullscreen .stage.r916,
+ #ng27:-webkit-full-screen .stage.r916{
+   width:min(100vw,calc(100dvh * 9 / 16));
+   height:min(100dvh,calc(100vw * 16 / 9));
+   max-height:100dvh;
+   border-radius:0;
+ }
+ #ng27.gsfFullscreen .cockpit>.rail,
+ #ng27:fullscreen .cockpit>.rail,
+ #ng27:-webkit-full-screen .cockpit>.rail{
+   position:fixed;
+   top:50%;
+   z-index:60;
+ }
+ #ng27.gsfFullscreen .cockpit>.rail:first-child,
+ #ng27:fullscreen .cockpit>.rail:first-child,
+ #ng27:-webkit-full-screen .cockpit>.rail:first-child{left:max(8px,env(safe-area-inset-left))}
+ #ng27.gsfFullscreen .cockpit>.rail:last-child,
+ #ng27:fullscreen .cockpit>.rail:last-child,
+ #ng27:-webkit-full-screen .cockpit>.rail:last-child{right:max(8px,env(safe-area-inset-right))}
+ #ng27.gsfFullscreen .railBtn,
+ #ng27:fullscreen .railBtn,
+ #ng27:-webkit-full-screen .railBtn{
+   width:44px;height:44px;min-width:44px;min-height:44px;
+ }
+ #ng27.gsfFullscreen .timeline,
+ #ng27:fullscreen .timeline,
+ #ng27:-webkit-full-screen .timeline{
+   position:fixed;
+   left:50%;
+   bottom:max(10px,env(safe-area-inset-bottom));
+   width:min(calc(100vw - 18px),520px);
+   z-index:58;
+ }
+ #ng27.gsfFullscreen .drawer,
+ #ng27:fullscreen .drawer,
+ #ng27:-webkit-full-screen .drawer{
+   position:fixed;
+   left:58px;
+   right:58px;
+   bottom:100px;
+   z-index:70;
+   max-height:52dvh;
+ }
+ #ng27.gsfFullscreen .toast,
+ #ng27:fullscreen .toast,
+ #ng27:-webkit-full-screen .toast{
+   position:fixed;
+   bottom:102px;
+   z-index:80;
+ }
 }
 </style>
 
@@ -739,17 +901,156 @@
    sendStateToPython(payload);
    flash('MODIFICHE APPLICATE');
  };
- zoomEditorBtn.onclick=()=>{
-   const expanded=root.classList.toggle('expanded');
-   zoomEditorBtn.querySelector('span').textContent=expanded?'RIDUCI':'ZOOM';
-   flash(expanded?'EDITOR ESPANSO':'EDITOR COMPATTO');
+ const playBtn=root.querySelector('#playBtn');
+ const pauseBtn=root.querySelector('#pauseBtn');
+ const isMobileEditor=()=>window.matchMedia('(max-width:820px)').matches;
+ const ownFullscreen=()=>document.fullscreenElement===root||document.webkitFullscreenElement===root;
+ const parentFullscreen=()=>{
+   try{return !!(window.frameElement&&window.parent.document&&(window.parent.document.fullscreenElement===window.frameElement||window.parent.document.webkitFullscreenElement===window.frameElement));}
+   catch(e){return false;}
+ };
+ const overlayFullscreen=()=>root.classList.contains('gsfFullscreenFallback');
+ const isEditorFullscreen=()=>ownFullscreen()||parentFullscreen()||overlayFullscreen();
+
+ function updateZoomControl(){
+   const span=zoomEditorBtn.querySelector('span');
+   if(isEditorFullscreen()){
+     span.textContent='RIDUCI';
+     zoomEditorBtn.title='Esci da schermo intero';
+   }else if(isMobileEditor()){
+     span.textContent='FULL';
+     zoomEditorBtn.title='Apri Game Editor a schermo intero';
+   }else if(root.classList.contains('expanded')){
+     span.textContent='FULL';
+     zoomEditorBtn.title='Apri Game Editor a schermo intero';
+   }else{
+     span.textContent='ZOOM';
+     zoomEditorBtn.title='Ingrandisci Game Editor';
+   }
+ }
+
+ function setFrameFullscreenFallback(on){
+   try{
+     const frame=window.frameElement;
+     if(!frame||!window.parent||!window.parent.document)return false;
+     const doc=window.parent.document;
+     if(on){
+       if(!frame.dataset.gsfFullscreenStyle)frame.dataset.gsfFullscreenStyle=frame.getAttribute('style')||'';
+       if(!doc.documentElement.dataset.gsfEditorOverflow)doc.documentElement.dataset.gsfEditorOverflow=doc.documentElement.style.overflow||'';
+       if(!doc.body.dataset.gsfEditorOverflow)doc.body.dataset.gsfEditorOverflow=doc.body.style.overflow||'';
+       frame.style.position='fixed';frame.style.inset='0';frame.style.width='100vw';frame.style.height='100dvh';
+       frame.style.maxWidth='none';frame.style.maxHeight='none';frame.style.zIndex='2147483600';frame.style.border='0';frame.style.background='#08131c';
+       doc.documentElement.style.overflow='hidden';doc.body.style.overflow='hidden';
+       root.classList.add('gsfFullscreenFallback','gsfFullscreen');
+     }else{
+       const saved=frame.dataset.gsfFullscreenStyle;
+       if(saved!==undefined){frame.setAttribute('style',saved);delete frame.dataset.gsfFullscreenStyle;}
+       doc.documentElement.style.overflow=doc.documentElement.dataset.gsfEditorOverflow||'';
+       doc.body.style.overflow=doc.body.dataset.gsfEditorOverflow||'';
+       delete doc.documentElement.dataset.gsfEditorOverflow;delete doc.body.dataset.gsfEditorOverflow;
+       root.classList.remove('gsfFullscreenFallback','gsfFullscreen');
+       setFrameHeight(hostHeight);
+     }
+     return true;
+   }catch(e){return false;}
+ }
+
+ async function enterEditorFullscreen(){
+   root.classList.add('gsfFullscreen');
+   try{
+     if(root.requestFullscreen){await root.requestFullscreen({navigationUI:'hide'});updateZoomControl();return true;}
+     if(root.webkitRequestFullscreen){root.webkitRequestFullscreen();updateZoomControl();return true;}
+   }catch(e){}
+   try{
+     const frame=window.frameElement;
+     if(frame&&frame.requestFullscreen){await frame.requestFullscreen({navigationUI:'hide'});updateZoomControl();return true;}
+     if(frame&&frame.webkitRequestFullscreen){frame.webkitRequestFullscreen();updateZoomControl();return true;}
+   }catch(e){}
+   if(setFrameFullscreenFallback(true)){updateZoomControl();return true;}
+   root.classList.remove('gsfFullscreen');
+   flash('FULLSCREEN NON DISPONIBILE');
+   updateZoomControl();
+   return false;
+ }
+
+ async function exitEditorFullscreen(){
+   if(overlayFullscreen()){setFrameFullscreenFallback(false);updateZoomControl();return;}
+   try{
+     if(document.fullscreenElement||document.webkitFullscreenElement){
+       if(document.exitFullscreen)await document.exitFullscreen();
+       else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
+     }else{
+       const pdoc=window.parent&&window.parent.document;
+       if(pdoc&&(pdoc.fullscreenElement||pdoc.webkitFullscreenElement)){
+         if(pdoc.exitFullscreen)await pdoc.exitFullscreen();
+         else if(pdoc.webkitExitFullscreen)pdoc.webkitExitFullscreen();
+       }
+     }
+   }catch(e){}
+   root.classList.remove('gsfFullscreen');
+   updateZoomControl();
+   setFrameHeight(hostHeight);
+ }
+
+ zoomEditorBtn.onclick=async()=>{
+   if(isEditorFullscreen()){
+     await exitEditorFullscreen();
+     flash('EDITOR COMPATTO');
+     return;
+   }
+   if(isMobileEditor()){
+     await enterEditorFullscreen();
+     if(isEditorFullscreen())flash('EDITOR FULL SCREEN');
+     return;
+   }
+   if(!root.classList.contains('expanded')){
+     root.classList.add('expanded');
+     updateZoomControl();
+     flash('EDITOR ESPANSO');
+     return;
+   }
+   await enterEditorFullscreen();
+   if(isEditorFullscreen())flash('EDITOR FULL SCREEN');
  };
 
- root.querySelector('#playBtn').onclick=()=>{
+ function syncFullscreenState(){
+   const full=ownFullscreen()||parentFullscreen()||overlayFullscreen();
+   root.classList.toggle('gsfFullscreen',full);
+   if(!full&&!overlayFullscreen())setFrameHeight(hostHeight);
+   updateZoomControl();
+ }
+ document.addEventListener('fullscreenchange',syncFullscreenState);
+ document.addEventListener('webkitfullscreenchange',syncFullscreenState);
+ try{
+   if(window.parent&&window.parent.document){
+     window.parent.document.addEventListener('fullscreenchange',syncFullscreenState);
+     window.parent.document.addEventListener('webkitfullscreenchange',syncFullscreenState);
+   }
+ }catch(e){}
+ window.addEventListener('resize',updateZoomControl);
+ updateZoomControl();
+
+ function syncPlayToggle(){
+   if(!isMobileEditor())return;
+   const playing=!video.paused&&!video.ended;
+   const use=playBtn.querySelector('use');
+   const span=playBtn.querySelector('span');
+   if(use)use.setAttribute('href',playing?'#i-pause':'#i-play');
+   if(span)span.textContent=playing?'PAUSA':'PLAY';
+   playBtn.setAttribute('aria-label',playing?'Pausa':'Play');
+ }
+ playBtn.onclick=()=>{
+   if(isMobileEditor()&&!video.paused){
+     video.pause();
+     return;
+   }
    if(video.currentTime<state.inPoint||video.currentTime>=state.outPoint)video.currentTime=state.inPoint;
    video.play().catch(()=>{});
  };
- root.querySelector('#pauseBtn').onclick=()=>video.pause();
+ pauseBtn.onclick=()=>video.pause();
+ video.addEventListener('play',syncPlayToggle);
+ video.addEventListener('pause',syncPlayToggle);
+ video.addEventListener('ended',syncPlayToggle);
  video.addEventListener('loadedmetadata',()=>{
    // Prime the first real frame immediately. This keeps the editor visually
    // populated before PLAY without autoplaying the gameplay.
