@@ -32,15 +32,27 @@ for marker in (
     "exitEditorFullscreen",
     "root.classList.add('expanded')",
     "span.textContent='FULL'",
-    "#ng27 #pauseBtn{display:none!important}",
+    "span.textContent='FULL ×2'",
+    "span.textContent='RIDUCI'",
     "syncPlayToggle",
     "playing?'#i-pause':'#i-play'",
+    "captionMode",
+    "Smart Safe",
+    "Usa la trascrizione reale",
 ):
     if marker not in frontend:
-        raise SystemExit(f"FAIL Editor 2027 mobile/fullscreen control missing: {marker}")
+        raise SystemExit(f"FAIL Editor 2027 simplified/fullscreen control missing: {marker}")
 
 if "#ng27 .zoomEditorBtn{display:none!important}" in frontend:
     raise SystemExit("FAIL mobile Editor zoom/fullscreen control is still hidden")
+if 'id="pauseBtn"' in frontend or "pauseBtn" in frontend:
+    raise SystemExit("FAIL Editor 2027 still exposes a separate Pause control")
+if "APPLICA TESTO" in frontend or "data-color=" in frontend:
+    raise SystemExit("FAIL Caption still contains redundant Apply controls")
+if "GAME EVENT MAP" in frontend or "AIM LOCK · 00:03" in frontend:
+    raise SystemExit("FAIL Editor still shows fake static event-map data")
+if "#ng27 .shade,#ng27 .scanlines{display:none!important}" not in frontend:
+    raise SystemExit("FAIL decorative preview effects still alter the rendered look")
 
 if "components.html(" in wrapper:
     raise SystemExit("FAIL Editor 2027 still uses display-only components.html")
@@ -81,7 +93,7 @@ sample={
     "speed":1.25,"volume":80,"muted":False,
     "audioMode":"Game Boost",
     "look":"Competitive","intensity":75,
-    "captionOn":True,"captionText":"CLUTCH",
+    "captionOn":True,"captionMode":"Auto","captionText":"CLUTCH",
     "captionSize":36,"captionY":70,
     "textColor":"#ffffff","activeColor":"#ffd400","outlineColor":"#000000",
     "inPoint":2.0,"outPoint":12.0,
@@ -110,6 +122,42 @@ for key,expected in checks.items():
             raise SystemExit(f"FAIL Editor 2027 mapping {key}: {actual} != {expected}")
     elif actual!=expected:
         raise SystemExit(f"FAIL Editor 2027 mapping {key}: {actual} != {expected}")
+
+# Caption/HUD contract: every visible simplified control must affect the render.
+fixed=editor_2027_render_kwargs({
+    "captionMode":"Fixed","captionOn":True,"captionText":"TESTO MANUALE",
+    "hudMode":"Off","visionEnabled":False,
+},{ "editor_sub_live_words":[{"text":"AUTO","start":0.0,"end":0.2}] })
+if fixed.get("subtitle_words") is not None:
+    raise SystemExit("FAIL Fixed Caption still uses automatic transcript words")
+if fixed.get("subtitle_text")!="TESTO MANUALE" or not fixed.get("subtitles_enabled"):
+    raise SystemExit("FAIL Fixed Caption does not reach final render text")
+
+auto_no_voice=editor_2027_render_kwargs({
+    "captionMode":"Auto","captionOn":True,"captionText":"NO SCOPE CLUTCH!",
+    "hudMode":"Off","visionEnabled":False,
+},{})
+if auto_no_voice.get("subtitle_text"):
+    raise SystemExit("FAIL Auto Caption can still burn placeholder/demo text")
+
+off_caption=editor_2027_render_kwargs({
+    "captionMode":"Off","captionOn":False,
+    "hudMode":"Off","visionEnabled":False,
+},{})
+if off_caption.get("subtitles_enabled") or off_caption.get("subtitle_text") or off_caption.get("subtitle_words"):
+    raise SystemExit("FAIL Caption Off still emits subtitles")
+
+hud_safe=editor_2027_render_kwargs({
+    "captionMode":"Off","hudMode":"Smart Safe","visionEnabled":False,
+},{})
+if not hud_safe.get("smart_reframe"):
+    raise SystemExit("FAIL HUD Smart Safe does not enable the real smart reframe engine")
+
+cinema=editor_2027_render_kwargs({
+    "captionMode":"Off","look":"Boss Cinematic","visionEnabled":False,
+},{})
+if cinema.get("filter_preset")!="Cinematico":
+    raise SystemExit("FAIL Cinema Look does not map to the final render preset")
 
 tree=ast.parse(app)
 core=None
