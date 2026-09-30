@@ -105,47 +105,60 @@ s=s.replace(_publish_anchor,_publish_replacement,1)
 
 # ------------------------------------------------------------------
 # V124 AI OS: social copy from the exact Director plan of the selected
-# moment instead of generic/stale copy.
+# moment. V105.5 intentionally created an empty connected composer; V124
+# seeds the Streamlit widget keys only once so manual user edits always win.
 # ------------------------------------------------------------------
-social_anchor='''                    _default_title = str(_base_pack.get("selected_title",_base_pack.get("title","")) or "")
-                    _default_description = _gsf_social_clean_description(_base_pack)
-                    _default_hashtags = " ".join(_base_pack.get("hashtags",[]) or [])
+social_anchor='''                        _ctx = _gsf_publish_context_token(_base_pack)
+                        _slug = _selected_social.lower()
+
+                        with st.container(key=f"v1055_social_composer_{_slug}"):
 '''
-social_replacement=social_anchor+'''                    # V124 AI Director social optimizer.
-                    try:
-                        _ai_platform_key=str(_selected_social or "").strip().lower()
-                        _ai_social_all={}
-                        _brain=st.session_state.get("gsf_v112_brain_context") or {}
-                        _rows=list(_brain.get("selected") or []) if isinstance(_brain,dict) else []
-                        if _rows:
-                            _nearest=min(
-                                _rows,
-                                key=lambda row:abs(float((row or {}).get("start") or 0.0)-float(_start))
-                            )
-                            _plan=dict((_nearest or {}).get("director_plan") or {})
-                            _ai_social_all=dict(((_plan.get("text") or {}).get("social") or {}))
-                        if not _ai_social_all:
-                            _ai_social_all=st.session_state.get("gsf_v124_social_pack") or {}
-                        _ai_social=(
-                            _ai_social_all.get(_ai_platform_key)
-                            if isinstance(_ai_social_all,dict)
-                            else None
-                        ) or {}
-                        if isinstance(_ai_social,dict) and _ai_social:
-                            _ai_title=str(_ai_social.get("title") or "").strip()
-                            _ai_description=str(_ai_social.get("description") or "").strip()
-                            _ai_hashtags=list(_ai_social.get("hashtags") or [])
-                            if _ai_title:
-                                _default_title=_ai_title
-                            if _ai_description:
-                                _default_description=_ai_description
-                            if _ai_hashtags:
-                                _default_hashtags=" ".join(str(x) for x in _ai_hashtags if str(x).strip())
-                    except Exception as _v124_social_exc:
-                        print("GSF_V124_SOCIAL_WARN",repr(str(_v124_social_exc)),flush=True)
+social_replacement='''                        _ctx = _gsf_publish_context_token(_base_pack)
+                        _slug = _selected_social.lower()
+
+                        # V124 AI Director social optimizer.
+                        try:
+                            _ai_platform_key=str(_selected_social or "").strip().lower()
+                            _ai_social_all={}
+                            _brain=st.session_state.get("gsf_v112_brain_context") or {}
+                            _rows=list(_brain.get("selected") or []) if isinstance(_brain,dict) else []
+                            if _rows:
+                                _nearest=min(
+                                    _rows,
+                                    key=lambda row:abs(float((row or {}).get("start") or 0.0)-float(_start))
+                                )
+                                _plan=dict((_nearest or {}).get("director_plan") or {})
+                                _ai_social_all=dict(((_plan.get("text") or {}).get("social") or {}))
+                            if not _ai_social_all:
+                                _ai_social_all=st.session_state.get("gsf_v124_social_pack") or {}
+                            _ai_social=(
+                                _ai_social_all.get(_ai_platform_key)
+                                if isinstance(_ai_social_all,dict)
+                                else None
+                            ) or {}
+                            if isinstance(_ai_social,dict) and _ai_social:
+                                _ai_title_key=f"social_title_{_slug}_{_ctx}"
+                                _ai_description_key=f"social_description_{_slug}_{_ctx}"
+                                _ai_hashtags_key=f"social_hashtags_{_slug}_{_ctx}"
+                                _ai_title=str(_ai_social.get("title") or "").strip()
+                                _ai_description=str(_ai_social.get("description") or "").strip()
+                                _ai_hashtags=" ".join(
+                                    str(x) for x in (_ai_social.get("hashtags") or [])
+                                    if str(x).strip()
+                                )
+                                if _ai_title_key not in st.session_state and _ai_title:
+                                    st.session_state[_ai_title_key]=_ai_title
+                                if _ai_description_key not in st.session_state and _ai_description:
+                                    st.session_state[_ai_description_key]=_ai_description
+                                if _ai_hashtags_key not in st.session_state and _ai_hashtags:
+                                    st.session_state[_ai_hashtags_key]=_ai_hashtags
+                        except Exception as _v124_social_exc:
+                            print("GSF_V124_SOCIAL_WARN",repr(str(_v124_social_exc)),flush=True)
+
+                        with st.container(key=f"v1055_social_composer_{_slug}"):
 '''
 if social_anchor not in s:
-    raise RuntimeError("V124 social default anchor missing")
+    raise RuntimeError("V124 V105.5 social composer anchor missing")
 s=s.replace(social_anchor,social_replacement,1)
 
 # ------------------------------------------------------------------
