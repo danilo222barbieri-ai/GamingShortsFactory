@@ -18,6 +18,7 @@ import boto3
 from botocore.config import Config
 from boto3.s3.transfer import TransferConfig
 from gsf_perf import perf_event
+from guardian_v113 import inspect_and_repair_local as _guardian_local
 
 try:
     from pywebpush import webpush, WebPushException
@@ -2383,6 +2384,41 @@ def _instagram_oauth_callback(handler,query):
         _html(handler,500,_social_page(sid,"Collegamento Instagram fallito: "+str(exc)[:220]))
 
 
+_GUARDIAN_CACHE={}
+_GUARDIAN_CACHE_LOCK=threading.Lock()
+_GUARDIAN_MIN_INTERVAL=max(2.0,float(os.environ.get("GSF_GUARDIAN_MIN_INTERVAL","5") or 5))
+
+def _guardian_tick(sid,force=False):
+    sid=_safe_id(sid)
+    if not sid:
+        return {"ok":False,"error":"invalid session"}
+    now=time.time()
+    with _GUARDIAN_CACHE_LOCK:
+        cached=dict(_GUARDIAN_CACHE.get(sid) or {})
+        if not force and cached and now-float(cached.get("checked_at") or 0)<_GUARDIAN_MIN_INTERVAL:
+            return cached
+    root=ROOT/"sessions"/sid
+    root.mkdir(parents=True,exist_ok=True)
+    try:
+        result=_guardian_local(root,now=now,stale_after=900)
+        if result.get("needs_final_restore") and _bucket_enabled():
+            restored=_final_restore_from_bucket(sid)
+            if restored:
+                result=_guardian_local(root,now=time.time(),stale_after=900)
+                result.setdefault("repairs",[]).append("final_from_bucket")
+        repairs=list(result.get("repairs") or [])
+        if repairs:
+            print("GSF_GUARDIAN_REPAIR",sid,",".join(repairs),flush=True)
+        with _GUARDIAN_CACHE_LOCK:
+            _GUARDIAN_CACHE[sid]=dict(result)
+        return result
+    except Exception as exc:
+        result={"ok":False,"error":str(exc)[:180],"checked_at":now}
+        with _GUARDIAN_CACHE_LOCK:
+            _GUARDIAN_CACHE[sid]=dict(result)
+        print("GSF_GUARDIAN_WARN",sid,repr(str(exc))[:220],flush=True)
+        return result
+
 class Handler(BaseHTTPRequestHandler):
     server_version="GSFDirectUpload/2.0"
 
@@ -2413,8 +2449,23 @@ class Handler(BaseHTTPRequestHandler):
         if clean=="/push/public-key":
             _json(self,200,{"ok":bool(VAPID_PUBLIC_KEY),"public_key":VAPID_PUBLIC_KEY})
             return
+        if clean=="/guardian/status":
+            sid=_social_sid(self)
+            if not sid:
+                _json(self,400,{"ok":False,"error":"invalid session"})
+                return
+            guardian=_guardian_tick(sid,force=True)
+            _json(self,200,{
+                "ok":bool(guardian.get("ok")),
+                "guardian":guardian,
+                "bucket":_bucket_enabled(),
+                "worker_configured":bool(WORKER_URL),
+            })
+            return
         if clean=="/job/status":
             sid=_social_sid(self);payload={}
+            if sid:
+                _guardian_tick(sid)
             job=None
             stable=None
             if sid:
