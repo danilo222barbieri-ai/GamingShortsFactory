@@ -3444,7 +3444,7 @@ st.markdown("""
 </style>
 """,unsafe_allow_html=True)
 '''
-s=s.rstrip()+"\\n\\n"+_social_brand_tiles_v107.lstrip()
+s=s.rstrip()+"\n\n"+_social_brand_tiles_v107.lstrip()
 
 compile(s,str(out),'exec')
 out.write_text(s,encoding='utf-8')
