@@ -1,17 +1,18 @@
 import base64
 import hashlib
-import html
 import mimetypes
-import os
 from pathlib import Path
-from urllib.parse import quote
 
 import streamlit.components.v1 as components
 
 
 _COMPONENT_DIR = Path(__file__).resolve().parent / "editor_2027_component"
-_EDITOR_2027_TEMPLATE = (_COMPONENT_DIR / "index.html").read_text(encoding="utf-8")
-_EDITOR_COMPONENT_CACHE = {}
+# One stable component name/path for every clip. Dynamic per-video component
+# folders caused intermittent asset 404s behind Railway/Streamlit.
+_EDITOR_2027_COMPONENT = components.declare_component(
+    "gsf_editor_2027",
+    path=str(_COMPONENT_DIR),
+)
 
 
 def _clamp(value, low, high, fallback):
@@ -87,34 +88,11 @@ def _editor_video_url(video_path):
     return f"data:{mime};base64,{raw}"
 
 def _editor_component_for(video_path):
-    p = Path(video_path)
-    video_url = _editor_video_url(p)
-    digest = hashlib.sha1(
-        (str(p.resolve()) + "|" + video_url).encode("utf-8")
-    ).hexdigest()[:16]
-    component = _EDITOR_COMPONENT_CACHE.get(digest)
-    if component is not None:
-        return component, video_url
-
-    runtime_root = Path(os.environ.get("GSF_RUNTIME_ROOT", "/tmp/gsf-runtime"))
-    component_dir = runtime_root / "editor2027_components" / digest
-    component_dir.mkdir(parents=True, exist_ok=True)
-    target = component_dir / "index.html"
-
-    safe_url = html.escape(video_url, quote=True)
-    rendered = _EDITOR_2027_TEMPLATE.replace(
-        '<video id="video" playsinline muted loop preload="metadata" src=""></video>',
-        f'<video id="video" playsinline muted loop preload="metadata" src="{safe_url}"></video>',
-        1,
-    )
-    target.write_text(rendered, encoding="utf-8")
-
-    component = components.declare_component(
-        f"gsf_editor_2027_{digest}",
-        path=str(component_dir),
-    )
-    _EDITOR_COMPONENT_CACHE[digest] = component
-    return component, video_url
+    # Frontend assets are served from the repository's static component
+    # directory. The actual clip URL/state arrives through Streamlit's render
+    # message, so changing clips no longer registers a brand-new component.
+    video_url = _editor_video_url(Path(video_path))
+    return _EDITOR_2027_COMPONENT, video_url
 
 
 def render_editor_2027_embed(
