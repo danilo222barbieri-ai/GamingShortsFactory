@@ -1348,23 +1348,39 @@ st.markdown("""
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:7px;
+  gap:8px;
 }
 .gsf-footer-v4 .social{
-  width:28px;
-  height:28px;
-  border-radius:9px;
-  border:1px solid #d6e4ed;
-  background:linear-gradient(145deg,#fff,#eef5fa);
+  width:30px;
+  height:30px;
+  border-radius:10px;
+  border:1px solid rgba(192,213,227,.92);
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.98),rgba(235,244,250,.94));
   display:grid;
   place-items:center;
-  color:#5f7d92;
-  font:800 13px/1 Arial,sans-serif;
-  box-shadow:0 3px 8px rgba(65,96,121,.06);
+  color:#5d778b !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.96),
+    0 4px 10px rgba(65,96,121,.08);
+  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease,background .16s ease;
 }
-.gsf-footer-v4 .social.yt{font-size:12px}
-.gsf-footer-v4 .social.ig{font-size:15px}
-.gsf-footer-v4 .social.tt{font-size:15px}
+.gsf-footer-v4 .social:hover{
+  transform:translateY(-2px);
+  border-color:#b8d5e7;
+  background:linear-gradient(145deg,#f9fdff,#e8f3fa);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 7px 14px rgba(65,96,121,.13);
+}
+.gsf-footer-v4 .social svg{
+  width:15px;
+  height:15px;
+  display:block;
+  fill:currentColor;
+}
+.gsf-footer-v4 .social.ig svg{width:16px;height:16px}
+.gsf-footer-v4 .social.tw svg{width:16px;height:16px}
 [data-testid="stAppViewContainer"] .block-container{padding-bottom:.55rem !important}
 @media(max-width:600px){
   .gsf-footer-v4{
@@ -1374,13 +1390,15 @@ st.markdown("""
   }
   .gsf-footer-v4 .version,
   .gsf-footer-v4 .legal{font-size:9px}
-  .gsf-footer-v4 .socials{gap:6px}
+  .gsf-footer-v4 .socials{gap:7px}
   .gsf-footer-v4 .social{
-    width:26px;
-    height:26px;
-    border-radius:8px;
-    font-size:12px;
+    width:28px;
+    height:28px;
+    border-radius:9px;
   }
+  .gsf-footer-v4 .social svg{width:14px;height:14px}
+  .gsf-footer-v4 .social.ig svg,
+  .gsf-footer-v4 .social.tw svg{width:15px;height:15px}
   [data-testid="stAppViewContainer"] .block-container{padding-bottom:.35rem !important}
 }
 </style>
@@ -1394,10 +1412,21 @@ st.markdown("""
     <a href="/contact" target="_blank">Contatti</a>
   </div>
   <div class="socials" aria-label="Social">
-    <span class="social fb" title="Facebook">f</span>
-    <span class="social ig" title="Instagram">◎</span>
-    <span class="social yt" title="YouTube">▶</span>
-    <span class="social tt" title="TikTok">♪</span>
+    <a class="social fb" href="https://www.facebook.com/profile.php?id=61595124112318&amp;locale=it_IT" target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.7 22v-9h3l.5-3.5h-3.5V7.3c0-1 .3-1.7 1.8-1.7h1.9V2.5c-.3 0-1.5-.1-2.8-.1-2.8 0-4.7 1.7-4.7 4.8v2.7H7v3.5h2.9v9h3.8z"/></svg>
+    </a>
+    <a class="social ig" href="https://www.instagram.com/gamingshortsfactory/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.4 2h9.2A5.4 5.4 0 0 1 22 7.4v9.2a5.4 5.4 0 0 1-5.4 5.4H7.4A5.4 5.4 0 0 1 2 16.6V7.4A5.4 5.4 0 0 1 7.4 2Zm0 2A3.4 3.4 0 0 0 4 7.4v9.2A3.4 3.4 0 0 0 7.4 20h9.2a3.4 3.4 0 0 0 3.4-3.4V7.4A3.4 3.4 0 0 0 16.6 4H7.4Zm9.6 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg>
+    </a>
+    <a class="social yt" href="https://www.youtube.com/@Dans222nrg" target="_blank" rel="noopener noreferrer" aria-label="YouTube" title="YouTube">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23 12s0-3.7-.5-5.4a3 3 0 0 0-2.1-2.1C18.7 4 12 4 12 4s-6.7 0-8.4.5a3 3 0 0 0-2.1 2.1C1 8.3 1 12 1 12s0 3.7.5 5.4a3 3 0 0 0 2.1 2.1C5.3 20 12 20 12 20s6.7 0 8.4-.5a3 3 0 0 0 2.1-2.1C23 15.7 23 12 23 12Zm-13.2 3.4V8.6l6 3.4-6 3.4Z"/></svg>
+    </a>
+    <a class="social tt" href="https://www.tiktok.com/@gamingshortsfactory" target="_blank" rel="noopener noreferrer" aria-label="TikTok" title="TikTok">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.6 2c.4 2.3 1.8 3.7 4.1 3.9v3.3a9.1 9.1 0 0 1-4.1-1v6.4a6.6 6.6 0 1 1-5.7-6.5v3.4a3.2 3.2 0 1 0 2.4 3.1V2h3.3Z"/></svg>
+    </a>
+    <a class="social tw" href="https://www.twitch.tv/dan222s86" target="_blank" rel="noopener noreferrer" aria-label="Twitch" title="Twitch">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.3 2 2 6.1v14h5.1V24l3.8-3.9h3.1L20 14V2H4.3Zm13.6 11-3.4 3.4H11l-2.9 2.9v-2.9H4V4.1h13.9V13ZM15.2 6.5h-2v5.2h2V6.5Zm-4.7 0h-2v5.2h2V6.5Z"/></svg>
+    </a>
   </div>
 </div>
 <script>
