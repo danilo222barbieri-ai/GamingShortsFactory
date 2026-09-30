@@ -18,6 +18,8 @@ checks={
     "pre-render memory telemetry": "GSF_PRE_RENDER_MEMORY" in s,
     "preview QSV is hardware-gated": 'Path("/dev/dri/renderD128").exists()' in s,
     "preview x264 is one-thread bounded": '"-threads","1"' in s,
+    "final filters are one-thread bounded": "'-filter_threads', '1'" in s or '"-filter_threads", "1"' in s,
+    "final x264 lookahead is bounded": "rc-lookahead=8:sync-lookahead=0:ref=2:bframes=2" in s,
 }
 missing=[name for name,ok in checks.items() if not ok]
 if missing:

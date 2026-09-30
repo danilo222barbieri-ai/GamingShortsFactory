@@ -147,6 +147,45 @@ if _old_lock not in s:
     raise RuntimeError("V107.1 render-lock anchor missing")
 s=s.replace(_old_lock,'acquired=_GSF_V106_RENDER_LOCK.acquire(timeout=15.0)',1)
 
+# 4K/60 iPhone sources can transiently push the 1 GB Railway container over
+# its cgroup limit even with one x264 worker. Keep CRF/resolution intact but
+# bound filter parallelism and x264 lookahead/reference buffering.
+_gsf_render_tree=ast.parse(s)
+_gsf_render_core=next(
+    (n for n in _gsf_render_tree.body if isinstance(n,ast.FunctionDef) and n.name=="_gsf_render_core"),
+    None,
+)
+if _gsf_render_core is None:
+    raise RuntimeError("V107.1 final render core missing")
+_gsf_lowmem_lists=[]
+for _node in ast.walk(_gsf_render_core):
+    if not isinstance(_node,ast.List):
+        continue
+    _vals=[x.value for x in _node.elts if isinstance(x,ast.Constant) and isinstance(x.value,str)]
+    if "-c:v" in _vals and "libx264" in _vals and "-threads" in _vals and "1" in _vals:
+        _gsf_lowmem_lists.append(_node)
+if len(_gsf_lowmem_lists)!=1:
+    raise RuntimeError(f"V107.1 expected one final x264 option list, found {len(_gsf_lowmem_lists)}")
+_gsf_opts=_gsf_lowmem_lists[0].elts
+_gsf_thread_i=None
+for _i in range(len(_gsf_opts)-1):
+    if (
+        isinstance(_gsf_opts[_i],ast.Constant) and _gsf_opts[_i].value=="-threads"
+        and isinstance(_gsf_opts[_i+1],ast.Constant) and str(_gsf_opts[_i+1].value)=="1"
+    ):
+        _gsf_thread_i=_i+2
+        break
+if _gsf_thread_i is None:
+    raise RuntimeError("V107.1 final x264 thread anchor missing")
+_gsf_opts[_gsf_thread_i:_gsf_thread_i]=[
+    ast.Constant(value="-filter_threads"),ast.Constant(value="1"),
+    ast.Constant(value="-x264-params"),ast.Constant(value="rc-lookahead=8:sync-lookahead=0:ref=2:bframes=2"),
+]
+ast.fix_missing_locations(_gsf_render_core)
+_gsf_render_lines=s.splitlines(keepends=True)
+_gsf_render_src=ast.unparse(_gsf_render_core)
+s="".join(_gsf_render_lines[:_gsf_render_core.lineno-1])+_gsf_render_src.rstrip()+"\n\n"+"".join(_gsf_render_lines[_gsf_render_core.end_lineno:])
+
 # Manual/Scegli scena already has a durable source path.  Do not duplicate the
 # entire uploaded source into publication_preview_bytes.  Replace only the
 # unique read; leaving the surrounding try/if structure intact makes this

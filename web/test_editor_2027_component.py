@@ -4,7 +4,7 @@ import math
 import sys
 
 sys.path.insert(0,"/app/web")
-from editor_2027_embed import editor_2027_clip_bounds, editor_2027_render_kwargs
+from editor_2027_embed import editor_2027_clip_bounds, editor_2027_render_kwargs, _editor_video_url
 
 frontend=Path("/app/web/editor_2027_component/index.html").read_text(encoding="utf-8")
 wrapper=Path("/app/web/editor_2027_embed.py").read_text(encoding="utf-8")
@@ -32,8 +32,14 @@ if "_editor_component_for" not in wrapper or '_EDITOR_2027_COMPONENT = component
     raise SystemExit("FAIL Editor 2027 does not use one stable static component")
 if 'f"gsf_editor_2027_{digest}"' in wrapper or "editor2027_components" in wrapper:
     raise SystemExit("FAIL Editor 2027 still declares dynamic per-video component assets")
-if "base64.b64encode(p.read_bytes())" not in wrapper or 'return f"data:{mime};base64,{raw}"' not in wrapper:
-    raise SystemExit("FAIL Editor 2027 mobile source is not self-contained")
+if 'return f"/media/{sid}/{media_path}"' not in wrapper:
+    raise SystemExit("FAIL Editor 2027 web source is not streamed through /media")
+if "base64.b64encode(p.read_bytes())" not in wrapper:
+    raise SystemExit("FAIL Editor 2027 local fallback is missing")
+if "editor2027_manual_" not in app or "crea_anteprima(_gsf_manual_path,_gsf_manual_proxy" not in app:
+    raise SystemExit("FAIL Scegli scena does not create a browser-safe H.264 editor proxy")
+if "_gsf_manual_editor_media" not in app:
+    raise SystemExit("FAIL Scegli scena does not feed the browser-safe proxy to Editor 2027")
 if "\\n" in frontend:
     raise SystemExit("FAIL Editor 2027 frontend contains visible literal newline markers")
 if "gsf-personalize-major" not in app:

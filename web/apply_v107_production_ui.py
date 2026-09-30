@@ -1721,27 +1721,27 @@ _manual_editor_heading_css = r'''
 st.markdown("""
 <style id="gsf-manual-editor-heading-style">
 .gsf-personalize-major{
-    box-sizing:border-box;
-    width:100%;
-    height:56px;
-    min-height:56px;
-    max-height:56px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    margin:0 auto 16px;
-    padding:0 18px;
-    border-radius:17px;
-    border:1px solid rgba(255,255,255,.34);
-    background:linear-gradient(135deg,#8B67E8 0%,#6557D9 100%);
+    box-sizing:border-box !important;
+    width:100% !important;
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    margin:0 auto 16px !important;
+    padding:0 18px !important;
+    border-radius:17px !important;
+    border:1px solid rgba(255,255,255,.34) !important;
+    background:linear-gradient(135deg,#8B67E8 0%,#6557D9 100%) !important;
     color:#FFFFFF !important;
-    box-shadow:0 12px 28px rgba(104,84,205,.28);
-    font-family:var(--gsf-ui-font,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif);
-    font-size:15px;
-    font-weight:900;
-    line-height:1;
-    letter-spacing:.045em;
-    text-align:center;
+    box-shadow:0 12px 28px rgba(104,84,205,.28) !important;
+    font-family:var(--gsf-ui-font,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif) !important;
+    font-size:15px !important;
+    font-weight:900 !important;
+    line-height:1 !important;
+    letter-spacing:.045em !important;
+    text-align:center !important;
 }
 @media(max-width:750px){
     .gsf-personalize-major{
@@ -1830,14 +1830,26 @@ _gsf_new_manual_body = [
     _gsf_indent + '        # Persist the exact Editor source across component/button reruns.\n',
     _gsf_indent + '        st.session_state["gsf_source_path"]=str(_gsf_manual_path)\n',
     _gsf_indent + '        st.session_state["gsf_editor_source_path"]=str(_gsf_manual_path)\n',
-    _gsf_indent + '        _gsf_manual_duration=float(st.session_state.get("auto_clip_duration",15.0) or 15.0)\n',
+    _gsf_indent + '        try:\n',
+    _gsf_indent + '            _gsf_manual_source_duration=float(durata_video(_gsf_manual_path) or 15.0)\n',
+    _gsf_indent + '        except Exception:\n',
+    _gsf_indent + '            _gsf_manual_source_duration=15.0\n',
+    _gsf_indent + '        _gsf_manual_duration=max(0.5,min(60.0,_gsf_manual_source_duration))\n',
+    _gsf_indent + '        _gsf_proxy_sig=__import__("hashlib").sha1((str(_gsf_manual_path)+"|"+str(_gsf_manual_os.path.getsize(_gsf_manual_path))+"|"+str(int(_gsf_manual_os.path.getmtime(_gsf_manual_path)))+"|editor2027-h264-v1").encode("utf-8")).hexdigest()[:16]\n',
+    _gsf_indent + '        _gsf_manual_proxy=_gsf_manual_os.path.join(str(GSF_PREVIEW_DIR),"editor2027_manual_"+_gsf_proxy_sig+".mp4")\n',
+    _gsf_indent + '        _gsf_proxy_ok=_gsf_manual_os.path.isfile(_gsf_manual_proxy) and _gsf_manual_os.path.getsize(_gsf_manual_proxy)>4096\n',
+    _gsf_indent + '        if not _gsf_proxy_ok:\n',
+    _gsf_indent + '            with st.spinner("Preparazione Game Editor..."):\n',
+    _gsf_indent + '                _gsf_proxy_ok=bool(crea_anteprima(_gsf_manual_path,_gsf_manual_proxy,0.0,_gsf_manual_duration))\n',
+    _gsf_indent + '        _gsf_manual_editor_media=_gsf_manual_proxy if _gsf_proxy_ok else _gsf_manual_path\n',
+    _gsf_indent + '        print("GSF_MANUAL_EDITOR_PROXY","source="+str(_gsf_manual_path),"editor="+str(_gsf_manual_editor_media),"proxy_ok="+str(bool(_gsf_proxy_ok)),"duration="+str(round(_gsf_manual_duration,3)),flush=True)\n',
     _gsf_indent + '        _gsf_manual_state_slot=_gsf_editor_2027_state_key(_gsf_manual_path)\n',
     _gsf_indent + '        _gsf_manual_component_key=_gsf_manual_state_slot+"_component"\n',
     _gsf_indent + '        _gsf_manual_saved_state=st.session_state.get(_gsf_manual_state_slot)\n',
     _gsf_indent + '        if not isinstance(_gsf_manual_saved_state,dict):\n',
     _gsf_indent + '            _gsf_manual_saved_state=_gsf_editor_2027_initial_state(_gsf_manual_duration)\n',
     _gsf_indent + '        _gsf_manual_editor_state=_gsf_render_manual_editor_2027(\n',
-    _gsf_indent + '            _gsf_manual_path,height=720,key=_gsf_manual_component_key,initial_state=_gsf_manual_saved_state\n',
+    _gsf_indent + '            _gsf_manual_editor_media,height=720,key=_gsf_manual_component_key,initial_state=_gsf_manual_saved_state\n',
     _gsf_indent + '        )\n',
     _gsf_indent + '        if isinstance(_gsf_manual_editor_state,dict):\n',
     _gsf_indent + '            st.session_state[_gsf_manual_state_slot]=dict(_gsf_manual_editor_state)\n',

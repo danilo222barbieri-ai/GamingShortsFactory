@@ -1,7 +1,9 @@
 import base64
 import hashlib
 import mimetypes
+import os
 from pathlib import Path
+from urllib.parse import quote
 
 import streamlit.components.v1 as components
 
@@ -79,10 +81,26 @@ def _editor_video_url(video_path):
     if not p.is_file():
         return ""
 
-    # The Editor runs inside a Streamlit component iframe. On Safari/iOS and
-    # Chromium/Android a session-protected /media URL can lose the parent
-    # session context. Embed the selected clip directly so every browser gets
-    # an immediately playable source independent of cookies/range routing.
+    # Railway/web: never push a whole gameplay file through Streamlit's
+    # component JSON. That duplicates tens of MB in RAM and, for iPhone MOV,
+    # also gives Chromium a QuickTime/HEVC data URI it may not decode.
+    # Files under the anonymous session media directory are already exposed by
+    # Nginx with byte-range support, so stream them directly from the iframe.
+    try:
+        sessions_root = (
+            Path(os.environ.get("GSF_RUNTIME_ROOT", "/tmp/gsf-runtime"))
+            / "sessions"
+        ).resolve()
+        rel = p.resolve().relative_to(sessions_root)
+        parts = rel.parts
+        if len(parts) >= 3:
+            sid = quote(parts[0], safe="")
+            media_path = "/".join(quote(x, safe="") for x in parts[1:])
+            return f"/media/{sid}/{media_path}"
+    except Exception:
+        pass
+
+    # Local desktop/dev fallback where Nginx /media is not present.
     mime = mimetypes.guess_type(str(p))[0] or "video/mp4"
     raw = base64.b64encode(p.read_bytes()).decode("ascii")
     return f"data:{mime};base64,{raw}"
