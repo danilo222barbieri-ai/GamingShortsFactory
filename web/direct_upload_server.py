@@ -1354,7 +1354,7 @@ h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-col
 <h2>Le tue bozze</h2>{drafts_html}<h2>I tuoi social</h2><div class="socials"><div class="social"><strong>YouTube</strong><span>Accedi per collegare</span></div><div class="social"><strong>TikTok</strong><span>Accedi per collegare</span></div><div class="social"><strong>Instagram</strong><span>Accedi per collegare</span></div><div class="social"><strong>Facebook</strong><span>Accedi per collegare</span></div></div>
 <h2>Auto Highlights</h2><div class="auto"><div class="auto-k">AUTO HIGHLIGHTS</div><div class="auto-title">Tu fai la live. GSF trova i momenti da pubblicare.</div><div class="auto-sub">Accedi al Creator Hub per collegare i tuoi account e gestire le live.</div></div>
 <h2>Prossimamente</h2><div class="future">Storico Short · Cloud · Piano Pro · Crediti AI · Achievement · Classifica Creator.</div>
-<a class="back" href="/" onclick="if(window.opener){window.close();return false;}">← Torna alla pagina principale</a>
+<a class="back" href="/" onclick="if(window.opener){{window.close();return false;}}">← Torna alla pagina principale</a>
 </div></main></body></html>"""
     providers=dict(profile.get("providers") or {})
     name=html.escape(str(profile.get("display_name") or "Creator"))
@@ -1414,7 +1414,7 @@ h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-col
 <h2>Le tue bozze</h2>{drafts_html}<h2>I tuoi social</h2><div class="socials">{socials}</div>
 <h2>Auto Highlights</h2><div class="auto"><div class="auto-k">AUTO HIGHLIGHTS</div><div class="auto-title">Tu fai la live. GSF trova i momenti da pubblicare.</div><div class="auto-sub">Collega i tuoi account live per trovare automaticamente i momenti migliori e portarli nel Game Editor.</div></div>
 <h2>Prossimamente</h2><div class="future">Storico Short · Cloud · Piano Pro · Crediti AI · Achievement · Classifica Creator.</div>
-<a class="logout" href="/account/logout">Esci dal Creator Hub</a><a class="back-bottom" href="/" onclick="if(window.opener){window.close();return false;}">← Torna alla pagina principale</a>
+<a class="logout" href="/account/logout">Esci dal Creator Hub</a><a class="back-bottom" href="/" onclick="if(window.opener){{window.close();return false;}}">← Torna alla pagina principale</a>
 </div></main></body></html>"""
 
 
