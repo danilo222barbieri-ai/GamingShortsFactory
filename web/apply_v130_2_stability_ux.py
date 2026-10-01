@@ -759,8 +759,19 @@ st.markdown("""
   visibility:visible !important;
   filter:none !important;
 }
+.st-key-v81_new_video{
+  display:flex !important;
+  justify-content:center !important;
+  width:100% !important;
+}
+.st-key-v81_new_video > div,
+.st-key-v81_new_video [data-testid="stButton"]{
+  width:auto !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
 .gsf-footer-v4{
-  margin:2px auto 4px !important;
+  margin:0 auto 2px !important;
   padding:5px 6px 4px !important;
   gap:5px !important;
   min-height:0 !important;
@@ -792,14 +803,32 @@ st.markdown("""
     border-radius:18px !important;
   }
   .gsf-footer-v4{
-    margin:1px auto 3px !important;
-    padding:4px 5px 3px !important;
-    gap:4px !important;
+    margin:-8px auto 0 !important;
+    padding:2px 4px 1px !important;
+    gap:2px !important;
+    line-height:1.05 !important;
+  }
+  .gsf-footer-v4 .socials{
+    margin:1px 0 !important;
+    gap:5px !important;
+  }
+  .gsf-footer-v4 .socials a{
+    width:34px !important;
+    height:34px !important;
+  }
+  .gsf-footer-v4 .bug-report{
+    margin-top:0 !important;
+    line-height:1 !important;
+  }
+  .gsf-v1056-ad:last-of-type,
+  .gsf-v1057-ad:last-of-type,
+  .v67-ad:last-of-type{
+    margin-bottom:4px !important;
   }
   [data-testid="stAppViewContainer"] .block-container{
     padding-left:.8rem !important;
     padding-right:.8rem !important;
-    padding-bottom:.2rem !important;
+    padding-bottom:0 !important;
   }
 }
 </style>
