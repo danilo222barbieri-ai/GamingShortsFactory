@@ -64,6 +64,9 @@ def editor_2027_initial_state(duration=15.0, saved=None):
         "outPoint": duration,
         "aiMode": "Auto Gaming",
         "visionEnabled": False,
+        "longFormMinutes": 8,
+        "longFormNonce": 0,
+        "longFormRequested": False,
     }
     if isinstance(saved, dict):
         state.update(saved)
