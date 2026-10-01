@@ -167,17 +167,28 @@ html,body,[data-testid="stAppViewContainer"],.stApp{
 """,unsafe_allow_html=True)
 '''
 
-# Put the neutral reset before app rendering, while preserved Editor CSS later
-# in the file can still apply its exact approved appearance.
-insert_anchor='st.set_page_config('
-pos=s.find(insert_anchor)
-if pos<0:
-    # Fallback: before first visible Streamlit markdown/widget call.
-    insert_anchor='st.markdown('
-    pos=s.find(insert_anchor)
-if pos<0:
-    raise RuntimeError("V152 insertion anchor not found")
-s=s[:pos]+reset+"\n"+s[pos:]
+# Insert the neutral reset immediately AFTER st.set_page_config.
+# Streamlit requires set_page_config to remain the first UI command.
+_page_tree=ast.parse(s)
+_page_node=None
+for _node in ast.walk(_page_tree):
+    if not isinstance(_node,ast.Call):
+        continue
+    _fn=_node.func
+    if (
+        isinstance(_fn,ast.Attribute)
+        and isinstance(_fn.value,ast.Name)
+        and _fn.value.id=="st"
+        and _fn.attr=="set_page_config"
+    ):
+        _page_node=_node
+        break
+if _page_node is None:
+    raise RuntimeError("V152 st.set_page_config anchor not found")
+_page_lines=s.splitlines(keepends=True)
+_insert_at=getattr(_page_node,"end_lineno",_page_node.lineno)
+_page_lines[_insert_at:_insert_at]=["\n"+reset+"\n"]
+s="".join(_page_lines)
 
 # Hard guards: functionality markers remain; old V151 shell is gone; Editor survives.
 for marker in (
