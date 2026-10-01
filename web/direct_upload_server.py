@@ -27,6 +27,7 @@ from feedback_learning_v127 import (
     save_model as _learning_save_model,
     update_model as _learning_update_model,
 )
+from content_memory_v145 import inspect_memory as _content_memory_inspect, upsert_memory as _content_memory_upsert
 
 try:
     from pywebpush import webpush, WebPushException
@@ -49,6 +50,7 @@ _STATE_LOCKS_GUARD=threading.Lock()
 _QUALITY_CACHE={}
 _QUALITY_LOCK=threading.Lock()
 _AI_FEEDBACK_LOCK=threading.Lock()
+_CONTENT_MEMORY_LOCK=threading.Lock()
 _AI_LEARNING_PATH=ROOT/"ai_learning_v127.json"
 _AI_LEARNING_BUCKET_KEY="ai-feedback/global/model.json"
 _GUARDIAN_WATCHDOG=None
