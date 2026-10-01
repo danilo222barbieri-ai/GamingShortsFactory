@@ -104,3 +104,9 @@ assert '"retention_prediction"' in Path("/app/web/one_click_v130.py").read_text(
 assert '"creator_learning"' in Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
 assert '"game_specific"' in Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
 assert '"ab_variants"' in Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
+
+
+# V131 session-wide Director intelligence contract
+src=Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
+for marker in ("_session_intelligence","duplicate_detector","series_ai","best_of_session","long_form","content_memory","safety_privacy","copyright_audio","visual_cleanup","trend_adaptation","content_calendar","post_publish_learning"):
+    assert marker in src, marker
