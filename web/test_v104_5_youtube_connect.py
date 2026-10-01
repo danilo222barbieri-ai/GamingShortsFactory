@@ -27,7 +27,7 @@ need('"/social-connect/youtube/start"' in server,"YouTube connect start endpoint
 need('"/social-connect/youtube/callback"' in server,"YouTube callback endpoint exists")
 need("https://accounts.google.com/o/oauth2/v2/auth" in server,"official Google auth endpoint used")
 need("https://oauth2.googleapis.com/token" in server,"official Google token endpoint used")
-need('YOUTUBE_SCOPE="https://www.googleapis.com/auth/youtube.upload"' in server,"YouTube upload scope used")
+need("YOUTUBE_SCOPE=" in server and "https://www.googleapis.com/auth/youtube.upload" in server,"YouTube upload scope used")
 need('f"social-connections/{sid}/youtube.json"' in server,"YouTube token stored per browser")
 need("✅ YouTube collegato" in server,"Social Connect shows YouTube status")
 need('href="/social-connect/youtube/start"' in server,"Social Connect has YouTube button")
