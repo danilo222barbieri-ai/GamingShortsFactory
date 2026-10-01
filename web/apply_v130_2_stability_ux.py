@@ -522,11 +522,11 @@ if (
             with _v1302_col:
                 _v1302_state=bool(st.session_state.get("gsf_v1302_target_"+_v1302_key,False))
                 if st.button(
-                    _v1302_icon+(" ✓" if _v1302_state else ""),
+                    _v1302_icon,
                     key="gsf_v1302_icon_"+_v1302_key,
                     width="stretch",
                     disabled=(_v1302_key=="facebook"),
-                    help=("Pubblicazione diretta Facebook in attesa dei permessi Meta Page." if _v1302_key=="facebook" else None),
+                    help=(("Selezionato · " if _v1302_state else "")+_v1302_name if _v1302_key!="facebook" else "Facebook · pubblicazione diretta in attesa dei permessi Meta Page."),
                 ):
                     st.session_state["gsf_v1302_target_"+_v1302_key]=not _v1302_state
                     st.rerun()
@@ -542,7 +542,7 @@ if (
         _v1302_a1,_v1302_a2=st.columns(2,gap="small")
         with _v1302_a1:
             st.download_button(
-                "↓  SALVA",data=bytes(_v1302_save_bytes),file_name="gaming_short_finale.mp4",
+                "⇩",data=bytes(_v1302_save_bytes),file_name="gaming_short_finale.mp4",
                 mime="video/mp4",width="stretch",key="gsf_v1302_save",
                 disabled=not bool(_v1302_final_ready and _v1302_save_bytes),
             )
@@ -551,14 +551,14 @@ if (
                 try:
                     _v1302_b64=__import__("base64").b64encode(bytes(_v1302_save_bytes)).decode("ascii")
                     __import__("streamlit.components.v1",fromlist=["html"]).html(
-                        """<button id="gsfShare" class="gsfShare">↗&nbsp; CONDIVIDI</button><script>
+                        """<button id="gsfShare" class="gsfShare">↗</button><script>
 const b=document.getElementById('gsfShare');b.onclick=async()=>{try{const raw=atob('"""+_v1302_b64+"""');const a=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)a[i]=raw.charCodeAt(i);const f=new File([a],'gaming_short_finale.mp4',{type:'video/mp4'});if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[f]}))){await navigator.share({files:[f],title:'Gaming Short'});}else{alert('Condivisione non disponibile su questo browser. Usa Salva.');}}catch(e){if(e.name!=='AbortError')alert('Condivisione non disponibile. Usa Salva.');}};</script><style>body{margin:0;background:transparent}.gsfShare{width:100%;height:44px;border-radius:14px;border:1px solid rgba(138,174,199,.48);background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(241,247,252,.95));color:#365c76;font:800 15px system-ui;box-shadow:0 8px 18px rgba(49,92,125,.08)}</style>""",
                         height=48,
                     )
                 except Exception:
-                    st.button("↗  CONDIVIDI",disabled=True,width="stretch",key="gsf_v1302_share_fallback")
+                    st.button("↗",disabled=True,width="stretch",key="gsf_v1302_share_fallback")
             else:
-                st.button("↗  CONDIVIDI",disabled=True,width="stretch",key="gsf_v1302_share_wait")
+                st.button("↗",disabled=True,width="stretch",key="gsf_v1302_share_wait")
 
         _v1302_missing=[]
         for _v1302_platform in _v1302_targets:
@@ -721,10 +721,11 @@ st.markdown("""
 }
 .gsf-v1302-social-pick{margin:12px 0 8px;text-align:center;color:#53758e;font-weight:800;font-size:13px}
 [class*="st-key-gsf_v1302_icon_"]{display:flex!important;justify-content:center!important}
-[class*="st-key-gsf_v1302_icon_"] button{width:64px!important;min-width:64px!important;max-width:64px!important;height:64px!important;min-height:64px!important;padding:0!important;border-radius:18px!important;border:1px solid rgba(138,174,199,.48)!important;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(241,247,252,.96))!important;color:#53758e!important;box-shadow:0 9px 20px rgba(49,92,125,.10)!important;font-size:23px!important;font-weight:850!important}
+[class*="st-key-gsf_v1302_icon_"] button{width:64px!important;min-width:64px!important;max-width:64px!important;height:64px!important;min-height:64px!important;padding:0!important;border-radius:18px!important;border:1px solid rgba(138,174,199,.48)!important;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(241,247,252,.96))!important;color:#53758e!important;box-shadow:0 9px 20px rgba(49,92,125,.10)!important;font-size:26px!important;font-weight:850!important}
 [class*="st-key-gsf_v1302_icon_"] button:hover{transform:translateY(-2px)!important;color:#4f46e5!important;border-color:rgba(99,102,241,.52)!important;box-shadow:0 12px 24px rgba(79,70,229,.12)!important}
 .gsf-v1302-live-progress{margin:14px 0 12px;padding:14px 16px 15px;border:1px solid rgba(126,165,193,.34);border-radius:20px;background:linear-gradient(145deg,rgba(250,253,255,.98),rgba(238,247,252,.94));box-shadow:0 10px 28px rgba(46,94,128,.09);overflow:hidden}
 .gsf-v1302-progress-steps{display:flex;align-items:center;justify-content:space-between;gap:7px;font-size:12px;font-weight:850;letter-spacing:.035em;color:#91a8b8}.gsf-v1302-progress-steps i{font-style:normal;color:#bdd0dd}.gsf-v1302-progress-steps .active{color:#397b9f;animation:gsfPulse 1.35s ease-in-out infinite}.gsf-v1302-progress-steps .done{color:#2d718f}.gsf-v1302-progress-track{position:relative;height:9px;margin-top:12px;border-radius:999px;background:rgba(173,204,222,.32);overflow:hidden}.gsf-v1302-progress-track span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#8ed8ee,#68bde4,#a9dfe9);background-size:180% 100%;box-shadow:0 0 16px rgba(75,174,218,.42);animation:gsfFlow 1.45s linear infinite;transition:width .55s ease}.gsf-v1302-live-progress.ready .gsf-v1302-progress-track span{animation:none}.gsf-v1302-live-progress:not(.ready) .gsf-v1302-progress-track:after{content:"";position:absolute;top:0;bottom:0;width:32%;left:-35%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);animation:gsfShine 1.55s ease-in-out infinite}@keyframes gsfFlow{to{background-position:-180% 0}}@keyframes gsfShine{to{left:110%}}@keyframes gsfPulse{50%{opacity:.52}}
+.st-key-gsf_v1302_save button,.st-key-gsf_v1302_share_wait button,.st-key-gsf_v1302_share_fallback button{height:44px!important;border-radius:14px!important;border:1px solid rgba(138,174,199,.48)!important;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(241,247,252,.96))!important;color:#53758e!important;font-size:24px!important;box-shadow:0 8px 18px rgba(49,92,125,.08)!important}
 .gsf-v1302-create-note{border:1px dashed #bfd7e8;border-radius:16px;padding:10px 12px;background:rgba(244,250,254,.78);color:#55758c}
 [class*="st-key-gsf_share_download_top"]{display:none !important;}
 #gsf-creator-hub-portal-v107:has(.gsf-creator-hub-overlay.is-open){
