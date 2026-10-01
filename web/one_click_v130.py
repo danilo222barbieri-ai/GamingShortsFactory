@@ -143,6 +143,52 @@ def _editor_actions(moment,plan):
     return actions
 
 
+
+def _narrative_plan(moment,plan,target):
+    """Build a non-UI story plan from available semantic/game signals."""
+    edit=_dict(plan.get("edit"))
+    explanation=[str(x) for x in _list(plan.get("explanation")) if str(x).strip()]
+    raw=[]
+    for key in ("story_beats","beats","micro_scenes","segments"):
+        raw.extend([_dict(x) for x in _list(moment.get(key) or plan.get(key)) if isinstance(x,dict)])
+    start=max(0.0,_num(moment.get("start"),0.0))
+    peak=max(0.0,_num(edit.get("thumbnail_offset"),target*.62))
+    if not raw:
+        raw=[
+            {"role":"setup","start":max(0.0,start-2.2),"duration":min(2.2,target*.20)},
+            {"role":"tension","start":max(0.0,start-.8),"duration":min(2.8,target*.28)},
+            {"role":"payoff","start":start+peak,"duration":min(2.4,target*.24)},
+        ]
+    beats=[]
+    for row in raw[:5]:
+        role=str(row.get("role") or row.get("type") or "beat").lower()
+        beats.append({"role":role,"start":round(max(0.0,_num(row.get("start"),start)),3),
+                      "duration":round(max(.25,_num(row.get("duration"),1.0)),3),
+                      "score":round(_clamp(row.get("score"),0,1),3)})
+    roles={x["role"] for x in beats}
+    arc="setup-tension-payoff" if {"setup","tension","payoff"}<=roles else "event-payoff"
+    reaction=_dict(moment.get("reaction") or plan.get("reaction"))
+    cold=bool(target>=10 and len(beats)>=2)
+    dead=[]
+    for row in _list(moment.get("dead_zones") or plan.get("dead_zones"))[:6]:
+        if isinstance(row,dict) and _num(row.get("duration"),0)>=1.8:
+            dead.append({"start":round(max(0.0,_num(row.get("start"),0)),3),
+                         "duration":round(_num(row.get("duration"),0),3),
+                         "action":"speed_up_or_micro_cut"})
+    payoff_delay=max(0.0,min(target,_num(peak,target*.62)))
+    drop_risk="high" if payoff_delay>min(5.0,target*.42) else ("medium" if payoff_delay>3.0 else "low")
+    return {
+        "arc":arc,"beats":beats,"multi_moment":len(beats)>=2,
+        "cold_open":{"enabled":cold,"duration":round(min(1.0,max(.5,target*.05)),2),
+                     "source_role":"payoff"},
+        "smart_ending":{"mode":"reaction" if reaction else "payoff","tail":0.65 if reaction else 0.35},
+        "reaction_intelligence":reaction,
+        "pattern_interrupts":dead,
+        "retention":{"early_drop_risk":drop_risk,"payoff_delay":round(payoff_delay,2),
+                     "notes":explanation[:3]},
+    }
+
+
 def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
     moment=_dict(moment)
     plan=_dict(moment.get("director_plan"))
@@ -163,6 +209,8 @@ def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
     if not explanation:
         explanation=[f"Evento: {reason}",f"Confidenza: {round(confidence*100)}%"]
 
+    narrative=_narrative_plan(moment,plan,target)
+
     package={
         "engine":ENGINE_VERSION,
         "rank":rank,
@@ -173,6 +221,7 @@ def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
         "reason":reason,
         "game_profile":_profile_key(genre,event),
         "status":"mounted",
+        "narrative_director":narrative,
         "mounted":True,
         "mount":{
             "trim":{
@@ -203,6 +252,9 @@ def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
             "cinematic":{
                 "slow_motion":_dict(edit.get("slow_motion")),
                 "replay":_dict(edit.get("replay")),
+                "cold_open":_dict(narrative.get("cold_open")),
+                "smart_ending":_dict(narrative.get("smart_ending")),
+                "pattern_interrupts":_list(narrative.get("pattern_interrupts")),
             },
             "hook":str(text.get("hook") or ""),
             "thumbnail_offset":round(_num(edit.get("thumbnail_offset"),0.0),3),
@@ -227,6 +279,7 @@ def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
             "strategy":"encode-on-selection",
             "shared_social_master":True,
             "plan":plan,
+            "narrative":narrative,
         },
     }
     return package
