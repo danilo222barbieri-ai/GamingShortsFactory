@@ -8,6 +8,13 @@ anchor='with st.container(key="v73-upload-shell"):\n'
 if anchor not in s:
     raise RuntimeError("V154 uploader anchor missing")
 
+# V157: restore the active project before rendering any navigable surface.
+# This complements the older reconnect snapshot with an explicit project id.
+state_anchor='with st.container(key="v73-upload-shell"):\\n'
+if state_anchor in s and "restore_project as _gsf_restore_project_v157" not in s:
+    state_block='''# V157 ACTIVE PROJECT STATE\nif GSF_WEB_MODE:\n    try:\n        from web.project_state_v157 import restore_project as _gsf_restore_project_v157\n        _gsf_restore_project_v157(st.session_state, GSF_SESSION_ROOT)\n    except Exception:\n        pass\n\n'''
+    s=s.replace(state_anchor,state_block+state_anchor,1)
+
 block=r'''
 # V154 Structural Home — real custom component, not a CSS reskin.
 # The existing V98.9/V99 direct-upload backend, AI engine and Editor remain
@@ -108,6 +115,8 @@ for marker in (
 ):
     if marker not in s:
         raise RuntimeError("V154 marker missing: "+marker)
+
+s=s.rstrip()+"\n# V157: persist lightweight project/UI state at the end of every successful rerun.\n# Video/render payloads stay on disk and are referenced by path, never serialized here.\nif 'GSF_WEB_MODE' in globals() and GSF_WEB_MODE:\n    try:\n        from web.project_state_v157 import save_project as _gsf_save_project_v157\n        _gsf_save_project_v157(st.session_state, GSF_SESSION_ROOT)\n    except Exception:\n        pass\n"+"\n"
 
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
