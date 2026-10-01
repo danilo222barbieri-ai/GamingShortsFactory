@@ -110,37 +110,57 @@ html,body,[data-testid="stAppViewContainer"],.stApp{
 
 /* Uploader is the visual heart of Home. */
 [data-testid="stFileUploader"]{
-  max-width:690px!important;
-  margin:2rem auto 2.6rem!important;
-  filter:drop-shadow(0 18px 34px rgba(81,142,180,.10));
+  width:min(62vw,430px)!important;
+  max-width:430px!important;
+  aspect-ratio:1/1!important;
+  margin:1.35rem auto 2.2rem!important;
+  filter:drop-shadow(0 22px 44px rgba(81,142,180,.13));
+}
+[data-testid="stFileUploader"]>section{
+  height:100%!important;
 }
 [data-testid="stFileUploaderDropzone"]{
   position:relative;
-  min-height:164px!important;
+  height:100%!important;
+  min-height:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
   border:1px solid rgba(103,181,225,.36)!important;
-  border-radius:34px!important;
+  border-radius:50%!important;
   background:
     radial-gradient(circle at 50% 0,rgba(137,207,244,.13),transparent 42%),
     linear-gradient(180deg,rgba(255,255,255,.97),rgba(244,251,255,.89))!important;
   box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.78),
-    0 14px 42px rgba(87,153,194,.09)!important;
+    inset 0 0 0 1px rgba(255,255,255,.92),
+    inset 0 0 0 22px rgba(231,247,255,.38),
+    0 0 0 12px rgba(184,230,250,.16),
+    0 22px 58px rgba(87,153,194,.14)!important;
   animation:gsfLivingBreath 3.1s ease-in-out infinite;
   transition:transform .28s ease,border-color .28s ease,box-shadow .28s ease;
 }
 [data-testid="stFileUploaderDropzone"]::before{
-  content:"GAMEPLAY READY";
-  position:absolute;top:14px;left:50%;transform:translateX(-50%);
-  font-size:9px;font-weight:800;letter-spacing:1.35px;color:rgba(48,112,150,.58);
+  content:"CARICA IL TUO GAMEPLAY";
+  position:absolute;top:24%;left:50%;transform:translateX(-50%);
+  width:78%;
+  text-align:center;
+  font-size:13px;font-weight:820;letter-spacing:.7px;color:#16395a;
 }
 [data-testid="stFileUploaderDropzone"]::after{
   content:"";
-  position:absolute;inset:-1px;border-radius:34px;pointer-events:none;
+  position:absolute;inset:-1px;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle at 50% 0,var(--gsf-glow),transparent 47%);
   opacity:.28;animation:gsfUploaderAura 3.1s ease-in-out infinite;
 }
 [data-testid="stFileUploaderDropzoneInstructions"]{
-  font-weight:650!important;color:#4b6177!important;
+  max-width:68%!important;
+  margin:2.2rem auto 0!important;
+  font-weight:650!important;
+  color:#61758a!important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"] small{
+  color:#7d8fa2!important;
 }
 [data-testid="stFileUploaderDropzone"] button{
   border-radius:999px!important;
@@ -275,6 +295,31 @@ hr{
   margin:1.3rem 0!important;
 }
 
+
+/* Living cards: soft app-like surfaces inspired by the approved Home direction. */
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]{
+  min-width:0!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"] [data-testid="stVerticalBlockBorderWrapper"]{
+  background:linear-gradient(180deg,rgba(255,255,255,.90),rgba(249,252,255,.78))!important;
+  border:1px solid rgba(113,170,204,.14)!important;
+  box-shadow:0 14px 32px rgba(82,133,165,.08)!important;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"] .stButton>button{
+  border-radius:999px!important;
+}
+@media(hover:hover) and (pointer:fine){
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"] [data-testid="stVerticalBlockBorderWrapper"]{
+    transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"] [data-testid="stVerticalBlockBorderWrapper"]:hover{
+    transform:translateY(-2px);
+    border-color:rgba(91,178,225,.24)!important;
+    box-shadow:0 18px 38px rgba(82,144,180,.12)!important;
+  }
+}
+
 /* Key motion is soft and bounded. */
 @keyframes gsfBrandIn{
   from{opacity:0;transform:translateY(-7px)}
@@ -311,8 +356,9 @@ hr{
     top:auto;bottom:10px;
     width:calc(100% - 20px);
     justify-content:space-between;
-    gap:4px;padding:6px;
-    border-radius:18px;
+    gap:4px;padding:7px;
+    border-radius:24px;
+    box-shadow:0 14px 38px rgba(74,126,158,.16),inset 0 1px 0 rgba(255,255,255,.95);
   }
   .gsf-living-chip{
     min-width:0;flex:1;height:42px;padding:0 4px;
@@ -320,17 +366,17 @@ hr{
   }
   .gsf-living-chip .gsf-nav-dot{width:4px;height:4px}
   [data-testid="stFileUploader"]{
-    max-width:100%!important;
-    margin:1.2rem auto 2rem!important;
+    width:min(82vw,350px)!important;
+    max-width:350px!important;
+    margin:1rem auto 1.8rem!important;
   }
   [data-testid="stFileUploaderDropzone"]{
-    min-height:142px!important;
-    border-radius:27px!important;
+    border-radius:50%!important;
   }
   [data-testid="stFileUploaderDropzone"]::before{
-    top:11px;font-size:8px;letter-spacing:1.1px;
+    top:23%;font-size:11px;letter-spacing:.55px;
   }
-  [data-testid="stFileUploaderDropzone"]::after{border-radius:27px}
+  [data-testid="stFileUploaderDropzone"]::after{border-radius:50%}
 }
 @media(max-width:760px){
   [data-testid="stHorizontalBlock"]{gap:.65rem!important}
