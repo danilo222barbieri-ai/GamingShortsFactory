@@ -190,7 +190,6 @@ def collect(platform,token,content_id,id_type=""):
             if not ids:
                 return {
                     "platform":platform,"content_id":str(content_id),
-        "resolved_content_id":locals().get("resolved",str(content_id)),
                     "resolved_content_id":"","publish_status":status,
                     "stats":{},"analytics":{},
                     "learning_metrics":normalize_learning_metrics(platform,{},{}),
@@ -206,6 +205,7 @@ def collect(platform,token,content_id,id_type=""):
     metrics=normalize_learning_metrics(platform,stats,analytics)
     return {
         "platform":platform,"content_id":str(content_id),
+        "resolved_content_id":locals().get("resolved",str(content_id)),
         "stats":stats,"analytics":analytics,"learning_metrics":metrics,
         "performance_score":dynamic_performance_score(metrics),
     }
