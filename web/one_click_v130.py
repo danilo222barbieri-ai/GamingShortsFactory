@@ -279,7 +279,8 @@ def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
         "reason":reason,
         "game_profile":_profile_key(genre,event),
         "status":"mounted",
-        "narrative_director":narrative,\n        "director_intelligence":intelligence,
+        "narrative_director":narrative,
+        "director_intelligence":intelligence,
         "mounted":True,
         "mount":{
             "trim":{
