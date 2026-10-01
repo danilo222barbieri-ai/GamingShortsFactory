@@ -25,26 +25,39 @@ button{appearance:none;-webkit-appearance:none}
 .brandOnly{font-size:18px;font-weight:800;letter-spacing:.38em;color:#6c81a1;text-transform:uppercase;white-space:nowrap}
 .hub{border:1px solid rgba(158,184,212,.32);background:rgba(255,255,255,.76);backdrop-filter:blur(16px);border-radius:999px;padding:15px 22px;display:flex;align-items:center;gap:12px;color:#122a5a;font-size:16px;font-weight:800;box-shadow:0 12px 34px rgba(68,104,142,.11);cursor:pointer}
 .hub svg{width:24px;height:24px;fill:none;stroke:#5d78a5;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.hub .arr{font-size:22px;line-height:1;color:#60769b}
-.stage{position:relative;min-height:520px;display:flex;align-items:center;justify-content:center}
-.rings{position:relative;width:425px;height:425px;border-radius:50%;display:grid;place-items:center;
- background:radial-gradient(circle at 38% 30%,rgba(255,255,255,.99),rgba(232,246,255,.78) 52%,rgba(226,255,247,.72));
- border:1px solid rgba(119,205,238,.42);box-shadow:0 0 0 30px rgba(130,218,255,.07),0 0 0 54px rgba(99,226,192,.045),0 25px 78px rgba(74,132,176,.14)}
-.rings:before,.rings:after{content:"";position:absolute;border-radius:50%;pointer-events:none}.rings:before{inset:-30px;border:1px solid rgba(83,195,237,.32)}.rings:after{inset:-54px;border:1px solid rgba(90,220,184,.24)}
+.stage{position:relative;min-height:440px;display:flex;align-items:center;justify-content:center}
+.rings{position:relative;width:350px;height:350px;border-radius:50%;display:grid;place-items:center;
+ background:radial-gradient(circle at 38% 30%,rgba(255,255,255,.99),rgba(234,247,255,.80) 54%,rgba(229,255,247,.74));
+ border:1px solid rgba(121,205,235,.40);box-shadow:0 0 0 24px rgba(130,218,255,.055),0 0 0 44px rgba(99,226,192,.035),0 22px 65px rgba(74,132,176,.12);
+ transition:box-shadow .28s ease,filter .28s ease}
+.rings:before,.rings:after{content:"";position:absolute;border-radius:50%;pointer-events:none;transition:.28s ease}.rings:before{inset:-24px;border:1px solid rgba(83,195,237,.28)}.rings:after{inset:-44px;border:1px solid rgba(90,220,184,.20)}
+@keyframes gsfMintPulse{
+  0%,100%{box-shadow:0 0 0 24px rgba(131,226,204,.08),0 0 34px rgba(114,222,197,.18),0 22px 65px rgba(74,132,176,.10);filter:saturate(1)}
+  50%{box-shadow:0 0 0 30px rgba(131,226,204,.14),0 0 58px rgba(100,225,194,.32),0 22px 65px rgba(74,132,176,.12);filter:saturate(1.08)}
+}
+@keyframes gsfMintRing{
+  0%,100%{transform:scale(.985);opacity:.46}
+  50%{transform:scale(1.025);opacity:.92}
+}
+.rings.uploading{animation:gsfMintPulse 1.45s ease-in-out infinite;border-color:rgba(106,216,187,.56)}
+.rings.uploading:before{border-color:rgba(103,222,191,.54);box-shadow:0 0 24px rgba(107,225,194,.22);animation:gsfMintRing 1.45s ease-in-out infinite}
+.rings.uploading:after{border-color:rgba(126,231,204,.38);box-shadow:0 0 42px rgba(110,224,196,.18);animation:gsfMintRing 1.45s .18s ease-in-out infinite}
+.rings.uploaded{box-shadow:0 0 0 23px rgba(133,221,198,.065),0 0 34px rgba(116,215,190,.16),0 22px 60px rgba(74,132,176,.09);border-color:rgba(116,211,185,.48)}
 .pick{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .circle{position:absolute;inset:0;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:.18s ease}
 .circle:hover{transform:scale(1.012)}.circle.busy{pointer-events:none}.circle.loaded{cursor:default}
-.icon{width:76px;height:76px;margin-bottom:24px;color:#699fe2}.icon svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.circle strong{font-size:25px;font-weight:850;letter-spacing:.09em;text-transform:uppercase;color:#142f62;text-align:center}
-.circle small{margin-top:13px;color:#7890aa;font-size:13px;font-weight:750;letter-spacing:.08em}
+.icon{width:64px;height:64px;margin-bottom:19px;color:#6a9ed9}.icon svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.85;stroke-linecap:round;stroke-linejoin:round}
+.circle strong{max-width:230px;font-size:21px;font-weight:840;letter-spacing:.075em;text-transform:uppercase;color:#142f62;text-align:center;line-height:1.18}
+.circle small{display:none!important}
 .status{display:none;position:absolute;bottom:-22px;width:235px;text-align:center;color:#7088a0;font-size:11px;font-weight:780}.status.show{display:block}.status.error{color:#a54848}
 .track{height:5px;border-radius:999px;background:#e4edf4;margin-top:7px;overflow:hidden}.bar{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#70c4ef,#75dcbb);transition:width .12s linear}
 .scribble{position:absolute;color:#4f75aa;font-family:"Bradley Hand","Segoe Print","Comic Sans MS",cursive;font-size:24px;line-height:1.12;transform:rotate(-6deg);opacity:.92}
 .scribble.left{left:0;top:195px;width:200px;text-align:right}.scribble.right{right:0;top:205px;width:200px;transform:rotate(6deg)}
 .scribble .arrow{display:block;font-size:42px;line-height:.7;color:#69a9d7;margin-top:8px}.scribble.left .arrow{transform:rotate(8deg)}.scribble.right .arrow{transform:rotate(175deg)}
-.features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:4px 0 42px}
-.feature{border:1px solid var(--line);border-radius:28px;min-height:156px;padding:23px 18px 19px;background:var(--glass);backdrop-filter:blur(16px);box-shadow:var(--shadow);cursor:pointer;text-align:center;transition:.17s ease;color:var(--ink)}
-.feature:hover{transform:translateY(-2px)}.featureIcon{width:58px;height:58px;border-radius:18px;margin:0 auto 13px;display:grid;place-items:center}.featureIcon svg{width:31px;height:31px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.feature b{display:block;font-size:18px;font-weight:850}.feature small{display:block;margin-top:7px;font-size:11px;font-weight:700;color:#8193ad;line-height:1.3}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin:0 4px 40px}
+.feature{border:1px solid var(--line);border-radius:30px;min-height:184px;padding:25px 18px 22px;background:var(--glass);backdrop-filter:blur(16px);box-shadow:var(--shadow);cursor:pointer;text-align:center;transition:.17s ease;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.feature:hover{transform:translateY(-2px)}.featureIcon{width:76px;height:76px;border-radius:50%;margin:0 auto 16px;display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.52),0 10px 26px rgba(85,124,159,.08)}.featureIcon svg{width:36px;height:36px;fill:none;stroke:currentColor;stroke-width:1.85;stroke-linecap:round;stroke-linejoin:round}
+.feature b{display:block;font-size:17px;font-weight:850}.feature small{display:block;margin-top:8px;font-size:11px;font-weight:700;color:#8193ad;line-height:1.34;max-width:190px}
 .fAi .featureIcon{background:linear-gradient(145deg,#d9f2ff,#cfe9ff);color:#4f98e1}.fEditor .featureIcon{background:linear-gradient(145deg,#dff8ed,#ccefdc);color:#328d70}.fShort .featureIcon{background:linear-gradient(145deg,#fff1b7,#ffe289);color:#d08c00}
 .sectionHead{display:flex;align-items:center;justify-content:space-between;margin:0 3px 18px}.sectionHead h2{margin:0;font-size:22px;letter-spacing:-.02em}.seeAll{border:1px solid rgba(153,180,209,.3);background:rgba(255,255,255,.72);border-radius:999px;padding:9px 16px;color:#547092;font-size:12px;font-weight:800;cursor:pointer}
 .projects{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:35px}.project{border-radius:24px;background:rgba(255,255,255,.73);border:1px solid rgba(157,184,211,.25);overflow:hidden;box-shadow:0 10px 30px rgba(74,107,140,.08)}
@@ -59,15 +72,15 @@ button{appearance:none;-webkit-appearance:none}
 .navItem{border:0;background:transparent;border-radius:21px;padding:8px 4px 7px;color:#8192aa;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:9px;font-weight:800;cursor:pointer}.navItem svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.navItem.active{color:#4f93d7;background:rgba(219,241,255,.7)}
 @media(max-width:760px){
  #home154{padding:22px 18px 22px;border-radius:0}.brandOnly{font-size:11px;letter-spacing:.26em}.hub{padding:11px 15px;font-size:12px;gap:8px}.hub svg{width:19px;height:19px}
- .stage{min-height:410px;margin-top:4px}.rings{width:292px;height:292px;box-shadow:0 0 0 22px rgba(130,218,255,.07),0 0 0 39px rgba(99,226,192,.045),0 22px 65px rgba(74,132,176,.13)}.rings:before{inset:-22px}.rings:after{inset:-39px}
- .icon{width:58px;height:58px;margin-bottom:18px}.circle strong{font-size:18px;letter-spacing:.075em}.circle small{font-size:10px}
- .scribble{font-size:16px;width:108px}.scribble.left{left:-8px;top:150px}.scribble.right{right:-8px;top:162px}.scribble .arrow{font-size:30px}
- .features{gap:9px;margin-bottom:31px}.feature{min-height:132px;border-radius:22px;padding:17px 8px 14px}.featureIcon{width:47px;height:47px;border-radius:15px;margin-bottom:10px}.featureIcon svg{width:25px;height:25px}.feature b{font-size:12px}.feature small{font-size:8.5px}
+ .stage{min-height:360px;margin-top:4px}.rings{width:246px;height:246px;box-shadow:0 0 0 18px rgba(130,218,255,.055),0 0 0 31px rgba(99,226,192,.035),0 18px 52px rgba(74,132,176,.10)}.rings:before{inset:-18px}.rings:after{inset:-31px}
+ .icon{width:50px;height:50px;margin-bottom:15px}.circle strong{max-width:175px;font-size:16px;letter-spacing:.065em}
+ .scribble{font-size:15px;width:102px}.scribble.left{left:-8px;top:128px}.scribble.right{right:-8px;top:138px}.scribble .arrow{font-size:28px}
+ .features{gap:10px;margin-bottom:31px}.feature{min-height:148px;border-radius:24px;padding:17px 8px 15px}.featureIcon{width:58px;height:58px;margin-bottom:11px}.featureIcon svg{width:28px;height:28px}.feature b{font-size:12px}.feature small{font-size:8.5px}
  .sectionHead h2{font-size:18px}.projects{gap:9px}.project{border-radius:18px}.thumb{height:82px}.pBody{padding:9px}.pBody b{font-size:10px}.meta{font-size:7px}
  .bottomNav{position:relative;border-radius:26px}.engines{grid-template-columns:repeat(2,1fr)}.engine:last-child{grid-column:1/-1}
 }
 @media(max-width:430px){
- #home154{padding-left:12px;padding-right:12px}.brandOnly{font-size:9px}.hub{font-size:10px;padding:9px 11px}.stage{min-height:390px}.rings{width:265px;height:265px}
+ #home154{padding-left:12px;padding-right:12px}.brandOnly{font-size:9px}.hub{font-size:10px;padding:9px 11px}.stage{min-height:340px}.rings{width:228px;height:228px}
  .scribble.left{display:none}.scribble.right{display:none}.features{gap:7px}.feature{min-height:124px}.feature b{font-size:11px}.feature small{font-size:7.5px}.projects{gap:7px}.thumb{height:72px}.seeAll{padding:7px 11px;font-size:9px}
 }
 </style>
@@ -88,7 +101,7 @@ button{appearance:none;-webkit-appearance:none}
     <label id="circle" class="circle" for="pick">
      <span id="uploadIcon" class="icon"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 42h-1C10.4 42 5 36.6 5 30s5.4-12 12-12c1.6 0 3.1.3 4.5.9C24.7 12.4 31.3 8 39 8c10.5 0 19 8.5 19 19 0 .7 0 1.4-.1 2.1C61.5 30.9 64 34.6 64 39c0 6.1-4.9 11-11 11H38"/><path d="M32 52V28"/><path d="m24 36 8-8 8 8"/></svg></span>
      <strong id="uploadLabel">CARICA IL TUO GAMEPLAY</strong>
-     <small id="uploadHint">MP4 · MOV · MKV</small>
+     <small id="uploadHint"></small>
     </label>
     <div id="status" class="status"><div id="statusText">Caricamento video… 0%</div><div class="track"><div id="bar" class="bar"></div></div></div>
    </div>
@@ -139,7 +152,7 @@ button{appearance:none;-webkit-appearance:none}
  const value=(v)=>send(SET_COMPONENT_VALUE,{value:v,dataType:"json"});
  const height=(h)=>send(SET_FRAME_HEIGHT,{height:h});
  const root=document.getElementById("home154"),view=document.getElementById("view");
- const pick=document.getElementById("pick"),circle=document.getElementById("circle"),uploadIcon=document.getElementById("uploadIcon");
+ const pick=document.getElementById("pick"),circle=document.getElementById("circle"),rings=document.querySelector(".rings"),uploadIcon=document.getElementById("uploadIcon");
  const uploadLabel=document.getElementById("uploadLabel"),uploadHint=document.getElementById("uploadHint");
  const status=document.getElementById("status"),statusText=document.getElementById("statusText"),bar=document.getElementById("bar");
  const cta=document.getElementById("primaryCta");
@@ -148,8 +161,8 @@ button{appearance:none;-webkit-appearance:none}
 
  function setLoaded(on){
    loaded=!!on; view.classList.toggle("loadedView",loaded); circle.classList.toggle("loaded",loaded);
-   if(loaded){uploadIcon.textContent="✓";uploadLabel.textContent="Video caricato";uploadHint.textContent="Pronto per la scelta";pick.disabled=true;}
-   else{uploadIcon.textContent="⇧";uploadLabel.textContent="Carica il tuo video";uploadHint.textContent="MP4 · MOV · MKV";pick.disabled=false;}
+   if(loaded){rings.classList.remove("uploading");rings.classList.add("uploaded");uploadIcon.textContent="✓";uploadLabel.textContent="Video caricato";uploadHint.textContent="";pick.disabled=true;}
+   else{rings.classList.remove("uploading","uploaded");uploadIcon.innerHTML=`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 42h-1C10.4 42 5 36.6 5 30s5.4-12 12-12c1.6 0 3.1.3 4.5.9C24.7 12.4 31.3 8 39 8c10.5 0 19 8.5 19 19 0 .7 0 1.4-.1 2.1C61.5 30.9 64 34.6 64 39c0 6.1-4.9 11-11 11H38"/><path d="M32 52V28"/><path d="m24 36 8-8 8 8"/></svg>`;uploadLabel.textContent="CARICA IL TUO GAMEPLAY";uploadHint.textContent="";pick.disabled=false;}
    height(loaded?1180:1080);
  }
  function parentClick(candidates,exact=false){
@@ -216,9 +229,9 @@ button{appearance:none;-webkit-appearance:none}
  pick.addEventListener("change",async()=>{
    const file=pick.files&&pick.files[0];if(!file||uploadBusy)return;
    const ext=(file.name.split(".").pop()||"").toLowerCase();if(!["mp4","mov","mkv"].includes(ext)){status.className="status show error";statusText.textContent="Formato non supportato";return;}
-   uploadBusy=true;circle.classList.add("busy");status.className="status show";uploadLabel.textContent="Caricamento…";bar.style.width="1%";
+   uploadBusy=true;circle.classList.add("busy");rings.classList.remove("uploaded");rings.classList.add("uploading");status.className="status show";uploadLabel.textContent="Caricamento…";bar.style.width="1%";
    try{const caps=await capabilities();if(caps&&caps.bucket===true)await bucketUpload(file,caps);else await fallbackUpload(file);bar.style.width="100%";statusText.textContent="Video caricato";setLoaded(true);value({event:"upload_complete",duration,engine});}
-   catch(e){status.className="status show error";statusText.textContent="Upload interrotto — riprova";bar.style.width="0";uploadLabel.textContent="Carica il tuo video";circle.classList.remove("busy");uploadBusy=false;}
+   catch(e){rings.classList.remove("uploading","uploaded");status.className="status show error";statusText.textContent="Upload interrotto — riprova";bar.style.width="0";uploadLabel.textContent="CARICA IL TUO GAMEPLAY";circle.classList.remove("busy");uploadBusy=false;}
  });
  
  document.querySelectorAll(".feature").forEach(b=>b.addEventListener("click",()=>{
