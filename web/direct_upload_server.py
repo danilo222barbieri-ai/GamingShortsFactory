@@ -2648,6 +2648,181 @@ def _content_memory_record(sid,record):
     )
     return state
 
+def _analytics_path(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return None
+    root=ROOT/"sessions"/sid
+    root.mkdir(parents=True,exist_ok=True)
+    return root/"social_analytics_v148.json"
+
+def _analytics_key(sid):
+    sid=_safe_id(sid)
+    return f"social-analytics/{sid}/analytics_v148.json" if sid else ""
+
+def _analytics_load(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return {"records":[]}
+    path=_analytics_path(sid)
+    if path is not None and path.is_file():
+        try:
+            payload=json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(payload,dict):
+                return payload
+        except Exception:
+            pass
+    if _bucket_enabled():
+        try:
+            obj=_s3().get_object(Bucket=S3_BUCKET,Key=_analytics_key(sid))
+            payload=json.loads(obj["Body"].read().decode("utf-8"))
+            if isinstance(payload,dict):
+                if path is not None:
+                    _write_json_atomic(path,payload)
+                return payload
+        except Exception:
+            pass
+    return {"records":[]}
+
+def _analytics_save(sid,payload):
+    sid=_safe_id(sid)
+    if not sid or not isinstance(payload,dict):
+        return False
+    path=_analytics_path(sid)
+    if path is not None:
+        _write_json_atomic(path,payload)
+    if _bucket_enabled():
+        try:
+            _s3().put_object(
+                Bucket=S3_BUCKET,Key=_analytics_key(sid),
+                Body=json.dumps(payload,ensure_ascii=False,separators=(",",":")).encode("utf-8"),
+                ContentType="application/json",CacheControl="no-store",
+            )
+        except Exception as exc:
+            print("GSF_V148_ANALYTICS_BUCKET_WARN",sid,repr(str(exc))[:180],flush=True)
+    return True
+
+def _analytics_token_for(sid,platform):
+    p=str(platform or "").lower()
+    if p.startswith("you"):
+        return _youtube_user_load(sid)
+    if p.startswith("tik"):
+        return _tiktok_user_load(sid)
+    if p.startswith("inst"):
+        return _instagram_user_load(sid)
+    return {}
+
+def _analytics_register(sid,record):
+    sid=_safe_id(sid)
+    if not sid or not isinstance(record,dict):
+        return {}
+    platform=str(record.get("platform") or "").strip()
+    content_id=str(record.get("content_id") or "").strip()
+    fingerprint=str(record.get("content_fingerprint") or "").strip()
+    if not platform or not content_id:
+        return {"ok":False,"error":"platform/content_id required"}
+    with _ANALYTICS_LOCK:
+        data=_analytics_load(sid)
+        rows=[dict(x) for x in (data.get("records") or []) if isinstance(x,dict)]
+        key=(platform.lower(),content_id)
+        existing=None
+        for row in rows:
+            if (str(row.get("platform") or "").lower(),str(row.get("content_id") or ""))==key:
+                existing=row;break
+        now=time.time()
+        payload={
+            "platform":platform,
+            "content_id":content_id,
+            "content_fingerprint":fingerprint,
+            "registered_at":float((existing or {}).get("registered_at") or now),
+            "updated_at":now,
+            "status":str((existing or {}).get("status") or "registered"),
+            "metadata":dict(record.get("metadata") or {}),
+        }
+        if existing is not None:
+            existing.update(payload)
+        else:
+            rows.append(payload)
+        data["records"]=rows[-300:]
+        data["updated_at"]=now
+        _analytics_save(sid,data)
+    return {"ok":True,"record":payload}
+
+def _analytics_collect_one(sid,row):
+    token=_analytics_token_for(sid,row.get("platform"))
+    if not token:
+        return {**dict(row),"status":"needs_connection","last_error":"account not connected","updated_at":time.time()}
+    content_id=str(row.get("content_id") or "")
+    if not content_id:
+        return {**dict(row),"status":"invalid","last_error":"missing content id","updated_at":time.time()}
+    try:
+        result=_social_analytics_collect(row.get("platform"),token,content_id)
+        out={**dict(row),"status":"ok","last_error":"","updated_at":time.time(),
+             "analytics":result,"performance_score":float(result.get("performance_score") or 0.0)}
+        fp=str(out.get("content_fingerprint") or "")
+        if fp:
+            with _CONTENT_MEMORY_LOCK:
+                memory_rows=_content_memory_load(sid)
+                changed=False
+                for item in memory_rows:
+                    if str(item.get("fingerprint") or "")==fp:
+                        item["performance_score"]=out["performance_score"]
+                        item["platform"]=str(out.get("platform") or item.get("platform") or "")
+                        item["analytics_updated_at"]=out["updated_at"]
+                        changed=True
+                        break
+                if changed:
+                    _content_memory_save(sid,memory_rows)
+        return out
+    except Exception as exc:
+        return {**dict(row),"status":"error","last_error":str(exc)[:300],"updated_at":time.time()}
+
+def _analytics_collect_all(sid,force=False):
+    sid=_safe_id(sid)
+    if not sid:
+        return {"ok":False,"records":[]}
+    now=time.time()
+    if not force and now-float(_ANALYTICS_TICK.get(sid,0) or 0)<900:
+        data=_analytics_load(sid)
+        return {"ok":True,"records":list(data.get("records") or []),"cached":True}
+    with _ANALYTICS_LOCK:
+        data=_analytics_load(sid)
+        rows=[dict(x) for x in (data.get("records") or []) if isinstance(x,dict)]
+    refreshed=[_analytics_collect_one(sid,row) for row in rows]
+    with _ANALYTICS_LOCK:
+        data["records"]=refreshed
+        data["updated_at"]=now
+        _analytics_save(sid,data)
+        _ANALYTICS_TICK[sid]=now
+    return {"ok":True,"records":refreshed,"cached":False}
+
+def _analytics_context(sid):
+    data=_analytics_load(sid)
+    rows=[dict(x) for x in (data.get("records") or []) if isinstance(x,dict)]
+    scored=[x for x in rows if float(x.get("performance_score") or 0)>0]
+    if not scored:
+        return {"samples":0,"best_strategy":"","best_platform":"","mean_score":0.0}
+    best=max(scored,key=lambda x:float(x.get("performance_score") or 0.0))
+    mean=sum(float(x.get("performance_score") or 0.0) for x in scored)/len(scored)
+    strategies={}
+    for row in scored:
+        strategy=str((row.get("metadata") or {}).get("ab_strategy") or "")
+        if strategy:
+            strategies.setdefault(strategy,[]).append(float(row.get("performance_score") or 0.0))
+    best_strategy=""
+    if strategies:
+        best_strategy=max(
+            strategies,
+            key=lambda k:sum(strategies[k])/max(1,len(strategies[k]))
+        )
+    return {
+        "samples":len(scored),
+        "best_strategy":best_strategy,
+        "best_platform":str(best.get("platform") or ""),
+        "mean_score":round(mean,4),
+        "best_score":round(float(best.get("performance_score") or 0.0),4),
+    }
+
 def _quality_report_path(sid):
     sid=_safe_id(sid)
     return (ROOT/"sessions"/sid/"quality_report.json") if sid else None
