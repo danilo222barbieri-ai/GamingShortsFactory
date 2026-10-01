@@ -2805,6 +2805,7 @@ def _analytics_register(sid,record):
         payload={
             "platform":platform,
             "content_id":content_id,
+            "id_type":str(record.get("id_type") or ""),
             "content_fingerprint":fingerprint,
             "registered_at":float((existing or {}).get("registered_at") or now),
             "updated_at":now,
@@ -2828,7 +2829,10 @@ def _analytics_collect_one(sid,row):
     if not content_id:
         return {**dict(row),"status":"invalid","last_error":"missing content id","updated_at":time.time()}
     try:
-        result=_social_analytics_collect(row.get("platform"),token,content_id)
+        result=_social_analytics_collect(
+            row.get("platform"),token,content_id,
+            id_type=str(row.get("id_type") or ""),
+        )
         out={**dict(row),"status":"ok","last_error":"","updated_at":time.time(),
              "analytics":result,"performance_score":float(result.get("performance_score") or 0.0)}
         fp=str(out.get("content_fingerprint") or "")
