@@ -4,6 +4,7 @@ import json
 import math
 import subprocess
 from pathlib import Path
+from cinematic_render_v125 import probe_media
 
 
 def _f(v,d=0.0):
@@ -91,6 +92,8 @@ def render_long_form(source_path,output_path,plan,source_duration,target_seconds
     windows=chapter_windows(plan,source_duration,target_seconds=target_seconds)
     if not windows:
         raise RuntimeError("no long-form windows")
+    meta=probe_media(src)
+    has_audio=bool(meta.get("has_audio"))
     filters=[]; inputs=[]
     for i,row in enumerate(windows):
         a,b=float(row["start"]),float(row["end"])
@@ -100,17 +103,29 @@ def render_long_form(source_path,output_path,plan,source_duration,target_seconds
             "pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
             f"[v{i}]"
         )
-        filters.append(
-            f"[0:a]atrim=start={a:.3f}:end={b:.3f},asetpts=PTS-STARTPTS[a{i}]"
+        inputs.append(f"[v{i}]")
+        if has_audio:
+            filters.append(
+                f"[0:a]atrim=start={a:.3f}:end={b:.3f},asetpts=PTS-STARTPTS[a{i}]"
+            )
+            inputs.append(f"[a{i}]")
+    filters.append(
+        "".join(inputs)+(
+            f"concat=n={len(windows)}:v=1:a=1[vout][aout]"
+            if has_audio else
+            f"concat=n={len(windows)}:v=1:a=0[vout]"
         )
-        inputs.extend((f"[v{i}]",f"[a{i}]"))
-    filters.append("".join(inputs)+f"concat=n={len(windows)}:v=1:a=1[vout][aout]")
+    )
     cmd=[
         "/usr/bin/ffmpeg","-hide_banner","-loglevel","error","-y","-i",str(src),
-        "-filter_complex",";".join(filters),"-map","[vout]","-map","[aout]",
+        "-filter_complex",";".join(filters),"-map","[vout]",
         "-c:v","libx264","-preset","fast","-crf","16","-pix_fmt","yuv420p",
-        "-c:a","aac","-b:a","192k","-ar","48000","-movflags","+faststart",str(out),
     ]
+    if has_audio:
+        cmd+=["-map","[aout]","-c:a","aac","-b:a","192k","-ar","48000"]
+    else:
+        cmd+=["-an"]
+    cmd+=["-movflags","+faststart",str(out)]
     p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=1800,check=False)
     if p.returncode!=0 or not out.is_file() or out.stat().st_size<=1024:
         raise RuntimeError((p.stderr or p.stdout or "long-form render failed")[-1800:])
