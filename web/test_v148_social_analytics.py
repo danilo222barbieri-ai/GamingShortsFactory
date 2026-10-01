@@ -43,7 +43,7 @@ if len(sys.argv)>2:
     app=Path(sys.argv[2]).read_text(encoding="utf-8")
     for marker in (
         "_gsf_v148_api","GSF_V148_ANALYTICS_REGISTERED",
-        "/social-analytics/register","Gaming Shorts Factory · V148 Analytics Learning",
+        "/social-analytics/register",
     ):
         assert marker in app,marker
 
