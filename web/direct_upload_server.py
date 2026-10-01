@@ -3468,6 +3468,33 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,400,{"ok":False,"error":str(exc)[:180]})
             return
 
+        if path=="/social-analytics/register":
+            try:
+                data=_read_json(self,max_bytes=128*1024)
+                state=_analytics_register(sid,data)
+                _json(self,200,state)
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:220]})
+            return
+
+        if path=="/social-analytics/collect":
+            try:
+                data=_read_json(self,max_bytes=64*1024)
+                force=bool(data.get("force",False)) if isinstance(data,dict) else False
+                state=_analytics_collect_all(sid,force=force)
+                state["context"]=_analytics_context(sid)
+                _json(self,200,state)
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:240]})
+            return
+
+        if path=="/social-analytics/context":
+            try:
+                _json(self,200,{"ok":True,"context":_analytics_context(sid)})
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:220]})
+            return
+
         if path=="/drafts/save":
             try:
                 data=_read_json(self,max_bytes=1024*1024)
