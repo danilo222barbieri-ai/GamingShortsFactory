@@ -3198,6 +3198,26 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,400,{"ok":False,"error":str(exc)[:180]})
             return
 
+        if path=="/content-memory/check":
+            try:
+                data=_read_json(self,max_bytes=128*1024)
+                record=data.get("record") if isinstance(data.get("record"),dict) else data
+                state=_content_memory_check(sid,record)
+                _json(self,200,{"ok":True,"memory":state})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+
+        if path=="/content-memory/record":
+            try:
+                data=_read_json(self,max_bytes=128*1024)
+                record=data.get("record") if isinstance(data.get("record"),dict) else data
+                state=_content_memory_record(sid,record)
+                _json(self,200,{"ok":True,"memory":state})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+
         if path=="/drafts/save":
             try:
                 data=_read_json(self,max_bytes=1024*1024)
