@@ -2600,10 +2600,12 @@ def _log_living_runtime_once() -> None:
 def render_shell() -> None:
     """Render presentation only; no session-state or pipeline mutations."""
     _log_living_runtime_once()
-    st.markdown(LIVING_CSS, unsafe_allow_html=True)
-    st.markdown(SHELL_HTML, unsafe_allow_html=True)
+    # V153.20: st.html is Streamlit's dedicated, non-iframe HTML/CSS surface.
+    # Avoid routing the entire visual system through the Markdown renderer.
+    st.html(LIVING_CSS)
+    st.html(SHELL_HTML)
 
 def render_tail() -> None:
     """Re-apply presentation CSS after the legacy app has rendered its own layers."""
     tail_css = LIVING_CSS.replace('id="gsf-living-ui"', 'id="gsf-living-ui-tail"', 1)
-    st.markdown(tail_css, unsafe_allow_html=True)
+    st.html(tail_css)
