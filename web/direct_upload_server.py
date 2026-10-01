@@ -2702,12 +2702,84 @@ def _analytics_save(sid,payload):
             print("GSF_V148_ANALYTICS_BUCKET_WARN",sid,repr(str(exc))[:180],flush=True)
     return True
 
+def _youtube_analytics_token(sid):
+    token=dict(_youtube_user_load(sid) or {})
+    refresh=str(token.get("refresh_token") or "")
+    client_id=str(token.get("client_id") or YOUTUBE_CLIENT_ID or "")
+    client_secret=str(token.get("client_secret") or YOUTUBE_CLIENT_SECRET or "")
+    if not refresh or not client_id or not client_secret:
+        return token
+    try:
+        form=urllib.parse.urlencode({
+            "client_id":client_id,
+            "client_secret":client_secret,
+            "refresh_token":refresh,
+            "grant_type":"refresh_token",
+        }).encode("utf-8")
+        req=urllib.request.Request(
+            "https://oauth2.googleapis.com/token",
+            data=form,
+            headers={"Content-Type":"application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req,timeout=30) as resp:
+            payload=json.loads(resp.read().decode("utf-8"))
+        access=str(payload.get("access_token") or "")
+        if access:
+            token["token"]=access
+            token["access_token"]=access
+            token["refresh_token"]=refresh
+            token["client_id"]=client_id
+            token["client_secret"]=client_secret
+            token["scopes"]=str(payload.get("scope") or YOUTUBE_SCOPE).split()
+            token["_analytics_refreshed_at"]=time.time()
+            try:_youtube_user_save(sid,token)
+            except Exception:pass
+    except Exception as exc:
+        print("GSF_V148_YOUTUBE_REFRESH_WARN",sid,repr(str(exc))[:180],flush=True)
+    return token
+
+def _tiktok_analytics_token(sid):
+    token=dict(_tiktok_user_load(sid) or {})
+    refresh=str(token.get("refresh_token") or "")
+    expiry=float(token.get("expires_at") or 0.0)
+    if not refresh or not TIKTOK_CLIENT_KEY or not TIKTOK_CLIENT_SECRET:
+        return token
+    if expiry and expiry-time.time()>600:
+        return token
+    try:
+        form=urllib.parse.urlencode({
+            "client_key":TIKTOK_CLIENT_KEY,
+            "client_secret":TIKTOK_CLIENT_SECRET,
+            "grant_type":"refresh_token",
+            "refresh_token":refresh,
+        }).encode("utf-8")
+        req=urllib.request.Request(
+            "https://open.tiktokapis.com/v2/oauth/token/",
+            data=form,
+            headers={"Content-Type":"application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req,timeout=30) as resp:
+            payload=json.loads(resp.read().decode("utf-8"))
+        if payload.get("access_token"):
+            now=time.time()
+            token.update(dict(payload))
+            token["expires_at"]=now+int(payload.get("expires_in",0) or 0)
+            token["refresh_expires_at"]=now+int(payload.get("refresh_expires_in",0) or 0)
+            token["_analytics_refreshed_at"]=now
+            try:_tiktok_user_save(sid,token)
+            except Exception:pass
+    except Exception as exc:
+        print("GSF_V148_TIKTOK_REFRESH_WARN",sid,repr(str(exc))[:180],flush=True)
+    return token
+
 def _analytics_token_for(sid,platform):
     p=str(platform or "").lower()
     if p.startswith("you"):
-        return _youtube_user_load(sid)
+        return _youtube_analytics_token(sid)
     if p.startswith("tik"):
-        return _tiktok_user_load(sid)
+        return _tiktok_analytics_token(sid)
     if p.startswith("inst"):
         return _instagram_user_load(sid)
     return {}
