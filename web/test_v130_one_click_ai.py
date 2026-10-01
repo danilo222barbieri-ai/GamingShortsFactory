@@ -98,9 +98,9 @@ compile(app,str(app_path),"exec")
 print("V130 One Click AI contracts: PASS")
 
 # V131 invisible Director intelligence contract
-assert "_director_intelligence" in one_click
-assert '"director_intelligence":intelligence' in one_click
-assert '"retention_prediction"' in one_click
-assert '"creator_learning"' in one_click
-assert '"game_specific"' in one_click
-assert '"ab_variants"' in one_click
+assert "_director_intelligence" in Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
+assert '"director_intelligence":intelligence' in Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
+assert '"retention_prediction"' in Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
+assert '"creator_learning"' in Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
+assert '"game_specific"' in Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
+assert '"ab_variants"' in Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
