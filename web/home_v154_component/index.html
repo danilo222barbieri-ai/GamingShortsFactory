@@ -1,0 +1,223 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+:root{
+  --ink:#243f59;--muted:#7890a3;--line:#dceaf3;--blue:#a9dcff;--mint:#bcefdc;
+  --violet:#d8d1ff;--peach:#ffd8c7;--yellow:#ffe9a9;--shadow:0 18px 55px rgba(58,95,125,.10);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:transparent;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink)}
+button,input{font:inherit}
+#home154{width:100%;max-width:1120px;margin:0 auto;padding:8px 14px 14px}
+.hero{text-align:center;padding:8px 8px 4px}
+.brand{font-size:clamp(25px,3.2vw,42px);line-height:1;font-weight:860;letter-spacing:-.035em;color:#2d5879}
+.sub{margin-top:10px;font-size:clamp(14px,1.5vw,19px);font-weight:650;color:#7a92a6}
+.steps{max-width:770px;margin:22px auto 18px;display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.step{border:1px solid rgba(200,222,235,.9);background:rgba(255,255,255,.72);border-radius:18px;padding:10px 8px;box-shadow:0 8px 24px rgba(73,108,136,.06)}
+.step b{display:block;font-size:11px;letter-spacing:.12em;color:#53758d}
+.step span{display:block;margin-top:3px;font-size:10px;color:#93a6b4;font-weight:700}
+.stage{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:310px}
+.rings{position:relative;width:248px;height:248px;display:grid;place-items:center}
+.rings:before,.rings:after{content:"";position:absolute;border-radius:50%;border:1px solid rgba(117,198,241,.35);inset:-15px;animation:orb 6s linear infinite}
+.rings:after{inset:-31px;border-color:rgba(120,221,192,.25);animation-duration:9s;animation-direction:reverse}
+@keyframes orb{to{transform:rotate(360deg)}}
+.pick{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.circle{position:relative;z-index:2;width:238px;height:238px;border-radius:50%;border:1px solid rgba(155,207,239,.95);background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(225,242,255,.90));box-shadow:var(--shadow),0 0 0 14px rgba(155,222,255,.08);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:.18s ease}
+.circle:hover{transform:translateY(-2px) scale(1.01);box-shadow:0 23px 62px rgba(58,95,125,.14),0 0 0 16px rgba(155,222,255,.10)}
+.circle.busy{pointer-events:none}
+.circle.loaded{cursor:default;background:linear-gradient(145deg,#f2fffa,#e4f7ef);border-color:#a6ddc7;box-shadow:0 18px 55px rgba(76,135,108,.10),0 0 0 14px rgba(134,223,187,.08)}
+.icon{font-size:58px;line-height:.85;color:#6fa7d8;font-weight:600;margin-bottom:13px}
+.circle.loaded .icon{color:#63ad8a}
+.circle strong{max-width:165px;text-align:center;font-size:17px;line-height:1.18;color:#3d6786}
+.circle small{margin-top:8px;color:#86a0b2;font-size:11px;font-weight:700}
+.status{display:none;width:210px;margin-top:10px;text-align:center;color:#708a9d;font-size:11px;font-weight:780}
+.status.show{display:block}.status.error{color:#aa4c4c}
+.track{height:5px;border-radius:999px;background:#e7f0f6;margin-top:7px;overflow:hidden}
+.bar{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#79c7ef,#79dcb7);transition:width .12s linear}
+.controls{display:none;margin-top:6px}.loadedView .controls{display:block}
+.durationWrap{text-align:center;margin:4px auto 19px}
+.kicker{font-size:11px;font-weight:850;letter-spacing:.11em;color:#7890a3;margin-bottom:9px;text-transform:uppercase}
+.durations{display:flex;justify-content:center;gap:11px}
+.dur{width:66px;height:66px;border-radius:50%;border:1px solid #d6e6ef;background:#fff;color:#607b8f;font-weight:900;font-size:15px;cursor:pointer;box-shadow:0 8px 24px rgba(73,108,136,.07);transition:.16s}
+.dur.active{background:linear-gradient(145deg,#e9f8ff,#e8f7f0);border-color:#a9d8ee;color:#346b8e;transform:translateY(-1px)}
+.engines{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:0 auto;max-width:980px}
+.engine{min-height:116px;border:1px solid rgba(204,224,236,.94);border-radius:24px;background:rgba(255,255,255,.86);padding:14px 10px 12px;cursor:pointer;box-shadow:0 10px 28px rgba(70,106,132,.07);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;transition:.17s}
+.engine:hover{transform:translateY(-2px);box-shadow:0 15px 34px rgba(70,106,132,.11)}
+.engine.active{outline:2px solid rgba(111,177,220,.35);transform:translateY(-2px)}
+.engine .ico{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;font-size:24px}
+.engine b{font-size:12px;color:#486a82}.engine small{text-align:center;font-size:9.5px;color:#8aa0af;font-weight:700;line-height:1.25}
+.e-auto .ico{background:#dff3ff}.e-best .ico{background:#e7e2ff}.e-action .ico{background:#ffe4da}.e-react .ico{background:#fff1c5}.e-manual .ico{background:#dff6eb}
+.ctaRow{display:flex;justify-content:center;gap:10px;margin:18px 0 0}
+.cta{border:0;border-radius:18px;padding:13px 20px;font-size:12px;font-weight:900;letter-spacing:.03em;cursor:pointer;box-shadow:0 10px 28px rgba(70,106,132,.10)}
+.cta.ai{background:#dff3ff;color:#356a8c}.cta.manual{background:#dff6eb;color:#38775c}.cta:disabled{opacity:.45;cursor:not-allowed}
+.note{text-align:center;margin-top:10px;font-size:10px;color:#94a5b2;font-weight:700}
+@media(max-width:850px){.engines{grid-template-columns:repeat(2,minmax(0,1fr))}.engine:last-child{grid-column:1/-1}.steps{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){#home154{padding:2px 8px 10px}.hero{text-align:left;padding:8px 6px}.brand{font-size:26px}.sub{font-size:14px}.steps{margin:15px 5px 12px;gap:7px}.step{border-radius:15px;padding:8px 6px}.stage{min-height:275px}.rings{width:220px;height:220px}.circle{width:210px;height:210px}.icon{font-size:50px}.circle strong{font-size:16px}.engines{gap:8px}.engine{min-height:104px;border-radius:19px;padding:10px 7px}.engine .ico{width:40px;height:40px;border-radius:14px}.cta{width:100%;max-width:330px}.ctaRow{padding:0 6px}}
+@media(prefers-reduced-motion:reduce){.rings:before,.rings:after{animation:none}.circle,.engine,.dur{transition:none}}
+</style>
+</head>
+<body>
+<div id="home154">
+  <div class="hero">
+    <div class="brand">Gaming Shorts Factory</div>
+    <div class="sub">Dal gameplay allo Short. Tu scegli il momento, al resto pensa il motore.</div>
+  </div>
+  <div class="steps">
+    <div class="step"><b>01 · CARICA</b><span>Il tuo gameplay</span></div>
+    <div class="step"><b>02 · SCEGLI</b><span>Motore e durata</span></div>
+    <div class="step"><b>03 · MODIFICA</b><span>AI oppure Game Editor</span></div>
+    <div class="step"><b>04 · PUBBLICA</b><span>Short pronto</span></div>
+  </div>
+
+  <div id="view" class="">
+    <div class="stage">
+      <div class="rings">
+        <input id="pick" class="pick" type="file" accept="video/mp4,video/quicktime,video/x-matroska,.mp4,.mov,.mkv">
+        <label id="circle" class="circle" for="pick">
+          <span id="uploadIcon" class="icon">⇧</span>
+          <strong id="uploadLabel">Carica il tuo video</strong>
+          <small id="uploadHint">MP4 · MOV · MKV</small>
+        </label>
+      </div>
+      <div id="status" class="status">
+        <div id="statusText">Caricamento video… 0%</div>
+        <div class="track"><div id="bar" class="bar"></div></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="durationWrap">
+        <div class="kicker">Durata dello Short</div>
+        <div class="durations">
+          <button class="dur active" data-duration="15">15s</button>
+          <button class="dur" data-duration="30">30s</button>
+        </div>
+      </div>
+      <div class="kicker" style="text-align:center">Scegli come creare</div>
+      <div class="engines">
+        <button class="engine e-auto" data-engine="auto"><span class="ico">🚀</span><b>Automatico</b><small>Fa tutto il motore</small></button>
+        <button class="engine e-best" data-engine="best"><span class="ico">✦</span><b>Momento migliore</b><small>Cerca il picco più forte</small></button>
+        <button class="engine e-action" data-engine="action"><span class="ico">⚡</span><b>Più azione</b><small>Ritmo, impatti, movimento</small></button>
+        <button class="engine e-react" data-engine="reaction"><span class="ico">◎</span><b>Reazioni</b><small>Voce e momenti emotivi</small></button>
+        <button class="engine e-manual" data-engine="manual"><span class="ico">🎮</span><b>Manuale</b><small>Apri il Game Editor</small></button>
+      </div>
+      <div class="ctaRow">
+        <button id="primaryCta" class="cta ai" disabled>Crea con AI</button>
+      </div>
+      <div class="note">Le funzioni sotto restano quelle del motore attuale: cambia solo la Home.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(()=>{
+ const SET_COMPONENT_VALUE="streamlit:setComponentValue";
+ const RENDER="streamlit:render";
+ const COMPONENT_READY="streamlit:componentReady";
+ const SET_FRAME_HEIGHT="streamlit:setFrameHeight";
+ const send=(type,data)=>window.parent.postMessage(Object.assign({isStreamlitMessage:true,type},data||{}),"*");
+ const value=(v)=>send(SET_COMPONENT_VALUE,{value:v,dataType:"json"});
+ const height=(h)=>send(SET_FRAME_HEIGHT,{height:h});
+ const root=document.getElementById("home154"),view=document.getElementById("view");
+ const pick=document.getElementById("pick"),circle=document.getElementById("circle"),uploadIcon=document.getElementById("uploadIcon");
+ const uploadLabel=document.getElementById("uploadLabel"),uploadHint=document.getElementById("uploadHint");
+ const status=document.getElementById("status"),statusText=document.getElementById("statusText"),bar=document.getElementById("bar");
+ const cta=document.getElementById("primaryCta");
+ let loaded=false,duration=15,engine="",uploadBusy=false;
+ const norm=s=>String(s||"").replace(/\s+/g," ").trim().toLowerCase();
+
+ function setLoaded(on){
+   loaded=!!on; view.classList.toggle("loadedView",loaded); circle.classList.toggle("loaded",loaded);
+   if(loaded){uploadIcon.textContent="✓";uploadLabel.textContent="Video caricato";uploadHint.textContent="Pronto per la scelta";pick.disabled=true;}
+   else{uploadIcon.textContent="⇧";uploadLabel.textContent="Carica il tuo video";uploadHint.textContent="MP4 · MOV · MKV";pick.disabled=false;}
+   height(loaded?760:470);
+ }
+ function parentClick(candidates,exact=false){
+   try{
+     const doc=window.parent.document;
+     const els=[...doc.querySelectorAll("button,[role=radio],[role=tab],label,a")];
+     const words=(candidates||[]).map(norm);
+     const hit=els.find(el=>{
+       const t=norm(el.innerText||el.textContent);
+       return words.some(w=>exact?t===w:t.includes(w));
+     });
+     if(hit){hit.click();return true;}
+   }catch(e){}
+   return false;
+ }
+ function setDuration(n,emit=true){
+   duration=Number(n)===30?30:15;
+   document.querySelectorAll(".dur").forEach(b=>b.classList.toggle("active",Number(b.dataset.duration)===duration));
+   parentClick(duration===15?["15s","15 s","15 sec","15 secondi"]:["30s","30 s","30 sec","30 secondi"],true);
+   if(emit)value({event:"duration",duration,engine});
+ }
+ function setEngine(name,emit=true){
+   engine=String(name||"");
+   document.querySelectorAll(".engine").forEach(b=>b.classList.toggle("active",b.dataset.engine===engine));
+   cta.disabled=!engine;
+   cta.textContent=engine==="manual"?"Apri Game Editor":"Crea con AI";
+   cta.classList.toggle("manual",engine==="manual");cta.classList.toggle("ai",engine!=="manual");
+   const map={
+     auto:["automatico"],
+     best:["momento migliore"],
+     action:["più azione","piu azione"],
+     reaction:["reazioni"],
+     manual:["manuale","game editor"]
+   };
+   parentClick(map[engine]||[],true);
+   if(emit)value({event:"engine",duration,engine});
+ }
+
+ async function capabilities(){try{const r=await fetch("/direct-upload/capabilities",{cache:"no-store"});return r.ok?await r.json():{bucket:false};}catch(e){return {bucket:false};}}
+ function put(url,blob,onProgress){return new Promise((resolve,reject)=>{const x=new XMLHttpRequest();x.open("PUT",url,true);x.upload.onprogress=e=>{if(e.lengthComputable)onProgress(e.loaded)};x.onload=()=>{if(x.status>=200&&x.status<300){const et=x.getResponseHeader("ETag")||x.getResponseHeader("etag");et?resolve(et):reject(new Error("ETag mancante"));}else reject(new Error("HTTP "+x.status));};x.onerror=()=>reject(new Error("Errore rete"));x.timeout=240000;x.ontimeout=()=>reject(new Error("Timeout"));x.send(blob);});}
+ async function bucketUpload(file,caps){
+   const ir=await fetch("/direct-upload/bucket/init",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:file.name,size:file.size,type:file.type||"application/octet-stream"})});
+   const init=await ir.json(); if(!ir.ok||!init.ok)throw new Error(init.error||"Init fallita");
+   const partSize=Number(init.part_size||caps.part_size||32*1024*1024),concurrency=Math.max(1,Number(init.concurrency||caps.concurrency||4));
+   const desc=Array.isArray(init.parts)?init.parts:[];let next=0,doneBytes=0;const live=new Map(),parts=[];
+   const update=()=>{let flight=0;for(const v of live.values())flight+=v;const pct=Math.min(99,Math.round(((doneBytes+flight)/file.size)*100));bar.style.width=pct+"%";statusText.textContent="Caricamento video… "+pct+"%";};
+   const worker=async()=>{while(true){const i=next++;if(i>=desc.length)return;const d=desc[i],start=i*partSize,end=Math.min(file.size,start+partSize),blob=file.slice(start,end);live.set(i,0);const et=await put(d.url,blob,s=>{live.set(i,s);update()});live.delete(i);doneBytes+=end-start;parts[i]={PartNumber:Number(d.number),ETag:et};update();}};
+   try{
+     await Promise.all(Array.from({length:Math.min(concurrency,desc.length)},()=>worker()));
+     statusText.textContent="Preparazione video…";
+     const dr=await fetch("/direct-upload/bucket/complete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({upload_id:init.upload_id,multipart_id:init.multipart_id,key:init.key,analysis_key:init.analysis_key,name:file.name,size:file.size,parts})});
+     const done=await dr.json();if(!dr.ok||!done.ok)throw new Error(done.error||"Finalizzazione fallita");
+     const deadline=Date.now()+300000;
+     while(Date.now()<deadline){const sr=await fetch("/direct-upload/bucket/status?upload_id="+encodeURIComponent(init.upload_id),{cache:"no-store"});const st=await sr.json();if(sr.ok&&st.ready)return true;if(!sr.ok&&st.error)throw new Error(st.error);await new Promise(r=>setTimeout(r,500));}
+     throw new Error("Preparazione troppo lunga");
+   }catch(e){try{await fetch("/direct-upload/bucket/abort",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({upload_id:init.upload_id,multipart_id:init.multipart_id,key:init.key})});}catch(_e){}throw e;}
+ }
+ function chunkPut(blob,m,onProgress){return new Promise((resolve,reject)=>{const x=new XMLHttpRequest();x.open("PUT","/direct-upload/chunk",true);x.setRequestHeader("Content-Type","application/octet-stream");x.setRequestHeader("X-GSF-Upload-ID",m.id);x.setRequestHeader("X-GSF-Filename",encodeURIComponent(m.name));x.setRequestHeader("X-GSF-File-Size",String(m.size));x.setRequestHeader("X-GSF-Chunk-Start",String(m.start));x.setRequestHeader("X-GSF-Chunk-Index",String(m.index));x.setRequestHeader("X-GSF-Chunk-Count",String(m.count));x.upload.onprogress=e=>{if(e.lengthComputable)onProgress(e.loaded)};x.onload=()=>x.status>=200&&x.status<300?resolve():reject(new Error("HTTP "+x.status));x.onerror=()=>reject(new Error("Errore rete"));x.timeout=120000;x.ontimeout=()=>reject(new Error("Timeout"));x.send(blob);});}
+ async function fallbackUpload(file){
+   const CHUNK=4*1024*1024,count=Math.ceil(file.size/CHUNK),id=Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,12);
+   for(let i=0;i<count;i++){const start=i*CHUNK,end=Math.min(file.size,start+CHUNK);await chunkPut(file.slice(start,end),{id,name:file.name,size:file.size,start,index:i,count},sent=>{const pct=Math.min(99,Math.round(((start+sent)/file.size)*100));bar.style.width=pct+"%";statusText.textContent="Caricamento video… "+pct+"%";});}
+   return true;
+ }
+ pick.addEventListener("change",async()=>{
+   const file=pick.files&&pick.files[0];if(!file||uploadBusy)return;
+   const ext=(file.name.split(".").pop()||"").toLowerCase();if(!["mp4","mov","mkv"].includes(ext)){status.className="status show error";statusText.textContent="Formato non supportato";return;}
+   uploadBusy=true;circle.classList.add("busy");status.className="status show";uploadLabel.textContent="Caricamento…";bar.style.width="1%";
+   try{const caps=await capabilities();if(caps&&caps.bucket===true)await bucketUpload(file,caps);else await fallbackUpload(file);bar.style.width="100%";statusText.textContent="Video caricato";setLoaded(true);value({event:"upload_complete",duration,engine});}
+   catch(e){status.className="status show error";statusText.textContent="Upload interrotto — riprova";bar.style.width="0";uploadLabel.textContent="Carica il tuo video";circle.classList.remove("busy");uploadBusy=false;}
+ });
+ document.querySelectorAll(".dur").forEach(b=>b.addEventListener("click",()=>setDuration(b.dataset.duration)));
+ document.querySelectorAll(".engine").forEach(b=>b.addEventListener("click",()=>setEngine(b.dataset.engine)));
+ cta.addEventListener("click",()=>{
+   if(!engine)return;
+   if(engine==="manual")parentClick(["apri game editor","game editor","manuale"]);
+   else parentClick(["crea con ia","crea con ai","analizza con ia","genera con ia"]);
+   value({event:engine==="manual"?"open_editor":"create_ai",duration,engine});
+ });
+
+ function receive(args){
+   args=args||{};setLoaded(!!args.loaded);setDuration(Number(args.duration)||15,false);if(args.engine)setEngine(String(args.engine),false);
+ }
+ window.addEventListener("message",e=>{if(e.data&&e.data.type===RENDER)receive(e.data.args||{});});
+ send(COMPONENT_READY,{apiVersion:1});height(470);
+})();
+</script>
+</body>
+</html>
