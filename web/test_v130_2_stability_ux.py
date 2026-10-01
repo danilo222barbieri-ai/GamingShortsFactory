@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+import ast
 
 app_path=Path(sys.argv[1] if len(sys.argv)>1 else "/app/GamingShortsFactory_V130_2_STABILITY_UX.py")
 s=app_path.read_text(encoding="utf-8")
@@ -21,7 +22,6 @@ required=[
     'SHORT PRONTO',
     'Scegli copertina',
     'gsf_v1302_thumbnail_index',
-    '"-preset","fast"',
     '.gsf-v124-quality{display:none !important;',
     '.gsf-footer-v4 .bug-report',
     'position:static !important;',
@@ -30,6 +30,23 @@ required=[
 for marker in required:
     if marker not in s:
         raise SystemExit("V130.2 marker missing: "+marker)
+
+
+# Validate the actual final renderer structurally; ast.unparse may choose either quote style.
+_tree=ast.parse(s)
+_core=next((n for n in _tree.body if isinstance(n,ast.FunctionDef) and n.name=="_gsf_render_core"),None)
+if _core is None:
+    raise SystemExit("V130.2 final render core missing")
+_fast=0
+for _node in ast.walk(_core):
+    if isinstance(_node,ast.List):
+        _elts=_node.elts
+        for _i in range(len(_elts)-1):
+            _a,_b=_elts[_i],_elts[_i+1]
+            if isinstance(_a,ast.Constant) and _a.value=="-preset" and isinstance(_b,ast.Constant) and _b.value=="fast":
+                _fast+=1
+if _fast!=1:
+    raise SystemExit("V130.2 final renderer fast preset contract failed: "+str(_fast))
 
 for forbidden in (
     'on_click=_gsf_start_new_video,',

@@ -233,25 +233,40 @@ s=s.replace(queue_flag,'''                st.session_state["gsf_v107_final_rende
 ''',1)
 
 # 3) Faster final encode while preserving CRF/profile/current render layout.
-# Limit the replacement to the final-Short render area so preview/analysis
-# encoders and approved players are untouched.
-_final_render_anchor='_gsf_session_mkdtemp("gsf_final_v54_")'
-_final_render_i=s.find(_final_render_anchor)
-if _final_render_i>=0:
-    _final_render_end=min(len(s),_final_render_i+42000)
-    _final_render_seg=s[_final_render_i:_final_render_end]
-    if '"-preset","medium"' in _final_render_seg:
-        _final_render_seg=_final_render_seg.replace(
-            '"-preset","medium"','"-preset","fast"',1
-        )
-        s=s[:_final_render_i]+_final_render_seg+s[_final_render_end:]
-    elif "'-preset','medium'" in _final_render_seg:
-        _final_render_seg=_final_render_seg.replace(
-            "'-preset','medium'","'-preset','fast'",1
-        )
-        s=s[:_final_render_i]+_final_render_seg+s[_final_render_end:]
-# If the current final renderer is already optimized by an earlier patch,
-# leave it unchanged rather than rewriting a different FFmpeg command.
+# The real final encoder lives in _gsf_render_core. Update that function by AST
+# so the optimization survives formatting/unparse changes from older patches.
+_tree_speed=ast.parse(s)
+_core_speed=next(
+    (n for n in _tree_speed.body if isinstance(n,ast.FunctionDef) and n.name=="_gsf_render_core"),
+    None,
+)
+if _core_speed is None:
+    raise RuntimeError("V130.2 final render core missing")
+_speed_changes=0
+for _node in ast.walk(_core_speed):
+    if not isinstance(_node,ast.List):
+        continue
+    _elts=_node.elts
+    for _i in range(len(_elts)-1):
+        _a,_b=_elts[_i],_elts[_i+1]
+        if (
+            isinstance(_a,ast.Constant) and _a.value=="-preset"
+            and isinstance(_b,ast.Constant) and str(_b.value)=="medium"
+        ):
+            _b.value="fast"
+            _speed_changes+=1
+if _speed_changes!=1:
+    raise RuntimeError(
+        "V130.2 expected one final medium preset, found "+str(_speed_changes)
+    )
+ast.fix_missing_locations(_core_speed)
+_new_core_speed=ast.unparse(_core_speed)
+_lines_speed=s.splitlines(keepends=True)
+s=(
+    "".join(_lines_speed[:_core_speed.lineno-1])
+    +_new_core_speed.rstrip()+"\n\n"
+    +"".join(_lines_speed[_core_speed.end_lineno:])
+)
 
 # 4) Restore visible ad placeholders if live AdSense lacks explicit slot IDs.
 ads_hidden='''    if not valid:
