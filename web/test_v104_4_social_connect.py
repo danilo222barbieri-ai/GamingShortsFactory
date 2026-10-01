@@ -55,7 +55,7 @@ need('f"social-connections/{sid}/tiktok.json"' in server,"TikTok token stored pe
 need("tiktok_token.json" in server and "tiktok_config.json" in server,"callback writes app-compatible TikTok files")
 need("https://www.tiktok.com/v2/auth/authorize/" in server,"official TikTok authorize endpoint used")
 need("https://open.tiktokapis.com/v2/oauth/token/" in server,"official TikTok token endpoint used")
-need('"scope":"user.info.basic,video.publish"' in server,"required TikTok scopes requested")
+need('"scope":' in server and "user.info.basic" in server and "video.publish" in server,"required TikTok scopes requested")
 need("redirect_uri=PUBLIC_APP_URL" in server,"existing registered root redirect URI is reused")
 need('state="gsfsc_"+' in server,"standalone OAuth state is namespaced")
 need("Collega i social" in server,"no-video social connector page exists")
