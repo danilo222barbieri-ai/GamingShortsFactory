@@ -11,7 +11,7 @@ LIVING_CSS = r"""
   --gsf-ink:#18243a;
   --gsf-blue:#83c8ee;
   --gsf-line:rgba(102,155,190,.24);
-  --gsf-glass:rgba(255,255,255,.76);\n  --gsf-glow:rgba(101,190,239,.30);
+  --gsf-glass:rgba(255,255,255,.76);\n  --gsf-glow:rgba(101,190,239,.30);\n  --gsf-soft:#eef8fe;
 }
 html,body,[data-testid="stAppViewContainer"],.stApp{
   background:
@@ -78,23 +78,23 @@ html,body,[data-testid="stAppViewContainer"],.stApp{
   color:#176894; background:rgba(129,202,239,.18);
   box-shadow:inset 0 0 0 1px rgba(105,186,229,.14);
 }
-@keyframes gsfBrandIn{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}\n@keyframes gsfBarIn{from{opacity:0;transform:translate(-50%,-8px) scale(.98)}to{opacity:1;transform:translate(-50%,0) scale(1)}}\n[data-testid="stFileUploader"]{
-  max-width:720px !important; margin:1.2rem auto !important;
+@keyframes gsfBrandIn{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}\n@keyframes gsfBarIn{from{opacity:0;transform:translate(-50%,-8px) scale(.98)}to{opacity:1;transform:translate(-50%,0) scale(1)}}\n/* Living uploader: make the first action feel like the center of the product. */\n[data-testid="stFileUploader"]{
+  max-width:680px !important; margin:1.8rem auto 2.4rem !important;
   filter:drop-shadow(0 18px 34px rgba(81,142,180,.10));
 }
 [data-testid="stFileUploaderDropzone"]{
   border:1px solid rgba(103,181,225,.34) !important;
-  border-radius:28px !important;
-  background:rgba(255,255,255,.84) !important;
+  border-radius:32px !important;
+  background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(244,251,255,.88)) !important;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),
              0 14px 42px rgba(87,153,194,.09) !important;
-  animation:gsfLivingBreath 3.2s ease-in-out infinite;\n  transition:transform .28s ease,border-color .28s ease;
+  animation:gsfLivingBreath 3.2s ease-in-out infinite;\n  min-height:156px!important;\n  transition:transform .28s ease,border-color .28s ease;
 }
-[data-testid="stFileUploaderDropzone"]:hover{transform:translateY(-2px);border-color:rgba(82,174,226,.58)!important}\n[data-testid="stFileUploaderDropzone"]::after{\n  content:"";position:absolute;inset:-1px;border-radius:28px;pointer-events:none;\n  background:radial-gradient(circle at 50% 0,var(--gsf-glow),transparent 46%);\n  opacity:.35;animation:gsfUploaderAura 3.2s ease-in-out infinite;\n}\n@keyframes gsfUploaderAura{0%,100%{opacity:.22}50%{opacity:.62}}\n@keyframes gsfLivingBreath{
+[data-testid="stFileUploaderDropzoneInstructions"]{font-weight:650!important;color:#4b6177!important}\n[data-testid="stFileUploaderDropzone"] button{border-radius:999px!important;padding:.62rem 1rem!important;background:rgba(226,245,255,.9)!important}\n[data-testid="stFileUploaderDropzone"]:hover{transform:translateY(-2px);border-color:rgba(82,174,226,.58)!important}\n[data-testid="stFileUploaderDropzone"]::after{\n  content:"";position:absolute;inset:-1px;border-radius:28px;pointer-events:none;\n  background:radial-gradient(circle at 50% 0,var(--gsf-glow),transparent 46%);\n  opacity:.35;animation:gsfUploaderAura 3.2s ease-in-out infinite;\n}\n@keyframes gsfUploaderAura{0%,100%{opacity:.22}50%{opacity:.62}}\n@keyframes gsfLivingBreath{
   0%,100%{box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),0 14px 42px rgba(87,153,194,.09)}
   50%{box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),0 16px 48px rgba(87,169,216,.18)}
 }
-@media(max-width:760px){
+@media(max-width:760px){\n  [data-testid="stFileUploader"]{max-width:100%!important;margin-top:1.1rem!important}\n  [data-testid="stFileUploaderDropzone"]{min-height:138px!important;border-radius:26px!important}
   .gsf-living-brand{left:16px;top:15px;font-size:15px}
   .gsf-living-bar{top:auto;bottom:12px;width:calc(100% - 24px);justify-content:space-between}
   .gsf-living-chip{min-width:0;flex:1;padding:0 5px;font-size:11px}
