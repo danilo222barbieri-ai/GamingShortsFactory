@@ -38,6 +38,7 @@ pipeline_anchor=r'''        _pipeline=_mod.run_director_pipeline(
             selected_start=_start,
             provider_results=st.session_state.get("gsf_v142_provider_results"),
             creator_event=_event,
+            performance_context=_gsf_v148_performance_context(),
         )
         st.session_state["gsf_v142_runtime"]=_pipeline
         _recipe=_mod.apply_pipeline_to_recipe(_recipe,_pipeline)
@@ -47,6 +48,7 @@ pipeline_replacement=r'''        _pipeline=_mod.run_director_pipeline(
             selected_start=_start,
             provider_results=st.session_state.get("gsf_v142_provider_results"),
             creator_event=_event,
+            performance_context=_gsf_v148_performance_context(),
         )
 
         # V145: persistent candidate-level memory is checked before the render
