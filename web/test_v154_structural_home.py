@@ -23,7 +23,7 @@ for marker in (
     assert marker in s, "missing app marker: "+marker
 
 for marker in (
-    "Carica il tuo video",
+    "CARICA IL TUO GAMEPLAY",
     "GAMING SHORTS FACTORY",
     "Creator Hub",
     "CARICA IL TUO GAMEPLAY",
