@@ -117,7 +117,7 @@ st.markdown(r"""
 <div class="gsf-v151-whisper">Trasforma il tuo gameplay in Shorts</div>
 """,unsafe_allow_html=True)
 '''
-s=s.replace(anchor,home+anchor,1)\n
+s=s.replace(anchor,home+anchor,1)
 # Insert the new Home action cards immediately after the uploader block's visual
 # status and before the legacy workflow continues. They are presentation only.
 _cards=r'''
