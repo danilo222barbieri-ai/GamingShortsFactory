@@ -345,6 +345,38 @@ def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
 
 
 
+
+def _recognize_game(rows,genre="Auto"):
+    """Infer a game/profile from semantic, HUD and event evidence already produced upstream."""
+    rows=[_dict(x) for x in _list(rows) if isinstance(x,dict)]
+    corpus=[]; explicit=[]
+    for row in rows:
+        for key in ("game","game_title","title"):
+            v=str(row.get(key) or "").strip().lower()
+            if v: explicit.append(v)
+        corpus += [str(row.get("event") or "").lower(),str(row.get("reason") or "").lower()]
+        plan=_dict(row.get("director_plan"))
+        framing=_dict(plan.get("framing"))
+        corpus += [str(x).lower() for x in _list(framing.get("hud_elements"))]
+    text=" ".join(corpus)
+    known={
+        "fortnite":["fortnite","battle bus","storm","final zone","build","victory royale"],
+        "call_of_duty_warzone":["warzone","gulag","loadout","gas","armor plate"],
+        "ea_sports_fc":["ea fc","fifa","goal","penalty","scoreboard","football"],
+        "rocket_league":["rocket league","aerial","boost","goal","overtime"],
+        "gta":["grand theft auto","gta","wanted","police","heist"],
+        "arc_raiders":["arc raiders","raider","arc machine","extract","extraction"],
+    }
+    scores={k:sum(1 for term in terms if term in text) for k,terms in known.items()}
+    for v in explicit:
+        for k,terms in known.items():
+            if k.replace("_"," ") in v or any(term in v for term in terms[:2]): scores[k]+=4
+    winner=max(scores,key=scores.get) if scores and max(scores.values())>0 else _profile_key(genre,rows[0].get("event") if rows else "")
+    top=max(scores.values()) if scores else 0
+    confidence=min(.98,.38+top*.12) if top else .32
+    return {"game":winner,"confidence":round(confidence,3),"evidence_score":top,
+            "source":"semantic_hud_context" if top else "genre_event_fallback"}
+
 def _session_intelligence(rows,genre="Auto"):
     """Session-wide intelligence used by Director without adding UI."""
     rows=[_dict(x) for x in _list(rows) if isinstance(x,dict)]
@@ -395,6 +427,8 @@ def build_one_click_package(brain,clip_duration=15.0,genre="Auto",profile="auto"
     selected=[x for x in _list(brain.get("selected")) if isinstance(x,dict)]
     alternates=[x for x in _list(brain.get("alternates")) if isinstance(x,dict)]
     target=max(1,min(3,int(target_count or 3)))
+    session_intelligence=_session_intelligence(selected+alternates,genre=genre)
+    game_recognition=_recognize_game(selected+alternates,genre=genre)
     shorts=[
         build_short_package(row,clip_duration=clip_duration,genre=genre,profile=profile)
         for row in selected[:target]
@@ -414,6 +448,8 @@ def build_one_click_package(brain,clip_duration=15.0,genre="Auto",profile="auto"
         "shared_social_master":True,
         "profile":str(profile or brain.get("profile") or "auto"),
         "genre":str(genre or brain.get("genre") or "Auto"),
+        "game_recognition":game_recognition,
+        "session_intelligence":session_intelligence,
         "shorts":shorts,
         "alternates":alt_packages,
     }
