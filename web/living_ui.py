@@ -1123,6 +1123,265 @@ button[data-testid="baseButton-primary"]{
   }
 }
 
+/* V153.12 — large tactile Living pass: depth, CTA hierarchy, projects, motion, mobile. */
+
+/* Living canvas: subtle depth without turning into a gradient-heavy website. */
+[data-testid="stAppViewContainer"]{
+  background:
+    radial-gradient(circle at 50% -10%,rgba(151,216,247,.23),transparent 31%),
+    radial-gradient(circle at 8% 34%,rgba(204,238,226,.12),transparent 22%),
+    radial-gradient(circle at 91% 38%,rgba(247,229,167,.10),transparent 20%),
+    linear-gradient(180deg,#fbfdff 0%,#f6fbff 48%,#ffffff 100%)!important;
+}
+[data-testid="stAppViewContainer"]::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background-image:
+    linear-gradient(rgba(115,168,199,.028) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(115,168,199,.028) 1px,transparent 1px);
+  background-size:34px 34px;
+  mask-image:linear-gradient(to bottom,rgba(0,0,0,.28),transparent 44%);
+  -webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,.28),transparent 44%);
+}
+
+/* Brand + dock sit on the same visual system. */
+.gsf-living-brand{
+  text-shadow:0 1px 0 rgba(255,255,255,.86);
+}
+.gsf-living-bar{
+  border-color:rgba(107,165,198,.18)!important;
+  box-shadow:
+    0 14px 38px rgba(66,116,148,.12),
+    inset 0 1px 0 rgba(255,255,255,.96)!important;
+}
+.gsf-living-chip{
+  position:relative;
+  overflow:hidden;
+}
+.gsf-living-chip::after{
+  content:"";
+  position:absolute;
+  left:22%;
+  right:22%;
+  bottom:3px;
+  height:2px;
+  border-radius:999px;
+  background:currentColor;
+  opacity:0;
+  transform:scaleX(.5);
+  transition:opacity .18s ease,transform .18s ease;
+}
+.gsf-living-chip.active::after{
+  opacity:.34;
+  transform:scaleX(1);
+}
+
+/* Upload object: stronger living pulse and cleaner center stack. */
+[data-testid="stFileUploader"]{
+  filter:
+    drop-shadow(0 24px 46px rgba(75,137,175,.12))
+    drop-shadow(0 0 28px rgba(105,190,236,.08))!important;
+}
+[data-testid="stFileUploaderDropzone"]{
+  transform:translateZ(0);
+}
+[data-testid="stFileUploaderDropzone"]::after{
+  animation:gsfUploaderAura 2.8s ease-in-out infinite!important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"]{
+  width:70%!important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"]>div{
+  gap:.28rem!important;
+}
+[data-testid="stFileUploaderDropzone"] button{
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    background .18s ease!important;
+}
+[data-testid="stFileUploaderDropzone"] button:active{
+  transform:scale(.97);
+}
+
+/* Three primary action cards behave like one deliberate control group. */
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]){
+  min-width:0!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]{
+  position:relative!important;
+  border-radius:26px!important;
+  transition:
+    transform .22s ease,
+    box-shadow .22s ease,
+    border-color .22s ease,
+    background .22s ease!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]::after{
+  content:"";
+  position:absolute;
+  left:18px;
+  top:18px;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  box-shadow:0 0 0 6px rgba(121,200,241,.08);
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:nth-child(1):has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]::after{
+  background:#78c7ee;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:nth-child(2):has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]::after{
+  background:#91d7bd;
+  box-shadow:0 0 0 6px rgba(145,215,189,.09);
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:nth-child(3):has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]::after{
+  background:#efd377;
+  box-shadow:0 0 0 6px rgba(239,211,119,.10);
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) h3{
+  padding-left:18px!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) p{
+  padding-left:18px!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) .stButton>button{
+  position:relative;
+  overflow:hidden;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) .stButton>button::after{
+  content:"→";
+  position:absolute;
+  right:14px;
+  top:50%;
+  transform:translateY(-52%);
+  opacity:.55;
+  transition:transform .18s ease,opacity .18s ease;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) .stButton>button:active{
+  transform:scale(.985)!important;
+}
+
+/* Recent-project cards: stronger thumbnail/meta relationship. */
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]){
+  transition:
+    transform .22s ease,
+    box-shadow .22s ease,
+    border-color .22s ease!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]) [data-testid="stMarkdownContainer"] strong{
+  font-weight:790!important;
+  color:#273b4c!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]) [data-testid="stCaptionContainer"]{
+  color:#8492a1!important;
+  font-size:.76rem!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]) [data-testid="stImage"]{
+  border-radius:18px!important;
+}
+
+/* Secondary controls lose default web-app heaviness. */
+.stButton>button:not([kind="primary"]),
+.stDownloadButton>button{
+  min-height:40px!important;
+  border-radius:999px!important;
+  color:#4f6477!important;
+  background:rgba(255,255,255,.72)!important;
+}
+[data-testid="stExpander"]{
+  box-shadow:0 9px 24px rgba(71,119,150,.045)!important;
+}
+[data-testid="stExpander"] summary{
+  font-weight:680!important;
+  color:#42596d!important;
+}
+[data-testid="stTabs"] [role="tab"]{
+  font-weight:680!important;
+}
+
+/* Subtle hover affordance only on precise pointers. */
+@media(hover:hover) and (pointer:fine){
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]:hover{
+    transform:translateY(-4px);
+    border-color:rgba(91,178,225,.24)!important;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.96),
+      0 20px 44px rgba(77,137,173,.115)!important;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) .stButton>button:hover::after{
+    opacity:.88;
+    transform:translate(2px,-52%);
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]):hover{
+    transform:translateY(-3px);
+    border-color:rgba(89,169,214,.18);
+    box-shadow:0 17px 34px rgba(73,132,168,.09);
+  }
+}
+
+/* Desktop composition: clear center axis and deliberate card width. */
+@media(min-width:1100px){
+  [data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"]){
+    max-width:960px;
+    margin-left:auto!important;
+    margin-right:auto!important;
+  }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stImage"]){
+    margin-top:.4rem!important;
+  }
+}
+
+/* Mobile: tighter cards, stronger bottom dock, no accidental web chrome. */
+@media(max-width:760px){
+  [data-testid="stAppViewContainer"]{
+    background:
+      radial-gradient(circle at 50% -4%,rgba(151,216,247,.22),transparent 29%),
+      linear-gradient(180deg,#fbfdff 0%,#f7fbff 48%,#ffffff 100%)!important;
+  }
+  [data-testid="stAppViewContainer"]::before{
+    background-size:28px 28px;
+    opacity:.7;
+  }
+  .gsf-living-bar{
+    width:calc(100% - 16px)!important;
+  }
+  .gsf-living-chip.active::after{
+    bottom:2px;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]{
+    border-radius:19px!important;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]::after{
+    left:14px;
+    top:14px;
+    width:8px;
+    height:8px;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) h3,
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) p{
+    padding-left:14px!important;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]){
+    padding:.32rem;
+    border-radius:17px;
+  }
+  .stButton>button,
+  .stDownloadButton>button{
+    min-height:44px!important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .gsf-living-chip,
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"],
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"] [data-testid="stVerticalBlockBorderWrapper"],
+  [data-testid="stFileUploaderDropzone"] button{
+    transition:none!important;
+  }
+}
+
 /* Key motion is soft and bounded. */
 @keyframes gsfBrandIn{
   from{opacity:0;transform:translateY(-7px)}
