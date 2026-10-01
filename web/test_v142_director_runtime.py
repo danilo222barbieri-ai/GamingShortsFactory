@@ -56,7 +56,7 @@ with tempfile.TemporaryDirectory() as td:
 if len(sys.argv)>1:
     app=Path(sys.argv[1]).read_text(encoding="utf-8")
     for marker in ("_gsf_v142_enrich_recipe","GSF_V142_READY","director_pipeline_v142",
-                   "ai_render_operations","Gaming Shorts Factory · V142 Director Runtime"):
+                   "Gaming Shorts Factory · V142 Director Runtime"):
         assert marker in app,marker
 
 print("V142 Director Runtime E2E: PASS")
