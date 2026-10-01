@@ -81,31 +81,6 @@ if pipeline_anchor not in s:
     raise RuntimeError("V145 V142 pipeline anchor missing")
 s=s.replace(pipeline_anchor,pipeline_replacement,1)
 
-quality_anchor='    _v1302_quality=str((_v1302_status or {}).get("quality_status") or "")\n'
-quality_injection=r'''    # V145 records only a real completed Short, never a failed/prepared one.
-    if _v1302_final_ready:
-        try:
-            _v145_pipe=st.session_state.get("gsf_v142_runtime") or {}
-            _v145_record=dict((_v145_pipe or {}).get("content_memory_record") or {})
-            _v145_fp=str(_v145_record.get("fingerprint") or "")
-            if _v145_fp and st.session_state.get("gsf_v145_recorded_fp")!=_v145_fp:
-                _v145_record["status"]="rendered"
-                _v145_state=_gsf_v145_memory_api("/content-memory/record",_v145_record)
-                st.session_state["gsf_v145_recorded_fp"]=_v145_fp
-                st.session_state["gsf_v145_memory_state"]=_v145_state
-                print(
-                    "GSF_V145_MEMORY_FINAL",
-                    "fp="+_v145_fp[:12],
-                    "source_count="+str(_v145_state.get("source_count") or 0),
-                    flush=True,
-                )
-        except Exception as _v145_exc:
-            print("GSF_V145_MEMORY_FINAL_WARN",repr(str(_v145_exc))[:220],flush=True)
-'''
-if quality_anchor not in s:
-    raise RuntimeError("V145 quality anchor missing")
-s=s.replace(quality_anchor,quality_injection+quality_anchor,1)
-
 s=s.replace(
     "Gaming Shorts Factory · V144 Visual Scoring",
     "Gaming Shorts Factory · V145 Content Memory",
