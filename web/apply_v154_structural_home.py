@@ -72,7 +72,7 @@ if GSF_WEB_MODE:
         loaded=bool(video is not None),
         duration=_gsf_v154_duration,
         engine=_gsf_v154_engine,
-        height=1180 if video is not None else 1080,
+        height=690 if video is not None else 650,
         key="gsf_home_v154_live",
     )
 
