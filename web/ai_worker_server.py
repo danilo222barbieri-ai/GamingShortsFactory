@@ -21,6 +21,7 @@ from boto3.s3.transfer import TransferConfig
 from game_vision_v108 import build_event_map
 from semantic_video_v114 import analyze_gameplay_video, merge_semantic_events, semantic_enabled
 from ai_director_v124 import cloud_decision
+from auto_highlights.engine_v129 import analysis_to_candidates, candidate_dict
 
 PORT=int(os.environ.get("PORT","8600"))
 WORKER_TOKEN=os.environ.get("GSF_WORKER_TOKEN","")
@@ -298,6 +299,81 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
                 except Exception:
                     pass
 
+def _safe_segment(value,default="unknown"):
+    text=re.sub(r"[^A-Za-z0-9_-]+","-",str(value or "")).strip("-_")[:80]
+    return text or default
+
+def _auto_highlights_key(provider,account_id,broadcast_id):
+    return (
+        "auto-highlights/"
+        +_safe_segment(provider)+"/"
+        +_safe_segment(account_id)+"/"
+        +_safe_segment(broadcast_id)+".json"
+    )
+
+def _analysis_payload(analysis_key):
+    obj=_s3().get_object(Bucket=S3_BUCKET,Key=analysis_key)
+    raw=obj["Body"].read()
+    payload=json.loads(raw.decode("utf-8"))
+    if not isinstance(payload,dict):
+        raise ValueError("invalid analysis payload")
+    return payload
+
+def _build_auto_highlights(data):
+    analysis_key=str(data.get("analysis_key") or "")
+    if not analysis_key.startswith("analysis/"):
+        raise ValueError("invalid analysis key")
+    provider=str(data.get("provider") or "").strip().lower()
+    if provider not in ("twitch","youtube"):
+        raise ValueError("unsupported provider")
+    account_id=_safe_segment(data.get("account_id"))
+    broadcast_id=_safe_segment(data.get("broadcast_id") or data.get("vod_id"))
+    vod_id=str(data.get("vod_id") or "")
+    title=str(data.get("title") or "")[:180]
+    target_highlights=max(1,min(12,int(data.get("target_highlights",5) or 5)))
+    target_duration=max(8,min(60,int(data.get("target_duration",30) or 30)))
+    genre=str(data.get("genre") or "Auto")[:40]
+
+    analysis=_analysis_payload(analysis_key)
+    candidates,meta=analysis_to_candidates(
+        analysis,
+        target_highlights=target_highlights,
+        target_duration=target_duration,
+        genre=genre,
+    )
+    key=_auto_highlights_key(provider,account_id,broadcast_id)
+    payload={
+        "engine":"auto-highlights-v129",
+        "provider":provider,
+        "account_id":account_id,
+        "broadcast_id":broadcast_id,
+        "vod_id":vod_id,
+        "title":title,
+        "analysis_key":analysis_key,
+        "target_duration":target_duration,
+        "genre":genre,
+        "created_at":time.time(),
+        "candidates":[candidate_dict(x) for x in candidates],
+        "meta":meta,
+        "rendered_media":[],
+    }
+    _s3().put_object(
+        Bucket=S3_BUCKET,
+        Key=key,
+        Body=json.dumps(payload,separators=(",",":"),ensure_ascii=False).encode("utf-8"),
+        ContentType="application/json",
+        CacheControl="no-store",
+    )
+    print(
+        "GSF_V129_AUTO_HIGHLIGHTS",
+        "provider="+provider,
+        "broadcast="+broadcast_id,
+        "candidates="+str(len(candidates)),
+        "key="+key,
+        flush=True,
+    )
+    return key,payload
+
 class Handler(BaseHTTPRequestHandler):
     server_version="GSFAIWorker/1.0"
 
@@ -331,7 +407,8 @@ class Handler(BaseHTTPRequestHandler):
         _json(self,404,{"ok":False,"error":"not found"})
 
     def do_POST(self):
-        if self.path.rstrip("/")!="/prescan":
+        clean=self.path.rstrip("/")
+        if clean not in ("/prescan","/auto-highlights"):
             _json(self,404,{"ok":False,"error":"not found"})
             return
         if not _authorized(self):
@@ -339,6 +416,19 @@ class Handler(BaseHTTPRequestHandler):
             return
         if not _bucket_enabled():
             _json(self,503,{"ok":False,"error":"bucket unavailable"})
+            return
+        if clean=="/auto-highlights":
+            try:
+                data=_read_json(self)
+                key,payload=_build_auto_highlights(data)
+                _json(self,200,{
+                    "ok":True,
+                    "key":key,
+                    "candidate_count":len(payload.get("candidates") or []),
+                    "candidates":payload.get("candidates") or [],
+                })
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:240]})
             return
         try:
             data=_read_json(self)

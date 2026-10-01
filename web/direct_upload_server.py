@@ -1808,6 +1808,68 @@ def _creator_tiktok_callback(handler,query):
         _html(handler,500,_creator_page(sid,"Accesso TikTok fallito: "+str(exc)[:220]))
 
 
+
+def _auto_highlights_rows_for_account(account_id,limit=12):
+    account_id=_safe_id(account_id)
+    if not account_id or not _bucket_enabled():
+        return []
+    rows=[]
+    per_provider=max(1,min(25,int(limit or 12)))
+    for provider in ("youtube","twitch"):
+        prefix=f"auto-highlights/{provider}/{account_id}/"
+        try:
+            listing=_s3().list_objects_v2(
+                Bucket=S3_BUCKET,
+                Prefix=prefix,
+                MaxKeys=per_provider,
+            )
+        except Exception:
+            continue
+        for item in list((listing or {}).get("Contents") or []):
+            key=str((item or {}).get("Key") or "")
+            if not key.endswith(".json"):
+                continue
+            try:
+                obj=_s3().get_object(Bucket=S3_BUCKET,Key=key)
+                payload=json.loads(obj["Body"].read().decode("utf-8"))
+                if not isinstance(payload,dict):
+                    continue
+                payload["_key"]=key
+                payload["_provider"]=provider
+                rows.append(payload)
+            except Exception:
+                continue
+    rows.sort(key=lambda x:float((x or {}).get("created_at") or 0),reverse=True)
+    return rows[:max(1,min(24,int(limit or 12)))]
+
+
+def _auto_highlights_cards_html(sid):
+    profile=_creator_account_load(sid)
+    account_id=_safe_id((profile or {}).get("account_id",""))
+    if not account_id:
+        return '<div class="auto"><div class="auto-k">AUTO HIGHLIGHTS</div><div class="auto-title">Collega il tuo Creator Hub</div><div class="auto-sub">Accedi per vedere qui gli highlight trovati automaticamente dalle tue live.</div></div>'
+    rows=_auto_highlights_rows_for_account(account_id,limit=12)
+    if not rows:
+        return '<div class="auto"><div class="auto-k">AUTO HIGHLIGHTS</div><div class="auto-title">Nessun highlight automatico ancora</div><div class="auto-sub">Quando una live collegata viene analizzata, GSF salverà qui i timestamp migliori senza renderizzare tutto il VOD.</div></div>'
+    cards=[]
+    for row in rows:
+        provider=str(row.get("provider") or row.get("_provider") or "live").upper()
+        title=html.escape(str(row.get("title") or "Live")[:140])
+        candidates=list(row.get("candidates") or [])
+        top=candidates[0] if candidates and isinstance(candidates[0],dict) else {}
+        reason=html.escape(str(top.get("reason") or top.get("event") or "HIGHLIGHT").replace("_"," ")[:60])
+        confidence=max(0,min(100,int(round(float(top.get("confidence") or 0.0)*100))))
+        count=len(candidates)
+        duration=int(row.get("target_duration") or (top.get("duration") if isinstance(top,dict) else 0) or 0)
+        cards.append(
+            '<div class="autoCard">'
+            f'<div class="autoCardTop"><span class="autoProvider">{html.escape(provider)}</span><span class="autoReady">PRONTO</span></div>'
+            f'<strong>{title}</strong>'
+            f'<div class="autoMeta">{count} momenti · {duration}s · top: {reason} · {confidence}%</div>'
+            '</div>'
+        )
+    return '<div class="auto"><div class="auto-k">AUTO HIGHLIGHTS PRONTI</div><div class="auto-title">GSF ha già trovato i momenti forti.</div><div class="auto-sub">Sono salvati come timestamp e metadati: nessun render inutile del VOD completo.</div><div class="autoGrid">'+"".join(cards)+'</div></div>'
+
 def _creator_page(sid,message=""):
     profile=_creator_account_load(sid)
     if not profile:
@@ -1882,6 +1944,7 @@ h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-col
     ) or '<span class="providerBadge">Profilo attivo</span>'
     msg=f'<div class="notice">{html.escape(message)}</div>' if message else ""
     drafts_html=_draft_cards_html(sid)
+    auto_highlights_html=_auto_highlights_cards_html(sid)
 
     return f"""<!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1897,6 +1960,7 @@ main{{max-width:860px;margin:0 auto;padding:24px 16px 48px}} .top{{display:flex;
 h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-columns:1fr 1fr;gap:9px}} .social{{text-decoration:none;color:#294a62;background:#fff;border:1px solid #dbe8f1;border-radius:16px;padding:14px;display:flex;justify-content:space-between;align-items:center;font-size:12px}} .social strong{{font-size:13px}} .social span{{color:#5a7d96;font-weight:850}} .social.connected{{background:#f1fbf7;border-color:#cfeadf}} .social.connected span{{color:#3c8968}}
 .notice{{background:#eef8ff;border:1px solid #d2e9f8;border-radius:14px;padding:11px 13px;margin:0 0 15px;color:#426a86}} .auto{{background:linear-gradient(135deg,#eff9ff,#f3efff);border:1px solid #d7e7f1;border-radius:18px;padding:15px}} .auto-k{{font-size:11px;font-weight:950;letter-spacing:.08em;color:#607da0}} .auto-title{{font-size:17px;font-weight:950;margin:3px 0 5px}} .auto-sub{{font-size:12px;color:#73889b;line-height:1.45}} .future{{border:1px dashed #cadde9;border-radius:17px;padding:14px;color:#7b90a1;font-size:12px;line-height:1.45}}
 .draftGrid{{display:grid;gap:9px}}.draftCard{{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f8fbfe;border:1px solid #dce9f2;border-radius:16px;padding:13px 14px}}.draftInfo{{display:flex;flex-direction:column;gap:3px;min-width:0}}.draftInfo strong{{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}.draftInfo span{{font-size:10px;color:#7e92a2}}.draftActions{{display:flex;align-items:center;gap:6px;flex-wrap:wrap}}.draftOpen{{text-decoration:none;color:#356f91;background:linear-gradient(135deg,#eef8ff,#f1eeff);border:1px solid #cfe5f3;border-radius:12px;padding:8px 10px;font-size:10px;font-weight:900;box-shadow:0 4px 10px #345d7810}}.draftDelete{{text-decoration:none;color:#8b6170;background:linear-gradient(135deg,#fff7f9,#f8eef3);border:1px solid #ead5dd;border-radius:12px;padding:8px 10px;font-size:10px;font-weight:900;box-shadow:0 4px 10px #6f3e5110}}.draftEmpty{{font-size:12px;color:#71899a;background:#f8fbfe;border:1px dashed #cbdde9;border-radius:16px;padding:14px;line-height:1.45}}.draftSafe{{display:inline-flex;align-items:center;padding:2px 6px;border-radius:999px;background:#e9f8f0;color:#4f8468;font-size:9px;font-weight:900}}.draftSafeSync{{background:#fff7df;color:#9a7a37}}.draftInlineMessage{{display:none;margin:0 0 9px;padding:9px 11px;border-radius:12px;background:#eef8ff;border:1px solid #d3eaf8;color:#4b7189;font-size:11px;font-weight:750}}.draftInlineMessage.show{{display:block}}.draftInlineMessage.error{{background:#fff2f2;border-color:#f0d3d3;color:#916060}}.logout{{display:block;text-align:center;color:#8a6170;text-decoration:none;font-size:12px;font-weight:800;margin-top:18px}} .back-bottom{{display:block;text-align:center;color:#6d8799;text-decoration:none;font-size:11px;font-weight:800;margin-top:14px}}
+.autoGrid{{display:grid;gap:8px;margin-top:12px}} .autoCard{{background:#ffffffc9;border:1px solid #dce8f2;border-radius:14px;padding:11px 12px}} .autoCardTop{{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px}} .autoProvider,.autoReady{{font-size:9px;font-weight:950;letter-spacing:.06em}} .autoProvider{{color:#5b7891}} .autoReady{{color:#3f8a69;background:#eaf8f1;border-radius:999px;padding:3px 7px}} .autoCard strong{{display:block;font-size:12px}} .autoMeta{{font-size:10px;color:#70879a;margin-top:4px;line-height:1.4}}
 @media(max-width:560px){{.stats{{grid-template-columns:1fr 1fr 1fr}} .stat{{padding:10px 5px}} .stat b{{font-size:17px}} .socials{{grid-template-columns:1fr}}}}
 </style></head><body><main>
 <div class="top"><div class="brand">GAMING SHORTS FACTORY</div></div>
@@ -1904,7 +1968,7 @@ h2{{font-size:16px;margin:20px 0 10px}} .socials{{display:grid;grid-template-col
 <div class="stats"><div class="stat"><b>{shorts_created}</b><span>SHORT CREATI</span></div><div class="stat"><b>{shorts_published}</b><span>PUBBLICATI</span></div><div class="stat"><b>{connected}/4</b><span>SOCIAL</span></div></div>
 <div class="level"><div class="levelHead"><span>Creator Level {level} · Rookie</span><span>18%</span></div><div class="bar"><i></i></div></div>
 <h2>Le tue bozze</h2>{drafts_html}<h2>I tuoi social</h2><div class="socials">{socials}</div>
-<h2>Auto Highlights</h2><div class="auto"><div class="auto-k">AUTO HIGHLIGHTS</div><div class="auto-title">Tu fai la live. GSF trova i momenti da pubblicare.</div><div class="auto-sub">Collega i tuoi account live per trovare automaticamente i momenti migliori e portarli nel Game Editor.</div></div>
+<h2>Auto Highlights</h2>{auto_highlights_html}
 <h2>Prossimamente</h2><div class="future">Storico Short · Cloud · Piano Pro · Crediti AI · Achievement · Classifica Creator.</div>
 <a class="logout" href="/account/logout">Esci dal Creator Hub</a><a class="back-bottom" href="/" onclick="if(window.parent!==window){{window.parent.location.hash='';return false;}}window.location.href='/';return false;">← Torna alla pagina principale</a>
 </div></main></body></html>"""
