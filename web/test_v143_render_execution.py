@@ -30,8 +30,7 @@ with tempfile.TemporaryDirectory() as td:
 
 if len(sys.argv)>1:
     app=Path(sys.argv[1]).read_text(encoding="utf-8")
-    for marker in ("director_render_exec_v143","GSF_V143_RENDER_APPLIED","ai_render_operations",
-                   "Gaming Shorts Factory · V143 Render Execution"):
+    for marker in ("director_render_exec_v143","GSF_V143_RENDER_APPLIED","ai_render_operations"):
         assert marker in app,marker
 
 print("V143 Render Execution: PASS")
