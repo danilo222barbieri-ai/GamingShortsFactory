@@ -42,7 +42,12 @@ RUN chmod +x /usr/local/bin/ffmpeg && python -c "import base64,gzip,pathlib; p=p
     python /app/web/test_v124_ai_os.py /app/GamingShortsFactory_V130_ONE_CLICK_AI.py && \
     python /app/web/test_editor_2027_component.py /app/GamingShortsFactory_V130_ONE_CLICK_AI.py && \
     python -m py_compile /app/GamingShortsFactory_V130_ONE_CLICK_AI.py && \
-    python -m py_compile /app/web/one_click_v130.py
+    python -m py_compile /app/web/one_click_v130.py && \
+    python /app/web/apply_v130_1_hotfix.py && \
+    python /app/web/test_v130_1_hotfix.py /app/GamingShortsFactory_V130_1_HOTFIX.py && \
+    python /app/web/test_v124_ai_os.py /app/GamingShortsFactory_V130_1_HOTFIX.py && \
+    python /app/web/test_editor_2027_component.py /app/GamingShortsFactory_V130_1_HOTFIX.py && \
+    python -m py_compile /app/GamingShortsFactory_V130_1_HOTFIX.py
 RUN python -m compileall -q /app/web
 COPY .streamlit /app/.streamlit
 RUN PORT=8080 envsubst '${PORT}' < /app/web/nginx.conf.template > /tmp/gsf-nginx-test.conf && cp /tmp/gsf-nginx-test.conf /etc/nginx/conf.d/default.conf && nginx -t
