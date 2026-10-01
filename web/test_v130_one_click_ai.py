@@ -116,3 +116,9 @@ for marker in ("_session_intelligence","duplicate_detector","series_ai","best_of
 src=Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
 for marker in ("_recognize_game","game_recognition","semantic_hud_context","session_intelligence"):
     assert marker in src, marker
+
+
+# V133 gameplay context
+src=Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
+for marker in ("_game_context","critical_signals","stakes_score","director_bias","game_context"):
+    assert marker in src, marker
