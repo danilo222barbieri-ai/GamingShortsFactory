@@ -109,7 +109,10 @@ if _active_if is None:
 _guard=r'''
     if bool(locals().get("_gsf_v1302_new_video_clicked",False)):
         _gsf_v1302_has_work=bool(
-            st.session_state.get("gsf_final_recipe")
+            st.session_state.get("gsf_source_name")
+            or st.session_state.get("gsf_source_bytes")
+            or st.session_state.get("gsf_upload_id")
+            or st.session_state.get("gsf_final_recipe")
             or st.session_state.get("publication_ready")
             or st.session_state.get("publication_final_bytes")
             or st.session_state.get("auto_clip_scelta") is not None
@@ -124,7 +127,7 @@ _guard=r'''
     if st.session_state.get("gsf_v1302_new_video_confirm",False):
         with st.container(key="gsf_v1302_new_video_guard"):
             st.markdown(
-                '<div class="gsf-major-note"><b>Nuovo video</b> · salva la lavorazione attuale oppure continua senza salvarla.</div>',
+                '<div class="gsf-major-note"><b>Hai già un progetto in corso.</b><br>Iniziando un nuovo video perderai le modifiche non salvate.</div>',
                 unsafe_allow_html=True,
             )
             _v1302_g1,_v1302_g2,_v1302_g3=st.columns(3,gap="small")
@@ -298,6 +301,8 @@ if cover_anchor not in s:
     raise RuntimeError("V130.2 create-short anchor missing")
 create_note='''            with st.container(key="gsf-major-create-short"):\n                st.markdown('<div class="gsf-major-note gsf-v1302-create-note">L’IA crea il tuo Short, applica le modifiche e controlla automaticamente qualità e formato. Quando è pronto puoi salvarlo, condividerlo o pubblicarlo.</div>',unsafe_allow_html=True)\n'''
 s=s.replace(cover_anchor,create_note,1)
+# The explanatory cloud above CREA SHORT is the only create-final guidance.
+s=s.replace('<div class="gsf-major-note">Genera la versione finale pronta per il download e la pubblicazione sui tuoi social collegati.</div>','',1)
 
 # 7) Replace the old per-platform composer with one shared form + multi-select.
 tree=ast.parse(s)
@@ -417,19 +422,25 @@ if (
     )
 
     if not _v1302_final_ready:
-        _v1302_progress=32
-        _v1302_progress_text="CREO SHORT · IA Quality Check · Pronto"
+        _v1302_progress=34
+        _v1302_phase="render"
     elif _v1302_quality in ("","analyzing"):
-        _v1302_progress=72
-        _v1302_progress_text="Creo Short ✓ · IA QUALITY CHECK · Pronto"
+        _v1302_progress=74
+        _v1302_phase="quality"
     else:
         _v1302_progress=100
-        _v1302_progress_text=(
-            "Creo Short ✓ · IA Quality Check ✓ · SHORT PRONTO"
-            if _v1302_quality in ("pass","warn")
-            else "Creo Short ✓ · IA Quality Check ! · Controlla"
-        )
-    st.progress(_v1302_progress,text=_v1302_progress_text)
+        _v1302_phase=("ready" if _v1302_quality in ("pass","warn") else "check")
+    _v1302_steps=(
+        '<span class="'+('done' if _v1302_progress>34 else 'active')+'">CREO SHORT'+(' ✓' if _v1302_progress>34 else '')+'</span>'
+        '<i>›</i><span class="'+('done' if _v1302_progress>=100 else ('active' if _v1302_progress>34 else ''))+'">QUALITY CHECK'+(' ✓' if _v1302_progress>=100 and _v1302_phase=="ready" else '')+'</span>'
+        '<i>›</i><span class="'+('done' if _v1302_phase=="ready" else '')+'">PRONTO'+(' ✓' if _v1302_phase=="ready" else '')+'</span>'
+    )
+    st.markdown(
+        '<div class="gsf-v1302-live-progress '+_v1302_phase+'">'
+        '<div class="gsf-v1302-progress-steps">'+_v1302_steps+'</div>'
+        '<div class="gsf-v1302-progress-track"><span style="width:'+str(_v1302_progress)+'%"></span></div>'
+        '</div>',unsafe_allow_html=True
+    )
     _v1302_recipe=st.session_state.get("gsf_final_recipe",{}) or {}
     _v1302_start=float(_v1302_recipe.get("start",0.0) or 0.0)
     _v1302_game=_gsf_v1053_detect_game()
@@ -491,15 +502,6 @@ if (
 
     with st.container(key="v1055_social_composer_shared"):
         _v1302_save_bytes=st.session_state.get("publication_final_bytes") or b""
-        st.download_button(
-            "SALVA / CONDIVIDI",
-            data=bytes(_v1302_save_bytes),
-            file_name="gaming_short_finale.mp4",
-            mime="video/mp4",
-            use_container_width=True,
-            key="gsf_v1302_save_share",
-            disabled=not bool(_v1302_final_ready and _v1302_save_bytes),
-        )
         _v1302_title=st.text_input("Titolo",key=_v1302_title_key)
         _v1302_description=st.text_area(
             "Descrizione",key=_v1302_desc_key,height=120
@@ -520,9 +522,9 @@ if (
             with _v1302_col:
                 _v1302_state=bool(st.session_state.get("gsf_v1302_target_"+_v1302_key,False))
                 if st.button(
-                    _v1302_icon+"  "+_v1302_name+("  ✓" if _v1302_state else ""),
+                    _v1302_icon+(" ✓" if _v1302_state else ""),
                     key="gsf_v1302_icon_"+_v1302_key,
-                    use_container_width=True,
+                    width="stretch",
                     disabled=(_v1302_key=="facebook"),
                     help=("Pubblicazione diretta Facebook in attesa dei permessi Meta Page." if _v1302_key=="facebook" else None),
                 ):
@@ -536,6 +538,27 @@ if (
         if _v1302_youtube:_v1302_targets.append("YouTube")
         if _v1302_tiktok:_v1302_targets.append("TikTok")
         if _v1302_instagram:_v1302_targets.append("Instagram")
+
+        _v1302_a1,_v1302_a2=st.columns(2,gap="small")
+        with _v1302_a1:
+            st.download_button(
+                "↓  SALVA",data=bytes(_v1302_save_bytes),file_name="gaming_short_finale.mp4",
+                mime="video/mp4",width="stretch",key="gsf_v1302_save",
+                disabled=not bool(_v1302_final_ready and _v1302_save_bytes),
+            )
+        with _v1302_a2:
+            if _v1302_final_ready and _v1302_save_bytes:
+                try:
+                    _v1302_b64=__import__("base64").b64encode(bytes(_v1302_save_bytes)).decode("ascii")
+                    __import__("streamlit.components.v1",fromlist=["html"]).html(
+                        """<button id="gsfShare" class="gsfShare">↗&nbsp; CONDIVIDI</button><script>
+const b=document.getElementById('gsfShare');b.onclick=async()=>{try{const raw=atob('"""+_v1302_b64+"""');const a=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)a[i]=raw.charCodeAt(i);const f=new File([a],'gaming_short_finale.mp4',{type:'video/mp4'});if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[f]}))){await navigator.share({files:[f],title:'Gaming Short'});}else{alert('Condivisione non disponibile su questo browser. Usa Salva.');}}catch(e){if(e.name!=='AbortError')alert('Condivisione non disponibile. Usa Salva.');}};</script><style>body{margin:0;background:transparent}.gsfShare{width:100%;height:44px;border-radius:14px;border:1px solid rgba(138,174,199,.48);background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(241,247,252,.95));color:#365c76;font:800 15px system-ui;box-shadow:0 8px 18px rgba(49,92,125,.08)}</style>""",
+                        height=48,
+                    )
+                except Exception:
+                    st.button("↗  CONDIVIDI",disabled=True,width="stretch",key="gsf_v1302_share_fallback")
+            else:
+                st.button("↗  CONDIVIDI",disabled=True,width="stretch",key="gsf_v1302_share_wait")
 
         _v1302_missing=[]
         for _v1302_platform in _v1302_targets:
@@ -697,8 +720,11 @@ st.markdown("""
   font-weight:750 !important;
 }
 .gsf-v1302-social-pick{margin:12px 0 8px;text-align:center;color:#53758e;font-weight:800;font-size:13px}
-[class*="st-key-gsf_v1302_icon_"] button{min-height:44px!important;border-radius:14px!important;border:1px solid rgba(138,174,199,.48)!important;background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(241,247,252,.95))!important;color:#53758e!important;box-shadow:0 8px 18px rgba(49,92,125,.08)!important;font-weight:800!important}
-[class*="st-key-gsf_v1302_icon_"] button:hover{transform:translateY(-1px)!important;color:#4f46e5!important;border-color:rgba(99,102,241,.48)!important}
+[class*="st-key-gsf_v1302_icon_"]{display:flex!important;justify-content:center!important}
+[class*="st-key-gsf_v1302_icon_"] button{width:64px!important;min-width:64px!important;max-width:64px!important;height:64px!important;min-height:64px!important;padding:0!important;border-radius:18px!important;border:1px solid rgba(138,174,199,.48)!important;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(241,247,252,.96))!important;color:#53758e!important;box-shadow:0 9px 20px rgba(49,92,125,.10)!important;font-size:23px!important;font-weight:850!important}
+[class*="st-key-gsf_v1302_icon_"] button:hover{transform:translateY(-2px)!important;color:#4f46e5!important;border-color:rgba(99,102,241,.52)!important;box-shadow:0 12px 24px rgba(79,70,229,.12)!important}
+.gsf-v1302-live-progress{margin:14px 0 12px;padding:14px 16px 15px;border:1px solid rgba(126,165,193,.34);border-radius:20px;background:linear-gradient(145deg,rgba(250,253,255,.98),rgba(238,247,252,.94));box-shadow:0 10px 28px rgba(46,94,128,.09);overflow:hidden}
+.gsf-v1302-progress-steps{display:flex;align-items:center;justify-content:space-between;gap:7px;font-size:12px;font-weight:850;letter-spacing:.035em;color:#91a8b8}.gsf-v1302-progress-steps i{font-style:normal;color:#bdd0dd}.gsf-v1302-progress-steps .active{color:#397b9f;animation:gsfPulse 1.35s ease-in-out infinite}.gsf-v1302-progress-steps .done{color:#2d718f}.gsf-v1302-progress-track{position:relative;height:9px;margin-top:12px;border-radius:999px;background:rgba(173,204,222,.32);overflow:hidden}.gsf-v1302-progress-track span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#8ed8ee,#68bde4,#a9dfe9);background-size:180% 100%;box-shadow:0 0 16px rgba(75,174,218,.42);animation:gsfFlow 1.45s linear infinite;transition:width .55s ease}.gsf-v1302-live-progress.ready .gsf-v1302-progress-track span{animation:none}.gsf-v1302-live-progress:not(.ready) .gsf-v1302-progress-track:after{content:"";position:absolute;top:0;bottom:0;width:32%;left:-35%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);animation:gsfShine 1.55s ease-in-out infinite}@keyframes gsfFlow{to{background-position:-180% 0}}@keyframes gsfShine{to{left:110%}}@keyframes gsfPulse{50%{opacity:.52}}
 .gsf-v1302-create-note{border:1px dashed #bfd7e8;border-radius:16px;padding:10px 12px;background:rgba(244,250,254,.78);color:#55758c}
 [class*="st-key-gsf_share_download_top"]{display:none !important;}
 #gsf-creator-hub-portal-v107:has(.gsf-creator-hub-overlay.is-open){
@@ -762,6 +788,8 @@ st.markdown("""
     padding:15px 13px 14px !important;
     border-radius:18px !important;
   }
+  [class*="st-key-gsf_v1302_icon_"] button{width:58px!important;min-width:58px!important;max-width:58px!important;height:58px!important;min-height:58px!important;border-radius:17px!important}
+  .gsf-v1302-progress-steps{font-size:10px!important;gap:4px!important;letter-spacing:.02em!important}
   .gsf-footer-v4{
     margin:-8px auto 0 !important;
     padding:2px 4px 1px !important;
