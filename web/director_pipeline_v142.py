@@ -147,6 +147,18 @@ def apply_pipeline_to_recipe(recipe,pipeline):
     if covers:
         out["ai_cover"]=covers[0]
         out["ai_thumbnail_offset"]=covers[0].get("time")
+        # Existing V125 thumbnail extractor consumes edit.thumbnail_offset,
+        # so route the Vision-selected cover into that proven renderer path.
+        try:
+            _plan=_d(out.get("ai_director_plan"))
+            _edit=_d(_plan.get("edit"))
+            _edit["thumbnail_offset"]=round(
+                max(0.0,float(covers[0].get("time") or 0.0)-float(out.get("start") or 0.0)),3
+            )
+            _plan["edit"]=_edit
+            out["ai_director_plan"]=_plan
+        except Exception:
+            pass
     out["ai_visual_cleanup"]={
         "recommended":bool(vision.get("cleanup_recommended")),
         "overlays":_l(vision.get("overlay_findings")),
