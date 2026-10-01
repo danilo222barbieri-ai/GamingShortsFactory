@@ -49,3 +49,5 @@ The internal post-live ranking path is now implemented:
 Worker endpoint: authenticated `POST /auto-highlights` with an existing `analysis_key`.
 
 Provider event detection remains an adapter concern. Twitch EventSub credentials/scopes and YouTube live-stream read scopes are required before automatic provider triggers can be enabled for an account.
+
+- V129 Creator Hub now lists stored highlight sets for the signed-in creator, showing provider, candidate count, duration and top confidence without rendering the VOD.
