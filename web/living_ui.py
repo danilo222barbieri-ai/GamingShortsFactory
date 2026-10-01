@@ -1548,6 +1548,171 @@ button[data-testid="baseButton-primary"]{
   }
 }
 
+/* V153.14 — living states: loading, progress, feedback, disabled, focus. */
+
+/* Progress looks like an active system, not a generic widget. */
+[data-testid="stProgress"]>div{
+  position:relative;
+  overflow:hidden!important;
+  background:rgba(130,190,225,.12)!important;
+  border:1px solid rgba(112,180,218,.10)!important;
+  box-shadow:inset 0 1px 2px rgba(58,108,137,.04)!important;
+}
+[data-testid="stProgress"]>div::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(
+    100deg,
+    transparent 0 34%,
+    rgba(255,255,255,.72) 44%,
+    transparent 55% 100%
+  );
+  transform:translateX(-100%);
+  animation:gsfProgressSheen 2.15s ease-in-out infinite;
+  pointer-events:none;
+}
+[data-testid="stProgress"]>div>div{
+  background:linear-gradient(90deg,#8fd0f2,#67b9e5)!important;
+  box-shadow:0 0 18px rgba(84,174,223,.20)!important;
+}
+
+/* Streamlit spinner/status gains a polished presence. */
+[data-testid="stSpinner"]{
+  color:#4c8fb7!important;
+}
+[data-testid="stSpinner"] svg{
+  filter:drop-shadow(0 2px 6px rgba(74,157,203,.20));
+}
+[data-testid="stStatusWidget"]{
+  border:1px solid rgba(112,172,207,.14)!important;
+  background:rgba(255,255,255,.78)!important;
+  box-shadow:0 12px 30px rgba(72,123,155,.07)!important;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+
+/* Alerts and confirmations feel like part of the visual system. */
+[data-testid="stAlert"]{
+  border:1px solid rgba(111,169,203,.14)!important;
+  background:rgba(255,255,255,.76)!important;
+  box-shadow:0 10px 26px rgba(71,120,150,.055)!important;
+}
+[data-testid="stAlert"] svg{
+  opacity:.74;
+}
+[data-testid="stToast"]{
+  background:rgba(255,255,255,.88)!important;
+  border:1px solid rgba(108,168,202,.16)!important;
+  box-shadow:0 14px 38px rgba(66,115,147,.13)!important;
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+
+/* Disabled states stay elegant and readable. */
+.stButton>button:disabled,
+.stDownloadButton>button:disabled{
+  opacity:.50!important;
+  filter:saturate(.65)!important;
+  transform:none!important;
+  box-shadow:none!important;
+}
+[data-baseweb="select"] [aria-disabled="true"],
+[data-testid="stTextInput"] input:disabled,
+[data-testid="stTextArea"] textarea:disabled{
+  opacity:.62!important;
+}
+
+/* Unified keyboard focus is visible without harsh browser rings. */
+.stButton>button:focus-visible,
+.stDownloadButton>button:focus-visible,
+[data-testid="stFileUploaderDropzone"] button:focus-visible,
+[data-testid="stTabs"] [role="tab"]:focus-visible,
+.gsf-living-chip:focus-visible{
+  outline:none!important;
+  box-shadow:
+    0 0 0 3px rgba(103,190,237,.18),
+    0 10px 26px rgba(71,144,184,.10)!important;
+}
+
+/* Active Living navigation has a very subtle breathing state. */
+.gsf-living-chip.active{
+  animation:gsfActiveChip 3.2s ease-in-out infinite;
+}
+
+/* Uploader communicates readiness even before interaction. */
+[data-testid="stFileUploaderDropzone"]{
+  background-size:100% 100%!important;
+}
+[data-testid="stFileUploaderDropzone"] svg{
+  animation:gsfUploadIconFloat 2.8s ease-in-out infinite;
+}
+
+/* Native press response across core visual controls. */
+.stButton>button:active,
+.stDownloadButton>button:active,
+.gsf-living-chip:active{
+  transform:scale(.975)!important;
+  transition-duration:.07s!important;
+}
+
+/* Smooth visual entry when Streamlit reveals later sections. */
+[data-testid="stExpander"],
+[data-testid="stAlert"],
+[data-testid="stStatusWidget"],
+[data-testid="stImage"],
+[data-testid="stVideo"]{
+  animation:gsfReveal .34s ease both;
+}
+
+/* Motion definitions. */
+@keyframes gsfProgressSheen{
+  0%,34%{transform:translateX(-110%)}
+  68%,100%{transform:translateX(110%)}
+}
+@keyframes gsfActiveChip{
+  0%,100%{box-shadow:inset 0 0 0 1px rgba(105,186,229,.14),0 5px 14px rgba(78,155,198,.07)}
+  50%{box-shadow:inset 0 0 0 1px rgba(105,186,229,.20),0 6px 18px rgba(78,155,198,.12)}
+}
+@keyframes gsfUploadIconFloat{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-3px)}
+}
+@keyframes gsfReveal{
+  from{opacity:.01;transform:translateY(4px)}
+  to{opacity:1;transform:none}
+}
+
+/* Mobile feedback remains lighter to preserve speed and visual calm. */
+@media(max-width:760px){
+  [data-testid="stProgress"]>div::after{
+    animation-duration:2.5s;
+  }
+  .gsf-living-chip.active{
+    animation-duration:3.8s;
+  }
+  [data-testid="stExpander"],
+  [data-testid="stAlert"],
+  [data-testid="stStatusWidget"],
+  [data-testid="stImage"],
+  [data-testid="stVideo"]{
+    animation-duration:.25s;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  [data-testid="stProgress"]>div::after,
+  .gsf-living-chip.active,
+  [data-testid="stFileUploaderDropzone"] svg,
+  [data-testid="stExpander"],
+  [data-testid="stAlert"],
+  [data-testid="stStatusWidget"],
+  [data-testid="stImage"],
+  [data-testid="stVideo"]{
+    animation:none!important;
+  }
+}
+
 /* Key motion is soft and bounded. */
 @keyframes gsfBrandIn{
   from{opacity:0;transform:translateY(-7px)}
