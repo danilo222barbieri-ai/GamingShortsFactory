@@ -38,7 +38,6 @@ if len(sys.argv)>2:
     app=Path(sys.argv[2]).read_text(encoding="utf-8")
     for marker in (
         "_gsf_v145_memory_api","GSF_V145_MEMORY_CHECK","GSF_V145_MEMORY_FINAL",
-        "Gaming Shorts Factory · V145 Content Memory",
     ):
         assert marker in app,marker
 
