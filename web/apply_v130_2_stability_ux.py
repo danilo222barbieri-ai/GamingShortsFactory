@@ -291,75 +291,13 @@ s=s.replace(
     1,
 )
 
-# 6) Three cover-frame candidates in the space freed by Alternative AI / One Click AI.
-cover_anchor='''            with st.container(key="gsf-major-create-short"):
-'''
-cover_ui=r'''            try:
-                _v1302_source=Path(str(
-                    st.session_state.get("gsf_source_path")
-                    or st.session_state.get("gsf_editor_source_path")
-                    or ""
-                ))
-                _v1302_start=float(st.session_state.get("auto_clip_scelta",0.0) or 0.0)
-                _v1302_moment=_gsf_v124_moment_for_start(_v1302_start)
-                _v1302_plan=dict((_v1302_moment or {}).get("director_plan") or {})
-                _v1302_edit=dict(_v1302_plan.get("edit") or {})
-                _v1302_rel=float(_v1302_edit.get("thumbnail_offset") or 0.0)
-                _v1302_base=max(0.0,_v1302_start+_v1302_rel)
-                _v1302_offsets=[
-                    max(0.0,_v1302_base),
-                    max(0.0,_v1302_base-1.15),
-                    max(0.0,_v1302_base+1.15),
-                ]
-                if _v1302_source.is_file() and _v1302_source.stat().st_size>1024:
-                    _v1302_thumb_root=Path(
-                        __import__("os").environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime")
-                    )/"sessions"/str(GSF_SESSION_ID)/"media"/"covers_v1302"
-                    _v1302_thumb_root.mkdir(parents=True,exist_ok=True)
-                    _v1302_paths=[]
-                    _v1302_mod=__import__("cinematic_render_v125",fromlist=["extract_thumbnail"])
-                    for _v1302_i,_v1302_off in enumerate(_v1302_offsets):
-                        _v1302_p=_v1302_thumb_root/(
-                            "cover_"+str(int(round(_v1302_start*1000)))+"_"+str(_v1302_i)+".jpg"
-                        )
-                        if not _v1302_p.is_file() or _v1302_p.stat().st_size<512:
-                            try:
-                                _v1302_mod.extract_thumbnail(
-                                    str(_v1302_source),str(_v1302_p),
-                                    offset_seconds=_v1302_off,width=520,
-                                )
-                            except Exception:
-                                pass
-                        if _v1302_p.is_file() and _v1302_p.stat().st_size>512:
-                            _v1302_paths.append((_v1302_i,_v1302_p,_v1302_off))
-                    if _v1302_paths:
-                        st.markdown(
-                            '<div class="gsf-icon-title">Scegli copertina</div>',
-                            unsafe_allow_html=True,
-                        )
-                        _v1302_cols=st.columns(len(_v1302_paths),gap="small")
-                        _v1302_selected=int(st.session_state.get("gsf_v1302_thumbnail_index",0) or 0)
-                        for (_v1302_i,_v1302_p,_v1302_off),_v1302_col in zip(_v1302_paths,_v1302_cols):
-                            with _v1302_col:
-                                st.image(str(_v1302_p),use_container_width=True)
-                                _v1302_label="SELEZIONATO" if _v1302_selected==_v1302_i else "SELEZIONA"
-                                if st.button(
-                                    _v1302_label,
-                                    key=f"gsf_v1302_thumb_{_v1302_i}_{int(round(_v1302_start*1000))}",
-                                    use_container_width=True,
-                                    disabled=(_v1302_selected==_v1302_i),
-                                ):
-                                    st.session_state["gsf_v1302_thumbnail_index"]=_v1302_i
-                                    st.session_state["gsf_v1302_thumbnail_offset"]=_v1302_off
-                                    st.session_state["gsf_v1302_thumbnail_path"]=str(_v1302_p)
-                                    st.rerun()
-            except Exception as _v1302_thumb_exc:
-                print("GSF_V1302_COVER_WARN",repr(str(_v1302_thumb_exc))[:220],flush=True)
-
-'''
+# 6) Cover is intentionally not a standalone gallery in V130.2.
+# It will live as a compact control associated with the final player.
+cover_anchor='''            with st.container(key="gsf-major-create-short"):\n'''
 if cover_anchor not in s:
     raise RuntimeError("V130.2 create-short anchor missing")
-s=s.replace(cover_anchor,cover_ui+cover_anchor,1)
+create_note='''            with st.container(key="gsf-major-create-short"):\n                st.markdown('<div class="gsf-major-note gsf-v1302-create-note">L’IA crea il tuo Short, applica le modifiche e controlla automaticamente qualità e formato. Quando è pronto puoi salvarlo, condividerlo o pubblicarlo.</div>',unsafe_allow_html=True)\n'''
+s=s.replace(cover_anchor,create_note,1)
 
 # 7) Replace the old per-platform composer with one shared form + multi-select.
 tree=ast.parse(s)
@@ -492,9 +430,6 @@ if (
             else "Creo Short ✓ · IA Quality Check ! · Controlla"
         )
     st.progress(_v1302_progress,text=_v1302_progress_text)
-    if _v1302_quality in ("pass","warn") and _v1302_qscore is not None:
-        st.caption("IA Quality Check · "+str(_v1302_qscore)+"/100")
-
     _v1302_recipe=st.session_state.get("gsf_final_recipe",{}) or {}
     _v1302_start=float(_v1302_recipe.get("start",0.0) or 0.0)
     _v1302_game=_gsf_v1053_detect_game()
@@ -561,22 +496,32 @@ if (
         )
         _v1302_hashtags=st.text_input("Hashtag",key=_v1302_tags_key)
 
+        st.markdown('<div class="gsf-v1302-social-pick">Scegli dove pubblicare</div>',unsafe_allow_html=True)
+        for _v1302_key in ("youtube","tiktok","instagram"):
+            st.session_state.setdefault("gsf_v1302_target_"+_v1302_key,False)
         _v1302_c1,_v1302_c2,_v1302_c3,_v1302_c4=st.columns(4,gap="small")
-        with _v1302_c1:
-            _v1302_youtube=st.checkbox("YouTube",key="gsf_v1302_target_youtube")
-        with _v1302_c2:
-            _v1302_tiktok=st.checkbox("TikTok",key="gsf_v1302_target_tiktok")
-        with _v1302_c3:
-            _v1302_instagram=st.checkbox("Instagram",key="gsf_v1302_target_instagram")
-        with _v1302_c4:
-            st.checkbox(
-                "Facebook",
-                key="gsf_v1302_target_facebook",
-                value=False,
-                disabled=True,
-                help="Pubblicazione diretta Facebook in attesa dei permessi Meta Page.",
-            )
+        _v1302_defs=[
+            ("youtube","▶","YouTube",_v1302_c1),
+            ("tiktok","♪","TikTok",_v1302_c2),
+            ("instagram","◎","Instagram",_v1302_c3),
+            ("facebook","f","Facebook",_v1302_c4),
+        ]
+        for _v1302_key,_v1302_icon,_v1302_name,_v1302_col in _v1302_defs:
+            with _v1302_col:
+                _v1302_state=bool(st.session_state.get("gsf_v1302_target_"+_v1302_key,False))
+                if st.button(
+                    _v1302_icon+"  "+_v1302_name+("  ✓" if _v1302_state else ""),
+                    key="gsf_v1302_icon_"+_v1302_key,
+                    use_container_width=True,
+                    disabled=(_v1302_key=="facebook"),
+                    help=("Pubblicazione diretta Facebook in attesa dei permessi Meta Page." if _v1302_key=="facebook" else None),
+                ):
+                    st.session_state["gsf_v1302_target_"+_v1302_key]=not _v1302_state
+                    st.rerun()
 
+        _v1302_youtube=bool(st.session_state.get("gsf_v1302_target_youtube",False))
+        _v1302_tiktok=bool(st.session_state.get("gsf_v1302_target_tiktok",False))
+        _v1302_instagram=bool(st.session_state.get("gsf_v1302_target_instagram",False))
         _v1302_targets=[]
         if _v1302_youtube:_v1302_targets.append("YouTube")
         if _v1302_tiktok:_v1302_targets.append("TikTok")
@@ -741,6 +686,10 @@ st.markdown("""
   color:#29485F !important;
   font-weight:750 !important;
 }
+.gsf-v1302-social-pick{margin:12px 0 8px;text-align:center;color:#53758e;font-weight:800;font-size:13px}
+[class*="st-key-gsf_v1302_icon_"] button{min-height:44px!important;border-radius:14px!important;border:1px solid rgba(138,174,199,.48)!important;background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(241,247,252,.95))!important;color:#53758e!important;box-shadow:0 8px 18px rgba(49,92,125,.08)!important;font-weight:800!important}
+[class*="st-key-gsf_v1302_icon_"] button:hover{transform:translateY(-1px)!important;color:#4f46e5!important;border-color:rgba(99,102,241,.48)!important}
+.gsf-v1302-create-note{border:1px dashed #bfd7e8;border-radius:16px;padding:10px 12px;background:rgba(244,250,254,.78);color:#55758c}
 #gsf-creator-hub-portal-v107:has(.gsf-creator-hub-overlay.is-open){
   position:fixed !important;
   inset:0 !important;
