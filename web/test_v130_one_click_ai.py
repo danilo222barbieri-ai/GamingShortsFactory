@@ -110,3 +110,9 @@ assert '"ab_variants"' in Path("/app/web/one_click_v130.py").read_text(encoding=
 src=Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
 for marker in ("_session_intelligence","duplicate_detector","series_ai","best_of_session","long_form","content_memory","safety_privacy","copyright_audio","visual_cleanup","trend_adaptation","content_calendar","post_publish_learning"):
     assert marker in src, marker
+
+
+# V132 game recognition + wired session intelligence
+src=Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
+for marker in ("_recognize_game","game_recognition","semantic_hud_context","session_intelligence"):
+    assert marker in src, marker
