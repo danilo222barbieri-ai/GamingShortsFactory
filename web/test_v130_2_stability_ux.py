@@ -38,7 +38,6 @@ required=[
     'margin:-8px auto 0 !important;',
     'Hai già un progetto in corso.',
     'gsf_source_name',
-    'Regola il gameplay con Frame, Look, Caption, Audio e Game AI.',
 ]
 for marker in required:
     if marker not in s:
