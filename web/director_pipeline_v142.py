@@ -97,6 +97,12 @@ def run_director_pipeline(
     if creator_event:
         profile=learn(profile,_d(creator_event))
         save_profile(profile_path,profile)
+    source_fp=content_fingerprint(evidence)
+    try:
+        _mem=__import__("content_memory_v145",fromlist=["candidate_fingerprint"])
+        candidate_fp=_mem.candidate_fingerprint(source_fp,short_pkg)
+    except Exception:
+        candidate_fp=source_fp
     return {
         "engine":"v142-director-runtime",
         "selected_short":short_pkg,
@@ -106,7 +112,8 @@ def run_director_pipeline(
         "ab":ab,
         "render":render,
         "long_form":long_form,
-        "content_fingerprint":content_fingerprint(evidence),
+        "source_fingerprint":source_fp,
+        "content_fingerprint":candidate_fp,
         "ready":bool(short_pkg and render.get("ready")),
     }
 
