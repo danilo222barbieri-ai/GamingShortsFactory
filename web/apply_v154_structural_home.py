@@ -118,6 +118,88 @@ for marker in (
 
 s=s.rstrip()+"\n# V157: persist lightweight project/UI state at the end of every successful rerun.\n# Video/render payloads stay on disk and are referenced by path, never serialized here.\nif 'GSF_WEB_MODE' in globals() and GSF_WEB_MODE:\n    try:\n        from web.project_state_v157 import save_project as _gsf_save_project_v157\n        _gsf_save_project_v157(st.session_state, GSF_SESSION_ROOT)\n    except Exception:\n        pass\n"+"\n"
 
+
+# V158 — persistent shell bridge. Creator Hub is a true browser overlay:
+# opening/closing it does not rerun Streamlit or unmount the current work.
+_shell_v158 = r'''
+if GSF_WEB_MODE:
+    st.markdown(r"""
+    <style id="gsf-v158-shell-bridge">
+    #gsf-creator-hub-portal-v107 .gsf-creator-hub-overlay{
+      background:transparent !important;
+      transition:opacity .22s ease,visibility .22s ease !important;
+    }
+    #gsf-creator-hub-portal-v107 .gsf-creator-hub-backdrop{
+      background:rgba(219,235,244,.52) !important;
+      -webkit-backdrop-filter:blur(4px) saturate(.96) !important;
+      backdrop-filter:blur(4px) saturate(.96) !important;
+      transition:opacity .22s ease !important;
+    }
+    #gsf-creator-hub-portal-v107 .gsf-creator-hub-shell{
+      width:min(1380px,calc(100vw - 30px)) !important;
+      height:min(700px,calc(100vh - 30px)) !important;
+      border-radius:30px !important;
+      background:#F7FBFF !important;
+      transform:scale(.985) !important;
+      transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .22s ease !important;
+      opacity:0 !important;
+      overflow:hidden !important;
+    }
+    #gsf-creator-hub-portal-v107 .gsf-creator-hub-overlay.is-open .gsf-creator-hub-shell,
+    #gsf-creator-hub-portal-v107 .gsf-creator-hub-overlay:target .gsf-creator-hub-shell{
+      transform:scale(1) !important;
+      opacity:1 !important;
+    }
+    #gsf-creator-hub-portal-v107 .gsf-creator-hub-head{display:none !important}
+    #gsf-creator-hub-portal-v107 .gsf-creator-hub-frame{
+      width:100% !important;height:100% !important;background:#F7FBFF !important;
+    }
+    @media(max-width:760px){
+      #gsf-creator-hub-portal-v107 .gsf-creator-hub-shell{
+        width:calc(100vw - 10px) !important;height:calc(100vh - 10px) !important;border-radius:22px !important;
+      }
+    }
+    </style>
+    <script>
+    (()=>{
+      const KEY='gsf_creator_hub_open_v107';
+      const closeHub=()=>{
+        const panel=document.getElementById('gsf-creator-hub-panel');
+        if(!panel)return;
+        panel.classList.remove('is-open');
+        panel.style.opacity='0';panel.style.visibility='hidden';panel.style.pointerEvents='none';
+        try{sessionStorage.setItem(KEY,'0')}catch(e){}
+        if(location.hash==='#gsf-creator-hub-panel') history.replaceState(null,'',location.pathname+location.search);
+      };
+      const clickTarget=(words)=>{
+        const nodes=[...document.querySelectorAll('button,a,[role=button]')].filter(x=>!x.closest('#gsf-creator-hub-portal-v107'));
+        const el=nodes.find(x=>words.some(w=>(x.innerText||x.textContent||'').toLowerCase().includes(w)));
+        if(el){el.click();return true}return false;
+      };
+      const sync=()=>{
+        const frame=document.querySelector('#gsf-creator-hub-portal-v107 .gsf-creator-hub-frame');
+        if(frame && !String(frame.src||'').includes('/creator-hub-v156/')) frame.src='/creator-hub-v156/';
+      };
+      sync();
+      new MutationObserver(sync).observe(document.body,{childList:true,subtree:true});
+      window.addEventListener('message',ev=>{
+        if(ev.origin!==location.origin || !ev.data || ev.data.type!=='GSF_SHELL_NAV')return;
+        const t=String(ev.data.target||'');
+        if(t==='close' || t==='home'){closeHub();return}
+        closeHub();
+        setTimeout(()=>{
+          if(t==='new') clickTarget(['nuovo video','carica il tuo gameplay']);
+          else if(t==='editor' || t==='resume_draft') clickTarget(['apri game editor','game editor','manuale']);
+          else if(t==='ai') clickTarget(['crea con ia','crea con ai','analizza con ia']);
+          else if(t==='social') clickTarget(['condividi o scarica','social','condividi']);
+        },210);
+      });
+    })();
+    </script>
+    """, unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\\n\\n" + _shell_v158.lstrip()
+
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
 print("V154 STRUCTURAL HOME applied:",out)
