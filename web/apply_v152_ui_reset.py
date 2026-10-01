@@ -187,7 +187,11 @@ if _page_node is None:
     raise RuntimeError("V152 st.set_page_config anchor not found")
 _page_lines=s.splitlines(keepends=True)
 _insert_at=getattr(_page_node,"end_lineno",_page_node.lineno)
-_page_lines[_insert_at:_insert_at]=["\n"+reset+"\n"]
+_living_hook=r'''
+from web.living_ui import render_shell as _gsf_render_living_shell
+_gsf_render_living_shell()
+'''
+_page_lines[_insert_at:_insert_at]=["\n"+reset+"\n"+_living_hook+"\n"]
 s="".join(_page_lines)
 
 # Hard guards: functionality markers remain; old V151 shell is gone; Editor survives.
