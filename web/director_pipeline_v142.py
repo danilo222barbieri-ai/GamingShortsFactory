@@ -97,6 +97,12 @@ def run_director_pipeline(
     if creator_event:
         profile=learn(profile,_d(creator_event))
         save_profile(profile_path,profile)
+    source_fp=content_fingerprint(evidence)
+    try:
+        _mem=__import__("content_memory_v145",fromlist=["candidate_fingerprint"])
+        candidate_fp=_mem.candidate_fingerprint(source_fp,short_pkg)
+    except Exception:
+        candidate_fp=source_fp
     return {
         "engine":"v142-director-runtime",
         "selected_short":short_pkg,
@@ -106,7 +112,8 @@ def run_director_pipeline(
         "ab":ab,
         "render":render,
         "long_form":long_form,
-        "content_fingerprint":content_fingerprint(evidence),
+        "source_fingerprint":source_fp,
+        "content_fingerprint":candidate_fp,
         "ready":bool(short_pkg and render.get("ready")),
     }
 
@@ -141,10 +148,17 @@ def apply_pipeline_to_recipe(recipe,pipeline):
     out["director_runtime_v142"]={
         "engine":p.get("engine"),
         "ab":p.get("ab"),
+        "source_fingerprint":p.get("source_fingerprint"),
         "content_fingerprint":p.get("content_fingerprint"),
+        "content_memory":_d(p.get("content_memory")),
         "publish_guard":render.get("publish_guard","clear"),
         "operation_count":render.get("operation_count",0),
     }
+    out["ai_source_fingerprint"]=p.get("source_fingerprint")
+    out["ai_content_fingerprint"]=p.get("content_fingerprint")
+    if p.get("content_memory"):
+        out["ai_content_memory"]=_d(p.get("content_memory"))
+        out["ai_duplicate_guard"]=bool(_d(p.get("content_memory")).get("duplicate"))
     out["ai_render_operations"]=_l(render.get("operations"))
     out["ai_ab_strategy"]=_d(p.get("ab")).get("winner")
     out["ai_creator_style"]=_d(p.get("creator_profile"))
