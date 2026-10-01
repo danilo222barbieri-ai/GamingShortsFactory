@@ -18,6 +18,8 @@ required=[
     'gsf_v1302_target_tiktok',
     'gsf_v1302_target_instagram',
     'gsf_v1302_publish_all',
+    '_v1302_ai_social',
+    '"published"',
     'CREO SHORT · IA Quality Check · Pronto',
     'SHORT PRONTO',
     'Scegli copertina',
