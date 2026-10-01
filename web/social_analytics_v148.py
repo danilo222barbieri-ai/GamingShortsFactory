@@ -59,6 +59,22 @@ def youtube_analytics(access_token,video_id,days=30):
     return {headers[i]:row[i] for i in range(min(len(headers),len(row)))}
 
 
+def tiktok_publish_status(access_token,publish_id):
+    data=_http_json(
+        "https://open.tiktokapis.com/v2/post/publish/status/fetch/",
+        method="POST",
+        headers={"Authorization":"Bearer "+str(access_token),"Content-Type":"application/json; charset=UTF-8"},
+        body={"publish_id":str(publish_id)},
+    )
+    payload=dict(data.get("data") or {})
+    ids=list(payload.get("publicaly_available_post_id") or [])
+    return {
+        "status":str(payload.get("status") or ""),
+        "post_ids":[str(x) for x in ids if str(x)],
+        "fail_reason":str(payload.get("fail_reason") or ""),
+    }
+
+
 def tiktok_video_stats(access_token,video_id):
     fields="id,view_count,like_count,comment_count,share_count"
     url="https://open.tiktokapis.com/v2/video/query/?"+urllib.parse.urlencode({"fields":fields})
@@ -158,7 +174,7 @@ def dynamic_performance_score(metrics):
     return round(total/weight,4) if weight else 0.0
 
 
-def collect(platform,token,content_id):
+def collect(platform,token,content_id,id_type=""):
     p=str(platform or "").lower()
     if p.startswith("you"):
         access=str(token.get("token") or token.get("access_token") or "")
@@ -167,7 +183,21 @@ def collect(platform,token,content_id):
         except Exception: analytics={}
     elif p.startswith("tik"):
         access=str(token.get("access_token") or "")
-        stats=tiktok_video_stats(access,content_id); analytics={}
+        resolved=str(content_id)
+        if str(id_type or "").lower()=="publish_id" or resolved.startswith(("v_pub_","v_pub_url~","p_pub_")):
+            status=tiktok_publish_status(access,resolved)
+            ids=list(status.get("post_ids") or [])
+            if not ids:
+                return {
+                    "platform":platform,"content_id":str(content_id),
+        "resolved_content_id":locals().get("resolved",str(content_id)),
+                    "resolved_content_id":"","publish_status":status,
+                    "stats":{},"analytics":{},
+                    "learning_metrics":normalize_learning_metrics(platform,{},{}),
+                    "performance_score":0.0,
+                }
+            resolved=ids[0]
+        stats=tiktok_video_stats(access,resolved); analytics={}
     elif p.startswith("inst"):
         access=str(token.get("access_token") or "")
         stats=instagram_media_stats(access,content_id,token.get("api_host") or "https://graph.instagram.com"); analytics={}
