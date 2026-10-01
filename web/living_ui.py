@@ -605,6 +605,167 @@ button[data-testid="baseButton-primary"]{
   [data-testid="stFileUploader"]::after{left:calc(100% + 18px)}
 }
 
+/* V153.9 — native app polish: icon dock, media, controls, compact responsive. */
+.gsf-living-chip{
+  min-width:58px!important;
+}
+.gsf-nav-icon{
+  width:17px;
+  height:17px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+}
+.gsf-nav-icon svg{
+  width:100%;
+  height:100%;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.75;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.gsf-living-chip.active .gsf-nav-icon{
+  filter:drop-shadow(0 2px 5px rgba(65,156,207,.22));
+}
+.gsf-nav-label{
+  white-space:nowrap;
+}
+
+/* Rich media adopts the same soft radius as the approved reference. */
+[data-testid="stImage"],
+[data-testid="stImage"] img,
+[data-testid="stVideo"],
+[data-testid="stVideo"] video{
+  border-radius:20px!important;
+}
+[data-testid="stImage"] img,
+[data-testid="stVideo"] video{
+  box-shadow:0 12px 30px rgba(61,104,132,.10)!important;
+}
+[data-testid="stImage"]{
+  overflow:hidden!important;
+}
+
+/* Sliders, toggles and checks feel part of one product. */
+[data-testid="stSlider"] [data-baseweb="slider"]{
+  padding-top:.35rem!important;
+  padding-bottom:.35rem!important;
+}
+[data-testid="stSlider"] [role="slider"]{
+  box-shadow:0 0 0 4px rgba(92,183,231,.10)!important;
+}
+[data-testid="stCheckbox"] label,
+[data-testid="stToggle"] label{
+  color:#4f6478!important;
+  font-weight:620!important;
+}
+[data-testid="stCheckbox"] input:checked + div,
+[data-testid="stToggle"] input:checked + div{
+  box-shadow:0 0 0 3px rgba(96,186,233,.10);
+}
+
+/* Pills and badges read lighter and more modern. */
+[data-testid="stPills"] button,
+[data-testid="stSegmentedControl"] button{
+  border-radius:999px!important;
+  min-height:38px!important;
+  border-color:rgba(109,170,205,.16)!important;
+}
+[data-testid="stPills"] button[aria-pressed="true"],
+[data-testid="stSegmentedControl"] button[aria-pressed="true"]{
+  background:rgba(129,202,239,.18)!important;
+}
+
+/* Cleaner upload icon / instruction stack. */
+[data-testid="stFileUploaderDropzone"] svg{
+  color:#73bfe8!important;
+  filter:drop-shadow(0 5px 12px rgba(89,174,220,.18));
+}
+[data-testid="stFileUploaderDropzoneInstructions"] span{
+  font-weight:720!important;
+  color:#405b72!important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"] small{
+  font-size:.72rem!important;
+  letter-spacing:.02em;
+}
+
+/* Recent-project-like rows gain depth without changing their content. */
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"] [data-testid="stImage"]{
+  margin-bottom:.45rem!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"] [data-testid="stImage"] img{
+  aspect-ratio:16/9;
+  object-fit:cover;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"] [data-testid="stCaptionContainer"]{
+  margin-top:-.1rem!important;
+  padding-left:.1rem!important;
+}
+
+/* Desktop dock gets more air and less 'button' feeling. */
+@media(min-width:761px){
+  .gsf-living-bar{
+    padding:7px 8px!important;
+    gap:5px!important;
+  }
+  .gsf-living-chip{
+    height:38px!important;
+    padding:0 13px!important;
+    background:transparent!important;
+    border-color:transparent!important;
+  }
+  .gsf-living-chip.active{
+    background:rgba(129,202,239,.18)!important;
+    border-color:rgba(105,186,229,.12)!important;
+  }
+}
+
+/* Mobile dock uses stacked icon + label, like a native app bar. */
+@media(max-width:760px){
+  .gsf-living-chip{
+    flex-direction:column!important;
+    gap:2px!important;
+    height:50px!important;
+    padding:5px 3px 4px!important;
+    line-height:1!important;
+  }
+  .gsf-nav-icon{
+    width:18px;
+    height:18px;
+  }
+  .gsf-nav-label{
+    font-size:8.5px;
+    font-weight:720;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .gsf-living-chip:nth-child(4) .gsf-nav-label{
+    font-size:7.6px;
+  }
+  [data-testid="stImage"],
+  [data-testid="stImage"] img,
+  [data-testid="stVideo"],
+  [data-testid="stVideo"] video{
+    border-radius:17px!important;
+  }
+  [data-testid="stAppViewContainer"] [data-testid="stVerticalBlock"]{
+    row-gap:.58rem!important;
+  }
+}
+
+@media(max-width:390px){
+  .gsf-living-bar{
+    width:calc(100% - 14px)!important;
+    bottom:7px!important;
+  }
+  .gsf-nav-label{font-size:7.8px}
+  .gsf-living-chip:nth-child(4) .gsf-nav-label{font-size:7px}
+}
+
 /* Key motion is soft and bounded. */
 @keyframes gsfBrandIn{
   from{opacity:0;transform:translateY(-7px)}
@@ -686,11 +847,36 @@ button[data-testid="baseButton-primary"]{
 SHELL_HTML = r"""
 <div class="gsf-living-brand">Gaming Shorts Factory</div>
 <nav class="gsf-living-bar" aria-label="GSF Game Bar">
-  <div class="gsf-living-chip active"><span class="gsf-nav-dot"></span>Home</div>
-  <div class="gsf-living-chip"><span class="gsf-nav-dot"></span>AI</div>
-  <div class="gsf-living-chip"><span class="gsf-nav-dot"></span>Editor</div>
-  <div class="gsf-living-chip"><span class="gsf-nav-dot"></span>Creator Hub</div>
-  <div class="gsf-living-chip"><span class="gsf-nav-dot"></span>Social</div>
+  <div class="gsf-living-chip active">
+    <span class="gsf-nav-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg>
+    </span>
+    <span class="gsf-nav-label">Home</span>
+  </div>
+  <div class="gsf-living-chip">
+    <span class="gsf-nav-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="m12 3 1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6Z"/><path d="m18.5 15 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8Z"/></svg>
+    </span>
+    <span class="gsf-nav-label">AI</span>
+  </div>
+  <div class="gsf-living-chip">
+    <span class="gsf-nav-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M8 9h8M8 13h5"/></svg>
+    </span>
+    <span class="gsf-nav-label">Editor</span>
+  </div>
+  <div class="gsf-living-chip">
+    <span class="gsf-nav-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>
+    </span>
+    <span class="gsf-nav-label">Creator Hub</span>
+  </div>
+  <div class="gsf-living-chip">
+    <span class="gsf-nav-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.3 10.8 7.4-4.4M8.3 13.2l7.4 4.4"/></svg>
+    </span>
+    <span class="gsf-nav-label">Social</span>
+  </div>
 </nav>
 """
 
