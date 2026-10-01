@@ -133,6 +133,192 @@ def _editor_component_for(video_path):
     return _EDITOR_2027_COMPONENT, video_url
 
 
+def _long_form_source(video_path):
+    candidates=[]
+    try:
+        for key in (
+            "gsf_source_path","inline_editor_original_input","editor_input",
+            "publication_input","gsf_editor_source_path",
+        ):
+            value=str(st.session_state.get(key) or "").strip()
+            if value:
+                candidates.append(Path(value))
+    except Exception:
+        pass
+    candidates.append(Path(video_path))
+    for p in candidates:
+        try:
+            if p.is_file() and p.stat().st_size>1024:
+                return p.resolve()
+        except Exception:
+            continue
+    try:
+        raw=st.session_state.get("gsf_source_bytes")
+        if isinstance(raw,(bytes,bytearray,memoryview)) and len(raw)>1024:
+            base=Path(os.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))/"long_form_fallback"
+            base.mkdir(parents=True,exist_ok=True)
+            p=base/"source.mp4"
+            if (not p.exists()) or p.stat().st_size!=len(raw):
+                tmp=p.with_suffix(".tmp")
+                tmp.write_bytes(bytes(raw))
+                os.replace(tmp,p)
+            return p.resolve()
+    except Exception:
+        pass
+    return Path(video_path).resolve()
+
+
+def _long_form_session(source_path,video_path):
+    sessions=(Path(os.environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime"))/"sessions").resolve()
+    for raw in (source_path,video_path):
+        try:
+            p=Path(raw).resolve()
+            rel=p.relative_to(sessions)
+            if rel.parts:
+                root=sessions/rel.parts[0]
+                root.mkdir(parents=True,exist_ok=True)
+                return rel.parts[0],root
+        except Exception:
+            continue
+    return "",Path(source_path).resolve().parent
+
+
+def _long_form_moments(duration):
+    rows=[]
+    try:
+        brain=st.session_state.get("gsf_v112_brain_context") or {}
+        if isinstance(brain,dict):
+            rows.extend(dict(x) for x in (brain.get("selected") or []) if isinstance(x,dict))
+            rows.extend(dict(x) for x in (brain.get("alternates") or []) if isinstance(x,dict))
+    except Exception:
+        pass
+    if len(rows)<4:
+        try:
+            for event in st.session_state.get("gsf_v108_event_map") or []:
+                if not isinstance(event,dict):
+                    continue
+                rows.append({
+                    "start":float(event.get("time") or 0.0),
+                    "event":str(event.get("kind") or "gameplay").lower(),
+                    "brain_score":float(event.get("score") or .45),
+                })
+        except Exception:
+            pass
+    if len(rows)<4 and duration>0:
+        for i in range(1,8):
+            t=duration*i/8.0
+            rows.append({
+                "start":round(t,3),
+                "event":"gameplay",
+                "brain_score":round(.35+.04*i,3),
+            })
+    dedup={}
+    for row in rows:
+        try:
+            key=round(float(row.get("start") or 0.0),1)
+            if key not in dedup or float(row.get("brain_score") or 0)>float(dedup[key].get("brain_score") or 0):
+                dedup[key]=row
+        except Exception:
+            continue
+    return sorted(dedup.values(),key=lambda x:float(x.get("start") or 0.0))
+
+
+def _maybe_render_long_form(value,video_path):
+    if not isinstance(value,dict) or not value.get("longFormRequested"):
+        return
+    nonce=int(value.get("longFormNonce") or 0)
+    if nonce<=0:
+        return
+    request_key="gsf_long_form_nonce_"+hashlib.sha1(
+        str(Path(video_path).resolve()).encode("utf-8")
+    ).hexdigest()[:12]
+    if int(st.session_state.get(request_key) or 0)>=nonce:
+        return
+    st.session_state[request_key]=nonce
+    source=_long_form_source(video_path)
+    try:
+        from cinematic_render_v125 import probe_media
+        from long_form_director_v141 import build_long_form
+        from long_form_render_v147 import render_long_form
+        from privacy_cleanup_v149 import cleanup_video
+        meta=probe_media(source)
+        duration=float(meta.get("duration") or 0.0)
+        if duration<30:
+            raise RuntimeError("Il gameplay sorgente è troppo corto per un video lungo.")
+        minutes=max(6,min(10,int(value.get("longFormMinutes") or 8)))
+        moments=_long_form_moments(duration)
+        plan=build_long_form(moments,minutes)
+        sid,session_root=_long_form_session(source,video_path)
+        out_dir=session_root/"long_form"
+        out_dir.mkdir(parents=True,exist_ok=True)
+        output=out_dir/"gaming_long_form_latest.mp4"
+        temp=out_dir/".gaming_long_form_render.mp4"
+        cleaned=out_dir/".gaming_long_form_clean.mp4"
+        for p in (temp,cleaned):
+            try:p.unlink(missing_ok=True)
+            except Exception:pass
+        with st.spinner("AI Director · creo il video lungo…"):
+            render_result=render_long_form(
+                source,temp,plan,duration,target_seconds=minutes*60
+            )
+            privacy=cleanup_video(temp,cleaned)
+            final_source=cleaned if privacy.get("applied") and cleaned.is_file() else temp
+            os.replace(final_source,output)
+            for p in (temp,cleaned):
+                try:p.unlink(missing_ok=True)
+                except Exception:pass
+        url=""
+        if sid:
+            url="/media/"+quote(str(sid),safe="")+"/long_form/"+quote(output.name,safe="")
+        result={
+            "ok":True,
+            "path":str(output),
+            "url":url,
+            "minutes":minutes,
+            "bytes":int(output.stat().st_size),
+            "segments":int(render_result.get("segment_count") or 0),
+            "planned_seconds":float(render_result.get("planned_seconds") or 0.0),
+            "privacy_guard":str(privacy.get("publish_guard") or "clear"),
+            "masked":int(privacy.get("mask_count") or 0),
+        }
+        st.session_state["gsf_long_form_result"]=result
+        print(
+            "GSF_V150_LONG_FORM_READY",
+            "minutes="+str(minutes),
+            "segments="+str(result["segments"]),
+            "masked="+str(result["masked"]),
+            flush=True,
+        )
+    except Exception as exc:
+        st.session_state["gsf_long_form_result"]={
+            "ok":False,"error":str(exc)[:320],
+        }
+        print("GSF_V150_LONG_FORM_FAIL",repr(str(exc))[:320],flush=True)
+
+
+def _render_long_form_result():
+    result=st.session_state.get("gsf_long_form_result")
+    if not isinstance(result,dict):
+        return
+    if result.get("ok"):
+        st.success(
+            "Video lungo pronto · "
+            +str(result.get("minutes") or 8)+" min target · "
+            +str(result.get("segments") or 0)+" segmenti AI"
+        )
+        if result.get("privacy_guard")=="review":
+            st.warning("Privacy AI: verifica richiesta prima della pubblicazione.")
+        url=str(result.get("url") or "")
+        if url:
+            st.link_button(
+                "SCARICA VIDEO LUNGO",
+                url,
+                use_container_width=True,
+            )
+    elif result.get("error"):
+        st.error("Video lungo non riuscito: "+str(result.get("error")))
+
+
 def render_editor_2027_embed(
     video_path,
     height=720,
@@ -196,6 +382,9 @@ def render_editor_2027_embed(
         key=str(key),
         default=None,
     )
+    if isinstance(value,dict):
+        _maybe_render_long_form(value,p)
+    _render_long_form_result()
     return value if isinstance(value, dict) else None
 
 
