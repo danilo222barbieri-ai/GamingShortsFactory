@@ -233,11 +233,25 @@ s=s.replace(queue_flag,'''                st.session_state["gsf_v107_final_rende
 ''',1)
 
 # 3) Faster final encode while preserving CRF/profile/current render layout.
-s=s.replace(
-    '"-preset","medium",\n                    "-crf","14",',
-    '"-preset","fast",\n                    "-crf","14",',
-    1,
-)
+# Limit the replacement to the final-Short render area so preview/analysis
+# encoders and approved players are untouched.
+_final_render_anchor='_gsf_session_mkdtemp("gsf_final_v54_")'
+_final_render_i=s.find(_final_render_anchor)
+if _final_render_i>=0:
+    _final_render_end=min(len(s),_final_render_i+42000)
+    _final_render_seg=s[_final_render_i:_final_render_end]
+    if '"-preset","medium"' in _final_render_seg:
+        _final_render_seg=_final_render_seg.replace(
+            '"-preset","medium"','"-preset","fast"',1
+        )
+        s=s[:_final_render_i]+_final_render_seg+s[_final_render_end:]
+    elif "'-preset','medium'" in _final_render_seg:
+        _final_render_seg=_final_render_seg.replace(
+            "'-preset','medium'","'-preset','fast'",1
+        )
+        s=s[:_final_render_i]+_final_render_seg+s[_final_render_end:]
+# If the current final renderer is already optimized by an earlier patch,
+# leave it unchanged rather than rewriting a different FFmpeg command.
 
 # 4) Restore visible ad placeholders if live AdSense lacks explicit slot IDs.
 ads_hidden='''    if not valid:
