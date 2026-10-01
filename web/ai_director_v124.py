@@ -265,6 +265,49 @@ def build_director_plan(candidate, clip_duration=15.0, genre="Auto", profile="au
         f"Evento: {label}",
         f"Confidenza: {round(confidence*100)}%",
     ]
+
+    assistant_actions=[]
+    if trim_start>.15 or trim_end<duration-.15:
+        assistant_actions.append({
+            "action":"trim",
+            "label":f"Il momento forte inizia a {trim_start:.1f}s e chiude a {trim_end:.1f}s",
+            "values":{"trim_start":round(trim_start,3),"trim_end":round(trim_end,3)},
+        })
+    if smart_reframe:
+        _dir="destra" if pan_x>1.0 else ("sinistra" if pan_x<-1.0 else "centro")
+        assistant_actions.append({
+            "action":"reframe",
+            "label":"Inquadratura "+_dir+" · HUD protetto" if hud else "Segui il soggetto automaticamente",
+            "values":{
+                "zoom":round(zoom,3),
+                "pan_x":round(pan_x,3),
+                "pan_y":round(pan_y,3),
+                "hud_mode":"Smart Safe" if (hud or smart_reframe) else "Off",
+            },
+        })
+    assistant_actions.append({
+        "action":"captions",
+        "label":"Sottotitoli "+("impact" if event_strength>=.78 else "clean")+" in zona sicura",
+        "values":{"caption_y":round(caption_y,2)},
+    })
+    if slowmo_enabled:
+        assistant_actions.append({
+            "action":"slow_motion",
+            "label":"Slow motion solo sul momento forte",
+            "values":{"speed":round(slowmo_speed,2),"center":round(relative_event,3)},
+        })
+    if replay_enabled:
+        assistant_actions.append({
+            "action":"replay",
+            "label":"Micro-replay sul payoff",
+            "values":{"center":round(relative_event,3),"window":round(replay_window,3)},
+        })
+    if sound_accent!="none":
+        assistant_actions.append({
+            "action":"sound_design",
+            "label":"Accento audio "+sound_accent.replace("-"," "),
+            "values":{"accent":sound_accent},
+        })
     if semantic_conf>0:
         explanation.append(f"Semantica video: {round(semantic_conf*100)}%")
     if focus_conf>0:
@@ -331,6 +374,7 @@ def build_director_plan(candidate, clip_duration=15.0, genre="Auto", profile="au
             "avoid_black_frames":True,
             "avoid_audio_clipping":True,
         },
+        "assistant_actions":assistant_actions,
         "explanation":explanation,
     }
 
