@@ -81,7 +81,7 @@ RUN chmod +x /usr/local/bin/ffmpeg && python -c "import base64,gzip,pathlib; p=p
     python /app/web/test_editor_2027_component.py /app/GamingShortsFactory_V148_ANALYTICS_LEARNING.py && \
     python -m py_compile /app/GamingShortsFactory_V148_ANALYTICS_LEARNING.py && \
     python -m py_compile /app/web/direct_upload_server.py && \
-    python /app/web/test_v150_end_to_end_stability.py /app/GamingShortsFactory_V148_ANALYTICS_LEARNING.py /app/web/direct_upload_server.py /app/web/ai_worker_server.py && \\
+    python /app/web/test_v150_end_to_end_stability.py /app/GamingShortsFactory_V148_ANALYTICS_LEARNING.py /app/web/direct_upload_server.py /app/web/ai_worker_server.py && \
     python /app/web/apply_v151_living_home.py && python -m py_compile /app/GamingShortsFactory_V151_LIVING_HOME.py
 RUN python -m compileall -q /app/web
 COPY .streamlit /app/.streamlit
