@@ -43,6 +43,28 @@ def _gsf_v142_source_path():
     return ""
 
 
+def _gsf_v148_performance_context():
+    try:
+        _u=__import__("urllib.request",fromlist=["Request","urlopen"])
+        _j=__import__("json")
+        _os=__import__("os")
+        _port=str(_os.environ.get("GSF_DIRECT_UPLOAD_PORT","8502") or "8502")
+        _raw=_j.dumps({},separators=(",",":")).encode("utf-8")
+        _req=_u.Request(
+            "http://127.0.0.1:"+_port+"/social-analytics/context",
+            data=_raw,
+            headers={
+                "Content-Type":"application/json",
+                "X-GSF-Session-ID":str(GSF_SESSION_ID),
+            },
+            method="POST",
+        )
+        _payload=_j.loads(_u.urlopen(_req,timeout=1.5).read().decode("utf-8"))
+        return dict((_payload or {}).get("context") or {})
+    except Exception:
+        return {}
+
+
 def _gsf_v142_enrich_recipe(recipe):
     _recipe=dict(recipe or {})
     try:
@@ -83,6 +105,7 @@ def _gsf_v142_enrich_recipe(recipe):
             selected_start=_start,
             provider_results=st.session_state.get("gsf_v142_provider_results"),
             creator_event=_event,
+            performance_context=_gsf_v148_performance_context(),
         )
         st.session_state["gsf_v142_runtime"]=_pipeline
         _recipe=_mod.apply_pipeline_to_recipe(_recipe,_pipeline)

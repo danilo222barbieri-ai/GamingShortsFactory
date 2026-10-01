@@ -28,6 +28,7 @@ from feedback_learning_v127 import (
     update_model as _learning_update_model,
 )
 from content_memory_v145 import inspect_memory as _content_memory_inspect, upsert_memory as _content_memory_upsert
+from social_analytics_v148 import collect as _social_analytics_collect, dynamic_performance_score as _social_dynamic_score
 
 try:
     from pywebpush import webpush, WebPushException
@@ -51,6 +52,8 @@ _QUALITY_CACHE={}
 _QUALITY_LOCK=threading.Lock()
 _AI_FEEDBACK_LOCK=threading.Lock()
 _CONTENT_MEMORY_LOCK=threading.Lock()
+_ANALYTICS_LOCK=threading.Lock()
+_ANALYTICS_TICK={}
 _AI_LEARNING_PATH=ROOT/"ai_learning_v127.json"
 _AI_LEARNING_BUCKET_KEY="ai-feedback/global/model.json"
 _GUARDIAN_WATCHDOG=None
@@ -79,10 +82,10 @@ TIKTOK_CLIENT_KEY=_env_first("GSF_TIKTOK_CLIENT_KEY",default="")
 TIKTOK_CLIENT_SECRET=_env_first("GSF_TIKTOK_CLIENT_SECRET",default="")
 YOUTUBE_CLIENT_ID=_env_first("GSF_YOUTUBE_CLIENT_ID",default="")
 YOUTUBE_CLIENT_SECRET=_env_first("GSF_YOUTUBE_CLIENT_SECRET",default="")
-YOUTUBE_SCOPE="https://www.googleapis.com/auth/youtube.upload"
+YOUTUBE_SCOPE="https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/yt-analytics.readonly"
 INSTAGRAM_APP_ID=_env_first("GSF_INSTAGRAM_APP_ID",default="")
 INSTAGRAM_APP_SECRET=_env_first("GSF_INSTAGRAM_APP_SECRET",default="")
-INSTAGRAM_SCOPES="instagram_business_basic,instagram_business_content_publish"
+INSTAGRAM_SCOPES="instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights"
 INSTAGRAM_REDIRECT_URI=(PUBLIC_APP_URL+"/auth/instagram/callback") if PUBLIC_APP_URL else ""
 META_APP_ID=_env_first("GSF_META_APP_ID",default="")
 META_APP_SECRET=_env_first("GSF_META_APP_SECRET",default="")
@@ -2063,7 +2066,7 @@ def _tiktok_oauth_start(handler,sid):
     params={
         "client_key":TIKTOK_CLIENT_KEY,
         "response_type":"code",
-        "scope":"user.info.basic,video.publish",
+        "scope":"user.info.basic,video.publish,video.list",
         "redirect_uri":redirect_uri,
         "state":state,
     }
@@ -2645,6 +2648,257 @@ def _content_memory_record(sid,record):
     )
     return state
 
+def _analytics_path(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return None
+    root=ROOT/"sessions"/sid
+    root.mkdir(parents=True,exist_ok=True)
+    return root/"social_analytics_v148.json"
+
+def _analytics_key(sid):
+    sid=_safe_id(sid)
+    return f"social-analytics/{sid}/analytics_v148.json" if sid else ""
+
+def _analytics_load(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return {"records":[]}
+    path=_analytics_path(sid)
+    if path is not None and path.is_file():
+        try:
+            payload=json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(payload,dict):
+                return payload
+        except Exception:
+            pass
+    if _bucket_enabled():
+        try:
+            obj=_s3().get_object(Bucket=S3_BUCKET,Key=_analytics_key(sid))
+            payload=json.loads(obj["Body"].read().decode("utf-8"))
+            if isinstance(payload,dict):
+                if path is not None:
+                    _write_json_atomic(path,payload)
+                return payload
+        except Exception:
+            pass
+    return {"records":[]}
+
+def _analytics_save(sid,payload):
+    sid=_safe_id(sid)
+    if not sid or not isinstance(payload,dict):
+        return False
+    path=_analytics_path(sid)
+    if path is not None:
+        _write_json_atomic(path,payload)
+    if _bucket_enabled():
+        try:
+            _s3().put_object(
+                Bucket=S3_BUCKET,Key=_analytics_key(sid),
+                Body=json.dumps(payload,ensure_ascii=False,separators=(",",":")).encode("utf-8"),
+                ContentType="application/json",CacheControl="no-store",
+            )
+        except Exception as exc:
+            print("GSF_V148_ANALYTICS_BUCKET_WARN",sid,repr(str(exc))[:180],flush=True)
+    return True
+
+def _youtube_analytics_token(sid):
+    token=dict(_youtube_user_load(sid) or {})
+    refresh=str(token.get("refresh_token") or "")
+    client_id=str(token.get("client_id") or YOUTUBE_CLIENT_ID or "")
+    client_secret=str(token.get("client_secret") or YOUTUBE_CLIENT_SECRET or "")
+    if not refresh or not client_id or not client_secret:
+        return token
+    try:
+        form=urllib.parse.urlencode({
+            "client_id":client_id,
+            "client_secret":client_secret,
+            "refresh_token":refresh,
+            "grant_type":"refresh_token",
+        }).encode("utf-8")
+        req=urllib.request.Request(
+            "https://oauth2.googleapis.com/token",
+            data=form,
+            headers={"Content-Type":"application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req,timeout=30) as resp:
+            payload=json.loads(resp.read().decode("utf-8"))
+        access=str(payload.get("access_token") or "")
+        if access:
+            token["token"]=access
+            token["access_token"]=access
+            token["refresh_token"]=refresh
+            token["client_id"]=client_id
+            token["client_secret"]=client_secret
+            token["scopes"]=str(payload.get("scope") or YOUTUBE_SCOPE).split()
+            token["_analytics_refreshed_at"]=time.time()
+            try:_youtube_user_save(sid,token)
+            except Exception:pass
+    except Exception as exc:
+        print("GSF_V148_YOUTUBE_REFRESH_WARN",sid,repr(str(exc))[:180],flush=True)
+    return token
+
+def _tiktok_analytics_token(sid):
+    token=dict(_tiktok_user_load(sid) or {})
+    refresh=str(token.get("refresh_token") or "")
+    expiry=float(token.get("expires_at") or 0.0)
+    if not refresh or not TIKTOK_CLIENT_KEY or not TIKTOK_CLIENT_SECRET:
+        return token
+    if expiry and expiry-time.time()>600:
+        return token
+    try:
+        form=urllib.parse.urlencode({
+            "client_key":TIKTOK_CLIENT_KEY,
+            "client_secret":TIKTOK_CLIENT_SECRET,
+            "grant_type":"refresh_token",
+            "refresh_token":refresh,
+        }).encode("utf-8")
+        req=urllib.request.Request(
+            "https://open.tiktokapis.com/v2/oauth/token/",
+            data=form,
+            headers={"Content-Type":"application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req,timeout=30) as resp:
+            payload=json.loads(resp.read().decode("utf-8"))
+        if payload.get("access_token"):
+            now=time.time()
+            token.update(dict(payload))
+            token["expires_at"]=now+int(payload.get("expires_in",0) or 0)
+            token["refresh_expires_at"]=now+int(payload.get("refresh_expires_in",0) or 0)
+            token["_analytics_refreshed_at"]=now
+            try:_tiktok_user_save(sid,token)
+            except Exception:pass
+    except Exception as exc:
+        print("GSF_V148_TIKTOK_REFRESH_WARN",sid,repr(str(exc))[:180],flush=True)
+    return token
+
+def _analytics_token_for(sid,platform):
+    p=str(platform or "").lower()
+    if p.startswith("you"):
+        return _youtube_analytics_token(sid)
+    if p.startswith("tik"):
+        return _tiktok_analytics_token(sid)
+    if p.startswith("inst"):
+        return _instagram_user_load(sid)
+    return {}
+
+def _analytics_register(sid,record):
+    sid=_safe_id(sid)
+    if not sid or not isinstance(record,dict):
+        return {}
+    platform=str(record.get("platform") or "").strip()
+    content_id=str(record.get("content_id") or "").strip()
+    fingerprint=str(record.get("content_fingerprint") or "").strip()
+    if not platform or not content_id:
+        return {"ok":False,"error":"platform/content_id required"}
+    with _ANALYTICS_LOCK:
+        data=_analytics_load(sid)
+        rows=[dict(x) for x in (data.get("records") or []) if isinstance(x,dict)]
+        key=(platform.lower(),content_id)
+        existing=None
+        for row in rows:
+            if (str(row.get("platform") or "").lower(),str(row.get("content_id") or ""))==key:
+                existing=row;break
+        now=time.time()
+        payload={
+            "platform":platform,
+            "content_id":content_id,
+            "id_type":str(record.get("id_type") or ""),
+            "content_fingerprint":fingerprint,
+            "registered_at":float((existing or {}).get("registered_at") or now),
+            "updated_at":now,
+            "status":str((existing or {}).get("status") or "registered"),
+            "metadata":dict(record.get("metadata") or {}),
+        }
+        if existing is not None:
+            existing.update(payload)
+        else:
+            rows.append(payload)
+        data["records"]=rows[-300:]
+        data["updated_at"]=now
+        _analytics_save(sid,data)
+    return {"ok":True,"record":payload}
+
+def _analytics_collect_one(sid,row):
+    token=_analytics_token_for(sid,row.get("platform"))
+    if not token:
+        return {**dict(row),"status":"needs_connection","last_error":"account not connected","updated_at":time.time()}
+    content_id=str(row.get("content_id") or "")
+    if not content_id:
+        return {**dict(row),"status":"invalid","last_error":"missing content id","updated_at":time.time()}
+    try:
+        result=_social_analytics_collect(
+            row.get("platform"),token,content_id,
+            id_type=str(row.get("id_type") or ""),
+        )
+        out={**dict(row),"status":"ok","last_error":"","updated_at":time.time(),
+             "analytics":result,"performance_score":float(result.get("performance_score") or 0.0)}
+        fp=str(out.get("content_fingerprint") or "")
+        if fp:
+            with _CONTENT_MEMORY_LOCK:
+                memory_rows=_content_memory_load(sid)
+                changed=False
+                for item in memory_rows:
+                    if str(item.get("fingerprint") or "")==fp:
+                        item["performance_score"]=out["performance_score"]
+                        item["platform"]=str(out.get("platform") or item.get("platform") or "")
+                        item["analytics_updated_at"]=out["updated_at"]
+                        changed=True
+                        break
+                if changed:
+                    _content_memory_save(sid,memory_rows)
+        return out
+    except Exception as exc:
+        return {**dict(row),"status":"error","last_error":str(exc)[:300],"updated_at":time.time()}
+
+def _analytics_collect_all(sid,force=False):
+    sid=_safe_id(sid)
+    if not sid:
+        return {"ok":False,"records":[]}
+    now=time.time()
+    if not force and now-float(_ANALYTICS_TICK.get(sid,0) or 0)<900:
+        data=_analytics_load(sid)
+        return {"ok":True,"records":list(data.get("records") or []),"cached":True}
+    with _ANALYTICS_LOCK:
+        data=_analytics_load(sid)
+        rows=[dict(x) for x in (data.get("records") or []) if isinstance(x,dict)]
+    refreshed=[_analytics_collect_one(sid,row) for row in rows]
+    with _ANALYTICS_LOCK:
+        data["records"]=refreshed
+        data["updated_at"]=now
+        _analytics_save(sid,data)
+        _ANALYTICS_TICK[sid]=now
+    return {"ok":True,"records":refreshed,"cached":False}
+
+def _analytics_context(sid):
+    data=_analytics_load(sid)
+    rows=[dict(x) for x in (data.get("records") or []) if isinstance(x,dict)]
+    scored=[x for x in rows if float(x.get("performance_score") or 0)>0]
+    if not scored:
+        return {"samples":0,"best_strategy":"","best_platform":"","mean_score":0.0}
+    best=max(scored,key=lambda x:float(x.get("performance_score") or 0.0))
+    mean=sum(float(x.get("performance_score") or 0.0) for x in scored)/len(scored)
+    strategies={}
+    for row in scored:
+        strategy=str((row.get("metadata") or {}).get("ab_strategy") or "")
+        if strategy:
+            strategies.setdefault(strategy,[]).append(float(row.get("performance_score") or 0.0))
+    best_strategy=""
+    if strategies:
+        best_strategy=max(
+            strategies,
+            key=lambda k:sum(strategies[k])/max(1,len(strategies[k]))
+        )
+    return {
+        "samples":len(scored),
+        "best_strategy":best_strategy,
+        "best_platform":str(best.get("platform") or ""),
+        "mean_score":round(mean,4),
+        "best_score":round(float(best.get("performance_score") or 0.0),4),
+    }
+
 def _quality_report_path(sid):
     sid=_safe_id(sid)
     return (ROOT/"sessions"/sid/"quality_report.json") if sid else None
@@ -3218,6 +3472,33 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,400,{"ok":False,"error":str(exc)[:180]})
             return
 
+        if path=="/social-analytics/register":
+            try:
+                data=_read_json(self,max_bytes=128*1024)
+                state=_analytics_register(sid,data)
+                _json(self,200,state)
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:220]})
+            return
+
+        if path=="/social-analytics/collect":
+            try:
+                data=_read_json(self,max_bytes=64*1024)
+                force=bool(data.get("force",False)) if isinstance(data,dict) else False
+                state=_analytics_collect_all(sid,force=force)
+                state["context"]=_analytics_context(sid)
+                _json(self,200,state)
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:240]})
+            return
+
+        if path=="/social-analytics/context":
+            try:
+                _json(self,200,{"ok":True,"context":_analytics_context(sid)})
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:220]})
+            return
+
         if path=="/drafts/save":
             try:
                 data=_read_json(self,max_bytes=1024*1024)
@@ -3553,11 +3834,44 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:
             _json(self,500,{"ok":False,"error":str(exc)[:160]})
 
+def _start_social_analytics_worker():
+    interval=max(900,int(os.environ.get("GSF_SOCIAL_ANALYTICS_INTERVAL","1800") or 1800))
+    def run():
+        time.sleep(45)
+        while True:
+            try:
+                sessions=ROOT/"sessions"
+                if sessions.is_dir():
+                    for root in list(sessions.iterdir())[:200]:
+                        if not root.is_dir():
+                            continue
+                        sid=_safe_id(root.name)
+                        if not sid:
+                            continue
+                        try:
+                            data=_analytics_load(sid)
+                            if data.get("records"):
+                                result=_analytics_collect_all(sid,force=True)
+                                print(
+                                    "GSF_V148_ANALYTICS_REFRESH",
+                                    sid,
+                                    "records="+str(len(result.get("records") or [])),
+                                    flush=True,
+                                )
+                        except Exception as exc:
+                            print("GSF_V148_ANALYTICS_WARN",sid,repr(str(exc))[:180],flush=True)
+            except Exception as exc:
+                print("GSF_V148_ANALYTICS_LOOP_WARN",repr(str(exc))[:180],flush=True)
+            time.sleep(interval)
+    threading.Thread(target=run,name="gsf-social-analytics-v148",daemon=True).start()
+
+
 if __name__=="__main__":
     ROOT.mkdir(parents=True,exist_ok=True)
     _ensure_bucket_cors()
     _ai_learning_restore()
     _start_proactive_guardian()
+    _start_social_analytics_worker()
     server=ThreadingHTTPServer(("127.0.0.1",PORT),Handler)
     print(
         f"GSF direct upload server listening on 127.0.0.1:{PORT} "

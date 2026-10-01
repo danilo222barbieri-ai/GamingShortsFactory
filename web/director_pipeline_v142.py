@@ -72,6 +72,7 @@ def run_director_pipeline(
     selected_start=None,
     provider_results=None,
     creator_event=None,
+    performance_context=None,
 ):
     """Execute the full V134→V141 intelligence chain for one selected Short."""
     brain=_d(brain); one_click=_d(one_click)
@@ -106,7 +107,18 @@ def run_director_pipeline(
     profile=load_profile(profile_path)
     a,b=_ab_candidates(short_pkg)
     ab=choose_ab(a,b,profile)
+    perf=_d(performance_context)
+    if int(perf.get("samples") or 0)>=3 and str(perf.get("best_strategy") or "") in ("A","B"):
+        scores=_d(ab.get("scores"))
+        preferred=str(perf.get("best_strategy"))
+        bonus=min(.08,.02+max(0.0,min(1.0,float(perf.get("best_score") or 0.0)))*.06)
+        scores[preferred]=round(min(1.0,float(scores.get(preferred) or 0.0)+bonus),4)
+        ab["scores"]=scores
+        ab["winner"]="A" if float(scores.get("A") or 0.0)>=float(scores.get("B") or 0.0) else "B"
+        ab["strategy"]="structural_plus_real_performance"
+        ab["performance_bonus"]=round(bonus,4)
     ab["variants"]={"A":a.get("name"),"B":b.get("name")}
+    ab["performance_context"]=perf
     render=compile_render_plan(short_pkg,profile,ab,vision)
     all_moments=_l(brain.get("selected"))+_l(brain.get("alternates"))
     long_form=build_long_form(all_moments,8)
@@ -126,6 +138,7 @@ def run_director_pipeline(
         "evidence":evidence,
         "vision":vision,
         "creator_profile":profile,
+        "performance_context":perf,
         "ab":ab,
         "render":render,
         "long_form":long_form,
