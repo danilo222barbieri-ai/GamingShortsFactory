@@ -53,6 +53,11 @@ for marker in (
 
 assert "declare_component" in e
 assert "gsf-living-bar" in s and "display:none !important" in s
+assert "gsfMintPulse" in h, "mint upload glow missing"
+assert 'rings.classList.add("uploading")' in h, "upload glow runtime state missing"
+assert "MP4 · MOV · MKV" not in h, "upload formats must stay hidden"
+assert '[data-testid="sync-short-ready-button"]' in s, "legacy sync artifact guard missing"
+assert '[data-testid="footer"]' in s, "legacy footer artifact guard missing"
 compile(s,str(app),"exec")
 compile(e,str(embed),"exec")
 print("V154 structural Home contract: PASS")
