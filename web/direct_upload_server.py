@@ -2563,6 +2563,88 @@ def _ai_feedback_store(sid,event):
     )
     return True
 
+def _content_memory_path(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return None
+    root=ROOT/"sessions"/sid
+    root.mkdir(parents=True,exist_ok=True)
+    return root/"content_memory_v145.json"
+
+def _content_memory_key(sid):
+    sid=_safe_id(sid)
+    return f"content-memory/{sid}/memory_v145.json" if sid else ""
+
+def _content_memory_load(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return []
+    path=_content_memory_path(sid)
+    if path is not None and path.is_file():
+        try:
+            rows=json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(rows,list):
+                return [x for x in rows if isinstance(x,dict)]
+        except Exception:
+            pass
+    if _bucket_enabled():
+        try:
+            obj=_s3().get_object(Bucket=S3_BUCKET,Key=_content_memory_key(sid))
+            rows=json.loads(obj["Body"].read().decode("utf-8"))
+            if isinstance(rows,list):
+                rows=[x for x in rows if isinstance(x,dict)]
+                if path is not None:
+                    _write_json_atomic(path,rows)
+                return rows
+        except Exception:
+            pass
+    return []
+
+def _content_memory_save(sid,rows):
+    sid=_safe_id(sid)
+    if not sid:
+        return False
+    clean=[dict(x) for x in (rows or []) if isinstance(x,dict)][:500]
+    path=_content_memory_path(sid)
+    if path is not None:
+        _write_json_atomic(path,clean)
+    if _bucket_enabled():
+        try:
+            _s3().put_object(
+                Bucket=S3_BUCKET,Key=_content_memory_key(sid),
+                Body=json.dumps(clean,ensure_ascii=False,separators=(",",":")).encode("utf-8"),
+                ContentType="application/json",CacheControl="no-store",
+            )
+        except Exception as exc:
+            print("GSF_V145_MEMORY_BUCKET_WARN",sid,repr(str(exc))[:180],flush=True)
+    return True
+
+def _content_memory_check(sid,record):
+    sid=_safe_id(sid)
+    if not sid or not isinstance(record,dict):
+        return {"duplicate":False,"recommendation":"new_content","source_count":0,"series_count":0}
+    with _CONTENT_MEMORY_LOCK:
+        rows=_content_memory_load(sid)
+        return _content_memory_inspect(rows,record)
+
+def _content_memory_record(sid,record):
+    sid=_safe_id(sid)
+    if not sid or not isinstance(record,dict):
+        return {}
+    with _CONTENT_MEMORY_LOCK:
+        rows=_content_memory_load(sid)
+        merged=_content_memory_upsert(rows,record,max_rows=500)
+        _content_memory_save(sid,merged)
+        state=_content_memory_inspect(merged,record)
+    print(
+        "GSF_V145_MEMORY_RECORDED",
+        sid,
+        "fp="+str(record.get("fingerprint") or "")[:12],
+        "source_count="+str(state.get("source_count") or 0),
+        flush=True,
+    )
+    return state
+
 def _quality_report_path(sid):
     sid=_safe_id(sid)
     return (ROOT/"sessions"/sid/"quality_report.json") if sid else None
