@@ -159,6 +159,8 @@ def apply_pipeline_to_recipe(recipe,pipeline):
     if p.get("content_memory"):
         out["ai_content_memory"]=_d(p.get("content_memory"))
         out["ai_duplicate_guard"]=bool(_d(p.get("content_memory")).get("duplicate"))
+    if p.get("content_memory_record"):
+        out["ai_content_memory_record"]=_d(p.get("content_memory_record"))
     out["ai_render_operations"]=_l(render.get("operations"))
     out["ai_ab_strategy"]=_d(p.get("ab")).get("winner")
     out["ai_creator_style"]=_d(p.get("creator_profile"))
