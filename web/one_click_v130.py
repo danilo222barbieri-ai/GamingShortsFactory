@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 
-ENGINE_VERSION="v130-one-click-ai"
+ENGINE_VERSION="v131-director-intelligence"
 
 
 def _num(value,default=0.0):
@@ -189,6 +189,63 @@ def _narrative_plan(moment,plan,target):
     }
 
 
+def _director_intelligence(moment,plan,narrative,target,genre,event):
+    """Deeper invisible Director signals; no UI contract changes."""
+    reaction=_dict(moment.get("reaction") or plan.get("reaction"))
+    state=_dict(moment.get("match_state") or plan.get("match_state") or moment.get("game_state"))
+    game=str(moment.get("game") or plan.get("game") or "").strip()
+    language=str(moment.get("language") or plan.get("language") or "auto").strip()
+    beats=_list(narrative.get("beats"))
+    # Context raises importance when stakes are visible (low health, late timer, deficit, final zone).
+    stakes=0.0
+    health=_num(state.get("health_pct"),100.0)
+    if health<=20: stakes+=.28
+    ammo=_num(state.get("ammo"),99)
+    if ammo<=5: stakes+=.12
+    timer=_num(state.get("timer_remaining"),999)
+    if timer<=30: stakes+=.18
+    if bool(state.get("overtime") or state.get("final_zone") or state.get("last_lap")): stakes+=.25
+    deficit=abs(min(0.0,_num(state.get("score_delta"),0)))
+    stakes+=min(.17,deficit*.05)
+    reaction_strength=_clamp(reaction.get("strength") or reaction.get("score"),0,1)
+    payoff=_num(_dict(narrative.get("retention")).get("payoff_delay"),target*.62)
+    dead=sum(_num(x.get("duration"),0) for x in _list(narrative.get("pattern_interrupts")) if isinstance(x,dict))
+    retention_score=_clamp(1.0-(payoff/max(target,1))*.55-(dead/max(target,1))*.35+reaction_strength*.15+stakes*.18,0,1)
+    return {
+        "story_understanding":{
+            "arc":str(narrative.get("arc") or "event-payoff"),
+            "stakes_score":round(_clamp(stakes,0,1),3),
+            "match_state":state,
+            "game":game or _profile_key(genre,event),
+        },
+        "multi_moment":{
+            "enabled":len(beats)>=2,
+            "sequence":[str(_dict(x).get("role") or "beat") for x in beats[:5]],
+            "max_micro_scenes":3,
+        },
+        "reaction":{
+            "strength":round(reaction_strength,3),
+            "use_in_edit":reaction_strength>=.35,
+            "comedic_pause":bool(reaction.get("laugh") or reaction.get("comedic")),
+        },
+        "retention_prediction":{
+            "structural_score":round(retention_score,3),
+            "payoff_delay":round(payoff,2),
+            "dead_air_seconds":round(dead,2),
+            "needs_pattern_interrupt":dead>=1.8,
+        },
+        "ab_variants":{
+            "enabled":True,
+            "A":"cold_open" if _dict(narrative.get("cold_open")).get("enabled") else "action_first",
+            "B":"context_hook",
+        },
+        "creator_learning":{"enabled":True,"signals":["selected","edited","published"]},
+        "game_specific":{"profile":game.lower().replace(" ","_") if game else _profile_key(genre,event),"hud_context":state},
+        "language":{"detected":language,"publishing":"match_creator"},
+        "smart_loop":{"candidate":bool(beats and target<=30),"ending":str(_dict(narrative.get("smart_ending")).get("mode") or "payoff")},
+    }
+
+
 def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
     moment=_dict(moment)
     plan=_dict(moment.get("director_plan"))
@@ -209,7 +266,7 @@ def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
     if not explanation:
         explanation=[f"Evento: {reason}",f"Confidenza: {round(confidence*100)}%"]
 
-    narrative=_narrative_plan(moment,plan,target)
+    narrative=_narrative_plan(moment,plan,target)\n    intelligence=_director_intelligence(moment,plan,narrative,target,genre,event)
 
     package={
         "engine":ENGINE_VERSION,
@@ -221,7 +278,7 @@ def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
         "reason":reason,
         "game_profile":_profile_key(genre,event),
         "status":"mounted",
-        "narrative_director":narrative,
+        "narrative_director":narrative,\n        "director_intelligence":intelligence,
         "mounted":True,
         "mount":{
             "trim":{
