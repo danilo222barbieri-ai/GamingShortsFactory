@@ -66,7 +66,7 @@ st.markdown(r"""
 /* V151.1 approved Home replaces legacy hero. */
 .gsf-hero{display:none!important}
 @media(max-width:600px){.gsf-hero{display:none!important}.gsf-v151-brand{text-align:left!important;margin:18px 8px 12px!important;font-size:17px!important;letter-spacing:.14em!important}.gsf-v151-whisper{text-align:left!important;margin:0 8px 4px!important;font-size:16px!important}.st-key-v73-upload-shell{margin-top:0!important;min-height:292px!important;padding:24px 0!important}.gsf-v89-upload-visual{width:226px!important;height:226px!important;min-width:226px!important;min-height:226px!important;max-width:226px!important;max-height:226px!important}.gsf-v89-upload-label{font-size:16px!important;width:180px!important;max-width:180px!important}.gsf-v89-upload-label::after{font-size:13px!important}.gsf-v151-bar{width:calc(100vw - 18px)!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:0!important;padding:6px 4px!important}.gsf-v151-nav{min-width:0!important;width:100%!important;font-size:10px!important;overflow:hidden!important;white-space:nowrap!important}}
-@media(prefers-reduced-motion:reduce){.gsf-v89-upload-visual,.gsf-v89-upload-visual::before,.gsf-v89-upload-visual::after{animation:none!important}}
+.gsf-home-hero,.hero-wrap,.home-steps,.gsf-steps,.gsf-roadmap,[class*="roadmap"]{display:none!important}\n@media(prefers-reduced-motion:reduce){.gsf-v89-upload-visual,.gsf-v89-upload-visual::before,.gsf-v89-upload-visual::after{animation:none!important}}
 </style>
 <div class="gsf-v151-brand">Gaming Shorts Factory</div>
 <div class="gsf-v151-whisper">Trasforma il tuo gameplay in Shorts</div>
