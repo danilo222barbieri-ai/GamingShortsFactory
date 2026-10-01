@@ -104,3 +104,7 @@ assert '"retention_prediction"' in one_click
 assert '"creator_learning"' in one_click
 assert '"game_specific"' in one_click
 assert '"ab_variants"' in one_click
+
+# V131 session intelligence
+for marker in ('_session_intelligence','duplicate_detector','series_ai','best_of_session','long_form','content_memory','safety_privacy','copyright_audio','visual_cleanup','trend_adaptation','content_calendar','post_publish_learning'):
+    assert marker in one_click, marker
