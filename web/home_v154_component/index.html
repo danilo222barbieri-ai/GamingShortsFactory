@@ -51,9 +51,9 @@ button{appearance:none;-webkit-appearance:none}
 .circle small{display:none!important}
 .status{display:none;position:absolute;bottom:-22px;width:235px;text-align:center;color:#7088a0;font-size:11px;font-weight:780}.status.show{display:block}.status.error{color:#a54848}
 .track{height:5px;border-radius:999px;background:#e4edf4;margin-top:7px;overflow:hidden}.bar{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#70c4ef,#75dcbb);transition:width .12s linear}
-.scribble{position:absolute;color:#4f75aa;font-family:"Bradley Hand","Segoe Print","Comic Sans MS",cursive;font-size:24px;line-height:1.12;transform:rotate(-6deg);opacity:.92}
-.scribble.left{left:0;top:195px;width:200px;text-align:right}.scribble.right{right:0;top:205px;width:200px;transform:rotate(6deg)}
-.scribble .arrow{display:block;font-size:42px;line-height:.7;color:#69a9d7;margin-top:8px}.scribble.left .arrow{transform:rotate(8deg)}.scribble.right .arrow{transform:rotate(175deg)}
+.scribble{position:absolute;color:#627fae;font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive;font-size:25px;font-weight:500;line-height:1.18;letter-spacing:.01em;opacity:.90;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+.scribble.left{left:10px;top:138px;width:225px;text-align:center;transform:rotate(-5deg)}.scribble.right{right:10px;top:142px;width:230px;text-align:center;transform:rotate(4deg)}
+.scribble .arrow{display:block;height:44px;margin-top:3px;color:#6684ae}.scribble .arrow svg{width:78px;height:44px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.scribble.left .arrow{transform:translateX(58px) rotate(5deg)}.scribble.right .arrow{transform:translateX(-55px) rotate(-3deg)}.scribble .padSketch{display:block;margin:8px auto 0;width:52px;height:34px;color:#607ba7}.scribble .padSketch svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:-2px 4px 10px}
 .feature{border:1px solid var(--line);border-radius:22px;min-height:94px;padding:9px 18px 8px;background:var(--glass);backdrop-filter:blur(16px);box-shadow:var(--shadow);cursor:pointer;text-align:center;transition:.17s ease;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center}
 .feature:hover{transform:translateY(-2px)}.featureIcon{width:44px;height:44px;border-radius:14px;margin:0 auto 6px;display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.52),0 10px 26px rgba(85,124,159,.08)}.featureIcon svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.85;stroke-linecap:round;stroke-linejoin:round}
@@ -94,8 +94,8 @@ button{appearance:none;-webkit-appearance:none}
 
  <div id="view">
   <div class="stage">
-   <div class="scribble left">Carica il tuo<br>gameplay<span class="arrow">↝</span></div>
-   <div class="scribble right">Da qui nasce<br>il tuo Short<span class="arrow">↝</span></div>
+   <div class="scribble left">Trasforma<br>il tuo gameplay<br>in Shorts<span class="arrow"><svg viewBox="0 0 80 44"><path d="M4 4c8 28 28 35 63 33"/><path d="m58 28 10 9-11 7"/></svg></span></div>
+   <div class="scribble right"><span class="arrow"><svg viewBox="0 0 80 44"><path d="M76 4C68 28 48 35 13 33"/><path d="m22 24-10 9 11 7"/></svg></span>Trascina qui<br>o tocca per caricare<span class="padSketch"><svg viewBox="0 0 56 38"><path d="M14 10h28c5 0 9 4 9 9v4c0 5-4 9-8 9-4 0-6-2-9-7H22c-3 5-5 7-9 7-4 0-8-4-8-9v-4c0-5 4-9 9-9Z"/><path d="M15 16v9M10.5 20.5h9"/><circle cx="38" cy="18" r="1.4"/><circle cx="43" cy="23" r="1.4"/></svg></span></div>
    <div class="rings">
     <input id="pick" class="pick" type="file" accept="video/mp4,video/quicktime,video/x-matroska,.mp4,.mov,.mkv">
     <label id="circle" class="circle" for="pick">
