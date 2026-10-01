@@ -82,7 +82,7 @@ RUN chmod +x /usr/local/bin/ffmpeg && python -c "import base64,gzip,pathlib; p=p
     python -m py_compile /app/GamingShortsFactory_V148_ANALYTICS_LEARNING.py && \
     python -m py_compile /app/web/direct_upload_server.py && \
     python /app/web/test_v150_end_to_end_stability.py /app/GamingShortsFactory_V148_ANALYTICS_LEARNING.py /app/web/direct_upload_server.py /app/web/ai_worker_server.py && \
-    python /app/web/apply_v151_living_home.py && python -m py_compile /app/GamingShortsFactory_V151_LIVING_HOME.py
+    python /app/web/apply_v151_living_home.py && python -m py_compile /app/GamingShortsFactory_V151_LIVING_HOME.py && \\\n    python /app/web/apply_v152_ui_reset.py && python -m py_compile /app/GamingShortsFactory_V152_UI_RESET.py
 RUN python -m compileall -q /app/web
 COPY .streamlit /app/.streamlit
 RUN PORT=8080 envsubst '${PORT}' < /app/web/nginx.conf.template > /tmp/gsf-nginx-test.conf && cp /tmp/gsf-nginx-test.conf /etc/nginx/conf.d/default.conf && nginx -t
