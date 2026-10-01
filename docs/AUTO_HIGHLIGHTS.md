@@ -33,4 +33,21 @@ Do not eagerly render every highlight and do not persist full VOD copies unless 
 - Creator Hub / Auto Highlights UI
 - retention/cleanup policy and quotas
 
-No production service imports this module yet.
+The production worker imports the V129 engine for authenticated post-live ranking; provider event detection and Creator Hub presentation remain separate integration layers.
+
+
+## V129 production engine
+
+The internal post-live ranking path is now implemented:
+
+- an existing worker analysis payload is converted into an event pool;
+- the same production Game Brain used by normal uploads performs ranking;
+- each highlight receives confidence, semantic event and AI Director plan;
+- only timestamps/metadata are written to `auto-highlights/<provider>/<account>/<broadcast>.json`;
+- `rendered_media` starts empty: no eager clip rendering.
+
+Worker endpoint: authenticated `POST /auto-highlights` with an existing `analysis_key`.
+
+Provider event detection remains an adapter concern. Twitch EventSub credentials/scopes and YouTube live-stream read scopes are required before automatic provider triggers can be enabled for an account.
+
+- V129 Creator Hub now lists stored highlight sets for the signed-in creator, showing provider, candidate count, duration and top confidence without rendering the VOD.
