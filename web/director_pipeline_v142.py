@@ -148,10 +148,17 @@ def apply_pipeline_to_recipe(recipe,pipeline):
     out["director_runtime_v142"]={
         "engine":p.get("engine"),
         "ab":p.get("ab"),
+        "source_fingerprint":p.get("source_fingerprint"),
         "content_fingerprint":p.get("content_fingerprint"),
+        "content_memory":_d(p.get("content_memory")),
         "publish_guard":render.get("publish_guard","clear"),
         "operation_count":render.get("operation_count",0),
     }
+    out["ai_source_fingerprint"]=p.get("source_fingerprint")
+    out["ai_content_fingerprint"]=p.get("content_fingerprint")
+    if p.get("content_memory"):
+        out["ai_content_memory"]=_d(p.get("content_memory"))
+        out["ai_duplicate_guard"]=bool(_d(p.get("content_memory")).get("duplicate"))
     out["ai_render_operations"]=_l(render.get("operations"))
     out["ai_ab_strategy"]=_d(p.get("ab")).get("winner")
     out["ai_creator_style"]=_d(p.get("creator_profile"))
