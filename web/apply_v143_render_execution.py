@@ -43,6 +43,41 @@ replacement=r'''                        _v143_final_source=_v126_final_source
 
                         __import__("shutil").copyfile(_v143_final_source,_tmp_video)
                         __import__("os").replace(_tmp_video,_gsf_stable)
+
+                        # V145 finalizes persistent content memory only after a
+                        # real final file exists, avoiding brittle UI hooks.
+                        try:
+                            _v145_record=dict(_v143_recipe.get("ai_content_memory_record") or {})
+                            _v145_fp=str(_v145_record.get("fingerprint") or "")
+                            if _v145_fp and _gsf_stable.is_file() and _gsf_stable.stat().st_size>1024:
+                                _v145_record["status"]="rendered"
+                                _v145_json=__import__("json")
+                                _v145_url=__import__("urllib.request",fromlist=["Request","urlopen"])
+                                _v145_req=_v145_url.Request(
+                                    "http://127.0.0.1:8502/content-memory/record",
+                                    data=_v145_json.dumps(
+                                        {"record":_v145_record},
+                                        ensure_ascii=False,
+                                        separators=(",",":"),
+                                    ).encode("utf-8"),
+                                    headers={
+                                        "Content-Type":"application/json",
+                                        "X-GSF-Session-ID":str(GSF_SESSION_ID),
+                                    },
+                                    method="POST",
+                                )
+                                _v145_resp=_v145_json.loads(
+                                    _v145_url.urlopen(_v145_req,timeout=2.5).read().decode("utf-8")
+                                )
+                                print(
+                                    "GSF_V145_MEMORY_FINAL",
+                                    "fp="+_v145_fp[:12],
+                                    "ok="+str(bool((_v145_resp or {}).get("ok"))),
+                                    flush=True,
+                                )
+                        except Exception as _v145_exc:
+                            print("GSF_V145_MEMORY_FINAL_WARN",repr(str(_v145_exc))[:220],flush=True)
+
                         try:
                             _v143_tmp.unlink(missing_ok=True)
                         except Exception:
