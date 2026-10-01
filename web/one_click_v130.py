@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 
-ENGINE_VERSION="v130-one-click-ai"
+ENGINE_VERSION="v131-narrative-director"
 
 
 def _num(value,default=0.0):
@@ -143,6 +143,64 @@ def _editor_actions(moment,plan):
     return actions
 
 
+
+def _narrative_director(moment,plan,target):
+    """Build an executable story/retention plan from Game Brain evidence."""
+    moment=_dict(moment); plan=_dict(plan)
+    edit=_dict(plan.get("edit")); text=_dict(plan.get("text"))
+    start=max(0.0,_num(moment.get("start"),0.0))
+    peak=max(0.0,_num(edit.get("thumbnail_offset"),target*0.62))
+    peak=min(target,peak)
+    reaction=_clamp(moment.get("reaction_score",moment.get("audio_score",0.0)),0,1)
+    tension=_clamp(moment.get("tension_score",moment.get("context_score",0.0)),0,1)
+    payoff=_clamp(moment.get("confidence",0.0),0,1)
+    setup_end=max(1.0,min(peak-0.35,target*0.36))
+    story=[
+        {"role":"setup","start":0.0,"end":round(setup_end,3)},
+        {"role":"tension","start":round(setup_end,3),"end":round(max(setup_end,peak),3)},
+        {"role":"payoff","start":round(max(setup_end,peak),3),"end":round(target,3)},
+    ]
+    if reaction>=0.35 and target-peak>=0.7:
+        story[-1]["role"]="payoff_reaction"
+    cold_open={
+        "enabled":bool(payoff>=0.62 and peak>=2.2),
+        "source_start":round(max(0.0,peak-0.35),3),
+        "duration":round(min(0.85,max(0.5,target*0.05)),3),
+        "return_to_start":True,
+    }
+    interrupts=[]
+    dead=_list(moment.get("dead_zones"))+_list(plan.get("dead_zones"))
+    for i,row in enumerate(dead[:3]):
+        if isinstance(row,dict):
+            a=max(0.0,_num(row.get("start"),0)); b=min(target,_num(row.get("end"),a))
+            if b-a>=1.6:
+                interrupts.append({"at":round(a,3),"duration":round(b-a,3),
+                                   "type":("speed_up" if i%2==0 else "micro_crop")})
+    first_payoff=peak+(0.0 if cold_open["enabled"] else 0.0)
+    risk="low"
+    if not cold_open["enabled"] and first_payoff>max(4.0,target*0.38): risk="high"
+    elif not cold_open["enabled"] and first_payoff>2.8: risk="medium"
+    ending="reaction" if reaction>=0.45 else ("scoreboard" if str(moment.get("event","")).lower() in {"victory","goal"} else "cut_on_payoff")
+    hook=str(text.get("hook") or "").strip()
+    return {
+        "arc":"setup-tension-payoff",
+        "segments":story,
+        "multi_moment":{"enabled":True,"max_scenes":3,"same_event_only":True},
+        "cold_open":cold_open,
+        "pattern_interrupts":interrupts,
+        "retention":{"opening_risk":risk,"payoff_at":round(peak,3),
+                     "first_2_8s_has_hook":bool(cold_open["enabled"] or hook)},
+        "smart_ending":{"mode":ending,"protect_reaction":reaction>=0.45},
+        "auto_loop":{"candidate":bool(cold_open["enabled"] and ending=="cut_on_payoff")},
+        "signals":{"tension":round(tension,3),"reaction":round(reaction,3),"payoff":round(payoff,3)},
+        "ab_openings":[
+            {"variant":"action_first","cold_open":cold_open},
+            {"variant":"text_hook","hook":hook,"cold_open":{"enabled":False}},
+        ],
+    }
+
+
+
 def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
     moment=_dict(moment)
     plan=_dict(moment.get("director_plan"))
@@ -163,6 +221,8 @@ def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
     if not explanation:
         explanation=[f"Evento: {reason}",f"Confidenza: {round(confidence*100)}%"]
 
+    narrative=_narrative_director(moment,plan,target)
+
     package={
         "engine":ENGINE_VERSION,
         "rank":rank,
@@ -173,6 +233,9 @@ def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
         "reason":reason,
         "game_profile":_profile_key(genre,event),
         "status":"mounted",
+        "narrative_director":narrative,
+        "retention_prediction":dict(narrative.get("retention") or {}),
+        "ab_openings":list(narrative.get("ab_openings") or []),
         "mounted":True,
         "mount":{
             "trim":{
@@ -222,7 +285,7 @@ def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
             "focus_confidence":round(_num(moment.get("focus_confidence"),0.0),4),
             "learning_multiplier":round(_num(moment.get("learning_multiplier"),1.0),6),
         },
-        "editor_actions":_editor_actions(moment,plan),
+        "editor_actions":_editor_actions(moment,plan)+[{"action":"narrative_mount","label":"Story Director · setup → tensione → payoff","values":narrative}],
         "render":{
             "strategy":"encode-on-selection",
             "shared_social_master":True,
