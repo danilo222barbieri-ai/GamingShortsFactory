@@ -48,7 +48,7 @@ for marker in (
 
 for marker in (
     "from ai_director_v124 import attach_director_plans, build_alternates",
-    '"engine":"game-brain-v124-ai-director"',
+    "director_selected=attach_director_plans(",
     '"director_plan":dict(c.get("director_plan") or {})',
     '"alternates":[',
     '"event_time":',
