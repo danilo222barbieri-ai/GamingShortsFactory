@@ -10,27 +10,111 @@ s=src.read_text(encoding="utf-8")
 # Existing visual language is preserved. No player dimensions are touched.
 
 # 1) New video must never silently destroy current work.
-old='''    st.button(
-        "＋ NUOVO VIDEO",
-        use_container_width=False,
-        key="v81_new_video",
-        on_click=_gsf_start_new_video,
-        help="Azzera questa lavorazione e prepara l'upload di un nuovo video."
-    )
-'''
-new=r'''    _gsf_v1302_has_work=bool(
-        st.session_state.get("gsf_final_recipe")
-        or st.session_state.get("publication_ready")
-        or st.session_state.get("publication_final_bytes")
-        or st.session_state.get("auto_clip_scelta") is not None
-        or st.session_state.get("gsf_editor_2027_inline_open")
-    )
-    if st.button(
-        "＋ NUOVO VIDEO",
-        use_container_width=False,
-        key="v81_new_video",
-        help="Avvia un nuovo progetto senza perdere per errore quello attuale."
-    ):
+# Locate the real final widget by its stable Streamlit key instead of depending
+# on the historical layout/column wrapper around it.
+_tree_nv=ast.parse(s)
+_nv_call=None
+_nv_stmt=None
+for _node in ast.walk(_tree_nv):
+    if not isinstance(_node,ast.Call):
+        continue
+    _fn=_node.func
+    if not (isinstance(_fn,ast.Attribute) and _fn.attr=="button"):
+        continue
+    _key=None
+    for _kw in _node.keywords:
+        if _kw.arg=="key" and isinstance(_kw.value,ast.Constant):
+            _key=str(_kw.value.value or "")
+    if _key=="v81_new_video":
+        _nv_call=_node
+        break
+if _nv_call is None:
+    raise RuntimeError("V130.2 new-video widget missing")
+
+_old_call=ast.get_source_segment(s,_nv_call) or ""
+if not _old_call:
+    raise RuntimeError("V130.2 new-video widget source unavailable")
+_new_call=(
+    'st.button("＋ NUOVO VIDEO",use_container_width=False,key="v81_new_video",'
+    'help="Avvia un nuovo progetto senza perdere per errore quello attuale.")'
+)
+s=s.replace(_old_call,_new_call,1)
+
+# Insert the protection flow immediately after the enclosing active-video block
+# so it uses full page width rather than the small centered button column.
+_tree_nv=ast.parse(s)
+_active_if=None
+for _node in ast.walk(_tree_nv):
+    if isinstance(_node,ast.If):
+        _test=ast.get_source_segment(s,_node.test) or ""
+        _body=ast.get_source_segment(s,_node) or ""
+        if "_gsf_has_active_video" in _test and 'key="v81_new_video"' in _body:
+            _active_if=_node
+            break
+if _active_if is None:
+    raise RuntimeError("V130.2 active-video block missing")
+
+# Change the button expression into a click flag inside the existing block.
+_lines=s.splitlines(keepends=True)
+_button_line=None
+for _lineno in range(_active_if.lineno,_active_if.end_lineno+1):
+    if 'key="v81_new_video"' in _lines[_lineno-1]:
+        _button_line=_lineno
+        break
+if _button_line is None:
+    # Multiline call: use AST location.
+    _tree_tmp=ast.parse(s)
+    for _node in ast.walk(_tree_tmp):
+        if isinstance(_node,ast.Call):
+            _seg=ast.get_source_segment(s,_node) or ""
+            if 'key="v81_new_video"' in _seg:
+                _button_line=_node.lineno
+                break
+if _button_line is None:
+    raise RuntimeError("V130.2 new-video line missing")
+
+# Replace the standalone st.button expression statement using AST.
+_tree_tmp=ast.parse(s)
+_button_expr=None
+for _node in ast.walk(_tree_tmp):
+    if isinstance(_node,ast.Expr) and isinstance(_node.value,ast.Call):
+        _seg=ast.get_source_segment(s,_node.value) or ""
+        if 'key="v81_new_video"' in _seg:
+            _button_expr=_node
+            break
+if _button_expr is None:
+    raise RuntimeError("V130.2 new-video expression missing")
+_old_expr=ast.get_source_segment(s,_button_expr) or ""
+_indent=" "*int(_button_expr.col_offset)
+_new_expr=(
+    '_gsf_v1302_new_video_clicked=st.button('
+    '"＋ NUOVO VIDEO",use_container_width=False,key="v81_new_video",'
+    'help="Avvia un nuovo progetto senza perdere per errore quello attuale.")'
+)
+s=s.replace(_old_expr,_new_expr,1)
+
+# Reparse after replacement to get the enclosing active-video block end.
+_tree_nv=ast.parse(s)
+_active_if=None
+for _node in ast.walk(_tree_nv):
+    if isinstance(_node,ast.If):
+        _test=ast.get_source_segment(s,_node.test) or ""
+        _body=ast.get_source_segment(s,_node) or ""
+        if "_gsf_has_active_video" in _test and "gsf_v1302_new_video_clicked" in _body:
+            _active_if=_node
+            break
+if _active_if is None:
+    raise RuntimeError("V130.2 protected active-video block missing")
+
+_guard=r'''
+    if bool(locals().get("_gsf_v1302_new_video_clicked",False)):
+        _gsf_v1302_has_work=bool(
+            st.session_state.get("gsf_final_recipe")
+            or st.session_state.get("publication_ready")
+            or st.session_state.get("publication_final_bytes")
+            or st.session_state.get("auto_clip_scelta") is not None
+            or st.session_state.get("gsf_editor_2027_inline_open")
+        )
         if _gsf_v1302_has_work:
             st.session_state["gsf_v1302_new_video_confirm"]=True
         else:
@@ -108,10 +192,11 @@ new=r'''    _gsf_v1302_has_work=bool(
             if _v1302_cancel:
                 st.session_state.pop("gsf_v1302_new_video_confirm",None)
                 st.rerun()
+
 '''
-if old not in s:
-    raise RuntimeError("V130.2 new-video anchor missing")
-s=s.replace(old,new,1)
+_lines=s.splitlines(keepends=True)
+_insert_index=_active_if.end_lineno
+s="".join(_lines[:_insert_index])+_guard+"".join(_lines[_insert_index:])
 
 # Transient buttons must never be restored from a persisted state.
 restore_anchor='''try:
