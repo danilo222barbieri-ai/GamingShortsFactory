@@ -77,13 +77,30 @@ def run_director_pipeline(
     brain=_d(brain); one_click=_d(one_click)
     root=Path(runtime_dir); root.mkdir(parents=True,exist_ok=True)
     evidence=build_director_evidence(video_path,duration,brain,one_click,out_dir=root/"vision")
+    privacy_report={}
     if provider_results is None:
         try:
             _visual=__import__("visual_scoring_v144",fromlist=["enrich_frame_manifest"])
             provider_results=_visual.enrich_frame_manifest(dict(evidence.get("frames") or {}))
         except Exception:
             provider_results=[]
+        try:
+            _privacy=__import__(
+                "ocr_privacy_v146",
+                fromlist=["scan_manifest","merge_provider_results"],
+            )
+            privacy_report=_privacy.scan_manifest(
+                dict(evidence.get("frames") or {}),
+                max_frames=12,
+            )
+            provider_results=_privacy.merge_provider_results(provider_results,privacy_report)
+        except Exception:
+            privacy_report={}
     vision=consume_vision_evidence(evidence,provider_results=provider_results)
+    if privacy_report:
+        vision["ocr_privacy"]=privacy_report
+        if privacy_report.get("publish_guard")=="review":
+            vision["publish_guard"]="review"
     short_pkg=_selected_short(one_click,selected_start)
     profile_path=root/"creator_style.json"
     profile=load_profile(profile_path)
