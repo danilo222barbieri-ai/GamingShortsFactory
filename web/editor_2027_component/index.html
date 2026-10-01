@@ -1357,6 +1357,11 @@
         if(edit.replay&&edit.replay.enabled)msg+=' · replay consigliato';
         if(edit.slow_motion&&edit.slow_motion.enabled)msg+=' · slow-motion consigliato';
         if(style.sound_accent&&style.sound_accent!=='none')msg+=' · audio '+escapeHtml(String(style.sound_accent));
+        const assistant=Array.isArray(plan.assistant_actions)?plan.assistant_actions:[];
+        if(assistant.length){
+          const labels=assistant.slice(0,3).map(x=>escapeHtml(String((x&&x.label)||''))).filter(Boolean);
+          if(labels.length)msg+=' · suggerimenti: '+labels.join(' · ');
+        }
         return msg+'. AI Director, cloud e Game Vision locale collaborano sul montaggio.';
       })():('Game Brain analizza evento, azione, reazione, continuità e HUD. Tutte le modifiche restano manualmente regolabili.'))+'</div>']
    };
@@ -1494,6 +1499,8 @@
          const edit=(plan.edit&&typeof plan.edit==='object')?plan.edit:{};
          const framing=(plan.framing&&typeof plan.framing==='object')?plan.framing:{};
          const style=(plan.style&&typeof plan.style==='object')?plan.style:{};
+         const textPlan=(plan.text&&typeof plan.text==='object')?plan.text:{};
+         const assistantActions=Array.isArray(plan.assistant_actions)?plan.assistant_actions:[];
          if(sem.confidence>=.45){
            visionPrimary={x:sem.x,y:sem.y,confidence:sem.confidence};
          }
@@ -1507,6 +1514,20 @@
            if(Number.isFinite(Number(framing.pan_x)))state.panX=Math.max(-25,Math.min(25,Number(framing.pan_x)));
            if(Number.isFinite(Number(framing.pan_y)))state.panY=Math.max(-25,Math.min(25,Number(framing.pan_y)));
            if(Number.isFinite(Number(framing.caption_y)))state.captionY=Math.max(15,Math.min(88,Number(framing.caption_y)));
+           const captionStyle=String(textPlan.caption_style||'clean').toLowerCase();
+           if(captionStyle==='impact'){
+             state.captionSize=Math.max(38,Math.min(46,Number(state.captionSize)||40));
+             state.textColor='#ffffff';
+             state.activeColor='#ffd400';
+             state.outlineColor='#000000';
+           }else{
+             state.captionSize=Math.max(30,Math.min(38,Number(state.captionSize)||34));
+             state.textColor='#ffffff';
+             state.activeColor='#ffd400';
+             state.outlineColor='#000000';
+           }
+           state.captionMode='Auto';
+           state.captionOn=true;
            if(framing.hud_mode)state.hudMode=String(framing.hud_mode);
            state.visionEnabled=framing.smart_reframe!==false;
            if(framing.frame_preset)state.framePreset=String(framing.frame_preset);
