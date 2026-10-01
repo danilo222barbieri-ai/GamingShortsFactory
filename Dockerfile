@@ -62,7 +62,10 @@ RUN chmod +x /usr/local/bin/ffmpeg && python -c "import base64,gzip,pathlib; p=p
     python /app/web/test_v141_long_form_director.py && \
     python /app/web/apply_v142_director_runtime.py && \
     python /app/web/test_v142_director_runtime.py /app/GamingShortsFactory_V142_DIRECTOR_RUNTIME.py && \
-    python -m py_compile /app/GamingShortsFactory_V142_DIRECTOR_RUNTIME.py
+    python -m py_compile /app/GamingShortsFactory_V142_DIRECTOR_RUNTIME.py && \
+    python /app/web/apply_v143_render_execution.py && \
+    python /app/web/test_v143_render_execution.py /app/GamingShortsFactory_V143_RENDER_EXECUTION.py && \
+    python -m py_compile /app/GamingShortsFactory_V143_RENDER_EXECUTION.py
 RUN python -m compileall -q /app/web
 COPY .streamlit /app/.streamlit
 RUN PORT=8080 envsubst '${PORT}' < /app/web/nginx.conf.template > /tmp/gsf-nginx-test.conf && cp /tmp/gsf-nginx-test.conf /etc/nginx/conf.d/default.conf && nginx -t
