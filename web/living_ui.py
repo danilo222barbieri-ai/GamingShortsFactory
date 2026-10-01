@@ -296,6 +296,101 @@ hr{
 }
 
 
+/* Reference fidelity pass: cleaner hierarchy, brighter canvas, stronger app feel. */
+[data-testid="stAppViewContainer"] .main{
+  position:relative;
+}
+[data-testid="stAppViewContainer"] .main::before{
+  content:"";
+  position:fixed;
+  inset:64px 5% auto 5%;
+  height:310px;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 20%,rgba(137,207,244,.15),transparent 42%),
+    radial-gradient(circle at 25% 65%,rgba(201,239,226,.12),transparent 26%),
+    radial-gradient(circle at 78% 62%,rgba(255,231,158,.10),transparent 25%);
+  filter:blur(4px);
+  z-index:0;
+}
+[data-testid="stAppViewContainer"] .main .block-container{
+  position:relative;
+  z-index:1;
+}
+[data-testid="stWidgetLabel"]{
+  color:#51677d!important;
+  font-weight:680!important;
+  letter-spacing:-.01em!important;
+}
+[data-testid="stCaptionContainer"]{
+  font-size:.82rem!important;
+}
+[data-testid="stFileUploader"]{
+  isolation:isolate;
+}
+[data-testid="stFileUploaderDropzone"]{
+  overflow:hidden!important;
+}
+[data-testid="stFileUploaderDropzone"] > div{
+  position:relative;
+  z-index:2;
+}
+[data-testid="stFileUploaderDropzone"] button{
+  min-height:40px!important;
+  padding:.55rem 1rem!important;
+  box-shadow:0 8px 20px rgba(75,145,187,.09)!important;
+}
+[data-testid="stFileUploaderDropzone"] button:hover{
+  box-shadow:0 10px 24px rgba(75,145,187,.14)!important;
+}
+[data-testid="stVerticalBlockBorderWrapper"]{
+  border:1px solid rgba(113,170,204,.14)!important;
+  background:rgba(255,255,255,.66)!important;
+  box-shadow:0 12px 32px rgba(82,133,165,.06)!important;
+}
+[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stMarkdownContainer"] h3{
+  margin-top:.15rem!important;
+}
+[data-testid="stExpander"] summary{
+  min-height:48px!important;
+  align-items:center!important;
+}
+[data-testid="stTabs"]{
+  margin-top:.2rem!important;
+}
+[data-testid="stTabs"] [role="tablist"]{
+  width:max-content;
+  max-width:100%;
+}
+[data-testid="stTabs"] [role="tab"]{
+  min-height:38px!important;
+}
+.stButton>button,
+.stDownloadButton>button{
+  font-weight:720!important;
+  letter-spacing:-.01em!important;
+}
+@media(min-width:761px){
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]{
+    transition:transform .2s ease;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]){
+    align-self:stretch;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) .stButton{
+    margin-top:.25rem!important;
+  }
+}
+@media(max-width:760px){
+  [data-testid="stAppViewContainer"] .main::before{
+    inset:54px 0 auto 0;
+    height:240px;
+  }
+  [data-testid="stVerticalBlockBorderWrapper"]{
+    border-radius:19px!important;
+  }
+}
+
 /* Living cards: soft app-like surfaces inspired by the approved Home direction. */
 [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]{
   min-width:0!important;
@@ -404,8 +499,8 @@ SHELL_HTML = r"""
   <div class="gsf-living-chip active"><span class="gsf-nav-dot"></span>Home</div>
   <div class="gsf-living-chip"><span class="gsf-nav-dot"></span>AI</div>
   <div class="gsf-living-chip"><span class="gsf-nav-dot"></span>Editor</div>
-  <div class="gsf-living-chip"><span class="gsf-nav-dot"></span>Share</div>
   <div class="gsf-living-chip"><span class="gsf-nav-dot"></span>Creator Hub</div>
+  <div class="gsf-living-chip"><span class="gsf-nav-dot"></span>Social</div>
 </nav>
 """
 
