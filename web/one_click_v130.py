@@ -266,7 +266,8 @@ def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
     if not explanation:
         explanation=[f"Evento: {reason}",f"Confidenza: {round(confidence*100)}%"]
 
-    narrative=_narrative_plan(moment,plan,target)\n    intelligence=_director_intelligence(moment,plan,narrative,target,genre,event)
+    narrative=_narrative_plan(moment,plan,target)
+    intelligence=_director_intelligence(moment,plan,narrative,target,genre,event)
 
     package={
         "engine":ENGINE_VERSION,
