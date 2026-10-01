@@ -542,6 +542,19 @@
    z-index:80;
  }
 }
+
+/* V156 NEW EDITOR PAGE FRAME — same visual language as Home, desktop no-scroll */
+#ng27{max-width:1440px;margin:0 auto;padding:10px 34px 8px;border-radius:32px;overflow:hidden;background:radial-gradient(circle at 8% 8%,rgba(128,217,255,.15),transparent 24%),radial-gradient(circle at 92% 10%,rgba(117,230,195,.13),transparent 25%),linear-gradient(180deg,rgba(252,254,255,.90),rgba(246,250,255,.84))}
+#ng27 .shell{max-width:1080px!important;padding:2px 8px!important;background:transparent!important;overflow:visible!important}
+#ng27 .cockpit{grid-template-columns:76px minmax(0,1fr) 76px!important;gap:12px!important}
+#ng27 .railBtn{width:68px!important;height:58px!important;border-radius:17px!important;background:rgba(255,255,255,.78)!important;border:1px solid rgba(154,190,218,.30)!important;box-shadow:0 8px 22px rgba(79,118,157,.10)!important}
+#ng27 .stage.r916{width:min(100%,300px)!important;border-radius:22px!important}
+#ng27 .timeline{width:min(100%,720px)!important;margin-left:auto!important;margin-right:auto!important;border-radius:16px!important}
+#ng27 .topline:before{content:"GAME EDITOR";margin-right:auto;color:#6c81a1;font-size:12px;font-weight:900;letter-spacing:.28em}
+#ng27 .topline{padding:2px 4px 5px!important}
+#ng27 .gsfGuide{position:absolute;z-index:20;left:-170px;top:44%;width:155px;color:#6783a8;font-family:"Comic Sans MS","Bradley Hand",cursive;font-size:14px;font-weight:700;line-height:1.12;text-align:right;transform:rotate(-3deg);pointer-events:none}
+#ng27 .gsfGuide .arr{display:block;font-size:30px;line-height:.7;transform:rotate(8deg);color:#78a7d4}
+@media(max-width:900px){#ng27{padding:8px 10px;border-radius:20px}#ng27 .gsfGuide{display:none}}
 </style>
 
 <div class="shell">
@@ -556,7 +569,7 @@
     </div>
   </div>
 
-  <div class="cockpit">
+  <div class="gsfGuide">Tocca direttamente il video per personalizzarlo<span class="arr">↝</span></div>\n<div class="cockpit">
     <div class="rail">
       <button class="railBtn" data-panel="frame"><svg class="ico"><use href="#i-frame"/></svg><span>FRAME</span></button>
       <button class="railBtn" data-panel="cover"><svg class="ico"><use href="#i-cover"/></svg><span>COVER</span></button>
