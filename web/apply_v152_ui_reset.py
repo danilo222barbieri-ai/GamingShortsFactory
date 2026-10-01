@@ -188,7 +188,10 @@ if _page_node is None:
 _page_lines=s.splitlines(keepends=True)
 _insert_at=getattr(_page_node,"end_lineno",_page_node.lineno)
 _living_hook=r'''
-from web.living_ui import render_shell as _gsf_render_living_shell
+from web.living_ui import (
+    render_shell as _gsf_render_living_shell,
+    render_tail as _gsf_render_living_tail,
+)
 _gsf_render_living_shell()
 '''
 _page_lines[_insert_at:_insert_at]=["\n"+reset+"\n"+_living_hook+"\n"]
@@ -215,6 +218,11 @@ s=s.replace(
     "Gaming Shorts Factory · V151 Living Home",
     "Gaming Shorts Factory · V152 UI Reset",
 )
+
+# V153 Living tail override: presentation CSS is rendered again after the
+# complete legacy application so later historical styles cannot win the cascade.
+s += "\n# V153 Living tail override\n_gsf_render_living_tail()\n"
+
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
 print(
