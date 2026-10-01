@@ -3,6 +3,7 @@ import math
 
 from ai_director_v124 import attach_director_plans, build_alternates
 from feedback_learning_v127 import load_model as _load_learning_model, event_multiplier as _learning_multiplier
+from one_click_v130 import build_one_click_package as _build_one_click_package
 
 def _num(v,default=0.0):
     try:
@@ -267,4 +268,20 @@ def rerank_moments(pool,diagnostics,clip_duration=15,numero_clip=3,profile="auto
             "director_plan":dict(c.get("director_plan") or {}),
         } for i,c in enumerate(alternates)],
     }
+    try:
+        meta["one_click"]=_build_one_click_package(
+            meta,
+            clip_duration=clip_duration,
+            genre=genre,
+            profile=profile,
+            target_count=min(3,max(1,int(numero_clip or 3))),
+        )
+    except Exception as exc:
+        meta["one_click"]={
+            "engine":"v130-one-click-ai",
+            "ready":False,
+            "error":str(exc)[:180],
+            "shorts":[],
+            "alternates":[],
+        }
     return chosen,meta
