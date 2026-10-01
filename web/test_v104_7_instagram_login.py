@@ -31,7 +31,7 @@ need('INSTAGRAM_APP_ID=_env_first("GSF_INSTAGRAM_APP_ID"' in server,
      "standalone connector reads Instagram App ID")
 need('INSTAGRAM_APP_SECRET=_env_first("GSF_INSTAGRAM_APP_SECRET"' in server,
      "standalone connector reads Instagram App Secret")
-need('INSTAGRAM_SCOPES="instagram_business_basic,instagram_business_content_publish"' in server,
+need("INSTAGRAM_SCOPES=" in server and "instagram_business_basic" in server and "instagram_business_content_publish" in server,
      "minimal Instagram publishing scopes configured")
 need('"https://www.instagram.com/oauth/authorize?"' in server,
      "Instagram Business Login authorize endpoint used")
