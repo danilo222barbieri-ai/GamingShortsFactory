@@ -3830,11 +3830,44 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:
             _json(self,500,{"ok":False,"error":str(exc)[:160]})
 
+def _start_social_analytics_worker():
+    interval=max(900,int(os.environ.get("GSF_SOCIAL_ANALYTICS_INTERVAL","1800") or 1800))
+    def run():
+        time.sleep(45)
+        while True:
+            try:
+                sessions=ROOT/"sessions"
+                if sessions.is_dir():
+                    for root in list(sessions.iterdir())[:200]:
+                        if not root.is_dir():
+                            continue
+                        sid=_safe_id(root.name)
+                        if not sid:
+                            continue
+                        try:
+                            data=_analytics_load(sid)
+                            if data.get("records"):
+                                result=_analytics_collect_all(sid,force=True)
+                                print(
+                                    "GSF_V148_ANALYTICS_REFRESH",
+                                    sid,
+                                    "records="+str(len(result.get("records") or [])),
+                                    flush=True,
+                                )
+                        except Exception as exc:
+                            print("GSF_V148_ANALYTICS_WARN",sid,repr(str(exc))[:180],flush=True)
+            except Exception as exc:
+                print("GSF_V148_ANALYTICS_LOOP_WARN",repr(str(exc))[:180],flush=True)
+            time.sleep(interval)
+    threading.Thread(target=run,name="gsf-social-analytics-v148",daemon=True).start()
+
+
 if __name__=="__main__":
     ROOT.mkdir(parents=True,exist_ok=True)
     _ensure_bucket_cors()
     _ai_learning_restore()
     _start_proactive_guardian()
+    _start_social_analytics_worker()
     server=ThreadingHTTPServer(("127.0.0.1",PORT),Handler)
     print(
         f"GSF direct upload server listening on 127.0.0.1:{PORT} "
