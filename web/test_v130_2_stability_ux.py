@@ -22,12 +22,16 @@ required=[
     '"published"',
     'CREO SHORT · IA Quality Check · Pronto',
     'SHORT PRONTO',
-    'Scegli copertina',
-    'gsf_v1302_thumbnail_index',
+    'gsf-v1302-create-note',
+    'gsf_v1302_icon_youtube',
+    'gsf_v1302_save_share',
+    '"SALVA / CONDIVIDI"',
+    '[class*="st-key-gsf_share_download_top"]{display:none !important;}',
     '.gsf-v124-quality{display:none !important;',
     '.gsf-footer-v4 .bug-report',
     'position:static !important;',
     'display:flex;align-items:center;justify-content:center;text-align:center',
+    'margin:-8px auto 0 !important;',
 ]
 for marker in required:
     if marker not in s:
