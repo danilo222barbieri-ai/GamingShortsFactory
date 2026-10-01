@@ -3339,6 +3339,63 @@ class Handler(BaseHTTPRequestHandler):
                 _draft_delete(sid,draft_id)
             _redirect(self,"/account")
             return
+        if clean=="/creator-hub/state":
+            sid=_social_sid(self)
+            if not sid:
+                _json(self,400,{"ok":False,"error":"Sessione browser non valida."})
+                return
+            profile=_creator_account_load(sid) or {}
+            providers=dict(profile.get("providers") or {}) if isinstance(profile,dict) else {}
+            drafts=[]
+            for row in _draft_list(sid)[:6]:
+                if not isinstance(row,dict):
+                    continue
+                drafts.append({
+                    "id":_safe_id(row.get("id","")),
+                    "title":str(row.get("title") or row.get("source_name") or "Gameplay")[:120],
+                    "source_name":str(row.get("source_name") or "Gameplay")[:120],
+                    "duration":int(row.get("duration") or 0),
+                    "updated_at":float(row.get("updated_at") or 0),
+                })
+            project={}
+            account_id=_safe_id(profile.get("account_id","")) if isinstance(profile,dict) else ""
+            try:
+                project_root=(ROOT/"creator-projects"/account_id) if account_id else (ROOT/"sessions"/sid/"projects")
+                idx=json.loads((project_root/"index.json").read_text(encoding="utf-8"))
+                pid=_safe_id(idx.get("active_project_id",""))
+                if pid:
+                    pdata=json.loads((project_root/pid/"project_state.json").read_text(encoding="utf-8"))
+                    project={
+                        "id":pid,
+                        "updated_at":float(pdata.get("updated_at") or idx.get("updated_at") or 0),
+                        "has_source":bool((pdata.get("state") or {}).get("gsf_source_path") or (pdata.get("state") or {}).get("gsf_editor_source_path")),
+                    }
+            except Exception:
+                pass
+            _json(self,200,{
+                "ok":True,
+                "account":{
+                    "connected":bool(account_id),
+                    "id":account_id,
+                    "display_name":str(profile.get("display_name") or "Creator")[:120] if isinstance(profile,dict) else "Creator",
+                    "plan":str(profile.get("plan") or "FREE")[:24] if isinstance(profile,dict) else "FREE",
+                },
+                "social":{
+                    "youtube":bool(_youtube_user_load(sid)),
+                    "tiktok":bool(_tiktok_user_load(sid)),
+                    "instagram":bool(_instagram_user_load(sid)),
+                    "facebook":False,
+                },
+                "stats":{
+                    "shorts_created":int(profile.get("shorts_created") or 0) if isinstance(profile,dict) else 0,
+                    "shorts_published":int(profile.get("shorts_published") or 0) if isinstance(profile,dict) else 0,
+                    "drafts":len(_draft_list(sid)),
+                    "social":sum(1 for x in (_youtube_user_load(sid),_tiktok_user_load(sid),_instagram_user_load(sid)) if x),
+                },
+                "drafts":drafts,
+                "project":project,
+            })
+            return
         if clean=="/account":
             sid=_social_sid(self)
             if not sid:
