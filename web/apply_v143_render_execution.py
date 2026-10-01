@@ -41,7 +41,58 @@ replacement=r'''                        _v143_final_source=_v126_final_source
                         except Exception as _v143_exc:
                             print("GSF_V143_RENDER_FALLBACK",repr(str(_v143_exc))[:300],flush=True)
 
-                        __import__("shutil").copyfile(_v143_final_source,_tmp_video)
+                        _v149_final_source=_v143_final_source
+                        _v149_tmp=_gsf_stable.with_name(".privacy_v149_"+str(__import__("os").getpid())+".mp4")
+                        try:
+                            _v149_mod=__import__(
+                                "privacy_cleanup_v149",
+                                fromlist=["cleanup_video"],
+                            )
+                            _v149_result=_v149_mod.cleanup_video(
+                                str(_v143_final_source),
+                                str(_v149_tmp),
+                            )
+                            _job["privacy_cleanup_v149"]=_v149_result
+                            try:
+                                _v149_root=__import__("pathlib").Path(
+                                    __import__("os").environ.get("GSF_RUNTIME_ROOT","/tmp/gsf-runtime")
+                                )/"sessions"/str(GSF_SESSION_ID)
+                                _v149_root.mkdir(parents=True,exist_ok=True)
+                                (_v149_root/"privacy_cleanup_v149.json").write_text(
+                                    __import__("json").dumps(
+                                        {
+                                            "engine":"v149-privacy-cleanup",
+                                            "applied":bool((_v149_result or {}).get("applied")),
+                                            "mask_count":int((_v149_result or {}).get("mask_count") or 0),
+                                            "publish_guard":str((_v149_result or {}).get("publish_guard") or "clear"),
+                                            "report":dict((_v149_result or {}).get("report") or {}),
+                                        },
+                                        ensure_ascii=False,
+                                        separators=(",",":"),
+                                    ),
+                                    encoding="utf-8",
+                                )
+                            except Exception:
+                                pass
+                            if (
+                                isinstance(_v149_result,dict)
+                                and _v149_result.get("ok")
+                                and _v149_tmp.is_file()
+                                and _v149_tmp.stat().st_size>1024
+                                and bool(_v149_result.get("applied"))
+                            ):
+                                _v149_final_source=_v149_tmp
+                            print(
+                                "GSF_V149_PRIVACY",
+                                "sid="+_gsf_sid,
+                                "masked="+str(int((_v149_result or {}).get("mask_count") or 0)),
+                                "guard="+str((_v149_result or {}).get("publish_guard") or "clear"),
+                                flush=True,
+                            )
+                        except Exception as _v149_exc:
+                            print("GSF_V149_PRIVACY_FALLBACK",repr(str(_v149_exc))[:300],flush=True)
+
+                        __import__("shutil").copyfile(_v149_final_source,_tmp_video)
                         __import__("os").replace(_tmp_video,_gsf_stable)
 
                         # V145 finalizes persistent content memory only after a
@@ -80,6 +131,10 @@ replacement=r'''                        _v143_final_source=_v126_final_source
 
                         try:
                             _v143_tmp.unlink(missing_ok=True)
+                        except Exception:
+                            pass
+                        try:
+                            _v149_tmp.unlink(missing_ok=True)
                         except Exception:
                             pass
 '''
