@@ -766,6 +766,201 @@ button[data-testid="baseButton-primary"]{
   .gsf-living-chip:nth-child(4) .gsf-nav-label{font-size:7px}
 }
 
+/* V153.10 — large premium card/section pass aligned to approved Living reference. */
+
+/* Three main action areas get distinct soft identities without changing behavior. */
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]){
+  position:relative;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]{
+  overflow:hidden!important;
+  isolation:isolate;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]::before{
+  content:"";
+  position:absolute;
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  top:-52px;
+  right:-34px;
+  z-index:-1;
+  opacity:.5;
+  filter:blur(.2px);
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:nth-child(1):has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]::before{
+  background:radial-gradient(circle,rgba(117,200,244,.28),rgba(117,200,244,0) 68%);
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:nth-child(2):has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]::before{
+  background:radial-gradient(circle,rgba(157,226,199,.26),rgba(157,226,199,0) 68%);
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:nth-child(3):has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]::before{
+  background:radial-gradient(circle,rgba(246,220,137,.26),rgba(246,220,137,0) 68%);
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) h3{
+  font-size:1.18rem!important;
+  font-weight:800!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) p{
+  min-height:2.4em;
+  color:#6b7c8e!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) .stButton>button{
+  width:100%!important;
+  justify-content:center!important;
+}
+
+/* Section headers mimic the reference: title left, controls lighter and compact. */
+[data-testid="stAppViewContainer"] h2{
+  position:relative;
+  padding-bottom:.18rem;
+}
+[data-testid="stAppViewContainer"] h2::after{
+  content:"";
+  display:block;
+  width:32px;
+  height:3px;
+  margin-top:.42rem;
+  border-radius:999px;
+  background:linear-gradient(90deg,rgba(85,174,221,.68),rgba(85,174,221,.08));
+}
+[data-testid="stAppViewContainer"] h2 + [data-testid="stCaptionContainer"],
+[data-testid="stAppViewContainer"] h2 + div [data-testid="stCaptionContainer"]{
+  margin-top:-.15rem!important;
+}
+
+/* Media/project cards feel cinematic and tactile. */
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]){
+  border-radius:23px;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]) [data-testid="stImage"]{
+  position:relative;
+  overflow:hidden!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]) [data-testid="stImage"]::after{
+  content:"";
+  position:absolute;
+  inset:auto 0 0 0;
+  height:40%;
+  pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(17,31,43,.12));
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]) img{
+  transition:transform .28s ease,filter .28s ease!important;
+}
+@media(hover:hover) and (pointer:fine){
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]):hover img{
+    transform:scale(1.018);
+    filter:saturate(1.025) contrast(1.01);
+  }
+}
+
+/* Inputs and forms become quieter, matching the Living canvas. */
+[data-testid="stTextInput"] input,
+[data-testid="stTextArea"] textarea,
+[data-testid="stNumberInput"] input,
+[data-baseweb="select"]>div{
+  min-height:44px!important;
+}
+[data-testid="stTextArea"] textarea{
+  padding:.8rem .9rem!important;
+}
+[data-testid="stForm"]{
+  border-radius:24px!important;
+  border-color:rgba(108,168,202,.14)!important;
+  background:rgba(255,255,255,.62)!important;
+  box-shadow:0 14px 34px rgba(82,133,165,.055)!important;
+}
+
+/* Status/progress elements sit closer to the app language. */
+[data-testid="stStatusWidget"],
+[data-testid="stNotification"],
+[data-testid="stToast"]{
+  border-radius:18px!important;
+}
+[data-testid="stProgress"]{
+  margin:.45rem 0!important;
+}
+[data-testid="stProgress"]>div{
+  height:8px!important;
+  border-radius:999px!important;
+}
+
+/* Desktop: stronger center composition, less web-page feel. */
+@media(min-width:1000px){
+  [data-testid="stAppViewContainer"] .main .block-container{
+    padding-left:2.4rem!important;
+    padding-right:2.4rem!important;
+  }
+  [data-testid="stFileUploader"]{
+    width:min(40vw,445px)!important;
+    max-width:445px!important;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]{
+    min-height:178px!important;
+  }
+}
+
+/* Tablet: preserve the reference hierarchy without crowding. */
+@media(min-width:761px) and (max-width:999px){
+  [data-testid="stFileUploader"]{
+    width:min(50vw,390px)!important;
+    max-width:390px!important;
+  }
+  [data-testid="stHorizontalBlock"]{
+    gap:.75rem!important;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) h3{
+    font-size:1.05rem!important;
+  }
+}
+
+/* Mobile: cards become compact but keep hierarchy and touch comfort. */
+@media(max-width:760px){
+  [data-testid="stAppViewContainer"] .main .block-container{
+    padding-left:.8rem!important;
+    padding-right:.8rem!important;
+  }
+  [data-testid="stAppViewContainer"] h2{
+    margin-top:1.15rem!important;
+  }
+  [data-testid="stAppViewContainer"] h2::after{
+    width:26px;
+    height:2px;
+    margin-top:.32rem;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]{
+    min-height:0!important;
+    padding-top:.12rem!important;
+    padding-bottom:.12rem!important;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) p{
+    min-height:0;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]) [data-testid="stImage"] img{
+    aspect-ratio:16/9;
+  }
+}
+
+/* Gentle entry of primary visual regions only. */
+@keyframes gsfSurfaceIn{
+  from{opacity:0;transform:translateY(7px)}
+  to{opacity:1;transform:none}
+}
+[data-testid="stFileUploader"],
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]){
+  animation:gsfSurfaceIn .48s ease both;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]):nth-child(2){animation-delay:.05s}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]):nth-child(3){animation-delay:.10s}
+
+@media(prefers-reduced-motion:reduce){
+  [data-testid="stFileUploader"],
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]){
+    animation:none!important;
+  }
+}
+
 /* Key motion is soft and bounded. */
 @keyframes gsfBrandIn{
   from{opacity:0;transform:translateY(-7px)}
