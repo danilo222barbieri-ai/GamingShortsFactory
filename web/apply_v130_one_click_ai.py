@@ -112,7 +112,7 @@ one_click_ui=r'''            # V130 One Click AI: the three ranked moments are a
                     _v130_feature_text=" · ".join(_v130_bits[:5]) or "montaggio AI"
                     st.markdown(
                         '<div class="gsf-v130-oneclick">'
-                        '<div><b>ONE CLICK AI</b><span>'+str(_v130_count)+' Short preparati</span></div>'
+                        '<div><b>ONE CLICK AI</b><span>AI SECOND OPINION · '+str(_v130_count)+' Short preparati</span></div>'
                         '<small><strong>'+_v130_escape(_v130_event.upper())+' · '+str(_v130_conf)+'%</strong>'
                         ' · '+_v130_escape(_v130_feature_text)+'</small>'
                         '</div>',
