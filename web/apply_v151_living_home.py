@@ -4,6 +4,31 @@ src=Path("/app/GamingShortsFactory_V148_ANALYTICS_LEARNING.py")
 out=Path("/app/GamingShortsFactory_V151_LIVING_HOME.py")
 s=src.read_text(encoding="utf-8")
 
+# V151.4: structurally remove only the legacy four-step hero markup.
+import ast as _ast
+_tree=_ast.parse(s)
+_lines=s.splitlines(keepends=True)
+_targets=[]
+for _node in _ast.walk(_tree):
+    if not isinstance(_node,_ast.Call):
+        continue
+    _fn=_node.func
+    if not (isinstance(_fn,_ast.Attribute) and _fn.attr=="markdown"):
+        continue
+    _seg=_ast.get_source_segment(s,_node) or ""
+    if ("Crea il tuo Short in quattro passaggi semplici" in _seg or
+        ("CARICA" in _seg and "SCEGLI" in _seg and "MODIFICA" in _seg and "PUBBLICA" in _seg)):
+        _targets.append(_node)
+if not _targets:
+    raise RuntimeError("V151.4 legacy four-step hero source call not found")
+for _node in sorted(_targets,key=lambda n:n.lineno,reverse=True):
+    _start=_node.lineno-1
+    _end=getattr(_node,"end_lineno",_node.lineno)
+    _indent=_lines[_start][:_node.col_offset]
+    _lines[_start:_end]=[_indent+'st.markdown("", unsafe_allow_html=True)\n']
+s="".join(_lines)
+print("V151.4 legacy hero removed:",len(_targets))
+
 anchor='with st.container(key="v73-upload-shell"):\n'
 if anchor not in s:
     raise RuntimeError("V151 uploader anchor missing")
