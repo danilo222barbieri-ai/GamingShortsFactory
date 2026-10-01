@@ -2337,6 +2337,219 @@ button[data-testid="baseButton-primary"]{
   [data-testid="stFileUploader"]{width:min(82vw,294px)!important}
 }
 
+
+/* V153.18 — TARGETED LEGACY OVERRIDE
+   Real production keys from the historical V107 layer.
+   Removes the old purple CTA language and brings the actual controls into Living.
+*/
+.st-key-v73-upload-shell,
+[class*="st-key-v73-upload-shell"]{
+  position:relative!important;
+  margin:0 auto!important;
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+
+/* Real major milestones: one pastel-blue system. */
+.st-key-gsf-major-create-ai button,
+[class*="st-key-gsf-major-create-ai"] button,
+.st-key-gsf-major-personalize button,
+[class*="st-key-gsf-major-personalize"] button,
+[class*="st-key-gsf-major-game-editor_"] button,
+.st-key-gsf-major-create-short button,
+[class*="st-key-gsf-major-create-short"] button,
+[class*="st-key-edit_ai_"] button,
+.st-key-create_final_short_v54 button,
+[class*="st-key-create_final_short_v54"] button,
+.st-key-gsf_share_download_top button,
+[class*="st-key-gsf_share_download_top"] button{
+  width:100%!important;
+  min-height:52px!important;
+  height:52px!important;
+  max-height:52px!important;
+  padding:0 18px!important;
+  border-radius:15px!important;
+  border:1px solid rgba(255,255,255,.72)!important;
+  background:
+    linear-gradient(180deg,rgba(183,225,247,.98) 0%,rgba(139,205,239,.98) 100%)!important;
+  color:#173d58!important;
+  font-size:14px!important;
+  font-weight:820!important;
+  line-height:1!important;
+  letter-spacing:.015em!important;
+  text-transform:none!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.92),
+    0 10px 24px rgba(72,151,194,.14)!important;
+  filter:none!important;
+  transition:transform .18s ease,box-shadow .18s ease,filter .18s ease!important;
+}
+.st-key-gsf-major-create-ai button *,
+[class*="st-key-gsf-major-create-ai"] button *,
+.st-key-gsf-major-personalize button *,
+[class*="st-key-gsf-major-personalize"] button *,
+[class*="st-key-gsf-major-game-editor_"] button *,
+.st-key-gsf-major-create-short button *,
+[class*="st-key-gsf-major-create-short"] button *,
+[class*="st-key-edit_ai_"] button *,
+.st-key-create_final_short_v54 button *,
+[class*="st-key-create_final_short_v54"] button *,
+.st-key-gsf_share_download_top button *,
+[class*="st-key-gsf_share_download_top"] button *{
+  color:#173d58!important;
+  font-weight:820!important;
+  letter-spacing:.015em!important;
+}
+
+/* Give Editor a slight mint identity while staying inside the same Living family. */
+[class*="st-key-gsf-major-game-editor_"] button{
+  background:
+    linear-gradient(180deg,rgba(202,239,226,.98) 0%,rgba(159,220,199,.97) 100%)!important;
+  color:#245749!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.92),
+    0 10px 24px rgba(74,153,127,.11)!important;
+}
+[class*="st-key-gsf-major-game-editor_"] button *{
+  color:#245749!important;
+}
+
+/* Final-create milestone gets the warm pale accent from the approved reference. */
+.st-key-gsf-major-create-short button,
+[class*="st-key-gsf-major-create-short"] button,
+.st-key-create_final_short_v54 button,
+[class*="st-key-create_final_short_v54"] button{
+  background:
+    linear-gradient(180deg,rgba(251,235,181,.98) 0%,rgba(241,214,125,.96) 100%)!important;
+  color:#654f17!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.92),
+    0 10px 24px rgba(184,145,53,.10)!important;
+}
+.st-key-gsf-major-create-short button *,
+[class*="st-key-gsf-major-create-short"] button *,
+.st-key-create_final_short_v54 button *,
+[class*="st-key-create_final_short_v54"] button *{
+  color:#654f17!important;
+}
+
+/* Publish/share returns to blue so the journey closes coherently. */
+.st-key-gsf_share_download_top button,
+[class*="st-key-gsf_share_download_top"] button{
+  background:
+    linear-gradient(180deg,rgba(183,225,247,.98) 0%,rgba(139,205,239,.98) 100%)!important;
+  color:#173d58!important;
+}
+.st-key-gsf_share_download_top button *,
+[class*="st-key-gsf_share_download_top"] button *{
+  color:#173d58!important;
+}
+
+/* Legacy headings/notes become clean app typography instead of badges/clouds. */
+.gsf-icon-title{
+  display:flex!important;
+  justify-content:center!important;
+  align-items:center!important;
+  width:100%!important;
+  margin:1.25rem auto .55rem!important;
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  color:#263c50!important;
+  font-size:clamp(1.15rem,2vw,1.55rem)!important;
+  font-weight:820!important;
+  line-height:1.18!important;
+  letter-spacing:-.03em!important;
+  text-align:center!important;
+}
+.gsf-major-note{
+  max-width:620px!important;
+  margin:.45rem auto 1.1rem!important;
+  padding:.68rem .9rem!important;
+  border-radius:999px!important;
+  border:1px solid rgba(111,174,210,.13)!important;
+  background:rgba(244,251,255,.82)!important;
+  box-shadow:none!important;
+  color:#718496!important;
+  text-align:center!important;
+  font-size:.78rem!important;
+  font-weight:620!important;
+}
+.gsf-major-note::before{
+  display:none!important;
+  content:none!important;
+}
+
+/* Historical social-share wrapper loses its metallic demo shell. */
+div[data-testid="stHorizontalBlock"]:has(.st-key-v69_social_facebook){
+  width:min(650px,100%)!important;
+  max-width:650px!important;
+  margin:.3rem auto 1rem!important;
+  padding:.65rem!important;
+  gap:.55rem!important;
+  border:1px solid rgba(110,170,204,.12)!important;
+  border-radius:21px!important;
+  background:rgba(255,255,255,.70)!important;
+  box-shadow:0 13px 30px rgba(74,124,154,.06)!important;
+}
+
+/* Hover only where a pointer actually exists. */
+@media(hover:hover) and (pointer:fine){
+  .st-key-gsf-major-create-ai button:hover,
+  [class*="st-key-gsf-major-create-ai"] button:hover,
+  .st-key-gsf-major-personalize button:hover,
+  [class*="st-key-gsf-major-personalize"] button:hover,
+  [class*="st-key-gsf-major-game-editor_"] button:hover,
+  .st-key-gsf-major-create-short button:hover,
+  [class*="st-key-gsf-major-create-short"] button:hover,
+  [class*="st-key-edit_ai_"] button:hover,
+  .st-key-create_final_short_v54 button:hover,
+  [class*="st-key-create_final_short_v54"] button:hover,
+  .st-key-gsf_share_download_top button:hover,
+  [class*="st-key-gsf_share_download_top"] button:hover{
+    transform:translateY(-2px)!important;
+    filter:brightness(1.018)!important;
+    box-shadow:0 14px 30px rgba(72,151,194,.18)!important;
+  }
+}
+
+/* Mobile: keep major milestones compact and finger-friendly. */
+@media(max-width:760px){
+  .gsf-icon-title{
+    margin:1rem auto .45rem!important;
+    font-size:1.12rem!important;
+  }
+  .gsf-major-note{
+    width:max-content!important;
+    max-width:92%!important;
+    margin:.35rem auto .85rem!important;
+    padding:.55rem .75rem!important;
+    font-size:.72rem!important;
+  }
+  .st-key-gsf-major-create-ai button,
+  [class*="st-key-gsf-major-create-ai"] button,
+  .st-key-gsf-major-personalize button,
+  [class*="st-key-gsf-major-personalize"] button,
+  [class*="st-key-gsf-major-game-editor_"] button,
+  .st-key-gsf-major-create-short button,
+  [class*="st-key-gsf-major-create-short"] button,
+  [class*="st-key-edit_ai_"] button,
+  .st-key-create_final_short_v54 button,
+  [class*="st-key-create_final_short_v54"] button,
+  .st-key-gsf_share_download_top button,
+  [class*="st-key-gsf_share_download_top"] button{
+    min-height:48px!important;
+    height:48px!important;
+    max-height:48px!important;
+    border-radius:14px!important;
+    padding:0 13px!important;
+    font-size:12px!important;
+  }
+}
+
 </style>
 """
 
