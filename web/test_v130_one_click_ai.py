@@ -67,7 +67,7 @@ for short in package["shorts"]:
 
 for marker in (
     "def _gsf_v130_short_for_start(",
-    '"one_click_engine"="v130-one-click-ai"',
+    '_recipe["one_click_engine"]="v130-one-click-ai"',
     '"one_click_v130"',
     "AI SECOND OPINION",
     "ONE CLICK AI",
