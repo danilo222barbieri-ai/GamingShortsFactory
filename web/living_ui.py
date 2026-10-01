@@ -2018,7 +2018,21 @@ SHELL_HTML = r"""
 </nav>
 """
 
+_LIVING_RUNTIME_LOGGED = False
+
+def _log_living_runtime_once() -> None:
+    global _LIVING_RUNTIME_LOGGED
+    if not _LIVING_RUNTIME_LOGGED:
+        print("GSF_LIVING_UI_ACTIVE V153.16", flush=True)
+        _LIVING_RUNTIME_LOGGED = True
+
 def render_shell() -> None:
     """Render presentation only; no session-state or pipeline mutations."""
+    _log_living_runtime_once()
     st.markdown(LIVING_CSS, unsafe_allow_html=True)
     st.markdown(SHELL_HTML, unsafe_allow_html=True)
+
+def render_tail() -> None:
+    """Re-apply presentation CSS after the legacy app has rendered its own layers."""
+    tail_css = LIVING_CSS.replace('id="gsf-living-ui"', 'id="gsf-living-ui-tail"', 1)
+    st.markdown(tail_css, unsafe_allow_html=True)
