@@ -377,6 +377,37 @@ def _recognize_game(rows,genre="Auto"):
     return {"game":winner,"confidence":round(confidence,3),"evidence_score":top,
             "source":"semantic_hud_context" if top else "genre_event_fallback"}
 
+
+def _game_context(rows,recognition):
+    """Aggregate match stakes/context already exposed by upstream gameplay analysis."""
+    rows=[_dict(x) for x in _list(rows) if isinstance(x,dict)]
+    states=[]
+    for row in rows:
+        plan=_dict(row.get("director_plan"))
+        state=_dict(row.get("match_state") or row.get("game_state") or plan.get("match_state"))
+        if state: states.append(state)
+    latest=states[-1] if states else {}
+    health=_num(latest.get("health_pct"),100)
+    ammo=_num(latest.get("ammo"),99)
+    timer=_num(latest.get("timer_remaining"),999)
+    delta=_num(latest.get("score_delta"),0)
+    critical=[]
+    if health<=20: critical.append("low_health")
+    if ammo<=5: critical.append("low_ammo")
+    if timer<=30: critical.append("late_timer")
+    if delta<0: critical.append("score_deficit")
+    for key in ("overtime","final_zone","last_lap","match_point","extraction"):
+        if latest.get(key): critical.append(key)
+    stakes=min(1.0,len(critical)*.16 + (0.18 if delta<0 else 0))
+    return {
+        "game":str(_dict(recognition).get("game") or "unknown"),
+        "state":latest,
+        "critical_signals":critical,
+        "stakes_score":round(stakes,3),
+        "director_bias":"preserve_context" if critical else "action_first",
+        "context_available":bool(states),
+    }
+
 def _session_intelligence(rows,genre="Auto"):
     """Session-wide intelligence used by Director without adding UI."""
     rows=[_dict(x) for x in _list(rows) if isinstance(x,dict)]
@@ -429,6 +460,7 @@ def build_one_click_package(brain,clip_duration=15.0,genre="Auto",profile="auto"
     target=max(1,min(3,int(target_count or 3)))
     session_intelligence=_session_intelligence(selected+alternates,genre=genre)
     game_recognition=_recognize_game(selected+alternates,genre=genre)
+    game_context=_game_context(selected+alternates,game_recognition)
     shorts=[
         build_short_package(row,clip_duration=clip_duration,genre=genre,profile=profile)
         for row in selected[:target]
@@ -449,6 +481,7 @@ def build_one_click_package(brain,clip_duration=15.0,genre="Auto",profile="auto"
         "profile":str(profile or brain.get("profile") or "auto"),
         "genre":str(genre or brain.get("genre") or "Auto"),
         "game_recognition":game_recognition,
+        "game_context":game_context,
         "session_intelligence":session_intelligence,
         "shorts":shorts,
         "alternates":alt_packages,
