@@ -27,9 +27,9 @@ required=[
     'gsf-v1302-create-note',
     '"gsf_v1302_icon_"+_v1302_key',
     'gsf_v1302_save',
-    '"↓  SALVA"',
+    '"⇩"',
     'navigator.share',
-    '↗&nbsp; CONDIVIDI',
+    '>↗</button>',
     '[class*="st-key-gsf_share_download_top"]{display:none !important;}',
     '.gsf-v124-quality{display:none !important;',
     '.gsf-footer-v4 .bug-report',
@@ -38,6 +38,7 @@ required=[
     'margin:-8px auto 0 !important;',
     'Hai già un progetto in corso.',
     'gsf_source_name',
+    'Regola il gameplay con Frame, Look, Caption, Audio e Game AI.',
 ]
 for marker in required:
     if marker not in s:
