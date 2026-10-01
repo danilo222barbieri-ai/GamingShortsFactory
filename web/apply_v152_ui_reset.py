@@ -23,6 +23,25 @@ EDITOR_MARKERS=(
     "game vision",
 )
 
+# V153.19 root fix: an old CSS block is NOT considered "Editor CSS"
+# just because it happens to contain one editor selector. Historical mixed
+# blocks (for example gsf-v80-ui-fix) also style the whole app and were
+# surviving V152, which kept the legacy UI alive.
+GLOBAL_VISUAL_MARKERS=(
+    "stappviewcontainer",
+    "block-container",
+    "stfileuploader",
+    "stfileuploaderdropzone",
+    ".stbutton",
+    "basebutton-primary",
+    "sthorizontalblock",
+    "gsf-account-fab",
+    "gsf-v151-",
+    "gsf-v89-upload",
+    "v67-ad",
+    "v67-footer",
+)
+
 REMOVE_MARKERS=(
     "gsf-v151-living-home",
     "gsf-v151-bar",
@@ -52,16 +71,20 @@ for node in ast.walk(tree):
     has_style="<style" in low
     has_script="<script" in low
     is_editor=any(m in low for m in EDITOR_MARKERS)
+    has_global_visual=any(m in low for m in GLOBAL_VISUAL_MARKERS)
+    editor_only=is_editor and not has_global_visual
     force_remove=any(m.lower() in low for m in REMOVE_MARKERS)
 
     remove=False
     if force_remove:
         remove=True
         removed_visual_calls+=1
-    elif has_style and is_editor:
+    elif has_style and editor_only:
+        # Preserve only genuinely Editor-scoped presentation.
         kept_editor_styles+=1
     elif has_style and not has_script:
-        # Pure legacy CSS is presentation only. Strip it structurally.
+        # Any pure CSS block that is global OR mixed Editor+global is legacy
+        # presentation and must go. This is the V153.19 root fix.
         remove=True
         removed_styles+=1
 
@@ -212,7 +235,16 @@ if 'id="gsf-v151-living-home"' in s:
 if 'id="gsf-v151-bar"' in s:
     raise RuntimeError("V152 old V151 Game Bar survived")
 if kept_editor_styles < 1:
-    raise RuntimeError("V152 did not preserve any Editor style block")
+    raise RuntimeError("V152 did not preserve any Editor-only style block")
+
+# Root-cause guard: the V80 mixed global/editor style block must never survive
+# into production again. If it does, Living cannot become authoritative.
+for _legacy_global in (
+    'id="gsf-v80-ui-fix"',
+    'id="gsf-v151-living-home"',
+):
+    if _legacy_global in s:
+        raise RuntimeError("V153.19 legacy global style survived: "+_legacy_global)
 
 s=s.replace(
     "Gaming Shorts Factory · V151 Living Home",
