@@ -678,7 +678,8 @@
    textColor:'#ffffff',activeColor:'#ffd400',outlineColor:'#000000',
    muted:false,volume:100,speed:1,audioMode:'Originale',
    inPoint:0,outPoint:15,
-   aiMode:'Auto Gaming',visionEnabled:false
+   aiMode:'Auto Gaming',visionEnabled:false,
+   longFormMinutes:8,longFormNonce:0,longFormRequested:false
  };
  let state={...defaults};
  let history=[JSON.stringify(state)];
@@ -1352,6 +1353,9 @@
       ['Auto Gaming','FPS','Racing','Sports','Battle Royale'].map(x=>'<button class="pill aiPreset" data-value="'+x+'">'+(x==='Auto Gaming'?'Auto':x==='Battle Royale'?'Battle Royale':x)+'</button>').join('')+
       '</div>'+
       '<div class="strip" style="margin-top:9px"><button class="pill" id="brainApply">AI CONSIGLIO</button></div>'+
+      '<div class="strip" style="margin-top:9px">'+
+      [6,8,10].map(x=>'<button class="pill longMinutes" data-value="'+x+'">'+x+' MIN</button>').join('')+
+      '<button class="pill" id="longFormBtn">CREA VIDEO LUNGO</button></div>'+
       '<div class="panelNote">'+(brainContext&&brainContext.reason?(()=>{
         const plan=directorPlanFromBrain();
         const edit=(plan.edit&&typeof plan.edit==='object')?plan.edit:{};
@@ -1534,6 +1538,26 @@
          flash(mode==='Off'?'GAME AI OFF':mode.toUpperCase());
        };
      });
+     body.querySelectorAll('.longMinutes').forEach(p=>{
+       p.classList.toggle('sel',Number(p.dataset.value)===Number(state.longFormMinutes||8));
+       p.onclick=()=>{
+         state.longFormMinutes=Number(p.dataset.value)||8;
+         commit();openPanel('vision',btn);flash('VIDEO LUNGO '+state.longFormMinutes+' MIN');
+       };
+     });
+     const longFormBtn=body.querySelector('#longFormBtn');
+     if(longFormBtn){
+       longFormBtn.onclick=()=>{
+         state.longFormRequested=true;
+         state.longFormNonce=(Number(state.longFormNonce)||0)+1;
+         commit();
+         const payload=cloneState();
+         payload.editorVersion='2027.6';
+         payload.sourceDuration=duration;
+         sendStateToPython(payload);
+         flash('CREAZIONE VIDEO LUNGO');
+       };
+     }
      const brainApply=body.querySelector('#brainApply');
      if(brainApply){
        const director=directorPlanFromBrain();
