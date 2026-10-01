@@ -1979,6 +1979,364 @@ hr{
   .gsf-living-brand::after,
   .gsf-living-bar{animation:none!important}
 }
+
+/* V153.17 — FINAL LIVING OVERRIDE
+   One authoritative visual layer after all historical Living experiments.
+   This is intentionally compact and high-specificity so the visible Home
+   finally matches the approved reference instead of inheriting old Streamlit tone.
+*/
+[data-testid="stAppViewContainer"]{
+  background:
+    radial-gradient(circle at 50% -8%,rgba(154,219,249,.30),transparent 30%),
+    radial-gradient(circle at 12% 35%,rgba(198,236,222,.12),transparent 22%),
+    radial-gradient(circle at 88% 32%,rgba(246,226,157,.10),transparent 20%),
+    linear-gradient(180deg,#fbfdff 0%,#f7fbff 45%,#ffffff 100%)!important;
+}
+[data-testid="stAppViewContainer"] .main .block-container{
+  max-width:1120px!important;
+  padding-top:5.7rem!important;
+  padding-left:2rem!important;
+  padding-right:2rem!important;
+  padding-bottom:7rem!important;
+}
+
+/* Header */
+.gsf-living-brand{
+  top:20px!important;
+  left:28px!important;
+  font-size:17px!important;
+  font-weight:820!important;
+  letter-spacing:-.35px!important;
+  color:#17304a!important;
+}
+.gsf-living-brand::before{
+  content:"";
+  width:8px;height:8px;border-radius:50%;
+  background:#73c4ed;
+  box-shadow:0 0 0 5px rgba(115,196,237,.11),0 0 18px rgba(84,177,226,.25);
+  display:inline-block;
+}
+
+/* Dock */
+.gsf-living-bar{
+  top:14px!important;
+  bottom:auto!important;
+  min-height:48px!important;
+  padding:6px 7px!important;
+  gap:3px!important;
+  border-radius:22px!important;
+  background:rgba(255,255,255,.84)!important;
+  border:1px solid rgba(111,169,202,.16)!important;
+  box-shadow:0 14px 36px rgba(66,116,148,.10),inset 0 1px 0 rgba(255,255,255,.98)!important;
+  backdrop-filter:blur(20px) saturate(140%)!important;
+  -webkit-backdrop-filter:blur(20px) saturate(140%)!important;
+}
+.gsf-living-chip{
+  height:36px!important;
+  padding:0 12px!important;
+  border-radius:14px!important;
+  gap:6px!important;
+  color:#6e8193!important;
+  font-size:11px!important;
+  font-weight:720!important;
+}
+.gsf-living-chip.active{
+  color:#2d6f98!important;
+  background:rgba(129,202,239,.18)!important;
+  border-color:rgba(98,180,225,.10)!important;
+}
+
+/* First screen / hero */
+[data-testid="stAppViewContainer"] h1{
+  color:#1b2c40!important;
+  letter-spacing:-.045em!important;
+  font-weight:820!important;
+}
+[data-testid="stAppViewContainer"] h1:first-of-type{
+  text-align:center!important;
+  font-size:clamp(2rem,3vw,3rem)!important;
+  max-width:780px!important;
+  margin:0 auto .35rem!important;
+}
+[data-testid="stAppViewContainer"] h1:first-of-type + *{
+  max-width:720px!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  text-align:center!important;
+}
+
+/* Uploader: hero object */
+[data-testid="stFileUploader"]{
+  width:min(38vw,430px)!important;
+  max-width:430px!important;
+  min-width:360px!important;
+  aspect-ratio:1/1!important;
+  margin:1.6rem auto 2.75rem!important;
+  filter:drop-shadow(0 24px 50px rgba(68,132,170,.14))!important;
+}
+[data-testid="stFileUploader"]>section,
+[data-testid="stFileUploaderDropzone"]{
+  height:100%!important;
+}
+[data-testid="stFileUploaderDropzone"]{
+  min-height:0!important;
+  border-radius:50%!important;
+  border:1px solid rgba(101,186,232,.33)!important;
+  background:
+    radial-gradient(circle at 50% 38%,rgba(255,255,255,1) 0 35%,rgba(247,252,255,.98) 60%,rgba(228,247,255,.96) 100%)!important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.98),
+    inset 0 0 0 18px rgba(220,244,255,.30),
+    0 0 0 10px rgba(178,228,250,.13),
+    0 0 0 22px rgba(178,228,250,.05),
+    0 28px 72px rgba(74,140,180,.15)!important;
+}
+[data-testid="stFileUploaderDropzone"]::before{
+  content:"CARICA IL TUO GAMEPLAY"!important;
+  top:22%!important;
+  left:50%!important;
+  width:72%!important;
+  transform:translateX(-50%)!important;
+  text-align:center!important;
+  color:#173d59!important;
+  font-size:13px!important;
+  font-weight:840!important;
+  letter-spacing:.055em!important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"]{
+  max-width:68%!important;
+  margin:2.55rem auto 0!important;
+  text-align:center!important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"] span{
+  color:#536d81!important;
+  font-size:.9rem!important;
+  font-weight:700!important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"] small{
+  color:#8293a2!important;
+  font-size:.72rem!important;
+}
+[data-testid="stFileUploaderDropzone"] button{
+  min-height:40px!important;
+  margin-top:.45rem!important;
+  border-radius:999px!important;
+  border:1px solid rgba(99,181,225,.18)!important;
+  background:linear-gradient(180deg,rgba(239,250,255,.98),rgba(217,241,253,.96))!important;
+  color:#2f5e7b!important;
+  font-weight:760!important;
+}
+
+/* Side guidance */
+[data-testid="stFileUploader"]::before{
+  content:"Trasforma il tuo gameplay in Shorts  →"!important;
+  right:calc(100% + 28px)!important;
+  width:220px!important;
+  color:#738596!important;
+  font-size:14px!important;
+  font-weight:560!important;
+  font-style:italic!important;
+}
+[data-testid="stFileUploader"]::after{
+  content:"←  Trascina qui o tocca per caricare"!important;
+  left:calc(100% + 28px)!important;
+  width:220px!important;
+  color:#738596!important;
+  font-size:14px!important;
+  font-weight:560!important;
+  font-style:italic!important;
+}
+
+/* Main cards */
+[data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"]){
+  max-width:980px!important;
+  margin:0 auto!important;
+  gap:1rem!important;
+  align-items:stretch!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]){
+  display:flex!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]{
+  width:100%!important;
+  min-height:180px!important;
+  padding:1.05rem 1rem .95rem!important;
+  border-radius:25px!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(249,252,255,.84))!important;
+  border:1px solid rgba(109,170,204,.13)!important;
+  box-shadow:0 16px 36px rgba(74,126,158,.07),inset 0 1px 0 rgba(255,255,255,.98)!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) h3{
+  font-size:1.15rem!important;
+  font-weight:810!important;
+  color:#263c50!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) p{
+  color:#718293!important;
+  font-size:.87rem!important;
+  line-height:1.42!important;
+}
+.stButton>button[kind="primary"],
+button[data-testid="baseButton-primary"]{
+  min-height:44px!important;
+  border-radius:14px!important;
+  border:0!important;
+  background:linear-gradient(180deg,#a9dcf6,#82c8ec)!important;
+  color:#173c56!important;
+  font-weight:790!important;
+  box-shadow:0 10px 22px rgba(78,157,201,.16)!important;
+}
+
+/* Section / project cards */
+[data-testid="stAppViewContainer"] h2{
+  margin-top:1.55rem!important;
+  margin-bottom:.55rem!important;
+  color:#24384a!important;
+  font-size:clamp(1.35rem,2vw,1.8rem)!important;
+  font-weight:810!important;
+  letter-spacing:-.035em!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]){
+  border-radius:21px!important;
+  padding:.42rem!important;
+  background:rgba(255,255,255,.72)!important;
+  border:1px solid rgba(108,168,202,.10)!important;
+  box-shadow:0 13px 30px rgba(74,124,154,.06)!important;
+}
+[data-testid="stImage"],
+[data-testid="stImage"] img,
+[data-testid="stVideo"],
+[data-testid="stVideo"] video{
+  border-radius:17px!important;
+}
+
+/* Forms and secondary UI */
+[data-testid="stExpander"],
+[data-testid="stForm"],
+[data-testid="stVerticalBlockBorderWrapper"]{
+  border-color:rgba(108,168,202,.12)!important;
+}
+[data-testid="stTextInput"] input,
+[data-testid="stTextArea"] textarea,
+[data-testid="stNumberInput"] input,
+[data-baseweb="select"]>div{
+  border-radius:13px!important;
+  background:rgba(255,255,255,.86)!important;
+}
+
+/* Desktop hover */
+@media(hover:hover) and (pointer:fine){
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]:hover{
+    transform:translateY(-3px)!important;
+    box-shadow:0 22px 44px rgba(74,135,171,.11),inset 0 1px 0 rgba(255,255,255,.98)!important;
+  }
+}
+
+/* Tablet */
+@media(min-width:761px) and (max-width:1100px){
+  [data-testid="stFileUploader"]{
+    width:min(46vw,390px)!important;
+    min-width:330px!important;
+  }
+  [data-testid="stFileUploader"]::before,
+  [data-testid="stFileUploader"]::after{
+    width:145px!important;
+    font-size:12px!important;
+  }
+}
+
+/* Mobile: true app layout */
+@media(max-width:760px){
+  [data-testid="stAppViewContainer"] .main .block-container{
+    max-width:none!important;
+    padding-top:4.15rem!important;
+    padding-left:.78rem!important;
+    padding-right:.78rem!important;
+    padding-bottom:calc(7.2rem + env(safe-area-inset-bottom))!important;
+  }
+  .gsf-living-brand{
+    top:calc(14px + env(safe-area-inset-top))!important;
+    left:16px!important;
+    font-size:15px!important;
+  }
+  .gsf-living-bar{
+    top:auto!important;
+    bottom:calc(8px + env(safe-area-inset-bottom))!important;
+    width:calc(100% - 16px)!important;
+    min-height:58px!important;
+    border-radius:24px!important;
+    padding:6px!important;
+  }
+  .gsf-living-chip{
+    height:46px!important;
+    padding:4px 2px!important;
+    flex-direction:column!important;
+    gap:2px!important;
+    font-size:8px!important;
+  }
+  .gsf-nav-icon{width:18px!important;height:18px!important}
+  .gsf-nav-label{font-size:8px!important}
+  [data-testid="stAppViewContainer"] h1:first-of-type{
+    font-size:1.75rem!important;
+    line-height:1.06!important;
+    margin-bottom:.2rem!important;
+  }
+  [data-testid="stFileUploader"]{
+    width:min(80vw,316px)!important;
+    max-width:316px!important;
+    min-width:0!important;
+    margin:.95rem auto 1.8rem!important;
+  }
+  [data-testid="stFileUploader"]::before,
+  [data-testid="stFileUploader"]::after{
+    display:none!important;
+  }
+  [data-testid="stFileUploaderDropzone"]::before{
+    top:21%!important;
+    font-size:10px!important;
+  }
+  [data-testid="stFileUploaderDropzoneInstructions"]{
+    max-width:72%!important;
+    margin-top:2rem!important;
+  }
+  [data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"]){
+    max-width:none!important;
+    overflow-x:auto!important;
+    flex-wrap:nowrap!important;
+    scroll-snap-type:x mandatory!important;
+    gap:.7rem!important;
+    padding:.12rem 0 .5rem!important;
+  }
+  [data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"])>[data-testid="stColumn"]{
+    flex:0 0 82%!important;
+    width:82%!important;
+    min-width:82%!important;
+    scroll-snap-align:start!important;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]{
+    min-height:150px!important;
+    border-radius:20px!important;
+    padding:.82rem!important;
+  }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stImage"]){
+    overflow-x:auto!important;
+    flex-wrap:nowrap!important;
+    scroll-snap-type:x mandatory!important;
+    gap:.7rem!important;
+  }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stImage"])>[data-testid="stColumn"]{
+    flex:0 0 76%!important;
+    width:76%!important;
+    min-width:76%!important;
+    scroll-snap-align:start!important;
+  }
+}
+
+@media(max-width:390px){
+  .gsf-living-brand{font-size:14px!important}
+  [data-testid="stFileUploader"]{width:min(82vw,294px)!important}
+}
+
 </style>
 """
 
