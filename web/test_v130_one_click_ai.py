@@ -122,3 +122,9 @@ for marker in ("_recognize_game","game_recognition","semantic_hud_context","sess
 src=Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
 for marker in ("_game_context","critical_signals","stakes_score","director_bias","game_context"):
     assert marker in src, marker
+
+
+# V134 complete/future Director stack
+src=Path("/app/web/one_click_v130.py").read_text(encoding="utf-8")
+for marker in ("_future_director_stack","creator_style_learning","cover_ai","retention_lab","privacy_visual_guard","audio_intelligence","publishing_intelligence","performance_learning","long_form_director","game_specific_director","reaction_comedy","multi_moment_story","cold_open_smart_end","future_hooks"):
+    assert marker in src, marker
