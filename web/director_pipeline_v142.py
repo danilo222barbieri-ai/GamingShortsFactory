@@ -119,6 +119,35 @@ def run_director_pipeline(
         ab["performance_bonus"]=round(bonus,4)
     ab["variants"]={"A":a.get("name"),"B":b.get("name")}
     ab["performance_context"]=perf
+    # Feed real post-publish performance back into concrete edit decisions, not only A/B choice.
+    if perf and short_pkg:
+        short_pkg=dict(short_pkg)
+        mount=_d(short_pkg.get("mount"))
+        cine=_d(mount.get("cinematic"))
+        captions=_d(mount.get("captions"))
+        audio=_d(mount.get("audio"))
+        best=max(0.0,min(1.0,float(perf.get("best_score") or perf.get("mean_score") or 0.0)))
+        completion=max(0.0,min(1.0,float(perf.get("completion_rate") or perf.get("best_completion_rate") or 0.0)))
+        share=max(0.0,min(1.0,float(perf.get("share_rate") or perf.get("best_share_rate") or 0.0)))
+        if int(perf.get("samples") or 0)>=3:
+            # Weak retention gets a stronger opening/interrupt; strong retention preserves the winning rhythm.
+            if completion and completion<.55:
+                cold=_d(cine.get("cold_open")); cold["enabled"]=True
+                cold["duration"]=round(max(.45,min(.9,float(cold.get("duration") or .65))),3)
+                cine["cold_open"]=cold
+                interrupts=_l(cine.get("pattern_interrupts"))
+                if not interrupts:
+                    start=float(short_pkg.get("start") or 0.0)+2.2
+                    interrupts=[{"start":start,"duration":.75,"action":"speed_up_or_micro_cut","source":"performance_learning"}]
+                cine["pattern_interrupts"]=interrupts
+            if share>=.04:
+                ending=_d(cine.get("smart_ending")); ending["mode"]="payoff"; ending["tail"]=.28
+                cine["smart_ending"]=ending
+            if best>=.72:
+                captions["performance_bias"]="preserve_winner"
+                audio["performance_bias"]="preserve_winner"
+        mount["cinematic"]=cine; mount["captions"]=captions; mount["audio"]=audio
+        short_pkg["mount"]=mount
     render=compile_render_plan(short_pkg,profile,ab,vision)
     all_moments=_l(brain.get("selected"))+_l(brain.get("alternates"))
     long_form=build_long_form(all_moments,8)
