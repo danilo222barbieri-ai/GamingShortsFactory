@@ -507,18 +507,52 @@ if (
             tone=_v1302_tone,
         )
     )
+    # Keep V124/V130 Director social intelligence as the default copy even
+    # though V130.2 exposes only one shared form.
+    _v1302_ai_social={}
+    try:
+        _v1302_brain=st.session_state.get("gsf_v112_brain_context") or {}
+        _v1302_rows=list(_v1302_brain.get("selected") or []) if isinstance(_v1302_brain,dict) else []
+        if _v1302_rows:
+            _v1302_nearest=min(
+                _v1302_rows,
+                key=lambda row:abs(float((row or {}).get("start") or 0.0)-_v1302_start)
+            )
+            _v1302_plan=dict((_v1302_nearest or {}).get("director_plan") or {})
+            _v1302_social_all=dict(((_v1302_plan.get("text") or {}).get("social") or {}))
+            _v1302_ai_social=dict(_v1302_social_all.get("youtube") or {})
+        if not _v1302_ai_social:
+            _v1302_social_all=st.session_state.get("gsf_v124_social_pack") or {}
+            if isinstance(_v1302_social_all,dict):
+                _v1302_ai_social=dict(_v1302_social_all.get("youtube") or {})
+    except Exception as _v1302_social_seed_exc:
+        print("GSF_V1302_SOCIAL_SEED_WARN",repr(str(_v1302_social_seed_exc))[:220],flush=True)
+        _v1302_ai_social={}
+
     _v1302_ctx=_gsf_publish_context_token(_v1302_base)
     _v1302_title_key="gsf_v1302_shared_title_"+_v1302_ctx
     _v1302_desc_key="gsf_v1302_shared_description_"+_v1302_ctx
     _v1302_tags_key="gsf_v1302_shared_hashtags_"+_v1302_ctx
+    _v1302_default_title=str(
+        _v1302_ai_social.get("title")
+        or _v1302_base.get("selected_title",_v1302_base.get("title",""))
+        or ""
+    )
+    _v1302_default_description=str(
+        _v1302_ai_social.get("description")
+        or _gsf_social_clean_description(_v1302_base)
+        or ""
+    )
+    _v1302_default_tags=" ".join(
+        str(x) for x in (_v1302_ai_social.get("hashtags") or [])
+        if str(x).strip()
+    ) or " ".join(_v1302_base.get("hashtags",[]) or [])
     if _v1302_title_key not in st.session_state:
-        st.session_state[_v1302_title_key]=str(
-            _v1302_base.get("selected_title",_v1302_base.get("title","")) or ""
-        )
+        st.session_state[_v1302_title_key]=_v1302_default_title
     if _v1302_desc_key not in st.session_state:
-        st.session_state[_v1302_desc_key]=_gsf_social_clean_description(_v1302_base)
+        st.session_state[_v1302_desc_key]=_v1302_default_description
     if _v1302_tags_key not in st.session_state:
-        st.session_state[_v1302_tags_key]=" ".join(_v1302_base.get("hashtags",[]) or [])
+        st.session_state[_v1302_tags_key]=_v1302_default_tags
 
     with st.container(key="v1055_social_composer_shared"):
         _v1302_title=st.text_input("Titolo",key=_v1302_title_key)
@@ -628,6 +662,14 @@ if (
                             _v1302_platform,
                             pack_override=_v1302_edited,
                         )
+                    if _ok:
+                        try:
+                            _gsf_v124_feedback(
+                                _gsf_v124_moment_for_start(_v1302_start),
+                                "published",
+                            )
+                        except Exception:
+                            pass
                     _v1302_results.append((_v1302_platform,_ok,_msg))
                 for _platform,_ok,_msg in _v1302_results:
                     if _ok:
