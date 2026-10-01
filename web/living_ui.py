@@ -1713,6 +1713,197 @@ button[data-testid="baseButton-primary"]{
   }
 }
 
+/* V153.15 — global Home coherence: selectors, links, panels, touch, spacing. */
+
+/* Links and inline actions belong to the same visual family. */
+[data-testid="stMarkdownContainer"] a{
+  color:#3f8fbd!important;
+  text-decoration:none!important;
+  font-weight:680!important;
+  text-underline-offset:3px;
+}
+@media(hover:hover) and (pointer:fine){
+  [data-testid="stMarkdownContainer"] a:hover{
+    color:#2d7eac!important;
+    text-decoration:underline!important;
+  }
+}
+
+/* Selects, multiselects and pill-like choices lose default hard edges. */
+[data-baseweb="select"]>div,
+[data-baseweb="base-input"]{
+  border-radius:14px!important;
+}
+[data-baseweb="tag"]{
+  border-radius:999px!important;
+  background:rgba(221,243,255,.88)!important;
+  color:#315b75!important;
+  border:1px solid rgba(104,176,217,.14)!important;
+}
+[data-testid="stMultiSelect"] [role="combobox"],
+[data-testid="stSelectbox"] [role="combobox"]{
+  min-height:44px!important;
+}
+[data-testid="stRadio"] label,
+[data-testid="stCheckbox"] label,
+[data-testid="stToggle"] label{
+  min-height:38px;
+  align-items:center!important;
+}
+
+/* Sliders and range controls become softer and easier to read. */
+[data-testid="stSlider"]{
+  padding:.15rem .1rem .2rem!important;
+}
+[data-testid="stSlider"] [data-baseweb="slider"]>div>div{
+  border-radius:999px!important;
+}
+[data-testid="stSlider"] [role="slider"]{
+  width:18px!important;
+  height:18px!important;
+}
+
+/* Containers read as one app system. */
+[data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stExpander"],
+[data-testid="stForm"]{
+  color:#24384a!important;
+}
+[data-testid="stExpander"] summary{
+  padding:.72rem .9rem!important;
+}
+[data-testid="stExpander"] [data-testid="stExpanderDetails"]{
+  padding:.15rem .9rem .85rem!important;
+}
+
+/* Metrics / status cards are compact and soft. */
+[data-testid="stMetric"]{
+  min-height:88px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  box-shadow:0 10px 28px rgba(70,119,150,.05)!important;
+}
+[data-testid="stMetricLabel"]{
+  color:#718294!important;
+}
+[data-testid="stMetricValue"]{
+  color:#24384a!important;
+  letter-spacing:-.035em!important;
+}
+
+/* Video and image surfaces sit flush with their cards. */
+[data-testid="stImage"] img,
+[data-testid="stVideo"] video{
+  background:#eef5f9!important;
+}
+[data-testid="stImage"] button,
+[data-testid="stVideo"] button{
+  border-radius:12px!important;
+}
+
+/* Captions and helper text use one calm hierarchy. */
+[data-testid="stCaptionContainer"],
+small,
+.stMarkdown p small{
+  color:#8392a1!important;
+}
+[data-testid="stWidgetLabel"] p{
+  font-size:.86rem!important;
+}
+
+/* Clean separators and remove excess empty vertical rhythm. */
+hr{
+  height:1px!important;
+  border:0!important;
+  background:linear-gradient(
+    90deg,
+    transparent,
+    rgba(108,164,197,.16) 12%,
+    rgba(108,164,197,.16) 88%,
+    transparent
+  )!important;
+}
+[data-testid="stAppViewContainer"] .element-container:empty{
+  margin:0!important;
+  min-height:0!important;
+}
+
+/* Desktop refinement: airy but compact. */
+@media(min-width:1100px){
+  [data-testid="stAppViewContainer"] .main .block-container{
+    padding-left:2.2rem!important;
+    padding-right:2.2rem!important;
+  }
+  [data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"]){
+    gap:1.05rem!important;
+  }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stImage"]){
+    gap:.95rem!important;
+  }
+}
+
+/* Tablet avoids oversized controls. */
+@media(min-width:761px) and (max-width:1099px){
+  .stButton>button,
+  .stDownloadButton>button{
+    font-size:.92rem!important;
+  }
+  [data-testid="stVerticalBlockBorderWrapper"]{
+    border-radius:22px!important;
+  }
+}
+
+/* Mobile touch cleanup. */
+@media(max-width:760px){
+  input,
+  textarea,
+  select{
+    font-size:16px!important; /* prevents iOS focus zoom */
+  }
+  [data-testid="stSelectbox"],
+  [data-testid="stMultiSelect"],
+  [data-testid="stTextInput"],
+  [data-testid="stTextArea"],
+  [data-testid="stNumberInput"]{
+    width:100%!important;
+  }
+  [data-baseweb="select"]>div,
+  [data-testid="stTextInput"] input,
+  [data-testid="stNumberInput"] input,
+  [data-testid="stTextArea"] textarea{
+    border-radius:13px!important;
+  }
+  [data-testid="stExpander"]{
+    border-radius:17px!important;
+  }
+  [data-testid="stMetric"]{
+    min-height:76px;
+    padding:.7rem .8rem!important;
+    border-radius:16px!important;
+  }
+  [data-testid="stCaptionContainer"]{
+    font-size:.76rem!important;
+  }
+  [data-testid="stAppViewContainer"] p{
+    line-height:1.43!important;
+  }
+}
+
+/* Ultra-small screens keep the app usable without horizontal page overflow. */
+@media(max-width:360px){
+  [data-testid="stAppViewContainer"] .main .block-container{
+    padding-left:.62rem!important;
+    padding-right:.62rem!important;
+  }
+  .gsf-living-brand{
+    font-size:14px!important;
+  }
+  [data-testid="stFileUploader"]{
+    width:min(84vw,294px)!important;
+  }
+}
+
 /* Key motion is soft and bounded. */
 @keyframes gsfBrandIn{
   from{opacity:0;transform:translateY(-7px)}
