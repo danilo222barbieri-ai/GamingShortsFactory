@@ -77,6 +77,12 @@ def run_director_pipeline(
     brain=_d(brain); one_click=_d(one_click)
     root=Path(runtime_dir); root.mkdir(parents=True,exist_ok=True)
     evidence=build_director_evidence(video_path,duration,brain,one_click,out_dir=root/"vision")
+    if provider_results is None:
+        try:
+            _visual=__import__("visual_scoring_v144",fromlist=["enrich_frame_manifest"])
+            provider_results=_visual.enrich_frame_manifest(dict(evidence.get("frames") or {}))
+        except Exception:
+            provider_results=[]
     vision=consume_vision_evidence(evidence,provider_results=provider_results)
     short_pkg=_selected_short(one_click,selected_start)
     profile_path=root/"creator_style.json"
