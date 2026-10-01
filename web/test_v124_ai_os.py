@@ -24,13 +24,24 @@ for marker in (
     "_gsf_v124_moment_for_start",
     '"opened_editor"',
     '"published"',
+):
+    if marker not in app:
+        raise SystemExit("V124 app visible AI OS marker missing: "+marker)
+
+_legacy_social=all(marker in app for marker in (
     '_ai_title_key=f"social_title_{_slug}_{_ctx}"',
     'st.session_state[_ai_title_key]=_ai_title',
     'st.session_state[_ai_description_key]=_ai_description',
     'st.session_state[_ai_hashtags_key]=_ai_hashtags',
-):
-    if marker not in app:
-        raise SystemExit("V124 app visible AI OS marker missing: "+marker)
+))
+_shared_social=all(marker in app for marker in (
+    '"gsf_v1302_shared_title_"',
+    '"gsf_v1302_shared_description_"',
+    '"gsf_v1302_shared_hashtags_"',
+    '_v1302_ai_social',
+))
+if not (_legacy_social or _shared_social):
+    raise SystemExit("V124/V130.2 social optimizer contract missing")
 
 for marker in (
     "from quality_control_v124 import inspect_final_video as _quality_inspect",
