@@ -91,61 +91,13 @@ st.markdown(r"""
 /* V151.1 approved Home replaces legacy hero. */
 .gsf-hero{display:none!important}
 @media(max-width:600px){.gsf-hero{display:none!important}.gsf-v151-brand{text-align:left!important;margin:18px 8px 12px!important;font-size:17px!important;letter-spacing:.14em!important}.gsf-v151-whisper{text-align:left!important;margin:0 8px 4px!important;font-size:16px!important}.st-key-v73-upload-shell{margin-top:0!important;min-height:292px!important;padding:24px 0!important}.gsf-v89-upload-visual{width:226px!important;height:226px!important;min-width:226px!important;min-height:226px!important;max-width:226px!important;max-height:226px!important}.gsf-v89-upload-label{font-size:16px!important;width:180px!important;max-width:180px!important}.gsf-v89-upload-label::after{font-size:13px!important}.gsf-v151-bar{width:calc(100vw - 18px)!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:0!important;padding:6px 4px!important}.gsf-v151-nav{min-width:0!important;width:100%!important;font-size:10px!important;overflow:hidden!important;white-space:nowrap!important}}
-.gsf-home-hero,.hero-wrap,.home-steps,.gsf-steps,.gsf-roadmap,[class*="roadmap"]{display:none!important}\n
-/* V151.5 mobile Home composition */
-.gsf-account-fab{display:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important}
-.gsf-v151-homecards{max-width:820px;margin:6px auto 26px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.gsf-v151-card{border:1px solid rgba(183,211,232,.8);border-radius:22px;padding:18px 14px;background:linear-gradient(145deg,rgba(255,255,255,.9),rgba(235,245,253,.8));box-shadow:0 10px 26px rgba(61,104,142,.09);text-align:center;color:#315f86}
-.gsf-v151-card b{display:block;font-size:15px;margin:5px 0}.gsf-v151-card small{font-size:11px;color:#7890a5}
-.gsf-v151-card .ico{font-size:25px}
-.gsf-v151-recent{max-width:820px;margin:0 auto 20px;font-size:16px;font-weight:800;letter-spacing:.05em;color:#426987}
-@media(max-width:600px){
- [data-testid="stAppViewContainer"] .main .block-container{padding-top:.25rem!important}
- .gsf-v151-brand{margin:6px 8px 7px!important}
- .gsf-v151-whisper{margin:0 8px 0!important}
- .st-key-v73-upload-shell{min-height:260px!important;padding:13px 0 17px!important}
- .gsf-v151-homecards{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0 4px 18px}
- .gsf-v151-card{border-radius:17px;padding:12px 4px;min-width:0}
- .gsf-v151-card b{font-size:11px}.gsf-v151-card small{font-size:9px}.gsf-v151-card .ico{font-size:21px}
- .gsf-v151-recent{margin:0 8px 14px;font-size:14px}
- /* legacy ad previews stay out of the new Home's first screen */
- [class*="st-key"][class*="ad"],[class*="ads-preview"]{margin-top:18px!important}
-}
-\n@media(prefers-reduced-motion:reduce){.gsf-v89-upload-visual,.gsf-v89-upload-visual::before,.gsf-v89-upload-visual::after{animation:none!important}}
+.gsf-home-hero,.hero-wrap,.home-steps,.gsf-steps,.gsf-roadmap,[class*="roadmap"]{display:none!important}\n@media(prefers-reduced-motion:reduce){.gsf-v89-upload-visual,.gsf-v89-upload-visual::before,.gsf-v89-upload-visual::after{animation:none!important}}
 </style>
 <div class="gsf-v151-brand">Gaming Shorts Factory</div>
 <div class="gsf-v151-whisper">Trasforma il tuo gameplay in Shorts</div>
 """,unsafe_allow_html=True)
 '''
 s=s.replace(anchor,home+anchor,1)
-# Insert the new Home action cards immediately after the uploader block's visual
-# status and before the legacy workflow continues. They are presentation only.
-_cards=r'''
-st.markdown(r"""
-<div class="gsf-v151-homecards">
- <div class="gsf-v151-card"><span class="ico">✦</span><b>Crea con IA</b><small>Trova i momenti migliori</small></div>
- <div class="gsf-v151-card"><span class="ico">🎮</span><b>Game Editor</b><small>Modifica il gameplay</small></div>
- <div class="gsf-v151-card"><span class="ico">↗</span><b>Crea Short</b><small>Prepara il risultato finale</small></div>
-</div>
-<div class="gsf-v151-recent">Ultimi progetti</div>
-""",unsafe_allow_html=True)
-'''
-# Place after upload shell closes by using the next stable ad marker if present.
-_ad_candidates=['# AD SLOT', 'Pubblicità', 'PUBBLICITÀ']
-_pos=-1
-for _cand in _ad_candidates:
-    _p=s.find(_cand,s.find(anchor)+len(anchor))
-    if _p!=-1:
-        _pos=_p; break
-if _pos!=-1:
-    s=s[:_pos]+_cards+s[_pos:]
-else:
-    # Safe fallback: immediately before the first motor-selection heading.
-    _m=s.find('Scegli il tuo motore IA')
-    if _m!=-1:
-        _ls=s.rfind('\n',0,_m)
-        s=s[:_ls+1]+_cards+s[_ls+1:]
-
 
 # V151.3: retire only the old Creator Hub floating FAB; keep its panel/logic for Game Bar.\ns = s.replace("p+'.gsf-account-fab{z-index:2147483500!important;opacity:1!important;visibility:visible!important;filter:none!important;mix-blend-mode:normal!important}'+", "p+'.gsf-account-fab{display:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important}'+")\ns = s.replace("fab.style.opacity='1';\n      fab.style.visibility='visible';\n      fab.style.filter='none';", "fab.style.display='none';\n      fab.style.opacity='0';\n      fab.style.visibility='hidden';\n      fab.style.pointerEvents='none';")\n\n# Make the new uploader language match the approved Home without touching upload mechanics.
 s=s.replace('_label = "Video caricato" if loaded else "Carica il tuo video"',
