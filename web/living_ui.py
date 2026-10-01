@@ -1382,6 +1382,172 @@ button[data-testid="baseButton-primary"]{
   }
 }
 
+/* V153.13 — native mobile rails, iOS safe areas, stronger desktop card alignment. */
+
+/* Desktop/tablet grids stay balanced. */
+@media(min-width:761px){
+  [data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"]){
+    align-items:stretch!important;
+  }
+  [data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"])>[data-testid="stColumn"]{
+    flex:1 1 0!important;
+    width:0!important;
+  }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stImage"]){
+    align-items:stretch!important;
+  }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stImage"])>[data-testid="stColumn"]{
+    min-width:0!important;
+  }
+}
+
+/* Mobile cards become swipeable native rails instead of a long stacked page. */
+@media(max-width:760px){
+  html,body{
+    overscroll-behavior-y:none;
+  }
+
+  [data-testid="stAppViewContainer"] .main .block-container{
+    padding-bottom:calc(7.4rem + env(safe-area-inset-bottom))!important;
+  }
+
+  .gsf-living-brand{
+    top:calc(13px + env(safe-area-inset-top))!important;
+  }
+
+  .gsf-living-bar{
+    bottom:calc(8px + env(safe-area-inset-bottom))!important;
+  }
+
+  /* Main action rail */
+  [data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"]){
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    overflow-x:auto!important;
+    overflow-y:visible!important;
+    scroll-snap-type:x mandatory;
+    scroll-padding-left:2px;
+    -webkit-overflow-scrolling:touch;
+    gap:.72rem!important;
+    padding:.2rem .02rem .5rem!important;
+    scrollbar-width:none;
+  }
+  [data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"])::-webkit-scrollbar{
+    display:none;
+  }
+  [data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"])>[data-testid="stColumn"]{
+    flex:0 0 78%!important;
+    width:78%!important;
+    min-width:78%!important;
+    scroll-snap-align:start;
+  }
+  [data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"])>[data-testid="stColumn"]:last-child{
+    margin-right:8%;
+  }
+
+  /* Recent project/media rail */
+  [data-testid="stHorizontalBlock"]:has([data-testid="stImage"]){
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    overflow-x:auto!important;
+    overflow-y:visible!important;
+    scroll-snap-type:x mandatory;
+    scroll-padding-left:2px;
+    -webkit-overflow-scrolling:touch;
+    gap:.72rem!important;
+    padding:.15rem .02rem .55rem!important;
+    scrollbar-width:none;
+  }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stImage"])::-webkit-scrollbar{
+    display:none;
+  }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stImage"])>[data-testid="stColumn"]{
+    flex:0 0 72%!important;
+    width:72%!important;
+    min-width:72%!important;
+    scroll-snap-align:start;
+  }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stImage"])>[data-testid="stColumn"]:last-child{
+    margin-right:10%;
+  }
+
+  /* Slight visual hint that rails continue horizontally. */
+  [data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"]),
+  [data-testid="stHorizontalBlock"]:has([data-testid="stImage"]){
+    mask-image:linear-gradient(
+      90deg,
+      #000 0,
+      #000 calc(100% - 22px),
+      rgba(0,0,0,.38) calc(100% - 7px),
+      transparent 100%
+    );
+    -webkit-mask-image:linear-gradient(
+      90deg,
+      #000 0,
+      #000 calc(100% - 22px),
+      rgba(0,0,0,.38) calc(100% - 7px),
+      transparent 100%
+    );
+  }
+
+  [data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"]):focus-within,
+  [data-testid="stHorizontalBlock"]:has([data-testid="stImage"]):focus-within{
+    mask-image:none;
+    -webkit-mask-image:none;
+  }
+
+  /* Keep CTA text readable inside narrow cards. */
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) h3{
+    font-size:1.08rem!important;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) p{
+    font-size:.88rem!important;
+    line-height:1.38!important;
+  }
+
+  /* Native press feedback. */
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:active{
+    transform:scale(.992);
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]{
+    transition:transform .12s ease;
+  }
+}
+
+/* Smaller phones: reveal a little more of the next card as a swipe cue. */
+@media(max-width:420px){
+  [data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"])>[data-testid="stColumn"]{
+    flex-basis:82%!important;
+    width:82%!important;
+    min-width:82%!important;
+  }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stImage"])>[data-testid="stColumn"]{
+    flex-basis:77%!important;
+    width:77%!important;
+    min-width:77%!important;
+  }
+}
+
+/* Wider phones/tablets in portrait show more content per swipe. */
+@media(min-width:560px) and (max-width:760px){
+  [data-testid="stHorizontalBlock"]:has(.stButton>button[kind="primary"])>[data-testid="stColumn"]{
+    flex-basis:58%!important;
+    width:58%!important;
+    min-width:58%!important;
+  }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stImage"])>[data-testid="stColumn"]{
+    flex-basis:52%!important;
+    width:52%!important;
+    min-width:52%!important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  [data-testid="stHorizontalBlock"]{
+    scroll-behavior:auto!important;
+  }
+}
+
 /* Key motion is soft and bounded. */
 @keyframes gsfBrandIn{
   from{opacity:0;transform:translateY(-7px)}
