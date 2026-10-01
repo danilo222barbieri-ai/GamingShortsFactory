@@ -262,7 +262,77 @@ if target is None:
     raise RuntimeError("V130.2 final social block not found")
 
 indent=" "*(target.col_offset)
-social_block=r'''if (
+social_block=r'''def _gsf_v1302_youtube_short_bytes(video_bytes):
+    raw=bytes(video_bytes or b"")
+    if not raw:
+        return raw
+    _tmp=None
+    try:
+        _tempfile=__import__("tempfile")
+        _subprocess=__import__("subprocess")
+        _json=__import__("json")
+        _shutil=__import__("shutil")
+        _tmp=Path(_tempfile.mkdtemp(prefix="gsf_youtube_short_"))
+        _src=_tmp/"input.mp4"
+        _out=_tmp/"short.mp4"
+        _src.write_bytes(raw)
+        _probe=_subprocess.run(
+            [
+                "/usr/bin/ffprobe","-v","error",
+                "-select_streams","v:0",
+                "-show_entries","stream=width,height:format=duration",
+                "-of","json",str(_src),
+            ],
+            stdout=_subprocess.PIPE,stderr=_subprocess.PIPE,text=True,timeout=25,
+        )
+        _data=_json.loads(_probe.stdout or "{}")
+        _streams=list(_data.get("streams") or [])
+        _stream=_streams[0] if _streams else {}
+        _w=int(_stream.get("width") or 0)
+        _h=int(_stream.get("height") or 0)
+        _dur=float((_data.get("format") or {}).get("duration") or 0.0)
+        if _w>0 and _h>0 and _w<=_h and (_dur<=0 or _dur<=180.0):
+            return raw
+
+        _vf=(
+            "[0:v]split=2[bg][fg];"
+            "[bg]scale=1080:1920:force_original_aspect_ratio=increase,"
+            "crop=1080:1920,boxblur=20:1[bg2];"
+            "[fg]scale=1080:1920:force_original_aspect_ratio=decrease[fg2];"
+            "[bg2][fg2]overlay=(W-w)/2:(H-h)/2,setsar=1[v]"
+        )
+        _cmd=[
+            "/usr/bin/ffmpeg","-hide_banner","-loglevel","error","-y",
+            "-i",str(_src),
+            "-filter_complex",_vf,
+            "-map","[v]","-map","0:a?",
+            "-t","179.8",
+            "-c:v","libx264","-preset","veryfast","-crf","18",
+            "-pix_fmt","yuv420p",
+            "-c:a","aac","-b:a","128k",
+            "-movflags","+faststart",
+            str(_out),
+        ]
+        _run=_subprocess.run(
+            _cmd,stdout=_subprocess.PIPE,stderr=_subprocess.PIPE,text=True,timeout=240
+        )
+        if _run.returncode==0 and _out.is_file() and _out.stat().st_size>1024:
+            print("GSF_V1302_YOUTUBE_SHORT_NORMALIZED",_w,_h,_dur,flush=True)
+            return _out.read_bytes()
+        print("GSF_V1302_YOUTUBE_SHORT_NORMALIZE_WARN",_run.stderr[-220:],flush=True)
+        return raw
+    except Exception as _exc:
+        print("GSF_V1302_YOUTUBE_SHORT_WARN",repr(str(_exc))[:220],flush=True)
+        return raw
+    finally:
+        if _tmp is not None:
+            try:
+                __import__("shutil").rmtree(_tmp,ignore_errors=True)
+            except Exception:
+                pass
+
+
+if (
     st.session_state.get("gsf_v1302_social_open",False)
     or _has_final
     or st.session_state.get("gsf_v107_final_render_running",False)
@@ -433,9 +503,14 @@ social_block=r'''if (
                         _v1302_description,
                         _v1302_tags,
                     )
+                    _v1302_publish_video=(
+                        _gsf_v1302_youtube_short_bytes(_v1302_video)
+                        if _v1302_platform=="YouTube"
+                        else _v1302_video
+                    )
                     with st.spinner("Pubblico su "+_v1302_platform+"…"):
                         _ok,_msg,_path=_gsf_publish_social_upload(
-                            _v1302_video,
+                            _v1302_publish_video,
                             _v1302_platform,
                             pack_override=_v1302_edited,
                         )
