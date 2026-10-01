@@ -408,6 +408,76 @@ def _game_context(rows,recognition):
         "context_available":bool(states),
     }
 
+
+def _future_director_stack(rows,recognition,context,profile="auto"):
+    """Forward-compatible Director contracts. Uses current signals and exposes hooks for future telemetry/models."""
+    rows=[_dict(x) for x in _list(rows) if isinstance(x,dict)]
+    edits=[_dict(x.get("editor_feedback")) for x in rows if _dict(x.get("editor_feedback"))]
+    def avg(key,default):
+        vals=[_num(x.get(key),default) for x in edits if key in x]
+        return round(sum(vals)/len(vals),3) if vals else default
+    creator_style={
+        "learn":True,"sample_count":len(edits),
+        "cut_density":avg("cut_density",.5),"zoom_aggression":avg("zoom_aggression",.45),
+        "caption_density":avg("caption_density",.6),"replay_preference":avg("replay_preference",.35),
+        "hook_style":"creator_history" if edits else "adaptive",
+        "signals":["selected","discarded","trim_delta","caption_changes","published","platform_performance"],
+    }
+    ranked=sorted(rows,key=lambda x:_num(x.get("brain_score"),x.get("score")),reverse=True)
+    peak=ranked[0] if ranked else {}
+    cover={
+        "enabled":True,"peak_time":round(_num(peak.get("start"),0),2),
+        "subject_focus":"primary_action","text_safe_zone":"upper_third",
+        "hud_policy":"preserve_if_contextual","contrast":"adaptive",
+        "candidates":3,"editor_control":"COVER",
+    }
+    retention={
+        "predict":True,"signals":["hook_latency","dead_air","payoff_delay","reaction","stakes","cut_density"],
+        "ab_test":{"enabled":True,"variants":["action_first","context_first"],"render_both":False},
+        "pattern_interrupt":{"enabled":True,"actions":["micro_cut","smart_zoom","speed_ramp","caption_punch"]},
+    }
+    privacy={
+        "ocr_hook":True,"vision_hook":True,
+        "entities":["email","phone","ip","qr_code","nickname","chat","notification"],
+        "overlay_cleanup":["discord","xbox","playstation","steam","system_popup"],
+        "policy":"warn_or_mask_before_publish",
+    }
+    audio={
+        "copyright_risk_hook":True,"music_fingerprint_hook":True,
+        "speech_language_hook":True,"normalize":True,"ducking":"contextual",
+    }
+    publishing={
+        "language_aware":True,"platform_memory":True,"cross_platform_memory":True,
+        "trend_weight":"light","preserve_creator_style":True,
+        "calendar_hook":True,"avoid_duplicate_publish":True,
+    }
+    learning={
+        "post_publish":True,
+        "signals":["watch_time","completion_rate","scroll_away","retention_curve","rewatch","shares","saves"],
+        "feedback_to":["ranking","hook","cut_density","cover","caption_style","ending","platform_copy"],
+    }
+    long_form={
+        "enabled":len(rows)>=4,"target_minutes":[6,10],
+        "director":"story_strength_then_chronology",
+        "chapters":["cold_open","setup","escalation","peak","reaction","resolution"],
+        "reuse_short_moments":True,
+    }
+    game_profiles={
+        "recognized":str(_dict(recognition).get("game") or "unknown"),
+        "context":_dict(context),"specialize":True,
+        "profiles":["arc_raiders","fortnite","call_of_duty_warzone","ea_sports_fc","gta","rocket_league"],
+    }
+    return {
+        "creator_style_learning":creator_style,"cover_ai":cover,"retention_lab":retention,
+        "privacy_visual_guard":privacy,"audio_intelligence":audio,"publishing_intelligence":publishing,
+        "performance_learning":learning,"long_form_director":long_form,"game_specific_director":game_profiles,
+        "reaction_comedy":{"enabled":True,"pause_timing":"adaptive","meme_layer":"context_only"},
+        "multi_moment_story":{"enabled":True,"max_micro_scenes":3,"preserve_same_event":True},
+        "cold_open_smart_end":{"cold_open":True,"smart_ending":True,"auto_loop":True},
+        "future_hooks":{"embeddings":True,"frame_vision":True,"ocr":True,"audio_fingerprint":True,
+                        "platform_analytics":True,"trend_feed":True,"content_calendar":True},
+    }
+
 def _session_intelligence(rows,genre="Auto"):
     """Session-wide intelligence used by Director without adding UI."""
     rows=[_dict(x) for x in _list(rows) if isinstance(x,dict)]
@@ -461,6 +531,7 @@ def build_one_click_package(brain,clip_duration=15.0,genre="Auto",profile="auto"
     session_intelligence=_session_intelligence(selected+alternates,genre=genre)
     game_recognition=_recognize_game(selected+alternates,genre=genre)
     game_context=_game_context(selected+alternates,game_recognition)
+    future_stack=_future_director_stack(selected+alternates,game_recognition,game_context,profile=profile)
     shorts=[
         build_short_package(row,clip_duration=clip_duration,genre=genre,profile=profile)
         for row in selected[:target]
@@ -482,6 +553,7 @@ def build_one_click_package(brain,clip_duration=15.0,genre="Auto",profile="auto"
         "genre":str(genre or brain.get("genre") or "Auto"),
         "game_recognition":game_recognition,
         "game_context":game_context,
+        "director_future_stack":future_stack,
         "session_intelligence":session_intelligence,
         "shorts":shorts,
         "alternates":alt_packages,
