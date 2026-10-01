@@ -74,7 +74,7 @@ st.markdown(r"""
 '''
 s=s.replace(anchor,home+anchor,1)
 
-# Make the new uploader language match the approved Home without touching upload mechanics.
+# V151.3: retire only the old Creator Hub floating FAB; keep its panel/logic for Game Bar.\ns = s.replace("p+'.gsf-account-fab{z-index:2147483500!important;opacity:1!important;visibility:visible!important;filter:none!important;mix-blend-mode:normal!important}'+", "p+'.gsf-account-fab{display:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important}'+")\ns = s.replace("fab.style.opacity='1';\n      fab.style.visibility='visible';\n      fab.style.filter='none';", "fab.style.display='none';\n      fab.style.opacity='0';\n      fab.style.visibility='hidden';\n      fab.style.pointerEvents='none';")\n\n# Make the new uploader language match the approved Home without touching upload mechanics.
 s=s.replace('_label = "Video caricato" if loaded else "Carica il tuo video"',
             '_label = "Video caricato" if loaded else "Carica il tuo gameplay"',1)
 
