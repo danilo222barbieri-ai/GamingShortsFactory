@@ -81,14 +81,8 @@ if pipeline_anchor not in s:
     raise RuntimeError("V145 V142 pipeline anchor missing")
 s=s.replace(pipeline_anchor,pipeline_replacement,1)
 
-ready_anchor=r'''    _v1302_final_ready=bool(
-        st.session_state.get("publication_ready",False)
-        or st.session_state.get("publication_final_bytes")
-        or (_v1302_status or {}).get("download_ready")
-    )
-'''
-ready_replacement=ready_anchor+r'''
-    # V145 records only a real completed Short, never a failed/prepared one.
+quality_anchor='    _v1302_quality=str((_v1302_status or {}).get("quality_status") or "")\n'
+quality_injection=r'''    # V145 records only a real completed Short, never a failed/prepared one.
     if _v1302_final_ready:
         try:
             _v145_pipe=st.session_state.get("gsf_v142_runtime") or {}
@@ -108,9 +102,9 @@ ready_replacement=ready_anchor+r'''
         except Exception as _v145_exc:
             print("GSF_V145_MEMORY_FINAL_WARN",repr(str(_v145_exc))[:220],flush=True)
 '''
-if ready_anchor not in s:
-    raise RuntimeError("V145 final-ready anchor missing")
-s=s.replace(ready_anchor,ready_replacement,1)
+if quality_anchor not in s:
+    raise RuntimeError("V145 quality anchor missing")
+s=s.replace(quality_anchor,quality_injection+quality_anchor,1)
 
 s=s.replace(
     "Gaming Shorts Factory · V144 Visual Scoring",
