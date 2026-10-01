@@ -198,6 +198,29 @@ def apply_pipeline_to_recipe(recipe,pipeline):
             out["ai_director_plan"]=_plan
         except Exception:
             pass
+    # A manual/locked Cover selected inside Game Editor overrides the
+    # automatic Vision candidate while reusing the existing thumbnail renderer.
+    _editor_state=_d(out.get("editor_2027_state"))
+    if _editor_state and (
+        bool(_editor_state.get("coverLocked"))
+        or str(_editor_state.get("coverMode") or "Auto").lower()!="auto"
+    ):
+        try:
+            _cover_time=max(0.0,float(_editor_state.get("coverTime") or 0.0))
+            out["ai_cover"]={
+                "time":_cover_time,
+                "source":"game_editor",
+                "mode":str(_editor_state.get("coverMode") or "Manual"),
+                "score":1.0,
+            }
+            out["ai_thumbnail_offset"]=_cover_time
+            _plan=_d(out.get("ai_director_plan"))
+            _edit=_d(_plan.get("edit"))
+            _edit["thumbnail_offset"]=round(_cover_time,3)
+            _plan["edit"]=_edit
+            out["ai_director_plan"]=_plan
+        except Exception:
+            pass
     out["ai_visual_cleanup"]={
         "recommended":bool(vision.get("cleanup_recommended")),
         "overlays":_l(vision.get("overlay_findings")),
