@@ -111,6 +111,27 @@ def apply_pipeline_to_recipe(recipe,pipeline):
     render=_d(p.get("render")); selected=_d(p.get("selected_short"))
     if selected.get("render",{}).get("plan") and not out.get("ai_director_plan"):
         out["ai_director_plan"]=_d(selected["render"].get("plan"))
+    # Blend learned creator preferences back into the actual Director plan.
+    _plan=_d(out.get("ai_director_plan"))
+    _frame=_d(_plan.get("framing"))
+    _edit=_d(_plan.get("edit"))
+    _profile=_d(p.get("creator_profile"))
+    if _frame and _profile:
+        try:
+            _zoom=float(_frame.get("zoom") or 1.0)
+            _learned=1.0+0.45*float(_profile.get("zoom_aggression") or 0.0)
+            _frame["zoom"]=round(max(1.0,min(1.8,_zoom*.72+_learned*.28)),3)
+        except Exception:
+            pass
+        _plan["framing"]=_frame
+    if _edit and _profile:
+        _replay=_d(_edit.get("replay"))
+        if _replay and float(_profile.get("replay_preference") or 0.0)<.22:
+            _replay["enabled"]=False
+            _edit["replay"]=_replay
+        _plan["edit"]=_edit
+    if _plan:
+        out["ai_director_plan"]=_plan
     out["director_runtime_v142"]={
         "engine":p.get("engine"),
         "ab":p.get("ab"),
