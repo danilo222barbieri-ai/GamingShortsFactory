@@ -342,10 +342,55 @@ def build_short_package(moment,clip_duration=15.0,genre="Auto",profile="auto"):
     return package
 
 
+def _session_intelligence(rows,genre="Auto"):
+    """Session-wide intelligence used by Director without adding UI."""
+    rows=[_dict(x) for x in _list(rows) if isinstance(x,dict)]
+    fingerprints=set(); unique=[]; duplicates=[]
+    for row in rows:
+        event=str(row.get("event") or "highlight").lower()
+        start=round(_num(row.get("start"),0.0)/3.0)
+        reason=str(row.get("reason") or "").lower().strip()[:42]
+        fp=(event,start,reason)
+        if fp in fingerprints:
+            duplicates.append({"event":event,"start":round(_num(row.get("start"),0),2)})
+        else:
+            fingerprints.add(fp); unique.append(row)
+    groups={}
+    for row in unique:
+        key=str(row.get("event") or "highlight").lower()
+        groups.setdefault(key,[]).append(row)
+    series=[{"theme":k,"parts":len(v)} for k,v in groups.items() if len(v)>=2]
+    ranked=sorted(unique,key=lambda x:_num(x.get("brain_score"),x.get("score")),reverse=True)
+    return {
+        "duplicate_detector":{"unique":len(unique),"duplicates":duplicates[:12]},
+        "series_ai":{"candidates":series[:6]},
+        "best_of_session":{
+            "shorts":[round(_num(x.get("start"),0),2) for x in ranked[:3]],
+            "compilation":[round(_num(x.get("start"),0),2) for x in ranked[3:7]],
+            "long_form_intro":[round(_num(x.get("start"),0),2) for x in ranked[:2]],
+        },
+        "long_form":{
+            "enabled":len(unique)>=4,
+            "target_minutes":[6,10],
+            "chapter_strategy":"narrative_strength_then_chronology",
+        },
+        "content_memory":{"fingerprints":[str(x) for x in list(fingerprints)[:24]],"avoid_republish":True},
+        "safety_privacy":{
+            "scan":["nickname","chat","email","notification","ip","qr_code"],
+            "action":"warn_before_publish",
+        },
+        "copyright_audio":{"scan":True,"action":"flag_before_publish"},
+        "visual_cleanup":{"detect":["discord","xbox","playstation","system_notification","popup"],"auto_cover_candidate":True},
+        "trend_adaptation":{"enabled":True,"weight":"light","preserve_creator_style":True},
+        "content_calendar":{"enabled":True,"inputs":["material","platform_history","content_type"]},
+        "post_publish_learning":{"signals":["watch_time","completion_rate","scroll_away","retention_curve"],"when_connected":True},
+    }
+
+
 def build_one_click_package(brain,clip_duration=15.0,genre="Auto",profile="auto",target_count=3):
     brain=_dict(brain)
     selected=[x for x in _list(brain.get("selected")) if isinstance(x,dict)]
-    alternates=[x for x in _list(brain.get("alternates")) if isinstance(x,dict)]
+    alternates=[x for x in _list(brain.get("alternates")) if isinstance(x,dict)]\n    session_intelligence=_session_intelligence(selected+alternates,genre=genre)
     target=max(1,min(3,int(target_count or 3)))
     shorts=[
         build_short_package(row,clip_duration=clip_duration,genre=genre,profile=profile)
@@ -357,7 +402,7 @@ def build_one_click_package(brain,clip_duration=15.0,genre="Auto",profile="auto"
     ]
     return {
         "engine":ENGINE_VERSION,
-        "source_engine":str(brain.get("engine") or ""),
+        "source_engine":str(brain.get("engine") or ""),\n        "session_intelligence":session_intelligence,
         "ready":bool(shorts),
         "target_count":target,
         "prepared_count":len(shorts),
