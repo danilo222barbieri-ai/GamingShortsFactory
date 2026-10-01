@@ -18,7 +18,10 @@ for legacy in (
 ):
     assert legacy not in app, f"legacy global CSS survived V152 reset: {legacy}"
 
-assert 'id="gsf-living-ui"' in app, "Living shell CSS missing from generated app"
+assert "_gsf_render_living_shell()" in app, "Living shell call missing from generated app"
 assert "_gsf_render_living_tail()" in app, "Living tail call missing from generated app"
+assert "st.html(LIVING_CSS)" in living, "Living CSS must mount through st.html"
+assert "st.html(SHELL_HTML)" in living, "Living shell HTML must mount through st.html"
+assert "st.html(tail_css)" in living, "Living tail CSS must mount through st.html"
 
 print("V153.19 legacy CSS purge contract: PASS")
