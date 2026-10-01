@@ -69,6 +69,7 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python -m py_compile /app/web/quality_control_v124.py && \
     python -m py_compile /app/web/guardian_intelligence_v124.py && \
     python -m py_compile /app/web/auto_highlights/engine_v129.py && \
+    python -m py_compile /app/web/one_click_v130.py && \
     python -m py_compile /app/web/ai_worker_server.py
 
 EXPOSE 8600
