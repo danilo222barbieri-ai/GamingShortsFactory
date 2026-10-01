@@ -28,7 +28,28 @@ if GSF_WEB_MODE:
         padding:0 !important;
         overflow:hidden !important;
     }
-    .gsf-living-brand{display:none !important;}
+    .gsf-living-brand,
+    .gsf-living-bar{
+        display:none !important;
+    }
+
+    /* V154.1 owns these Home CTAs. Keep the real Streamlit widgets mounted
+       as action targets for the component, but remove their duplicate UI. */
+    .st-key-gsf-major-create-ai,
+    .st-key-gsf-major-personalize,
+    [class*="st-key-gsf-major-game-editor_"],
+    .st-key-gsf-major-create-short,
+    [class*="st-key-edit_ai_"],
+    .st-key-create_final_short_v54{
+        position:absolute !important;
+        width:1px !important;
+        height:1px !important;
+        overflow:hidden !important;
+        opacity:0 !important;
+        pointer-events:none !important;
+        margin:0 !important;
+        padding:0 !important;
+    }
     </style>
     """)
 
@@ -41,7 +62,7 @@ if GSF_WEB_MODE:
         loaded=bool(video is not None),
         duration=_gsf_v154_duration,
         engine=_gsf_v154_engine,
-        height=760 if video is not None else 470,
+        height=1180 if video is not None else 1080,
         key="gsf_home_v154_live",
     )
 
