@@ -73,7 +73,8 @@ RUN chmod +x /usr/local/bin/ffmpeg && python -c "import base64,gzip,pathlib; p=p
     python /app/web/test_v145_content_memory.py /app/web/direct_upload_server.py /app/GamingShortsFactory_V145_CONTENT_MEMORY.py && \
     python -m py_compile /app/GamingShortsFactory_V145_CONTENT_MEMORY.py && \
     python -m py_compile /app/web/direct_upload_server.py && \
-    python /app/web/test_v146_ocr_privacy.py
+    python /app/web/test_v146_ocr_privacy.py && \
+    python /app/web/test_v147_cover_longform.py
 RUN python -m compileall -q /app/web
 COPY .streamlit /app/.streamlit
 RUN PORT=8080 envsubst '${PORT}' < /app/web/nginx.conf.template > /tmp/gsf-nginx-test.conf && cp /tmp/gsf-nginx-test.conf /etc/nginx/conf.d/default.conf && nginx -t
