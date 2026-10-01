@@ -24,9 +24,13 @@ def _run(cmd, timeout=180):
 def _sample_times(duration,step=.8,max_frames=40):
     duration=max(0.0,float(duration or 0.0))
     if duration<=0:return []
+    max_frames=max(4,int(max_frames or 40))
+    step=max(.45,float(step or .8))
+    if duration/step>max_frames:
+        step=max(.45,duration/max_frames)
     pts=[]; t=.15
     while t<duration and len(pts)<max_frames:
-        pts.append(round(t,3)); t+=max(.45,float(step))
+        pts.append(round(t,3)); t+=step
     if not pts or pts[-1]<duration-.25:
         pts.append(round(max(0.0,duration-.15),3))
     return pts[:max_frames]
