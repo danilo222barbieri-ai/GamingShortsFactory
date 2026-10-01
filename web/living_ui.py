@@ -158,6 +158,123 @@ html,body,[data-testid="stAppViewContainer"],.stApp{
   }
 }
 
+/* Home hierarchy and controls: visual-only Living pass. */
+[data-testid="stAppViewContainer"] h1,
+[data-testid="stAppViewContainer"] h2,
+[data-testid="stAppViewContainer"] h3{
+  color:#17233a!important;
+  letter-spacing:-.035em!important;
+  line-height:1.04!important;
+}
+[data-testid="stAppViewContainer"] h1{
+  font-size:clamp(2rem,4.2vw,3.35rem)!important;
+  font-weight:820!important;
+  margin-bottom:.45rem!important;
+}
+[data-testid="stAppViewContainer"] h2{
+  font-size:clamp(1.45rem,2.4vw,2.1rem)!important;
+  font-weight:790!important;
+}
+[data-testid="stAppViewContainer"] h3{
+  font-size:clamp(1.08rem,1.8vw,1.4rem)!important;
+  font-weight:760!important;
+}
+[data-testid="stAppViewContainer"] p,
+[data-testid="stCaptionContainer"]{
+  color:var(--gsf-muted)!important;
+}
+[data-testid="stMarkdownContainer"] strong{
+  color:#26384b;
+}
+
+/* Inputs feel integrated instead of default widgets. */
+[data-baseweb="select"]>div,
+[data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input,
+[data-testid="stTextArea"] textarea{
+  border-radius:14px!important;
+  border-color:rgba(105,166,201,.22)!important;
+  background:rgba(255,255,255,.82)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.86)!important;
+}
+[data-baseweb="select"]>div:focus-within,
+[data-testid="stTextInput"] input:focus,
+[data-testid="stNumberInput"] input:focus,
+[data-testid="stTextArea"] textarea:focus{
+  border-color:rgba(80,170,220,.56)!important;
+  box-shadow:0 0 0 3px rgba(102,190,238,.10)!important;
+}
+
+/* Choice controls and tabs become lighter app controls. */
+[data-testid="stRadio"] [role="radiogroup"],
+[data-testid="stSegmentedControl"]{
+  gap:8px!important;
+}
+[data-testid="stTabs"] [role="tablist"]{
+  gap:7px!important;
+  background:rgba(245,250,255,.68);
+  padding:5px;
+  border-radius:16px;
+  border:1px solid rgba(110,169,203,.14);
+}
+[data-testid="stTabs"] [role="tab"]{
+  border-radius:11px!important;
+  padding:.42rem .8rem!important;
+}
+[data-testid="stTabs"] [aria-selected="true"]{
+  background:rgba(132,203,240,.16)!important;
+}
+
+/* Progress and status surfaces look alive but calm. */
+[data-testid="stProgress"]>div>div{
+  border-radius:999px!important;
+  overflow:hidden!important;
+  background:rgba(137,197,231,.15)!important;
+}
+[data-testid="stProgress"]>div>div>div{
+  border-radius:999px!important;
+  box-shadow:0 0 14px rgba(85,174,221,.18);
+}
+[data-testid="stMetric"]{
+  padding:.85rem 1rem!important;
+  border-radius:18px!important;
+  background:rgba(255,255,255,.64)!important;
+  border:1px solid rgba(108,166,199,.13)!important;
+}
+
+/* Main CTA buttons get a more product-like visual weight. */
+.stButton>button[kind="primary"],
+button[data-testid="baseButton-primary"]{
+  color:#15364a!important;
+  font-weight:790!important;
+  background:
+    linear-gradient(180deg,rgba(176,222,247,.96),rgba(139,205,239,.92))!important;
+  border-color:rgba(77,164,212,.30)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.82),
+    0 10px 25px rgba(72,153,198,.15)!important;
+}
+@media(hover:hover) and (pointer:fine){
+  .stButton>button[kind="primary"]:hover,
+  button[data-testid="baseButton-primary"]:hover{
+    background:
+      linear-gradient(180deg,rgba(187,228,249,.98),rgba(148,211,243,.96))!important;
+    transform:translateY(-1px) scale(1.006);
+  }
+}
+
+/* Keep vertical rhythm compact and intentional. */
+[data-testid="stAppViewContainer"] [data-testid="stVerticalBlock"]{
+  row-gap:.72rem;
+}
+[data-testid="stHorizontalBlock"]{
+  gap:1rem!important;
+}
+hr{
+  border-color:rgba(104,160,194,.13)!important;
+  margin:1.3rem 0!important;
+}
+
 /* Key motion is soft and bounded. */
 @keyframes gsfBrandIn{
   from{opacity:0;transform:translateY(-7px)}
@@ -214,6 +331,12 @@ html,body,[data-testid="stAppViewContainer"],.stApp{
     top:11px;font-size:8px;letter-spacing:1.1px;
   }
   [data-testid="stFileUploaderDropzone"]::after{border-radius:27px}
+}
+@media(max-width:760px){
+  [data-testid="stHorizontalBlock"]{gap:.65rem!important}
+  [data-testid="stAppViewContainer"] h1{font-size:2rem!important}
+  [data-testid="stAppViewContainer"] h2{font-size:1.45rem!important}
+  .stButton>button,.stDownloadButton>button{min-height:44px!important}
 }
 @media(max-width:420px){
   .gsf-living-chip{font-size:9px}
