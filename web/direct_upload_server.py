@@ -28,6 +28,7 @@ from feedback_learning_v127 import (
     update_model as _learning_update_model,
 )
 from content_memory_v145 import inspect_memory as _content_memory_inspect, upsert_memory as _content_memory_upsert
+from social_analytics_v148 import collect as _social_analytics_collect, dynamic_performance_score as _social_dynamic_score
 
 try:
     from pywebpush import webpush, WebPushException
@@ -51,6 +52,8 @@ _QUALITY_CACHE={}
 _QUALITY_LOCK=threading.Lock()
 _AI_FEEDBACK_LOCK=threading.Lock()
 _CONTENT_MEMORY_LOCK=threading.Lock()
+_ANALYTICS_LOCK=threading.Lock()
+_ANALYTICS_TICK={}
 _AI_LEARNING_PATH=ROOT/"ai_learning_v127.json"
 _AI_LEARNING_BUCKET_KEY="ai-feedback/global/model.json"
 _GUARDIAN_WATCHDOG=None
@@ -79,10 +82,10 @@ TIKTOK_CLIENT_KEY=_env_first("GSF_TIKTOK_CLIENT_KEY",default="")
 TIKTOK_CLIENT_SECRET=_env_first("GSF_TIKTOK_CLIENT_SECRET",default="")
 YOUTUBE_CLIENT_ID=_env_first("GSF_YOUTUBE_CLIENT_ID",default="")
 YOUTUBE_CLIENT_SECRET=_env_first("GSF_YOUTUBE_CLIENT_SECRET",default="")
-YOUTUBE_SCOPE="https://www.googleapis.com/auth/youtube.upload"
+YOUTUBE_SCOPE="https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/yt-analytics.readonly"
 INSTAGRAM_APP_ID=_env_first("GSF_INSTAGRAM_APP_ID",default="")
 INSTAGRAM_APP_SECRET=_env_first("GSF_INSTAGRAM_APP_SECRET",default="")
-INSTAGRAM_SCOPES="instagram_business_basic,instagram_business_content_publish"
+INSTAGRAM_SCOPES="instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights"
 INSTAGRAM_REDIRECT_URI=(PUBLIC_APP_URL+"/auth/instagram/callback") if PUBLIC_APP_URL else ""
 META_APP_ID=_env_first("GSF_META_APP_ID",default="")
 META_APP_SECRET=_env_first("GSF_META_APP_SECRET",default="")
