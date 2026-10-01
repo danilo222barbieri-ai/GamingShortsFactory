@@ -63,10 +63,12 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v99_final_arch.py && \
     python /app/web/test_v114_semantic_video.py && \
     python /app/web/test_v124_ai_core.py && \
+    python /app/web/test_v129_auto_highlights.py && \
     python -m py_compile /app/web/semantic_video_v114.py && \
     python -m py_compile /app/web/ai_director_v124.py && \
     python -m py_compile /app/web/quality_control_v124.py && \
     python -m py_compile /app/web/guardian_intelligence_v124.py && \
+    python -m py_compile /app/web/auto_highlights/engine_v129.py && \
     python -m py_compile /app/web/ai_worker_server.py
 
 EXPOSE 8600

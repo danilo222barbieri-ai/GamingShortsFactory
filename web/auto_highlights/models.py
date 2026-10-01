@@ -41,7 +41,10 @@ class HighlightCandidate:
     end_seconds: float
     score: float
     reason: str
-    engine: str = "automatico"
+    engine: str = "game-brain-v129"
+    confidence: float = 0.0
+    event: str = "highlight"
+    director_plan: Mapping[str, Any] = field(default_factory=dict)
 
     @property
     def duration(self) -> float:
