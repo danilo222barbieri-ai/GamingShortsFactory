@@ -76,6 +76,9 @@ contracts={
    'visual_scoring_v144',
    'content_memory_v145',
    'out["ai_render_operations"]',
+   'source":"performance_learning"',
+   'completion<.55',
+   'share>=.04',
  ],
  "render-execution":[
    "def execute_director_operations",
