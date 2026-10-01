@@ -19,6 +19,36 @@ html,body,[data-testid="stAppViewContainer"],.stApp{
     linear-gradient(180deg,#fbfdff 0%,#f5faff 52%,#ffffff 100%) !important;
   color:var(--gsf-ink) !important;
 }
+
+/* App-shell polish: presentation only. */
+[data-testid="stHeader"]{background:transparent!important}
+[data-testid="stToolbar"],#MainMenu,footer{visibility:hidden!important}
+[data-testid="stDecoration"]{display:none!important}
+[data-testid="stAppViewContainer"]{overflow-x:hidden!important}
+.stButton>button,.stDownloadButton>button{
+  border-radius:14px!important;
+  border:1px solid rgba(104,176,217,.22)!important;
+  box-shadow:0 8px 22px rgba(75,135,171,.07)!important;
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease!important;
+}
+.stButton>button:hover,.stDownloadButton>button:hover{
+  transform:translateY(-1px);
+  border-color:rgba(86,174,224,.44)!important;
+  box-shadow:0 11px 28px rgba(75,145,187,.12)!important;
+}
+[data-testid="stVerticalBlockBorderWrapper"]{
+  border-radius:22px!important;
+}
+[data-testid="stExpander"]{
+  border-radius:18px!important;
+  overflow:hidden;
+  border-color:rgba(112,169,202,.18)!important;
+  background:rgba(255,255,255,.66)!important;
+}
+[data-testid="stAlert"]{
+  border-radius:16px!important;
+}
+
 [data-testid="stAppViewContainer"] .main .block-container{
   max-width:1200px !important;
   padding-top:5.3rem !important;
