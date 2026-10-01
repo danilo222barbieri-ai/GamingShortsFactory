@@ -490,6 +490,16 @@ if (
         st.session_state[_v1302_tags_key]=_v1302_default_tags
 
     with st.container(key="v1055_social_composer_shared"):
+        _v1302_save_bytes=st.session_state.get("publication_final_bytes") or b""
+        st.download_button(
+            "SALVA / CONDIVIDI",
+            data=bytes(_v1302_save_bytes),
+            file_name="gaming_short_finale.mp4",
+            mime="video/mp4",
+            use_container_width=True,
+            key="gsf_v1302_save_share",
+            disabled=not bool(_v1302_final_ready and _v1302_save_bytes),
+        )
         _v1302_title=st.text_input("Titolo",key=_v1302_title_key)
         _v1302_description=st.text_area(
             "Descrizione",key=_v1302_desc_key,height=120
@@ -690,6 +700,7 @@ st.markdown("""
 [class*="st-key-gsf_v1302_icon_"] button{min-height:44px!important;border-radius:14px!important;border:1px solid rgba(138,174,199,.48)!important;background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(241,247,252,.95))!important;color:#53758e!important;box-shadow:0 8px 18px rgba(49,92,125,.08)!important;font-weight:800!important}
 [class*="st-key-gsf_v1302_icon_"] button:hover{transform:translateY(-1px)!important;color:#4f46e5!important;border-color:rgba(99,102,241,.48)!important}
 .gsf-v1302-create-note{border:1px dashed #bfd7e8;border-radius:16px;padding:10px 12px;background:rgba(244,250,254,.78);color:#55758c}
+[class*="st-key-gsf_share_download_top"]{display:none !important;}
 #gsf-creator-hub-portal-v107:has(.gsf-creator-hub-overlay.is-open){
   position:fixed !important;
   inset:0 !important;
