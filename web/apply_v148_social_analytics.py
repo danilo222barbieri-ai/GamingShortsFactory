@@ -93,9 +93,7 @@ def _gsf_write_social_status(*args,**kwargs):
 
 
 '''
-replacement=block.rstrip()+"
-
-"+wrapper.lstrip()
+replacement=block.rstrip()+"\n\n"+wrapper.lstrip()
 s="".join(lines[:start])+replacement+"".join(lines[end:])
 
 s=s.replace(
