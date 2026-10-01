@@ -961,6 +961,168 @@ button[data-testid="baseButton-primary"]{
   }
 }
 
+/* V153.11 — first-screen composition and stronger reference match. */
+
+/* Make the first viewport read as one designed composition. */
+[data-testid="stAppViewContainer"] .main .block-container{
+  padding-top:5.8rem!important;
+}
+[data-testid="stAppViewContainer"] h1:first-of-type{
+  text-align:center!important;
+  max-width:760px;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+[data-testid="stAppViewContainer"] h1:first-of-type + div,
+[data-testid="stAppViewContainer"] h1:first-of-type + [data-testid="stCaptionContainer"]{
+  max-width:720px;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  text-align:center!important;
+}
+
+/* The upload circle now feels like a real focal object, not a styled widget. */
+[data-testid="stFileUploader"]{
+  width:min(36vw,420px)!important;
+  max-width:420px!important;
+  min-width:340px!important;
+}
+[data-testid="stFileUploaderDropzone"]{
+  border-width:1px!important;
+  border-color:rgba(102,185,230,.32)!important;
+}
+[data-testid="stFileUploaderDropzone"]::before{
+  top:22%!important;
+  font-size:12px!important;
+  letter-spacing:.75px!important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"]{
+  margin-top:2.55rem!important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"] small{
+  display:block!important;
+  margin-top:.25rem!important;
+}
+[data-testid="stFileUploaderDropzone"] button{
+  margin-top:.45rem!important;
+  min-width:126px!important;
+}
+
+/* Main action cards: equal rhythm and clear visual grouping. */
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]){
+  display:flex!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"])>div{
+  width:100%!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]{
+  height:100%!important;
+  padding:1rem 1rem .9rem!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stMarkdownContainer"]{
+  min-height:64px;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) .stButton{
+  margin-top:auto!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) .stButton>button{
+  height:44px!important;
+  min-height:44px!important;
+}
+
+/* Recent-project/media groups become quieter and more premium. */
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]){
+  background:rgba(255,255,255,.54);
+  border:1px solid rgba(107,166,200,.10);
+  border-radius:22px;
+  padding:.45rem;
+  box-shadow:0 12px 28px rgba(73,122,153,.055);
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]) [data-testid="stMarkdownContainer"]{
+  padding:0 .25rem .15rem;
+}
+
+/* Keep headings and section controls compact and modern. */
+[data-testid="stAppViewContainer"] h2{
+  font-size:clamp(1.35rem,2vw,1.85rem)!important;
+}
+[data-testid="stAppViewContainer"] h3{
+  line-height:1.15!important;
+}
+[data-testid="stCaptionContainer"]{
+  line-height:1.35!important;
+}
+
+/* Desktop spacing tuned for one-screen hierarchy. */
+@media(min-width:1100px){
+  [data-testid="stAppViewContainer"] .main .block-container{
+    max-width:1110px!important;
+  }
+  [data-testid="stFileUploader"]{
+    margin-top:1.4rem!important;
+    margin-bottom:2.7rem!important;
+  }
+  [data-testid="stHorizontalBlock"]{
+    gap:1rem!important;
+  }
+}
+
+/* Tablet keeps the uploader central without crushing the side guidance. */
+@media(min-width:761px) and (max-width:1099px){
+  [data-testid="stFileUploader"]{
+    width:min(44vw,380px)!important;
+    min-width:320px!important;
+  }
+  [data-testid="stFileUploader"]::before,
+  [data-testid="stFileUploader"]::after{
+    width:135px!important;
+    font-size:12px!important;
+  }
+}
+
+/* Mobile: native-app density, centered hero, cards readable without huge scrolling. */
+@media(max-width:760px){
+  [data-testid="stAppViewContainer"] .main .block-container{
+    padding-top:4.05rem!important;
+    padding-bottom:6.9rem!important;
+  }
+  [data-testid="stAppViewContainer"] h1:first-of-type{
+    font-size:1.82rem!important;
+    margin-bottom:.25rem!important;
+  }
+  [data-testid="stFileUploader"]{
+    width:min(78vw,318px)!important;
+    min-width:0!important;
+    max-width:318px!important;
+    margin-top:.85rem!important;
+    margin-bottom:1.75rem!important;
+  }
+  [data-testid="stFileUploaderDropzone"]::before{
+    top:21%!important;
+    font-size:10px!important;
+  }
+  [data-testid="stFileUploaderDropzoneInstructions"]{
+    max-width:72%!important;
+    margin-top:2rem!important;
+  }
+  [data-testid="stFileUploaderDropzone"] button{
+    min-width:112px!important;
+    min-height:40px!important;
+    font-size:.82rem!important;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stVerticalBlockBorderWrapper"]{
+    padding:.78rem .82rem!important;
+    border-radius:20px!important;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has(.stButton>button[kind="primary"]) [data-testid="stMarkdownContainer"]{
+    min-height:0;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]:has([data-testid="stImage"]){
+    border-radius:18px;
+    padding:.35rem;
+  }
+}
+
 /* Key motion is soft and bounded. */
 @keyframes gsfBrandIn{
   from{opacity:0;transform:translateY(-7px)}
