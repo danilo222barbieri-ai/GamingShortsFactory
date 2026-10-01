@@ -23,7 +23,7 @@ required=[
     'CREO SHORT · IA Quality Check · Pronto',
     'SHORT PRONTO',
     'gsf-v1302-create-note',
-    'gsf_v1302_icon_youtube',
+    '"gsf_v1302_icon_"+_v1302_key',
     'gsf_v1302_save_share',
     '"SALVA / CONDIVIDI"',
     '[class*="st-key-gsf_share_download_top"]{display:none !important;}',
