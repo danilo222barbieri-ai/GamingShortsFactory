@@ -38,7 +38,9 @@ def recent_sessions(runtime_root,now=None,active_window=21600,max_sessions=24):
             session/"media"/".direct_upload_ready.json",
             session/"media"/"gaming_short_finale_share.mp4",
         ]
-        latest=max([_mtime(x) for x in candidates]+[_mtime(session)])
+        marker_times=[_mtime(x) for x in candidates]
+        marker_latest=max(marker_times or [0.0])
+        latest=marker_latest if marker_latest>0 else _mtime(session)
         if latest<=0 or now-latest>active_window:
             continue
         rows.append({"sid":sid,"last_seen":latest,"age":max(0.0,now-latest)})
