@@ -11,7 +11,7 @@ LIVING_CSS = r"""
   --gsf-ink:#18243a;
   --gsf-blue:#83c8ee;
   --gsf-line:rgba(102,155,190,.24);
-  --gsf-glass:rgba(255,255,255,.78);
+  --gsf-glass:rgba(255,255,255,.76);\n  --gsf-glow:rgba(101,190,239,.30);
 }
 html,body,[data-testid="stAppViewContainer"],.stApp{
   background:
@@ -26,7 +26,7 @@ html,body,[data-testid="stAppViewContainer"],.stApp{
 }
 .gsf-living-brand{
   position:fixed; top:18px; left:26px; z-index:9999;
-  font-size:18px; font-weight:800; letter-spacing:-.35px;
+  font-size:18px; font-weight:800; letter-spacing:-.35px;\n  animation:gsfBrandIn .7s cubic-bezier(.2,.8,.2,1) both;
   color:#17233a;
 }
 .gsf-living-bar{
@@ -35,20 +35,20 @@ html,body,[data-testid="stAppViewContainer"],.stApp{
   padding:7px 9px; border:1px solid var(--gsf-line);
   border-radius:18px; background:var(--gsf-glass);
   box-shadow:0 12px 34px rgba(64,116,151,.12);
-  backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+  backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);\n  animation:gsfBarIn .65s cubic-bezier(.2,.8,.2,1) both;
 }
 .gsf-living-chip{
   display:flex; align-items:center; justify-content:center;
   min-width:42px; height:34px; padding:0 12px;
   border-radius:12px; font-size:12px; font-weight:750;
   color:#506177; background:rgba(245,250,255,.82);
-  border:1px solid rgba(121,172,205,.14);
+  border:1px solid rgba(121,172,205,.14);\n  transition:transform .2s ease,background .2s ease,box-shadow .2s ease;
 }
-.gsf-living-chip.active{
+.gsf-living-chip:hover{transform:translateY(-1px);background:rgba(229,245,255,.96)}\n.gsf-living-chip.active{
   color:#176894; background:rgba(129,202,239,.18);
   box-shadow:inset 0 0 0 1px rgba(105,186,229,.14);
 }
-[data-testid="stFileUploader"]{
+@keyframes gsfBrandIn{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}\n@keyframes gsfBarIn{from{opacity:0;transform:translate(-50%,-8px) scale(.98)}to{opacity:1;transform:translate(-50%,0) scale(1)}}\n[data-testid="stFileUploader"]{
   max-width:720px !important; margin:1.2rem auto !important;
   filter:drop-shadow(0 18px 34px rgba(81,142,180,.10));
 }
@@ -58,9 +58,9 @@ html,body,[data-testid="stAppViewContainer"],.stApp{
   background:rgba(255,255,255,.84) !important;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),
              0 14px 42px rgba(87,153,194,.09) !important;
-  animation:gsfLivingBreath 3.2s ease-in-out infinite;
+  animation:gsfLivingBreath 3.2s ease-in-out infinite;\n  transition:transform .28s ease,border-color .28s ease;
 }
-@keyframes gsfLivingBreath{
+[data-testid="stFileUploaderDropzone"]:hover{transform:translateY(-2px);border-color:rgba(82,174,226,.58)!important}\n[data-testid="stFileUploaderDropzone"]::after{\n  content:"";position:absolute;inset:-1px;border-radius:28px;pointer-events:none;\n  background:radial-gradient(circle at 50% 0,var(--gsf-glow),transparent 46%);\n  opacity:.35;animation:gsfUploaderAura 3.2s ease-in-out infinite;\n}\n@keyframes gsfUploaderAura{0%,100%{opacity:.22}50%{opacity:.62}}\n@keyframes gsfLivingBreath{
   0%,100%{box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),0 14px 42px rgba(87,153,194,.09)}
   50%{box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),0 16px 48px rgba(87,169,216,.18)}
 }
@@ -71,7 +71,7 @@ html,body,[data-testid="stAppViewContainer"],.stApp{
   [data-testid="stAppViewContainer"] .main .block-container{padding-top:4.4rem !important;padding-bottom:6.4rem !important}
 }
 @media(prefers-reduced-motion:reduce){
-  [data-testid="stFileUploaderDropzone"]{animation:none}
+  [data-testid="stFileUploaderDropzone"],[data-testid="stFileUploaderDropzone"]::after,.gsf-living-brand,.gsf-living-bar{animation:none}
 }
 </style>
 """
@@ -83,7 +83,7 @@ SHELL_HTML = r"""
   <div class="gsf-living-chip">AI</div>
   <div class="gsf-living-chip">Editor</div>
   <div class="gsf-living-chip">Share</div>
-  <div class="gsf-living-chip">Hub</div>
+  <div class="gsf-living-chip">Creator Hub</div>
 </div>
 """
 
