@@ -415,6 +415,196 @@ hr{
   }
 }
 
+/* V153.8 — large Living fidelity pass: hero, guidance, cards, dock, responsive. */
+
+@media(min-width:980px){
+  [data-testid="stAppViewContainer"] .main .block-container{
+    max-width:1080px!important;
+    padding-top:6.15rem!important;
+  }
+}
+
+/* Central living uploader with side guidance. */
+[data-testid="stFileUploader"]{
+  position:relative!important;
+  overflow:visible!important;
+  margin-top:2.35rem!important;
+  margin-bottom:3.4rem!important;
+}
+[data-testid="stFileUploader"]::before,
+[data-testid="stFileUploader"]::after{
+  position:absolute;
+  top:50%;
+  width:220px;
+  transform:translateY(-50%);
+  color:rgba(52,79,104,.66);
+  font-size:15px;
+  line-height:1.28;
+  font-weight:560;
+  font-style:italic;
+  letter-spacing:-.02em;
+  pointer-events:none;
+  z-index:3;
+}
+[data-testid="stFileUploader"]::before{
+  content:"Trasforma il tuo gameplay in Shorts  →";
+  right:calc(100% + 34px);
+  text-align:right;
+}
+[data-testid="stFileUploader"]::after{
+  content:"←  Trascina qui o tocca per caricare";
+  left:calc(100% + 34px);
+  text-align:left;
+}
+[data-testid="stFileUploaderDropzone"]{
+  background:
+    radial-gradient(circle at 50% 42%,rgba(255,255,255,.99) 0 42%,rgba(246,252,255,.96) 58%,rgba(228,246,255,.93) 100%)!important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.98),
+    inset 0 0 0 19px rgba(223,244,255,.34),
+    inset 0 -18px 34px rgba(133,199,234,.07),
+    0 0 0 10px rgba(181,228,249,.15),
+    0 0 0 21px rgba(181,228,249,.055),
+    0 26px 70px rgba(78,143,182,.15)!important;
+}
+[data-testid="stFileUploaderDropzone"]::after{
+  background:
+    radial-gradient(circle at 50% 22%,rgba(113,199,244,.34),transparent 38%),
+    radial-gradient(circle at 50% 78%,rgba(192,235,255,.12),transparent 48%)!important;
+}
+[data-testid="stFileUploaderDropzone"] button{
+  border-radius:999px!important;
+  padding:.58rem 1.08rem!important;
+  background:linear-gradient(180deg,rgba(236,248,255,.98),rgba(218,241,253,.94))!important;
+  color:#24465e!important;
+  font-weight:760!important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"]{
+  text-align:center!important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"]>div{
+  justify-content:center!important;
+}
+
+/* App-card language across Home. */
+[data-testid="stVerticalBlockBorderWrapper"]{
+  border-radius:25px!important;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.92),rgba(248,252,255,.78))!important;
+  border:1px solid rgba(116,174,207,.13)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.95),
+    0 16px 38px rgba(80,130,160,.075)!important;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"] [data-testid="stVerticalBlockBorderWrapper"]{
+  min-height:100%;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"] [data-testid="stMarkdownContainer"] p{
+  line-height:1.42!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"] h3{
+  margin-bottom:.35rem!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"] .stButton{
+  margin-top:.35rem!important;
+}
+[data-testid="stHorizontalBlock"]>[data-testid="stColumn"] .stButton>button{
+  border-radius:999px!important;
+  min-width:44px!important;
+}
+
+/* Stronger primary actions, softer secondary actions. */
+.stButton>button[kind="primary"],
+button[data-testid="baseButton-primary"]{
+  min-height:46px!important;
+  padding:.62rem 1.15rem!important;
+  border-radius:15px!important;
+  background:
+    linear-gradient(180deg,rgba(181,225,248,.98),rgba(141,205,239,.95))!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.88),
+    0 12px 26px rgba(72,153,198,.16)!important;
+}
+.stButton>button:not([kind="primary"]),
+.stDownloadButton>button{
+  background:rgba(255,255,255,.78)!important;
+}
+
+/* Cleaner section rhythm. */
+[data-testid="stAppViewContainer"] h1{
+  margin-top:.1rem!important;
+  margin-bottom:.35rem!important;
+}
+[data-testid="stAppViewContainer"] h2{
+  margin-top:1.45rem!important;
+  margin-bottom:.55rem!important;
+}
+[data-testid="stAppViewContainer"] h3{
+  margin-bottom:.4rem!important;
+}
+[data-testid="stAppViewContainer"] [data-testid="stVerticalBlock"]{
+  row-gap:.66rem!important;
+}
+[data-testid="stHorizontalBlock"]{
+  gap:.9rem!important;
+}
+
+/* Bottom dock feels like a real native app control. */
+@media(max-width:760px){
+  .gsf-living-bar{
+    bottom:9px!important;
+    border-radius:26px!important;
+    padding:7px!important;
+    background:rgba(255,255,255,.86)!important;
+    box-shadow:
+      0 16px 42px rgba(70,126,158,.17),
+      inset 0 1px 0 rgba(255,255,255,.98)!important;
+  }
+  .gsf-living-chip{
+    height:44px!important;
+    border-radius:15px!important;
+    font-size:10px!important;
+  }
+  .gsf-living-chip.active{
+    background:rgba(132,203,240,.22)!important;
+  }
+
+  [data-testid="stFileUploader"]{
+    width:min(82vw,340px)!important;
+    margin-top:1.15rem!important;
+    margin-bottom:2.15rem!important;
+  }
+  [data-testid="stFileUploader"]::before,
+  [data-testid="stFileUploader"]::after{
+    display:none!important;
+  }
+  [data-testid="stFileUploaderDropzone"]{
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.98),
+      inset 0 0 0 14px rgba(223,244,255,.30),
+      0 0 0 8px rgba(181,228,249,.13),
+      0 20px 52px rgba(78,143,182,.13)!important;
+  }
+  [data-testid="stHorizontalBlock"]{
+    gap:.7rem!important;
+  }
+  [data-testid="stHorizontalBlock"]>[data-testid="stColumn"] [data-testid="stVerticalBlockBorderWrapper"]{
+    border-radius:21px!important;
+  }
+}
+
+@media(min-width:761px) and (max-width:1180px){
+  [data-testid="stFileUploader"]::before,
+  [data-testid="stFileUploader"]::after{
+    width:150px;
+    font-size:13px;
+  }
+  [data-testid="stFileUploader"]::before{right:calc(100% + 18px)}
+  [data-testid="stFileUploader"]::after{left:calc(100% + 18px)}
+}
+
 /* Key motion is soft and bounded. */
 @keyframes gsfBrandIn{
   from{opacity:0;transform:translateY(-7px)}
