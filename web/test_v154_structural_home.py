@@ -24,10 +24,22 @@ for marker in (
 
 for marker in (
     "Carica il tuo video",
-    "01 · CARICA",
-    "02 · SCEGLI",
-    "03 · MODIFICA",
-    "04 · PUBBLICA",
+    "GAMING SHORTS FACTORY",
+    "Creator Hub",
+    "CARICA IL TUO GAMEPLAY",
+    "Crea con IA",
+    "Game Editor",
+    "Crea Short",
+    "I tuoi ultimi progetti",
+    "Vedi tutti",
+    "Warzone #024",
+    "Forza #012",
+    "Fortnite #008",
+    "Home",
+    "AI",
+    "Editor",
+    "Progetti",
+    "Social",
     "Automatico",
     "Momento migliore",
     "Più azione",
@@ -40,6 +52,7 @@ for marker in (
     assert marker in h, "missing component marker: "+marker
 
 assert "declare_component" in e
+assert "gsf-living-bar" in s and "display:none !important" in s
 compile(s,str(app),"exec")
 compile(e,str(embed),"exec")
 print("V154 structural Home contract: PASS")
