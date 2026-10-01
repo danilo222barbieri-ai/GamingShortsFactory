@@ -50,6 +50,16 @@ if GSF_WEB_MODE:
         margin:0 !important;
         padding:0 !important;
     }
+
+    /* Remove only the legacy chrome that TinyFish sees under V154 Home. */
+    [data-testid="sync-short-ready-button"],
+    .st-sync-ready,
+    .sync-short-ready,
+    [data-testid="footer"],
+    .st-footer,
+    .gsf-footer-v4{
+        display:none !important;
+    }
     </style>
     """)
 
