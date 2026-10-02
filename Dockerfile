@@ -110,6 +110,7 @@ RUN python /app/web/test_v174_4_upload_transition.py
 RUN python /app/web/test_v174_5_outer_proportions.py
 RUN python /app/web/test_v175_adaptive_geometry.py
 RUN python /app/web/test_v176_mobile_visual_parity.py
+RUN python /app/web/test_v176_1_mobile_cache_bust.py
 RUN python /app/web/test_v162_1_home_lift.py
 RUN python -m compileall -q /app/web
 COPY .streamlit /app/.streamlit
