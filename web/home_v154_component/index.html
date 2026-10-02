@@ -162,6 +162,19 @@ button{appearance:none;-webkit-appearance:none}
  let loaded=false,duration=15,engine="",uploadBusy=false,previewData=[];
  const norm=s=>String(s||"").replace(/\s+/g," ").trim().toLowerCase();
 
+ function purgeLegacySync(){
+   try{
+     const doc=window.parent.document;
+     doc.querySelectorAll("button,[role=button]").forEach(el=>{
+       if(norm(el.innerText||el.textContent)==="sync short ready"){
+         el.style.setProperty("display","none","important");
+         const c=el.closest('[data-testid="stElementContainer"]');
+         if(c){c.style.setProperty("display","none","important");c.style.setProperty("height","0","important");c.style.setProperty("margin","0","important");}
+       }
+     });
+   }catch(e){}
+ }
+ try{purgeLegacySync();new MutationObserver(purgeLegacySync).observe(window.parent.document.body,{childList:true,subtree:true});}catch(e){}
  function setLoaded(on){
    loaded=!!on; view.classList.toggle("loadedView",loaded); circle.classList.toggle("loaded",loaded);
    if(loaded){rings.classList.remove("uploading");rings.classList.add("uploaded");uploadIcon.textContent="✓";uploadLabel.textContent="Video caricato";uploadHint.textContent="";pick.disabled=true;}
