@@ -3862,6 +3862,33 @@ html,body{
   }
 }
 
+
+/* V217 standalone desktop-preview safety: desktop media stays real at 1440px. */
+html.gsfDesktopPreview,
+body.gsfDesktopPreview{
+  width:1440px!important;
+  min-width:1440px!important;
+  max-width:1440px!important;
+  height:900px!important;
+  min-height:900px!important;
+  max-height:900px!important;
+  overflow:hidden!important;
+}
+body.gsfDesktopPreview #home154{
+  width:1440px!important;
+  max-width:1440px!important;
+  height:900px!important;
+  min-height:900px!important;
+  max-height:900px!important;
+  border-radius:0!important;
+}
+body.gsfDesktopPreview button,
+body.gsfDesktopPreview input,
+body.gsfDesktopPreview .circle,
+body.gsfDesktopPreview .feature{
+  pointer-events:none!important;
+}
+
 </style>
 </head>
 <body>
@@ -3950,6 +3977,11 @@ html,body{
  const value=(v)=>send(SET_COMPONENT_VALUE,{value:v,dataType:"json"});
  const height=(h)=>send(SET_FRAME_HEIGHT,{height:h});
  const root=document.getElementById("home154"),view=document.getElementById("view");
+ if(DESKTOP_PREVIEW){
+   document.documentElement.classList.add("gsfDesktopPreview");
+   document.body.classList.add("gsfDesktopPreview");
+ }
+
  const pick=document.getElementById("pick"),circle=document.getElementById("circle"),rings=document.querySelector(".rings"),uploadIcon=document.getElementById("uploadIcon");
  const uploadLabel=document.getElementById("uploadLabel"),uploadHint=document.getElementById("uploadHint");
  const status=document.getElementById("status"),statusText=document.getElementById("statusText"),bar=document.getElementById("bar");
@@ -4030,9 +4062,11 @@ html,body{
    muralReadyTimer=window.setTimeout(()=>setMuralState("ready"),delay);
  }
 
+ const DESKTOP_PREVIEW=new URLSearchParams(window.location.search).get("desktopPreview")==="1";
  const norm=s=>String(s||"").replace(/\s+/g," ").trim().toLowerCase();
 
  function normalizeParentHomeShell(){
+   if(DESKTOP_PREVIEW)return {frame:null,top:0};
    try{
      const doc=window.parent.document;
      const frame=[...doc.querySelectorAll("iframe")].find(f=>f.contentWindow===window)||null;

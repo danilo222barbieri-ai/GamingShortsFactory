@@ -189,6 +189,30 @@ server {
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
     }
 
+    # V217 phone-accessible desktop preview. The inner iframe has a real
+    # 1440px layout viewport, then the wrapper scales it down visually.
+    location = /desktop-preview {
+        return 302 /desktop-preview/;
+    }
+
+    location /desktop-preview/ {
+        alias /app/web/desktop_preview/;
+        index index.html;
+        try_files $uri $uri/ /desktop-preview/index.html;
+        add_header Cache-Control "no-store" always;
+    }
+
+    location = /desktop-home {
+        return 302 /desktop-home/;
+    }
+
+    location /desktop-home/ {
+        alias /app/web/home_v154_component/;
+        index index.html;
+        try_files $uri $uri/ /desktop-home/index.html;
+        add_header Cache-Control "no-store" always;
+    }
+
     # V158 fixed Creator Hub surface + live state API.
     location = /creator-hub-v156 {
         return 302 /creator-hub-v156/;

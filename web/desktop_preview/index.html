@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5fbff">
+<title>GSF · Anteprima Desktop</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#eef7fc;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.previewShell{position:fixed;inset:0;display:flex;flex-direction:column;background:linear-gradient(180deg,#f8fcff,#eef7fc)}
+.previewHead{height:42px;flex:0 0 42px;display:flex;align-items:center;justify-content:space-between;padding:0 13px;border-bottom:1px solid rgba(124,171,206,.22);background:rgba(255,255,255,.92);color:#456784;font-size:12px;font-weight:800;letter-spacing:.02em}
+.previewHead strong{color:#173d68}
+.previewHead a{color:#428fd3;text-decoration:none;padding:7px 10px;border-radius:999px;background:#e5f4ff}
+.viewport{position:relative;flex:1;min-height:0;overflow:hidden;background:#eaf5fb}
+.desktop{position:absolute;left:0;top:0;width:1440px;height:900px;border:0;transform-origin:0 0;pointer-events:none;background:#f6fcff}
+.badge{position:absolute;right:8px;bottom:8px;z-index:3;padding:6px 9px;border-radius:999px;background:rgba(20,50,85,.72);color:white;font-size:10px;font-weight:800;backdrop-filter:blur(8px)}
+</style>
+</head>
+<body>
+<div class="previewShell">
+  <div class="previewHead"><strong>ANTEPRIMA DESKTOP 1440×900</strong><span>ridotta sul telefono</span><a href="/">Chiudi</a></div>
+  <div class="viewport" id="viewport">
+    <iframe id="desktopFrame" class="desktop" src="/desktop-home/?desktopPreview=1" title="Anteprima desktop Gaming Shorts Factory"></iframe>
+    <div class="badge" id="scaleBadge">Desktop</div>
+  </div>
+</div>
+<script>
+(()=>{
+ const BASE_W=1440,BASE_H=900,head=42;
+ const frame=document.getElementById("desktopFrame"),vp=document.getElementById("viewport"),badge=document.getElementById("scaleBadge");
+ const fit=()=>{
+   const w=vp.clientWidth,h=vp.clientHeight;
+   const s=Math.min(w/BASE_W,h/BASE_H);
+   const x=Math.max(0,(w-BASE_W*s)/2),y=Math.max(0,(h-BASE_H*s)/2);
+   frame.style.transform="translate("+x+"px,"+y+"px) scale("+s+")";
+   badge.textContent="Desktop · "+Math.round(s*100)+"%";
+ };
+ addEventListener("resize",fit,{passive:true});fit();
+})();
+</script>
+</body>
+</html>
