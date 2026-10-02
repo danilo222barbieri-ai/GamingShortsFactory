@@ -1815,7 +1815,7 @@ def _creator_facebook_callback(handler,query):
         token_url="https://graph.facebook.com/oauth/access_token?"+urllib.parse.urlencode({
             "client_id":META_APP_ID,
             "client_secret":META_APP_SECRET,
-            "redirect_uri":INSTAGRAM_REDIRECT_URI,
+            "redirect_uri":PUBLIC_APP_URL,
             "code":code,
         })
         token=_oauth_json(token_url)
@@ -3456,6 +3456,8 @@ class Handler(BaseHTTPRequestHandler):
                     ready=final_bytes>1024
                 except Exception:
                     pass
+            share_profile=_creator_account_load(sid) or {}
+            share_providers=dict(share_profile.get("providers") or {}) if isinstance(share_profile,dict) else {}
             _json(self,200,{
                 "ok":True,
                 "ready":ready,
@@ -3465,7 +3467,7 @@ class Handler(BaseHTTPRequestHandler):
                     "youtube":bool(_youtube_user_load(sid)),
                     "tiktok":bool(_tiktok_user_load(sid)),
                     "instagram":bool(_instagram_user_load(sid)),
-                    "facebook":False,
+                    "facebook":bool(share_providers.get("facebook")),
                 },
             })
             return
@@ -3527,13 +3529,13 @@ class Handler(BaseHTTPRequestHandler):
                     "youtube":bool(_youtube_user_load(sid)),
                     "tiktok":bool(_tiktok_user_load(sid)),
                     "instagram":bool(_instagram_user_load(sid)),
-                    "facebook":False,
+                    "facebook":bool(providers.get("facebook")),
                 },
                 "stats":{
                     "shorts_created":int(profile.get("shorts_created") or 0) if isinstance(profile,dict) else 0,
                     "shorts_published":int(profile.get("shorts_published") or 0) if isinstance(profile,dict) else 0,
                     "drafts":len(_draft_list(sid)),
-                    "social":sum(1 for x in (_youtube_user_load(sid),_tiktok_user_load(sid),_instagram_user_load(sid)) if x),
+                    "social":sum(1 for x in (_youtube_user_load(sid),_tiktok_user_load(sid),_instagram_user_load(sid)) if x)+(1 if providers.get("facebook") else 0),
                 },
                 "drafts":drafts,
                 "project":project,
