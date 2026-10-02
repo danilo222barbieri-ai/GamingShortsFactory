@@ -2913,6 +2913,215 @@ button{appearance:none;-webkit-appearance:none}
  .footerSocialLink{width:20px!important;height:20px!important;min-width:20px!important;min-height:20px!important}
 }
 
+
+/* V179 MOBILE HARD RESET
+   Final mobile override after all legacy media queries. This deliberately
+   neutralizes the old <=430px rules that hid the handwritten notes and
+   resurrected the old projects section. */
+@media (max-width:760px){
+ html,body{
+   width:100%!important;
+   min-height:100%!important;
+   overflow-x:hidden!important;
+   background:#FBFDFF!important;
+ }
+ #home154{
+   width:100%!important;
+   min-height:100dvh!important;
+   max-height:none!important;
+   height:auto!important;
+   padding:14px 12px 18px!important;
+   border-radius:0!important;
+   overflow:visible!important;
+   background:
+     radial-gradient(circle at 12% 8%,rgba(111,209,255,.17),transparent 23%),
+     radial-gradient(circle at 88% 10%,rgba(106,229,185,.15),transparent 24%),
+     linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important;
+ }
+ .ui{min-height:100dvh!important}
+ .topbar{min-height:34px!important;margin-bottom:0!important}
+ .brandOnly{font-size:9px!important;letter-spacing:.24em!important}
+ .hubLegacy{display:none!important}
+
+ /* Keep only the new Home composition on phones. */
+ .sectionHead,.projects,.momentShelf{display:none!important}
+
+ .stage{
+   position:relative!important;
+   min-height:372px!important;
+   height:372px!important;
+   margin:0!important;
+   display:flex!important;
+   align-items:center!important;
+   justify-content:center!important;
+   overflow:visible!important;
+ }
+ .rings{
+   width:clamp(220px,61vw,242px)!important;
+   height:clamp(220px,61vw,242px)!important;
+   min-width:0!important;min-height:0!important;
+ }
+ .rings:before{inset:-21px!important}
+ .rings:after{inset:-38px!important}
+
+ /* Undo the ancient <=430px display:none and place notes beside the ring. */
+ .scribble,
+ .scribble.left,
+ .scribble.right{
+   display:block!important;
+   visibility:visible!important;
+   opacity:.94!important;
+ }
+ .scribble{
+   position:absolute!important;
+   width:clamp(96px,27vw,112px)!important;
+   max-width:none!important;
+   font-size:clamp(13px,3.8vw,16px)!important;
+   line-height:1.05!important;
+   color:#637DA8!important;
+   z-index:8!important;
+ }
+ .scribble.left{
+   left:0!important;
+   right:auto!important;
+   top:92px!important;
+   text-align:right!important;
+   transform:rotate(-5deg)!important;
+ }
+ .scribble.right{
+   right:0!important;
+   left:auto!important;
+   top:102px!important;
+   text-align:left!important;
+   transform:rotate(4deg)!important;
+ }
+ .scribble .arrow{
+   position:absolute!important;
+   width:58px!important;
+   height:32px!important;
+   margin:0!important;
+ }
+ .scribble .arrow svg{width:100%!important;height:100%!important}
+ .scribble.left .arrow{
+   right:-46px!important;
+   left:auto!important;
+   top:67%!important;
+   transform:translateY(-50%) rotate(3deg)!important;
+ }
+ .scribble.right .arrow{
+   left:-46px!important;
+   right:auto!important;
+   top:-4px!important;
+   transform:rotate(-3deg)!important;
+ }
+ .scribble .padSketch{
+   width:42px!important;
+   margin:6px 0 0 18px!important;
+ }
+
+ .features{
+   width:100%!important;
+   display:grid!important;
+   grid-template-columns:repeat(3,minmax(0,1fr))!important;
+   gap:7px!important;
+   margin:0 0 18px!important;
+ }
+ .feature{
+   min-height:138px!important;
+   height:138px!important;
+   padding:11px 5px 10px!important;
+   border-radius:22px!important;
+ }
+ .featureIcon{
+   width:52px!important;height:52px!important;
+   margin-bottom:7px!important;
+ }
+ .feature b{font-size:10.5px!important}
+ .feature small{font-size:7.3px!important;line-height:1.18!important}
+
+ .bottomNav{
+   position:relative!important;
+   left:auto!important;right:auto!important;bottom:auto!important;
+   transform:none!important;
+   width:100%!important;
+   height:62px!important;
+   min-height:62px!important;
+   margin:0 0 14px!important;
+   padding:7px 7px 6px!important;
+   border-radius:999px!important;
+   display:grid!important;
+   grid-template-columns:repeat(5,1fr)!important;
+   z-index:20!important;
+ }
+ .navItem{font-size:7px!important;gap:2px!important}
+ .navItem svg{width:18px!important;height:18px!important;padding:5px!important}
+
+ .siteFooter{
+   position:relative!important;
+   left:auto!important;right:auto!important;bottom:auto!important;
+   width:100%!important;
+   height:auto!important;
+   min-height:86px!important;
+   margin:0!important;
+   padding:12px 0 4px!important;
+   display:grid!important;
+   grid-template-columns:1fr!important;
+   justify-items:center!important;
+   align-items:center!important;
+   gap:8px!important;
+   border-top:1px solid rgba(146,183,214,.25)!important;
+   background:transparent!important;
+   overflow:visible!important;
+ }
+ .footerBrand{justify-self:center!important;font-size:7.5px!important}
+ .footerSocial{
+   position:static!important;
+   transform:none!important;
+   justify-self:center!important;
+   display:flex!important;
+   gap:9px!important;
+ }
+ .footerSocialLink{
+   width:28px!important;height:28px!important;
+   min-width:28px!important;min-height:28px!important;
+   padding:5px!important;
+   opacity:1!important;visibility:visible!important;
+ }
+ .footerSocialLink svg{
+   width:100%!important;height:100%!important;
+   display:block!important;
+   fill:none;stroke:currentColor;stroke-width:1.8;
+   stroke-linecap:round;stroke-linejoin:round;
+ }
+ .footerSocialLink[aria-label="Facebook"] svg path,
+ .footerSocialLink[aria-label="YouTube"] svg path:first-child{fill:currentColor!important;stroke:none!important}
+ .footerSocialLink[aria-label="YouTube"] .ytPlay{fill:white!important;stroke:none!important}
+ .footLinks{
+   justify-self:center!important;
+   display:flex!important;
+   flex-wrap:wrap!important;
+   justify-content:center!important;
+   gap:8px!important;
+ }
+ .footLinks button,.footLinks span{font-size:7px!important}
+
+ .sideAd{display:none!important}
+}
+
+@media (max-width:390px){
+ .stage{min-height:356px!important;height:356px!important}
+ .rings{width:216px!important;height:216px!important}
+ .rings:before{inset:-20px!important}
+ .rings:after{inset:-35px!important}
+ .scribble{width:92px!important;font-size:13px!important}
+ .scribble.left{left:-2px!important;top:88px!important}
+ .scribble.right{right:-2px!important;top:98px!important}
+ .scribble.left .arrow{right:-42px!important}
+ .scribble.right .arrow{left:-42px!important}
+ .feature{height:132px!important;min-height:132px!important}
+ .featureIcon{width:48px!important;height:48px!important}
+}
+
 </style>
 </head>
 <body>

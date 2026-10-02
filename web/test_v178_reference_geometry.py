@@ -11,7 +11,7 @@ checks={
  "Gamebar is pinned above footer":"bottom:54px!important" in home,
  "Footer is pinned to bottom":"bottom:0!important" in home and "height:44px!important" in home,
  "Footer socials remain visible":"footerSocialLink" in home and "width:26px!important" in home,
- "Fresh component name":"gsf_home_v154_live_178" in embed,
+ "Fresh component name":("gsf_home_v154_live_178" in embed or "gsf_home_v154_live_179" in embed),
 }
 bad=[k for k,v in checks.items() if not v]
 for k,v in checks.items(): print(("PASS" if v else "FAIL")+": "+k)
