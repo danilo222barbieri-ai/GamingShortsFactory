@@ -43,6 +43,36 @@ if GSF_WEB_MODE:
       }
     }
     /* V161 VIEWPORT CONTRACT */
+    /* V161.1 ZERO-SCROLL CONTRACT */
+    @media (min-width:761px){
+      html,body,.stApp,[data-testid="stAppViewContainer"],[data-testid="stMain"]{
+        height:100dvh !important;
+        max-height:100dvh !important;
+        overflow:hidden !important;
+      }
+      [data-testid="stMainBlockContainer"],.main .block-container{
+        height:100dvh !important;
+        max-height:100dvh !important;
+        min-height:0 !important;
+        overflow:hidden !important;
+        margin:0 !important;
+      }
+      /* Streamlit execution chrome can sit below the custom shell and create
+         an otherwise pointless scrollbar. It is not GSF render/upload progress. */
+      [data-testid="stStatusWidget"],
+      [data-testid="stToolbar"],
+      [data-testid="stDecoration"],
+      [data-testid="stHeader"]{
+        display:none !important;
+      }
+      iframe[title*="gsf_home_v154_live_155"],
+      iframe[title*="gsf_home_v154"],
+      iframe[src*="home_v154"]{
+        display:block !important;
+        max-height:100dvh !important;
+        border:0 !important;
+      }
+    }
     /* The new component owns the production Home. Keep the old uploader
        mounted only as an invisible fallback so its backend/state contracts
        remain available during migration. */
