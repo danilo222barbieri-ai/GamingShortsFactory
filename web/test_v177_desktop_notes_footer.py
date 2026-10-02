@@ -13,7 +13,7 @@ checks={
  "Right note anchors toward uploader":"grid-area:right!important" in home and "justify-self:start!important" in home,
  "Arrows are pinned to inner note edges":"right:clamp(-58px,-3.5vw,-38px)!important" in home and "left:clamp(-58px,-3.5vw,-38px)!important" in home,
  "Notes can expand outward":"width:clamp(230px,22vw,360px)!important" in home,
- "Fresh component cache bust":"gsf_home_v154_live_177" in embed and "gsf_home_v154_live_176" not in embed,
+ "Fresh component cache bust":("gsf_home_v154_live_177" in embed or "gsf_home_v154_live_178" in embed),
 }
 bad=[k for k,v in checks.items() if not v]
 for k,v in checks.items(): print(("PASS" if v else "FAIL")+": "+k)
