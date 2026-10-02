@@ -837,6 +837,61 @@ def _social_sid(handler):
     return _safe_id(handler.headers.get("X-GSF-Session-ID"))
 
 
+_EDITOR_STATE_KEYS={
+    "zoom","panX","panY","framePreset","coverMode","coverTime","coverLocked",
+    "look","intensity","brightness","contrast","hudMode","captionOn","captionMode",
+    "captionText","captionSize","captionY","textColor","activeColor","outlineColor",
+    "muted","volume","speed","audioMode","inPoint","outPoint","aiMode","visionEnabled",
+    "editorVersion","sourceDuration"
+}
+
+def _editor_overlay_state_path(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return None
+    root=ROOT/"sessions"/sid
+    root.mkdir(parents=True,exist_ok=True)
+    return root/"editor_overlay_state.json"
+
+def _editor_overlay_state_load(sid):
+    path=_editor_overlay_state_path(sid)
+    if path is None or not path.is_file():
+        return {}
+    try:
+        payload=json.loads(path.read_text(encoding="utf-8"))
+        state=payload.get("state") if isinstance(payload,dict) else {}
+        return dict(state) if isinstance(state,dict) else {}
+    except Exception:
+        return {}
+
+def _editor_overlay_state_save(sid,state):
+    sid=_safe_id(sid)
+    if not sid or not isinstance(state,dict):
+        raise ValueError("invalid editor state")
+    clean={}
+    for key in _EDITOR_STATE_KEYS:
+        if key not in state:
+            continue
+        value=state.get(key)
+        if isinstance(value,(str,int,float,bool)) or value is None:
+            clean[key]=value
+    if not clean:
+        raise ValueError("empty editor state")
+    path=_editor_overlay_state_path(sid)
+    _write_json_atomic(path,{"version":223,"updated_at":time.time(),"state":clean})
+    return clean
+
+def _editor_state_payload(sid,current):
+    stat=current.stat()
+    stamp=str(stat.st_size)+"-"+str(int(stat.st_mtime))
+    return {
+        "ok":True,
+        "ready":True,
+        "name":current.name,
+        "video_url":"/editor-media/current?v="+urllib.parse.quote(stamp,safe=""),
+        "initial_state":_editor_overlay_state_load(sid),
+    }
+
 def _editor_prepare_current(sid):
     sid=_safe_id(sid)
     if not sid:
@@ -847,7 +902,7 @@ def _editor_prepare_current(sid):
         current=Path(marker.read_text(encoding="utf-8").strip()).resolve()
         current.relative_to(root)
         if current.is_file():
-            return {"ok":True,"ready":True,"name":current.name}
+            return _editor_state_payload(sid,current)
     except Exception:
         pass
     candidates=[]
@@ -874,7 +929,7 @@ def _editor_prepare_current(sid):
             p.relative_to(root)
             if p.is_file():
                 marker.write_text(str(p),encoding="utf-8")
-                return {"ok":True,"ready":True,"name":p.name}
+                return _editor_state_payload(sid,p)
         except Exception:
             continue
     return {"ok":True,"ready":False,"error":"editor media unavailable"}
@@ -3586,6 +3641,16 @@ class Handler(BaseHTTPRequestHandler):
         sid=_safe_id(self.headers.get("X-GSF-Session-ID"))
         if not sid:
             _json(self,400,{"ok":False,"error":"invalid session"})
+            return
+
+        if path=="/editor/state/save":
+            try:
+                data=_read_json(self,max_bytes=128*1024)
+                raw_state=data.get("state") if isinstance(data,dict) else {}
+                state=_editor_overlay_state_save(sid,raw_state)
+                _json(self,200,{"ok":True,"saved":True,"keys":len(state)})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
             return
 
         if path=="/ai/feedback":

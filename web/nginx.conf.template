@@ -232,6 +232,17 @@ server {
         add_header Cache-Control "no-store" always;
     }
 
+    location = /editor/state/save {
+        add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
+        proxy_pass http://127.0.0.1:8502/editor/state/save;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+        proxy_set_header Content-Type $content_type;
+        proxy_request_buffering off;
+        add_header Cache-Control "no-store" always;
+    }
+
     # V221 living AI engines surface.
     location = /ai-v221 {
         return 302 /ai-v221/;

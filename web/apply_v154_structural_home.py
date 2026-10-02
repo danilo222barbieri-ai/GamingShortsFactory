@@ -592,11 +592,52 @@ if GSF_WEB_MODE:
       const morph=(el,html,s)=>{if(!el||el.innerHTML===html)return;el.classList.remove('in');el.classList.add('out');setTimeout(()=>{if(s!==seq)return;el.innerHTML=html;el.classList.remove('out');void el.offsetWidth;el.classList.add('in');setTimeout(()=>el.classList.remove('in'),1100)},420)};
       const guide=(key)=>{const c=copies[key]||copies.idle,s=++seq;morph(left,c[0],s);morph(right,c[1],s)};
       const wire=()=>{try{const d=frame.contentDocument;if(!d)return;d.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('button');if(!b)return;const t=(b.innerText||b.textContent||'').trim().toUpperCase();if(t.includes('FRAME'))guide('frame');else if(t.includes('COVER'))guide('cover');else if(t.includes('LOOK'))guide('look');else if(t.includes('CAPTION'))guide('caption');else if(t.includes('AUDIO'))guide('audio');else if(t.includes('GAME AI'))guide('ai');else if(t.includes('PLAY')||t.includes('PAUSE'))guide('play');else if(t.includes('DONE'))guide('done')},true)}catch(e){}};
-      frame.addEventListener('load',wire);
-      const open=async()=>{try{await fetch('/editor/state',{cache:'no-store',credentials:'same-origin'})}catch(e){}frame.src='/editor-live/?v='+Date.now();o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false');guide('idle')};
-      const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true')};
+      const KEY='gsf_editor_overlay_open_v223';
+      let editorMeta={video_url:'',initial_state:{}};
+      const sendRender=()=>{
+        try{
+          frame.contentWindow.postMessage({
+            type:'streamlit:render',
+            args:{
+              video_url:String(editorMeta.video_url||'/editor-media/current'),
+              initial_state:(editorMeta.initial_state&&typeof editorMeta.initial_state==='object')?editorMeta.initial_state:{},
+              event_map:[],
+              event_duration:Number((editorMeta.initial_state||{}).sourceDuration)||15,
+              vision_profile:'Auto',vision_zones:[],brain_context:{},height:720
+            }
+          },location.origin);
+        }catch(e){}
+      };
+      frame.addEventListener('load',()=>{wire();setTimeout(sendRender,70)});
+      const open=async(remember=true)=>{
+        try{
+          const r=await fetch('/editor/state',{cache:'no-store',credentials:'same-origin'});
+          const j=await r.json();
+          if(r.ok&&j&&j.ok)editorMeta=j;
+        }catch(e){}
+        frame.src='/editor-live/?v=223-'+Date.now();
+        o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false');
+        if(remember)try{sessionStorage.setItem(KEY,'1')}catch(e){}
+        guide('idle');
+      };
+      const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true');try{sessionStorage.setItem(KEY,'0')}catch(e){}};
       o.querySelector('.gsf-editor-close').onclick=close;o.addEventListener('click',e=>{if(e.target===o)close()});
-      window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;const t=String(e.data.target||'');if(t==='editor')open();if(t==='close'||t==='home'||t==='social'||t==='hub'||t==='ai')close()});
+      window.addEventListener('message',e=>{
+        if(e.source===frame.contentWindow&&e.data&&e.data.type==='streamlit:setComponentValue'){
+          const state=e.data.value;
+          if(state&&typeof state==='object'){
+            editorMeta.initial_state=state;
+            fetch('/editor/state/save',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({state})}).catch(()=>{});
+            guide('done');
+          }
+          return;
+        }
+        if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
+        const t=String(e.data.target||'');
+        if(t==='editor'){open();return}
+        if(t==='close'||t==='home'||t==='social'||t==='hub'||t==='ai'||t==='account')close();
+      });
+      try{if(sessionStorage.getItem(KEY)==='1')setTimeout(()=>open(false),90)}catch(e){};
     })();
     </script>
     """, unsafe_allow_html=True)
@@ -704,6 +745,32 @@ if GSF_WEB_MODE:
     """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _account_surface_v223.lstrip()
+
+
+# V223.2 — bridge app-layer Editor state into the existing render recipe.
+_gsf_v223_state_anchor='        _gsf_manual_saved_state=st.session_state.get(_gsf_manual_state_slot)\n'
+if _gsf_v223_state_anchor in s and 'GSF_OVERLAY_EDITOR_STATE_BRIDGE_V223' not in s:
+    _gsf_v223_state_repl='''        _gsf_manual_saved_state=st.session_state.get(_gsf_manual_state_slot)
+        # GSF_OVERLAY_EDITOR_STATE_BRIDGE_V223
+        if GSF_WEB_MODE:
+            try:
+                import urllib.request as _gsf_overlay_editor_request
+                import json as _gsf_overlay_editor_json
+                _gsf_overlay_req=_gsf_overlay_editor_request.Request(
+                    "http://127.0.0.1:8502/editor/state",
+                    headers={"X-GSF-Session-ID":str(GSF_SESSION_ID)}
+                )
+                _gsf_overlay_payload=_gsf_overlay_editor_json.loads(
+                    _gsf_overlay_editor_request.urlopen(_gsf_overlay_req,timeout=4).read().decode("utf-8")
+                )
+                _gsf_overlay_saved=_gsf_overlay_payload.get("initial_state") if isinstance(_gsf_overlay_payload,dict) else None
+                if isinstance(_gsf_overlay_saved,dict) and _gsf_overlay_saved:
+                    _gsf_manual_saved_state=dict(_gsf_overlay_saved)
+                    st.session_state[_gsf_manual_state_slot]=dict(_gsf_overlay_saved)
+            except Exception as _gsf_overlay_state_exc:
+                print("GSF_OVERLAY_EDITOR_STATE_WARN",repr(str(_gsf_overlay_state_exc))[:180],flush=True)
+'''
+    s=s.replace(_gsf_v223_state_anchor,_gsf_v223_state_repl,1)
 
 # V221 final write must happen AFTER V220 + V221 surfaces are appended.
 compile(s,str(out),"exec")
