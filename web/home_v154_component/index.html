@@ -628,6 +628,202 @@ button{appearance:none;-webkit-appearance:none}
  .bottomNav{padding:2px 8px!important}.navItem svg{width:16px!important;height:16px!important}.navItem span{font-size:8px!important}
 }
 
+
+/* V167 HOME VISUAL FINAL — visual-only fidelity pass from the approved reference.
+   Functional DOM, actions and responsive shell remain untouched. */
+@media (min-width:761px){
+ :root{
+   --v167-ink:#0D2A66;
+   --v167-soft:#7086AA;
+   --v167-blue:#2370E2;
+   --v167-blue-bg:#D7E9FF;
+   --v167-mint:#079B70;
+   --v167-mint-bg:#C9F5DC;
+   --v167-gold:#CA7910;
+   --v167-gold-bg:#FFEDAF;
+   --v167-ring-blue:#72D8FF;
+   --v167-ring-mint:#79EAC8;
+ }
+ #home154{
+   background:
+    radial-gradient(circle at 14% 20%,rgba(114,216,255,.23),transparent 24%),
+    radial-gradient(circle at 83% 30%,rgba(121,234,200,.22),transparent 27%),
+    radial-gradient(circle at 78% 80%,rgba(255,237,175,.13),transparent 24%),
+    linear-gradient(180deg,#F3FBFF 0%,#F7FCFF 48%,#F4FBFF 100%)!important;
+ }
+ #home154:before{
+   background:
+    radial-gradient(circle at 50% 32%,rgba(255,255,255,.52),transparent 34%),
+    linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.10))!important;
+ }
+ .brandOnly{
+   color:#667FA8!important;
+   text-shadow:0 1px 0 rgba(255,255,255,.9)!important;
+ }
+ .hub{
+   color:var(--v167-ink)!important;
+   background:rgba(255,255,255,.86)!important;
+   border-color:rgba(130,174,214,.26)!important;
+   box-shadow:0 12px 34px rgba(65,115,157,.12),inset 0 1px 0 rgba(255,255,255,.95)!important;
+ }
+ .hub .arr{color:#244D87!important}
+
+ /* Uploader: vivid cyan on the left, mint on the right, pulse preserved. */
+ .rings{
+   border:2px solid transparent!important;
+   background:
+    radial-gradient(circle at 39% 28%,#FFFFFF 0%,#EFF9FF 47%,#E8FFF7 100%) padding-box,
+    conic-gradient(from 210deg,var(--v167-ring-blue) 0 46%,#8FE3FF 49%,#8FEED4 55%,var(--v167-ring-mint) 100%) border-box!important;
+   box-shadow:
+    -20px 0 56px rgba(92,205,255,.36),
+    22px 0 58px rgba(87,232,190,.34),
+    0 0 0 clamp(16px,2.2vh,28px) rgba(104,211,255,.10),
+    0 0 0 clamp(30px,4vh,50px) rgba(98,232,195,.075),
+    0 20px 48px rgba(63,120,164,.10)!important;
+ }
+ .rings:before{
+   border-color:rgba(88,207,255,.52)!important;
+   box-shadow:-8px 0 28px rgba(89,207,255,.30),10px 0 30px rgba(98,234,198,.18)!important;
+ }
+ .rings:after{
+   border-color:rgba(101,232,197,.40)!important;
+   box-shadow:12px 0 42px rgba(91,232,193,.30),-8px 0 38px rgba(97,208,255,.18)!important;
+ }
+ @keyframes gsfMintPulse{
+   0%,100%{
+    box-shadow:-18px 0 50px rgba(92,205,255,.34),20px 0 54px rgba(87,232,190,.34),
+      0 0 0 24px rgba(105,220,246,.10),0 0 0 40px rgba(98,234,195,.08),0 20px 48px rgba(63,120,164,.10);
+    filter:saturate(1.05)
+   }
+   50%{
+    box-shadow:-24px 0 68px rgba(83,199,255,.50),28px 0 72px rgba(79,235,185,.52),
+      0 0 0 30px rgba(105,220,246,.15),0 0 0 50px rgba(98,234,195,.12),0 20px 50px rgba(63,120,164,.12);
+    filter:saturate(1.16)
+   }
+ }
+ .rings.uploading{animation:gsfMintPulse 1.45s ease-in-out infinite!important}
+ .icon{color:#5599EF!important}
+ .circle strong{color:var(--v167-ink)!important;letter-spacing:.015em!important}
+ .circle small{display:none!important}
+ .scribble{color:#667FA8!important}
+
+ /* Projects stay mounted for compatibility, but are not part of the visual Home. */
+ .sectionHead,.projects{display:none!important}
+ #view{
+   grid-template-rows:43% 41% 0 0 12% 3%!important;
+   row-gap:.2%!important;
+ }
+
+ /* Three tall reference cards. */
+ .features{
+   width:min(72vw,760px)!important;
+   max-width:760px!important;
+   justify-self:center!important;
+   align-self:stretch!important;
+   grid-template-columns:repeat(3,minmax(180px,1fr))!important;
+   gap:clamp(16px,1.8vw,24px)!important;
+ }
+ .feature{
+   height:100%!important;
+   min-height:0!important;
+   border-radius:clamp(28px,2.2vw,38px)!important;
+   padding:clamp(12px,1.7vh,18px) clamp(12px,1.2vw,18px) clamp(10px,1.25vh,15px)!important;
+   border:1px solid rgba(162,190,220,.26)!important;
+   background:rgba(255,255,255,.82)!important;
+   box-shadow:0 18px 44px rgba(64,112,156,.10),inset 0 1px 0 rgba(255,255,255,.96)!important;
+   justify-content:flex-start!important;
+ }
+ .featureIcon{
+   width:clamp(72px,10vh,110px)!important;
+   height:clamp(72px,10vh,110px)!important;
+   margin:0 auto clamp(9px,1.25vh,14px)!important;
+   border-radius:50%!important;
+   box-shadow:inset 0 0 0 1px rgba(255,255,255,.74),0 12px 30px rgba(66,114,154,.09)!important;
+ }
+ .featureIcon svg{width:54%!important;height:54%!important;stroke-width:2.1!important}
+ .feature b{
+   color:var(--v167-ink)!important;
+   font-size:clamp(16px,1.35vw,22px)!important;
+   line-height:1.05!important;
+ }
+ .feature small{
+   color:var(--v167-soft)!important;
+   font-size:clamp(10px,.84vw,13px)!important;
+   line-height:1.28!important;
+   max-width:190px!important;
+   margin-top:clamp(6px,.7vh,9px)!important;
+ }
+ .feature:after{
+   width:clamp(32px,4.8vh,48px)!important;
+   height:clamp(32px,4.8vh,48px)!important;
+   margin-top:auto!important;
+   margin-bottom:1px!important;
+   background:rgba(233,243,252,.92)!important;
+   color:#35659B!important;
+   box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 5px 14px rgba(73,112,153,.08)!important;
+ }
+ .fAi{
+   background:
+    radial-gradient(circle at 50% 22%,rgba(179,217,255,.34),transparent 38%),
+    rgba(255,255,255,.86)!important;
+ }
+ .fAi .featureIcon{background:linear-gradient(145deg,#E5F1FF,var(--v167-blue-bg))!important;color:var(--v167-blue)!important}
+ .fEditor{
+   background:
+    radial-gradient(circle at 50% 22%,rgba(169,240,205,.34),transparent 38%),
+    rgba(255,255,255,.86)!important;
+ }
+ .fEditor .featureIcon{background:linear-gradient(145deg,#DDFBEA,var(--v167-mint-bg))!important;color:var(--v167-mint)!important}
+ .fShort{
+   background:
+    radial-gradient(circle at 50% 22%,rgba(255,225,128,.34),transparent 38%),
+    rgba(255,255,255,.86)!important;
+ }
+ .fShort .featureIcon{background:linear-gradient(145deg,#FFF5C8,var(--v167-gold-bg))!important;color:var(--v167-gold)!important}
+
+ /* Bottom bar: lighter, rounded and closer to the approved reference. */
+ .bottomNav{
+   width:min(86%,980px)!important;
+   justify-self:center!important;
+   align-self:center!important;
+   border-radius:999px!important;
+   padding:clamp(5px,.75vh,9px) clamp(12px,1.2vw,20px)!important;
+   border:1px solid rgba(160,190,218,.28)!important;
+   background:rgba(255,255,255,.88)!important;
+   backdrop-filter:blur(24px) saturate(1.12)!important;
+   box-shadow:0 16px 44px rgba(64,112,154,.12),inset 0 1px 0 rgba(255,255,255,.98)!important;
+ }
+ .navItem{
+   color:#7084A8!important;
+   border-radius:999px!important;
+   padding:clamp(3px,.45vh,6px) 4px!important;
+   gap:2px!important;
+ }
+ .navItem svg{stroke-width:1.9!important}
+ .navItem.active{
+   color:var(--v167-blue)!important;
+   background:linear-gradient(145deg,rgba(226,241,255,.98),rgba(214,233,255,.82))!important;
+   box-shadow:inset 0 0 0 1px rgba(255,255,255,.72)!important;
+ }
+ .navItem.active:after{background:var(--v167-ink)!important;bottom:2px!important}
+ .siteFooter{color:#7D90AD!important}
+}
+@media (min-width:761px) and (max-width:1100px){
+ .features{width:min(78vw,690px)!important;grid-template-columns:repeat(3,minmax(170px,1fr))!important;gap:12px!important}
+ .featureIcon{width:clamp(64px,9vh,88px)!important;height:clamp(64px,9vh,88px)!important}
+ .bottomNav{width:min(92%,900px)!important}
+}
+@media (min-width:761px) and (max-height:650px){
+ #view{grid-template-rows:42% 42% 0 0 13% 2%!important;row-gap:.2%!important}
+ .features{width:min(72vw,650px)!important;gap:10px!important}
+ .feature{border-radius:24px!important;padding:8px 9px 7px!important}
+ .featureIcon{width:56px!important;height:56px!important;margin-bottom:5px!important}
+ .feature b{font-size:clamp(13px,1.05vw,16px)!important}
+ .feature small{font-size:clamp(8px,.66vw,10px)!important;margin-top:3px!important}
+ .feature:after{width:26px!important;height:26px!important;font-size:16px!important}
+ .bottomNav{width:min(88%,860px)!important}
+}
+
 </style>
 </head>
 <body>
@@ -653,9 +849,9 @@ button{appearance:none;-webkit-appearance:none}
   </div>
 
   <div class="features">
-   <button class="feature fAi" data-action="ai"><span class="featureIcon"><svg viewBox="0 0 48 48"><path d="m24 5 2.8 8.2L35 16l-8.2 2.8L24 27l-2.8-8.2L13 16l8.2-2.8Z"/><path d="m38 27 1.6 4.4L44 33l-4.4 1.6L38 39l-1.6-4.4L32 33l4.4-1.6Z"/><path d="m11 29 1.2 3.3 3.3 1.2-3.3 1.2L11 38l-1.2-3.3-3.3-1.2 3.3-1.2Z"/></svg></span><b>Crea con IA</b><small>Trova i momenti più epici</small></button>
-   <button class="feature fEditor" data-action="editor"><span class="featureIcon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M13.5 17.5h21c4.7 0 8.5 3.8 8.5 8.5v4.2c0 4.6-3.5 8.3-7.8 8.3-2.8 0-4.7-1.3-6.8-4.5l-1.8-2.8h-5.2L19.6 34c-2.1 3.2-4 4.5-6.8 4.5C8.5 38.5 5 34.8 5 30.2V26c0-4.7 3.8-8.5 8.5-8.5Z"/><path d="M14.5 23v8M10.5 27h8"/><circle cx="32.5" cy="24.5" r="1.6"/><circle cx="37.5" cy="29.5" r="1.6"/></svg></span><b>Game Editor</b><small>Personalizza il tuo gameplay</small></button>
-   <button class="feature fShort" data-action="short"><span class="featureIcon"><svg viewBox="0 0 48 48"><rect x="6" y="9" width="36" height="30" rx="8"/><path d="m20 17 12 7-12 7Z"/></svg></span><b>Crea Short</b><small>Genera il tuo video in verticale 9:16</small></button>
+   <button class="feature fAi" data-action="ai"><span class="featureIcon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M20 6c1.2 8.5 5.5 12.8 14 14-8.5 1.2-12.8 5.5-14 14-1.2-8.5-5.5-12.8-14-14 8.5-1.2 12.8-5.5 14-14Z"/><path d="M37 5c.45 3.1 2 4.65 5 5-3 .45-4.55 2-5 5-.45-3-2-4.55-5-5 3-.35 4.55-1.9 5-5Z"/></svg></span><b>Crea con IA</b><small>Trova i momenti più epici</small></button>
+   <button class="feature fEditor" data-action="editor"><span class="featureIcon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M13 16h22c5 0 9 4 9 9v4c0 5-4 9-8.5 9-3.1 0-5.1-1.5-7.4-5l-1.6-2.5h-5L19.9 33c-2.3 3.5-4.3 5-7.4 5C8 38 4 34 4 29v-4c0-5 4-9 9-9Z"/><path d="M14 22v10M9 27h10"/><circle cx="33" cy="24" r="1.5"/><circle cx="38" cy="29" r="1.5"/></svg></span><b>Game Editor</b><small>Personalizza il tuo gameplay</small></button>
+   <button class="feature fShort" data-action="short"><span class="featureIcon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M17 12.5 35 24 17 35.5Z"/></svg></span><b>Crea Short</b><small>Genera il tuo video in verticale 9:16</small></button>
   </div>
 
   <div id="aiPanel" class="aiPanel">
