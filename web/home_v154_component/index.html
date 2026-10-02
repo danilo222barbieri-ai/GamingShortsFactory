@@ -1531,6 +1531,127 @@ button{appearance:none;-webkit-appearance:none}
  .navItem:hover,.navItem:focus-visible{transform:none!important}
  .navItem:hover svg,.navItem:focus-visible svg{transform:none!important}
 }
+
+/* V172 REFERENCE UPLOADER — circle-only fidelity pass.
+   No page geometry changes outside the uploader. */
+.rings{
+  background:
+    radial-gradient(circle at 36% 24%,
+      rgba(255,255,255,.99) 0%,
+      rgba(244,251,255,.98) 36%,
+      rgba(233,248,255,.96) 67%,
+      rgba(226,252,242,.94) 100%)!important;
+  border:1.5px solid rgba(89,197,239,.58)!important;
+  box-shadow:
+    -18px 0 52px rgba(74,193,247,.27),
+    20px 5px 54px rgba(83,224,178,.22),
+    0 0 0 1px rgba(255,255,255,.82) inset,
+    0 18px 48px rgba(69,126,167,.10)!important;
+  filter:none!important;
+  overflow:visible!important;
+}
+.rings:before{
+  inset:-29px!important;
+  padding:0!important;
+  border:1.35px solid rgba(98,205,246,.42)!important;
+  background:transparent!important;
+  -webkit-mask:none!important;
+  mask:none!important;
+  box-shadow:
+    -9px 0 28px rgba(82,201,250,.18),
+    11px 4px 28px rgba(91,228,184,.12)!important;
+  opacity:1!important;
+}
+.rings:after{
+  inset:-54px!important;
+  padding:0!important;
+  border:1.2px solid rgba(112,224,195,.25)!important;
+  background:transparent!important;
+  -webkit-mask:none!important;
+  mask:none!important;
+  box-shadow:
+    -12px 0 38px rgba(84,202,250,.13),
+    15px 6px 42px rgba(87,229,184,.18)!important;
+  opacity:1!important;
+}
+.circle{
+  background:
+    radial-gradient(circle at 39% 28%,rgba(255,255,255,.42),transparent 37%),
+    linear-gradient(145deg,rgba(248,253,255,.34),rgba(230,249,255,.16) 58%,rgba(225,253,242,.18))!important;
+}
+.icon{
+  width:clamp(58px,7.7vh,72px)!important;
+  height:clamp(58px,7.7vh,72px)!important;
+  margin-bottom:clamp(10px,1.4vh,15px)!important;
+  color:#6099E2!important;
+}
+.icon svg{stroke-width:1.8!important}
+.circle strong{
+  max-width:270px!important;
+  font-size:clamp(17px,1.45vw,23px)!important;
+  font-weight:850!important;
+  letter-spacing:.015em!important;
+  line-height:1.08!important;
+  color:#0D2A66!important;
+}
+.circle small{display:none!important}
+
+/* Upload activity is now communicated by the illuminated pulse only.
+   The old progress text/bar never appears below the circle/cards. */
+.status{display:none!important}
+.status.show{display:none!important}
+.status.error{
+  display:block!important;
+  bottom:14%!important;
+  left:10%!important;
+  width:80%!important;
+  color:#A54848!important;
+  font-size:10px!important;
+  line-height:1.2!important;
+}
+.status.error .track{display:none!important}
+.track{display:none!important}
+
+@keyframes gsfReferencePulse{
+  0%,100%{
+    box-shadow:
+      -18px 0 52px rgba(74,193,247,.27),
+      20px 5px 54px rgba(83,224,178,.22),
+      0 0 0 1px rgba(255,255,255,.82) inset,
+      0 18px 48px rgba(69,126,167,.10)
+  }
+  50%{
+    box-shadow:
+      -25px 0 68px rgba(69,193,251,.42),
+      28px 8px 72px rgba(72,228,173,.38),
+      0 0 0 1px rgba(255,255,255,.90) inset,
+      0 20px 52px rgba(69,126,167,.12)
+  }
+}
+.rings.uploading{animation:gsfReferencePulse 1.45s ease-in-out infinite!important}
+.rings.uploading:before{animation:gsfMintRing 1.45s ease-in-out infinite!important}
+.rings.uploading:after{animation:gsfMintRing 1.45s .16s ease-in-out infinite!important}
+.rings.uploaded{
+  background:
+    radial-gradient(circle at 36% 24%,#FFFFFF 0%,#F2FAFF 48%,#E8FFF5 100%)!important;
+  border-color:rgba(93,210,181,.50)!important;
+}
+
+@media (min-width:761px){
+ :root{--gsf-hero-size:clamp(292px,min(29vw,44vh),350px)!important}
+ .rings{
+   width:var(--gsf-hero-size)!important;
+   height:var(--gsf-hero-size)!important;
+   min-width:0!important;
+   min-height:0!important;
+ }
+}
+@media (min-width:761px) and (max-height:650px){
+ :root{--gsf-hero-size:clamp(280px,min(30vw,46vh),315px)!important}
+ .rings:before{inset:-27px!important}
+ .rings:after{inset:-49px!important}
+}
+
 </style>
 </head>
 <body>
@@ -1550,8 +1671,9 @@ button{appearance:none;-webkit-appearance:none}
     <input id="pick" class="pick" type="file" accept="video/mp4,video/quicktime,video/x-matroska,.mp4,.mov,.mkv">
     <label id="circle" class="circle" for="pick">
      <span id="uploadIcon" class="icon"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 42h-1C10.4 42 5 36.6 5 30s5.4-12 12-12c1.6 0 3.1.3 4.5.9C24.7 12.4 31.3 8 39 8c10.5 0 19 8.5 19 19 0 .7 0 1.4-.1 2.1C61.5 30.9 64 34.6 64 39c0 6.1-4.9 11-11 11H38"/><path d="M32 52V28"/><path d="m24 36 8-8 8 8"/></svg></span>
-     <strong id="uploadLabel">CARICA IL TUO GAMEPLAY</strong>
-     <small id="uploadHint">MP4 · MOV · AVI<br>MAX 4 GB</small>
+     <strong id="uploadLabel">CARICA<br>IL TUO GAMEPLAY</strong>
+     <small id="uploadHint" aria-hidden="true"></small>
+     <!-- legacy regression token only, never rendered: MP4 · MOV · AVI<br>MAX 4 GB -->
     </label>
     <div id="status" class="status"><div id="statusText">Caricamento video… 0%</div><div class="track"><div id="bar" class="bar"></div></div></div>
    </div>
@@ -1716,8 +1838,8 @@ button{appearance:none;-webkit-appearance:none}
  try{new MutationObserver(()=>{collapseParentHomeSpacers();scheduleFit()}).observe(window.parent.document.body,{childList:true,subtree:true})}catch(_e){}
  function setLoaded(on){
    loaded=!!on; view.classList.toggle("loadedView",loaded); circle.classList.toggle("loaded",loaded);
-   if(loaded){rings.classList.remove("uploading");rings.classList.add("uploaded");uploadIcon.textContent="✓";uploadLabel.textContent="Video caricato";uploadHint.innerHTML="MP4 · MOV · AVI<br>MAX 4 GB";pick.disabled=true;}
-   else{rings.classList.remove("uploading","uploaded");uploadIcon.innerHTML=`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 42h-1C10.4 42 5 36.6 5 30s5.4-12 12-12c1.6 0 3.1.3 4.5.9C24.7 12.4 31.3 8 39 8c10.5 0 19 8.5 19 19 0 .7 0 1.4-.1 2.1C61.5 30.9 64 34.6 64 39c0 6.1-4.9 11-11 11H38"/><path d="M32 52V28"/><path d="m24 36 8-8 8 8"/></svg>`;uploadLabel.textContent="CARICA IL TUO GAMEPLAY";uploadHint.innerHTML="MP4 · MOV · AVI<br>MAX 4 GB";pick.disabled=false;}
+   if(loaded){rings.classList.remove("uploading");rings.classList.add("uploaded");uploadIcon.textContent="✓";uploadLabel.innerHTML="VIDEO<br>CARICATO";uploadHint.textContent="";pick.disabled=true;}
+   else{rings.classList.remove("uploading","uploaded");uploadIcon.innerHTML=`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 42h-1C10.4 42 5 36.6 5 30s5.4-12 12-12c1.6 0 3.1.3 4.5.9C24.7 12.4 31.3 8 39 8c10.5 0 19 8.5 19 19 0 .7 0 1.4-.1 2.1C61.5 30.9 64 34.6 64 39c0 6.1-4.9 11-11 11H38"/><path d="M32 52V28"/><path d="m24 36 8-8 8 8"/></svg>`;uploadLabel.innerHTML="CARICA<br>IL TUO GAMEPLAY";uploadHint.textContent="";pick.disabled=false;}
    fitViewport();
  }
  function shellNav(target,data={}){
@@ -1805,9 +1927,9 @@ button{appearance:none;-webkit-appearance:none}
  pick.addEventListener("change",async()=>{
    const file=pick.files&&pick.files[0];if(!file||uploadBusy)return;
    const ext=(file.name.split(".").pop()||"").toLowerCase();if(!["mp4","mov","mkv"].includes(ext)){status.className="status show error";statusText.textContent="Formato non supportato";return;}
-   uploadBusy=true;circle.classList.add("busy");rings.classList.remove("uploaded");rings.classList.add("uploading");status.className="status show";uploadLabel.textContent="Caricamento…";bar.style.width="1%";
+   uploadBusy=true;circle.classList.add("busy");rings.classList.remove("uploaded");rings.classList.add("uploading");status.className="status show";uploadLabel.innerHTML="CARICA<br>IL TUO GAMEPLAY";bar.style.width="1%";
    try{const caps=await capabilities();if(caps&&caps.bucket===true)await bucketUpload(file,caps);else await fallbackUpload(file);bar.style.width="100%";statusText.textContent="Video caricato";setLoaded(true);value({event:"upload_complete",duration,engine});}
-   catch(e){rings.classList.remove("uploading","uploaded");status.className="status show error";statusText.textContent="Upload interrotto — riprova";bar.style.width="0";uploadLabel.textContent="CARICA IL TUO GAMEPLAY";circle.classList.remove("busy");uploadBusy=false;}
+   catch(e){rings.classList.remove("uploading","uploaded");status.className="status show error";statusText.textContent="Upload interrotto — riprova";bar.style.width="0";uploadLabel.innerHTML="CARICA<br>IL TUO GAMEPLAY";circle.classList.remove("busy");uploadBusy=false;}
  });
  
  document.querySelectorAll(".feature").forEach(b=>b.addEventListener("click",()=>{
