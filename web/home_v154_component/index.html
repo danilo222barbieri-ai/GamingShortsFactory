@@ -3185,362 +3185,13 @@ button{appearance:none;-webkit-appearance:none}
 }
 
 
-/* V183 DESKTOP MOBILE-PALETTE SYNC
-   Desktop adopts the approved phone palette only.
-   Geometry, sizing and positions remain untouched. */
-@media (min-width:761px){
- #home154{
-   background:
-     radial-gradient(circle at 10% 8%,rgba(111,209,255,.18),transparent 24%),
-     radial-gradient(circle at 90% 12%,rgba(106,229,185,.16),transparent 25%),
-     radial-gradient(circle at 50% 42%,rgba(255,255,255,.97),transparent 42%),
-     linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 52%,#F7FCFF 100%)!important;
- }
- #home154:before{
-   background:
-     radial-gradient(circle at 23% 44%,rgba(111,211,255,.05),transparent 31%),
-     radial-gradient(circle at 77% 52%,rgba(91,226,178,.05),transparent 31%)!important;
- }
+/* V190 CANONICAL HOME VISUAL SYSTEM
+   ROOT CLEANUP: the approved mobile Home is now the single visual source of truth.
+   Old V183-V188 visual patch layers were removed. Desktop keeps only desktop
+   geometry; colors, typography, uploader, cards, icons, gamebar and footer
+   use the same real values as mobile. */
 
- .brandOnly{color:#6680A8!important}
-
- .rings{
-   background:
-     radial-gradient(circle at 36% 27%,rgba(255,255,255,.995) 0%,rgba(246,252,255,.985) 34%,rgba(238,249,255,.965) 61%,rgba(232,251,246,.955) 100%) padding-box,
-     linear-gradient(102deg,rgba(109,195,244,.68) 0%,rgba(124,207,249,.48) 44%,rgba(132,221,214,.36) 66%,rgba(113,229,192,.42) 100%) border-box!important;
-   border-color:transparent!important;
-   box-shadow:
-     -18px 0 48px rgba(89,198,247,.18),
-     20px 7px 52px rgba(92,225,182,.14),
-     inset 0 0 0 1px rgba(255,255,255,.86),
-     0 16px 42px rgba(70,126,166,.07)!important;
-   filter:none!important;
- }
- .rings:before{
-   background:linear-gradient(104deg,rgba(105,203,248,.35) 0%,rgba(122,211,250,.24) 46%,rgba(122,225,207,.20) 67%,rgba(103,231,190,.28) 100%)!important;
-   box-shadow:none!important;
-   opacity:.86!important;
- }
- .rings:after{
-   background:linear-gradient(106deg,rgba(110,205,249,.22) 0%,rgba(126,213,250,.15) 45%,rgba(125,226,209,.13) 68%,rgba(106,231,191,.20) 100%)!important;
-   box-shadow:none!important;
-   opacity:.58!important;
- }
- .circle{
-   background:
-     radial-gradient(circle at 40% 28%,rgba(255,255,255,.46),transparent 36%),
-     linear-gradient(140deg,rgba(249,253,255,.28),rgba(232,248,255,.14) 56%,rgba(229,253,242,.15))!important;
- }
- .icon{color:#5599EF!important}
- .circle strong{color:#0D2A66!important}
- .scribble,
- .scribble .arrow,
- .scribble .padSketch{color:#637DA8!important}
-
- .feature{
-   border-color:rgba(160,190,218,.24)!important;
-   box-shadow:0 14px 34px rgba(62,107,150,.09),inset 0 1px 0 rgba(255,255,255,.96)!important;
- }
- .fAi{
-   background:
-     radial-gradient(circle at 50% 24%,rgba(109,180,255,.13),transparent 40%),
-     rgba(255,255,255,.90)!important;
- }
- .fEditor{
-   background:
-     radial-gradient(circle at 50% 24%,rgba(87,220,151,.14),transparent 40%),
-     rgba(255,255,255,.90)!important;
- }
- .fShort{
-   background:
-     radial-gradient(circle at 50% 24%,rgba(255,198,74,.14),transparent 40%),
-     rgba(255,255,255,.90)!important;
- }
- .fAi .featureIcon{background:#D8E9FF!important;color:#1875E6!important}
- .fEditor .featureIcon{background:#CFF4DD!important;color:#078F61!important}
- .fShort .featureIcon{background:#FFE9A8!important;color:#D68000!important}
- .feature b{color:#0D2A66!important}
- .feature small{color:#7185A6!important}
-
- .bottomNav{
-   background:rgba(255,255,255,.93)!important;
-   border-color:rgba(139,181,218,.30)!important;
-   box-shadow:
-     0 10px 28px rgba(59,104,148,.11),
-     0 0 0 4px rgba(226,243,255,.30),
-     inset 0 1px 0 #fff!important;
- }
- .navItem{color:#7185A6!important}
- .navItem svg{
-   background:linear-gradient(145deg,#F9FCFF,#EDF5FC)!important;
-   border-color:rgba(150,184,215,.24)!important;
- }
- .navItem.active{color:#1674E8!important}
- .navItem.active svg{
-   background:linear-gradient(145deg,#E8F5FF,#D8EBFF)!important;
-   border-color:rgba(71,153,226,.40)!important;
- }
-
- .siteFooter{
-   background:transparent!important;
-   border-top-color:rgba(150,184,214,.22)!important;
-   color:#7D90AD!important;
- }
- .footerSocialLink{
-   background:rgba(255,255,255,.90)!important;
-   border-color:rgba(150,183,213,.24)!important;
-   box-shadow:0 5px 13px rgba(65,105,145,.08)!important;
- }
-}
-
-
-/* V184 SCRIBBLES + GAME EDITOR ICON
-   Stagger the handwritten callouts and point both arrows into the uploader.
-   The Game Editor card and callout use the same approved green controller. */
-.fEditor .featureIcon svg{
-  stroke:currentColor!important;
-  fill:none!important;
-  stroke-width:3!important;
-  stroke-linecap:round!important;
-  stroke-linejoin:round!important;
-}
-.fEditor .featureIcon svg circle{
-  fill:currentColor!important;
-  stroke:none!important;
-}
-.scribble .padSketch{
-  color:#078F61!important;
-}
-.scribble .padSketch svg{
-  width:100%!important;
-  height:100%!important;
-  display:block!important;
-  stroke:currentColor!important;
-  fill:none!important;
-  stroke-width:2.8!important;
-  stroke-linecap:round!important;
-  stroke-linejoin:round!important;
-}
-.scribble .padSketch svg circle{
-  fill:currentColor!important;
-  stroke:none!important;
-}
-
-@media (min-width:761px){
- .scribble.left{
-   top:43%!important;
-   right:calc(50% + (var(--gsf-hero-size) / 2) + clamp(22px,2vw,34px))!important;
-   transform:translateY(-50%) rotate(-5deg)!important;
-   text-align:right!important;
- }
- .scribble.right{
-   top:57%!important;
-   left:calc(50% + (var(--gsf-hero-size) / 2) + clamp(22px,2vw,34px))!important;
-   transform:translateY(-50%) rotate(4deg)!important;
-   text-align:left!important;
- }
- .scribble .arrow{
-   width:clamp(96px,7vw,124px)!important;
-   height:clamp(42px,5.2vh,62px)!important;
-   color:#637DA8!important;
- }
- .scribble.left .arrow{
-   right:clamp(-102px,-6vw,-78px)!important;
-   left:auto!important;
-   top:70%!important;
-   transform:translateY(-50%) rotate(1deg)!important;
- }
- .scribble.right .arrow{
-   left:clamp(-102px,-6vw,-78px)!important;
-   right:auto!important;
-   top:2%!important;
-   transform:translateY(-50%) rotate(-1deg)!important;
- }
- .scribble.right .padSketch{
-   width:clamp(50px,4.4vw,64px)!important;
-   height:clamp(50px,4.4vw,64px)!important;
-   margin:8px 0 0 clamp(18px,2.2vw,34px)!important;
- }
-}
-
-@media (max-width:760px){
- .scribble.left{
-   left:0!important;
-   right:auto!important;
-   top:78px!important;
-   transform:rotate(-5deg)!important;
-   text-align:right!important;
- }
- .scribble.right{
-   right:0!important;
-   left:auto!important;
-   top:122px!important;
-   transform:rotate(4deg)!important;
-   text-align:left!important;
- }
- .scribble .arrow{
-   width:62px!important;
-   height:34px!important;
-   margin:0!important;
-   color:#637DA8!important;
- }
- .scribble.left .arrow{
-   right:-48px!important;
-   left:auto!important;
-   top:72%!important;
-   transform:translateY(-50%) rotate(2deg)!important;
- }
- .scribble.right .arrow{
-   left:-48px!important;
-   right:auto!important;
-   top:0!important;
-   transform:rotate(-2deg)!important;
- }
- .scribble.right .padSketch{
-   width:46px!important;
-   height:46px!important;
-   margin:7px 0 0 18px!important;
- }
-}
-@media (max-width:390px){
- .scribble.left{top:74px!important}
- .scribble.right{top:116px!important}
- .scribble.left .arrow{right:-44px!important}
- .scribble.right .arrow{left:-44px!important}
-}
-
-
-/* V185 DESKTOP PALETTE LOCK
-   Desktop-only hard lock to the approved mobile palette.
-   Mobile is intentionally untouched/frozen. */
-@media (min-width:761px){
- #home154{
-   background:
-     radial-gradient(circle at 10% 8%,rgba(111,209,255,.18),transparent 24%),
-     radial-gradient(circle at 90% 12%,rgba(106,229,185,.16),transparent 25%),
-     radial-gradient(circle at 50% 42%,rgba(255,255,255,.97),transparent 42%),
-     linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 52%,#F7FCFF 100%)!important;
- }
- #home154:before{
-   background:
-     radial-gradient(circle at 23% 44%,rgba(111,211,255,.05),transparent 31%),
-     radial-gradient(circle at 77% 52%,rgba(91,226,178,.05),transparent 31%)!important;
- }
- .topbar{background:transparent!important}
- .brandOnly{color:#6680A8!important}
-
- .rings{
-   background:
-     radial-gradient(circle at 36% 27%,rgba(255,255,255,.995) 0%,rgba(246,252,255,.985) 34%,rgba(238,249,255,.965) 61%,rgba(232,251,246,.955) 100%) padding-box,
-     linear-gradient(102deg,rgba(109,195,244,.68) 0%,rgba(124,207,249,.48) 44%,rgba(132,221,214,.36) 66%,rgba(113,229,192,.42) 100%) border-box!important;
-   border:1.35px solid transparent!important;
-   box-shadow:
-     -18px 0 48px rgba(89,198,247,.18),
-     20px 7px 52px rgba(92,225,182,.14),
-     inset 0 0 0 1px rgba(255,255,255,.86),
-     0 16px 42px rgba(70,126,166,.07)!important;
-   filter:none!important;
- }
- .rings:before{
-   background:linear-gradient(104deg,rgba(105,203,248,.35) 0%,rgba(122,211,250,.24) 46%,rgba(122,225,207,.20) 67%,rgba(103,231,190,.28) 100%)!important;
-   border:0!important;
-   box-shadow:none!important;
-   opacity:.86!important;
- }
- .rings:after{
-   background:linear-gradient(106deg,rgba(110,205,249,.22) 0%,rgba(126,213,250,.15) 45%,rgba(125,226,209,.13) 68%,rgba(106,231,191,.20) 100%)!important;
-   border:0!important;
-   box-shadow:none!important;
-   opacity:.58!important;
- }
- .circle{
-   background:
-     radial-gradient(circle at 40% 28%,rgba(255,255,255,.46),transparent 36%),
-     linear-gradient(140deg,rgba(249,253,255,.28),rgba(232,248,255,.14) 56%,rgba(229,253,242,.15))!important;
- }
- .icon{color:#5599EF!important}
- .circle strong{color:#0D2A66!important}
- .scribble,
- .scribble .arrow{color:#637DA8!important}
- .scribble .padSketch{color:#078F61!important}
-
- .feature{
-   border:1px solid rgba(160,190,218,.24)!important;
-   box-shadow:0 14px 34px rgba(62,107,150,.09),inset 0 1px 0 rgba(255,255,255,.96)!important;
- }
- .fAi{
-   background:
-     radial-gradient(circle at 50% 24%,rgba(109,180,255,.13),transparent 40%),
-     rgba(255,255,255,.90)!important;
- }
- .fEditor{
-   background:
-     radial-gradient(circle at 50% 24%,rgba(87,220,151,.14),transparent 40%),
-     rgba(255,255,255,.90)!important;
- }
- .fShort{
-   background:
-     radial-gradient(circle at 50% 24%,rgba(255,198,74,.14),transparent 40%),
-     rgba(255,255,255,.90)!important;
- }
- .featureIcon{border-radius:50%!important}
- .fAi .featureIcon{
-   background:#D8E9FF!important;
-   color:#1875E6!important;
-   border-color:rgba(72,147,230,.18)!important;
- }
- .fEditor .featureIcon{
-   background:#CFF4DD!important;
-   color:#078F61!important;
-   border-color:rgba(59,180,119,.18)!important;
- }
- .fShort .featureIcon{
-   background:#FFE9A8!important;
-   color:#D68000!important;
-   border-color:rgba(226,160,31,.18)!important;
- }
- .feature b{color:#0D2A66!important}
- .feature small{color:#7185A6!important}
-
- .bottomNav{
-   background:rgba(255,255,255,.93)!important;
-   border:1px solid rgba(139,181,218,.30)!important;
-   box-shadow:
-     0 10px 28px rgba(59,104,148,.11),
-     0 0 0 4px rgba(226,243,255,.30),
-     inset 0 1px 0 #fff!important;
- }
- .bottomNav:before{border-color:rgba(163,198,226,.22)!important}
- .navItem{color:#7185A6!important}
- .navItem svg{
-   background:linear-gradient(145deg,#F9FCFF,#EDF5FC)!important;
-   border-color:rgba(150,184,215,.24)!important;
- }
- .navItem.active{color:#1674E8!important}
- .navItem.active svg{
-   background:linear-gradient(145deg,#E8F5FF,#D8EBFF)!important;
-   border-color:rgba(71,153,226,.40)!important;
- }
- .navItem.active:after{background:#0D2A66!important}
-
- .siteFooter{
-   background:transparent!important;
-   border-top-color:rgba(150,184,214,.22)!important;
-   color:#7D90AD!important;
- }
- .footerBrand,.footLinks button,.footLinks span{color:#7D90AD!important}
- .footerSocialLink{
-   background:rgba(255,255,255,.90)!important;
-   border-color:rgba(150,183,213,.24)!important;
-   box-shadow:0 5px 13px rgba(65,105,145,.08)!important;
- }
-}
-
-
-/* V186 REFERENCE CALLOUTS + PAD COLOR FIX
-   Final callout alignment against the approved reference.
-   The callout controller uses the same ink as the handwritten copy;
-   the Game Editor card keeps the controller green. */
+/* Shared controller drawing/color rules */
 .scribble,
 .scribble .arrow,
 .scribble .padSketch{
@@ -3559,16 +3210,236 @@ button{appearance:none;-webkit-appearance:none}
   fill:currentColor!important;
   stroke:none!important;
 }
-.fEditor .featureIcon{color:#078F61!important}
+.fEditor .featureIcon svg{
+  stroke:currentColor!important;
+  fill:none!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
 .fEditor .featureIcon svg circle{
   fill:currentColor!important;
   stroke:none!important;
 }
 
+/* DESKTOP: mobile visual language, desktop geometry */
 @media (min-width:761px){
+ html,body,#home154{
+   font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;
+   -webkit-font-smoothing:antialiased!important;
+   -moz-osx-font-smoothing:grayscale!important;
+   text-rendering:geometricPrecision!important;
+ }
+
+ #home154{
+   background:
+     radial-gradient(circle at 12% 8%,rgba(111,209,255,.17),transparent 23%),
+     radial-gradient(circle at 88% 10%,rgba(106,229,185,.15),transparent 24%),
+     linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important;
+ }
+ #home154:before{
+   background:linear-gradient(180deg,rgba(255,255,255,.36),rgba(255,255,255,.08))!important;
+   opacity:1!important;
+ }
+
+ .brandOnly{
+   color:#6C81A1!important;
+   font-weight:800!important;
+   letter-spacing:.24em!important;
+   text-shadow:none!important;
+   opacity:1!important;
+ }
+
+ /* Exact uploader appearance used by mobile */
+ .rings{
+   background:
+     radial-gradient(circle at 36% 24%,
+       rgba(255,255,255,.99) 0%,
+       rgba(244,251,255,.98) 36%,
+       rgba(233,248,255,.96) 67%,
+       rgba(226,252,242,.94) 100%)!important;
+   border:1.5px solid rgba(89,197,239,.58)!important;
+   box-shadow:
+     -18px 0 52px rgba(74,193,247,.27),
+     20px 5px 54px rgba(83,224,178,.22),
+     0 0 0 1px rgba(255,255,255,.82) inset,
+     0 18px 48px rgba(69,126,167,.10)!important;
+   filter:none!important;
+   opacity:1!important;
+   overflow:visible!important;
+ }
+ .rings:before{
+   inset:-29px!important;
+   padding:0!important;
+   border:1.35px solid rgba(98,205,246,.42)!important;
+   background:transparent!important;
+   -webkit-mask:none!important;
+   mask:none!important;
+   box-shadow:
+     -9px 0 28px rgba(82,201,250,.18),
+     11px 4px 28px rgba(91,228,184,.12)!important;
+   opacity:1!important;
+ }
+ .rings:after{
+   inset:-54px!important;
+   padding:0!important;
+   border:1.2px solid rgba(112,224,195,.25)!important;
+   background:transparent!important;
+   -webkit-mask:none!important;
+   mask:none!important;
+   box-shadow:
+     -12px 0 38px rgba(84,202,250,.13),
+     15px 6px 42px rgba(87,229,184,.18)!important;
+   opacity:1!important;
+ }
+ .circle{
+   background:
+     radial-gradient(circle at 39% 28%,rgba(255,255,255,.42),transparent 37%),
+     linear-gradient(145deg,rgba(248,253,255,.34),rgba(230,249,255,.16) 58%,rgba(225,253,242,.18))!important;
+   filter:none!important;
+   opacity:1!important;
+ }
+ .icon{
+   color:#6099E2!important;
+   opacity:1!important;
+ }
+ .icon svg{stroke-width:1.8!important}
+ .circle strong{
+   color:#0D2A66!important;
+   font-weight:850!important;
+   letter-spacing:.015em!important;
+   line-height:1.08!important;
+   text-shadow:none!important;
+   opacity:1!important;
+ }
+
+ /* Exact mobile cards and icon treatment */
+ .feature{
+   border:1px solid var(--line)!important;
+   border-radius:22px!important;
+   background:var(--glass)!important;
+   -webkit-backdrop-filter:blur(16px)!important;
+   backdrop-filter:blur(16px)!important;
+   box-shadow:var(--shadow)!important;
+   color:var(--ink)!important;
+   filter:none!important;
+   opacity:1!important;
+ }
+ .featureIcon{
+   border-radius:50%!important;
+   box-shadow:
+     inset 0 0 0 1px rgba(255,255,255,.52),
+     0 10px 26px rgba(85,124,159,.08)!important;
+   filter:none!important;
+   opacity:1!important;
+ }
+ .featureIcon svg{
+   stroke-width:1.85!important;
+   opacity:1!important;
+ }
+ .fAi .featureIcon{
+   background:linear-gradient(145deg,#D9F2FF,#CFE9FF)!important;
+   color:#4F98E1!important;
+ }
+ .fEditor .featureIcon{
+   background:linear-gradient(145deg,#DFF8ED,#CCEFDC)!important;
+   color:#328D70!important;
+ }
+ .fShort .featureIcon{
+   background:linear-gradient(145deg,#FFF1B7,#FFE289)!important;
+   color:#D08C00!important;
+ }
+ .feature b{
+   color:#102858!important;
+   font-weight:850!important;
+   letter-spacing:0!important;
+   text-shadow:none!important;
+   opacity:1!important;
+ }
+ .feature small{
+   color:#8193AD!important;
+   font-weight:700!important;
+   line-height:1.34!important;
+   letter-spacing:0!important;
+   text-shadow:none!important;
+   opacity:1!important;
+ }
+
+ /* Exact mobile gamebar */
+ .bottomNav{
+   background:rgba(255,255,255,.80)!important;
+   border:1px solid rgba(154,183,211,.28)!important;
+   border-radius:30px!important;
+   -webkit-backdrop-filter:blur(22px)!important;
+   backdrop-filter:blur(22px)!important;
+   box-shadow:0 16px 44px rgba(70,105,141,.12)!important;
+   filter:none!important;
+   opacity:1!important;
+ }
+ .navItem{
+   color:#8192AA!important;
+   font-weight:800!important;
+   letter-spacing:0!important;
+   text-shadow:none!important;
+   background:transparent!important;
+   opacity:1!important;
+ }
+ .navItem svg{
+   fill:none!important;
+   stroke:currentColor!important;
+   stroke-width:2!important;
+   stroke-linecap:round!important;
+   stroke-linejoin:round!important;
+   background:transparent!important;
+   border:0!important;
+   box-shadow:none!important;
+   filter:none!important;
+   opacity:1!important;
+ }
+ .navItem.active{
+   color:#4F93D7!important;
+   background:rgba(219,241,255,.70)!important;
+ }
+ .navItem.active svg{
+   background:transparent!important;
+   border:0!important;
+ }
+ .navItem.active:after{
+   background:#4F93D7!important;
+   opacity:1!important;
+ }
+
+ /* Exact mobile footer treatment */
+ .siteFooter{
+   color:#7D90AA!important;
+   font-weight:750!important;
+   background:transparent!important;
+   filter:none!important;
+   opacity:1!important;
+ }
+ .footerBrand{
+   color:#7D90AA!important;
+   font-weight:750!important;
+   text-shadow:none!important;
+ }
+ .footLinks button{
+   color:#6983A4!important;
+   font-weight:800!important;
+   text-shadow:none!important;
+ }
+ .footLinks span{color:#7D90AA!important}
+ .footerSocialLink{
+   background:rgba(255,255,255,.90)!important;
+   border:1px solid rgba(150,183,213,.24)!important;
+   box-shadow:0 5px 13px rgba(65,105,145,.08)!important;
+   opacity:1!important;
+ }
+
+ /* Reference callouts: staggered and aimed at the uploader */
  .scribble{
    width:clamp(245px,23vw,380px)!important;
    overflow:visible!important;
+   color:#637DA8!important;
+   opacity:.94!important;
  }
  .scribble.left{
    top:44%!important;
@@ -3609,13 +3480,12 @@ button{appearance:none;-webkit-appearance:none}
    width:clamp(48px,4.2vw,62px)!important;
    height:clamp(48px,4.2vw,62px)!important;
    margin:8px 0 0 clamp(18px,2.1vw,32px)!important;
+   color:#637DA8!important;
  }
 }
 
+/* PHONE: keep the already approved reference callout positioning */
 @media (max-width:760px){
- .scribble{
-   overflow:visible!important;
- }
  .scribble.left{
    top:84px!important;
    left:0!important;
@@ -3664,345 +3534,6 @@ button{appearance:none;-webkit-appearance:none}
  .scribble .arrow{width:66px!important}
  .scribble.left .arrow{right:-50px!important}
  .scribble.right .arrow{left:-50px!important}
-}
-
-
-/* V187 DESKTOP TRUE MOBILE COLOR LOCK
-   Exact desktop palette parity with the final approved phone Home.
-   Visual-only: geometry and positions stay untouched. */
-@media (min-width:761px){
- html,body{
-   background:#FBFDFF!important;
- }
-
- #home154{
-   background:
-     radial-gradient(circle at 12% 8%,rgba(111,209,255,.17),transparent 23%),
-     radial-gradient(circle at 88% 10%,rgba(106,229,185,.15),transparent 24%),
-     linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important;
- }
- #home154:before{
-   background:
-     radial-gradient(circle at 23% 44%,rgba(111,211,255,.05),transparent 31%),
-     radial-gradient(circle at 77% 52%,rgba(91,226,178,.05),transparent 31%)!important;
-   opacity:1!important;
- }
-
- .feature{
-   background:rgba(255,255,255,.84)!important;
-   border:1px solid rgba(160,190,218,.24)!important;
-   box-shadow:0 14px 34px rgba(62,107,150,.09),inset 0 1px 0 rgba(255,255,255,.96)!important;
-   opacity:1!important;
-   filter:none!important;
-   backdrop-filter:none!important;
-   -webkit-backdrop-filter:none!important;
- }
- .fAi{
-   background:
-     radial-gradient(circle at 50% 23%,rgba(167,216,255,.22),transparent 30%),
-     rgba(255,255,255,.84)!important;
- }
- .fEditor{
-   background:
-     radial-gradient(circle at 50% 23%,rgba(163,237,204,.22),transparent 30%),
-     rgba(255,255,255,.84)!important;
- }
- .fShort{
-   background:
-     radial-gradient(circle at 50% 23%,rgba(255,224,135,.26),transparent 30%),
-     rgba(255,255,255,.84)!important;
- }
-
- .featureIcon{
-   opacity:1!important;
-   filter:none!important;
-   box-shadow:
-     inset 0 0 0 1px rgba(255,255,255,.52),
-     0 10px 26px rgba(85,124,159,.08)!important;
- }
- .fAi .featureIcon{
-   background:#D8E9FF!important;
-   color:#1875E6!important;
- }
- .fEditor .featureIcon{
-   background:#CFF4DD!important;
-   color:#078F61!important;
- }
- .fShort .featureIcon{
-   background:#FFE9A8!important;
-   color:#D68000!important;
- }
-
- .rings{
-   background:
-     radial-gradient(circle at 36% 27%,rgba(255,255,255,.995) 0%,rgba(246,252,255,.985) 34%,rgba(238,249,255,.965) 61%,rgba(232,251,246,.955) 100%) padding-box,
-     linear-gradient(102deg,rgba(109,195,244,.68) 0%,rgba(124,207,249,.48) 44%,rgba(132,221,214,.36) 66%,rgba(113,229,192,.42) 100%) border-box!important;
-   border:1.35px solid transparent!important;
-   box-shadow:
-     -18px 0 48px rgba(89,198,247,.18),
-     20px 7px 52px rgba(92,225,182,.14),
-     inset 0 0 0 1px rgba(255,255,255,.86),
-     0 16px 42px rgba(70,126,166,.07)!important;
-   filter:none!important;
-   opacity:1!important;
- }
- .rings:before{
-   background:linear-gradient(104deg,rgba(105,203,248,.35) 0%,rgba(122,211,250,.24) 46%,rgba(122,225,207,.20) 67%,rgba(103,231,190,.28) 100%)!important;
-   opacity:.86!important;
- }
- .rings:after{
-   background:linear-gradient(106deg,rgba(110,205,249,.22) 0%,rgba(126,213,250,.15) 45%,rgba(125,226,209,.13) 68%,rgba(106,231,191,.20) 100%)!important;
-   opacity:.58!important;
- }
-
- .bottomNav{
-   background:rgba(255,255,255,.93)!important;
-   border:1px solid rgba(139,181,218,.30)!important;
-   box-shadow:
-     0 10px 28px rgba(59,104,148,.11),
-     0 0 0 4px rgba(226,243,255,.30),
-     inset 0 1px 0 #fff!important;
-   filter:none!important;
-   backdrop-filter:none!important;
-   -webkit-backdrop-filter:none!important;
-   opacity:1!important;
- }
- .navItem{
-   color:#7185A6!important;
-   opacity:1!important;
- }
- .navItem svg{
-   background:linear-gradient(145deg,#F9FCFF,#EDF5FC)!important;
-   border:1px solid rgba(150,184,215,.24)!important;
-   opacity:1!important;
- }
- .navItem.active{
-   color:#1674E8!important;
- }
- .navItem.active svg{
-   background:linear-gradient(145deg,#E8F5FF,#D8EBFF)!important;
-   border-color:rgba(71,153,226,.40)!important;
- }
-
- .feature b,.circle strong{
-   color:#0D2A66!important;
- }
- .feature small{
-   color:#7185A6!important;
- }
- .brandOnly{
-   color:#6680A8!important;
- }
-}
-
-
-/* V188 MOBILE MASTER -> DESKTOP
-   The approved phone Home is the visual source of truth.
-   Desktop keeps only desktop geometry; palette, typography, card/icon/nav
-   rendering and visual weight mirror mobile. */
-@media (min-width:761px){
- html,body,#home154{
-   font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;
-   -webkit-font-smoothing:antialiased!important;
-   -moz-osx-font-smoothing:grayscale!important;
-   text-rendering:geometricPrecision!important;
- }
-
- #home154{
-   background:
-     radial-gradient(circle at 12% 8%,rgba(111,209,255,.17),transparent 23%),
-     radial-gradient(circle at 88% 10%,rgba(106,229,185,.15),transparent 24%),
-     linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important;
- }
- #home154:before{
-   background:
-     radial-gradient(circle at 23% 44%,rgba(111,211,255,.05),transparent 31%),
-     radial-gradient(circle at 77% 52%,rgba(91,226,178,.05),transparent 31%)!important;
-   opacity:1!important;
- }
-
- .brandOnly{
-   color:#6680A8!important;
-   font-weight:800!important;
-   letter-spacing:.24em!important;
-   text-shadow:none!important;
-   opacity:1!important;
- }
-
- .rings{
-   background:
-     radial-gradient(circle at 36% 27%,rgba(255,255,255,.995) 0%,rgba(246,252,255,.985) 34%,rgba(238,249,255,.965) 61%,rgba(232,251,246,.955) 100%) padding-box,
-     linear-gradient(102deg,rgba(109,195,244,.68) 0%,rgba(124,207,249,.48) 44%,rgba(132,221,214,.36) 66%,rgba(113,229,192,.42) 100%) border-box!important;
-   border:1.35px solid transparent!important;
-   box-shadow:
-     -18px 0 48px rgba(89,198,247,.18),
-     20px 7px 52px rgba(92,225,182,.14),
-     inset 0 0 0 1px rgba(255,255,255,.86),
-     0 16px 42px rgba(70,126,166,.07)!important;
-   filter:none!important;
-   opacity:1!important;
- }
- .rings:before{
-   background:linear-gradient(104deg,rgba(105,203,248,.35) 0%,rgba(122,211,250,.24) 46%,rgba(122,225,207,.20) 67%,rgba(103,231,190,.28) 100%)!important;
-   opacity:.86!important;
- }
- .rings:after{
-   background:linear-gradient(106deg,rgba(110,205,249,.22) 0%,rgba(126,213,250,.15) 45%,rgba(125,226,209,.13) 68%,rgba(106,231,191,.20) 100%)!important;
-   opacity:.58!important;
- }
- .circle{
-   filter:none!important;
-   opacity:1!important;
- }
- .circle strong{
-   color:#0D2A66!important;
-   font-weight:840!important;
-   letter-spacing:.065em!important;
-   text-shadow:none!important;
-   opacity:1!important;
- }
- .icon{
-   color:#5599EF!important;
-   opacity:1!important;
- }
-
- .scribble,
- .scribble .arrow,
- .scribble .padSketch{
-   color:#637DA8!important;
-   opacity:.94!important;
-   text-shadow:0 1px 0 rgba(255,255,255,.70)!important;
- }
-
- .feature{
-   background:rgba(255,255,255,.84)!important;
-   border:1px solid rgba(160,190,218,.24)!important;
-   box-shadow:
-     0 14px 34px rgba(62,107,150,.09),
-     inset 0 1px 0 rgba(255,255,255,.96)!important;
-   backdrop-filter:none!important;
-   -webkit-backdrop-filter:none!important;
-   filter:none!important;
-   opacity:1!important;
- }
- .fAi{
-   background:
-     radial-gradient(circle at 50% 23%,rgba(167,216,255,.22),transparent 30%),
-     rgba(255,255,255,.84)!important;
- }
- .fEditor{
-   background:
-     radial-gradient(circle at 50% 23%,rgba(163,237,204,.22),transparent 30%),
-     rgba(255,255,255,.84)!important;
- }
- .fShort{
-   background:
-     radial-gradient(circle at 50% 23%,rgba(255,224,135,.26),transparent 30%),
-     rgba(255,255,255,.84)!important;
- }
-
- .featureIcon{
-   border-radius:50%!important;
-   opacity:1!important;
-   filter:none!important;
-   box-shadow:
-     inset 0 0 0 1px rgba(255,255,255,.52),
-     0 10px 26px rgba(85,124,159,.08)!important;
- }
- .fAi .featureIcon{
-   background:#D8E9FF!important;
-   color:#1875E6!important;
- }
- .fEditor .featureIcon{
-   background:#CFF4DD!important;
-   color:#078F61!important;
- }
- .fShort .featureIcon{
-   background:#FFE9A8!important;
-   color:#D68000!important;
- }
- .featureIcon svg{
-   stroke-width:1.9!important;
-   opacity:1!important;
- }
-
- .feature b{
-   color:#0D2A66!important;
-   font-weight:850!important;
-   letter-spacing:0!important;
-   text-shadow:none!important;
-   opacity:1!important;
- }
- .feature small{
-   color:#7185A6!important;
-   font-weight:700!important;
-   line-height:1.18!important;
-   letter-spacing:0!important;
-   text-shadow:none!important;
-   opacity:1!important;
- }
-
- .bottomNav{
-   background:rgba(255,255,255,.93)!important;
-   border:1px solid rgba(139,181,218,.30)!important;
-   box-shadow:
-     0 10px 28px rgba(59,104,148,.11),
-     0 0 0 4px rgba(226,243,255,.30),
-     inset 0 1px 0 #fff!important;
-   backdrop-filter:none!important;
-   -webkit-backdrop-filter:none!important;
-   filter:none!important;
-   opacity:1!important;
- }
- .navItem{
-   color:#7185A6!important;
-   font-weight:800!important;
-   letter-spacing:0!important;
-   text-shadow:none!important;
-   opacity:1!important;
- }
- .navItem svg{
-   color:currentColor!important;
-   background:linear-gradient(145deg,#F9FCFF,#EDF5FC)!important;
-   border:1px solid rgba(150,184,215,.24)!important;
-   stroke-width:2!important;
-   opacity:1!important;
-   filter:none!important;
- }
- .navItem.active{
-   color:#1674E8!important;
-   background:transparent!important;
- }
- .navItem.active svg{
-   background:linear-gradient(145deg,#E8F5FF,#D8EBFF)!important;
-   border-color:rgba(71,153,226,.40)!important;
- }
- .navItem.active:after{
-   background:#0D2A66!important;
-   opacity:1!important;
- }
-
- .siteFooter{
-   color:#7D90AD!important;
-   font-weight:750!important;
-   background:transparent!important;
-   filter:none!important;
-   opacity:1!important;
- }
- .footerBrand,
- .footLinks button,
- .footLinks span{
-   color:#7D90AD!important;
-   font-weight:750!important;
-   text-shadow:none!important;
-   opacity:1!important;
- }
- .footerSocialLink{
-   background:rgba(255,255,255,.90)!important;
-   border:1px solid rgba(150,183,213,.24)!important;
-   box-shadow:0 5px 13px rgba(65,105,145,.08)!important;
-   opacity:1!important;
- }
 }
 
 
