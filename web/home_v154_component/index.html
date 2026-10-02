@@ -200,7 +200,8 @@ button{appearance:none;-webkit-appearance:none}
      window.parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin);
    }catch(e){}
    return false;
- }\n function parentClick(candidates,exact=false){
+ }
+ function parentClick(candidates,exact=false){
    try{
      const doc=window.parent.document;
      const els=[...doc.querySelectorAll("button,[role=radio],[role=tab],label,a")];
