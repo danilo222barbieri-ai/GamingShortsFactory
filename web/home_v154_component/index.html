@@ -1951,6 +1951,65 @@ button{appearance:none;-webkit-appearance:none}
  .icon.loadedCheck .gsfCheckGhost{animation:none!important;stroke-dashoffset:0!important}
 }
 
+
+/* V174.2 TWO-RING REFERENCE UPLOADER
+   Match the approved close-up: one inner circle + one very soft outer circle.
+   Colors stay extremely faded: powder blue on the left, mint on the right. */
+@media (min-width:761px){
+ .rings{
+   background:
+     radial-gradient(circle at 36% 28%,rgba(255,255,255,.99) 0 33%,rgba(241,250,255,.97) 62%,rgba(236,251,247,.96) 100%) padding-box,
+     linear-gradient(100deg,rgba(111,196,244,.72) 0%,rgba(126,205,248,.54) 48%,rgba(119,226,194,.44) 100%) border-box!important;
+   border:1.35px solid transparent!important;
+   box-shadow:
+     -20px 0 56px rgba(90,196,246,.18),
+     24px 8px 62px rgba(94,224,181,.14),
+     inset 0 0 0 1px rgba(255,255,255,.82),
+     0 18px 48px rgba(70,126,166,.075)!important;
+   filter:none!important;
+ }
+
+ /* One single outer ring; no third contour. */
+ .rings:before{
+   inset:-54px!important;
+   padding:1.15px!important;
+   border:0!important;
+   border-radius:50%!important;
+   background:
+     linear-gradient(104deg,rgba(111,206,249,.34) 0%,rgba(124,212,250,.24) 48%,rgba(111,232,193,.26) 100%)!important;
+   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)!important;
+   -webkit-mask-composite:xor!important;
+   mask-composite:exclude!important;
+   box-shadow:
+     -18px 0 48px rgba(88,204,249,.11),
+     18px 8px 52px rgba(92,229,186,.12)!important;
+   opacity:.92!important;
+ }
+ .rings:after{
+   display:none!important;
+   content:none!important;
+ }
+
+ .circle{
+   background:
+     radial-gradient(circle at 40% 28%,rgba(255,255,255,.46),transparent 36%),
+     linear-gradient(140deg,rgba(249,253,255,.28),rgba(232,248,255,.14) 56%,rgba(229,253,242,.15))!important;
+ }
+
+ /* The idle animation keeps the two-ring geometry intact. */
+ .rings:not(.uploading):not(.uploaded):before{
+   animation:gsfOuterRingAlive 5.8s ease-in-out infinite!important;
+ }
+ .rings:not(.uploading):not(.uploaded):after,
+ .rings.uploading:after{
+   display:none!important;
+   animation:none!important;
+ }
+}
+@media (min-width:761px) and (max-height:650px){
+ .rings:before{inset:-48px!important}
+}
+
 </style>
 </head>
 <body>
