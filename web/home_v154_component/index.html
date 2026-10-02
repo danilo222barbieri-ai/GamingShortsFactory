@@ -2788,6 +2788,89 @@ button{appearance:none;-webkit-appearance:none}
   }
 }
 
+
+/* V209 LIVING MURAL — contextual handwritten guidance on desktop + mobile. */
+@keyframes gsfMuralSwapIn{
+  0%{opacity:0;filter:blur(5px);transform:translateY(7px) scale(.965)}
+  58%{opacity:1;filter:blur(0);transform:translateY(-1px) scale(1.012)}
+  100%{opacity:1;filter:blur(0);transform:translateY(0) scale(1)}
+}
+@keyframes gsfMuralAmbient{
+  0%,100%{opacity:.68;transform:rotate(-5deg) translateY(0)}
+  50%{opacity:.92;transform:rotate(-4deg) translateY(-3px)}
+}
+#home154 .muralGuide .guideText{
+  display:block!important;
+  transition:opacity .12s ease,filter .12s ease,transform .12s ease!important;
+  will-change:opacity,filter,transform!important;
+}
+#home154 .muralGuide .guideText.muralOut{
+  opacity:0!important;
+  filter:blur(4px)!important;
+  transform:translateY(-5px) scale(.97)!important;
+}
+#home154 .muralGuide .guideText.muralIn{
+  animation:gsfMuralSwapIn .34s cubic-bezier(.2,.82,.25,1) 1!important;
+}
+#home154 .muralAmbient{
+  position:absolute!important;
+  pointer-events:none!important;
+  color:#637DA8!important;
+  font-family:"Comic Sans MS","Bradley Hand",cursive!important;
+  font-weight:700!important;
+  letter-spacing:.01em!important;
+  line-height:1.05!important;
+  z-index:7!important;
+  animation:gsfMuralAmbient 6.2s ease-in-out infinite!important;
+}
+
+/* Desktop mural composition. */
+@media (min-width:761px){
+  #home154 .muralAmbient{
+    left:clamp(34px,6vw,120px)!important;
+    top:13%!important;
+    width:clamp(185px,15vw,250px)!important;
+    text-align:center!important;
+    font-size:clamp(16px,1.15vw,20px)!important;
+    transform:rotate(-5deg)!important;
+  }
+  #home154[data-mural-state="uploading"] .muralAmbient{
+    left:clamp(48px,8vw,150px)!important;
+    top:18%!important;
+  }
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    left:clamp(42px,7vw,135px)!important;
+    top:21%!important;
+  }
+}
+
+/* Mobile mural composition: same language, different use of the empty spaces. */
+@media (max-width:760px){
+  #home154 .muralAmbient{
+    left:0!important;
+    top:16px!important;
+    width:min(31vw,118px)!important;
+    text-align:center!important;
+    font-size:clamp(11.5px,3.25vw,14px)!important;
+    transform:rotate(-5deg)!important;
+  }
+  #home154[data-mural-state="uploading"] .muralAmbient{top:28px!important}
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{top:34px!important}
+}
+@media (max-width:390px){
+  #home154 .muralAmbient{
+    width:108px!important;
+    font-size:11.5px!important;
+    top:18px!important;
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  #home154 .muralGuide .guideText,
+  #home154 .muralAmbient{animation:none!important;transition:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -2802,8 +2885,9 @@ button{appearance:none;-webkit-appearance:none}
 
  <div id="view">
   <div class="stage">
-   <div class="scribble left">Trasforma<br>il tuo gameplay<br>in Shorts</div>
-   <div class="scribble right">Trascina e tocca<br>per caricare<span class="padSketch"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M15.5 22.5c2.2-5.6 8.5-8.2 13.8-5.4l3.2 1.7 3.2-1.7c5.3-2.8 11.6-.2 13.8 5.4l5.2 13.4c2.6 6.7-2.3 13.9-9.5 13.9-4.4 0-7.2-2.4-10.2-7.4l-1.6-2.7h-2.8L29 42.4c-3 5-5.8 7.4-10.2 7.4-7.2 0-12.1-7.2-9.5-13.9l5.2-13.4Z"/><path d="M20 27.5v10M15 32.5h10"/><circle cx="42" cy="27.5" r="2.1"/><circle cx="48" cy="32.5" r="2.1"/><circle cx="42" cy="37.5" r="2.1"/><circle cx="36" cy="32.5" r="2.1"/></svg></span></div>
+   <div id="muralPrimary" class="scribble left muralGuide"><span class="guideText">Trasforma<br>il tuo gameplay<br>in Shorts</span></div>
+   <div id="muralUpload" class="scribble right muralGuide"><span class="guideText">Trascina e tocca<br>per caricare</span><span class="padSketch"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M15.5 22.5c2.2-5.6 8.5-8.2 13.8-5.4l3.2 1.7 3.2-1.7c5.3-2.8 11.6-.2 13.8 5.4l5.2 13.4c2.6 6.7-2.3 13.9-9.5 13.9-4.4 0-7.2-2.4-10.2-7.4l-1.6-2.7h-2.8L29 42.4c-3 5-5.8 7.4-10.2 7.4-7.2 0-12.1-7.2-9.5-13.9l5.2-13.4Z"/><path d="M20 27.5v10M15 32.5h10"/><circle cx="42" cy="27.5" r="2.1"/><circle cx="48" cy="32.5" r="2.1"/><circle cx="42" cy="37.5" r="2.1"/><circle cx="36" cy="32.5" r="2.1"/></svg></span></div>
+   <div id="muralAmbient" class="muralAmbient muralGuide"><span class="guideText">Qui comincia<br>il tuo highlight</span></div>
    <div class="rings">
     <input id="pick" class="pick" type="file" accept="video/mp4,video/quicktime,video/x-matroska,.mp4,.mov,.mkv">
     <label id="circle" class="circle" for="pick">
@@ -2880,6 +2964,78 @@ button{appearance:none;-webkit-appearance:none}
  const status=document.getElementById("status"),statusText=document.getElementById("statusText"),bar=document.getElementById("bar");
  const cta=document.getElementById("primaryCta");
  let loaded=false,duration=15,engine="",uploadBusy=false,previewData=[];
+
+ const muralPrimary=document.querySelector("#muralPrimary .guideText");
+ const muralUpload=document.querySelector("#muralUpload .guideText");
+ const muralAmbient=document.querySelector("#muralAmbient .guideText");
+ let muralState="idle",muralSwapSeq=0,muralReadyTimer=null;
+ const muralCopy={
+   idle:{
+     primary:"Trasforma<br>il tuo gameplay<br>in Shorts",
+     upload:"Trascina e tocca<br>per caricare",
+     ambient:"Qui comincia<br>il tuo highlight"
+   },
+   uploading:{
+     primary:"Ci siamo...<br>il motore è acceso",
+     upload:"Sto caricando<br>il tuo gameplay",
+     ambient:"Un attimo<br>preparo tutto"
+   },
+   ready:{
+     primary:"Ora scegli<br>la tua modalità",
+     upload:"Video pronto",
+     ambient:"IA, Editor o Short<br>scegli tu"
+   },
+   "focus-ai":{
+     primary:"Lascia fare<br>all'IA",
+     upload:"Trova i momenti<br>più forti",
+     ambient:"Automatico<br>o scegli il motore"
+   },
+   "focus-editor":{
+     primary:"Vuoi controllo<br>totale?",
+     upload:"Apri il<br>Game Editor",
+     ambient:"Taglia. Regola.<br>Crea."
+   },
+   "focus-short":{
+     primary:"Vai dritto<br>al risultato",
+     upload:"Crea il tuo<br>Short",
+     ambient:"9:16 pronto<br>per i social"
+   }
+ };
+ function morphMuralText(el,html,seq){
+   if(!el||el.innerHTML===html)return;
+   el.classList.remove("muralIn");
+   el.classList.add("muralOut");
+   window.setTimeout(()=>{
+     if(seq!==muralSwapSeq)return;
+     el.innerHTML=html;
+     el.classList.remove("muralOut");
+     void el.offsetWidth;
+     el.classList.add("muralIn");
+     window.setTimeout(()=>el.classList.remove("muralIn"),380);
+   },115);
+ }
+ function setMuralState(next,instant=false){
+   next=muralCopy[next]?next:"idle";
+   muralState=next;
+   root.dataset.muralState=next;
+   window.clearTimeout(muralReadyTimer);
+   const copy=muralCopy[next],seq=++muralSwapSeq;
+   if(instant){
+     if(muralPrimary)muralPrimary.innerHTML=copy.primary;
+     if(muralUpload)muralUpload.innerHTML=copy.upload;
+     if(muralAmbient)muralAmbient.innerHTML=copy.ambient;
+     return;
+   }
+   morphMuralText(muralPrimary,copy.primary,seq);
+   morphMuralText(muralUpload,copy.upload,seq);
+   morphMuralText(muralAmbient,copy.ambient,seq);
+ }
+ function returnMuralReady(delay=220){
+   if(!loaded)return;
+   window.clearTimeout(muralReadyTimer);
+   muralReadyTimer=window.setTimeout(()=>setMuralState("ready"),delay);
+ }
+
  const norm=s=>String(s||"").replace(/\s+/g," ").trim().toLowerCase();
 
  function normalizeParentHomeShell(){
@@ -3000,7 +3156,8 @@ button{appearance:none;-webkit-appearance:none}
  function collapseParentHomeSpacers(){try{normalizeParentHomeShell()}catch(_e){}}
  try{new MutationObserver(()=>{collapseParentHomeSpacers();scheduleFit()}).observe(window.parent.document.body,{childList:true,subtree:true})}catch(_e){}
  function setLoaded(on){
-   loaded=!!on; view.classList.toggle("loadedView",loaded); circle.classList.toggle("loaded",loaded);
+   loaded=!!on;
+   setMuralState(loaded?"ready":"idle"); view.classList.toggle("loadedView",loaded); circle.classList.toggle("loaded",loaded);
    if(loaded){
      rings.classList.remove("uploading");rings.classList.add("uploaded");
      uploadIcon.classList.add("loadedCheck");
@@ -3095,11 +3252,22 @@ button{appearance:none;-webkit-appearance:none}
  pick.addEventListener("change",async()=>{
    const file=pick.files&&pick.files[0];if(!file||uploadBusy)return;
    const ext=(file.name.split(".").pop()||"").toLowerCase();if(!["mp4","mov","mkv"].includes(ext)){status.className="status show error";statusText.textContent="Formato non supportato";return;}
-   uploadBusy=true;circle.classList.add("busy");rings.classList.remove("uploaded");rings.classList.add("uploading");status.className="status show";uploadLabel.textContent="CARICAMENTO";uploadHint.textContent="";bar.style.width="1%";
+   uploadBusy=true;setMuralState("uploading");circle.classList.add("busy");rings.classList.remove("uploaded");rings.classList.add("uploading");status.className="status show";uploadLabel.textContent="CARICAMENTO";uploadHint.textContent="";bar.style.width="1%";
    try{const caps=await capabilities();if(caps&&caps.bucket===true)await bucketUpload(file,caps);else await fallbackUpload(file);bar.style.width="100%";statusText.textContent="Video caricato";setLoaded(true);value({event:"upload_complete",duration,engine});}
-   catch(e){rings.classList.remove("uploading","uploaded");status.className="status show error";statusText.textContent="Upload interrotto — riprova";bar.style.width="0";uploadLabel.innerHTML="CARICA<br>IL TUO GAMEPLAY";uploadHint.textContent="";circle.classList.remove("busy");uploadBusy=false;}
+   catch(e){setMuralState("idle");rings.classList.remove("uploading","uploaded");status.className="status show error";statusText.textContent="Upload interrotto — riprova";bar.style.width="0";uploadLabel.innerHTML="CARICA<br>IL TUO GAMEPLAY";uploadHint.textContent="";circle.classList.remove("busy");uploadBusy=false;}
  });
  
+
+ document.querySelectorAll(".feature").forEach(b=>{
+   const action=String(b.dataset.action||"");
+   const state=action==="ai"?"focus-ai":action==="editor"?"focus-editor":action==="short"?"focus-short":"ready";
+   b.addEventListener("mouseenter",()=>{if(loaded)setMuralState(state)});
+   b.addEventListener("mouseleave",()=>returnMuralReady());
+   b.addEventListener("focus",()=>{if(loaded)setMuralState(state)});
+   b.addEventListener("blur",()=>returnMuralReady());
+   b.addEventListener("touchstart",()=>{if(loaded)setMuralState(state)},{passive:true});
+ });
+
  document.querySelectorAll(".feature").forEach(b=>b.addEventListener("click",()=>{
    const action=b.dataset.action||"";
    if(action==="ai"){document.getElementById("aiPanel").classList.toggle("open");height(document.getElementById("aiPanel").classList.contains("open")?900:(loaded?690:650));}
@@ -3171,6 +3339,7 @@ button{appearance:none;-webkit-appearance:none}
    args=args||{};setLoaded(!!args.loaded);setDuration(Number(args.duration)||15,false);if(args.engine)setEngine(String(args.engine),false);renderMoments(args.previews||[]);
  }
  window.addEventListener("message",e=>{if(e.data&&e.data.type===RENDER)receive(e.data.args||{});});
+ setMuralState(loaded?"ready":"idle",true);
  send(COMPONENT_READY,{apiVersion:1});
  collapseParentHomeSpacers();
  fitViewport();
