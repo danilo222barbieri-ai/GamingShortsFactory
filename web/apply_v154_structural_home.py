@@ -424,7 +424,7 @@ if GSF_WEB_MODE:
     <div id="gsf-social-overlay-v159" aria-hidden="true">
       <section class="gsf-social-shell" role="dialog" aria-modal="false" aria-label="Condividi o scarica">
         <button class="gsf-social-close" type="button" aria-label="Chiudi">×</button>
-        <iframe src="/share-v156/" title="Condividi o scarica"></iframe>
+        <iframe src="about:blank" data-src="/share-v156/" title="Condividi o scarica"></iframe>
       </section>
     </div>
     <script>
@@ -432,7 +432,13 @@ if GSF_WEB_MODE:
       const o=document.getElementById('gsf-social-overlay-v159');
       if(!o)return;
       const frame=o.querySelector('iframe');
+      const ensureFrame=()=>{
+        if(frame.dataset.loaded==='1')return;
+        frame.src=frame.dataset.src||'/share-v156/';
+        frame.dataset.loaded='1';
+      };
       const open=(platform='')=>{
+        ensureFrame();
         o.classList.add('is-open');
         o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';
         o.setAttribute('aria-hidden','false');
@@ -511,7 +517,7 @@ if GSF_WEB_MODE:
     <div id="gsf-creator-hub-live-v160" aria-hidden="true">
       <section class="gsf-hub-shell-v160" role="dialog" aria-modal="false" aria-label="Creator Hub">
         <button class="gsf-hub-close-v160" type="button" aria-label="Chiudi">×</button>
-        <iframe src="/creator-hub-v156/" title="Creator Hub"></iframe>
+        <iframe src="about:blank" data-src="/creator-hub-v156/" title="Creator Hub"></iframe>
       </section>
     </div>
     <script>
@@ -519,7 +525,14 @@ if GSF_WEB_MODE:
       const o=document.getElementById('gsf-creator-hub-live-v160');if(!o)return;
       const frame=o.querySelector('iframe');
       const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true')};
+      const ensureFrame=()=>{
+        if(frame.dataset.loaded==='1')return false;
+        frame.src=frame.dataset.src||'/creator-hub-v156/';
+        frame.dataset.loaded='1';
+        return true;
+      };
       const open=()=>{
+        const firstLoad=ensureFrame();
         const so=document.getElementById('gsf-social-overlay-v159');if(so){so.classList.remove('is-open');so.style.opacity='0';so.style.visibility='hidden';so.style.pointerEvents='none'}
         const ed=document.getElementById('gsf-editor-overlay-v220');if(ed){ed.classList.remove('is-open');ed.style.opacity='0';ed.style.visibility='hidden';ed.style.pointerEvents='none'}
         const ai=document.getElementById('gsf-ai-overlay-v221');if(ai){ai.classList.remove('is-open');ai.style.opacity='0';ai.style.visibility='hidden';ai.style.pointerEvents='none'}
@@ -533,7 +546,11 @@ if GSF_WEB_MODE:
         if(t==='hub'||t==='profile'){
           open();
           const section=String(e.data.section||(t==='profile'?'profile':'profile'));
-          setTimeout(()=>{try{frame.contentWindow.postMessage({type:'GSF_HUB_FOCUS',section},location.origin)}catch(_e){}},90);
+          const focus=()=>{try{frame.contentWindow.postMessage({type:'GSF_HUB_FOCUS',section},location.origin)}catch(_e){}};
+          if(frame.dataset.loaded==='1' && frame.contentWindow){
+            if(frame.contentDocument && frame.contentDocument.readyState==='complete')setTimeout(focus,40);
+            else frame.addEventListener('load',focus,{once:true});
+          }
           return
         }
         if(t==='home'||t==='close'||t==='editor'||t==='social'||t==='ai'||t==='account')close();
@@ -578,7 +595,7 @@ if GSF_WEB_MODE:
         <div class="gsf-editor-head"><div>Game Editor<small>Il tuo gameplay resta nel progetto mentre modifichi.</small></div></div>
         <div class="gsf-editor-body">
           <div class="editor-note left"><span id="gsf-editor-note-left">Qui modelli<br>la tua giocata</span></div>
-          <iframe class="gsf-editor-frame" src="/editor-live/" title="Game Editor"></iframe>
+          <iframe class="gsf-editor-frame" src="about:blank" data-src="/editor-live/" title="Game Editor"></iframe>
           <div class="editor-note right"><span id="gsf-editor-note-right">Tocca uno strumento<br>e guarda cosa cambia</span></div>
         </div>
       </section>
@@ -615,7 +632,12 @@ if GSF_WEB_MODE:
           const j=await r.json();
           if(r.ok&&j&&j.ok)editorMeta=j;
         }catch(e){}
-        frame.src='/editor-live/?v=223-'+Date.now();
+        if(frame.dataset.loaded!=='1'){
+          frame.src=(frame.dataset.src||'/editor-live/')+'?v=224';
+          frame.dataset.loaded='1';
+        }else{
+          setTimeout(sendRender,40);
+        }
         o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false');
         if(remember)try{sessionStorage.setItem(KEY,'1')}catch(e){}
         guide('idle');
@@ -660,7 +682,7 @@ if GSF_WEB_MODE:
     <div id="gsf-ai-overlay-v221" aria-hidden="true">
       <section class="gsf-ai-shell" role="dialog" aria-modal="false" aria-label="Motori IA">
         <button class="gsf-ai-close" type="button" aria-label="Chiudi">×</button>
-        <iframe src="/ai-v221/" title="Motori IA"></iframe>
+        <iframe src="about:blank" data-src="/ai-v221/" title="Motori IA"></iframe>
       </section>
     </div>
     <script>
@@ -676,7 +698,13 @@ if GSF_WEB_MODE:
       const forwardState=(data)=>{
         try{frame.contentWindow.postMessage({type:'GSF_AI_STATE',state:{loaded:!!data.loaded,duration:Number(data.duration)||15,engine:String(data.engine||''),previews:Array.isArray(data.previews)?data.previews:[]}},location.origin)}catch(e){}
       };
+      const ensureFrame=()=>{
+        if(frame.dataset.loaded==='1')return;
+        frame.src=frame.dataset.src||'/ai-v221/';
+        frame.dataset.loaded='1';
+      };
       const open=(remember=true)=>{
+        ensureFrame();
         const so=document.getElementById('gsf-social-overlay-v159');if(so){so.classList.remove('is-open');so.style.opacity='0';so.style.visibility='hidden';so.style.pointerEvents='none'}
         const ed=document.getElementById('gsf-editor-overlay-v220');if(ed){ed.classList.remove('is-open');ed.style.opacity='0';ed.style.visibility='hidden';ed.style.pointerEvents='none'}
         o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false');
@@ -723,7 +751,7 @@ if GSF_WEB_MODE:
     <div id="gsf-account-overlay-v223" aria-hidden="true">
       <section class="gsf-account-shell" role="dialog" aria-modal="false" aria-label="Account">
         <button class="gsf-account-close" type="button" aria-label="Chiudi">×</button>
-        <iframe src="/account/" title="Account"></iframe>
+        <iframe src="about:blank" data-src="/account/" title="Account"></iframe>
       </section>
     </div>
     <script>
@@ -731,7 +759,7 @@ if GSF_WEB_MODE:
       const o=document.getElementById('gsf-account-overlay-v223');if(!o)return;
       const frame=o.querySelector('iframe');
       const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true')};
-      const open=()=>{frame.src='/account/?v=223-'+Date.now();o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false')};
+      const open=()=>{if(frame.dataset.loaded!=='1'){frame.src=(frame.dataset.src||'/account/')+'?v=224';frame.dataset.loaded='1'}o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false')};
       o.querySelector('.gsf-account-close').onclick=close;
       o.addEventListener('click',e=>{if(e.target===o)close()});
       window.addEventListener('message',e=>{
@@ -752,6 +780,9 @@ s = s.rstrip() + "\n\n" + _account_surface_v223.lstrip()
 # Final-render reconciliation will be attached through a safe boundary, not by
 # splicing inside an existing try/except block.
 
+# V224 legacy JS-regex escape cleanup: generated Python source must contain
+# a doubled backslash so Python emits the intended JS /\s/ regex without SyntaxWarning.
+s=s.replace("replace(/\\s/g,'')","replace(/\\\\s/g,'')")
 # V221 final write must happen AFTER V220 + V221 surfaces are appended.
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
