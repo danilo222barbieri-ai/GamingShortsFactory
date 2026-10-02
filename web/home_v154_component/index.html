@@ -3309,6 +3309,240 @@ html,body{
   #home154 .navItem.active svg{animation:none!important}
 }
 
+
+/* V213 MOBILE REFERENCE MASTER + ORGANIC CORE + ORBITING MURAL */
+
+/* Shared living uploader: much more physical, slow at rest and fast under load. */
+@keyframes gsfCoreDeepBreath213{
+  0%,100%{
+    transform:scale(1);
+    box-shadow:
+      -18px 0 50px rgba(89,198,247,.18),
+      22px 8px 56px rgba(92,225,182,.15),
+      inset 0 0 0 1px rgba(255,255,255,.90),
+      0 18px 46px rgba(70,126,166,.07);
+  }
+  16%{transform:scale(.955)}
+  46%{
+    transform:scale(1.115);
+    box-shadow:
+      -42px -5px 112px rgba(89,198,247,.34),
+      46px 14px 122px rgba(92,225,182,.29),
+      inset 0 0 0 1px rgba(255,255,255,.98),
+      0 34px 84px rgba(70,126,166,.14);
+  }
+  64%{transform:scale(.982)}
+  82%{
+    transform:scale(1.062);
+    box-shadow:
+      -30px -2px 84px rgba(89,198,247,.27),
+      34px 11px 92px rgba(92,225,182,.23),
+      inset 0 0 0 1px rgba(255,255,255,.96),
+      0 26px 68px rgba(70,126,166,.11);
+  }
+}
+@keyframes gsfCoreUpload213{
+  0%,100%{transform:scale(.975);filter:saturate(1.06) brightness(1)}
+  17%{transform:scale(1.105);filter:saturate(1.20) brightness(1.03)}
+  33%{transform:scale(1.005);filter:saturate(1.10) brightness(1.01)}
+  51%{transform:scale(1.14);filter:saturate(1.28) brightness(1.05)}
+  69%{transform:scale(1.008);filter:saturate(1.12) brightness(1.015)}
+  84%{transform:scale(1.095);filter:saturate(1.22) brightness(1.04)}
+}
+@keyframes gsfInnerWave213{
+  0%,100%{transform:scale(.97);opacity:.46}
+  50%{transform:scale(1.13);opacity:.96}
+}
+@keyframes gsfOuterWave213{
+  0%,100%{transform:scale(.94);opacity:.22}
+  46%{transform:scale(1.20);opacity:.82}
+  72%{transform:scale(1.05);opacity:.48}
+}
+#home154 .rings:not(.uploading):not(.uploaded){
+  animation:gsfCoreDeepBreath213 6.9s cubic-bezier(.42,.02,.18,1) infinite!important;
+  transform-origin:center!important;
+}
+#home154 .rings:not(.uploading):not(.uploaded):before{
+  animation:gsfInnerWave213 6.9s ease-in-out infinite!important;
+  transform-origin:center!important;
+}
+#home154 .rings:not(.uploading):not(.uploaded):after{
+  animation:gsfOuterWave213 6.9s .32s ease-in-out infinite!important;
+  transform-origin:center!important;
+}
+#home154 .rings.uploading{
+  animation:gsfCoreUpload213 .90s cubic-bezier(.32,.02,.18,1) infinite!important;
+  transform-origin:center!important;
+}
+#home154 .rings.uploading:before{animation:gsfInnerWave213 .90s ease-in-out infinite!important}
+#home154 .rings.uploading:after{animation:gsfOuterWave213 .90s .06s ease-in-out infinite!important}
+
+/* Mobile reference optical recipe shared as the source of truth. */
+#home154{
+  background:
+    radial-gradient(circle at 12% 8%,rgba(125,214,255,.18),transparent 24%),
+    radial-gradient(circle at 88% 10%,rgba(126,235,198,.17),transparent 25%),
+    radial-gradient(circle at 50% 44%,rgba(255,255,255,.985),transparent 43%),
+    linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F6FBFF 100%)!important;
+}
+#home154:before{
+  background:
+    radial-gradient(circle at 22% 45%,rgba(117,211,251,.05),transparent 31%),
+    radial-gradient(circle at 78% 52%,rgba(111,229,190,.05),transparent 31%)!important;
+}
+#home154 .rings{
+  background:
+    radial-gradient(circle at 36% 27%,rgba(255,255,255,.998) 0%,rgba(247,252,255,.99) 34%,rgba(237,249,255,.98) 61%,rgba(232,251,246,.97) 100%) padding-box,
+    linear-gradient(102deg,rgba(113,205,247,.64) 0%,rgba(126,214,250,.45) 44%,rgba(131,226,211,.36) 66%,rgba(117,229,194,.42) 100%) border-box!important;
+  border:1.35px solid transparent!important;
+}
+#home154 .rings:before{
+  background:linear-gradient(104deg,rgba(105,203,248,.33) 0%,rgba(122,211,250,.23) 46%,rgba(122,225,207,.20) 67%,rgba(103,231,190,.27) 100%)!important;
+}
+#home154 .rings:after{
+  background:linear-gradient(106deg,rgba(110,205,249,.20) 0%,rgba(126,213,250,.14) 45%,rgba(125,226,209,.13) 68%,rgba(106,231,191,.20) 100%)!important;
+}
+#home154 .circle .icon{color:#6099E2!important}
+#home154 .circle strong{color:#0D2A66!important}
+
+#home154 .feature,
+#home154 .feature.fAi,
+#home154 .feature.fEditor,
+#home154 .feature.fShort{
+  background:rgba(255,255,255,.82)!important;
+  border:1px solid rgba(165,193,219,.25)!important;
+  box-shadow:0 14px 34px rgba(62,107,150,.08),inset 0 1px 0 rgba(255,255,255,.98)!important;
+  -webkit-backdrop-filter:blur(16px)!important;
+  backdrop-filter:blur(16px)!important;
+}
+#home154 .feature.fAi .featureIcon{background:#D8E9FF!important;color:#1875E6!important}
+#home154 .feature.fEditor .featureIcon{background:#CFF4DD!important;color:#078F61!important}
+#home154 .feature.fShort .featureIcon{background:#FFE9A8!important;color:#D68000!important}
+#home154 .feature b{color:#0D2A66!important}
+#home154 .feature small{color:#7185A6!important}
+
+#home154 .bottomNav{
+  background:rgba(255,255,255,.93)!important;
+  border:1px solid rgba(139,181,218,.30)!important;
+  box-shadow:0 10px 28px rgba(59,104,148,.11),0 0 0 4px rgba(226,243,255,.30),inset 0 1px 0 #fff!important;
+  -webkit-backdrop-filter:blur(22px)!important;
+  backdrop-filter:blur(22px)!important;
+}
+#home154 .navItem{color:#8192AA!important;background:transparent!important}
+#home154 .navItem svg{
+  background:linear-gradient(145deg,#F9FCFF,#EDF5FC)!important;
+  border:1px solid rgba(150,184,215,.24)!important;
+}
+#home154 .navItem.active{
+  color:#4F93D7!important;
+  background:rgba(219,241,255,.70)!important;
+}
+#home154 .navItem.active svg{
+  color:#4F93D7!important;
+  background:linear-gradient(145deg,#E8F5FF,#D8EBFF)!important;
+}
+#home154 .siteFooter{
+  color:#7D90AD!important;
+  background:transparent!important;
+  border-top:1px solid rgba(150,184,214,.22)!important;
+}
+#home154 .footerSocialLink{
+  background:rgba(255,255,255,.90)!important;
+  border:1px solid rgba(150,183,213,.24)!important;
+  box-shadow:0 5px 13px rgba(65,105,145,.08)!important;
+}
+
+/* Desktop: explicit rebuild from the mobile reference, not inherited approximation. */
+@media (min-width:761px){
+  html,body{background:#F7FBFF!important}
+
+  #home154 .scribble.left{
+    left:calc(50% - clamp(250px,20vw,340px))!important;
+    right:auto!important;
+    top:31%!important;
+    bottom:auto!important;
+    width:clamp(210px,17vw,290px)!important;
+    text-align:right!important;
+    transform:rotate(-4deg)!important;
+  }
+  #home154 .scribble.right{
+    right:calc(50% - clamp(250px,20vw,340px))!important;
+    left:auto!important;
+    top:23%!important;
+    bottom:auto!important;
+    width:clamp(210px,17vw,290px)!important;
+    text-align:left!important;
+    transform:rotate(4deg)!important;
+  }
+  #home154 .muralAmbient{
+    left:calc(50% - clamp(390px,29vw,500px))!important;
+    right:auto!important;
+    top:18%!important;
+    width:clamp(150px,13vw,220px)!important;
+    text-align:center!important;
+  }
+
+  #home154 .feature{
+    background:rgba(255,255,255,.84)!important;
+  }
+  #home154 .bottomNav{
+    background:rgba(255,255,255,.94)!important;
+  }
+}
+
+/* Mobile: keep approved overall placement, but pull all writing closer to the uploader. */
+@media (max-width:760px){
+  #home154 .scribble.left{
+    left:8px!important;
+    right:auto!important;
+    top:33%!important;
+    bottom:auto!important;
+    width:min(34vw,135px)!important;
+    text-align:center!important;
+    transform:rotate(-4deg)!important;
+  }
+  #home154 .scribble.right{
+    right:6px!important;
+    left:auto!important;
+    top:31%!important;
+    bottom:auto!important;
+    width:min(34vw,135px)!important;
+    text-align:center!important;
+    transform:rotate(4deg)!important;
+  }
+  #home154 .scribble.right .padSketch{
+    width:44px!important;
+    margin:6px auto 0!important;
+  }
+  #home154[data-mural-state="uploading"] .scribble.left,
+  #home154[data-mural-state="ready"] .scribble.left,
+  #home154[data-mural-state^="focus-"] .scribble.left{
+    left:8px!important;
+    top:35%!important;
+    bottom:auto!important;
+    width:min(34vw,135px)!important;
+    transform:rotate(-4deg)!important;
+  }
+  #home154[data-mural-state="uploading"] .scribble.right,
+  #home154[data-mural-state="ready"] .scribble.right,
+  #home154[data-mural-state^="focus-"] .scribble.right{
+    right:6px!important;
+    top:33%!important;
+    bottom:auto!important;
+    width:min(34vw,135px)!important;
+    transform:rotate(4deg)!important;
+  }
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    left:50%!important;
+    right:auto!important;
+    top:17%!important;
+    width:min(46vw,180px)!important;
+    transform:translateX(-50%) rotate(-3deg)!important;
+    text-align:center!important;
+  }
+}
+
 </style>
 </head>
 <body>
