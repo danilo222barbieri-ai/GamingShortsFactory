@@ -4575,6 +4575,139 @@ button{appearance:none;-webkit-appearance:none}
   }
 }
 
+
+/* V202 DESKTOP PROPORTION + CALLOUT POLISH
+   Desktop only. Mobile master remains untouched.
+   Keep cards attached to gamebar, make them taller; extend side ads; lift hero
+   slightly; place handwritten helpers intentionally around the hero. */
+@media (min-width:761px){
+  /* Lift only the hero row; cards/gamebar/footer stay exactly in their flow. */
+  #home154 .stage{
+    transform:translateY(-10px)!important;
+  }
+
+  /* Taller CTA cards: same bottom relationship to the gamebar, more vertical presence. */
+  #home154 .features{
+    margin:0 auto 2px!important;
+  }
+  #home154 .feature{
+    min-height:140px!important;
+    height:140px!important;
+    padding:14px 10px 12px!important;
+    border-radius:24px!important;
+  }
+  #home154 .featureIcon{
+    width:58px!important;
+    height:58px!important;
+    margin-bottom:9px!important;
+  }
+  #home154 .featureIcon svg{
+    width:32px!important;
+    height:32px!important;
+  }
+  #home154 .feature b{
+    font-size:11.5px!important;
+  }
+  #home154 .feature small{
+    font-size:8.2px!important;
+    line-height:1.22!important;
+  }
+
+  /* Side ads: substantially longer vertically, same width and soft material. */
+  #home154 .sideAd{
+    height:clamp(300px,48vh,460px)!important;
+    min-height:300px!important;
+  }
+
+  /* Left note: farther outward, angled, with a long hand-drawn descent toward CTA cards. */
+  #home154 .scribble.left{
+    left:clamp(36px,6vw,108px)!important;
+    right:auto!important;
+    top:34%!important;
+    width:clamp(225px,20vw,315px)!important;
+    text-align:right!important;
+    transform:rotate(-7deg)!important;
+  }
+  #home154 .scribble.left .arrow{
+    width:104px!important;
+    height:126px!important;
+    right:-10px!important;
+    left:auto!important;
+    top:calc(100% + 2px)!important;
+    transform:rotate(-8deg)!important;
+  }
+
+  /* Right note: higher and farther outward; arrow reaches into uploader edge. */
+  #home154 .scribble.right{
+    right:clamp(36px,6vw,108px)!important;
+    left:auto!important;
+    top:24%!important;
+    width:clamp(235px,20vw,325px)!important;
+    text-align:left!important;
+    transform:rotate(5deg)!important;
+  }
+  #home154 .scribble.right .arrow{
+    width:108px!important;
+    height:58px!important;
+    left:-94px!important;
+    right:auto!important;
+    top:18px!important;
+    transform:rotate(-4deg)!important;
+  }
+  #home154 .scribble{
+    font-size:clamp(19px,1.5vw,25px)!important;
+    line-height:1.06!important;
+  }
+  #home154 .scribble .padSketch{
+    width:52px!important;
+    margin-top:7px!important;
+  }
+}
+
+/* Wide desktop: keep notes clear of the taller ad rails. */
+@media (min-width:1450px){
+  #home154 .scribble.left{
+    left:clamp(188px,11vw,235px)!important;
+  }
+  #home154 .scribble.right{
+    right:clamp(188px,11vw,235px)!important;
+  }
+}
+
+/* Compact desktop/laptop keeps the same hierarchy without touching mobile. */
+@media (min-width:761px) and (max-width:1100px){
+  #home154 .stage{transform:translateY(-7px)!important}
+  #home154 .feature{
+    min-height:130px!important;
+    height:130px!important;
+  }
+  #home154 .featureIcon{
+    width:54px!important;
+    height:54px!important;
+  }
+  #home154 .scribble{
+    font-size:15.5px!important;
+    width:185px!important;
+  }
+  #home154 .scribble.left{
+    left:18px!important;
+    top:35%!important;
+  }
+  #home154 .scribble.right{
+    right:18px!important;
+    top:25%!important;
+  }
+  #home154 .scribble.left .arrow{
+    width:88px!important;
+    height:108px!important;
+  }
+  #home154 .scribble.right .arrow{
+    width:88px!important;
+    height:50px!important;
+    left:-75px!important;
+  }
+}
+
 </style>
 </head>
 <body>
