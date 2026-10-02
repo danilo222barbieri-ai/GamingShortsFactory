@@ -163,6 +163,173 @@ button{appearance:none;-webkit-appearance:none}
 @media (min-width:761px) and (max-aspect-ratio:16/9){
  #home154{width:100vw;height:calc(100vw * 9 / 16)}
 }
+
+/* V164 APPROVED HOME REFERENCE
+   Desktop reproduces the approved mobile-reference composition:
+   large luminous uploader, handwritten side notes and three tall pastel cards. */
+@media (min-width:761px){
+ #home154{
+   background:
+    radial-gradient(circle at 49% 28%,rgba(123,219,255,.19),transparent 23%),
+    radial-gradient(circle at 55% 34%,rgba(116,235,199,.14),transparent 27%),
+    linear-gradient(180deg,rgba(251,254,255,.97),rgba(247,251,255,.93));
+ }
+ #view{
+   grid-template-rows:42% 32% 4% 9% 6% 3%;
+   row-gap:.8%;
+ }
+ .stage{overflow:visible}
+ .rings{
+   width:min(42vh,25vw,360px);
+   height:min(42vh,25vw,360px);
+   min-width:210px;min-height:210px;
+   background:radial-gradient(circle at 38% 28%,#ffffff 0%,rgba(239,249,255,.96) 48%,rgba(226,250,246,.88) 100%);
+   border:1.5px solid rgba(93,199,239,.58);
+   box-shadow:
+     0 0 0 clamp(18px,2.2vh,30px) rgba(102,205,247,.075),
+     0 0 0 clamp(36px,4.2vh,58px) rgba(89,232,197,.055),
+     0 0 clamp(38px,6vh,78px) rgba(86,215,229,.26),
+     0 22px 60px rgba(69,126,167,.10);
+ }
+ .rings:before{inset:clamp(-30px,-2.2vh,-18px);border:1.4px solid rgba(95,203,241,.37)}
+ .rings:after{inset:clamp(-58px,-4.2vh,-36px);border:1.2px solid rgba(83,229,193,.28)}
+ .icon{
+   width:clamp(52px,6.4vh,82px);
+   height:clamp(52px,6.4vh,82px);
+   margin-bottom:clamp(8px,1.3vh,17px);
+   color:#5f9ef0;
+ }
+ .circle strong{
+   max-width:270px;
+   font-size:clamp(16px,1.45vw,24px);
+   line-height:1.08;
+   letter-spacing:.02em;
+ }
+ .circle small{
+   display:block!important;
+   margin-top:clamp(7px,1vh,13px);
+   color:#7890ad;
+   font-size:clamp(9px,.72vw,13px);
+   font-weight:720;
+   line-height:1.45;
+   letter-spacing:.035em;
+   text-align:center;
+ }
+ .scribble{
+   color:#607aa8;
+   font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive;
+   font-size:clamp(16px,1.75vw,29px);
+   font-weight:500;
+   line-height:1.08;
+   text-shadow:0 1px 0 rgba(255,255,255,.85);
+ }
+ .scribble.left{
+   left:4.5%;top:20%;width:25%;
+   text-align:center;transform:rotate(-5deg);
+ }
+ .scribble.right{
+   right:3.8%;top:25%;width:25%;
+   text-align:center;transform:rotate(4deg);
+ }
+ .scribble .arrow{height:clamp(34px,5vh,58px);margin-top:1px;color:#6984ad}
+ .scribble .arrow svg{width:clamp(68px,7vw,104px);height:100%}
+ .scribble.left .arrow{transform:translateX(58%) rotate(5deg)}
+ .scribble.right .arrow{transform:translateX(-55%) rotate(-3deg)}
+ .scribble .padSketch{
+   width:clamp(44px,5vw,68px);
+   height:auto;margin:clamp(4px,.7vh,9px) auto 0;color:#5e78a6;
+ }
+
+ .features{
+   width:min(91%,1260px);
+   height:100%;
+   gap:clamp(18px,2vw,32px);
+   align-items:stretch;
+ }
+ .feature{
+   position:relative;
+   height:100%;min-height:0;
+   border-radius:clamp(25px,2.2vw,38px);
+   padding:clamp(10px,1.5vh,18px) clamp(14px,1.5vw,24px) clamp(8px,1.1vh,15px);
+   border:1px solid rgba(169,195,218,.28);
+   background:rgba(255,255,255,.82);
+   box-shadow:0 16px 42px rgba(77,114,151,.09),inset 0 1px 0 rgba(255,255,255,.92);
+ }
+ .featureIcon{
+   width:clamp(62px,9vh,112px);
+   height:clamp(62px,9vh,112px);
+   margin:0 auto clamp(6px,1vh,13px);
+   border-radius:50%;
+   box-shadow:inset 0 0 0 1px rgba(255,255,255,.68),0 10px 30px rgba(73,115,155,.08);
+ }
+ .featureIcon svg{width:54%;height:54%;stroke-width:1.7}
+ .feature b{
+   font-size:clamp(15px,1.55vw,25px);
+   line-height:1.05;
+   letter-spacing:-.02em;
+ }
+ .feature small{
+   max-width:220px;
+   font-size:clamp(9px,.95vw,16px);
+   line-height:1.18;
+   margin-top:clamp(4px,.6vh,8px);
+   font-weight:650;
+   color:#7588aa;
+ }
+ .feature:after{
+   width:clamp(30px,4.5vh,50px);
+   height:clamp(30px,4.5vh,50px);
+   margin-top:auto;
+   border-radius:50%;
+   background:rgba(237,244,250,.90);
+   color:#3f6d9f;
+   font-size:clamp(20px,1.55vw,28px);
+   font-weight:600;
+   box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+ }
+ .fAi{
+   background:
+    radial-gradient(circle at 50% 23%,rgba(167,216,255,.22),transparent 30%),
+    rgba(255,255,255,.84);
+ }
+ .fAi .featureIcon{
+   background:linear-gradient(145deg,#d9efff,#bcdcff);
+   color:#3e8bea;
+ }
+ .fEditor{
+   background:
+    radial-gradient(circle at 50% 23%,rgba(163,237,204,.22),transparent 30%),
+    rgba(255,255,255,.84);
+ }
+ .fEditor .featureIcon{
+   background:linear-gradient(145deg,#dcf8e9,#bfeecf);
+   color:#168f68;
+ }
+ .fShort{
+   background:
+    radial-gradient(circle at 50% 23%,rgba(255,224,135,.26),transparent 30%),
+    rgba(255,255,255,.84);
+ }
+ .fShort .featureIcon{
+   background:linear-gradient(145deg,#fff1b6,#ffe087);
+   color:#dc8700;
+ }
+
+ .sectionHead{width:min(91%,1260px);align-items:end}
+ .projects{width:min(91%,1260px)}
+ .bottomNav{width:min(91%,1260px)}
+ .siteFooter{width:min(91%,1260px)}
+}
+
+/* On shorter laptop browser viewports the artboard scales, but the hierarchy and
+   relative positions remain the same; only type and icon clamps get tighter. */
+@media (min-width:761px) and (max-height:650px){
+ .rings{min-width:185px;min-height:185px}
+ .scribble{font-size:clamp(14px,1.55vw,22px)}
+ .featureIcon{width:clamp(52px,8vh,84px);height:clamp(52px,8vh,84px)}
+ .feature b{font-size:clamp(13px,1.35vw,20px)}
+ .feature small{font-size:clamp(8px,.8vw,12px)}
+}
 @media (max-width:760px){
  .sectionHead{display:flex!important;margin:0 3px 10px}.projects{display:grid!important;margin-bottom:18px}
  .featureIcon{border-radius:50%}
@@ -185,7 +352,7 @@ button{appearance:none;-webkit-appearance:none}
     <label id="circle" class="circle" for="pick">
      <span id="uploadIcon" class="icon"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 42h-1C10.4 42 5 36.6 5 30s5.4-12 12-12c1.6 0 3.1.3 4.5.9C24.7 12.4 31.3 8 39 8c10.5 0 19 8.5 19 19 0 .7 0 1.4-.1 2.1C61.5 30.9 64 34.6 64 39c0 6.1-4.9 11-11 11H38"/><path d="M32 52V28"/><path d="m24 36 8-8 8 8"/></svg></span>
      <strong id="uploadLabel">CARICA IL TUO GAMEPLAY</strong>
-     <small id="uploadHint"></small>
+     <small id="uploadHint">MP4 · MOV · AVI<br>MAX 4 GB</small>
     </label>
     <div id="status" class="status"><div id="statusText">Caricamento video… 0%</div><div class="track"><div id="bar" class="bar"></div></div></div>
    </div>
@@ -281,8 +448,8 @@ button{appearance:none;-webkit-appearance:none}
  try{purgeLegacySync();new MutationObserver(purgeLegacySync).observe(window.parent.document.body,{childList:true,subtree:true});}catch(e){}
  function setLoaded(on){
    loaded=!!on; view.classList.toggle("loadedView",loaded); circle.classList.toggle("loaded",loaded);
-   if(loaded){rings.classList.remove("uploading");rings.classList.add("uploaded");uploadIcon.textContent="✓";uploadLabel.textContent="Video caricato";uploadHint.textContent="";pick.disabled=true;}
-   else{rings.classList.remove("uploading","uploaded");uploadIcon.innerHTML=`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 42h-1C10.4 42 5 36.6 5 30s5.4-12 12-12c1.6 0 3.1.3 4.5.9C24.7 12.4 31.3 8 39 8c10.5 0 19 8.5 19 19 0 .7 0 1.4-.1 2.1C61.5 30.9 64 34.6 64 39c0 6.1-4.9 11-11 11H38"/><path d="M32 52V28"/><path d="m24 36 8-8 8 8"/></svg>`;uploadLabel.textContent="CARICA IL TUO GAMEPLAY";uploadHint.textContent="";pick.disabled=false;}
+   if(loaded){rings.classList.remove("uploading");rings.classList.add("uploaded");uploadIcon.textContent="✓";uploadLabel.textContent="Video caricato";uploadHint.innerHTML="MP4 · MOV · AVI<br>MAX 4 GB";pick.disabled=true;}
+   else{rings.classList.remove("uploading","uploaded");uploadIcon.innerHTML=`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 42h-1C10.4 42 5 36.6 5 30s5.4-12 12-12c1.6 0 3.1.3 4.5.9C24.7 12.4 31.3 8 39 8c10.5 0 19 8.5 19 19 0 .7 0 1.4-.1 2.1C61.5 30.9 64 34.6 64 39c0 6.1-4.9 11-11 11H38"/><path d="M32 52V28"/><path d="m24 36 8-8 8 8"/></svg>`;uploadLabel.textContent="CARICA IL TUO GAMEPLAY";uploadHint.innerHTML="MP4 · MOV · AVI<br>MAX 4 GB";pick.disabled=false;}
    fitViewport();
  }
  function shellNav(target,data={}){
