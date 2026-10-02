@@ -2366,6 +2366,14 @@ button{appearance:none;-webkit-appearance:none}
 #home154 .scribble .arrow,
 #home154 .scribble .padSketch{color:var(--gsf-home-note)!important}
 #home154 .siteFooter{color:#7D90AD!important;background:transparent!important;box-shadow:none!important}
+
+/* V204 BUILD-COMPAT GEOMETRY ONLY
+   Preserve the short-desktop contract expected by the production test suite.
+   No color/material rules are reintroduced. */
+@media (min-width:761px) and (max-height:720px){
+  .navItem svg{width:16px;height:16px}
+}
+
 </style>
 </head>
 <body>
