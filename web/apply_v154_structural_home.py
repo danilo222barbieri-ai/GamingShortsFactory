@@ -431,10 +431,12 @@ if GSF_WEB_MODE:
     (()=>{
       const o=document.getElementById('gsf-social-overlay-v159');
       if(!o)return;
-      const open=()=>{
+      const frame=o.querySelector('iframe');
+      const open=(platform='')=>{
         o.classList.add('is-open');
         o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';
         o.setAttribute('aria-hidden','false');
+        if(platform)setTimeout(()=>{try{frame.contentWindow.postMessage({type:'GSF_SHARE_FOCUS',platform},location.origin)}catch(e){}},90);
       };
       const close=()=>{
         o.classList.remove('is-open');
@@ -457,8 +459,8 @@ if GSF_WEB_MODE:
       window.addEventListener('message',e=>{
         if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
         const t=String(e.data.target||'');
-        if(t==='social')open();
-        if(t==='close'||t==='home'||t==='hub'||t==='editor'||t==='ai')close();
+        if(t==='social')open(String(e.data.platform||''));
+        if(t==='close'||t==='home'||t==='hub'||t==='editor'||t==='ai'||t==='account')close();
       });
     })();
     </script>
@@ -515,6 +517,7 @@ if GSF_WEB_MODE:
     <script>
     (()=>{
       const o=document.getElementById('gsf-creator-hub-live-v160');if(!o)return;
+      const frame=o.querySelector('iframe');
       const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true')};
       const open=()=>{
         const so=document.getElementById('gsf-social-overlay-v159');if(so){so.classList.remove('is-open');so.style.opacity='0';so.style.visibility='hidden';so.style.pointerEvents='none'}
@@ -527,8 +530,13 @@ if GSF_WEB_MODE:
       window.addEventListener('message',e=>{
         if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
         const t=String(e.data.target||'');
-        if(t==='hub'||t==='profile'){open();return}
-        if(t==='home'||t==='close'||t==='editor'||t==='social'||t==='ai')close();
+        if(t==='hub'||t==='profile'){
+          open();
+          const section=String(e.data.section||(t==='profile'?'profile':'profile'));
+          setTimeout(()=>{try{frame.contentWindow.postMessage({type:'GSF_HUB_FOCUS',section},location.origin)}catch(_e){}},90);
+          return
+        }
+        if(t==='home'||t==='close'||t==='editor'||t==='social'||t==='ai'||t==='account')close();
       });
     })();
     </script>
@@ -648,7 +656,7 @@ if GSF_WEB_MODE:
         const t=String(e.data.target||'');
         if(t==='ai'){open();return}
         if(t==='ai-state'){forwardState(e.data);return}
-        if(t==='editor'||t==='social'||t==='hub'||t==='home'||t==='close')close();
+        if(t==='editor'||t==='social'||t==='hub'||t==='home'||t==='close'||t==='account')close();
       });
       try{if(sessionStorage.getItem(KEY)==='1')setTimeout(()=>open(false),90)}catch(e){}
     })();
@@ -656,6 +664,46 @@ if GSF_WEB_MODE:
     """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _ai_surface_v221.lstrip()
+
+
+# V223.1 — account/profile access stays inside the app shell.
+_account_surface_v223 = r'''
+if GSF_WEB_MODE:
+    st.markdown(r"""
+    <style id="gsf-v223-account-shell">
+    #gsf-account-overlay-v223{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483662;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(222,238,247,.46);-webkit-backdrop-filter:blur(5px) saturate(.98);backdrop-filter:blur(5px) saturate(.98);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
+    #gsf-account-overlay-v223.is-open{opacity:1;visibility:visible;pointer-events:auto}
+    #gsf-account-overlay-v223 .gsf-account-shell{position:relative;width:min(980px,calc(100vw - 30px));height:min(680px,calc(100dvh - 118px));border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:#F7FCFF;box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.94);transform:translateY(10px) scale(.975);opacity:0;transition:transform .30s cubic-bezier(.16,.84,.24,1),opacity .24s ease}
+    #gsf-account-overlay-v223.is-open .gsf-account-shell{transform:translateY(0) scale(1);opacity:1}
+    #gsf-account-overlay-v223 iframe{width:100%;height:100%;border:0;background:#F7FCFF}
+    #gsf-account-overlay-v223 .gsf-account-close{position:absolute;z-index:7;right:13px;top:11px;width:34px;height:34px;border:1px solid rgba(158,190,216,.34);border-radius:12px;background:rgba(255,255,255,.94);color:#617B9D;font-size:20px;cursor:pointer}
+    @media(max-width:760px){#gsf-account-overlay-v223{bottom:70px;padding:8px 5px}#gsf-account-overlay-v223 .gsf-account-shell{width:calc(100vw - 10px);height:calc(100dvh - 84px);border-radius:22px}#gsf-account-overlay-v223 .gsf-account-close{right:8px;top:7px;width:31px;height:31px}}
+    </style>
+    <div id="gsf-account-overlay-v223" aria-hidden="true">
+      <section class="gsf-account-shell" role="dialog" aria-modal="false" aria-label="Account">
+        <button class="gsf-account-close" type="button" aria-label="Chiudi">×</button>
+        <iframe src="/account/" title="Account"></iframe>
+      </section>
+    </div>
+    <script>
+    (()=>{
+      const o=document.getElementById('gsf-account-overlay-v223');if(!o)return;
+      const frame=o.querySelector('iframe');
+      const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true')};
+      const open=()=>{frame.src='/account/?v=223-'+Date.now();o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false')};
+      o.querySelector('.gsf-account-close').onclick=close;
+      o.addEventListener('click',e=>{if(e.target===o)close()});
+      window.addEventListener('message',e=>{
+        if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
+        const t=String(e.data.target||'');
+        if(t==='account'){open();return}
+        if(t==='home'||t==='close'||t==='hub'||t==='editor'||t==='social'||t==='ai')close();
+      });
+    })();
+    </script>
+    """, unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _account_surface_v223.lstrip()
 
 # V221 final write must happen AFTER V220 + V221 surfaces are appended.
 compile(s,str(out),"exec")

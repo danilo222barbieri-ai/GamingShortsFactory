@@ -330,6 +330,17 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:880;lett
    }catch(e){toast("Copia non disponibile")}
  };
 
+ window.addEventListener("message",e=>{
+   if(e.origin!==location.origin||!e.data||e.data.type!=="GSF_SHARE_FOCUS")return;
+   const key=String(e.data.platform||"");
+   if(!key)return;
+   const card=document.querySelector('[data-card="'+key+'"]');
+   if(card){
+     setGuide(key);
+     try{card.scrollIntoView({behavior:"smooth",block:"center"})}catch(_e){}
+     card.focus({preventScroll:true});
+   }
+ });
  load();
  /* V159 regression compatibility only; no visible player exists:
     video_url
