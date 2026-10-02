@@ -3942,6 +3942,185 @@ button{appearance:none;-webkit-appearance:none}
  .accountName{max-width:70px!important}
 }
 
+
+/* V193 DESKTOP MOBILE-PROPORTION GEOMETRY
+   Desktop keeps the approved mobile visual language, but uses a clean wide
+   composition: hero isolated above, compact cards below, gamebar/footer fixed.
+   No palette changes. */
+@media (min-width:761px){
+ #home154{
+   padding-top:12px!important;
+   padding-left:clamp(28px,3vw,54px)!important;
+   padding-right:clamp(28px,3vw,54px)!important;
+   padding-bottom:12px!important;
+ }
+
+ .topbar{
+   min-height:36px!important;
+   height:36px!important;
+   flex:0 0 36px!important;
+   margin:0!important;
+   padding:0!important;
+ }
+ .brandOnly{
+   font-size:10px!important;
+   letter-spacing:.26em!important;
+ }
+
+ #view{
+   position:relative!important;
+   display:flex!important;
+   flex-direction:column!important;
+   height:calc(100% - 36px)!important;
+   min-height:0!important;
+   padding:0 0 116px!important;
+   overflow:hidden!important;
+ }
+
+ .stage{
+   position:relative!important;
+   flex:1 1 auto!important;
+   min-height:0!important;
+   width:100%!important;
+   margin:0!important;
+   display:flex!important;
+   align-items:center!important;
+   justify-content:center!important;
+   overflow:visible!important;
+ }
+
+ .rings{
+   width:clamp(286px,min(28vw,42vh),336px)!important;
+   height:clamp(286px,min(28vw,42vh),336px)!important;
+   min-width:0!important;
+   min-height:0!important;
+ }
+
+ /* Compact desktop cards: same proportions/language as mobile. */
+ .features{
+   position:relative!important;
+   flex:0 0 auto!important;
+   width:min(48vw,660px)!important;
+   max-width:660px!important;
+   min-width:540px!important;
+   margin:0 auto 12px!important;
+   display:grid!important;
+   grid-template-columns:repeat(3,minmax(0,1fr))!important;
+   gap:12px!important;
+   align-items:stretch!important;
+   z-index:12!important;
+ }
+ .feature{
+   min-height:112px!important;
+   height:112px!important;
+   padding:10px 10px 9px!important;
+   border-radius:22px!important;
+ }
+ .featureIcon{
+   width:50px!important;
+   height:50px!important;
+   margin-bottom:6px!important;
+ }
+ .featureIcon svg{
+   width:28px!important;
+   height:28px!important;
+ }
+ .feature b{
+   font-size:10px!important;
+   line-height:1.05!important;
+ }
+ .feature small{
+   margin-top:4px!important;
+   font-size:7.2px!important;
+   line-height:1.18!important;
+   max-width:165px!important;
+ }
+
+ /* Give the hero its own visual breathing room above the compact cards. */
+ .stage + .features{
+   margin-top:8px!important;
+ }
+
+ /* Preserve the bottom surfaces outside the hero/cards flow. */
+ .bottomNav{
+   position:absolute!important;
+   left:50%!important;
+   bottom:48px!important;
+   transform:translateX(-50%)!important;
+   width:min(56vw,700px)!important;
+   height:54px!important;
+   min-height:54px!important;
+   margin:0!important;
+   z-index:40!important;
+ }
+ .siteFooter{
+   position:absolute!important;
+   left:0!important;
+   right:0!important;
+   bottom:0!important;
+   height:40px!important;
+   min-height:40px!important;
+   margin:0!important;
+   padding:4px clamp(16px,2vw,34px) 2px!important;
+   z-index:35!important;
+ }
+
+ /* Notes remain staggered. Right explains upload; left points down to cards. */
+ .scribble{
+   width:clamp(200px,19vw,300px)!important;
+   font-size:clamp(16px,1.35vw,22px)!important;
+   line-height:1.06!important;
+ }
+ .scribble.left{
+   top:40%!important;
+   right:calc(50% + (var(--gsf-hero-size) / 2) + 22px)!important;
+   left:auto!important;
+   text-align:right!important;
+   transform:translateY(-50%) rotate(-5deg)!important;
+ }
+ .scribble.right{
+   top:53%!important;
+   left:calc(50% + (var(--gsf-hero-size) / 2) + 22px)!important;
+   right:auto!important;
+   text-align:left!important;
+   transform:translateY(-50%) rotate(4deg)!important;
+ }
+ .scribble.left .arrow{
+   width:72px!important;
+   height:88px!important;
+   left:auto!important;
+   right:10px!important;
+   top:calc(100% + 2px)!important;
+   transform:rotate(-4deg)!important;
+ }
+ .scribble.right .arrow{
+   width:72px!important;
+   height:40px!important;
+   left:-58px!important;
+   right:auto!important;
+   top:0!important;
+   transform:rotate(-1deg)!important;
+ }
+
+ /* Keep ad rails available on desktop without stealing center width. */
+ @media (min-width:1450px){
+   .features{width:min(44vw,640px)!important}
+ }
+}
+@media (min-width:761px) and (max-width:1100px){
+ .features{
+   width:min(62vw,620px)!important;
+   min-width:0!important;
+ }
+ .feature{
+   min-height:106px!important;
+   height:106px!important;
+ }
+ .featureIcon{width:46px!important;height:46px!important}
+ .bottomNav{width:min(72vw,650px)!important}
+ .scribble{font-size:14px!important;width:180px!important}
+}
+
 </style>
 </head>
 <body>
