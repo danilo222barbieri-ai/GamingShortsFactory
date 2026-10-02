@@ -925,6 +925,232 @@ button{appearance:none;-webkit-appearance:none}
  .sideAd{display:none!important}
 }
 
+
+/* V169 REFERENCE FIDELITY — graphics only.
+   Keep the responsive structure; fix palette, gamebar prominence, footer layering and ad visibility. */
+@media (min-width:761px){
+ #home154{
+   background:
+    radial-gradient(circle at 9% 12%,rgba(123,219,255,.22),transparent 22%),
+    radial-gradient(circle at 91% 16%,rgba(112,233,194,.18),transparent 24%),
+    radial-gradient(circle at 50% 66%,rgba(255,255,255,.72),transparent 34%),
+    linear-gradient(180deg,#FBFDFF 0%,#F7FCFF 52%,#F3FAFF 100%)!important;
+ }
+ #home154:before{
+   background:
+    radial-gradient(circle at 50% 27%,rgba(255,255,255,.78),transparent 31%),
+    linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.06))!important;
+ }
+
+ /* Make the uploader visibly half blue / half mint like the reference. */
+ .rings{
+   background:
+    linear-gradient(90deg,
+      rgba(225,247,255,.98) 0%,
+      rgba(232,249,255,.98) 49.5%,
+      rgba(228,255,242,.98) 50.5%,
+      rgba(218,253,235,.98) 100%) padding-box,
+    linear-gradient(90deg,
+      #5CCBFF 0%,
+      #74D9FF 49.5%,
+      #6BE8B8 50.5%,
+      #54DDA9 100%) border-box!important;
+   border:2px solid transparent!important;
+   box-shadow:
+    -28px 0 70px rgba(78,194,255,.34),
+    30px 0 76px rgba(70,224,169,.36),
+    0 0 0 clamp(17px,2.35vh,29px) rgba(102,211,255,.13),
+    0 0 0 clamp(32px,4.3vh,53px) rgba(91,231,184,.10),
+    0 22px 54px rgba(64,123,166,.09)!important;
+   filter:saturate(1.10)!important;
+ }
+ .rings:before{
+   border:1.5px solid transparent!important;
+   background:
+    linear-gradient(90deg,rgba(93,205,255,.50) 0 49.5%,rgba(85,227,174,.46) 50.5% 100%) border-box!important;
+   -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);
+   -webkit-mask-composite:xor;
+   mask-composite:exclude;
+ }
+ .rings:after{
+   border:1.25px solid transparent!important;
+   background:
+    linear-gradient(90deg,rgba(97,209,255,.30) 0 49.5%,rgba(93,228,179,.34) 50.5% 100%) border-box!important;
+   -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);
+   -webkit-mask-composite:xor;
+   mask-composite:exclude;
+ }
+ .rings.uploading{
+   animation:gsfMintPulse 1.45s ease-in-out infinite!important;
+   filter:saturate(1.16)!important;
+ }
+ .rings.uploaded{
+   background:
+    linear-gradient(90deg,#E4F8FF 0 49.5%,#E1FFF0 50.5% 100%) padding-box,
+    linear-gradient(90deg,#63D0FF 0 49.5%,#5FE1AE 50.5% 100%) border-box!important;
+   border:2px solid transparent!important;
+ }
+
+ /* Reference CTA icons: large circles, simple line symbols, vivid but clean. */
+ .featureIcon{
+   border-radius:50%!important;
+   box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.82),
+    0 10px 26px rgba(64,111,151,.09)!important;
+ }
+ .fAi .featureIcon{
+   background:linear-gradient(145deg,#DCEEFF,#CFE4FF)!important;
+   color:#1674E8!important;
+ }
+ .fEditor .featureIcon{
+   background:linear-gradient(145deg,#DCF9E8,#C5F1D7)!important;
+   color:#079A67!important;
+ }
+ .fShort .featureIcon{
+   background:linear-gradient(145deg,#FFF4C4,#FFE69A)!important;
+   color:#D98200!important;
+ }
+ .featureIcon svg{stroke-width:2.15!important}
+ .fShort .featureIcon svg{stroke-width:2.35!important}
+
+ /* Handwritten notes and gamepad: same reference ink and softer scale. */
+ .scribble{
+   color:#6A82AA!important;
+   font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive!important;
+   font-weight:500!important;
+   letter-spacing:-.015em!important;
+   line-height:1.08!important;
+   text-shadow:0 1px 0 rgba(255,255,255,.94)!important;
+ }
+ .scribble .arrow,.scribble .padSketch{color:#6A82AA!important}
+ .scribble .padSketch{opacity:.96!important}
+ .scribble .padSketch svg,.scribble .arrow svg{stroke-width:2.15!important}
+
+ /* GAMEBAR: clearly floating and prominent. Each destination has a large circular icon. */
+ .bottomNav{
+   position:relative!important;
+   z-index:20!important;
+   width:min(68%,820px)!important;
+   max-width:820px!important;
+   min-width:600px!important;
+   height:auto!important;
+   min-height:clamp(78px,10.5vh,96px)!important;
+   justify-self:center!important;
+   align-self:center!important;
+   padding:clamp(8px,1.05vh,12px) clamp(16px,1.5vw,24px)!important;
+   border-radius:999px!important;
+   background:rgba(255,255,255,.94)!important;
+   border:1.5px solid rgba(130,180,220,.30)!important;
+   box-shadow:
+    0 18px 52px rgba(56,103,148,.18),
+    0 0 0 7px rgba(224,242,255,.48),
+    inset 0 1px 0 rgba(255,255,255,1)!important;
+   backdrop-filter:blur(28px) saturate(1.2)!important;
+   overflow:visible!important;
+ }
+ .navItem{
+   position:relative!important;
+   z-index:2!important;
+   min-width:0!important;
+   height:auto!important;
+   border-radius:26px!important;
+   padding:4px 3px 2px!important;
+   gap:4px!important;
+   color:#7285A6!important;
+   background:transparent!important;
+   font-size:clamp(8px,.68vw,10px)!important;
+ }
+ .navItem svg{
+   width:clamp(24px,3.2vh,30px)!important;
+   height:clamp(24px,3.2vh,30px)!important;
+   box-sizing:content-box!important;
+   padding:clamp(9px,1.25vh,13px)!important;
+   border-radius:50%!important;
+   background:linear-gradient(145deg,rgba(245,250,255,.98),rgba(229,240,251,.96))!important;
+   border:1px solid rgba(156,188,218,.26)!important;
+   box-shadow:0 8px 20px rgba(65,105,146,.10),inset 0 1px 0 rgba(255,255,255,.98)!important;
+ }
+ .navItem.active{
+   color:#176FD6!important;
+   background:transparent!important;
+ }
+ .navItem.active svg{
+   transform:translateY(-3px) scale(1.14)!important;
+   background:linear-gradient(145deg,#E8F5FF,#D6EAFF)!important;
+   border-color:rgba(81,161,228,.38)!important;
+   box-shadow:
+    0 12px 28px rgba(45,118,188,.22),
+    0 0 0 6px rgba(113,196,255,.13),
+    inset 0 1px 0 rgba(255,255,255,1)!important;
+ }
+ .navItem.active:after{
+   width:5px!important;height:5px!important;
+   bottom:-2px!important;background:#0E356E!important;
+ }
+
+ /* Footer must sit BELOW the gamebar, never over it. */
+ #view{grid-template-rows:42% 39% 0 0 14% 5%!important;row-gap:0!important}
+ .siteFooter{
+   position:relative!important;
+   z-index:1!important;
+   width:100%!important;
+   height:100%!important;
+   margin:0!important;
+   padding:4px 10px 0!important;
+   align-self:end!important;
+   transform:none!important;
+   background:transparent!important;
+   border-top:0!important;
+ }
+ .bottomNav + .siteFooter{margin-top:0!important}
+
+ /* Side ad rails: visible on normal desktop/laptop widths, not just ultra-wide monitors. */
+ .sideAd{
+   display:none!important;
+   top:50%!important;
+   transform:translateY(-46%)!important;
+   width:clamp(92px,8.2vw,122px)!important;
+   height:clamp(210px,32vh,290px)!important;
+   border-radius:22px!important;
+   border:1px solid rgba(145,183,215,.26)!important;
+   background:
+    linear-gradient(180deg,rgba(255,255,255,.78),rgba(242,249,255,.64))!important;
+   box-shadow:
+    0 16px 42px rgba(66,108,149,.10),
+    inset 0 1px 0 rgba(255,255,255,.96)!important;
+   color:#8A9DB7!important;
+   letter-spacing:.10em!important;
+ }
+ .sideAdLeft{left:clamp(8px,1.2vw,18px)!important}
+ .sideAdRight{right:clamp(8px,1.2vw,18px)!important}
+}
+@media (min-width:1180px) and (min-height:600px){
+ .sideAd{display:flex!important}
+ .stage{width:min(78%,1080px)!important}
+ .features{width:min(62vw,760px)!important}
+}
+@media (min-width:761px) and (max-width:1179px){
+ .sideAd{display:none!important}
+ .bottomNav{width:min(86%,760px)!important;min-width:0!important}
+}
+@media (min-width:761px) and (max-height:650px){
+ #view{grid-template-rows:41% 39% 0 0 15% 5%!important}
+ .bottomNav{
+   min-height:68px!important;
+   width:min(74%,760px)!important;
+   padding:6px 12px!important;
+ }
+ .navItem svg{
+   width:20px!important;height:20px!important;padding:8px!important;
+ }
+ .siteFooter{padding-top:2px!important}
+ .sideAd{height:210px!important}
+}
+@media (max-width:760px){
+ .sideAd{display:none!important}
+ .bottomNav{z-index:20!important}
+}
+
 </style>
 </head>
 <body>
