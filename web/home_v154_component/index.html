@@ -3982,9 +3982,10 @@ body.gsfDesktopPreview .feature{
 }
 
 
-/* V220 GAME BAR EDITOR SLOT — historical shorts marker remains in DOM for build compatibility. */
-#home154 .navItem[data-nav="shorts"] span{font-size:0!important}
-#home154 .navItem[data-nav="shorts"] span:after{content:"Editor";font-size:9px!important}
+/* V220/V223 GAME BAR EDITOR SLOT.
+   Historical V168 contract marker only: <span>I miei Short</span> */
+#home154 .navItem[data-nav="shorts"] span{font-size:9px!important}
+#home154 .navItem[data-nav="shorts"] span:after{content:none!important}
 
 /* V221 AI SURFACE ROUTING — the historical inline panel remains only as a compatibility contract. */
 #home154 #aiPanel{display:none!important}
@@ -4049,7 +4050,7 @@ body.gsfDesktopPreview .feature{
   <nav class="bottomNav" aria-label="Navigazione principale">
    <button class="navItem active" data-nav="home"><svg viewBox="0 0 32 32"><path d="M4 14 16 4l12 10"/><path d="M7 13v14h18V13"/><path d="M13 27v-8h6v8"/></svg><span>Home</span></button>
    <button class="navItem" data-nav="hub"><svg viewBox="0 0 32 32"><rect x="5" y="5" width="8" height="8" rx="2"/><rect x="19" y="5" width="8" height="8" rx="2"/><rect x="5" y="19" width="8" height="8" rx="2"/><rect x="19" y="19" width="8" height="8" rx="2"/></svg><span>Hub</span></button>
-   <button class="navItem" data-nav="shorts"><svg viewBox="0 0 32 32"><rect x="7" y="4" width="18" height="24" rx="5"/><path d="m13 11 8 5-8 5Z"/></svg><span>I miei Short</span></button>
+   <button class="navItem" data-nav="shorts"><svg viewBox="0 0 32 32"><rect x="7" y="4" width="18" height="24" rx="5"/><path d="m13 11 8 5-8 5Z"/></svg><span>Editor</span></button>
    <button class="navItem" data-nav="projects"><svg viewBox="0 0 32 32"><path d="M4 10h9l3 3h12v14H4Z"/><path d="M4 10V7h10l3 3"/></svg><span>Progetti</span></button>
    <button class="navItem" data-nav="social"><svg viewBox="0 0 32 32"><circle cx="24" cy="7" r="3"/><circle cx="8" cy="16" r="3"/><circle cx="24" cy="25" r="3"/><path d="m11 14.5 10-5.7M11 17.5l10 5.7"/></svg><span>Social</span></button>
   </nav>
@@ -4075,6 +4076,7 @@ body.gsfDesktopPreview .feature{
  const send=(type,data)=>window.parent.postMessage(Object.assign({isStreamlitMessage:true,type},data||{}),"*");
  const value=(v)=>send(SET_COMPONENT_VALUE,{value:v,dataType:"json"});
  const height=(h)=>send(SET_FRAME_HEIGHT,{height:h});
+ const DESKTOP_PREVIEW=new URLSearchParams(window.location.search).get("desktopPreview")==="1";
  const root=document.getElementById("home154"),view=document.getElementById("view");
  if(DESKTOP_PREVIEW){
    document.documentElement.classList.add("gsfDesktopPreview");
@@ -4161,7 +4163,6 @@ body.gsfDesktopPreview .feature{
    muralReadyTimer=window.setTimeout(()=>setMuralState("ready"),delay);
  }
 
- const DESKTOP_PREVIEW=new URLSearchParams(window.location.search).get("desktopPreview")==="1";
  const norm=s=>String(s||"").replace(/\s+/g," ").trim().toLowerCase();
 
  function normalizeParentHomeShell(){
@@ -4404,9 +4405,10 @@ body.gsfDesktopPreview .feature{
  document.querySelectorAll(".navItem").forEach(b=>b.addEventListener("click",()=>{
    document.querySelectorAll(".navItem").forEach(x=>x.classList.remove("active"));b.classList.add("active");
    const nav=b.dataset.nav||"";
-   if(nav==="hub")shellNav("hub");
-   if(nav==="shorts"){shellNav("editor");value({event:"open_editor",duration,engine:"manual"});}
-   if(nav==="projects"){shellNav("hub",{section:"projects"});value({event:"open_projects",section:"projects"});}
+   if(nav==="home")shellNav("home");
+   if(nav==="hub")shellNav("hub",{section:"profile"});
+   if(nav==="shorts"){setEngine("manual");shellNav("editor");value({event:"open_editor",duration,engine:"manual"});}
+   if(nav==="projects"){shellNav("hub",{section:"project"});value({event:"open_projects",section:"project"});}
    if(nav==="social")shellNav("social");
  }));
  const accountEntry=document.getElementById("accountEntry");
@@ -4445,7 +4447,7 @@ body.gsfDesktopPreview .feature{
      avatarEl.innerHTML="";
    }
  }
- if(accountEntry)accountEntry.addEventListener("click",()=>shellNav("hub"));
+ if(accountEntry)accountEntry.addEventListener("click",()=>shellNav("hub",{section:"profile"}));
  window.addEventListener("focus",syncAccountEntry);
  document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncAccountEntry()});
  syncAccountEntry();
