@@ -100,6 +100,7 @@ RUN python /app/web/test_v166_mega_responsive_home.py
 RUN python /app/web/test_v167_home_visual_final.py
 RUN python /app/web/test_v168_home_nav_ads.py
 RUN python /app/web/test_v169_reference_fidelity.py
+RUN python /app/web/test_v170_geometry_color_repair.py
 RUN python /app/web/test_v162_1_home_lift.py
 RUN python -m compileall -q /app/web
 COPY .streamlit /app/.streamlit

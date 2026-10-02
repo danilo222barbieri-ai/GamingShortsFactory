@@ -1151,6 +1151,228 @@ button{appearance:none;-webkit-appearance:none}
  .bottomNav{z-index:20!important}
 }
 
+
+/* V170 GEOMETRY RESTORE + HARD REFERENCE COLORS
+   Restore the approved V167/V168 positions. From here down: visual-only overrides. */
+@media (min-width:761px){
+ /* Restore the exact pre-V169 composition so nothing is pushed around. */
+ #view{
+   grid-template-rows:43% 41% 0 0 12% 3%!important;
+   row-gap:.2%!important;
+ }
+ .stage{
+   width:100%!important;
+   max-width:none!important;
+   margin:0!important;
+ }
+ .features{
+   width:min(72vw,760px)!important;
+   max-width:760px!important;
+   margin:0!important;
+ }
+ .bottomNav{
+   width:min(64%,760px)!important;
+   max-width:760px!important;
+   min-width:560px!important;
+   min-height:0!important;
+   height:100%!important;
+   padding:clamp(4px,.65vh,7px) clamp(10px,1vw,16px)!important;
+   margin:0!important;
+   align-self:stretch!important;
+   transform:none!important;
+ }
+ .siteFooter{
+   width:100%!important;
+   height:100%!important;
+   margin:0!important;
+   padding:0 8px!important;
+   align-self:center!important;
+   z-index:1!important;
+   transform:none!important;
+   border-top:0!important;
+ }
+
+ /* Stronger reference background: ice-blue left, mint right, clean white center. */
+ #home154{
+   background:
+    radial-gradient(circle at 7% 13%,rgba(91,200,255,.26),transparent 24%),
+    radial-gradient(circle at 93% 14%,rgba(84,225,169,.22),transparent 26%),
+    radial-gradient(circle at 50% 42%,rgba(255,255,255,.92),transparent 38%),
+    linear-gradient(180deg,#F8FCFF 0%,#F4FBFF 52%,#EFF9FF 100%)!important;
+ }
+ #home154:before{
+   background:
+    linear-gradient(90deg,rgba(111,210,255,.08),rgba(255,255,255,.18) 48%,rgba(90,229,174,.08))!important;
+ }
+
+ /* Make the uploader unmistakably BLUE on the left and MINT on the right. */
+ .rings{
+   background:
+    linear-gradient(90deg,#E7F8FF 0%,#E7F8FF 49.6%,#E4FFF1 50.4%,#E4FFF1 100%) padding-box,
+    linear-gradient(90deg,#34B8FF 0%,#52C8FF 49.6%,#43E0A3 50.4%,#2ED291 100%) border-box!important;
+   border:2.5px solid transparent!important;
+   box-shadow:
+    -28px 0 74px rgba(48,178,255,.42),
+    30px 0 78px rgba(42,220,148,.42),
+    0 0 0 clamp(17px,2.25vh,28px) rgba(58,190,255,.14),
+    0 0 0 clamp(31px,4.1vh,50px) rgba(49,218,151,.12),
+    0 20px 50px rgba(62,118,160,.09)!important;
+   filter:saturate(1.22)!important;
+ }
+ .rings:before{
+   border:0!important;
+   background:
+    linear-gradient(90deg,#62D0FF 0 49.6%,#63E7B6 50.4% 100%)!important;
+   padding:1.5px!important;
+   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)!important;
+   -webkit-mask-composite:xor!important;
+   mask-composite:exclude!important;
+ }
+ .rings:after{
+   border:0!important;
+   background:
+    linear-gradient(90deg,rgba(76,196,255,.55) 0 49.6%,rgba(71,224,164,.52) 50.4% 100%)!important;
+   padding:1.25px!important;
+   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)!important;
+   -webkit-mask-composite:xor!important;
+   mask-composite:exclude!important;
+ }
+ .rings.uploaded{
+   background:
+    linear-gradient(90deg,#E4F8FF 0 49.6%,#DFFFEF 50.4% 100%) padding-box,
+    linear-gradient(90deg,#34B8FF 0 49.6%,#2ED291 50.4% 100%) border-box!important;
+ }
+ .icon{color:#4D92E8!important}
+ .circle strong{color:#0D2A66!important}
+
+ /* Reference card color language: white glass cards with clearly colored icon discs. */
+ .feature{
+   border-color:rgba(160,190,218,.24)!important;
+   box-shadow:0 16px 40px rgba(62,107,150,.09),inset 0 1px 0 rgba(255,255,255,.96)!important;
+ }
+ .fAi{
+   background:
+    radial-gradient(circle at 50% 24%,rgba(109,180,255,.18),transparent 39%),
+    rgba(255,255,255,.88)!important;
+ }
+ .fEditor{
+   background:
+    radial-gradient(circle at 50% 24%,rgba(87,220,151,.20),transparent 39%),
+    rgba(255,255,255,.88)!important;
+ }
+ .fShort{
+   background:
+    radial-gradient(circle at 50% 24%,rgba(255,198,74,.20),transparent 39%),
+    rgba(255,255,255,.88)!important;
+ }
+ .fAi .featureIcon{
+   background:#D8E9FF!important;
+   color:#1875E6!important;
+   border:1px solid rgba(72,147,230,.18)!important;
+ }
+ .fEditor .featureIcon{
+   background:#CFF4DD!important;
+   color:#078F61!important;
+   border:1px solid rgba(59,180,119,.18)!important;
+ }
+ .fShort .featureIcon{
+   background:#FFE9A8!important;
+   color:#D68000!important;
+   border:1px solid rgba(226,160,31,.18)!important;
+ }
+ .featureIcon svg{stroke-width:2.25!important}
+ .feature b{color:#0D2A66!important}
+ .feature small{color:#7185A6!important}
+
+ /* Same blue-grey ink for handwritten text, arrows and gamepad. */
+ .scribble,
+ .scribble .arrow,
+ .scribble .padSketch{color:#637DA8!important}
+ .scribble .padSketch svg,
+ .scribble .arrow svg{stroke-width:2.2!important}
+
+ /* Gamebar stays in its original slot; prominence comes from the icon circles, not layout growth. */
+ .bottomNav{
+   position:relative!important;
+   z-index:10!important;
+   border-radius:999px!important;
+   background:rgba(255,255,255,.92)!important;
+   border:1px solid rgba(142,181,216,.30)!important;
+   box-shadow:
+    0 14px 36px rgba(59,104,148,.14),
+    0 0 0 5px rgba(224,242,255,.42),
+    inset 0 1px 0 rgba(255,255,255,1)!important;
+   overflow:visible!important;
+ }
+ .navItem{
+   color:#7185A6!important;
+   background:transparent!important;
+   padding:2px 3px!important;
+   gap:2px!important;
+ }
+ .navItem svg{
+   width:clamp(20px,2.5vh,24px)!important;
+   height:clamp(20px,2.5vh,24px)!important;
+   box-sizing:content-box!important;
+   padding:clamp(7px,.9vh,9px)!important;
+   border-radius:50%!important;
+   background:linear-gradient(145deg,#F9FCFF,#EDF5FC)!important;
+   border:1px solid rgba(150,184,215,.26)!important;
+   box-shadow:0 7px 17px rgba(62,105,146,.09),inset 0 1px 0 #fff!important;
+ }
+ .navItem.active{
+   color:#1674E8!important;
+   background:transparent!important;
+ }
+ .navItem.active svg{
+   transform:translateY(-2px) scale(1.08)!important;
+   background:linear-gradient(145deg,#E8F5FF,#D8EBFF)!important;
+   border-color:rgba(71,153,226,.40)!important;
+   box-shadow:
+    0 10px 24px rgba(46,118,185,.20),
+    0 0 0 5px rgba(96,189,255,.12),
+    inset 0 1px 0 #fff!important;
+ }
+ .navItem.active:after{
+   width:4px!important;height:4px!important;
+   bottom:0!important;background:#0D2A66!important;
+ }
+
+ /* Ad rails are absolute: visible but never allowed to resize or move the central composition. */
+ .sideAd{
+   display:none!important;
+   top:47%!important;
+   transform:translateY(-50%)!important;
+   width:clamp(86px,7.4vw,112px)!important;
+   height:clamp(200px,30vh,270px)!important;
+   border-radius:21px!important;
+   background:linear-gradient(180deg,rgba(255,255,255,.80),rgba(240,249,255,.66))!important;
+   border:1px solid rgba(145,183,214,.24)!important;
+   box-shadow:0 14px 36px rgba(62,105,145,.09),inset 0 1px 0 rgba(255,255,255,.96)!important;
+ }
+}
+@media (min-width:1180px) and (min-height:600px){
+ .sideAd{display:flex!important}
+ .stage{width:100%!important}
+ .features{width:min(72vw,760px)!important}
+}
+@media (min-width:761px) and (max-width:1179px){
+ .sideAd{display:none!important}
+ .bottomNav{width:min(82%,720px)!important;min-width:0!important}
+}
+@media (min-width:761px) and (max-height:650px){
+ #view{grid-template-rows:42% 42% 0 0 13% 2%!important;row-gap:.2%!important}
+ .bottomNav{
+   width:min(72vw,650px)!important;
+   min-width:0!important;
+   min-height:0!important;
+   height:100%!important;
+   padding:4px 9px!important;
+ }
+ .navItem svg{width:18px!important;height:18px!important;padding:6px!important}
+ .siteFooter{padding:0 8px!important}
+}
+
 </style>
 </head>
 <body>
