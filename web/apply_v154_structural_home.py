@@ -83,6 +83,25 @@ if GSF_WEB_MODE:
       }
     }
 
+
+    /* V165 FLUID HOME SHELL — let the Home component use the complete desktop viewport. */
+    @media (min-width:761px){
+      iframe[title*="gsf_home_v154_live_155"],
+      iframe[title*="gsf_home_v154"],
+      iframe[src*="home_v154"]{
+        width:100% !important;
+        max-width:none !important;
+        margin:0 !important;
+      }
+      [data-testid="stElementContainer"]:has(iframe[title*="gsf_home_v154"]),
+      [data-testid="stElementContainer"]:has(iframe[title*="gsf_home_v154_live_155"]){
+        width:100% !important;
+        max-width:none !important;
+        margin-top:0 !important;
+        margin-bottom:0 !important;
+      }
+    }
+
     /* The new component owns the production Home. Keep the old uploader
        mounted only as an invisible fallback so its backend/state contracts
        remain available during migration. */

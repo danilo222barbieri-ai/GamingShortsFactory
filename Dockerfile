@@ -95,6 +95,7 @@ RUN python /app/web/test_v161_1_zero_scroll.py
 RUN python /app/web/test_v162_1_short_desktop_fit.py
 RUN python /app/web/test_v163_adaptive_artboard.py
 RUN python /app/web/test_v164_home_reference.py
+RUN python /app/web/test_v165_fluid_responsive_home.py
 RUN python /app/web/test_v162_1_home_lift.py
 RUN python -m compileall -q /app/web
 COPY .streamlit /app/.streamlit
