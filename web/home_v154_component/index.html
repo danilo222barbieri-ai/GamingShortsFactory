@@ -3293,6 +3293,122 @@ button{appearance:none;-webkit-appearance:none}
  }
 }
 
+
+/* V184 SCRIBBLES + GAME EDITOR ICON
+   Stagger the handwritten callouts and point both arrows into the uploader.
+   The Game Editor card and callout use the same approved green controller. */
+.fEditor .featureIcon svg{
+  stroke:currentColor!important;
+  fill:none!important;
+  stroke-width:3!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+.fEditor .featureIcon svg circle{
+  fill:currentColor!important;
+  stroke:none!important;
+}
+.scribble .padSketch{
+  color:#078F61!important;
+}
+.scribble .padSketch svg{
+  width:100%!important;
+  height:100%!important;
+  display:block!important;
+  stroke:currentColor!important;
+  fill:none!important;
+  stroke-width:2.8!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+.scribble .padSketch svg circle{
+  fill:currentColor!important;
+  stroke:none!important;
+}
+
+@media (min-width:761px){
+ .scribble.left{
+   top:43%!important;
+   right:calc(50% + (var(--gsf-hero-size) / 2) + clamp(22px,2vw,34px))!important;
+   transform:translateY(-50%) rotate(-5deg)!important;
+   text-align:right!important;
+ }
+ .scribble.right{
+   top:57%!important;
+   left:calc(50% + (var(--gsf-hero-size) / 2) + clamp(22px,2vw,34px))!important;
+   transform:translateY(-50%) rotate(4deg)!important;
+   text-align:left!important;
+ }
+ .scribble .arrow{
+   width:clamp(96px,7vw,124px)!important;
+   height:clamp(42px,5.2vh,62px)!important;
+   color:#637DA8!important;
+ }
+ .scribble.left .arrow{
+   right:clamp(-102px,-6vw,-78px)!important;
+   left:auto!important;
+   top:70%!important;
+   transform:translateY(-50%) rotate(1deg)!important;
+ }
+ .scribble.right .arrow{
+   left:clamp(-102px,-6vw,-78px)!important;
+   right:auto!important;
+   top:2%!important;
+   transform:translateY(-50%) rotate(-1deg)!important;
+ }
+ .scribble.right .padSketch{
+   width:clamp(50px,4.4vw,64px)!important;
+   height:clamp(50px,4.4vw,64px)!important;
+   margin:8px 0 0 clamp(18px,2.2vw,34px)!important;
+ }
+}
+
+@media (max-width:760px){
+ .scribble.left{
+   left:0!important;
+   right:auto!important;
+   top:78px!important;
+   transform:rotate(-5deg)!important;
+   text-align:right!important;
+ }
+ .scribble.right{
+   right:0!important;
+   left:auto!important;
+   top:122px!important;
+   transform:rotate(4deg)!important;
+   text-align:left!important;
+ }
+ .scribble .arrow{
+   width:62px!important;
+   height:34px!important;
+   margin:0!important;
+   color:#637DA8!important;
+ }
+ .scribble.left .arrow{
+   right:-48px!important;
+   left:auto!important;
+   top:72%!important;
+   transform:translateY(-50%) rotate(2deg)!important;
+ }
+ .scribble.right .arrow{
+   left:-48px!important;
+   right:auto!important;
+   top:0!important;
+   transform:rotate(-2deg)!important;
+ }
+ .scribble.right .padSketch{
+   width:46px!important;
+   height:46px!important;
+   margin:7px 0 0 18px!important;
+ }
+}
+@media (max-width:390px){
+ .scribble.left{top:74px!important}
+ .scribble.right{top:116px!important}
+ .scribble.left .arrow{right:-44px!important}
+ .scribble.right .arrow{left:-44px!important}
+}
+
 </style>
 </head>
 <body>
@@ -3307,7 +3423,7 @@ button{appearance:none;-webkit-appearance:none}
  <div id="view">
   <div class="stage">
    <div class="scribble left">Trasforma<br>il tuo gameplay<br>in Shorts<span class="arrow"><svg viewBox="0 0 80 44"><path d="M4 4c8 28 28 35 63 33"/><path d="m58 28 10 9-11 7"/></svg></span></div>
-   <div class="scribble right"><span class="arrow"><svg viewBox="0 0 80 44"><path d="M76 4C68 28 48 35 13 33"/><path d="m22 24-10 9 11 7"/></svg></span>Trascina qui<br>o tocca per caricare<span class="padSketch"><svg viewBox="0 0 56 38"><path d="M14 10h28c5 0 9 4 9 9v4c0 5-4 9-8 9-4 0-6-2-9-7H22c-3 5-5 7-9 7-4 0-8-4-8-9v-4c0-5 4-9 9-9Z"/><path d="M15 16v9M10.5 20.5h9"/><circle cx="38" cy="18" r="1.4"/><circle cx="43" cy="23" r="1.4"/></svg></span></div>
+   <div class="scribble right"><span class="arrow"><svg viewBox="0 0 80 44"><path d="M76 4C68 28 48 35 13 33"/><path d="m22 24-10 9 11 7"/></svg></span>Trascina qui<br>o tocca per caricare<span class="padSketch"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 20h28c7 0 12 5 12 12v5c0 6-5 11-10 11-4.7 0-7.4-2.5-10.2-7H26.2C23.4 45.5 20.7 48 16 48 10.5 48 6 43 6 37v-5c0-7 5-12 12-12Z"/><path d="M19 28v10M14 33h10"/><circle cx="42" cy="29" r="2.1"/><circle cx="49" cy="33" r="2.1"/><circle cx="42" cy="37" r="2.1"/><circle cx="35" cy="33" r="2.1"/></svg></span></div>
    <div class="rings">
     <input id="pick" class="pick" type="file" accept="video/mp4,video/quicktime,video/x-matroska,.mp4,.mov,.mkv">
     <label id="circle" class="circle" for="pick">
@@ -3323,7 +3439,7 @@ button{appearance:none;-webkit-appearance:none}
 
   <div class="features">
    <button class="feature fAi" data-action="ai"><span class="featureIcon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M20 6c1.2 8.5 5.5 12.8 14 14-8.5 1.2-12.8 5.5-14 14-1.2-8.5-5.5-12.8-14-14 8.5-1.2 12.8-5.5 14-14Z"/><path d="M37 5c.45 3.1 2 4.65 5 5-3 .45-4.55 2-5 5-.45-3-2-4.55-5-5 3-.35 4.55-1.9 5-5Z"/></svg></span><b>Crea con IA</b><small>Trova i momenti più epici</small></button>
-   <button class="feature fEditor" data-action="editor"><span class="featureIcon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M13 16h22c5 0 9 4 9 9v4c0 5-4 9-8.5 9-3.1 0-5.1-1.5-7.4-5l-1.6-2.5h-5L19.9 33c-2.3 3.5-4.3 5-7.4 5C8 38 4 34 4 29v-4c0-5 4-9 9-9Z"/><path d="M14 22v10M9 27h10"/><circle cx="33" cy="24" r="1.5"/><circle cx="38" cy="29" r="1.5"/></svg></span><b>Game Editor</b><small>Personalizza il tuo gameplay</small></button>
+   <button class="feature fEditor" data-action="editor"><span class="featureIcon"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 20h28c7 0 12 5 12 12v5c0 6-5 11-10 11-4.7 0-7.4-2.5-10.2-7H26.2C23.4 45.5 20.7 48 16 48 10.5 48 6 43 6 37v-5c0-7 5-12 12-12Z"/><path d="M19 28v10M14 33h10"/><circle cx="42" cy="29" r="2.1"/><circle cx="49" cy="33" r="2.1"/><circle cx="42" cy="37" r="2.1"/><circle cx="35" cy="33" r="2.1"/></svg></span><b>Game Editor</b><small>Personalizza il tuo gameplay</small></button>
    <button class="feature fShort" data-action="short"><span class="featureIcon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M17 12.5 35 24 17 35.5Z"/></svg></span><b>Crea Short</b><small>Genera il tuo video in verticale 9:16</small></button>
   </div>
 
