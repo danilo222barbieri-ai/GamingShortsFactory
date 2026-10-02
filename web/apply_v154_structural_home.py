@@ -73,6 +73,16 @@ if GSF_WEB_MODE:
         border:0 !important;
       }
     }
+    /* V162.1 HOME LIFT — keep the fixed desktop composition pinned to the top. */
+    @media (min-width:761px){
+      [data-testid="stElementContainer"]:has(iframe[title*="gsf_home_v154"]),
+      [data-testid="stElementContainer"]:has(iframe[title*="gsf_home_v154_live_155"]){
+        margin-top:-8px !important;
+        margin-bottom:0 !important;
+        padding-top:0 !important;
+      }
+    }
+
     /* The new component owns the production Home. Keep the old uploader
        mounted only as an invisible fallback so its backend/state contracts
        remain available during migration. */
