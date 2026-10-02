@@ -2700,6 +2700,64 @@ button{appearance:none;-webkit-appearance:none}
  .footerSocialLink{width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important}
 }
 
+
+/* V177.2 VISIBLE SOCIAL FOOTER
+   Socials are a real centered footer cluster, independent of side copy width. */
+@media (min-width:761px){
+ #view{
+   grid-template-rows:minmax(0,47fr) minmax(0,34fr) minmax(58px,12fr) minmax(42px,7fr)!important;
+ }
+ .siteFooter{
+   min-height:42px!important;
+   padding:5px clamp(10px,1.4vw,22px)!important;
+ }
+ .footerSocial{
+   position:absolute!important;
+   left:50%!important;
+   top:50%!important;
+   transform:translate(-50%,-50%)!important;
+   z-index:5!important;
+   display:flex!important;
+   align-items:center!important;
+   justify-content:center!important;
+   gap:10px!important;
+   white-space:nowrap!important;
+ }
+ .footerSocialLink{
+   width:28px!important;height:28px!important;
+   min-width:28px!important;min-height:28px!important;
+   padding:5px!important;
+   display:grid!important;place-items:center!important;
+   background:rgba(255,255,255,.95)!important;
+   border:1px solid rgba(145,183,214,.30)!important;
+   box-shadow:0 5px 14px rgba(62,104,145,.10)!important;
+   opacity:1!important;visibility:visible!important;
+ }
+ .footerSocialLink svg{
+   width:100%!important;height:100%!important;
+   display:block!important;
+   fill:none;stroke:currentColor;stroke-width:1.8;
+   stroke-linecap:round;stroke-linejoin:round;
+ }
+ .footerSocialLink[aria-label="Facebook"] svg path,
+ .footerSocialLink[aria-label="YouTube"] svg path:first-child{
+   fill:currentColor!important;stroke:none!important;
+ }
+ .footerSocialLink[aria-label="YouTube"] .ytPlay{
+   fill:white!important;stroke:none!important;
+ }
+ .footerSocialLink[aria-label="Instagram"] svg rect,
+ .footerSocialLink[aria-label="Instagram"] svg circle{fill:none!important}
+ .footerBrand,.footLinks{position:relative!important;z-index:4!important}
+}
+@media (min-width:761px) and (max-width:1100px){
+ .footerSocial{gap:7px!important}
+ .footerSocialLink{width:22px!important;height:22px!important;min-width:22px!important;min-height:22px!important;padding:4px!important}
+ .footerBrand{font-size:7px!important}
+ .footLinks{gap:7px!important}
+ .footLinks button,.footLinks span{font-size:7px!important}
+}
+
 </style>
 </head>
 <body>
@@ -2766,11 +2824,11 @@ button{appearance:none;-webkit-appearance:none}
   <footer class="siteFooter">
    <span class="footerBrand">Gaming Shorts Factory</span>
    <div class="footerSocial" aria-label="Canali social">
-    <a class="footerSocialLink" href="https://www.facebook.com/profile.php?id=61595124112318&amp;locale=it_IT" target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook">f</a>
-    <a class="footerSocialLink" href="https://www.instagram.com/gamingshortsfactory/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram">◎</a>
-    <a class="footerSocialLink" href="https://www.youtube.com/@Dans222nrg" target="_blank" rel="noopener noreferrer" aria-label="YouTube" title="YouTube">▶</a>
-    <a class="footerSocialLink" href="https://www.tiktok.com/@gamingshortsfactory" target="_blank" rel="noopener noreferrer" aria-label="TikTok" title="TikTok">♪</a>
-    <a class="footerSocialLink" href="https://www.twitch.tv/dan222s86" target="_blank" rel="noopener noreferrer" aria-label="Twitch" title="Twitch">◫</a>
+    <a class="footerSocialLink" href="https://www.facebook.com/profile.php?id=61595124112318&amp;locale=it_IT" target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.2 8H17V4.5c-.5-.1-2.2-.2-4.1-.2-4 0-6.7 2.4-6.7 6.9V15H3v4h3.2v10h4.1V19h3.4l.5-4h-3.9v-3.4c0-1.2.3-2 2.1-2h1.8V8Z"/></svg></a>
+    <a class="footerSocialLink" href="https://www.instagram.com/gamingshortsfactory/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.8" r="1"/></svg></a>
+    <a class="footerSocialLink" href="https://www.youtube.com/@Dans222nrg" target="_blank" rel="noopener noreferrer" aria-label="YouTube" title="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8.2a3 3 0 0 0-2.1-2.1C17.1 5.6 12 5.6 12 5.6s-5.1 0-6.9.5A3 3 0 0 0 3 8.2a31 31 0 0 0-.5 4 31 31 0 0 0 .5 4 3 3 0 0 0 2.1 2.1c1.8.5 6.9.5 6.9.5s5.1 0 6.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .5-4 31 31 0 0 0-.5-4Z"/><path class="ytPlay" d="m10 9 5 3-5 3Z"/></svg></a>
+    <a class="footerSocialLink" href="https://www.tiktok.com/@gamingshortsfactory" target="_blank" rel="noopener noreferrer" aria-label="TikTok" title="TikTok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3v11.2a4.2 4.2 0 1 1-3.4-4.1"/><path d="M14 3c.8 2.7 2.4 4.3 5 5"/></svg></a>
+    <a class="footerSocialLink" href="https://www.twitch.tv/dan222s86" target="_blank" rel="noopener noreferrer" aria-label="Twitch" title="Twitch"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h16v11l-5 5h-4l-3 3v-3H5Z"/><path d="M10 8v5M15 8v5"/></svg></a>
    </div>
    <div class="footLinks"><button data-foot="privacy">Privacy</button><button data-foot="terms">Termini</button><button data-foot="contact">Contatti</button><span>© 2026</span></div>
   </footer>
