@@ -3122,6 +3122,49 @@ button{appearance:none;-webkit-appearance:none}
  .featureIcon{width:48px!important;height:48px!important}
 }
 
+
+/* V180 MOBILE VIEWPORT RECOVERY
+   iOS/phone recovery: keep the current visual language, but guarantee that
+   the uploader is visible and that the Home owns the real mobile viewport. */
+@media (max-width:760px){
+ html,body{
+   width:100%!important;
+   height:100%!important;
+   min-height:100%!important;
+   margin:0!important;
+   padding:0!important;
+   overflow-x:hidden!important;
+ }
+ #home154{
+   width:100%!important;
+   min-height:100dvh!important;
+   margin:0!important;
+ }
+ .stage{isolation:isolate!important}
+ .rings{
+   display:grid!important;
+   visibility:visible!important;
+   opacity:1!important;
+   position:relative!important;
+   z-index:6!important;
+   place-items:center!important;
+   background:
+     radial-gradient(circle at 36% 27%,rgba(255,255,255,.995) 0%,rgba(246,252,255,.985) 34%,rgba(238,249,255,.965) 61%,rgba(232,251,246,.955) 100%) padding-box,
+     linear-gradient(102deg,rgba(109,195,244,.68) 0%,rgba(124,207,249,.48) 44%,rgba(132,221,214,.36) 66%,rgba(113,229,192,.42) 100%) border-box!important;
+   border:1.35px solid transparent!important;
+ }
+ .circle{
+   display:flex!important;
+   visibility:visible!important;
+   opacity:1!important;
+   z-index:7!important;
+ }
+ .circle .icon,.circle strong{
+   visibility:visible!important;
+   opacity:1!important;
+ }
+}
+
 </style>
 </head>
 <body>
@@ -3250,9 +3293,12 @@ button{appearance:none;-webkit-appearance:none}
      frame.style.setProperty("padding","0","important");
      frame.style.setProperty("border","0","important");
 
+     const mobileShell=Math.max(320,Number(window.parent.innerWidth||window.innerWidth||1920))<=760;
      const safeToCollapse=(el)=>{
        if(!el||el.contains(frame)) return false;
-       if(el.querySelector('iframe,button,input,textarea,select,video,audio,canvas,img,[role="alert"],[role="dialog"],a[href]')) return false;
+       if(el.querySelector('[role="alert"],[role="dialog"]')) return false;
+       if(mobileShell) return true;
+       if(el.querySelector('iframe,button,input,textarea,select,video,audio,canvas,img,a[href]')) return false;
        return true;
      };
      let cursor=own;
@@ -3279,12 +3325,24 @@ button{appearance:none;-webkit-appearance:none}
  function fitViewport(){
    try{
      const pw=Math.max(320,Number(window.parent.innerWidth||window.innerWidth||1920));
-     if(pw<=760){
-       const natural=Math.max(760,Math.ceil(document.documentElement.scrollHeight||root.scrollHeight||760));
-       height(natural); return natural;
-     }
      const shell=normalizeParentHomeShell();
-     const top=shell.top; // ph-top-2: exact remaining viewport anchor
+     if(pw<=760){
+       const viewport=Math.max(720,Math.floor(Number(window.parent.innerHeight||window.innerHeight||780)));
+       [shell.own,shell.custom].filter(Boolean).forEach(el=>{
+         el.style.setProperty("height",viewport+"px","important");
+         el.style.setProperty("min-height","0","important");
+         el.style.setProperty("max-height",viewport+"px","important");
+         el.style.setProperty("margin","0","important");
+         el.style.setProperty("padding","0","important");
+       });
+       if(shell.frame){
+         shell.frame.style.setProperty("height",viewport+"px","important");
+         shell.frame.style.setProperty("min-height","0","important");
+         shell.frame.style.setProperty("max-height",viewport+"px","important");
+       }
+       height(viewport); return viewport;
+     }
+     const top=shell.top; // exact remaining viewport anchor
      const available=Math.max(430,Number(window.parent.innerHeight||window.innerHeight||768)-top);
      const target=Math.max(430,Math.floor(available));
      [shell.own,shell.custom].filter(Boolean).forEach(el=>{
@@ -3450,8 +3508,10 @@ button{appearance:none;-webkit-appearance:none}
  }
  window.addEventListener("message",e=>{if(e.data&&e.data.type===RENDER)receive(e.data.args||{});});
  send(COMPONENT_READY,{apiVersion:1});
+ collapseParentHomeSpacers();
  fitViewport();
- window.setTimeout(fitViewport,120);height(650);
+ window.setTimeout(()=>{collapseParentHomeSpacers();fitViewport()},120);
+ window.setTimeout(()=>{collapseParentHomeSpacers();fitViewport()},320);
 })();
 </script>
 </body>
