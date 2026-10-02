@@ -168,7 +168,26 @@ button{appearance:none;-webkit-appearance:none}
    else{rings.classList.remove("uploading","uploaded");uploadIcon.innerHTML=`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 42h-1C10.4 42 5 36.6 5 30s5.4-12 12-12c1.6 0 3.1.3 4.5.9C24.7 12.4 31.3 8 39 8c10.5 0 19 8.5 19 19 0 .7 0 1.4-.1 2.1C61.5 30.9 64 34.6 64 39c0 6.1-4.9 11-11 11H38"/><path d="M32 52V28"/><path d="m24 36 8-8 8 8"/></svg>`;uploadLabel.textContent="CARICA IL TUO GAMEPLAY";uploadHint.textContent="";pick.disabled=false;}
    height(loaded?690:650);
  }
- function shellNav(target,data={}){try{window.parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin)}catch(e){}}\n function parentClick(candidates,exact=false){
+ function shellNav(target,data={}){
+   try{
+     if(target==="hub"){
+       const doc=window.parent.document;
+       const panel=doc.getElementById("gsf-creator-hub-panel");
+       const frame=doc.querySelector("#gsf-creator-hub-portal-v107 .gsf-creator-hub-frame, #gsf-creator-hub-panel .gsf-creator-hub-frame");
+       if(frame && !String(frame.src||"").includes("/creator-hub-v156/")) frame.src="/creator-hub-v156/";
+       if(panel){
+         panel.classList.add("is-open");
+         panel.style.opacity="1";panel.style.visibility="visible";panel.style.pointerEvents="auto";
+         try{window.parent.sessionStorage.setItem("gsf_creator_hub_open_v107","1")}catch(_e){}
+         try{window.parent.history.replaceState(null,"",window.parent.location.pathname+window.parent.location.search+"#gsf-creator-hub-panel")}catch(_e){}
+         return true;
+       }
+       const fab=doc.querySelector(".gsf-account-fab"); if(fab){fab.click();return true;}
+     }
+     window.parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin);
+   }catch(e){}
+   return false;
+ }\n function parentClick(candidates,exact=false){
    try{
      const doc=window.parent.document;
      const els=[...doc.querySelectorAll("button,[role=radio],[role=tab],label,a")];
