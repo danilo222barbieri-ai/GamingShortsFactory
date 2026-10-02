@@ -2633,6 +2633,161 @@ button{appearance:none;-webkit-appearance:none}
   #home154 .scribble.right .padSketch{width:40px!important}
 }
 
+
+/* V208 HOME ALIVE — uploader is the heartbeat of GSF.
+   Shared behavior on desktop + mobile. Geometry and palette stay untouched. */
+@keyframes gsfHeartIdle{
+  0%,100%{
+    transform:scale(1);
+    box-shadow:
+      -18px 0 48px rgba(89,198,247,.18),
+      20px 7px 52px rgba(92,225,182,.14),
+      inset 0 0 0 1px rgba(255,255,255,.86),
+      0 16px 42px rgba(70,126,166,.07);
+  }
+  42%{
+    transform:scale(1.045);
+    box-shadow:
+      -24px -2px 66px rgba(89,198,247,.28),
+      27px 9px 72px rgba(92,225,182,.23),
+      inset 0 0 0 1px rgba(255,255,255,.94),
+      0 20px 54px rgba(70,126,166,.10);
+  }
+  58%{transform:scale(1.052)}
+}
+@keyframes gsfHeartUpload{
+  0%,100%{transform:scale(1);filter:saturate(1.04) brightness(1)}
+  20%{transform:scale(1.052);filter:saturate(1.13) brightness(1.025)}
+  38%{transform:scale(1.012);filter:saturate(1.08) brightness(1.01)}
+  61%{transform:scale(1.07);filter:saturate(1.19) brightness(1.035)}
+  78%{transform:scale(1.018);filter:saturate(1.10) brightness(1.015)}
+}
+@keyframes gsfHeartLoaded{
+  0%{transform:scale(1.065)}
+  35%{transform:scale(.988)}
+  68%{transform:scale(1.022)}
+  100%{transform:scale(1)}
+}
+@keyframes gsfRingHeat{
+  0%,100%{opacity:.55;filter:blur(.1px)}
+  45%{opacity:.96;filter:blur(.5px)}
+}
+@keyframes gsfGuideInkAlive{
+  0%,100%{opacity:.82;text-shadow:0 1px 0 rgba(255,255,255,.78)}
+  48%{opacity:1;text-shadow:0 2px 10px rgba(99,125,168,.13)}
+}
+@keyframes gsfPadAlive{
+  0%,100%{transform:rotate(-2deg) scale(1);opacity:.86}
+  50%{transform:rotate(2.5deg) scale(1.055);opacity:1}
+}
+@keyframes gsfCardWake{
+  0%{
+    transform:translateY(8px) scale(.975);
+    opacity:.72;
+    filter:saturate(.72) brightness(.99);
+  }
+  52%{
+    transform:translateY(-6px) scale(1.025);
+    opacity:1;
+    filter:saturate(1.13) brightness(1.025);
+  }
+  76%{transform:translateY(2px) scale(.998)}
+  100%{
+    transform:translateY(0) scale(1);
+    opacity:1;
+    filter:none;
+  }
+}
+@keyframes gsfCardReadyGlow{
+  0%,100%{box-shadow:0 14px 34px rgba(62,107,150,.09),inset 0 1px 0 rgba(255,255,255,.96)}
+  50%{box-shadow:0 18px 42px rgba(62,107,150,.15),0 0 0 4px rgba(221,241,255,.26),inset 0 1px 0 rgba(255,255,255,.98)}
+}
+
+/* Deep, readable idle breath: this is the default Home heartbeat. */
+#home154 .rings:not(.uploading):not(.uploaded){
+  animation:gsfHeartIdle 5.8s cubic-bezier(.45,.05,.2,1) infinite!important;
+  transform-origin:center!important;
+  will-change:transform,box-shadow!important;
+}
+#home154 .rings:not(.uploading):not(.uploaded):before{
+  animation:gsfSecondRingAlive 5.8s ease-in-out infinite!important;
+}
+#home154 .rings:not(.uploading):not(.uploaded):after{
+  animation:gsfThirdRingAlive 7.2s ease-in-out infinite!important;
+}
+
+/* Upload = faster heartbeat / warming up. */
+#home154 .rings.uploading{
+  animation:gsfHeartUpload 1.18s cubic-bezier(.36,.03,.2,1) infinite!important;
+  transform-origin:center!important;
+  will-change:transform,filter!important;
+}
+#home154 .rings.uploading:before,
+#home154 .rings.uploading:after{
+  animation:gsfRingHeat .78s ease-in-out infinite!important;
+}
+
+/* Loaded = one satisfying settle, then calm. */
+#home154 .rings.uploaded{
+  animation:gsfHeartLoaded 1.45s cubic-bezier(.2,.75,.2,1) 1!important;
+  transform-origin:center!important;
+}
+
+/* Handwritten guides stay alive without wandering around the layout. */
+#home154 .scribble{
+  animation:gsfGuideInkAlive 5.4s ease-in-out infinite!important;
+}
+#home154 .scribble.right{animation-delay:-2.1s!important}
+#home154 .scribble .padSketch{
+  animation:gsfPadAlive 4.8s ease-in-out infinite!important;
+  transform-origin:center!important;
+}
+
+/* Before upload the choices are available but visually in standby. */
+#home154 #view:not(.loadedView) .feature{
+  filter:saturate(.88) brightness(.995)!important;
+  opacity:.90!important;
+  box-shadow:0 12px 28px rgba(62,107,150,.075),inset 0 1px 0 rgba(255,255,255,.92)!important;
+}
+
+/* When the upload completes, the three possible next steps wake in sequence. */
+#home154 #view.loadedView .feature{
+  opacity:1!important;
+  filter:none!important;
+  animation:
+    gsfCardWake .92s cubic-bezier(.16,.84,.26,1) 1 backwards,
+    gsfCardReadyGlow 3.8s ease-in-out 1.05s 2!important;
+}
+#home154 #view.loadedView .feature.fAi{animation-delay:.12s,1.05s!important}
+#home154 #view.loadedView .feature.fEditor{animation-delay:.38s,1.31s!important}
+#home154 #view.loadedView .feature.fShort{animation-delay:.64s,1.57s!important}
+
+#home154 #view.loadedView .featureIcon{
+  filter:saturate(1.08)!important;
+}
+
+/* Preserve hover after the wake-up sequence. */
+#home154 #view.loadedView .feature:hover,
+#home154 #view.loadedView .feature:focus-visible{
+  transform:translateY(-4px)!important;
+}
+
+/* Motion accessibility remains respected. */
+@media (prefers-reduced-motion:reduce){
+  #home154 .rings,
+  #home154 .rings:before,
+  #home154 .rings:after,
+  #home154 .scribble,
+  #home154 .scribble .padSketch,
+  #home154 #view .feature{
+    animation:none!important;
+  }
+  #home154 #view:not(.loadedView) .feature{
+    opacity:.94!important;
+    filter:none!important;
+  }
+}
+
 </style>
 </head>
 <body>
