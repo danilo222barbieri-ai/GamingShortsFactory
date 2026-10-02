@@ -352,8 +352,7 @@ if GSF_WEB_MODE:
         closeHub();
         setTimeout(()=>{
           if(t==='new') clickTarget(['nuovo video','carica il tuo gameplay']);
-          else if(t==='editor' || t==='resume_draft') clickTarget(['apri game editor','game editor','manuale']);
-          else if(t==='ai') clickTarget(['crea con ia','crea con ai','analizza con ia']);
+          else if(t==='resume_draft') clickTarget(['apri game editor','game editor','manuale']);
           else if(t==='social'){
             const so=document.getElementById('gsf-social-overlay-v159');
             if(so){so.classList.add('is-open');so.style.opacity='1';so.style.visibility='visible';so.style.pointerEvents='auto';}
@@ -459,7 +458,7 @@ if GSF_WEB_MODE:
         if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
         const t=String(e.data.target||'');
         if(t==='social')open();
-        if(t==='close'||t==='home')close();
+        if(t==='close'||t==='home'||t==='hub'||t==='editor'||t==='ai')close();
       });
     })();
     </script>
@@ -546,9 +545,76 @@ if GSF_WEB_MODE:
       const open=async()=>{try{await fetch('/editor/state',{cache:'no-store',credentials:'same-origin'})}catch(e){}frame.src='/editor-live/?v='+Date.now();o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false');guide('idle')};
       const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true')};
       o.querySelector('.gsf-editor-close').onclick=close;o.addEventListener('click',e=>{if(e.target===o)close()});
-      window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;const t=String(e.data.target||'');if(t==='editor')open();if(t==='close'||t==='home'||t==='social'||t==='hub')close()});
+      window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;const t=String(e.data.target||'');if(t==='editor')open();if(t==='close'||t==='home'||t==='social'||t==='hub'||t==='ai')close()});
     })();
     </script>
     """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _editor_surface_v220.lstrip()
+
+# V221 — AI engines are a persistent app-layer over the live Home.
+_ai_surface_v221 = r'''
+if GSF_WEB_MODE:
+    st.markdown(r"""
+    <style id="gsf-v221-ai-shell">
+    #gsf-ai-overlay-v221{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483654;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(222,238,247,.46);-webkit-backdrop-filter:blur(5px) saturate(.98);backdrop-filter:blur(5px) saturate(.98);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
+    #gsf-ai-overlay-v221.is-open{opacity:1;visibility:visible;pointer-events:auto}
+    #gsf-ai-overlay-v221 .gsf-ai-shell{position:relative;width:min(1240px,calc(100vw - 30px));height:min(730px,calc(100dvh - 118px));border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:#F7FCFF;box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.94);transform:translateY(10px) scale(.975);opacity:0;transition:transform .32s cubic-bezier(.16,.84,.24,1),opacity .24s ease}
+    #gsf-ai-overlay-v221.is-open .gsf-ai-shell{transform:translateY(0) scale(1);opacity:1}
+    #gsf-ai-overlay-v221 iframe{width:100%;height:100%;border:0;background:#F7FCFF}
+    #gsf-ai-overlay-v221 .gsf-ai-close{position:absolute;z-index:7;right:13px;top:11px;width:34px;height:34px;border-radius:12px;border:1px solid rgba(158,190,216,.34);background:rgba(255,255,255,.94);color:#617B9D;font-size:20px;cursor:pointer;box-shadow:0 7px 18px rgba(64,104,143,.09)}
+    @media(max-width:760px){#gsf-ai-overlay-v221{bottom:70px;padding:8px 5px}#gsf-ai-overlay-v221 .gsf-ai-shell{width:calc(100vw - 10px);height:calc(100dvh - 84px);border-radius:22px}#gsf-ai-overlay-v221 .gsf-ai-close{right:8px;top:7px;width:31px;height:31px}}
+    </style>
+    <div id="gsf-ai-overlay-v221" aria-hidden="true">
+      <section class="gsf-ai-shell" role="dialog" aria-modal="false" aria-label="Motori IA">
+        <button class="gsf-ai-close" type="button" aria-label="Chiudi">×</button>
+        <iframe src="/ai-v221/" title="Motori IA"></iframe>
+      </section>
+    </div>
+    <script>
+    (()=>{
+      const KEY='gsf_ai_overlay_open_v221';
+      const o=document.getElementById('gsf-ai-overlay-v221');if(!o)return;
+      const frame=o.querySelector('iframe');
+      const broadcastHome=(payload)=>{
+        document.querySelectorAll('iframe').forEach(f=>{
+          try{if(f!==frame&&f.contentWindow)f.contentWindow.postMessage(payload,location.origin)}catch(e){}
+        });
+      };
+      const forwardState=(data)=>{
+        try{frame.contentWindow.postMessage({type:'GSF_AI_STATE',state:{loaded:!!data.loaded,duration:Number(data.duration)||15,engine:String(data.engine||''),previews:Array.isArray(data.previews)?data.previews:[]}},location.origin)}catch(e){}
+      };
+      const open=(remember=true)=>{
+        const so=document.getElementById('gsf-social-overlay-v159');if(so){so.classList.remove('is-open');so.style.opacity='0';so.style.visibility='hidden';so.style.pointerEvents='none'}
+        const ed=document.getElementById('gsf-editor-overlay-v220');if(ed){ed.classList.remove('is-open');ed.style.opacity='0';ed.style.visibility='hidden';ed.style.pointerEvents='none'}
+        o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false');
+        if(remember)try{sessionStorage.setItem(KEY,'1')}catch(e){}
+        setTimeout(()=>broadcastHome({type:'GSF_AI_COMMAND',action:'get_state'}),80);
+      };
+      const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true');try{sessionStorage.setItem(KEY,'0')}catch(e){}};
+      o.querySelector('.gsf-ai-close').onclick=close;o.addEventListener('click',e=>{if(e.target===o)close()});
+      window.addEventListener('message',e=>{
+        if(e.origin!==location.origin||!e.data)return;
+        if(e.data.type==='GSF_AI_UI'){
+          const action=String(e.data.action||'');
+          if(action==='ready'){broadcastHome({type:'GSF_AI_COMMAND',action:'get_state'});return}
+          broadcastHome({type:'GSF_AI_COMMAND',action,duration:e.data.duration,engine:e.data.engine,index:e.data.index});
+          return;
+        }
+        if(e.data.type!=='GSF_SHELL_NAV')return;
+        const t=String(e.data.target||'');
+        if(t==='ai'){open();return}
+        if(t==='ai-state'){forwardState(e.data);return}
+        if(t==='editor'||t==='social'||t==='hub'||t==='home'||t==='close')close();
+      });
+      try{if(sessionStorage.getItem(KEY)==='1')setTimeout(()=>open(false),90)}catch(e){}
+    })();
+    </script>
+    """, unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _ai_surface_v221.lstrip()
+
+# V221 final write must happen AFTER V220 + V221 surfaces are appended.
+compile(s,str(out),"exec")
+out.write_text(s,encoding="utf-8")
+print("V221 AI SURFACE applied:",out)

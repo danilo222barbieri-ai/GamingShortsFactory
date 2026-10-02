@@ -232,6 +232,17 @@ server {
         add_header Cache-Control "no-store" always;
     }
 
+    # V221 living AI engines surface.
+    location = /ai-v221 {
+        return 302 /ai-v221/;
+    }
+    location /ai-v221/ {
+        alias /app/web/ai_v221_component/;
+        index index.html;
+        try_files $uri $uri/ /ai-v221/index.html;
+        add_header Cache-Control "no-store" always;
+    }
+
     # V158 fixed Creator Hub surface + live state API.
     location = /creator-hub-v156 {
         return 302 /creator-hub-v156/;

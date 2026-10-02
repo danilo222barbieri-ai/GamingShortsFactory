@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+:root{
+ --ink:#0D2A66;--soft:#7185A6;--blue:#54A9F3;--blueSoft:#D9EDFF;
+ --mint:#C9F2DA;--mintInk:#078F61;--yellow:#FFE39A;--yellowInk:#D68000;
+ --line:rgba(143,181,216,.25);--glass:rgba(255,255,255,.86);
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;color:var(--ink);font-family:"Avenir Next","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button{font:inherit}
+#ai221{width:100%;height:100%;overflow:auto;padding:16px 18px 14px;background:
+ radial-gradient(circle at 8% 6%,rgba(126,214,255,.22),transparent 25%),
+ radial-gradient(circle at 92% 7%,rgba(127,236,197,.19),transparent 26%),
+ linear-gradient(180deg,#FCFEFF 0%,#F8FCFF 60%,#F4FAFF 100%)}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:0 2px 11px}
+.title{display:flex;align-items:center;gap:12px}
+.titleIcon{width:48px;height:48px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(145deg,#E6F6FF,#D9F0FF);color:#2E8FE3;box-shadow:inset 0 0 0 1px #fff,0 10px 26px rgba(78,154,214,.13)}
+.titleIcon svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+h1{margin:0;font-size:clamp(23px,2.1vw,33px);line-height:1;font-weight:900;letter-spacing:-.035em}
+.subtitle{margin:6px 0 0;font-size:11px;font-weight:650;color:var(--soft)}
+.duration{display:flex;align-items:center;gap:6px;padding:5px;border-radius:16px;background:rgba(255,255,255,.83);border:1px solid var(--line);box-shadow:0 8px 22px rgba(65,105,145,.06)}
+.duration button{border:0;border-radius:11px;padding:8px 12px;background:transparent;color:#7288A6;font-size:9px;font-weight:900;cursor:pointer}
+.duration button.active{background:#DCEFFF;color:#267FCB;box-shadow:0 4px 12px rgba(60,145,214,.12)}
+
+.guide{position:absolute;pointer-events:none;color:#637DA8;font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive;font-weight:600;line-height:1.05;text-align:center;z-index:3}
+.guide.left{left:18px;top:86px;width:160px;font-size:14px;transform:rotate(-4deg)}
+.guide.right{right:28px;top:82px;width:170px;font-size:13px;transform:rotate(4deg)}
+.guide span{display:block;transition:opacity .44s ease,filter .44s ease,transform .44s ease}
+.guide span.out{opacity:0;filter:blur(7px);transform:translateY(-8px) scale(.93)}
+@keyframes writeIn{0%{opacity:0;filter:blur(8px);transform:translateY(9px) scale(.92)}70%{opacity:1;filter:blur(.5px);transform:translateY(-2px) scale(1.02)}100%{opacity:1;filter:none;transform:none}}
+.guide span.in{animation:writeIn 1.08s cubic-bezier(.18,.72,.2,1) 1}
+
+.panel{position:relative;border:1px solid var(--line);border-radius:25px;background:rgba(255,255,255,.78);backdrop-filter:blur(17px);-webkit-backdrop-filter:blur(17px);box-shadow:0 16px 40px rgba(61,104,145,.08),inset 0 1px 0 rgba(255,255,255,.95);padding:13px}
+.panel+.panel{margin-top:10px}
+.panelHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.panelTitle{font-size:14px;font-weight:900}
+.panelHint{font-size:8px;color:#7C91AA;font-weight:750}
+.engines{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.engine{position:relative;min-height:190px;padding:12px;border:1px solid rgba(143,181,216,.23);border-radius:20px;background:rgba(255,255,255,.91);box-shadow:0 9px 25px rgba(65,105,145,.065),inset 0 1px 0 #fff;display:flex;flex-direction:column;cursor:pointer;transition:.22s ease;text-align:left}
+.engine:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(65,105,145,.11),inset 0 1px 0 #fff}
+.engine.selected{border-color:#70C7F5;box-shadow:0 0 0 3px rgba(104,203,249,.17),0 14px 32px rgba(65,105,145,.11),inset 0 1px 0 #fff}
+.engineTop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.engineIcon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:20px;font-weight:900}
+.engine[data-engine="auto"] .engineIcon{background:#DDEEFF;color:#337ED2}
+.engine[data-engine="best"] .engineIcon{background:#CFF3DD;color:#088E63}
+.engine[data-engine="action"] .engineIcon{background:#FFE5A3;color:#D68000}
+.engine[data-engine="reaction"] .engineIcon{background:#E8DFFF;color:#7C64D8}
+.check{width:24px;height:24px;border-radius:9px;display:grid;place-items:center;background:#E6F5FF;color:#378FD7;font-size:11px;opacity:0;transform:scale(.85);transition:.18s}
+.engine.selected .check{opacity:1;transform:scale(1)}
+.engine h3{margin:10px 0 4px;font-size:14px;font-weight:900;letter-spacing:-.02em}
+.engine p{margin:0;color:var(--soft);font-size:9px;line-height:1.38}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:9px}
+.tag{font-size:7px;font-weight:800;color:#6984A2;padding:4px 6px;border-radius:999px;background:#EDF6FF}
+.selectBtn{margin-top:auto;border:0;border-radius:12px;padding:9px;background:#EFF8FF;color:#397CB8;font-size:8.5px;font-weight:900;cursor:pointer}
+.engine.selected .selectBtn{background:linear-gradient(135deg,#76CFF8,#4EA9F4);color:white}
+.actionRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.status{font-size:9px;color:#7288A6;font-weight:750}
+.create{border:0;border-radius:15px;padding:11px 18px;background:linear-gradient(135deg,#77D3FB,#4EA7F3);color:#fff;font-size:10px;font-weight:900;cursor:pointer;box-shadow:0 9px 22px rgba(69,157,223,.20)}
+.create:disabled{opacity:.42;cursor:not-allowed}
+
+.moments{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.moment{min-height:106px;border:1px solid rgba(143,181,216,.23);border-radius:18px;background:rgba(255,255,255,.9);padding:7px;cursor:pointer;position:relative;overflow:hidden;text-align:left}
+.thumb{height:72px;border-radius:13px;background:linear-gradient(145deg,#E8F5FF,#EEF8F5);overflow:hidden;position:relative}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.rank{position:absolute;top:6px;left:6px;width:24px;height:24px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.91);color:#327FC7;font-size:10px;font-weight:900;box-shadow:0 4px 10px rgba(40,90,135,.12)}
+.play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(15,40,68,.76);color:#fff;font-size:11px}
+.moment b{display:block;font-size:9px;margin:6px 2px 0}
+.empty{display:grid;place-items:center;height:72px;color:#8BA0B6;font-size:8px;font-weight:800;text-align:center;padding:8px}
+.footerNote{font-size:8px;color:#8396AC;font-weight:700}
+
+@media(max-width:900px){
+ #ai221{padding:12px 10px 11px}
+ .engines{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .engine{min-height:155px}
+ .guide{display:none}
+}
+@media(max-width:520px){
+ #ai221{padding:9px 7px 10px}
+ .top{margin-bottom:8px}
+ .titleIcon{width:40px;height:40px;border-radius:14px}
+ h1{font-size:20px}
+ .subtitle{font-size:8.5px;max-width:230px}
+ .duration button{padding:7px 9px;font-size:8px}
+ .panel{padding:9px;border-radius:20px}
+ .panelHead{margin-bottom:7px}
+ .panelTitle{font-size:12px}
+ .panelHint{display:none}
+ .engines{gap:6px}
+ .engine{min-height:137px;padding:9px;border-radius:16px}
+ .engineIcon{width:34px;height:34px;border-radius:11px;font-size:16px}
+ .engine h3{font-size:11px;margin-top:7px}
+ .engine p{font-size:7.5px}
+ .tags{display:none}
+ .selectBtn{padding:7px;font-size:7.5px}
+ .actionRow{align-items:stretch;flex-direction:column}
+ .create{width:100%}
+ .moments{gap:6px}
+ .moment{padding:5px;border-radius:15px;min-height:90px}
+ .thumb{height:60px}
+ .moment b{font-size:7.5px}
+}
+</style>
+</head>
+<body>
+<main id="ai221">
+ <div class="top">
+  <div class="title">
+   <div class="titleIcon"><svg viewBox="0 0 24 24"><path d="M12 2l1.4 4.2L17.5 7.6l-4.1 1.4L12 13.2 10.6 9 6.5 7.6l4.1-1.4L12 2Z"/><path d="m18 14 .8 2.4 2.4.8-2.4.8L18 20.4l-.8-2.4-2.4-.8 2.4-.8L18 14Z"/></svg></div>
+   <div><h1>Scegli il tuo Motore IA</h1><p class="subtitle">Quattro modi diversi di leggere il gameplay. Il cervello è lo stesso, cambia ciò che cerchiamo.</p></div>
+  </div>
+  <div class="duration"><button data-duration="15" class="active">15s</button><button data-duration="30">30s</button></div>
+ </div>
+
+ <div class="guide left"><span id="guideLeft">Che tipo di<br>momento cerchiamo?</span></div>
+ <div class="guide right"><span id="guideRight">Scegline uno<br>e lascia lavorare l’IA</span></div>
+
+ <section class="panel">
+  <div class="panelHead"><div class="panelTitle">I tuoi 4 motori</div><div class="panelHint">Scegli il carattere dello Short</div></div>
+  <div class="engines">
+   <article class="engine selected" data-engine="auto"><div class="engineTop"><div class="engineIcon">✦</div><div class="check">✓</div></div><h3>Automatico</h3><p>Lascia decidere alla nostra IA quali momenti meritano davvero.</p><div class="tags"><span class="tag">equilibrato</span><span class="tag">smart</span><span class="tag">veloce</span></div><button class="selectBtn">Selezionato</button></article>
+   <article class="engine" data-engine="best"><div class="engineTop"><div class="engineIcon">⌁</div><div class="check">✓</div></div><h3>Momento migliore</h3><p>Cerca il picco più forte: clutch, vittorie e giocate che restano.</p><div class="tags"><span class="tag">clutch</span><span class="tag">picchi</span><span class="tag">wow</span></div><button class="selectBtn">Seleziona</button></article>
+   <article class="engine" data-engine="action"><div class="engineTop"><div class="engineIcon">⚡</div><div class="check">✓</div></div><h3>Più azione</h3><p>Predilige ritmo, impatti, esplosioni e gameplay ad alta intensità.</p><div class="tags"><span class="tag">ritmo</span><span class="tag">impatto</span><span class="tag">azione</span></div><button class="selectBtn">Seleziona</button></article>
+   <article class="engine" data-engine="reaction"><div class="engineTop"><div class="engineIcon">◎</div><div class="check">✓</div></div><h3>Reazioni</h3><p>Segue voce, emozioni, errori epici e momenti spontanei.</p><div class="tags"><span class="tag">voce</span><span class="tag">reaction</span><span class="tag">fun</span></div><button class="selectBtn">Seleziona</button></article>
+  </div>
+  <div class="actionRow"><div class="status" id="aiStatus">Pronto. Carica un gameplay per iniziare.</div><button class="create" id="createAi" disabled>Crea con IA</button></div>
+ </section>
+
+ <section class="panel">
+  <div class="panelHead"><div class="panelTitle">Le tue 3 migliori giocate</div><div class="panelHint">Quando l’IA le trova, compaiono qui</div></div>
+  <div class="moments">
+   <button class="moment" data-index="0"><div class="thumb"><div class="empty">Il primo momento<br>apparirà qui</div><span class="rank">1</span></div><b>Momento 1</b></button>
+   <button class="moment" data-index="1"><div class="thumb"><div class="empty">Il secondo momento<br>apparirà qui</div><span class="rank">2</span></div><b>Momento 2</b></button>
+   <button class="moment" data-index="2"><div class="thumb"><div class="empty">Il terzo momento<br>apparirà qui</div><span class="rank">3</span></div><b>Momento 3</b></button>
+  </div>
+ </section>
+</main>
+<script>
+(()=>{
+ let state={loaded:false,duration:15,engine:"auto",previews:[]},seq=0;
+ const send=(action,data={})=>parent.postMessage({type:"GSF_AI_UI",action,...data},location.origin);
+ const gl=document.getElementById("guideLeft"),gr=document.getElementById("guideRight"),status=document.getElementById("aiStatus"),create=document.getElementById("createAi");
+ const copy={
+  auto:["Lascia fare<br>all’IA","Equilibrio tra azione,<br>voce e momenti forti"],
+  best:["Cerchiamo il<br>picco più forte","Quella giocata che<br>ti fa dire: eccola"],
+  action:["Alziamo il<br>ritmo","Impatti, velocità<br>e pressione"],
+  reaction:["Ascoltiamo anche<br>te","Voce, risate,<br>errori e reazioni"],
+  creating:["Sta leggendo<br>il gameplay","Aspetta un attimo:<br>i momenti stanno arrivando"]
+ };
+ const morph=(el,html,s)=>{if(!el||el.innerHTML===html)return;el.classList.remove("in");el.classList.add("out");setTimeout(()=>{if(s!==seq)return;el.innerHTML=html;el.classList.remove("out");void el.offsetWidth;el.classList.add("in");setTimeout(()=>el.classList.remove("in"),1120)},440)};
+ const guide=(key)=>{const c=copy[key]||copy.auto,s=++seq;morph(gl,c[0],s);morph(gr,c[1],s)};
+ function selectEngine(name,emit=true){
+  state.engine=name||"auto";
+  document.querySelectorAll(".engine").forEach(card=>{const yes=card.dataset.engine===state.engine;card.classList.toggle("selected",yes);card.querySelector(".selectBtn").textContent=yes?"Selezionato":"Seleziona"});
+  guide(state.engine);
+  if(emit)send("engine",{engine:state.engine});
+ }
+ function selectDuration(n,emit=true){
+  state.duration=Number(n)===30?30:15;
+  document.querySelectorAll("[data-duration]").forEach(b=>b.classList.toggle("active",Number(b.dataset.duration)===state.duration));
+  if(emit)send("duration",{duration:state.duration});
+ }
+ function renderMoments(){
+  const rows=Array.isArray(state.previews)?state.previews.slice(0,3):[];
+  document.querySelectorAll(".moment").forEach((card,i)=>{
+   const d=rows[i]||{},thumb=card.querySelector(".thumb");
+   thumb.querySelectorAll("img,.play").forEach(x=>x.remove());
+   const empty=thumb.querySelector(".empty");
+   if(d.cover){
+    if(empty)empty.style.display="none";
+    const img=document.createElement("img");img.src=d.cover;img.alt="Anteprima momento "+(i+1);thumb.prepend(img);
+    const p=document.createElement("span");p.className="play";p.textContent="▶";thumb.appendChild(p);
+    card.disabled=false;
+   }else{
+    if(empty)empty.style.display="grid";
+    card.disabled=!d.video;
+   }
+   card.dataset.video=d.video||"";
+  });
+ }
+ function sync(){
+  selectDuration(state.duration,false);selectEngine(state.engine||"auto",false);renderMoments();
+  create.disabled=!state.loaded;
+  status.textContent=state.loaded?"Gameplay pronto · scegli il motore e crea":"Prima carica un gameplay dalla Home";
+ }
+ document.querySelectorAll(".engine").forEach(card=>card.addEventListener("click",()=>selectEngine(card.dataset.engine,true)));
+ document.querySelectorAll("[data-duration]").forEach(b=>b.addEventListener("click",()=>selectDuration(b.dataset.duration,true)));
+ document.querySelectorAll(".moment").forEach(card=>card.addEventListener("click",()=>send("preview",{index:Number(card.dataset.index)||0})));
+ create.addEventListener("click",()=>{if(!state.loaded)return;guide("creating");status.textContent="L’IA sta cercando i momenti migliori…";send("create",{engine:state.engine,duration:state.duration})});
+ window.addEventListener("message",e=>{if(e.origin!==location.origin||!e.data||e.data.type!=="GSF_AI_STATE")return;state={...state,...e.data.state};sync()});
+ send("ready");
+ sync();
+})();
+</script>
+</body>
+</html>
