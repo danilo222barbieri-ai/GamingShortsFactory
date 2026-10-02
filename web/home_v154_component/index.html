@@ -423,7 +423,7 @@ button{appearance:none;-webkit-appearance:none}
      let top=0,frame=null;
      try{
        frame=[...window.parent.document.querySelectorAll("iframe")].find(f=>f.contentWindow===window)||null;
-       if(frame) top=Math.max(0,frame.getBoundingClientRect().top);
+       if(frame) top=Math.max(0,frame.getBoundingClientRect().top); // ph-top-2: exact remaining viewport anchor
      }catch(_e){}
      const vw=Math.max(760,Number(window.parent.innerWidth||window.innerWidth||1366));
      const vh=Math.max(430,Number(window.parent.innerHeight||window.innerHeight||768)-top-2);
