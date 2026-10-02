@@ -223,8 +223,8 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:880;lett
       </article>
       <article class="card" data-card="facebook" tabindex="0">
         <div class="cardTop"><span class="logo fb"><svg viewBox="0 0 24 24"><path d="M14.5 8H18V4.5h-3.6C10.8 4.5 9 6.5 9 9.8V12H6v3.5h3V21h4v-5.5h3.4L17 12h-4V9.8c0-1.2.4-1.8 1.5-1.8Z"/></svg></span><span class="connected">○ Non collegato</span></div>
-        <h3>Facebook Reels</h3><p>Condividi sulla tua pagina o sul tuo profilo.</p>
-        <div class="cardHint">Pronto per Reel e feed verticale.</div>
+        <h3>Facebook Reels</h3><p>Apri Facebook e completa la pubblicazione manualmente.</p>
+        <div class="cardHint">Il video resta pronto da scaricare e caricare su Facebook.</div>
         <button class="open" data-platform="facebook">Collega Facebook</button>
       </article>
     </div>
@@ -287,9 +287,14 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:880;lett
      document.querySelector(".copyLink").disabled=!ready;
      document.querySelectorAll("[data-card]").forEach(card=>{
        const key=card.dataset.card,yes=!!(j.social||{})[key],status=card.querySelector(".connected"),btn=card.querySelector(".open");
-       status.textContent=yes?"✓ Collegato":"○ Non collegato";status.classList.toggle("on",yes);
-       btn.textContent=(yes?"Apri ":"Collega ")+names[key]+(yes?" ↗":"");
-       btn.classList.toggle("connect",!yes);
+       if(key==="facebook"){
+         status.textContent="Pubblicazione manuale";status.classList.remove("on");
+         btn.textContent="Apri Facebook ↗";btn.classList.remove("connect");
+       }else{
+         status.textContent=yes?"✓ Collegato":"○ Non collegato";status.classList.toggle("on",yes);
+         btn.textContent=(yes?"Apri ":"Collega ")+names[key]+(yes?" ↗":"");
+         btn.classList.toggle("connect",!yes);
+       }
      });
    }catch(e){
      const badge=document.getElementById("readyBadge");
@@ -308,6 +313,11 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:880;lett
 
  document.querySelectorAll("[data-platform]").forEach(b=>b.onclick=()=>{
    const key=b.dataset.platform,connected=!!(state.social||{})[key];
+   if(key==="facebook"){
+     setGuide("facebook");
+     window.open("https://www.facebook.com/","_blank","noopener,noreferrer");
+     return;
+   }
    setGuide(connected?key:"connect");
    setTimeout(()=>parentClick([key]),connected?180:650);
  });
