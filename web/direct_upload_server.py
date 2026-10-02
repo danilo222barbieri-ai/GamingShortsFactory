@@ -837,6 +837,49 @@ def _social_sid(handler):
     return _safe_id(handler.headers.get("X-GSF-Session-ID"))
 
 
+def _editor_prepare_current(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return {"ok":False,"ready":False,"error":"invalid session"}
+    root=(ROOT/"sessions"/sid).resolve()
+    marker=root/"editor2027_current.txt"
+    try:
+        current=Path(marker.read_text(encoding="utf-8").strip()).resolve()
+        current.relative_to(root)
+        if current.is_file():
+            return {"ok":True,"ready":True,"name":current.name}
+    except Exception:
+        pass
+    candidates=[]
+    try:
+        direct=root/"media"/".direct_upload_ready.json"
+        if direct.is_file():
+            meta=json.loads(direct.read_text(encoding="utf-8"))
+            candidates.append(str((meta or {}).get("path") or ""))
+    except Exception:
+        pass
+    try:
+        state_path=root/"session_state.json"
+        if state_path.is_file():
+            state=json.loads(state_path.read_text(encoding="utf-8"))
+            if isinstance(state,dict):
+                candidates.extend([str(state.get("gsf_editor_source_path") or ""),str(state.get("gsf_source_path") or "")])
+    except Exception:
+        pass
+    for raw in candidates:
+        if not raw:
+            continue
+        try:
+            p=Path(raw).resolve()
+            p.relative_to(root)
+            if p.is_file():
+                marker.write_text(str(p),encoding="utf-8")
+                return {"ok":True,"ready":True,"name":p.name}
+        except Exception:
+            continue
+    return {"ok":True,"ready":False,"error":"editor media unavailable"}
+
+
 def _editor_media_current(handler,sid):
     sid=_safe_id(sid)
     if not sid:
@@ -3298,6 +3341,10 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,200,{"ok":True,"path":restored})
             else:
                 _json(self,404,{"ok":False,"error":"source unavailable"})
+            return
+        if clean=="/editor/state":
+            payload=_editor_prepare_current(_social_sid(self))
+            _json(self,200 if payload.get("ok") else 400,payload)
             return
         if clean=="/editor-media/current":
             _editor_media_current(self,_social_sid(self))

@@ -3981,6 +3981,10 @@ body.gsfDesktopPreview .feature{
   }
 }
 
+
+/* V220 GAME BAR EDITOR SLOT — historical shorts marker remains in DOM for build compatibility. */
+#home154 .navItem[data-nav="shorts"] span{font-size:0!important}
+#home154 .navItem[data-nav="shorts"] span:after{content:"Editor";font-size:9px!important}
 </style>
 </head>
 <body>
@@ -4391,14 +4395,14 @@ body.gsfDesktopPreview .feature{
  document.querySelectorAll(".feature").forEach(b=>b.addEventListener("click",()=>{
    const action=b.dataset.action||"";
    if(action==="ai"){document.getElementById("aiPanel").classList.toggle("open");height(document.getElementById("aiPanel").classList.contains("open")?900:(loaded?690:650));}
-   if(action==="editor"){setEngine("manual");parentClick(["apri game editor","game editor","manuale"]);value({event:"open_editor",duration,engine:"manual"});}
+   if(action==="editor"){setEngine("manual");shellNav("editor");value({event:"open_editor",duration,engine:"manual"});}
    if(action==="short"){parentClick(["crea short","crea short finale","crea il tuo short"]);value({event:"create_short",duration,engine});}
  }));
  document.querySelectorAll(".navItem").forEach(b=>b.addEventListener("click",()=>{
    document.querySelectorAll(".navItem").forEach(x=>x.classList.remove("active"));b.classList.add("active");
    const nav=b.dataset.nav||"";
    if(nav==="hub")shellNav("hub");
-   if(nav==="shorts"){shellNav("hub",{section:"shorts"});value({event:"open_my_shorts",section:"shorts"});}
+   if(nav==="shorts"){shellNav("editor");value({event:"open_editor",duration,engine:"manual"});}
    if(nav==="projects"){shellNav("hub",{section:"projects"});value({event:"open_projects",section:"projects"});}
    if(nav==="social")shellNav("social");
  }));
@@ -4448,7 +4452,7 @@ body.gsfDesktopPreview .feature{
  document.querySelectorAll(".engine").forEach(b=>b.addEventListener("click",()=>setEngine(b.dataset.engine)));
  cta.addEventListener("click",()=>{
    if(!engine)return;
-   if(engine==="manual")parentClick(["apri game editor","game editor","manuale"]);
+   if(engine==="manual")shellNav("editor");
    else parentClick(["crea con ia","crea con ai","analizza con ia","genera con ia"]);
    value({event:engine==="manual"?"open_editor":"create_ai",duration,engine});
  });

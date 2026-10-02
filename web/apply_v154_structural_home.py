@@ -497,3 +497,58 @@ s = s.rstrip() + "\n\n" + _hub_surface_v160.lstrip()
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
 print("V154 STRUCTURAL HOME applied:",out)
+
+# V220 — Game Editor is a persistent app-layer over the live Home.
+# The existing editor_2027 component is embedded unchanged.
+_editor_surface_v220 = r'''
+if GSF_WEB_MODE:
+    st.markdown(r"""
+    <style id="gsf-v220-editor-shell">
+    #gsf-editor-overlay-v220{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483655;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(222,238,247,.46);-webkit-backdrop-filter:blur(5px) saturate(.98);backdrop-filter:blur(5px) saturate(.98);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
+    #gsf-editor-overlay-v220.is-open{opacity:1;visibility:visible;pointer-events:auto}
+    #gsf-editor-overlay-v220 .gsf-editor-shell{position:relative;width:min(1260px,calc(100vw - 30px));height:min(760px,calc(100dvh - 118px));border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:radial-gradient(circle at 8% 6%,rgba(126,214,255,.20),transparent 25%),radial-gradient(circle at 92% 7%,rgba(127,236,197,.18),transparent 26%),linear-gradient(180deg,#FCFEFF,#F6FBFF);box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.94);transform:translateY(10px) scale(.975);opacity:0;transition:transform .32s cubic-bezier(.16,.84,.24,1),opacity .24s ease}
+    #gsf-editor-overlay-v220.is-open .gsf-editor-shell{transform:translateY(0) scale(1);opacity:1}
+    #gsf-editor-overlay-v220 .gsf-editor-head{height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 54px 0 20px;border-bottom:1px solid rgba(148,183,213,.20);color:#0D2A66;font-size:14px;font-weight:900}
+    #gsf-editor-overlay-v220 .gsf-editor-head small{display:block;color:#7185A6;font-size:9px;font-weight:700;margin-top:2px}
+    #gsf-editor-overlay-v220 .gsf-editor-close{position:absolute;z-index:6;right:13px;top:10px;width:34px;height:34px;border-radius:12px;border:1px solid rgba(158,190,216,.34);background:rgba(255,255,255,.94);color:#617B9D;font-size:20px;cursor:pointer;box-shadow:0 7px 18px rgba(64,104,143,.09)}
+    #gsf-editor-overlay-v220 .gsf-editor-body{position:absolute;left:0;right:0;top:54px;bottom:0;display:grid;grid-template-columns:180px 1fr 180px;align-items:center}
+    #gsf-editor-overlay-v220 .gsf-editor-frame{width:100%;height:100%;border:0;background:transparent}
+    #gsf-editor-overlay-v220 .editor-note{color:#637DA8;font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive;font-size:16px;font-weight:600;line-height:1.08;text-align:center;padding:14px;pointer-events:none}
+    #gsf-editor-overlay-v220 .editor-note.left{transform:rotate(-4deg)}
+    #gsf-editor-overlay-v220 .editor-note.right{transform:rotate(4deg)}
+    #gsf-editor-overlay-v220 .editor-note span{display:block;transition:opacity .42s ease,filter .42s ease,transform .42s ease}
+    #gsf-editor-overlay-v220 .editor-note span.out{opacity:0;filter:blur(7px);transform:translateY(-8px) scale(.93)}
+    @keyframes gsfEditorWrite{0%{opacity:0;filter:blur(8px);transform:translateY(10px) scale(.91)}70%{opacity:1;filter:blur(.5px);transform:translateY(-2px) scale(1.02)}100%{opacity:1;filter:none;transform:none}}
+    #gsf-editor-overlay-v220 .editor-note span.in{animation:gsfEditorWrite 1.05s cubic-bezier(.18,.72,.2,1) 1}
+    @media(max-width:900px){#gsf-editor-overlay-v220{bottom:70px;padding:8px 5px}#gsf-editor-overlay-v220 .gsf-editor-shell{width:calc(100vw - 10px);height:calc(100dvh - 84px);border-radius:22px}#gsf-editor-overlay-v220 .gsf-editor-body{grid-template-columns:1fr;top:48px}#gsf-editor-overlay-v220 .editor-note{display:none}#gsf-editor-overlay-v220 .gsf-editor-head{height:48px;padding-left:14px}#gsf-editor-overlay-v220 .gsf-editor-close{top:7px;right:8px;width:31px;height:31px}}
+    </style>
+    <div id="gsf-editor-overlay-v220" aria-hidden="true">
+      <section class="gsf-editor-shell" role="dialog" aria-modal="false" aria-label="Game Editor">
+        <button class="gsf-editor-close" type="button" aria-label="Chiudi">×</button>
+        <div class="gsf-editor-head"><div>Game Editor<small>Il tuo gameplay resta nel progetto mentre modifichi.</small></div></div>
+        <div class="gsf-editor-body">
+          <div class="editor-note left"><span id="gsf-editor-note-left">Qui modelli<br>la tua giocata</span></div>
+          <iframe class="gsf-editor-frame" src="/editor-live/" title="Game Editor"></iframe>
+          <div class="editor-note right"><span id="gsf-editor-note-right">Tocca uno strumento<br>e guarda cosa cambia</span></div>
+        </div>
+      </section>
+    </div>
+    <script>
+    (()=>{
+      const o=document.getElementById('gsf-editor-overlay-v220'); if(!o)return;
+      const frame=o.querySelector('.gsf-editor-frame'),left=document.getElementById('gsf-editor-note-left'),right=document.getElementById('gsf-editor-note-right');
+      let seq=0;
+      const copies={idle:['Qui modelli<br>la tua giocata','Tocca uno strumento<br>e guarda cosa cambia'],frame:['Trova il punto<br>giusto','Inquadra l’azione<br>senza perdere il gameplay'],cover:['Scegli il frame<br>che racconta tutto','La cover deve<br>fermarsi negli occhi'],look:['Dagli il tuo<br>look','Più pulito, più gaming<br>o più cinematico'],caption:['Fai parlare<br>il momento','Le parole entrano<br>dove serve'],audio:['Fallo sentire','Voce, gioco e impatto<br>devono respirare insieme'],ai:['Lascia leggere<br>la scena alla Game AI','Ti aiuta a seguire<br>ciò che conta davvero'],play:['Guardalo vivere','Controlla il risultato<br>prima di chiudere'],done:['Ci siamo','Quando ti convince<br>torna al tuo Short']};
+      const morph=(el,html,s)=>{if(!el||el.innerHTML===html)return;el.classList.remove('in');el.classList.add('out');setTimeout(()=>{if(s!==seq)return;el.innerHTML=html;el.classList.remove('out');void el.offsetWidth;el.classList.add('in');setTimeout(()=>el.classList.remove('in'),1100)},420)};
+      const guide=(key)=>{const c=copies[key]||copies.idle,s=++seq;morph(left,c[0],s);morph(right,c[1],s)};
+      const wire=()=>{try{const d=frame.contentDocument;if(!d)return;d.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('button');if(!b)return;const t=(b.innerText||b.textContent||'').trim().toUpperCase();if(t.includes('FRAME'))guide('frame');else if(t.includes('COVER'))guide('cover');else if(t.includes('LOOK'))guide('look');else if(t.includes('CAPTION'))guide('caption');else if(t.includes('AUDIO'))guide('audio');else if(t.includes('GAME AI'))guide('ai');else if(t.includes('PLAY')||t.includes('PAUSE'))guide('play');else if(t.includes('DONE'))guide('done')},true)}catch(e){}};
+      frame.addEventListener('load',wire);
+      const open=async()=>{try{await fetch('/editor/state',{cache:'no-store',credentials:'same-origin'})}catch(e){}frame.src='/editor-live/?v='+Date.now();o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false');guide('idle')};
+      const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true')};
+      o.querySelector('.gsf-editor-close').onclick=close;o.addEventListener('click',e=>{if(e.target===o)close()});
+      window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;const t=String(e.data.target||'');if(t==='editor')open();if(t==='close'||t==='home'||t==='social'||t==='hub')close()});
+    })();
+    </script>
+    """, unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _editor_surface_v220.lstrip()

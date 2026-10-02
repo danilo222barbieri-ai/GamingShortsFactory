@@ -213,6 +213,25 @@ server {
         add_header Cache-Control "no-store" always;
     }
 
+    # V220 persistent Game Editor surface. The editor component itself is unchanged.
+    location = /editor-live {
+        return 302 /editor-live/;
+    }
+    location /editor-live/ {
+        alias /app/web/editor_2027_component/;
+        index index.html;
+        try_files $uri $uri/ /editor-live/index.html;
+        add_header Cache-Control "no-store" always;
+    }
+    location = /editor/state {
+        add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
+        proxy_pass http://127.0.0.1:8502/editor/state;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+        add_header Cache-Control "no-store" always;
+    }
+
     # V158 fixed Creator Hub surface + live state API.
     location = /creator-hub-v156 {
         return 302 /creator-hub-v156/;
