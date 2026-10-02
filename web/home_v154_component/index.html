@@ -90,54 +90,9 @@ button{appearance:none;-webkit-appearance:none}
 @media (min-width:761px){
  html,body{width:100%;height:100%;overflow:hidden}
  body{display:grid;place-items:center}
- #home154{
-   width:min(100vw,calc(100dvh * 16 / 9));
-   height:min(100dvh,calc(100vw * 9 / 16));
-   min-width:0;min-height:0;max-width:none;max-height:none;
-   aspect-ratio:16/9;
-   margin:auto;
-   padding:clamp(8px,1.15vh,16px) clamp(28px,3.6vw,64px) clamp(7px,1vh,14px);
-   border-radius:clamp(0px,1.5vw,28px);
- }
  .ui{height:100%;display:flex;flex-direction:column}
- .topbar{height:7.2%;min-height:0;flex:0 0 7.2%;align-items:center;padding:0}
- .brandOnly{font-size:clamp(11px,1vw,17px);letter-spacing:.34em;margin:0}
  .hub{padding:clamp(7px,.75vh,12px) clamp(12px,1.2vw,20px);font-size:clamp(10px,.8vw,14px);gap:8px}
  .hub .arr{font-size:clamp(15px,1.1vw,20px)}
-
- #view{height:92.8%;min-height:0;display:grid;grid-template-rows:45% 18% 18% 9% 6%;row-gap:1%;align-content:stretch}
- .stage{min-height:0;max-height:none;height:100%;margin:0;position:relative}
- .rings{
-   width:min(31vh,20vw,330px);height:min(31vh,20vw,330px);
-   min-width:190px;min-height:190px;
-   box-shadow:0 0 0 clamp(14px,1.6vh,24px) rgba(130,218,255,.06),
-              0 0 0 clamp(26px,3vh,44px) rgba(99,226,192,.04),
-              0 18px 52px rgba(74,132,176,.11);
- }
- .rings:before{inset:clamp(-24px,-1.6vh,-14px)}
- .rings:after{inset:clamp(-44px,-3vh,-26px)}
- .icon{width:clamp(40px,4.6vh,64px);height:clamp(40px,4.6vh,64px);margin-bottom:clamp(8px,1.4vh,18px)}
- .circle strong{font-size:clamp(14px,1.55vw,22px);max-width:235px}
- .scribble{font-size:clamp(14px,1.55vw,24px);width:clamp(145px,16vw,230px)}
- .scribble.left{left:calc(50% - min(29vw,430px));top:34%;transform:rotate(-5deg)}
- .scribble.right{right:calc(50% - min(29vw,430px));top:35%;transform:rotate(4deg)}
- .scribble .arrow{height:clamp(26px,4vh,44px)}
- .scribble .arrow svg{width:clamp(54px,6vw,80px);height:100%}
- .scribble .padSketch{width:clamp(38px,4vw,54px);height:auto;margin-top:4px}
-
- .features{height:100%;width:min(100%,1180px);margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(12px,1.25vw,22px)}
- .feature{height:100%;min-height:0;border-radius:clamp(18px,1.5vw,28px);padding:clamp(6px,1vh,12px) 16px}
- .featureIcon{width:clamp(38px,5vh,64px);height:clamp(38px,5vh,64px);border-radius:50%;margin-bottom:clamp(3px,.7vh,8px)}
- .featureIcon svg{width:58%;height:58%}
- .feature b{font-size:clamp(12px,1.15vw,18px)}
- .feature small{font-size:clamp(8px,.72vw,11px);margin-top:clamp(2px,.45vh,5px)}
- .feature:after{
-   content:"›";display:grid;place-items:center;
-   width:clamp(26px,3.2vh,42px);height:clamp(26px,3.2vh,42px);
-   margin-top:clamp(3px,.6vh,8px);border-radius:50%;
-   background:rgba(232,242,250,.86);color:#5276a6;
-   font-size:clamp(15px,1.25vw,22px);font-weight:800;
- }
 
  .sectionHead{display:flex!important;width:min(100%,1180px);height:100%;margin:0 auto;align-items:end}
  .sectionHead h2{font-size:clamp(11px,.95vw,16px);margin:0}
@@ -147,188 +102,27 @@ button{appearance:none;-webkit-appearance:none}
  .thumb{height:100%;min-height:0}.pBody{padding:clamp(5px,.8vh,11px) clamp(7px,.75vw,12px);display:flex;flex-direction:column;justify-content:center}
  .pBody b{font-size:clamp(9px,.82vw,13px)}.meta{font-size:clamp(7px,.58vw,9px);margin-top:2px}
  .duration{font-size:clamp(7px,.5vw,9px);padding:2px 5px}
-
- .bottomNav{width:min(100%,1180px);height:100%;margin:0 auto;border-radius:clamp(17px,1.4vw,26px);padding:clamp(2px,.4vh,5px) 10px}
- .navItem{height:100%;padding:1px;gap:1px;font-size:clamp(7px,.6vw,9px)}
- .navItem svg{width:clamp(16px,2.1vh,23px);height:clamp(16px,2.1vh,23px)}
- .siteFooter{width:min(100%,1180px);height:100%;margin:0 auto;padding:0 8px;border-top:1px solid rgba(150,184,214,.20);font-size:clamp(7px,.58vw,9px)}
- .siteFooter button{font-size:inherit}.siteFooter .footLinks{gap:clamp(8px,.9vw,15px)}
 }
 
 /* Very wide or tall desktop screens keep the same composition centered.
    Unused space is intentional letterbox room, never stretching the UI. */
 @media (min-width:761px) and (min-aspect-ratio:16/9){
- #home154{height:100dvh;width:calc(100dvh * 16 / 9)}
 }
 @media (min-width:761px) and (max-aspect-ratio:16/9){
- #home154{width:100vw;height:calc(100vw * 9 / 16)}
 }
 
 /* V164 APPROVED HOME REFERENCE
    Desktop reproduces the approved mobile-reference composition:
    large luminous uploader, handwritten side notes and three tall pastel cards. */
 @media (min-width:761px){
- #home154{
-   background:
-    radial-gradient(circle at 49% 28%,rgba(123,219,255,.19),transparent 23%),
-    radial-gradient(circle at 55% 34%,rgba(116,235,199,.14),transparent 27%),
-    linear-gradient(180deg,rgba(251,254,255,.97),rgba(247,251,255,.93));
- }
- #view{
-   grid-template-rows:42% 32% 4% 9% 6% 3%;
-   row-gap:.8%;
- }
- .stage{overflow:visible}
- .rings{
-   width:min(42vh,25vw,360px);
-   height:min(42vh,25vw,360px);
-   min-width:210px;min-height:210px;
-   background:radial-gradient(circle at 38% 28%,#ffffff 0%,rgba(239,249,255,.96) 48%,rgba(226,250,246,.88) 100%);
-   border:1.5px solid rgba(93,199,239,.58);
-   box-shadow:
-     0 0 0 clamp(18px,2.2vh,30px) rgba(102,205,247,.075),
-     0 0 0 clamp(36px,4.2vh,58px) rgba(89,232,197,.055),
-     0 0 clamp(38px,6vh,78px) rgba(86,215,229,.26),
-     0 22px 60px rgba(69,126,167,.10);
- }
- .rings:before{inset:clamp(-30px,-2.2vh,-18px);border:1.4px solid rgba(95,203,241,.37)}
- .rings:after{inset:clamp(-58px,-4.2vh,-36px);border:1.2px solid rgba(83,229,193,.28)}
- .icon{
-   width:clamp(52px,6.4vh,82px);
-   height:clamp(52px,6.4vh,82px);
-   margin-bottom:clamp(8px,1.3vh,17px);
-   color:#5f9ef0;
- }
- .circle strong{
-   max-width:270px;
-   font-size:clamp(16px,1.45vw,24px);
-   line-height:1.08;
-   letter-spacing:.02em;
- }
- .circle small{
-   display:block!important;
-   margin-top:clamp(7px,1vh,13px);
-   color:#7890ad;
-   font-size:clamp(9px,.72vw,13px);
-   font-weight:720;
-   line-height:1.45;
-   letter-spacing:.035em;
-   text-align:center;
- }
- .scribble{
-   color:#607aa8;
-   font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive;
-   font-size:clamp(16px,1.75vw,29px);
-   font-weight:500;
-   line-height:1.08;
-   text-shadow:0 1px 0 rgba(255,255,255,.85);
- }
- .scribble.left{
-   left:4.5%;top:20%;width:25%;
-   text-align:center;transform:rotate(-5deg);
- }
- .scribble.right{
-   right:3.8%;top:25%;width:25%;
-   text-align:center;transform:rotate(4deg);
- }
- .scribble .arrow{height:clamp(34px,5vh,58px);margin-top:1px;color:#6984ad}
- .scribble .arrow svg{width:clamp(68px,7vw,104px);height:100%}
- .scribble.left .arrow{transform:translateX(58%) rotate(5deg)}
- .scribble.right .arrow{transform:translateX(-55%) rotate(-3deg)}
- .scribble .padSketch{
-   width:clamp(44px,5vw,68px);
-   height:auto;margin:clamp(4px,.7vh,9px) auto 0;color:#5e78a6;
- }
-
- .features{
-   width:min(91%,1260px);
-   height:100%;
-   gap:clamp(18px,2vw,32px);
-   align-items:stretch;
- }
- .feature{
-   position:relative;
-   height:100%;min-height:0;
-   border-radius:clamp(25px,2.2vw,38px);
-   padding:clamp(10px,1.5vh,18px) clamp(14px,1.5vw,24px) clamp(8px,1.1vh,15px);
-   border:1px solid rgba(169,195,218,.28);
-   background:rgba(255,255,255,.82);
-   box-shadow:0 16px 42px rgba(77,114,151,.09),inset 0 1px 0 rgba(255,255,255,.92);
- }
- .featureIcon{
-   width:clamp(62px,9vh,112px);
-   height:clamp(62px,9vh,112px);
-   margin:0 auto clamp(6px,1vh,13px);
-   border-radius:50%;
-   box-shadow:inset 0 0 0 1px rgba(255,255,255,.68),0 10px 30px rgba(73,115,155,.08);
- }
- .featureIcon svg{width:54%;height:54%;stroke-width:1.7}
- .feature b{
-   font-size:clamp(15px,1.55vw,25px);
-   line-height:1.05;
-   letter-spacing:-.02em;
- }
- .feature small{
-   max-width:220px;
-   font-size:clamp(9px,.95vw,16px);
-   line-height:1.18;
-   margin-top:clamp(4px,.6vh,8px);
-   font-weight:650;
-   color:#7588aa;
- }
- .feature:after{
-   width:clamp(30px,4.5vh,50px);
-   height:clamp(30px,4.5vh,50px);
-   margin-top:auto;
-   border-radius:50%;
-   background:rgba(237,244,250,.90);
-   color:#3f6d9f;
-   font-size:clamp(20px,1.55vw,28px);
-   font-weight:600;
-   box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
- }
- .fAi{
-   background:
-    radial-gradient(circle at 50% 23%,rgba(167,216,255,.22),transparent 30%),
-    rgba(255,255,255,.84);
- }
- .fAi .featureIcon{
-   background:linear-gradient(145deg,#d9efff,#bcdcff);
-   color:#3e8bea;
- }
- .fEditor{
-   background:
-    radial-gradient(circle at 50% 23%,rgba(163,237,204,.22),transparent 30%),
-    rgba(255,255,255,.84);
- }
- .fEditor .featureIcon{
-   background:linear-gradient(145deg,#dcf8e9,#bfeecf);
-   color:#168f68;
- }
- .fShort{
-   background:
-    radial-gradient(circle at 50% 23%,rgba(255,224,135,.26),transparent 30%),
-    rgba(255,255,255,.84);
- }
- .fShort .featureIcon{
-   background:linear-gradient(145deg,#fff1b6,#ffe087);
-   color:#dc8700;
- }
 
  .sectionHead{width:min(91%,1260px);align-items:end}
  .projects{width:min(91%,1260px)}
- .bottomNav{width:min(91%,1260px)}
- .siteFooter{width:min(91%,1260px)}
 }
 
 /* On shorter laptop browser viewports the artboard scales, but the hierarchy and
    relative positions remain the same; only type and icon clamps get tighter. */
 @media (min-width:761px) and (max-height:650px){
- .rings{min-width:185px;min-height:185px}
- .scribble{font-size:clamp(14px,1.55vw,22px)}
- .featureIcon{width:clamp(52px,8vh,84px);height:clamp(52px,8vh,84px)}
- .feature b{font-size:clamp(13px,1.35vw,20px)}
- .feature small{font-size:clamp(8px,.8vw,12px)}
 }
 @media (max-width:760px){
  .sectionHead{display:flex!important;margin:0 3px 10px}.projects{display:grid!important;margin-bottom:18px}
@@ -337,20 +131,11 @@ button{appearance:none;-webkit-appearance:none}
 
 /* V162.1 SHORT DESKTOP FIT */
 @media (min-width:761px) and (max-height:720px){
- .stage{min-height:250px;max-height:285px}
- .rings{width:210px;height:210px}
- .features{gap:12px;margin-bottom:6px}.feature{min-height:88px;padding:7px 12px}
  .projects{gap:10px;margin-bottom:5px}.project{grid-template-columns:78px 1fr;min-height:58px}.thumb{height:58px}.pBody{padding:8px 10px}
- .bottomNav{padding:3px 8px}.navItem svg{width:16px;height:16px}.navItem span{font-size:8px}
 }
 /* V162.1 HOME LIFT COMPATIBILITY — reference layout keeps the same raised desktop geometry */
 @media (min-width:761px){
- #home154{padding:0 clamp(28px,4vw,70px) 4px;transform:translateY(-6px)}
- .topbar{height:40px;min-height:40px}
- .stage{max-height:320px;margin-top:-4px}
- .features{margin:-6px auto 6px}
  .projects{margin:0 auto 6px}
- .bottomNav{margin:-1px auto 0}
 }
 
 /* V165 FLUID RESPONSIVE HOME
@@ -361,59 +146,8 @@ button{appearance:none;-webkit-appearance:none}
    width:100%;height:100%;min-width:0;min-height:0;
    overflow:hidden;display:block;place-items:initial;
  }
- #home154{
-   width:100%;height:100dvh;min-width:0;min-height:0;
-   max-width:none;max-height:none;aspect-ratio:auto;
-   margin:0;padding:clamp(6px,1vh,12px) clamp(18px,3vw,56px) clamp(6px,1vh,12px);
-   border-radius:0;transform:none;
- }
  .ui{height:100%;min-height:0;display:flex;flex-direction:column}
- .topbar{
-   width:min(100%,1440px);height:auto;min-height:0;
-   flex:0 0 clamp(38px,6.5vh,58px);
-   margin:0 auto;padding:0;align-items:center;
- }
- .brandOnly{font-size:clamp(11px,1.05vw,17px);letter-spacing:.34em;margin:0}
  .hub{padding:clamp(7px,1vh,11px) clamp(12px,1.25vw,20px);font-size:clamp(10px,.85vw,14px)}
- #view{
-   flex:1 1 auto;height:auto;min-height:0;
-   display:grid;
-   grid-template-rows:minmax(210px,1fr) clamp(100px,17vh,150px) clamp(24px,4.2vh,38px) clamp(66px,11vh,100px) clamp(48px,7.5vh,64px) clamp(20px,3.5vh,30px);
-   row-gap:clamp(4px,.8vh,9px);
-   align-content:stretch;
- }
- .stage{
-   width:min(100%,1440px);height:100%;min-height:0;max-height:none;
-   margin:0 auto;overflow:visible;position:relative;
-   display:grid;
-   grid-template-columns:minmax(135px,1fr) minmax(220px,auto) minmax(135px,1fr);
-   grid-template-areas:"left center right";
-   align-items:center;column-gap:clamp(12px,2.2vw,36px);
- }
- .rings{
-   grid-area:center;justify-self:center;
-   width:min(27vw,38vh,360px);height:min(27vw,38vh,360px);
-   min-width:220px;min-height:220px;
- }
- .scribble{position:relative;inset:auto;width:100%;max-width:290px;font-size:clamp(16px,1.55vw,26px)}
- .scribble.left{grid-area:left;justify-self:end;left:auto;top:auto;width:100%;text-align:center;transform:rotate(-5deg)}
- .scribble.right{grid-area:right;justify-self:start;right:auto;top:auto;width:100%;text-align:center;transform:rotate(4deg)}
- .scribble.left .arrow{transform:translateX(28%) rotate(5deg)}
- .scribble.right .arrow{transform:translateX(-28%) rotate(-3deg)}
- .features{
-   width:min(100%,1400px);height:100%;margin:0 auto;
-   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-   gap:clamp(12px,1.5vw,24px);align-items:stretch;
- }
- .feature{
-   height:100%;min-height:0;margin:0;
-   padding:clamp(7px,1vh,13px) clamp(12px,1.25vw,22px);
-   border-radius:clamp(22px,1.8vw,32px);
- }
- .featureIcon{width:clamp(42px,6.5vh,72px);height:clamp(42px,6.5vh,72px);margin:0 auto clamp(3px,.7vh,8px)}
- .feature b{font-size:clamp(13px,1.15vw,19px)}
- .feature small{font-size:clamp(8px,.72vw,12px);margin-top:clamp(2px,.45vh,5px)}
- .feature:after{width:clamp(24px,3.5vh,36px);height:clamp(24px,3.5vh,36px);font-size:clamp(16px,1.2vw,22px);margin-top:auto}
  .sectionHead{display:flex!important;width:min(100%,1400px);height:100%;margin:0 auto;align-items:center}
  .sectionHead h2{font-size:clamp(12px,1vw,17px)}
  .projects{
@@ -424,42 +158,12 @@ button{appearance:none;-webkit-appearance:none}
  .project{height:100%;min-height:0;display:grid;grid-template-columns:28% 1fr;border-radius:clamp(13px,1vw,18px)}
  .thumb{height:100%;min-height:0}.pBody{padding:clamp(5px,.8vh,10px) clamp(8px,.8vw,13px);display:flex;flex-direction:column;justify-content:center}
  .pBody b{font-size:clamp(10px,.82vw,13px)}.meta{font-size:clamp(7px,.58vw,9px);margin-top:2px}
- .bottomNav{
-   width:min(100%,1400px);height:100%;margin:0 auto;
-   border-radius:clamp(18px,1.4vw,26px);padding:clamp(2px,.4vh,5px) 10px;
- }
- .navItem{height:100%;padding:1px;gap:1px;font-size:clamp(8px,.62vw,10px)}
- .navItem svg{width:clamp(18px,2.4vh,24px);height:clamp(18px,2.4vh,24px)}
- .siteFooter{width:min(100%,1400px);height:100%;margin:0 auto;padding:0 8px;font-size:clamp(7px,.58vw,9px)}
 }
 @media (min-width:761px) and (max-width:1050px){
- #home154{padding-left:18px;padding-right:18px}
- .stage{grid-template-columns:minmax(110px,1fr) minmax(205px,auto) minmax(110px,1fr);column-gap:10px}
- .rings{width:min(26vw,35vh,300px);height:min(26vw,35vh,300px);min-width:205px;min-height:205px}
- .scribble{font-size:clamp(14px,1.7vw,19px);max-width:210px}
- .features{gap:10px}.feature{padding-left:9px;padding-right:9px}
 }
 @media (min-width:761px) and (max-height:650px){
- #home154{padding-top:4px;padding-bottom:4px}
- .topbar{flex-basis:36px}
- #view{
-   grid-template-rows:minmax(175px,1fr) 80px 20px 54px 42px 16px;
-   row-gap:3px;
- }
- .rings{width:min(23vw,34vh,245px);height:min(23vw,34vh,245px);min-width:175px;min-height:175px}
- .icon{width:clamp(34px,5.5vh,48px);height:clamp(34px,5.5vh,48px);margin-bottom:4px}
- .circle strong{font-size:clamp(12px,1.2vw,17px)}
- .circle small{font-size:clamp(7px,.62vw,10px);margin-top:4px}
- .scribble{font-size:clamp(12px,1.35vw,18px)}
- .scribble .arrow{height:26px}.scribble .padSketch{width:38px}
- .feature{padding:4px 8px;border-radius:18px}
- .featureIcon{width:34px;height:34px;margin-bottom:2px}
- .feature b{font-size:clamp(11px,1vw,15px)}
- .feature small{font-size:clamp(7px,.62vw,9px);margin-top:1px}
- .feature:after{width:22px;height:22px;font-size:15px}
  .sectionHead h2{font-size:11px}.seeAll{padding:3px 8px;font-size:8px}
  .project{grid-template-columns:78px 1fr}.pBody{padding:4px 7px}
- .bottomNav{padding:2px 8px}.navItem svg{width:16px;height:16px}.navItem span{font-size:8px}
 }
 
 /* V166 MEGA RESPONSIVE HOME — canonical desktop/tablet layout.
@@ -478,93 +182,12 @@ button{appearance:none;-webkit-appearance:none}
    display:block!important;background:transparent!important;
  }
  body{place-items:initial!important}
- #home154{
-   width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
-   max-width:none!important;max-height:none!important;aspect-ratio:auto!important;
-   margin:0!important;padding:0 var(--gsf-side) 4px!important;
-   border-radius:0!important;transform:none!important;overflow:hidden!important;
- }
- #home154:before{inset:0!important}
  .ui{height:100%!important;min-height:0!important;display:flex!important;flex-direction:column!important}
- .topbar{
-   width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;
-   flex:0 0 clamp(40px,6.2vh,58px)!important;margin:0!important;padding:0!important;
-   align-items:center!important;
- }
- .brandOnly{
-   font-size:clamp(11px,1.05vw,17px)!important;letter-spacing:clamp(.22em,.34vw,.38em)!important;
-   line-height:1!important;margin:0!important;
- }
  .hub{
    padding:clamp(7px,1vh,11px) clamp(12px,1.25vw,20px)!important;
    font-size:clamp(10px,.82vw,14px)!important;gap:8px!important;
    box-shadow:0 8px 24px rgba(68,104,142,.09)!important;
  }
- #view{
-   flex:1 1 auto!important;height:auto!important;min-height:0!important;width:100%!important;
-   display:grid!important;
-   grid-template-rows:42% 26% 4% 12% 9% 3%!important;
-   row-gap:.6%!important;align-content:stretch!important;
- }
- .stage{
-   width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
-   margin:0!important;padding:0!important;overflow:visible!important;
-   position:relative!important;display:grid!important;
-   grid-template-columns:minmax(145px,1fr) minmax(220px,auto) minmax(145px,1fr)!important;
-   grid-template-areas:"left center right"!important;
-   align-items:center!important;column-gap:clamp(10px,2.4vw,40px)!important;
- }
- .rings{
-   grid-area:center!important;justify-self:center!important;align-self:center!important;
-   width:var(--gsf-hero-size)!important;height:var(--gsf-hero-size)!important;
-   min-width:0!important;min-height:0!important;
-   box-shadow:
-    0 0 0 clamp(15px,2.2vh,27px) rgba(102,205,247,.075),
-    0 0 0 clamp(28px,4vh,48px) rgba(89,232,197,.055),
-    0 0 clamp(30px,5vh,62px) rgba(86,215,229,.23),
-    0 18px 48px rgba(69,126,167,.10)!important;
- }
- .rings:before{inset:clamp(-27px,-2.2vh,-15px)!important}
- .rings:after{inset:clamp(-48px,-4vh,-28px)!important}
- .icon{width:clamp(44px,6vh,70px)!important;height:clamp(44px,6vh,70px)!important;margin-bottom:clamp(5px,1vh,12px)!important}
- .circle strong{max-width:250px!important;font-size:clamp(15px,1.45vw,23px)!important;line-height:1.08!important}
- .circle small{display:block!important;margin-top:clamp(5px,.85vh,10px)!important;font-size:clamp(8px,.7vw,12px)!important}
- .scribble{
-   position:relative!important;inset:auto!important;width:100%!important;max-width:290px!important;
-   font-size:clamp(15px,1.6vw,27px)!important;line-height:1.08!important;
- }
- .scribble.left{grid-area:left!important;justify-self:end!important;left:auto!important;top:auto!important;text-align:center!important;transform:rotate(-5deg)!important}
- .scribble.right{grid-area:right!important;justify-self:start!important;right:auto!important;top:auto!important;text-align:center!important;transform:rotate(4deg)!important}
- .scribble .arrow{height:clamp(28px,4.5vh,48px)!important;margin-top:2px!important}
- .scribble .arrow svg{width:clamp(58px,6vw,92px)!important;height:100%!important}
- .scribble.left .arrow{transform:translateX(32%) rotate(5deg)!important}
- .scribble.right .arrow{transform:translateX(-32%) rotate(-3deg)!important}
- .scribble .padSketch{width:clamp(38px,4vw,58px)!important;margin-top:4px!important}
-
- .features{
-   width:100%!important;height:100%!important;margin:0!important;
-   display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
-   gap:clamp(12px,1.5vw,24px)!important;align-items:stretch!important;
- }
- .feature{
-   height:100%!important;min-height:0!important;margin:0!important;
-   border-radius:clamp(22px,1.8vw,34px)!important;
-   padding:clamp(7px,1.1vh,14px) clamp(12px,1.4vw,24px)!important;
-   justify-content:center!important;
- }
- .featureIcon{
-   width:clamp(44px,7vh,76px)!important;height:clamp(44px,7vh,76px)!important;
-   margin:0 auto clamp(3px,.75vh,8px)!important;
- }
- .feature b{font-size:clamp(13px,1.25vw,20px)!important}
- .feature small{font-size:clamp(8px,.75vw,12px)!important;margin-top:clamp(2px,.4vh,5px)!important}
- .feature:after{
-   width:clamp(24px,3.7vh,38px)!important;height:clamp(24px,3.7vh,38px)!important;
-   margin-top:auto!important;font-size:clamp(16px,1.2vw,23px)!important;
- }
- .fAi{background:radial-gradient(circle at 50% 23%,rgba(167,216,255,.24),transparent 34%),rgba(255,255,255,.86)!important}
- .fEditor{background:radial-gradient(circle at 50% 23%,rgba(163,237,204,.24),transparent 34%),rgba(255,255,255,.86)!important}
- .fShort{background:radial-gradient(circle at 50% 23%,rgba(255,224,135,.28),transparent 34%),rgba(255,255,255,.86)!important}
 
  .sectionHead{
    display:flex!important;width:100%!important;height:100%!important;margin:0!important;
@@ -589,43 +212,19 @@ button{appearance:none;-webkit-appearance:none}
  .pBody b{font-size:clamp(10px,.86vw,14px)!important}.meta{font-size:clamp(7px,.6vw,9px)!important;margin-top:2px!important}
  .duration{font-size:clamp(7px,.52vw,9px)!important;padding:2px 5px!important}
 
- .bottomNav{
-   width:100%!important;height:100%!important;margin:0!important;
-   border-radius:clamp(18px,1.5vw,28px)!important;padding:clamp(2px,.45vh,5px) 10px!important;
- }
- .navItem{height:100%!important;padding:1px!important;gap:1px!important;font-size:clamp(8px,.64vw,10px)!important;position:relative!important}
- .navItem svg{width:clamp(18px,2.5vh,25px)!important;height:clamp(18px,2.5vh,25px)!important}
- .navItem.active:after{content:"";width:4px;height:4px;border-radius:50%;background:#173a70;position:absolute;bottom:1px;left:50%;transform:translateX(-50%)}
- .siteFooter{width:100%!important;height:100%!important;margin:0!important;padding:0 8px!important;font-size:clamp(7px,.58vw,9px)!important}
-
  .aiPanel{max-height:100%!important;overflow:auto!important}
 }
 
 /* Compact desktop/tablet: keep the same hierarchy, not a miniaturized poster. */
 @media (min-width:761px) and (max-width:1100px){
  :root{--gsf-side:clamp(14px,2.5vw,28px);--gsf-hero-size:clamp(220px,min(27vw,36vh),315px)}
- .stage{grid-template-columns:minmax(110px,1fr) minmax(205px,auto) minmax(110px,1fr)!important;column-gap:10px!important}
- .scribble{font-size:clamp(13px,1.65vw,19px)!important;max-width:210px!important}
- .features{gap:10px!important}.feature{padding-left:9px!important;padding-right:9px!important}
 }
 
 /* Short laptop viewport: preserve readable sizes; only tighten spacing. */
 @media (min-width:761px) and (max-height:650px){
  :root{--gsf-hero-size:clamp(195px,min(25vw,38vh),255px);--gsf-gap:3px}
- .topbar{flex-basis:36px!important}
- #view{grid-template-rows:44% 25% 4% 12% 9% 3%!important;row-gap:.5%!important}
- .rings{min-width:0!important;min-height:0!important}
- .icon{width:clamp(38px,5.8vh,50px)!important;height:clamp(38px,5.8vh,50px)!important;margin-bottom:4px!important}
- .circle strong{font-size:clamp(13px,1.2vw,18px)!important}
- .circle small{font-size:clamp(7px,.62vw,10px)!important;margin-top:4px!important}
- .scribble{font-size:clamp(13px,1.35vw,19px)!important}
- .feature{padding:5px 9px!important;border-radius:20px!important}
- .featureIcon{width:38px!important;height:38px!important;margin-bottom:2px!important}
- .feature b{font-size:clamp(11px,1vw,15px)!important}.feature small{font-size:clamp(7px,.62vw,9px)!important}
- .feature:after{width:22px!important;height:22px!important;font-size:15px!important}
  .sectionHead h2{font-size:11px!important}.seeAll{padding:3px 8px!important;font-size:8px!important}
  .project{grid-template-columns:78px 1fr!important}.pBody{padding:4px 7px!important}
- .bottomNav{padding:2px 8px!important}.navItem svg{width:16px!important;height:16px!important}.navItem span{font-size:8px!important}
 }
 
 
@@ -644,22 +243,6 @@ button{appearance:none;-webkit-appearance:none}
    --v167-ring-blue:#72D8FF;
    --v167-ring-mint:#79EAC8;
  }
- #home154{
-   background:
-    radial-gradient(circle at 14% 20%,rgba(114,216,255,.23),transparent 24%),
-    radial-gradient(circle at 83% 30%,rgba(121,234,200,.22),transparent 27%),
-    radial-gradient(circle at 78% 80%,rgba(255,237,175,.13),transparent 24%),
-    linear-gradient(180deg,#F3FBFF 0%,#F7FCFF 48%,#F4FBFF 100%)!important;
- }
- #home154:before{
-   background:
-    radial-gradient(circle at 50% 32%,rgba(255,255,255,.52),transparent 34%),
-    linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.10))!important;
- }
- .brandOnly{
-   color:#667FA8!important;
-   text-shadow:0 1px 0 rgba(255,255,255,.9)!important;
- }
  .hub{
    color:var(--v167-ink)!important;
    background:rgba(255,255,255,.86)!important;
@@ -667,28 +250,6 @@ button{appearance:none;-webkit-appearance:none}
    box-shadow:0 12px 34px rgba(65,115,157,.12),inset 0 1px 0 rgba(255,255,255,.95)!important;
  }
  .hub .arr{color:#244D87!important}
-
- /* Uploader: vivid cyan on the left, mint on the right, pulse preserved. */
- .rings{
-   border:2px solid transparent!important;
-   background:
-    radial-gradient(circle at 39% 28%,#FFFFFF 0%,#EFF9FF 47%,#E8FFF7 100%) padding-box,
-    conic-gradient(from 210deg,var(--v167-ring-blue) 0 46%,#8FE3FF 49%,#8FEED4 55%,var(--v167-ring-mint) 100%) border-box!important;
-   box-shadow:
-    -20px 0 56px rgba(92,205,255,.36),
-    22px 0 58px rgba(87,232,190,.34),
-    0 0 0 clamp(16px,2.2vh,28px) rgba(104,211,255,.10),
-    0 0 0 clamp(30px,4vh,50px) rgba(98,232,195,.075),
-    0 20px 48px rgba(63,120,164,.10)!important;
- }
- .rings:before{
-   border-color:rgba(88,207,255,.52)!important;
-   box-shadow:-8px 0 28px rgba(89,207,255,.30),10px 0 30px rgba(98,234,198,.18)!important;
- }
- .rings:after{
-   border-color:rgba(101,232,197,.40)!important;
-   box-shadow:12px 0 42px rgba(91,232,193,.30),-8px 0 38px rgba(97,208,255,.18)!important;
- }
  @keyframes gsfMintPulse{
    0%,100%{
     box-shadow:-18px 0 50px rgba(92,205,255,.34),20px 0 54px rgba(87,232,190,.34),
@@ -701,195 +262,20 @@ button{appearance:none;-webkit-appearance:none}
     filter:saturate(1.16)
    }
  }
- .rings.uploading{animation:gsfMintPulse 1.45s ease-in-out infinite!important}
- .icon{color:#5599EF!important}
- .circle strong{color:var(--v167-ink)!important;letter-spacing:.015em!important}
- .circle small{display:none!important}
- .scribble{color:#667FA8!important}
 
  /* Projects stay mounted for compatibility, but are not part of the visual Home. */
  .sectionHead,.projects{display:none!important}
- #view{
-   grid-template-rows:43% 41% 0 0 12% 3%!important;
-   row-gap:.2%!important;
- }
-
- /* Three tall reference cards. */
- .features{
-   width:min(72vw,760px)!important;
-   max-width:760px!important;
-   justify-self:center!important;
-   align-self:stretch!important;
-   grid-template-columns:repeat(3,minmax(180px,1fr))!important;
-   gap:clamp(16px,1.8vw,24px)!important;
- }
- .feature{
-   height:100%!important;
-   min-height:0!important;
-   border-radius:clamp(28px,2.2vw,38px)!important;
-   padding:clamp(12px,1.7vh,18px) clamp(12px,1.2vw,18px) clamp(10px,1.25vh,15px)!important;
-   border:1px solid rgba(162,190,220,.26)!important;
-   background:rgba(255,255,255,.82)!important;
-   box-shadow:0 18px 44px rgba(64,112,156,.10),inset 0 1px 0 rgba(255,255,255,.96)!important;
-   justify-content:flex-start!important;
- }
- .featureIcon{
-   width:clamp(72px,10vh,110px)!important;
-   height:clamp(72px,10vh,110px)!important;
-   margin:0 auto clamp(9px,1.25vh,14px)!important;
-   border-radius:50%!important;
-   box-shadow:inset 0 0 0 1px rgba(255,255,255,.74),0 12px 30px rgba(66,114,154,.09)!important;
- }
- .featureIcon svg{width:54%!important;height:54%!important;stroke-width:2.1!important}
- .feature b{
-   color:var(--v167-ink)!important;
-   font-size:clamp(16px,1.35vw,22px)!important;
-   line-height:1.05!important;
- }
- .feature small{
-   color:var(--v167-soft)!important;
-   font-size:clamp(10px,.84vw,13px)!important;
-   line-height:1.28!important;
-   max-width:190px!important;
-   margin-top:clamp(6px,.7vh,9px)!important;
- }
- .feature:after{
-   width:clamp(32px,4.8vh,48px)!important;
-   height:clamp(32px,4.8vh,48px)!important;
-   margin-top:auto!important;
-   margin-bottom:1px!important;
-   background:rgba(233,243,252,.92)!important;
-   color:#35659B!important;
-   box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 5px 14px rgba(73,112,153,.08)!important;
- }
- .fAi{
-   background:
-    radial-gradient(circle at 50% 22%,rgba(179,217,255,.34),transparent 38%),
-    rgba(255,255,255,.86)!important;
- }
- .fAi .featureIcon{background:linear-gradient(145deg,#E5F1FF,var(--v167-blue-bg))!important;color:var(--v167-blue)!important}
- .fEditor{
-   background:
-    radial-gradient(circle at 50% 22%,rgba(169,240,205,.34),transparent 38%),
-    rgba(255,255,255,.86)!important;
- }
- .fEditor .featureIcon{background:linear-gradient(145deg,#DDFBEA,var(--v167-mint-bg))!important;color:var(--v167-mint)!important}
- .fShort{
-   background:
-    radial-gradient(circle at 50% 22%,rgba(255,225,128,.34),transparent 38%),
-    rgba(255,255,255,.86)!important;
- }
- .fShort .featureIcon{background:linear-gradient(145deg,#FFF5C8,var(--v167-gold-bg))!important;color:var(--v167-gold)!important}
-
- /* Bottom bar: lighter, rounded and closer to the approved reference. */
- .bottomNav{
-   width:min(86%,980px)!important;
-   justify-self:center!important;
-   align-self:center!important;
-   border-radius:999px!important;
-   padding:clamp(5px,.75vh,9px) clamp(12px,1.2vw,20px)!important;
-   border:1px solid rgba(160,190,218,.28)!important;
-   background:rgba(255,255,255,.88)!important;
-   backdrop-filter:blur(24px) saturate(1.12)!important;
-   box-shadow:0 16px 44px rgba(64,112,154,.12),inset 0 1px 0 rgba(255,255,255,.98)!important;
- }
- .navItem{
-   color:#7084A8!important;
-   border-radius:999px!important;
-   padding:clamp(3px,.45vh,6px) 4px!important;
-   gap:2px!important;
- }
- .navItem svg{stroke-width:1.9!important}
- .navItem.active{
-   color:var(--v167-blue)!important;
-   background:linear-gradient(145deg,rgba(226,241,255,.98),rgba(214,233,255,.82))!important;
-   box-shadow:inset 0 0 0 1px rgba(255,255,255,.72)!important;
- }
- .navItem.active:after{background:var(--v167-ink)!important;bottom:2px!important}
- .siteFooter{color:#7D90AD!important}
 }
 @media (min-width:761px) and (max-width:1100px){
- .features{width:min(78vw,690px)!important;grid-template-columns:repeat(3,minmax(170px,1fr))!important;gap:12px!important}
- .featureIcon{width:clamp(64px,9vh,88px)!important;height:clamp(64px,9vh,88px)!important}
- .bottomNav{width:min(92%,900px)!important}
 }
 @media (min-width:761px) and (max-height:650px){
- #view{grid-template-rows:42% 42% 0 0 13% 2%!important;row-gap:.2%!important}
- .features{width:min(72vw,650px)!important;gap:10px!important}
- .feature{border-radius:24px!important;padding:8px 9px 7px!important}
- .featureIcon{width:56px!important;height:56px!important;margin-bottom:5px!important}
- .feature b{font-size:clamp(13px,1.05vw,16px)!important}
- .feature small{font-size:clamp(8px,.66vw,10px)!important;margin-top:3px!important}
- .feature:after{width:26px!important;height:26px!important;font-size:16px!important}
- .bottomNav{width:min(88%,860px)!important}
 }
 
 
 /* V168 HOME NAV + SIDE ADS — visual/navigation refinement only.
    No logo: the header is intentionally text-only. */
 @media (min-width:761px){
- #home154{
-   background:
-    radial-gradient(circle at 8% 13%,rgba(128,218,255,.22),transparent 23%),
-    radial-gradient(circle at 91% 16%,rgba(119,231,199,.20),transparent 25%),
-    radial-gradient(circle at 86% 84%,rgba(255,226,126,.08),transparent 24%),
-    linear-gradient(180deg,#FBFDFF 0%,#F7FBFF 44%,#F3FAFF 100%)!important;
- }
- #home154:before{
-   background:
-    radial-gradient(circle at 50% 30%,rgba(255,255,255,.64),transparent 32%),
-    linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,.08))!important;
- }
- .topbar{justify-content:flex-start!important}
  .hubLegacy{display:none!important}
- .brandOnly{
-   color:#6680A8!important;
-   font-size:clamp(11px,1.05vw,17px)!important;
-   letter-spacing:clamp(.24em,.34vw,.38em)!important;
- }
-
- /* Make the reference's blue/mint split unmistakable while preserving pulse. */
- .rings{
-   background:
-    radial-gradient(circle at 38% 28%,#FFFFFF 0%,#F2FAFF 48%,#E9FFF7 100%) padding-box,
-    linear-gradient(90deg,#79D9FF 0%,#79D9FF 47%,#8BEBD0 53%,#75E7C2 100%) border-box!important;
-   border:2px solid transparent!important;
-   box-shadow:
-    -22px 0 62px rgba(91,205,255,.36),
-    24px 0 64px rgba(87,232,190,.36),
-    0 0 0 clamp(16px,2.2vh,28px) rgba(112,217,255,.11),
-    0 0 0 clamp(30px,4vh,50px) rgba(102,233,197,.09),
-    0 19px 50px rgba(68,126,169,.10)!important;
- }
- .rings:before{
-   border-color:rgba(99,211,249,.50)!important;
-   background:linear-gradient(90deg,rgba(114,218,255,.05),rgba(104,234,198,.08))!important;
- }
- .rings:after{border-color:rgba(105,229,198,.36)!important}
- .scribble{
-   color:#687FA7!important;
-   font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive!important;
-   font-weight:500!important;
-   text-shadow:0 1px 0 rgba(255,255,255,.92)!important;
- }
- .scribble .arrow,.scribble .padSketch{color:#687FA7!important}
- .scribble .padSketch svg,.scribble .arrow svg{stroke-width:2.15!important}
-
- /* Compact central navigation: creation belongs in the three CTA cards above. */
- .bottomNav{
-   width:min(64%,760px)!important;
-   max-width:760px!important;
-   min-width:560px!important;
-   justify-self:center!important;
-   border-radius:999px!important;
-   padding:clamp(4px,.65vh,7px) clamp(10px,1vw,16px)!important;
-   background:rgba(255,255,255,.90)!important;
-   border:1px solid rgba(156,188,217,.28)!important;
-   box-shadow:0 14px 38px rgba(67,110,151,.11),inset 0 1px 0 rgba(255,255,255,.98)!important;
- }
- .navItem{font-size:clamp(8px,.6vw,10px)!important;color:#7186A8!important}
- .navItem svg{width:clamp(18px,2.35vh,23px)!important;height:clamp(18px,2.35vh,23px)!important}
- .navItem.active{color:#2476DA!important;background:rgba(221,239,255,.82)!important}
 
  /* Wide desktop-only ad rails. They disappear before they can squeeze the Home. */
  .sideAd{
@@ -918,7 +304,6 @@ button{appearance:none;-webkit-appearance:none}
  .features{width:min(58vw,760px)!important}
 }
 @media (min-width:761px) and (max-width:1100px){
- .bottomNav{width:min(82%,720px)!important;min-width:0!important}
 }
 @media (max-width:760px){
  .hubLegacy{display:none!important}
@@ -929,180 +314,6 @@ button{appearance:none;-webkit-appearance:none}
 /* V169 REFERENCE FIDELITY — graphics only.
    Keep the responsive structure; fix palette, gamebar prominence, footer layering and ad visibility. */
 @media (min-width:761px){
- #home154{
-   background:
-    radial-gradient(circle at 9% 12%,rgba(123,219,255,.22),transparent 22%),
-    radial-gradient(circle at 91% 16%,rgba(112,233,194,.18),transparent 24%),
-    radial-gradient(circle at 50% 66%,rgba(255,255,255,.72),transparent 34%),
-    linear-gradient(180deg,#FBFDFF 0%,#F7FCFF 52%,#F3FAFF 100%)!important;
- }
- #home154:before{
-   background:
-    radial-gradient(circle at 50% 27%,rgba(255,255,255,.78),transparent 31%),
-    linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.06))!important;
- }
-
- /* Make the uploader visibly half blue / half mint like the reference. */
- .rings{
-   background:
-    linear-gradient(90deg,
-      rgba(225,247,255,.98) 0%,
-      rgba(232,249,255,.98) 49.5%,
-      rgba(228,255,242,.98) 50.5%,
-      rgba(218,253,235,.98) 100%) padding-box,
-    linear-gradient(90deg,
-      #5CCBFF 0%,
-      #74D9FF 49.5%,
-      #6BE8B8 50.5%,
-      #54DDA9 100%) border-box!important;
-   border:2px solid transparent!important;
-   box-shadow:
-    -28px 0 70px rgba(78,194,255,.34),
-    30px 0 76px rgba(70,224,169,.36),
-    0 0 0 clamp(17px,2.35vh,29px) rgba(102,211,255,.13),
-    0 0 0 clamp(32px,4.3vh,53px) rgba(91,231,184,.10),
-    0 22px 54px rgba(64,123,166,.09)!important;
-   filter:saturate(1.10)!important;
- }
- .rings:before{
-   border:1.5px solid transparent!important;
-   background:
-    linear-gradient(90deg,rgba(93,205,255,.50) 0 49.5%,rgba(85,227,174,.46) 50.5% 100%) border-box!important;
-   -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);
-   -webkit-mask-composite:xor;
-   mask-composite:exclude;
- }
- .rings:after{
-   border:1.25px solid transparent!important;
-   background:
-    linear-gradient(90deg,rgba(97,209,255,.30) 0 49.5%,rgba(93,228,179,.34) 50.5% 100%) border-box!important;
-   -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);
-   -webkit-mask-composite:xor;
-   mask-composite:exclude;
- }
- .rings.uploading{
-   animation:gsfMintPulse 1.45s ease-in-out infinite!important;
-   filter:saturate(1.16)!important;
- }
- .rings.uploaded{
-   background:
-    linear-gradient(90deg,#E4F8FF 0 49.5%,#E1FFF0 50.5% 100%) padding-box,
-    linear-gradient(90deg,#63D0FF 0 49.5%,#5FE1AE 50.5% 100%) border-box!important;
-   border:2px solid transparent!important;
- }
-
- /* Reference CTA icons: large circles, simple line symbols, vivid but clean. */
- .featureIcon{
-   border-radius:50%!important;
-   box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.82),
-    0 10px 26px rgba(64,111,151,.09)!important;
- }
- .fAi .featureIcon{
-   background:linear-gradient(145deg,#DCEEFF,#CFE4FF)!important;
-   color:#1674E8!important;
- }
- .fEditor .featureIcon{
-   background:linear-gradient(145deg,#DCF9E8,#C5F1D7)!important;
-   color:#079A67!important;
- }
- .fShort .featureIcon{
-   background:linear-gradient(145deg,#FFF4C4,#FFE69A)!important;
-   color:#D98200!important;
- }
- .featureIcon svg{stroke-width:2.15!important}
- .fShort .featureIcon svg{stroke-width:2.35!important}
-
- /* Handwritten notes and gamepad: same reference ink and softer scale. */
- .scribble{
-   color:#6A82AA!important;
-   font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive!important;
-   font-weight:500!important;
-   letter-spacing:-.015em!important;
-   line-height:1.08!important;
-   text-shadow:0 1px 0 rgba(255,255,255,.94)!important;
- }
- .scribble .arrow,.scribble .padSketch{color:#6A82AA!important}
- .scribble .padSketch{opacity:.96!important}
- .scribble .padSketch svg,.scribble .arrow svg{stroke-width:2.15!important}
-
- /* GAMEBAR: clearly floating and prominent. Each destination has a large circular icon. */
- .bottomNav{
-   position:relative!important;
-   z-index:20!important;
-   width:min(68%,820px)!important;
-   max-width:820px!important;
-   min-width:600px!important;
-   height:auto!important;
-   min-height:clamp(78px,10.5vh,96px)!important;
-   justify-self:center!important;
-   align-self:center!important;
-   padding:clamp(8px,1.05vh,12px) clamp(16px,1.5vw,24px)!important;
-   border-radius:999px!important;
-   background:rgba(255,255,255,.94)!important;
-   border:1.5px solid rgba(130,180,220,.30)!important;
-   box-shadow:
-    0 18px 52px rgba(56,103,148,.18),
-    0 0 0 7px rgba(224,242,255,.48),
-    inset 0 1px 0 rgba(255,255,255,1)!important;
-   backdrop-filter:blur(28px) saturate(1.2)!important;
-   overflow:visible!important;
- }
- .navItem{
-   position:relative!important;
-   z-index:2!important;
-   min-width:0!important;
-   height:auto!important;
-   border-radius:26px!important;
-   padding:4px 3px 2px!important;
-   gap:4px!important;
-   color:#7285A6!important;
-   background:transparent!important;
-   font-size:clamp(8px,.68vw,10px)!important;
- }
- .navItem svg{
-   width:clamp(24px,3.2vh,30px)!important;
-   height:clamp(24px,3.2vh,30px)!important;
-   box-sizing:content-box!important;
-   padding:clamp(9px,1.25vh,13px)!important;
-   border-radius:50%!important;
-   background:linear-gradient(145deg,rgba(245,250,255,.98),rgba(229,240,251,.96))!important;
-   border:1px solid rgba(156,188,218,.26)!important;
-   box-shadow:0 8px 20px rgba(65,105,146,.10),inset 0 1px 0 rgba(255,255,255,.98)!important;
- }
- .navItem.active{
-   color:#176FD6!important;
-   background:transparent!important;
- }
- .navItem.active svg{
-   transform:translateY(-3px) scale(1.14)!important;
-   background:linear-gradient(145deg,#E8F5FF,#D6EAFF)!important;
-   border-color:rgba(81,161,228,.38)!important;
-   box-shadow:
-    0 12px 28px rgba(45,118,188,.22),
-    0 0 0 6px rgba(113,196,255,.13),
-    inset 0 1px 0 rgba(255,255,255,1)!important;
- }
- .navItem.active:after{
-   width:5px!important;height:5px!important;
-   bottom:-2px!important;background:#0E356E!important;
- }
-
- /* Footer must sit BELOW the gamebar, never over it. */
- #view{grid-template-rows:42% 39% 0 0 14% 5%!important;row-gap:0!important}
- .siteFooter{
-   position:relative!important;
-   z-index:1!important;
-   width:100%!important;
-   height:100%!important;
-   margin:0!important;
-   padding:4px 10px 0!important;
-   align-self:end!important;
-   transform:none!important;
-   background:transparent!important;
-   border-top:0!important;
- }
- .bottomNav + .siteFooter{margin-top:0!important}
 
  /* Side ad rails: visible on normal desktop/laptop widths, not just ultra-wide monitors. */
  .sideAd{
@@ -1131,19 +342,8 @@ button{appearance:none;-webkit-appearance:none}
 }
 @media (min-width:761px) and (max-width:1179px){
  .sideAd{display:none!important}
- .bottomNav{width:min(86%,760px)!important;min-width:0!important}
 }
 @media (min-width:761px) and (max-height:650px){
- #view{grid-template-rows:41% 39% 0 0 15% 5%!important}
- .bottomNav{
-   min-height:68px!important;
-   width:min(74%,760px)!important;
-   padding:6px 12px!important;
- }
- .navItem svg{
-   width:20px!important;height:20px!important;padding:8px!important;
- }
- .siteFooter{padding-top:2px!important}
  .sideAd{height:210px!important}
 }
 @media (max-width:760px){
@@ -1155,188 +355,6 @@ button{appearance:none;-webkit-appearance:none}
 /* V170 GEOMETRY RESTORE + HARD REFERENCE COLORS
    Restore the approved V167/V168 positions. From here down: visual-only overrides. */
 @media (min-width:761px){
- /* Restore the exact pre-V169 composition so nothing is pushed around. */
- #view{
-   grid-template-rows:43% 41% 0 0 12% 3%!important;
-   row-gap:.2%!important;
- }
- .stage{
-   width:100%!important;
-   max-width:none!important;
-   margin:0!important;
- }
- .features{
-   width:min(72vw,760px)!important;
-   max-width:760px!important;
-   margin:0!important;
- }
- .bottomNav{
-   width:min(64%,760px)!important;
-   max-width:760px!important;
-   min-width:560px!important;
-   min-height:0!important;
-   height:100%!important;
-   padding:clamp(4px,.65vh,7px) clamp(10px,1vw,16px)!important;
-   margin:0!important;
-   align-self:stretch!important;
-   transform:none!important;
- }
- .siteFooter{
-   width:100%!important;
-   height:100%!important;
-   margin:0!important;
-   padding:0 8px!important;
-   align-self:center!important;
-   z-index:1!important;
-   transform:none!important;
-   border-top:0!important;
- }
-
- /* Stronger reference background: ice-blue left, mint right, clean white center. */
- #home154{
-   background:
-    radial-gradient(circle at 7% 13%,rgba(91,200,255,.26),transparent 24%),
-    radial-gradient(circle at 93% 14%,rgba(84,225,169,.22),transparent 26%),
-    radial-gradient(circle at 50% 42%,rgba(255,255,255,.92),transparent 38%),
-    linear-gradient(180deg,#F8FCFF 0%,#F4FBFF 52%,#EFF9FF 100%)!important;
- }
- #home154:before{
-   background:
-    linear-gradient(90deg,rgba(111,210,255,.08),rgba(255,255,255,.18) 48%,rgba(90,229,174,.08))!important;
- }
-
- /* Make the uploader unmistakably BLUE on the left and MINT on the right. */
- .rings{
-   background:
-    linear-gradient(90deg,#E7F8FF 0%,#E7F8FF 49.6%,#E4FFF1 50.4%,#E4FFF1 100%) padding-box,
-    linear-gradient(90deg,#34B8FF 0%,#52C8FF 49.6%,#43E0A3 50.4%,#2ED291 100%) border-box!important;
-   border:2.5px solid transparent!important;
-   box-shadow:
-    -28px 0 74px rgba(48,178,255,.42),
-    30px 0 78px rgba(42,220,148,.42),
-    0 0 0 clamp(17px,2.25vh,28px) rgba(58,190,255,.14),
-    0 0 0 clamp(31px,4.1vh,50px) rgba(49,218,151,.12),
-    0 20px 50px rgba(62,118,160,.09)!important;
-   filter:saturate(1.22)!important;
- }
- .rings:before{
-   border:0!important;
-   background:
-    linear-gradient(90deg,#62D0FF 0 49.6%,#63E7B6 50.4% 100%)!important;
-   padding:1.5px!important;
-   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)!important;
-   -webkit-mask-composite:xor!important;
-   mask-composite:exclude!important;
- }
- .rings:after{
-   border:0!important;
-   background:
-    linear-gradient(90deg,rgba(76,196,255,.55) 0 49.6%,rgba(71,224,164,.52) 50.4% 100%)!important;
-   padding:1.25px!important;
-   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)!important;
-   -webkit-mask-composite:xor!important;
-   mask-composite:exclude!important;
- }
- .rings.uploaded{
-   background:
-    linear-gradient(90deg,#E4F8FF 0 49.6%,#DFFFEF 50.4% 100%) padding-box,
-    linear-gradient(90deg,#34B8FF 0 49.6%,#2ED291 50.4% 100%) border-box!important;
- }
- .icon{color:#4D92E8!important}
- .circle strong{color:#0D2A66!important}
-
- /* Reference card color language: white glass cards with clearly colored icon discs. */
- .feature{
-   border-color:rgba(160,190,218,.24)!important;
-   box-shadow:0 16px 40px rgba(62,107,150,.09),inset 0 1px 0 rgba(255,255,255,.96)!important;
- }
- .fAi{
-   background:
-    radial-gradient(circle at 50% 24%,rgba(109,180,255,.18),transparent 39%),
-    rgba(255,255,255,.88)!important;
- }
- .fEditor{
-   background:
-    radial-gradient(circle at 50% 24%,rgba(87,220,151,.20),transparent 39%),
-    rgba(255,255,255,.88)!important;
- }
- .fShort{
-   background:
-    radial-gradient(circle at 50% 24%,rgba(255,198,74,.20),transparent 39%),
-    rgba(255,255,255,.88)!important;
- }
- .fAi .featureIcon{
-   background:#D8E9FF!important;
-   color:#1875E6!important;
-   border:1px solid rgba(72,147,230,.18)!important;
- }
- .fEditor .featureIcon{
-   background:#CFF4DD!important;
-   color:#078F61!important;
-   border:1px solid rgba(59,180,119,.18)!important;
- }
- .fShort .featureIcon{
-   background:#FFE9A8!important;
-   color:#D68000!important;
-   border:1px solid rgba(226,160,31,.18)!important;
- }
- .featureIcon svg{stroke-width:2.25!important}
- .feature b{color:#0D2A66!important}
- .feature small{color:#7185A6!important}
-
- /* Same blue-grey ink for handwritten text, arrows and gamepad. */
- .scribble,
- .scribble .arrow,
- .scribble .padSketch{color:#637DA8!important}
- .scribble .padSketch svg,
- .scribble .arrow svg{stroke-width:2.2!important}
-
- /* Gamebar stays in its original slot; prominence comes from the icon circles, not layout growth. */
- .bottomNav{
-   position:relative!important;
-   z-index:10!important;
-   border-radius:999px!important;
-   background:rgba(255,255,255,.92)!important;
-   border:1px solid rgba(142,181,216,.30)!important;
-   box-shadow:
-    0 14px 36px rgba(59,104,148,.14),
-    0 0 0 5px rgba(224,242,255,.42),
-    inset 0 1px 0 rgba(255,255,255,1)!important;
-   overflow:visible!important;
- }
- .navItem{
-   color:#7185A6!important;
-   background:transparent!important;
-   padding:2px 3px!important;
-   gap:2px!important;
- }
- .navItem svg{
-   width:clamp(20px,2.5vh,24px)!important;
-   height:clamp(20px,2.5vh,24px)!important;
-   box-sizing:content-box!important;
-   padding:clamp(7px,.9vh,9px)!important;
-   border-radius:50%!important;
-   background:linear-gradient(145deg,#F9FCFF,#EDF5FC)!important;
-   border:1px solid rgba(150,184,215,.26)!important;
-   box-shadow:0 7px 17px rgba(62,105,146,.09),inset 0 1px 0 #fff!important;
- }
- .navItem.active{
-   color:#1674E8!important;
-   background:transparent!important;
- }
- .navItem.active svg{
-   transform:translateY(-2px) scale(1.08)!important;
-   background:linear-gradient(145deg,#E8F5FF,#D8EBFF)!important;
-   border-color:rgba(71,153,226,.40)!important;
-   box-shadow:
-    0 10px 24px rgba(46,118,185,.20),
-    0 0 0 5px rgba(96,189,255,.12),
-    inset 0 1px 0 #fff!important;
- }
- .navItem.active:after{
-   width:4px!important;height:4px!important;
-   bottom:0!important;background:#0D2A66!important;
- }
 
  /* Ad rails are absolute: visible but never allowed to resize or move the central composition. */
  .sideAd{
@@ -1358,19 +376,8 @@ button{appearance:none;-webkit-appearance:none}
 }
 @media (min-width:761px) and (max-width:1179px){
  .sideAd{display:none!important}
- .bottomNav{width:min(82%,720px)!important;min-width:0!important}
 }
 @media (min-width:761px) and (max-height:650px){
- #view{grid-template-rows:42% 42% 0 0 13% 2%!important;row-gap:.2%!important}
- .bottomNav{
-   width:min(72vw,650px)!important;
-   min-width:0!important;
-   min-height:0!important;
-   height:100%!important;
-   padding:4px 9px!important;
- }
- .navItem svg{width:18px!important;height:18px!important;padding:6px!important}
- .siteFooter{padding:0 8px!important}
 }
 
 
@@ -1378,153 +385,10 @@ button{appearance:none;-webkit-appearance:none}
    Separate gamebar/footer, keep the bar inside one rounded capsule,
    animate nav icons on hover, and restore the pale reference background. */
 @media (min-width:761px){
- #view{
-   grid-template-rows:42fr 40fr 0 0 13fr 5fr!important;
-   row-gap:2px!important;
- }
-
- /* Reference background: almost white, with only soft cyan/mint/warm glows. */
- #home154{
-   background:
-    radial-gradient(circle at 8% 10%,rgba(111,209,255,.16),transparent 24%),
-    radial-gradient(circle at 92% 12%,rgba(105,229,184,.14),transparent 25%),
-    radial-gradient(circle at 82% 88%,rgba(255,224,135,.07),transparent 22%),
-    radial-gradient(circle at 50% 42%,rgba(255,255,255,.98),transparent 40%),
-    linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 48%,#F8FCFF 100%)!important;
- }
- #home154:before{
-   background:
-    radial-gradient(circle at 50% 30%,rgba(255,255,255,.72),transparent 33%),
-    linear-gradient(90deg,rgba(114,214,255,.035),rgba(255,255,255,.11) 48%,rgba(96,229,179,.035))!important;
- }
-
- /* One closed capsule: nothing from the gamebar may spill into the footer. */
- .bottomNav{
-   position:relative!important;
-   width:min(64%,760px)!important;
-   max-width:760px!important;
-   min-width:560px!important;
-   height:calc(100% - 6px)!important;
-   min-height:0!important;
-   max-height:100%!important;
-   margin:3px auto!important;
-   align-self:center!important;
-   justify-self:center!important;
-   box-sizing:border-box!important;
-   overflow:hidden!important;
-   border-radius:999px!important;
-   padding:clamp(4px,.55vh,6px) clamp(10px,1vw,16px)!important;
-   background:rgba(255,255,255,.94)!important;
-   border:1px solid rgba(139,181,218,.30)!important;
-   box-shadow:
-    0 10px 28px rgba(59,104,148,.11),
-    0 0 0 4px rgba(226,243,255,.34),
-    inset 0 1px 0 #fff!important;
- }
- .bottomNav:before{
-   content:""!important;
-   position:absolute!important;
-   inset:3px!important;
-   border-radius:999px!important;
-   border:1px solid rgba(163,198,226,.22)!important;
-   pointer-events:none!important;
-   z-index:0!important;
- }
-
- .navItem{
-   position:relative!important;
-   z-index:1!important;
-   min-height:0!important;
-   overflow:hidden!important;
-   padding:1px 3px!important;
-   gap:1px!important;
-   background:transparent!important;
-   transition:transform .22s cubic-bezier(.2,.8,.2,1),color .22s ease!important;
- }
- .navItem svg{
-   width:clamp(18px,2.2vh,22px)!important;
-   height:clamp(18px,2.2vh,22px)!important;
-   padding:clamp(5px,.7vh,7px)!important;
-   border-radius:50%!important;
-   box-sizing:content-box!important;
-   transform:none!important;
-   transition:
-    transform .22s cubic-bezier(.2,.8,.2,1),
-    box-shadow .22s ease,
-    background .22s ease,
-    border-color .22s ease,
-    filter .22s ease!important;
- }
- .navItem:hover,
- .navItem:focus-visible{
-   transform:translateY(-3px)!important;
-   color:#1674E8!important;
- }
- .navItem:hover svg,
- .navItem:focus-visible svg{
-   transform:translateY(-2px) scale(1.10)!important;
-   background:linear-gradient(145deg,#F7FCFF,#E6F3FF)!important;
-   border-color:rgba(73,155,229,.42)!important;
-   box-shadow:
-    0 10px 24px rgba(46,118,185,.18),
-    0 0 0 5px rgba(96,189,255,.10),
-    inset 0 1px 0 #fff!important;
-   filter:saturate(1.08)!important;
- }
- .navItem:active{
-   transform:translateY(-1px) scale(.98)!important;
- }
- .navItem.active svg{
-   transform:none!important;
- }
- .navItem.active:hover svg,
- .navItem.active:focus-visible svg{
-   transform:translateY(-2px) scale(1.10)!important;
- }
- .navItem.active:after{bottom:1px!important}
-
- /* Footer has its own row and can never share the gamebar box. */
- .siteFooter{
-   position:relative!important;
-   z-index:1!important;
-   width:100%!important;
-   height:100%!important;
-   min-height:0!important;
-   margin:0!important;
-   padding:0 8px!important;
-   display:flex!important;
-   align-items:center!important;
-   justify-content:space-between!important;
-   overflow:hidden!important;
-   box-sizing:border-box!important;
-   line-height:1!important;
-   border-top:0!important;
- }
- .siteFooter .footLinks{align-items:center!important}
 }
 @media (min-width:761px) and (max-width:1179px){
- .bottomNav{
-   width:min(82%,720px)!important;
-   min-width:0!important;
- }
 }
 @media (min-width:761px) and (max-height:650px){
- #view{
-   grid-template-rows:41fr 40fr 0 0 14fr 5fr!important;
-   row-gap:2px!important;
- }
- .bottomNav{
-   width:min(72vw,650px)!important;
-   min-width:0!important;
-   height:calc(100% - 4px)!important;
-   margin:2px auto!important;
-   padding:3px 8px!important;
- }
- .bottomNav:before{inset:2px!important}
- .navItem svg{width:17px!important;height:17px!important;padding:5px!important}
- .navItem span{font-size:7.5px!important}
- .siteFooter{font-size:7px!important}
- .siteFooter button{font-size:7px!important}
 }
 @media (prefers-reduced-motion:reduce){
  .navItem,.navItem svg{transition:none!important}
@@ -1639,63 +503,14 @@ button{appearance:none;-webkit-appearance:none}
 
 @media (min-width:761px){
  :root{--gsf-hero-size:clamp(292px,min(29vw,44vh),350px)!important}
- .rings{
-   width:var(--gsf-hero-size)!important;
-   height:var(--gsf-hero-size)!important;
-   min-width:0!important;
-   min-height:0!important;
- }
 }
 @media (min-width:761px) and (max-height:650px){
  :root{--gsf-hero-size:clamp(280px,min(30vw,46vh),315px)!important}
- .rings:before{inset:-27px!important}
- .rings:after{inset:-49px!important}
 }
 
 
 /* V173 NAV FOOTER VISIBILITY + REFERENCE BACKGROUND */
 @media (min-width:761px){
- #home154{
-   background:
-    radial-gradient(circle at 11% 10%,rgba(115,214,255,.24),transparent 22%),
-    radial-gradient(circle at 90% 12%,rgba(111,231,190,.22),transparent 24%),
-    radial-gradient(circle at 50% 38%,rgba(255,255,255,.98),transparent 44%),
-    radial-gradient(circle at 83% 82%,rgba(255,231,154,.07),transparent 22%),
-    linear-gradient(180deg,#FFFFFF 0%,#FCFEFF 48%,#F8FCFF 100%)!important;
- }
- #home154:before{
-   background:
-    radial-gradient(circle at 22% 45%,rgba(111,211,255,.045),transparent 30%),
-    radial-gradient(circle at 78% 50%,rgba(91,226,178,.045),transparent 30%)!important;
- }
- #view{
-   grid-template-rows:minmax(0,58fr) minmax(0,22fr) 0 0 minmax(58px,14fr) minmax(24px,6fr)!important;
-   row-gap:2px!important;
- }
- .bottomNav{
-   display:grid!important;
-   visibility:visible!important;
-   opacity:1!important;
-   position:relative!important;
-   z-index:40!important;
-   min-height:52px!important;
- }
- .siteFooter{
-   display:grid!important;
-   grid-template-columns:1fr auto 1fr!important;
-   align-items:center!important;
-   visibility:visible!important;
-   opacity:1!important;
-   position:relative!important;
-   z-index:35!important;
-   width:100%!important;
-   min-height:24px!important;
-   height:100%!important;
-   margin:0!important;
-   padding:0 8px!important;
-   overflow:visible!important;
-   background:transparent!important;
- }
  .footerBrand{justify-self:start;white-space:nowrap}
  .footerSocial{justify-self:center;display:flex;align-items:center;justify-content:center;gap:10px}
  .footerSocialLink{
@@ -1723,11 +538,6 @@ button{appearance:none;-webkit-appearance:none}
  .footLinks{justify-self:end!important}
 }
 @media (min-width:761px) and (max-height:650px){
- #view{
-   grid-template-rows:minmax(0,59fr) minmax(0,21fr) 0 0 minmax(52px,14fr) minmax(22px,6fr)!important;
- }
- .bottomNav{min-height:48px!important}
- .siteFooter{min-height:22px!important}
  .footerSocialLink{width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;font-size:9px!important}
 }
 
@@ -1763,63 +573,6 @@ button{appearance:none;-webkit-appearance:none}
 }
 
 @media (min-width:761px){
- #home154:before{
-   animation:gsfHomeGlowAlive 9s ease-in-out infinite!important;
- }
-
- /* Idle uploader: breathing rings + floating cloud. Upload keeps its stronger existing pulse. */
- .rings:not(.uploading):not(.uploaded){
-   animation:gsfUploaderBreathe 5.4s ease-in-out infinite!important;
-   will-change:transform,box-shadow;
- }
- .rings:not(.uploading):not(.uploaded):before{
-   animation:gsfOuterRingAlive 5.4s ease-in-out infinite!important;
-   will-change:transform,opacity;
- }
- .rings:not(.uploading):not(.uploaded):after{
-   animation:gsfOuterRingAlive 5.4s 1.1s ease-in-out infinite!important;
-   will-change:transform,opacity;
- }
- .circle:not(.loaded) .icon{
-   animation:gsfCloudAlive 4.4s ease-in-out infinite!important;
-   transform-origin:center;
-   will-change:transform,filter;
- }
- .rings:hover{
-   filter:saturate(1.06)!important;
- }
- .rings:hover .icon{
-   animation:none!important;
-   transform:translateY(-6px) scale(1.07)!important;
-   filter:drop-shadow(0 10px 18px rgba(73,147,224,.22))!important;
- }
-
- /* CTA icons have staggered ambient motion; cards react more decisively to the pointer. */
- .featureIcon{
-   animation:gsfIconAlive 5.8s ease-in-out infinite!important;
-   transform-origin:center;
-   will-change:transform;
- }
- .fAi .featureIcon{animation-delay:0s!important}
- .fEditor .featureIcon{animation-delay:-1.8s!important}
- .fShort .featureIcon{animation-delay:-3.6s!important}
- .feature{
-   transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s ease,border-color .22s ease!important;
- }
- .feature:hover,.feature:focus-visible{
-   transform:translateY(-5px)!important;
-   border-color:rgba(111,170,218,.34)!important;
-   box-shadow:0 22px 48px rgba(62,107,150,.14),inset 0 1px 0 rgba(255,255,255,.98)!important;
- }
- .feature:hover .featureIcon,.feature:focus-visible .featureIcon{
-   animation:none!important;
-   transform:translateY(-4px) scale(1.09)!important;
- }
- .feature:active{transform:translateY(-2px) scale(.992)!important}
-
- .navItem.active svg{
-   animation:gsfActiveNavAlive 4.8s ease-in-out infinite!important;
- }
 
  /* Taller ad rails with more breathing room, still outside the central interactive composition. */
  .sideAd{
@@ -1902,48 +655,8 @@ button{appearance:none;-webkit-appearance:none}
 }
 
 @media (min-width:761px){
- .scribble{
-   width:clamp(210px,23vw,340px)!important;
-   font-size:clamp(18px,1.9vw,30px)!important;
-   line-height:1.08!important;
- }
- .scribble.left{
-   left:clamp(18px,2.3vw,44px)!important;
-   top:24%!important;
-   text-align:center!important;
-   transform:rotate(-5deg)!important;
- }
- .scribble.right{
-   right:clamp(18px,2.3vw,44px)!important;
-   top:27%!important;
-   text-align:center!important;
-   transform:rotate(4deg)!important;
- }
- .scribble.left .arrow{
-   transform:translateX(clamp(58px,5vw,92px)) rotate(5deg)!important;
- }
- .scribble.right .arrow{
-   transform:translateX(clamp(-92px,-5vw,-58px)) rotate(-3deg)!important;
- }
- .scribble .arrow{
-   height:clamp(40px,5.8vh,64px)!important;
- }
- .scribble .arrow svg{
-   width:clamp(78px,7.5vw,112px)!important;
- }
- .scribble .padSketch{
-   width:clamp(52px,5.4vw,76px)!important;
-   height:auto!important;
-   margin-top:clamp(5px,.8vh,10px)!important;
- }
 }
 @media (min-width:761px) and (max-width:1179px){
- .scribble{
-   width:clamp(170px,22vw,250px)!important;
-   font-size:clamp(15px,1.7vw,22px)!important;
- }
- .scribble.left{left:clamp(10px,1.4vw,20px)!important}
- .scribble.right{right:clamp(10px,1.4vw,20px)!important}
 }
 @media (prefers-reduced-motion:reduce){
  .icon.loadedCheck{animation:none!important;transform:rotate(-8deg)!important}
@@ -1956,58 +669,8 @@ button{appearance:none;-webkit-appearance:none}
    Match the approved close-up: one inner circle + one very soft outer circle.
    Colors stay extremely faded: powder blue on the left, mint on the right. */
 @media (min-width:761px){
- .rings{
-   background:
-     radial-gradient(circle at 36% 28%,rgba(255,255,255,.99) 0 33%,rgba(241,250,255,.97) 62%,rgba(236,251,247,.96) 100%) padding-box,
-     linear-gradient(100deg,rgba(111,196,244,.72) 0%,rgba(126,205,248,.54) 48%,rgba(119,226,194,.44) 100%) border-box!important;
-   border:1.35px solid transparent!important;
-   box-shadow:
-     -20px 0 56px rgba(90,196,246,.18),
-     24px 8px 62px rgba(94,224,181,.14),
-     inset 0 0 0 1px rgba(255,255,255,.82),
-     0 18px 48px rgba(70,126,166,.075)!important;
-   filter:none!important;
- }
-
- /* One single outer ring; no third contour. */
- .rings:before{
-   inset:-54px!important;
-   padding:1.15px!important;
-   border:0!important;
-   border-radius:50%!important;
-   background:
-     linear-gradient(104deg,rgba(111,206,249,.34) 0%,rgba(124,212,250,.24) 48%,rgba(111,232,193,.26) 100%)!important;
-   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)!important;
-   -webkit-mask-composite:xor!important;
-   mask-composite:exclude!important;
-   box-shadow:
-     -18px 0 48px rgba(88,204,249,.11),
-     18px 8px 52px rgba(92,229,186,.12)!important;
-   opacity:.92!important;
- }
- .rings:after{
-   display:none!important;
-   content:none!important;
- }
-
- .circle{
-   background:
-     radial-gradient(circle at 40% 28%,rgba(255,255,255,.46),transparent 36%),
-     linear-gradient(140deg,rgba(249,253,255,.28),rgba(232,248,255,.14) 56%,rgba(229,253,242,.15))!important;
- }
-
- /* The idle animation keeps the two-ring geometry intact. */
- .rings:not(.uploading):not(.uploaded):before{
-   animation:gsfOuterRingAlive 5.8s ease-in-out infinite!important;
- }
- .rings:not(.uploading):not(.uploaded):after,
- .rings.uploading:after{
-   display:none!important;
-   animation:none!important;
- }
 }
 @media (min-width:761px) and (max-height:650px){
- .rings:before{inset:-48px!important}
 }
 
 
@@ -2024,97 +687,9 @@ button{appearance:none;-webkit-appearance:none}
 }
 
 @media (min-width:761px){
- .rings{
-   background:
-     radial-gradient(circle at 36% 27%,
-       rgba(255,255,255,.995) 0%,
-       rgba(246,252,255,.985) 34%,
-       rgba(238,249,255,.965) 61%,
-       rgba(232,251,246,.955) 100%) padding-box,
-     linear-gradient(102deg,
-       rgba(109,195,244,.68) 0%,
-       rgba(124,207,249,.48) 44%,
-       rgba(132,221,214,.36) 66%,
-       rgba(113,229,192,.42) 100%) border-box!important;
-   border:1.35px solid transparent!important;
-   box-shadow:
-     -22px 0 62px rgba(89,198,247,.20),
-     25px 8px 68px rgba(92,225,182,.16),
-     inset 0 0 0 1px rgba(255,255,255,.86),
-     0 18px 50px rgba(70,126,166,.075)!important;
- }
-
- /* middle ring */
- .rings:before{
-   content:""!important;
-   display:block!important;
-   inset:-30px!important;
-   padding:1.2px!important;
-   border:0!important;
-   border-radius:50%!important;
-   background:
-     linear-gradient(104deg,
-       rgba(105,203,248,.38) 0%,
-       rgba(122,211,250,.27) 46%,
-       rgba(122,225,207,.22) 67%,
-       rgba(103,231,190,.30) 100%)!important;
-   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)!important;
-   -webkit-mask-composite:xor!important;
-   mask-composite:exclude!important;
-   box-shadow:
-     -12px 0 34px rgba(86,202,248,.12),
-     13px 5px 36px rgba(91,229,184,.10)!important;
-   opacity:.88!important;
-   animation:gsfSecondRingAlive 5.8s ease-in-out infinite!important;
- }
-
- /* outer ring */
- .rings:after{
-   content:""!important;
-   display:block!important;
-   inset:-55px!important;
-   padding:1.05px!important;
-   border:0!important;
-   border-radius:50%!important;
-   background:
-     linear-gradient(106deg,
-       rgba(110,205,249,.24) 0%,
-       rgba(126,213,250,.17) 45%,
-       rgba(125,226,209,.15) 68%,
-       rgba(106,231,191,.22) 100%)!important;
-   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)!important;
-   -webkit-mask-composite:xor!important;
-   mask-composite:exclude!important;
-   box-shadow:
-     -15px 0 44px rgba(87,203,248,.085),
-     16px 7px 48px rgba(91,229,185,.095)!important;
-   opacity:.62!important;
-   animation:gsfThirdRingAlive 6.6s .9s ease-in-out infinite!important;
- }
-
- .circle{
-   background:
-     radial-gradient(circle at 40% 27%,rgba(255,255,255,.50),transparent 36%),
-     radial-gradient(circle at 30% 54%,rgba(126,210,248,.055),transparent 42%),
-     radial-gradient(circle at 72% 62%,rgba(109,229,190,.055),transparent 45%),
-     linear-gradient(142deg,rgba(250,254,255,.30),rgba(234,249,255,.14) 57%,rgba(231,253,243,.16))!important;
- }
-
- /* During upload, keep all three rings alive but slightly stronger. */
- .rings.uploading:before{
-   animation:gsfSecondRingAlive 1.45s ease-in-out infinite!important;
-   opacity:1!important;
- }
- .rings.uploading:after{
-   display:block!important;
-   animation:gsfThirdRingAlive 1.45s .18s ease-in-out infinite!important;
-   opacity:.86!important;
- }
 }
 
 @media (min-width:761px) and (max-height:650px){
- .rings:before{inset:-27px!important}
- .rings:after{inset:-49px!important}
 }
 
 @media (prefers-reduced-motion:reduce){
@@ -2153,108 +728,6 @@ button{appearance:none;-webkit-appearance:none}
    --v175-ring:clamp(230px,min(23vw,38vh),340px);
    --v175-note:clamp(190px,20vw,320px);
  }
- .topbar{
-   flex:0 0 clamp(38px,5.4vh,52px)!important;
- }
-
- #view{
-   grid-template-rows:minmax(0,49fr) minmax(0,33fr) 0 0 minmax(52px,12fr) minmax(22px,6fr)!important;
-   row-gap:clamp(2px,.45vh,5px)!important;
- }
-
- .stage{
-   width:100%!important;
-   height:100%!important;
-   display:grid!important;
-   grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;
-   grid-template-areas:"left center right"!important;
-   align-items:center!important;
-   column-gap:clamp(18px,2.3vw,44px)!important;
-   overflow:visible!important;
- }
-
- .rings{
-   grid-area:center!important;
-   width:var(--v175-ring)!important;
-   height:var(--v175-ring)!important;
-   min-width:0!important;
-   min-height:0!important;
-   align-self:center!important;
-   justify-self:center!important;
- }
-
- /* Notes use the outer thirds of the screen.
-    Their inside edge stays away from the circle even when the viewport grows. */
- .scribble{
-   position:relative!important;
-   inset:auto!important;
-   width:var(--v175-note)!important;
-   max-width:none!important;
-   font-size:clamp(16px,1.55vw,27px)!important;
-   line-height:1.08!important;
- }
- .scribble.left{
-   grid-area:left!important;
-   justify-self:start!important;
-   margin-left:clamp(10px,4.2vw,82px)!important;
-   text-align:center!important;
-   transform:rotate(-5deg)!important;
- }
- .scribble.right{
-   grid-area:right!important;
-   justify-self:end!important;
-   margin-right:clamp(10px,4.2vw,82px)!important;
-   text-align:center!important;
-   transform:rotate(4deg)!important;
- }
- .scribble.left .arrow{
-   transform:translateX(clamp(52px,4.5vw,86px)) rotate(5deg)!important;
- }
- .scribble.right .arrow{
-   transform:translateX(clamp(-86px,-4.5vw,-52px)) rotate(-3deg)!important;
- }
- .scribble .arrow{height:clamp(32px,4.6vh,52px)!important}
- .scribble .arrow svg{width:clamp(66px,6vw,96px)!important}
- .scribble .padSketch{width:clamp(46px,4.6vw,66px)!important}
-
- /* Restore tall, readable cards instead of the compressed strip. */
- .features{
-   width:min(58vw,820px)!important;
-   max-width:820px!important;
-   height:88%!important;
-   align-self:center!important;
-   justify-self:center!important;
-   margin:auto!important;
-   gap:clamp(14px,1.5vw,24px)!important;
- }
- .feature{
-   height:100%!important;
-   min-height:0!important;
-   border-radius:clamp(22px,1.65vw,30px)!important;
-   padding:clamp(10px,1.25vh,15px) clamp(12px,1.15vw,20px)!important;
- }
- .featureIcon{
-   width:clamp(54px,7.2vh,76px)!important;
-   height:clamp(54px,7.2vh,76px)!important;
-   margin-bottom:clamp(5px,.8vh,9px)!important;
- }
- .feature b{font-size:clamp(14px,1.15vw,19px)!important}
- .feature small{font-size:clamp(8px,.72vw,11px)!important;max-width:210px!important}
- .feature:after{
-   width:clamp(27px,3.8vh,38px)!important;
-   height:clamp(27px,3.8vh,38px)!important;
- }
-
- .bottomNav{
-   width:min(62%,720px)!important;
-   min-width:0!important;
-   height:calc(100% - 6px)!important;
-   margin:3px auto!important;
- }
- .siteFooter{
-   min-height:0!important;
-   height:100%!important;
- }
 }
 
 /* Medium desktop / laptop */
@@ -2263,14 +736,6 @@ button{appearance:none;-webkit-appearance:none}
    --v175-ring:clamp(220px,min(25vw,37vh),290px);
    --v175-note:clamp(155px,18vw,220px);
  }
- .scribble{
-   font-size:clamp(14px,1.55vw,20px)!important;
- }
- .scribble.left{margin-left:clamp(4px,1.3vw,18px)!important}
- .scribble.right{margin-right:clamp(4px,1.3vw,18px)!important}
- .scribble.left .arrow{transform:translateX(clamp(36px,3.4vw,54px)) rotate(5deg)!important}
- .scribble.right .arrow{transform:translateX(clamp(-54px,-3.4vw,-36px)) rotate(-3deg)!important}
- .features{width:min(67vw,760px)!important}
 }
 
 /* Short laptop: preserve hierarchy instead of crushing everything. */
@@ -2279,12 +744,6 @@ button{appearance:none;-webkit-appearance:none}
    --v175-ring:clamp(205px,min(24vw,36vh),255px);
    --v175-note:clamp(145px,18vw,205px);
  }
- #view{
-   grid-template-rows:minmax(0,48fr) minmax(0,34fr) 0 0 minmax(48px,12fr) minmax(20px,6fr)!important;
- }
- .features{height:90%!important;width:min(68vw,700px)!important}
- .featureIcon{width:clamp(44px,6.4vh,58px)!important;height:clamp(44px,6.4vh,58px)!important}
- .bottomNav{width:min(70vw,650px)!important}
 }
 
 
@@ -2292,43 +751,9 @@ button{appearance:none;-webkit-appearance:none}
    Fix ONLY the external Home geometry: hero/card balance, uploader outer diameter and ring spacing.
    Internal uploader icon/text/check styling is intentionally untouched. */
 @media (min-width:761px){
- #view{
-   grid-template-rows:minmax(0,47fr) minmax(0,34fr) 0 0 minmax(56px,13fr) minmax(24px,6fr)!important;
-   row-gap:2px!important;
- }
 
  :root{
    --gsf-hero-size:clamp(260px,min(26vw,37vh),325px)!important;
- }
-
- .stage{
-   align-items:center!important;
-   justify-items:stretch!important;
-   overflow:visible!important;
- }
-
- .rings{
-   width:var(--gsf-hero-size)!important;
-   height:var(--gsf-hero-size)!important;
-   min-width:0!important;
-   min-height:0!important;
- }
-
- /* Keep three rings, but tighten the external spacing so the whole uploader
-    reads as one balanced object instead of a huge target. */
- .rings:before{inset:-25px!important}
- .rings:after{inset:-46px!important}
-
- .features{
-   width:min(72vw,760px)!important;
-   max-width:760px!important;
-   height:100%!important;
-   align-self:stretch!important;
- }
-
- .feature{
-   height:100%!important;
-   min-height:0!important;
  }
 }
 
@@ -2339,12 +764,7 @@ button{appearance:none;-webkit-appearance:none}
 }
 
 @media (min-width:761px) and (max-height:650px){
- #view{
-   grid-template-rows:minmax(0,46fr) minmax(0,35fr) 0 0 minmax(50px,13fr) minmax(22px,6fr)!important;
- }
  :root{--gsf-hero-size:clamp(235px,min(25vw,35vh),285px)!important}
- .rings:before{inset:-22px!important}
- .rings:after{inset:-40px!important}
 }
 
 
@@ -2565,42 +985,6 @@ button{appearance:none;-webkit-appearance:none}
    Final desktop geometry: notes anchor beside the uploader and expand outward;
    gamebar and footer have explicit rows so the footer can never be swallowed by the bar. */
 @media (min-width:761px){
- #view{
-   position:relative!important;
-   display:grid!important;
-   grid-template-rows:minmax(0,47fr) minmax(0,34fr) minmax(58px,13fr) minmax(32px,6fr)!important;
-   row-gap:clamp(3px,.55vh,6px)!important;
-   align-content:stretch!important;
- }
-
- .stage{grid-row:1!important}
- .features{grid-row:2!important}
- .bottomNav{
-   grid-row:3!important;
-   align-self:center!important;
-   justify-self:center!important;
-   height:calc(100% - 10px)!important;
-   min-height:54px!important;
-   margin:5px auto!important;
-   position:relative!important;
-   z-index:30!important;
- }
- .siteFooter{
-   grid-row:4!important;
-   display:grid!important;
-   grid-template-columns:1fr auto 1fr!important;
-   align-items:center!important;
-   width:100%!important;
-   height:100%!important;
-   min-height:32px!important;
-   margin:0!important;
-   padding:4px clamp(8px,1.2vw,18px) 2px!important;
-   position:relative!important;
-   z-index:20!important;
-   border-top:1px solid rgba(146,183,214,.24)!important;
-   background:linear-gradient(180deg,rgba(255,255,255,.30),rgba(255,255,255,.08))!important;
-   overflow:visible!important;
- }
  .footerBrand{justify-self:start!important;white-space:nowrap!important}
  .footerSocial{
    justify-self:center!important;
@@ -2622,81 +1006,14 @@ button{appearance:none;-webkit-appearance:none}
  }
  .footLinks{justify-self:end!important;display:flex!important;align-items:center!important;gap:clamp(8px,.7vw,13px)!important}
 
- /* Notes sit next to the circle. Their box grows away from it toward the screen edge. */
- .stage{
-   grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;
-   grid-template-areas:"left center right"!important;
-   column-gap:clamp(18px,2vw,34px)!important;
- }
- .scribble{
-   width:clamp(230px,22vw,360px)!important;
-   max-width:none!important;
-   position:relative!important;
-   inset:auto!important;
-   font-size:clamp(17px,1.65vw,28px)!important;
-   line-height:1.07!important;
-   overflow:visible!important;
- }
- .scribble.left{
-   grid-area:left!important;
-   justify-self:end!important;
-   margin:0 clamp(18px,1.8vw,34px) 0 0!important;
-   text-align:right!important;
-   transform:rotate(-4deg)!important;
- }
- .scribble.right{
-   grid-area:right!important;
-   justify-self:start!important;
-   margin:0 0 0 clamp(18px,1.8vw,34px)!important;
-   text-align:left!important;
-   transform:rotate(4deg)!important;
- }
- .scribble .arrow{
-   position:absolute!important;
-   display:block!important;
-   width:clamp(78px,6vw,108px)!important;
-   height:clamp(38px,4.8vh,56px)!important;
-   margin:0!important;
-   color:#637DA8!important;
-   pointer-events:none!important;
- }
- .scribble .arrow svg{width:100%!important;height:100%!important}
- .scribble.left .arrow{
-   right:clamp(-58px,-3.5vw,-38px)!important;
-   left:auto!important;
-   top:58%!important;
-   transform:translateY(-50%) rotate(2deg)!important;
- }
- .scribble.right .arrow{
-   left:clamp(-58px,-3.5vw,-38px)!important;
-   right:auto!important;
-   top:4%!important;
-   transform:rotate(-2deg)!important;
- }
- .scribble.right .padSketch{
-   margin:8px 0 0 clamp(18px,2.5vw,42px)!important;
- }
-
  /* Hidden compatibility sections must not consume grid tracks. */
  .sectionHead,.projects{display:none!important}
 }
 
 @media (min-width:761px) and (max-width:1199px){
- .scribble{width:clamp(180px,20vw,250px)!important;font-size:clamp(14px,1.5vw,20px)!important}
- .scribble.left{margin-right:12px!important}
- .scribble.right{margin-left:12px!important}
- .scribble .arrow{width:72px!important;height:38px!important}
- .scribble.left .arrow{right:-42px!important}
- .scribble.right .arrow{left:-42px!important}
- .siteFooter{min-height:30px!important}
 }
 
 @media (min-width:761px) and (max-height:650px){
- #view{
-   grid-template-rows:minmax(0,46fr) minmax(0,35fr) minmax(50px,13fr) minmax(28px,6fr)!important;
- }
- .bottomNav{min-height:48px!important;height:calc(100% - 6px)!important;margin:3px auto!important}
- .siteFooter{min-height:28px!important;padding-top:2px!important}
  .footerSocialLink{width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important}
 }
 
@@ -2704,13 +1021,6 @@ button{appearance:none;-webkit-appearance:none}
 /* V177.2 VISIBLE SOCIAL FOOTER
    Socials are a real centered footer cluster, independent of side copy width. */
 @media (min-width:761px){
- #view{
-   grid-template-rows:minmax(0,47fr) minmax(0,34fr) minmax(58px,12fr) minmax(42px,7fr)!important;
- }
- .siteFooter{
-   min-height:42px!important;
-   padding:5px clamp(10px,1.4vw,22px)!important;
- }
  .footerSocial{
    position:absolute!important;
    left:50%!important;
@@ -2763,116 +1073,6 @@ button{appearance:none;-webkit-appearance:none}
    Desktop geometry now keys note positions directly to the uploader diameter.
    Footer is pinned to the true bottom edge; gamebar floats above it. */
 @media (min-width:761px){
- #home154{position:relative!important;overflow:hidden!important}
- #view{
-   position:relative!important;
-   display:grid!important;
-   grid-template-rows:minmax(0,56fr) minmax(0,44fr)!important;
-   row-gap:0!important;
-   padding-bottom:118px!important;
-   height:calc(100% - 52px)!important;
-   min-height:0!important;
- }
- .stage{
-   grid-row:1!important;
-   position:relative!important;
-   width:100%!important;
-   height:100%!important;
-   display:flex!important;
-   align-items:center!important;
-   justify-content:center!important;
-   overflow:visible!important;
- }
- .features{
-   grid-row:2!important;
-   align-self:center!important;
-   justify-self:center!important;
- }
-
- /* Anchor each note to the actual uploader edge, not to the page margin. */
- .scribble{
-   position:absolute!important;
-   top:50%!important;
-   width:clamp(250px,24vw,390px)!important;
-   max-width:none!important;
-   font-size:clamp(18px,1.72vw,29px)!important;
-   line-height:1.06!important;
-   color:#637DA8!important;
-   overflow:visible!important;
- }
- .scribble.left{
-   left:auto!important;
-   right:calc(50% + (var(--gsf-hero-size) / 2) + clamp(22px,2vw,34px))!important;
-   transform:translateY(-46%) rotate(-4deg)!important;
-   text-align:right!important;
-   margin:0!important;
- }
- .scribble.right{
-   right:auto!important;
-   left:calc(50% + (var(--gsf-hero-size) / 2) + clamp(22px,2vw,34px))!important;
-   transform:translateY(-44%) rotate(4deg)!important;
-   text-align:left!important;
-   margin:0!important;
- }
-
- /* Arrow tips finish almost on the ring, as in the approved reference. */
- .scribble .arrow{
-   position:absolute!important;
-   display:block!important;
-   width:clamp(92px,7vw,126px)!important;
-   height:clamp(44px,5.4vh,66px)!important;
-   margin:0!important;
-   color:#637DA8!important;
-   pointer-events:none!important;
- }
- .scribble .arrow svg{width:100%!important;height:100%!important}
- .scribble.left .arrow{
-   right:clamp(-104px,-6.1vw,-76px)!important;
-   left:auto!important;
-   top:64%!important;
-   transform:translateY(-50%) rotate(1deg)!important;
- }
- .scribble.right .arrow{
-   left:clamp(-104px,-6.1vw,-76px)!important;
-   right:auto!important;
-   top:-2%!important;
-   transform:rotate(-1deg)!important;
- }
- .scribble.right .padSketch{
-   margin:10px 0 0 clamp(22px,2.6vw,44px)!important;
- }
-
- /* True bottom bar: never participates in the content grid. */
- .bottomNav{
-   position:absolute!important;
-   left:50%!important;
-   bottom:54px!important;
-   transform:translateX(-50%)!important;
-   width:min(62vw,720px)!important;
-   height:52px!important;
-   min-height:52px!important;
-   margin:0!important;
-   z-index:40!important;
- }
-
- .siteFooter{
-   position:absolute!important;
-   left:0!important;
-   right:0!important;
-   bottom:0!important;
-   width:100%!important;
-   height:44px!important;
-   min-height:44px!important;
-   margin:0!important;
-   padding:5px clamp(18px,2.5vw,42px)!important;
-   display:grid!important;
-   grid-template-columns:1fr auto 1fr!important;
-   align-items:center!important;
-   border-top:1px solid rgba(146,183,214,.28)!important;
-   background:linear-gradient(180deg,rgba(250,253,255,.62),rgba(246,251,255,.88))!important;
-   z-index:35!important;
-   overflow:visible!important;
- }
  .footerBrand{justify-self:start!important}
  .footerSocial{
    position:static!important;
@@ -2894,22 +1094,10 @@ button{appearance:none;-webkit-appearance:none}
 }
 
 @media (min-width:761px) and (max-width:1199px){
- #view{padding-bottom:108px!important}
- .scribble{width:clamp(190px,22vw,260px)!important;font-size:clamp(14px,1.5vw,21px)!important}
- .scribble.left{right:calc(50% + (var(--gsf-hero-size) / 2) + 14px)!important}
- .scribble.right{left:calc(50% + (var(--gsf-hero-size) / 2) + 14px)!important}
- .scribble .arrow{width:78px!important;height:42px!important}
- .scribble.left .arrow{right:-64px!important}
- .scribble.right .arrow{left:-64px!important}
- .bottomNav{bottom:48px!important;width:min(70vw,650px)!important;height:46px!important;min-height:46px!important}
- .siteFooter{height:40px!important;min-height:40px!important;padding-left:14px!important;padding-right:14px!important}
  .footerSocialLink{width:22px!important;height:22px!important;min-width:22px!important;min-height:22px!important}
 }
 
 @media (min-width:761px) and (max-height:650px){
- #view{padding-bottom:96px!important;grid-template-rows:minmax(0,54fr) minmax(0,46fr)!important}
- .bottomNav{bottom:42px!important;height:42px!important;min-height:42px!important}
- .siteFooter{height:36px!important;min-height:36px!important}
  .footerSocialLink{width:20px!important;height:20px!important;min-width:20px!important;min-height:20px!important}
 }
 
@@ -3229,193 +1417,6 @@ button{appearance:none;-webkit-appearance:none}
    -moz-osx-font-smoothing:grayscale!important;
    text-rendering:geometricPrecision!important;
  }
-
- #home154{
-   background:
-     radial-gradient(circle at 12% 8%,rgba(111,209,255,.17),transparent 23%),
-     radial-gradient(circle at 88% 10%,rgba(106,229,185,.15),transparent 24%),
-     linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important;
- }
- #home154:before{
-   background:linear-gradient(180deg,rgba(255,255,255,.36),rgba(255,255,255,.08))!important;
-   opacity:1!important;
- }
-
- .brandOnly{
-   color:#6C81A1!important;
-   font-weight:800!important;
-   letter-spacing:.24em!important;
-   text-shadow:none!important;
-   opacity:1!important;
- }
-
- /* Exact uploader appearance used by mobile */
- .rings{
-   background:
-     radial-gradient(circle at 36% 24%,
-       rgba(255,255,255,.99) 0%,
-       rgba(244,251,255,.98) 36%,
-       rgba(233,248,255,.96) 67%,
-       rgba(226,252,242,.94) 100%)!important;
-   border:1.5px solid rgba(89,197,239,.58)!important;
-   box-shadow:
-     -18px 0 52px rgba(74,193,247,.27),
-     20px 5px 54px rgba(83,224,178,.22),
-     0 0 0 1px rgba(255,255,255,.82) inset,
-     0 18px 48px rgba(69,126,167,.10)!important;
-   filter:none!important;
-   opacity:1!important;
-   overflow:visible!important;
- }
- .rings:before{
-   inset:-29px!important;
-   padding:0!important;
-   border:1.35px solid rgba(98,205,246,.42)!important;
-   background:transparent!important;
-   -webkit-mask:none!important;
-   mask:none!important;
-   box-shadow:
-     -9px 0 28px rgba(82,201,250,.18),
-     11px 4px 28px rgba(91,228,184,.12)!important;
-   opacity:1!important;
- }
- .rings:after{
-   inset:-54px!important;
-   padding:0!important;
-   border:1.2px solid rgba(112,224,195,.25)!important;
-   background:transparent!important;
-   -webkit-mask:none!important;
-   mask:none!important;
-   box-shadow:
-     -12px 0 38px rgba(84,202,250,.13),
-     15px 6px 42px rgba(87,229,184,.18)!important;
-   opacity:1!important;
- }
- .circle{
-   background:
-     radial-gradient(circle at 39% 28%,rgba(255,255,255,.42),transparent 37%),
-     linear-gradient(145deg,rgba(248,253,255,.34),rgba(230,249,255,.16) 58%,rgba(225,253,242,.18))!important;
-   filter:none!important;
-   opacity:1!important;
- }
- .icon{
-   color:#6099E2!important;
-   opacity:1!important;
- }
- .icon svg{stroke-width:1.8!important}
- .circle strong{
-   color:#0D2A66!important;
-   font-weight:850!important;
-   letter-spacing:.015em!important;
-   line-height:1.08!important;
-   text-shadow:none!important;
-   opacity:1!important;
- }
-
- /* Exact mobile cards and icon treatment */
- .feature{
-   border:1px solid var(--line)!important;
-   border-radius:22px!important;
-   background:var(--glass)!important;
-   -webkit-backdrop-filter:blur(16px)!important;
-   backdrop-filter:blur(16px)!important;
-   box-shadow:var(--shadow)!important;
-   color:var(--ink)!important;
-   filter:none!important;
-   opacity:1!important;
- }
- .featureIcon{
-   border-radius:50%!important;
-   box-shadow:
-     inset 0 0 0 1px rgba(255,255,255,.52),
-     0 10px 26px rgba(85,124,159,.08)!important;
-   filter:none!important;
-   opacity:1!important;
- }
- .featureIcon svg{
-   stroke-width:1.85!important;
-   opacity:1!important;
- }
- .fAi .featureIcon{
-   background:linear-gradient(145deg,#D9F2FF,#CFE9FF)!important;
-   color:#4F98E1!important;
- }
- .fEditor .featureIcon{
-   background:linear-gradient(145deg,#DFF8ED,#CCEFDC)!important;
-   color:#328D70!important;
- }
- .fShort .featureIcon{
-   background:linear-gradient(145deg,#FFF1B7,#FFE289)!important;
-   color:#D08C00!important;
- }
- .feature b{
-   color:#102858!important;
-   font-weight:850!important;
-   letter-spacing:0!important;
-   text-shadow:none!important;
-   opacity:1!important;
- }
- .feature small{
-   color:#8193AD!important;
-   font-weight:700!important;
-   line-height:1.34!important;
-   letter-spacing:0!important;
-   text-shadow:none!important;
-   opacity:1!important;
- }
-
- /* Exact mobile gamebar */
- .bottomNav{
-   background:rgba(255,255,255,.80)!important;
-   border:1px solid rgba(154,183,211,.28)!important;
-   border-radius:30px!important;
-   -webkit-backdrop-filter:blur(22px)!important;
-   backdrop-filter:blur(22px)!important;
-   box-shadow:0 16px 44px rgba(70,105,141,.12)!important;
-   filter:none!important;
-   opacity:1!important;
- }
- .navItem{
-   color:#8192AA!important;
-   font-weight:800!important;
-   letter-spacing:0!important;
-   text-shadow:none!important;
-   background:transparent!important;
-   opacity:1!important;
- }
- .navItem svg{
-   fill:none!important;
-   stroke:currentColor!important;
-   stroke-width:2!important;
-   stroke-linecap:round!important;
-   stroke-linejoin:round!important;
-   background:transparent!important;
-   border:0!important;
-   box-shadow:none!important;
-   filter:none!important;
-   opacity:1!important;
- }
- .navItem.active{
-   color:#4F93D7!important;
-   background:rgba(219,241,255,.70)!important;
- }
- .navItem.active svg{
-   background:transparent!important;
-   border:0!important;
- }
- .navItem.active:after{
-   background:#4F93D7!important;
-   opacity:1!important;
- }
-
- /* Exact mobile footer treatment */
- .siteFooter{
-   color:#7D90AA!important;
-   font-weight:750!important;
-   background:transparent!important;
-   filter:none!important;
-   opacity:1!important;
- }
  .footerBrand{
    color:#7D90AA!important;
    font-weight:750!important;
@@ -3432,55 +1433,6 @@ button{appearance:none;-webkit-appearance:none}
    border:1px solid rgba(150,183,213,.24)!important;
    box-shadow:0 5px 13px rgba(65,105,145,.08)!important;
    opacity:1!important;
- }
-
- /* Reference callouts: staggered and aimed at the uploader */
- .scribble{
-   width:clamp(245px,23vw,380px)!important;
-   overflow:visible!important;
-   color:#637DA8!important;
-   opacity:.94!important;
- }
- .scribble.left{
-   top:44%!important;
-   right:calc(50% + (var(--gsf-hero-size) / 2) + clamp(18px,1.7vw,30px))!important;
-   left:auto!important;
-   text-align:right!important;
-   transform:translateY(-50%) rotate(-4deg)!important;
- }
- .scribble.right{
-   top:56%!important;
-   left:calc(50% + (var(--gsf-hero-size) / 2) + clamp(18px,1.7vw,30px))!important;
-   right:auto!important;
-   text-align:left!important;
-   transform:translateY(-50%) rotate(4deg)!important;
- }
- .scribble .arrow{
-   position:absolute!important;
-   display:block!important;
-   width:clamp(102px,7.4vw,132px)!important;
-   height:clamp(46px,5.6vh,66px)!important;
-   margin:0!important;
-   overflow:visible!important;
- }
- .scribble .arrow svg{width:100%!important;height:100%!important}
- .scribble.left .arrow{
-   right:clamp(-112px,-6.7vw,-84px)!important;
-   left:auto!important;
-   top:63%!important;
-   transform:translateY(-50%) rotate(1deg)!important;
- }
- .scribble.right .arrow{
-   left:clamp(-112px,-6.7vw,-84px)!important;
-   right:auto!important;
-   top:-8%!important;
-   transform:rotate(-1deg)!important;
- }
- .scribble.right .padSketch{
-   width:clamp(48px,4.2vw,62px)!important;
-   height:clamp(48px,4.2vw,62px)!important;
-   margin:8px 0 0 clamp(18px,2.1vw,32px)!important;
-   color:#637DA8!important;
  }
 }
 
@@ -3611,193 +1563,6 @@ button{appearance:none;-webkit-appearance:none}
    Root fix: desktop now reuses the actual approved mobile visual language
    from V176/V179 instead of approximating it. Desktop layout/ads remain desktop. */
 @media (min-width:761px){
- #home154{
-   background:
-     radial-gradient(circle at 12% 8%,rgba(111,209,255,.17),transparent 23%),
-     radial-gradient(circle at 88% 10%,rgba(106,229,185,.15),transparent 24%),
-     linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important;
- }
- #home154:before{
-   background:
-     radial-gradient(circle at 23% 44%,rgba(111,211,255,.05),transparent 31%),
-     radial-gradient(circle at 77% 52%,rgba(91,226,178,.05),transparent 31%)!important;
-   animation:gsfHomeGlowAlive 9s ease-in-out infinite!important;
-   opacity:1!important;
- }
-
- /* Exact mobile uploader treatment. */
- .rings{
-   background:
-     radial-gradient(circle at 36% 27%,rgba(255,255,255,.995) 0%,rgba(246,252,255,.985) 34%,rgba(238,249,255,.965) 61%,rgba(232,251,246,.955) 100%) padding-box,
-     linear-gradient(102deg,rgba(109,195,244,.68) 0%,rgba(124,207,249,.48) 44%,rgba(132,221,214,.36) 66%,rgba(113,229,192,.42) 100%) border-box!important;
-   border:1.35px solid transparent!important;
-   box-shadow:
-     -18px 0 48px rgba(89,198,247,.18),
-     20px 7px 52px rgba(92,225,182,.14),
-     inset 0 0 0 1px rgba(255,255,255,.86),
-     0 16px 42px rgba(70,126,166,.07)!important;
-   filter:none!important;
-   opacity:1!important;
- }
- .rings:before{
-   content:""!important;
-   display:block!important;
-   inset:-8.8%!important;
-   padding:1.1px!important;
-   border:0!important;
-   border-radius:50%!important;
-   background:linear-gradient(104deg,rgba(105,203,248,.35) 0%,rgba(122,211,250,.24) 46%,rgba(122,225,207,.20) 67%,rgba(103,231,190,.28) 100%)!important;
-   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)!important;
-   -webkit-mask-composite:xor!important;
-   mask-composite:exclude!important;
-   opacity:.86!important;
-   animation:gsfSecondRingAlive 5.8s ease-in-out infinite!important;
- }
- .rings:after{
-   content:""!important;
-   display:block!important;
-   inset:-16.1%!important;
-   padding:1px!important;
-   border:0!important;
-   border-radius:50%!important;
-   background:linear-gradient(106deg,rgba(110,205,249,.22) 0%,rgba(126,213,250,.15) 45%,rgba(125,226,209,.13) 68%,rgba(106,231,191,.20) 100%)!important;
-   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)!important;
-   -webkit-mask-composite:xor!important;
-   mask-composite:exclude!important;
-   opacity:.58!important;
-   animation:gsfThirdRingAlive 6.6s .9s ease-in-out infinite!important;
- }
- .rings:not(.uploading):not(.uploaded){
-   animation:gsfUploaderBreathe 5.4s ease-in-out infinite!important;
- }
- .circle:not(.loaded) .icon{
-   animation:gsfCloudAlive 4.4s ease-in-out infinite!important;
- }
- .circle.busy strong{animation:gsfLoadingWord 1.35s ease-in-out infinite!important}
-
- /* Exact mobile cards, scaled only by desktop width. */
- .features{
-   width:min(72vw,760px)!important;
-   max-width:760px!important;
-   gap:9px!important;
-   margin:0 auto 22px!important;
- }
- .feature{
-   min-height:150px!important;
-   height:150px!important;
-   padding:14px 7px 12px!important;
-   border-radius:24px!important;
-   background:rgba(255,255,255,.74)!important;
-   border:1px solid rgba(160,190,218,.24)!important;
-   -webkit-backdrop-filter:blur(16px)!important;
-   backdrop-filter:blur(16px)!important;
-   box-shadow:0 14px 34px rgba(62,107,150,.09),inset 0 1px 0 rgba(255,255,255,.96)!important;
-   filter:none!important;
-   opacity:1!important;
- }
- .featureIcon{
-   width:58px!important;
-   height:58px!important;
-   margin-bottom:9px!important;
-   border-radius:50%!important;
-   animation:gsfIconAlive 5.8s ease-in-out infinite!important;
-   box-shadow:inset 0 0 0 1px rgba(255,255,255,.52),0 10px 26px rgba(85,124,159,.08)!important;
- }
- .fAi .featureIcon{
-   background:#D8E9FF!important;
-   color:#1875E6!important;
-   animation-delay:0s!important;
- }
- .fEditor .featureIcon{
-   background:#CFF4DD!important;
-   color:#078F61!important;
-   animation-delay:-1.8s!important;
- }
- .fShort .featureIcon{
-   background:#FFE9A8!important;
-   color:#D68000!important;
-   animation-delay:-3.6s!important;
- }
- .featureIcon svg{
-   stroke-width:2.05!important;
- }
- .feature b{
-   font-size:11px!important;
-   font-weight:850!important;
-   color:#0D2A66!important;
- }
- .feature small{
-   font-size:7.8px!important;
-   font-weight:700!important;
-   color:#7185A6!important;
-   line-height:1.22!important;
- }
-
- /* Exact mobile gamebar treatment, with desktop width preserved. */
- .bottomNav{
-   min-height:64px!important;
-   height:64px!important;
-   padding:7px 8px 6px!important;
-   border-radius:999px!important;
-   background:rgba(255,255,255,.93)!important;
-   border:1px solid rgba(139,181,218,.30)!important;
-   box-shadow:
-     0 10px 28px rgba(59,104,148,.11),
-     0 0 0 4px rgba(226,243,255,.30),
-     inset 0 1px 0 #fff!important;
-   -webkit-backdrop-filter:none!important;
-   backdrop-filter:none!important;
-   overflow:hidden!important;
- }
- .navItem{
-   gap:2px!important;
-   font-size:7.5px!important;
-   font-weight:800!important;
-   padding:1px 2px!important;
-   color:#7185A6!important;
-   background:transparent!important;
- }
- .navItem svg{
-   width:18px!important;
-   height:18px!important;
-   padding:5px!important;
-   box-sizing:content-box!important;
-   border-radius:50%!important;
-   background:linear-gradient(145deg,#F9FCFF,#EDF5FC)!important;
-   border:1px solid rgba(150,184,215,.24)!important;
-   box-shadow:none!important;
- }
- .navItem.active{
-   color:#1674E8!important;
-   background:transparent!important;
- }
- .navItem.active svg{
-   animation:gsfActiveNavAlive 4.8s ease-in-out infinite!important;
-   background:linear-gradient(145deg,#E8F5FF,#D8EBFF)!important;
-   border-color:rgba(71,153,226,.40)!important;
- }
-
- /* Reference arrows: shorter, curved and detached from the copy. */
- .scribble .arrow{
-   width:clamp(74px,5.3vw,94px)!important;
-   height:44px!important;
-   overflow:visible!important;
- }
- .scribble .arrow svg{
-   width:100%!important;
-   height:100%!important;
-   stroke-width:2.35!important;
- }
- .scribble.left .arrow{
-   right:clamp(-78px,-4.8vw,-62px)!important;
-   top:72%!important;
-   transform:translateY(-50%) rotate(0deg)!important;
- }
- .scribble.right .arrow{
-   left:clamp(-78px,-4.8vw,-62px)!important;
-   top:2%!important;
-   transform:rotate(0deg)!important;
- }
 }
 
 
@@ -3849,22 +1614,6 @@ button{appearance:none;-webkit-appearance:none}
 
 /* Desktop help logic too: right = uploader, left = cards. */
 @media (min-width:761px){
- .scribble.left .arrow{
-   width:78px!important;
-   height:92px!important;
-   right:auto!important;
-   left:56%!important;
-   top:92%!important;
-   transform:rotate(-5deg)!important;
- }
- .scribble.right .arrow{
-   width:82px!important;
-   height:44px!important;
-   left:clamp(-72px,-4.5vw,-58px)!important;
-   right:auto!important;
-   top:2%!important;
-   transform:rotate(0deg)!important;
- }
 }
 
 /* Phones: stagger the notes, keep both arrows out of the uploader.
@@ -3948,159 +1697,6 @@ button{appearance:none;-webkit-appearance:none}
    composition: hero isolated above, compact cards below, gamebar/footer fixed.
    No palette changes. */
 @media (min-width:761px){
- #home154{
-   padding-top:12px!important;
-   padding-left:clamp(28px,3vw,54px)!important;
-   padding-right:clamp(28px,3vw,54px)!important;
-   padding-bottom:12px!important;
- }
-
- .topbar{
-   min-height:36px!important;
-   height:36px!important;
-   flex:0 0 36px!important;
-   margin:0!important;
-   padding:0!important;
- }
- .brandOnly{
-   font-size:10px!important;
-   letter-spacing:.26em!important;
- }
-
- #view{
-   position:relative!important;
-   display:flex!important;
-   flex-direction:column!important;
-   height:calc(100% - 36px)!important;
-   min-height:0!important;
-   padding:0 0 116px!important;
-   overflow:hidden!important;
- }
-
- .stage{
-   position:relative!important;
-   flex:1 1 auto!important;
-   min-height:0!important;
-   width:100%!important;
-   margin:0!important;
-   display:flex!important;
-   align-items:center!important;
-   justify-content:center!important;
-   overflow:visible!important;
- }
-
- .rings{
-   width:clamp(286px,min(28vw,42vh),336px)!important;
-   height:clamp(286px,min(28vw,42vh),336px)!important;
-   min-width:0!important;
-   min-height:0!important;
- }
-
- /* Compact desktop cards: same proportions/language as mobile. */
- .features{
-   position:relative!important;
-   flex:0 0 auto!important;
-   width:min(48vw,660px)!important;
-   max-width:660px!important;
-   min-width:540px!important;
-   margin:0 auto 12px!important;
-   display:grid!important;
-   grid-template-columns:repeat(3,minmax(0,1fr))!important;
-   gap:12px!important;
-   align-items:stretch!important;
-   z-index:12!important;
- }
- .feature{
-   min-height:112px!important;
-   height:112px!important;
-   padding:10px 10px 9px!important;
-   border-radius:22px!important;
- }
- .featureIcon{
-   width:50px!important;
-   height:50px!important;
-   margin-bottom:6px!important;
- }
- .featureIcon svg{
-   width:28px!important;
-   height:28px!important;
- }
- .feature b{
-   font-size:10px!important;
-   line-height:1.05!important;
- }
- .feature small{
-   margin-top:4px!important;
-   font-size:7.2px!important;
-   line-height:1.18!important;
-   max-width:165px!important;
- }
-
- /* Give the hero its own visual breathing room above the compact cards. */
- .stage + .features{
-   margin-top:8px!important;
- }
-
- /* Preserve the bottom surfaces outside the hero/cards flow. */
- .bottomNav{
-   position:absolute!important;
-   left:50%!important;
-   bottom:48px!important;
-   transform:translateX(-50%)!important;
-   width:min(56vw,700px)!important;
-   height:54px!important;
-   min-height:54px!important;
-   margin:0!important;
-   z-index:40!important;
- }
- .siteFooter{
-   position:absolute!important;
-   left:0!important;
-   right:0!important;
-   bottom:0!important;
-   height:40px!important;
-   min-height:40px!important;
-   margin:0!important;
-   padding:4px clamp(16px,2vw,34px) 2px!important;
-   z-index:35!important;
- }
-
- /* Notes remain staggered. Right explains upload; left points down to cards. */
- .scribble{
-   width:clamp(200px,19vw,300px)!important;
-   font-size:clamp(16px,1.35vw,22px)!important;
-   line-height:1.06!important;
- }
- .scribble.left{
-   top:40%!important;
-   right:calc(50% + (var(--gsf-hero-size) / 2) + 22px)!important;
-   left:auto!important;
-   text-align:right!important;
-   transform:translateY(-50%) rotate(-5deg)!important;
- }
- .scribble.right{
-   top:53%!important;
-   left:calc(50% + (var(--gsf-hero-size) / 2) + 22px)!important;
-   right:auto!important;
-   text-align:left!important;
-   transform:translateY(-50%) rotate(4deg)!important;
- }
- .scribble.left .arrow{
-   width:72px!important;
-   height:88px!important;
-   left:auto!important;
-   right:10px!important;
-   top:calc(100% + 2px)!important;
-   transform:rotate(-4deg)!important;
- }
- .scribble.right .arrow{
-   width:72px!important;
-   height:40px!important;
-   left:-58px!important;
-   right:auto!important;
-   top:0!important;
-   transform:rotate(-1deg)!important;
- }
 
  /* Keep ad rails available on desktop without stealing center width. */
  @media (min-width:1450px){
@@ -4108,34 +1704,19 @@ button{appearance:none;-webkit-appearance:none}
  }
 }
 @media (min-width:761px) and (max-width:1100px){
- .features{
-   width:min(62vw,620px)!important;
-   min-width:0!important;
- }
- .feature{
-   min-height:106px!important;
-   height:106px!important;
- }
- .featureIcon{width:46px!important;height:46px!important}
- .bottomNav{width:min(72vw,650px)!important}
- .scribble{font-size:14px!important;width:180px!important}
 }
 
 
 /* V196 EMERGENCY VISIBLE RESTORE
    Restore V193 visual layout; only fix account placement and literal slash-n. */
 @media (min-width:761px){
- .topbar{
-   display:flex!important;
-   align-items:center!important;
-   width:100%!important;
- }
  .accountEntry{
    margin-left:auto!important;
    margin-right:0!important;
    flex:0 0 auto!important;
  }
 }
+
 
 
 /* V200 DESKTOP MOBILE-FLOW MASTER
@@ -4708,6 +2289,83 @@ button{appearance:none;-webkit-appearance:none}
   }
 }
 
+
+
+/* V203 SHARED VISUAL MASTER
+   One palette/material system for phone + desktop. Device media queries may
+   change only geometry/spacing from this point forward. */
+:root{
+  --gsf-home-ink:#0D2A66;
+  --gsf-home-soft:#7185A6;
+  --gsf-home-note:#637DA8;
+  --gsf-ai-bg:#D8E9FF;
+  --gsf-ai-ink:#1875E6;
+  --gsf-editor-bg:#CFF4DD;
+  --gsf-editor-ink:#078F61;
+  --gsf-short-bg:#FFE9A8;
+  --gsf-short-ink:#D68000;
+  --gsf-nav-ink:#8192AA;
+  --gsf-nav-active:#4F93D7;
+}
+#home154{
+  background:
+    radial-gradient(circle at 12% 8%,rgba(111,209,255,.17),transparent 23%),
+    radial-gradient(circle at 88% 10%,rgba(106,229,185,.15),transparent 24%),
+    linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important;
+}
+#home154:before{
+  background:
+    radial-gradient(circle at 23% 44%,rgba(111,211,255,.05),transparent 31%),
+    radial-gradient(circle at 77% 52%,rgba(91,226,178,.05),transparent 31%)!important;
+}
+#home154 .rings{
+  background:
+    radial-gradient(circle at 36% 27%,rgba(255,255,255,.995) 0%,rgba(246,252,255,.985) 34%,rgba(238,249,255,.965) 61%,rgba(232,251,246,.955) 100%) padding-box,
+    linear-gradient(102deg,rgba(109,195,244,.68) 0%,rgba(124,207,249,.48) 44%,rgba(132,221,214,.36) 66%,rgba(113,229,192,.42) 100%) border-box!important;
+  border:1.35px solid transparent!important;
+  filter:none!important;
+}
+#home154 .circle .icon{color:#6099E2!important}
+#home154 .circle strong{color:var(--gsf-home-ink)!important;text-shadow:none!important}
+
+#home154 .feature{
+  background:var(--glass)!important;
+  border:1px solid rgba(160,190,218,.24)!important;
+  box-shadow:0 14px 34px rgba(62,107,150,.09),inset 0 1px 0 rgba(255,255,255,.96)!important;
+  filter:none!important;
+  opacity:1!important;
+}
+#home154 .feature.fAi,
+#home154 .feature.fEditor,
+#home154 .feature.fShort{background:var(--glass)!important}
+#home154 .featureIcon{
+  border:0!important;
+  border-radius:50%!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.52),0 10px 26px rgba(85,124,159,.08)!important;
+  filter:none!important;
+}
+#home154 .feature.fAi .featureIcon{background:var(--gsf-ai-bg)!important;color:var(--gsf-ai-ink)!important}
+#home154 .feature.fEditor .featureIcon{background:var(--gsf-editor-bg)!important;color:var(--gsf-editor-ink)!important}
+#home154 .feature.fShort .featureIcon{background:var(--gsf-short-bg)!important;color:var(--gsf-short-ink)!important}
+#home154 .featureIcon svg{stroke:currentColor!important;fill:none!important;stroke-width:2.05!important}
+#home154 .feature b{color:var(--gsf-home-ink)!important;text-shadow:none!important}
+#home154 .feature small{color:var(--gsf-home-soft)!important;text-shadow:none!important}
+
+#home154 .bottomNav{
+  background:rgba(255,255,255,.93)!important;
+  border:1px solid rgba(139,181,218,.30)!important;
+  box-shadow:0 10px 28px rgba(59,104,148,.11),0 0 0 4px rgba(226,243,255,.30),inset 0 1px 0 #fff!important;
+  filter:none!important;
+}
+#home154 .navItem{color:var(--gsf-nav-ink)!important;background:transparent!important;text-shadow:none!important;filter:none!important}
+#home154 .navItem svg{color:currentColor!important;fill:none!important;stroke:currentColor!important;stroke-width:2!important;filter:none!important}
+#home154 .navItem.active{color:var(--gsf-nav-active)!important}
+#home154 .navItem.active:after{background:var(--gsf-nav-active)!important}
+
+#home154 .scribble,
+#home154 .scribble .arrow,
+#home154 .scribble .padSketch{color:var(--gsf-home-note)!important}
+#home154 .siteFooter{color:#7D90AD!important;background:transparent!important;box-shadow:none!important}
 </style>
 </head>
 <body>

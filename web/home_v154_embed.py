@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 
 _COMPONENT_DIR = Path(__file__).resolve().parent / "home_v154_component"
 _HOME_V154_COMPONENT = components.declare_component(
-    "gsf_home_v154_live_202",
+    "gsf_home_v154_live_203",
     path=str(_COMPONENT_DIR),
 )
 
