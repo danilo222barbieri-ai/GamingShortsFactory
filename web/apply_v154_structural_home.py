@@ -311,7 +311,7 @@ if GSF_WEB_MODE:
       }
     }
     </style>
-    <script>
+    <div class="gsf-script-guard" style="display:none!important"><script>
     (()=>{
       const KEY='gsf_creator_hub_open_v107';
       const closeHub=()=>{
@@ -360,7 +360,7 @@ if GSF_WEB_MODE:
         },210);
       });
     })();
-    </script>
+    </script></div>
     """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _shell_v158.lstrip()
@@ -427,7 +427,7 @@ if GSF_WEB_MODE:
         <iframe src="/share-v156/?v=226" data-src="/share-v156/" data-loaded="1" title="Condividi o scarica"></iframe>
       </section>
     </div>
-    <script>
+    <div class="gsf-script-guard" style="display:none!important"><script>
     (()=>{
       const o=document.getElementById('gsf-social-overlay-v159');
       if(!o)return;
@@ -469,7 +469,7 @@ if GSF_WEB_MODE:
         if(t==='close'||t==='home'||t==='hub'||t==='editor'||t==='ai'||t==='account')close();
       });
     })();
-    </script>
+    </script></div>
     """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _social_surface_v159.lstrip()
@@ -520,7 +520,7 @@ if GSF_WEB_MODE:
         <iframe src="/creator-hub-v156/?v=226" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
       </section>
     </div>
-    <script>
+    <div class="gsf-script-guard" style="display:none!important"><script>
     (()=>{
       const o=document.getElementById('gsf-creator-hub-live-v160');if(!o)return;
       const frame=o.querySelector('iframe');
@@ -556,7 +556,7 @@ if GSF_WEB_MODE:
         if(t==='home'||t==='close'||t==='editor'||t==='social'||t==='ai'||t==='account')close();
       });
     })();
-    </script>
+    </script></div>
     """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _hub_surface_v160.lstrip()
@@ -600,7 +600,7 @@ if GSF_WEB_MODE:
         </div>
       </section>
     </div>
-    <script>
+    <div class="gsf-script-guard" style="display:none!important"><script>
     (()=>{
       const o=document.getElementById('gsf-editor-overlay-v220'); if(!o)return;
       const frame=o.querySelector('.gsf-editor-frame'),left=document.getElementById('gsf-editor-note-left'),right=document.getElementById('gsf-editor-note-right');
@@ -661,7 +661,7 @@ if GSF_WEB_MODE:
       });
       try{if(sessionStorage.getItem(KEY)==='1')setTimeout(()=>open(false),90)}catch(e){};
     })();
-    </script>
+    </script></div>
     """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _editor_surface_v220.lstrip()
@@ -685,7 +685,7 @@ if GSF_WEB_MODE:
         <iframe src="/ai-v221/?v=226" data-src="/ai-v221/" data-loaded="1" title="Motori IA"></iframe>
       </section>
     </div>
-    <script>
+    <div class="gsf-script-guard" style="display:none!important"><script>
     (()=>{
       const KEY='gsf_ai_overlay_open_v221';
       const o=document.getElementById('gsf-ai-overlay-v221');if(!o)return;
@@ -729,7 +729,7 @@ if GSF_WEB_MODE:
       });
       try{if(sessionStorage.getItem(KEY)==='1')setTimeout(()=>open(false),90)}catch(e){}
     })();
-    </script>
+    </script></div>
     """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _ai_surface_v221.lstrip()
@@ -754,7 +754,7 @@ if GSF_WEB_MODE:
         <iframe src="/account/?v=226" data-src="/account/" data-loaded="1" title="Account"></iframe>
       </section>
     </div>
-    <script>
+    <div class="gsf-script-guard" style="display:none!important"><script>
     (()=>{
       const o=document.getElementById('gsf-account-overlay-v223');if(!o)return;
       const frame=o.querySelector('iframe');
@@ -769,7 +769,7 @@ if GSF_WEB_MODE:
         if(t==='home'||t==='close'||t==='hub'||t==='editor'||t==='social'||t==='ai')close();
       });
     })();
-    </script>
+    </script></div>
     """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _account_surface_v223.lstrip()
