@@ -461,6 +461,173 @@ button{appearance:none;-webkit-appearance:none}
  .project{grid-template-columns:78px 1fr}.pBody{padding:4px 7px}
  .bottomNav{padding:2px 8px}.navItem svg{width:16px;height:16px}.navItem span{font-size:8px}
 }
+
+/* V166 MEGA RESPONSIVE HOME — canonical desktop/tablet layout.
+   This final block intentionally wins over legacy V161-V165 desktop rules.
+   It removes the poster/artboard behavior and makes each Home region adapt
+   independently to the real iframe/browser viewport while keeping zero-scroll. */
+@media (min-width:761px){
+ :root{
+   --gsf-side:clamp(18px,4vw,72px);
+   --gsf-gap:clamp(5px,.75vh,9px);
+   --gsf-hero-size:clamp(220px,min(24vw,34vh),340px);
+ }
+ html,body{
+   width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
+   margin:0!important;padding:0!important;overflow:hidden!important;
+   display:block!important;background:transparent!important;
+ }
+ body{place-items:initial!important}
+ #home154{
+   width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
+   max-width:none!important;max-height:none!important;aspect-ratio:auto!important;
+   margin:0!important;padding:0 var(--gsf-side) 4px!important;
+   border-radius:0!important;transform:none!important;overflow:hidden!important;
+ }
+ #home154:before{inset:0!important}
+ .ui{height:100%!important;min-height:0!important;display:flex!important;flex-direction:column!important}
+ .topbar{
+   width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;
+   flex:0 0 clamp(40px,6.2vh,58px)!important;margin:0!important;padding:0!important;
+   align-items:center!important;
+ }
+ .brandOnly{
+   font-size:clamp(11px,1.05vw,17px)!important;letter-spacing:clamp(.22em,.34vw,.38em)!important;
+   line-height:1!important;margin:0!important;
+ }
+ .hub{
+   padding:clamp(7px,1vh,11px) clamp(12px,1.25vw,20px)!important;
+   font-size:clamp(10px,.82vw,14px)!important;gap:8px!important;
+   box-shadow:0 8px 24px rgba(68,104,142,.09)!important;
+ }
+ #view{
+   flex:1 1 auto!important;height:auto!important;min-height:0!important;width:100%!important;
+   display:grid!important;
+   grid-template-rows:44% 24% 5% 12% 9% 3%!important;
+   row-gap:.6%!important;align-content:stretch!important;
+ }
+ .stage{
+   width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
+   margin:0!important;padding:0!important;overflow:visible!important;
+   position:relative!important;display:grid!important;
+   grid-template-columns:minmax(145px,1fr) minmax(220px,auto) minmax(145px,1fr)!important;
+   grid-template-areas:"left center right"!important;
+   align-items:center!important;column-gap:clamp(10px,2.4vw,40px)!important;
+ }
+ .rings{
+   grid-area:center!important;justify-self:center!important;align-self:center!important;
+   width:var(--gsf-hero-size)!important;height:var(--gsf-hero-size)!important;
+   min-width:0!important;min-height:0!important;
+   box-shadow:
+    0 0 0 clamp(15px,2.2vh,27px) rgba(102,205,247,.075),
+    0 0 0 clamp(28px,4vh,48px) rgba(89,232,197,.055),
+    0 0 clamp(30px,5vh,62px) rgba(86,215,229,.23),
+    0 18px 48px rgba(69,126,167,.10)!important;
+ }
+ .rings:before{inset:clamp(-27px,-2.2vh,-15px)!important}
+ .rings:after{inset:clamp(-48px,-4vh,-28px)!important}
+ .icon{width:clamp(44px,6vh,70px)!important;height:clamp(44px,6vh,70px)!important;margin-bottom:clamp(5px,1vh,12px)!important}
+ .circle strong{max-width:250px!important;font-size:clamp(15px,1.45vw,23px)!important;line-height:1.08!important}
+ .circle small{display:block!important;margin-top:clamp(5px,.85vh,10px)!important;font-size:clamp(8px,.7vw,12px)!important}
+ .scribble{
+   position:relative!important;inset:auto!important;width:100%!important;max-width:290px!important;
+   font-size:clamp(15px,1.6vw,27px)!important;line-height:1.08!important;
+ }
+ .scribble.left{grid-area:left!important;justify-self:end!important;left:auto!important;top:auto!important;text-align:center!important;transform:rotate(-5deg)!important}
+ .scribble.right{grid-area:right!important;justify-self:start!important;right:auto!important;top:auto!important;text-align:center!important;transform:rotate(4deg)!important}
+ .scribble .arrow{height:clamp(28px,4.5vh,48px)!important;margin-top:2px!important}
+ .scribble .arrow svg{width:clamp(58px,6vw,92px)!important;height:100%!important}
+ .scribble.left .arrow{transform:translateX(32%) rotate(5deg)!important}
+ .scribble.right .arrow{transform:translateX(-32%) rotate(-3deg)!important}
+ .scribble .padSketch{width:clamp(38px,4vw,58px)!important;margin-top:4px!important}
+
+ .features{
+   width:100%!important;height:100%!important;margin:0!important;
+   display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+   gap:clamp(12px,1.5vw,24px)!important;align-items:stretch!important;
+ }
+ .feature{
+   height:100%!important;min-height:0!important;margin:0!important;
+   border-radius:clamp(22px,1.8vw,34px)!important;
+   padding:clamp(7px,1.1vh,14px) clamp(12px,1.4vw,24px)!important;
+   justify-content:center!important;
+ }
+ .featureIcon{
+   width:clamp(44px,7vh,76px)!important;height:clamp(44px,7vh,76px)!important;
+   margin:0 auto clamp(3px,.75vh,8px)!important;
+ }
+ .feature b{font-size:clamp(13px,1.25vw,20px)!important}
+ .feature small{font-size:clamp(8px,.75vw,12px)!important;margin-top:clamp(2px,.4vh,5px)!important}
+ .feature:after{
+   width:clamp(24px,3.7vh,38px)!important;height:clamp(24px,3.7vh,38px)!important;
+   margin-top:auto!important;font-size:clamp(16px,1.2vw,23px)!important;
+ }
+ .fAi{background:radial-gradient(circle at 50% 23%,rgba(167,216,255,.24),transparent 34%),rgba(255,255,255,.86)!important}
+ .fEditor{background:radial-gradient(circle at 50% 23%,rgba(163,237,204,.24),transparent 34%),rgba(255,255,255,.86)!important}
+ .fShort{background:radial-gradient(circle at 50% 23%,rgba(255,224,135,.28),transparent 34%),rgba(255,255,255,.86)!important}
+
+ .sectionHead{
+   display:flex!important;width:100%!important;height:100%!important;margin:0!important;
+   align-items:center!important;justify-content:space-between!important;
+ }
+ .sectionHead h2{font-size:clamp(12px,1.05vw,17px)!important;margin:0!important}
+ .seeAll{padding:clamp(4px,.55vh,7px) clamp(9px,.8vw,14px)!important;font-size:clamp(8px,.62vw,10px)!important}
+
+ .projects{
+   display:grid!important;width:100%!important;height:100%!important;margin:0!important;
+   grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:clamp(10px,1.1vw,18px)!important;
+ }
+ .project{
+   height:100%!important;min-height:0!important;display:grid!important;
+   grid-template-columns:30% 1fr!important;border-radius:clamp(13px,1.1vw,19px)!important;
+ }
+ .thumb{height:100%!important;min-height:0!important}
+ .thumb:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 28% 28%,rgba(255,255,255,.28),transparent 32%),linear-gradient(135deg,rgba(64,120,182,.18),rgba(103,231,202,.08))}
+ .thumb.t2:before{background:radial-gradient(circle at 66% 28%,rgba(255,184,102,.24),transparent 32%),linear-gradient(135deg,rgba(90,45,81,.20),rgba(229,133,79,.10))}
+ .thumb.t3:before{background:radial-gradient(circle at 35% 32%,rgba(112,210,255,.25),transparent 32%),linear-gradient(135deg,rgba(71,94,190,.18),rgba(171,108,206,.10))}
+ .pBody{padding:clamp(5px,.8vh,10px) clamp(8px,.85vw,13px)!important;display:flex!important;flex-direction:column!important;justify-content:center!important}
+ .pBody b{font-size:clamp(10px,.86vw,14px)!important}.meta{font-size:clamp(7px,.6vw,9px)!important;margin-top:2px!important}
+ .duration{font-size:clamp(7px,.52vw,9px)!important;padding:2px 5px!important}
+
+ .bottomNav{
+   width:100%!important;height:100%!important;margin:0!important;
+   border-radius:clamp(18px,1.5vw,28px)!important;padding:clamp(2px,.45vh,5px) 10px!important;
+ }
+ .navItem{height:100%!important;padding:1px!important;gap:1px!important;font-size:clamp(8px,.64vw,10px)!important;position:relative!important}
+ .navItem svg{width:clamp(18px,2.5vh,25px)!important;height:clamp(18px,2.5vh,25px)!important}
+ .navItem.active:after{content:"";width:4px;height:4px;border-radius:50%;background:#173a70;position:absolute;bottom:1px;left:50%;transform:translateX(-50%)}
+ .siteFooter{width:100%!important;height:100%!important;margin:0!important;padding:0 8px!important;font-size:clamp(7px,.58vw,9px)!important}
+
+ .aiPanel{max-height:100%!important;overflow:auto!important}
+}
+
+/* Compact desktop/tablet: keep the same hierarchy, not a miniaturized poster. */
+@media (min-width:761px) and (max-width:1100px){
+ :root{--gsf-side:clamp(14px,2.5vw,28px);--gsf-hero-size:clamp(205px,min(25vw,32vh),280px)}
+ .stage{grid-template-columns:minmax(110px,1fr) minmax(205px,auto) minmax(110px,1fr)!important;column-gap:10px!important}
+ .scribble{font-size:clamp(13px,1.65vw,19px)!important;max-width:210px!important}
+ .features{gap:10px!important}.feature{padding-left:9px!important;padding-right:9px!important}
+}
+
+/* Short laptop viewport: preserve readable sizes; only tighten spacing. */
+@media (min-width:761px) and (max-height:650px){
+ :root{--gsf-hero-size:clamp(205px,min(23vw,36vh),245px);--gsf-gap:3px}
+ .topbar{flex-basis:36px!important}
+ #view{grid-template-rows:46% 23% 4% 12% 9% 3%!important;row-gap:.5%!important}
+ .rings{min-width:0!important;min-height:0!important}
+ .icon{width:clamp(38px,5.8vh,50px)!important;height:clamp(38px,5.8vh,50px)!important;margin-bottom:4px!important}
+ .circle strong{font-size:clamp(13px,1.2vw,18px)!important}
+ .circle small{font-size:clamp(7px,.62vw,10px)!important;margin-top:4px!important}
+ .scribble{font-size:clamp(13px,1.35vw,19px)!important}
+ .feature{padding:5px 9px!important;border-radius:20px!important}
+ .featureIcon{width:38px!important;height:38px!important;margin-bottom:2px!important}
+ .feature b{font-size:clamp(11px,1vw,15px)!important}.feature small{font-size:clamp(7px,.62vw,9px)!important}
+ .feature:after{width:22px!important;height:22px!important;font-size:15px!important}
+ .sectionHead h2{font-size:11px!important}.seeAll{padding:3px 8px!important;font-size:8px!important}
+ .project{grid-template-columns:78px 1fr!important}.pBody{padding:4px 7px!important}
+ .bottomNav{padding:2px 8px!important}.navItem svg{width:16px!important;height:16px!important}.navItem span{font-size:8px!important}
+}
+
 </style>
 </head>
 <body>
@@ -506,17 +673,17 @@ button{appearance:none;-webkit-appearance:none}
 
   <section id="momentShelf" class="momentShelf" aria-label="Anteprime AI"><div class="momentTitle">Scegli il tuo momento</div><div class="momentGrid"><button class="momentCover" data-moment="0"><span class="momentPlay"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg></span><span class="momentBadge">Momento 1</span></button><button class="momentCover" data-moment="1"><span class="momentPlay"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg></span><span class="momentBadge">Momento 2</span></button><button class="momentCover" data-moment="2"><span class="momentPlay"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg></span><span class="momentBadge">Momento 3</span></button></div></section>
 
-  <div class="sectionHead"><h2>I tuoi ultimi progetti</h2><button id="seeAll" class="seeAll">Vedi tutti</button></div>
+  <div class="sectionHead"><h2>I tuoi ultimi progetti</h2><button id="seeAll" class="seeAll">Vedi tutti ›</button></div>
   <div class="projects">
-   <div class="project"><div class="thumb"><span class="duration">00:15</span></div><div class="pBody"><b>Warzone #024</b><div class="meta">Short · 9:16</div></div></div>
-   <div class="project"><div class="thumb t2"><span class="duration">00:30</span></div><div class="pBody"><b>Forza #012</b><div class="meta">Short · 9:16</div></div></div>
-   <div class="project"><div class="thumb t3"><span class="duration">00:15</span></div><div class="pBody"><b>Fortnite #008</b><div class="meta">Short · 9:16</div></div></div>
+   <div class="project"><div class="thumb"><span class="duration">0:28</span></div><div class="pBody"><b>Warzone #024</b><div class="meta">3 short · 12 min fa</div></div></div>
+   <div class="project"><div class="thumb t2"><span class="duration">0:15</span></div><div class="pBody"><b>Forza #012</b><div class="meta">1 short · 1 giorno fa</div></div></div>
+   <div class="project"><div class="thumb t3"><span class="duration">0:30</span></div><div class="pBody"><b>Fortnite #008</b><div class="meta">2 short · 2 giorni fa</div></div></div>
   </div>
 
   <nav class="bottomNav" aria-label="Navigazione principale">
    <button class="navItem active" data-nav="home"><svg viewBox="0 0 32 32"><path d="M4 14 16 4l12 10"/><path d="M7 13v14h18V13"/><path d="M13 27v-8h6v8"/></svg><span>Home</span></button>
    <button class="navItem" data-nav="ai"><svg viewBox="0 0 32 32"><path d="m16 3 2 6 6 2-6 2-2 6-2-6-6-2 6-2Z"/><path d="m25 18 1.2 3.6L30 23l-3.8 1.4L25 28l-1.2-3.6L20 23l3.8-1.4Z"/></svg><span>AI</span></button>
-   <button class="navItem" data-nav="editor"><svg viewBox="0 0 32 32"><rect x="5" y="6" width="22" height="20" rx="5"/><path d="M10 12h12M10 17h8M10 22h6"/></svg><span>Editor</span></button>
+   <button class="navItem" data-nav="editor"><svg viewBox="0 0 32 32"><path d="M9 11h14c4 0 7 3 7 7v2c0 4-3 7-6.5 7-2.4 0-4-1.2-5.6-3.8L17 22h-2l-.9 1.2C12.5 25.8 10.9 27 8.5 27 5 27 2 24 2 20v-2c0-4 3-7 7-7Z"/><path d="M9 15v7M5.5 18.5h7"/><circle cx="22" cy="16" r="1.3"/><circle cx="26" cy="20" r="1.3"/></svg><span>Editor</span></button>
    <button class="navItem" data-nav="projects"><svg viewBox="0 0 32 32"><path d="M4 10h9l3 3h12v14H4Z"/><path d="M4 10V7h10l3 3"/></svg><span>Progetti</span></button>
    <button class="navItem" data-nav="social"><svg viewBox="0 0 32 32"><circle cx="24" cy="7" r="3"/><circle cx="8" cy="16" r="3"/><circle cx="24" cy="25" r="3"/><path d="m11 14.5 10-5.7M11 17.5l10 5.7"/></svg><span>Social</span></button>
   </nav>
@@ -556,11 +723,14 @@ button{appearance:none;-webkit-appearance:none}
      const available=Math.max(430,Number(window.parent.innerHeight||window.innerHeight||768)-top-2);
      const vh=Math.max(430,available);
      const artH=Math.min(vh,vw*9/16);
-     const target=Math.max(430,Math.floor(available)); // V165: fill the available desktop height; artH is legacy diagnostics only
+     const target=Math.max(430,Math.floor(available)); // V166: use the exact available desktop height; never scale the Home as an artboard
      height(target); return target;
    }catch(e){height(720);return 720}
  }
- window.addEventListener("resize",()=>{clearTimeout(fitViewport.t);fitViewport.t=setTimeout(fitViewport,80)});
+ const scheduleFit=()=>{clearTimeout(fitViewport.t);fitViewport.t=setTimeout(fitViewport,70)};
+ window.addEventListener("resize",scheduleFit);
+ try{if(window.visualViewport)window.visualViewport.addEventListener("resize",scheduleFit)}catch(_e){}
+ try{window.parent.addEventListener("resize",scheduleFit)}catch(_e){}
  function purgeLegacySync(){
    try{
      const doc=window.parent.document;

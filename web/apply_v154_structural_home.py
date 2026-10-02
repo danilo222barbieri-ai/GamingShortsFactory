@@ -145,6 +145,41 @@ if GSF_WEB_MODE:
     .gsf-footer-v4{
         display:none !important;
     }
+
+    /* V166 CANONICAL FLUID HOME SHELL — the component owns the entire browser work area. */
+    @media (min-width:761px){
+      [data-testid="stMainBlockContainer"],.main .block-container{
+        width:100vw !important;
+        max-width:none !important;
+        height:100dvh !important;
+        min-height:0 !important;
+        padding:0 !important;
+        margin:0 !important;
+      }
+      [data-testid="stElementContainer"]:has(iframe[title*="gsf_home_v154"]),
+      [data-testid="stElementContainer"]:has(iframe[title*="gsf_home_v154_live_155"]){
+        width:100vw !important;
+        max-width:none !important;
+        height:100dvh !important;
+        margin:0 !important;
+        padding:0 !important;
+        transform:none !important;
+      }
+      iframe[title*="gsf_home_v154_live_155"],
+      iframe[title*="gsf_home_v154"],
+      iframe[src*="home_v154"]{
+        display:block !important;
+        width:100vw !important;
+        max-width:none !important;
+        height:100dvh !important;
+        max-height:100dvh !important;
+        margin:0 !important;
+        padding:0 !important;
+        border:0 !important;
+        transform:none !important;
+      }
+    }
+
     </style>
     """)
 
