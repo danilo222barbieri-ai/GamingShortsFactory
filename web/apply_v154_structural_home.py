@@ -468,26 +468,69 @@ s = s.rstrip() + "\n\n" + _social_surface_v159.lstrip()
 
 
 # V160 — guaranteed Creator Hub overlay owned by the current production shell.
+# V222: profile-first Creator Hub, app-layer over Home with Game Bar left accessible.
 _hub_surface_v160 = r'''
 if GSF_WEB_MODE:
     st.markdown(r"""
     <style id="gsf-v160-hub-shell">
-    #gsf-creator-hub-live-v160{position:fixed;inset:0;z-index:2147483660;display:flex;align-items:center;justify-content:center;padding:15px;background:rgba(219,235,244,.52);-webkit-backdrop-filter:blur(4px) saturate(.96);backdrop-filter:blur(4px) saturate(.96);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease,visibility .22s ease}
+    #gsf-creator-hub-live-v160{
+      position:fixed;left:0;right:0;top:0;bottom:78px;
+      z-index:2147483660;display:flex;align-items:center;justify-content:center;
+      padding:24px clamp(14px,2.5vw,38px) 12px;
+      background:rgba(222,238,247,.46);
+      -webkit-backdrop-filter:blur(5px) saturate(.98);
+      backdrop-filter:blur(5px) saturate(.98);
+      opacity:0;visibility:hidden;pointer-events:none;
+      transition:opacity .24s ease,visibility .24s ease
+    }
     #gsf-creator-hub-live-v160.is-open{opacity:1;visibility:visible;pointer-events:auto}
-    #gsf-creator-hub-live-v160 .gsf-hub-shell-v160{position:relative;width:min(1920px,calc(100vw - 20px));height:calc(100dvh - 20px);border:1px solid #D3E3ED;border-radius:30px;overflow:hidden;background:#F7FBFF;box-shadow:0 30px 86px rgba(19,45,65,.24);transform:scale(.985);transition:transform .26s cubic-bezier(.2,.8,.2,1)}
-    #gsf-creator-hub-live-v160.is-open .gsf-hub-shell-v160{transform:scale(1)}
-    #gsf-creator-hub-live-v160 iframe{width:100%;height:100%;border:0;background:#F7FBFF}
-    #gsf-creator-hub-live-v160 .gsf-hub-close-v160{position:absolute;z-index:5;right:14px;top:12px;width:34px;height:34px;border:1px solid #dce9f3;border-radius:12px;background:#fff;color:#617b9d;font-size:20px;cursor:pointer}
-    @media(max-width:760px){#gsf-creator-hub-live-v160{padding:5px}#gsf-creator-hub-live-v160 .gsf-hub-shell-v160{width:calc(100vw - 10px);height:calc(100vh - 10px);border-radius:22px}}
+    #gsf-creator-hub-live-v160 .gsf-hub-shell-v160{
+      position:relative;width:min(1220px,calc(100vw - 30px));height:min(720px,calc(100dvh - 118px));
+      border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:#F7FCFF;
+      box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.94);
+      transform:scale(.985);opacity:0;
+      transition:transform .30s cubic-bezier(.16,.84,.24,1),opacity .24s ease
+    }
+    #gsf-creator-hub-live-v160.is-open .gsf-hub-shell-v160{transform:scale(1);opacity:1}
+    #gsf-creator-hub-live-v160 iframe{width:100%;height:100%;border:0;background:#F7FCFF}
+    #gsf-creator-hub-live-v160 .gsf-hub-close-v160{
+      position:absolute;z-index:7;right:13px;top:11px;width:34px;height:34px;
+      border:1px solid rgba(158,190,216,.34);border-radius:12px;background:rgba(255,255,255,.94);
+      color:#617B9D;font-size:20px;cursor:pointer;box-shadow:0 7px 18px rgba(64,104,143,.09)
+    }
+    @media(max-width:760px){
+      #gsf-creator-hub-live-v160{bottom:70px;padding:8px 5px}
+      #gsf-creator-hub-live-v160 .gsf-hub-shell-v160{
+        width:calc(100vw - 10px);height:calc(100dvh - 84px);border-radius:22px
+      }
+      #gsf-creator-hub-live-v160 .gsf-hub-close-v160{right:8px;top:7px;width:31px;height:31px}
+    }
     </style>
     <div id="gsf-creator-hub-live-v160" aria-hidden="true">
-      <section class="gsf-hub-shell-v160" role="dialog" aria-modal="true" aria-label="Creator Hub">
+      <section class="gsf-hub-shell-v160" role="dialog" aria-modal="false" aria-label="Creator Hub">
         <button class="gsf-hub-close-v160" type="button" aria-label="Chiudi">×</button>
         <iframe src="/creator-hub-v156/" title="Creator Hub"></iframe>
       </section>
     </div>
     <script>
-    (()=>{const o=document.getElementById('gsf-creator-hub-live-v160');if(!o)return;const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none'};o.querySelector('.gsf-hub-close-v160').onclick=close;o.addEventListener('click',e=>{if(e.target===o)close()});})();
+    (()=>{
+      const o=document.getElementById('gsf-creator-hub-live-v160');if(!o)return;
+      const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true')};
+      const open=()=>{
+        const so=document.getElementById('gsf-social-overlay-v159');if(so){so.classList.remove('is-open');so.style.opacity='0';so.style.visibility='hidden';so.style.pointerEvents='none'}
+        const ed=document.getElementById('gsf-editor-overlay-v220');if(ed){ed.classList.remove('is-open');ed.style.opacity='0';ed.style.visibility='hidden';ed.style.pointerEvents='none'}
+        const ai=document.getElementById('gsf-ai-overlay-v221');if(ai){ai.classList.remove('is-open');ai.style.opacity='0';ai.style.visibility='hidden';ai.style.pointerEvents='none'}
+        o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false')
+      };
+      o.querySelector('.gsf-hub-close-v160').onclick=close;
+      o.addEventListener('click',e=>{if(e.target===o)close()});
+      window.addEventListener('message',e=>{
+        if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
+        const t=String(e.data.target||'');
+        if(t==='hub'||t==='profile'){open();return}
+        if(t==='home'||t==='close'||t==='editor'||t==='social'||t==='ai')close();
+      });
+    })();
     </script>
     """, unsafe_allow_html=True)
 '''

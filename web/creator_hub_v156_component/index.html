@@ -2,116 +2,311 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;}body{font-family:"Avenir Next","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#112a57}
-#hub{width:100%;height:100dvh;min-height:600px;max-height:1080px;opacity:0;transform:scale(.985);animation:hubIn .26s cubic-bezier(.2,.8,.2,1) forwards;max-width:1920px;margin:auto;padding:14px 38px 9px;border-radius:32px;overflow:hidden;background:radial-gradient(circle at 8% 8%,rgba(128,217,255,.16),transparent 24%),radial-gradient(circle at 92% 10%,rgba(117,230,195,.13),transparent 25%),linear-gradient(180deg,#fcfeffed,#f5faffe8)}
-@keyframes hubIn{to{opacity:1;transform:scale(1)}}@keyframes hubOut{to{opacity:0;transform:scale(.985)}}.closing{animation:hubOut .20s ease forwards!important}
-.top{height:42px;display:flex;align-items:center;justify-content:space-between}.brand{font-size:15px;font-weight:900;letter-spacing:.3em;color:#6e83a2}.back{border:1px solid #dce9f3;background:#fff;border-radius:999px;padding:9px 15px;color:#627b9e;font-weight:800;cursor:pointer}
-.layout{display:grid;grid-template-columns:clamp(174px,12vw,220px) 1fr;gap:clamp(12px,1vw,18px);flex:1;min-height:0;height:auto}.side,.box{border:1px solid rgba(144,178,207,.28);background:#ffffffc9;box-shadow:0 10px 28px rgba(76,116,155,.07)}
-.side{border-radius:23px;padding:13px 10px}.sideTitle{font-size:10px;color:#91a0b5;font-weight:900;padding:4px 9px 9px}.side button{width:100%;border:0;background:transparent;border-radius:13px;padding:10px;text-align:left;color:#7185a3;font-size:11px;font-weight:850;margin:2px 0;cursor:pointer}.side .on{background:#e7f5ff;color:#428fcf}
-.main{min-width:0;min-height:0;overflow:hidden;display:flex;flex-direction:column}.grid{flex:1;min-height:0;overflow:hidden}.intro{height:63px;display:flex;justify-content:space-between;align-items:center;padding:0 5px}.intro h1{font-size:27px;margin:0}.intro p{font-size:10px;color:#8091aa;margin:2px 0}.new{border:0;border-radius:14px;padding:10px 15px;background:linear-gradient(135deg,#78d9ff,#4ba7f5);color:#fff;font-size:10px;font-weight:900;cursor:pointer}
-.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:11px}.box{border-radius:20px;padding:12px}.box h2{font-size:12px;margin:0 0 9px}.socials{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.social{border:1px solid #e5edf5;border-radius:13px;padding:8px;background:#fff;font-size:9px;font-weight:850;cursor:pointer}.social span{display:block;color:#7f91a8;font-size:8px;margin-top:3px}.social.connected span{color:#2c9a72}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.stat{border:1px solid #e5edf5;border-radius:13px;padding:8px;background:#fff}.stat b{display:block;font-size:17px}.stat small{font-size:8px;color:#8798ae}
-.full{grid-column:1/-1}.rows{display:grid;gap:6px}.row{display:grid;grid-template-columns:1.4fr .65fr .7fr auto;align-items:center;gap:8px;padding:8px 10px;border:1px solid #e6eef5;border-radius:13px;background:#fff;font-size:9px}.row b{font-size:10px}.muted{color:#8798ae}.status{font-size:8px;font-weight:850;color:#458bc5}.action{border:0;background:#e8f5ff;color:#428bc8;border-radius:9px;padding:6px 9px;font-size:8px;font-weight:900;cursor:pointer}.empty{padding:11px 10px;border:1px dashed #dce8f1;border-radius:13px;color:#8a9ab0;font-size:9px;background:#fbfdff}
-.nav{height:39px;display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:7px;padding:5px 10px;border:1px solid rgba(144,178,207,.28);background:#ffffffc9;border-radius:22px}.nav button{border:0;background:transparent;color:#8494aa;font-size:9px;font-weight:850;cursor:pointer}.nav .on{color:#438fce;background:#e1f3ff;border-radius:14px}
-@media(max-width:760px){html,body{height:auto;overflow:auto}#hub{height:auto;min-height:100dvh;max-height:none;padding:10px 12px}.layout{display:block;height:auto}.side{display:flex;overflow:auto;margin-bottom:8px}.sideTitle{display:none}.side button{white-space:nowrap;width:auto}.grid{grid-template-columns:1fr}.socials,.stats{grid-template-columns:repeat(2,1fr)}.row{grid-template-columns:1fr auto}.row .hide{display:none}}
+:root{
+ --ink:#0D2A66;--soft:#7185A6;--note:#637DA8;
+ --blue:#55AAF2;--blueSoft:#DDEEFF;
+ --mint:#CFF3DD;--mintInk:#078F61;
+ --yellow:#FFE6A3;--yellowInk:#D68000;
+ --violet:#E9E2FF;--violetInk:#735DD1;
+ --line:rgba(143,181,216,.25);--glass:rgba(255,255,255,.86);
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;color:var(--ink);font-family:"Avenir Next","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button{font:inherit}
+#hub{
+ width:100%;height:100%;overflow:auto;padding:16px 18px 14px;
+ background:
+  radial-gradient(circle at 8% 6%,rgba(126,214,255,.22),transparent 25%),
+  radial-gradient(circle at 92% 7%,rgba(127,236,197,.18),transparent 26%),
+  linear-gradient(180deg,#FCFEFF 0%,#F8FCFF 60%,#F4FAFF 100%);
+ opacity:0;transform:scale(.985);animation:hubIn .30s cubic-bezier(.16,.84,.24,1) forwards;
+}
+@keyframes hubIn{to{opacity:1;transform:scale(1)}}
+@keyframes hubOut{to{opacity:0;transform:scale(.985)}}
+#hub.closing{animation:hubOut .20s ease forwards!important}
+
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:1px 2px 12px}
+.titleWrap{display:flex;align-items:center;gap:12px}
+.titleIcon{
+ width:48px;height:48px;border-radius:17px;display:grid;place-items:center;
+ background:linear-gradient(145deg,#E7F7FF,#DDF4EE);color:#2D8FE2;
+ box-shadow:inset 0 0 0 1px rgba(255,255,255,.95),0 10px 28px rgba(76,155,216,.13)
+}
+.titleIcon svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:900;letter-spacing:-.035em}
+.subtitle{margin:6px 0 0;color:var(--soft);font-size:11px;font-weight:650}
+.closeTop{
+ border:1px solid var(--line);border-radius:14px;padding:9px 13px;background:rgba(255,255,255,.88);
+ color:#5F7C9E;font-size:9px;font-weight:900;cursor:pointer;box-shadow:0 8px 22px rgba(65,105,145,.06)
+}
+
+.guide{position:absolute;z-index:4;pointer-events:none;color:var(--note);font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive;font-weight:600;line-height:1.05;text-align:center}
+.guide.left{left:20px;top:93px;width:170px;font-size:14px;transform:rotate(-4deg)}
+.guide.right{right:28px;top:88px;width:180px;font-size:13px;transform:rotate(4deg)}
+.guide span{display:block;transition:opacity .44s ease,filter .44s ease,transform .44s ease}
+.guide span.out{opacity:0;filter:blur(7px);transform:translateY(-8px) scale(.93)}
+@keyframes writeIn{0%{opacity:0;filter:blur(8px);transform:translateY(9px) scale(.92)}70%{opacity:1;filter:blur(.5px);transform:translateY(-2px) scale(1.02)}100%{opacity:1;filter:none;transform:none}}
+.guide span.in{animation:writeIn 1.08s cubic-bezier(.18,.72,.2,1) 1}
+
+.grid{display:grid;grid-template-columns:1.18fr .82fr;gap:10px}
+.card{
+ border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.80);
+ backdrop-filter:blur(17px);-webkit-backdrop-filter:blur(17px);
+ box-shadow:0 15px 38px rgba(61,104,145,.075),inset 0 1px 0 rgba(255,255,255,.96);
+ padding:13px;
+}
+.full{grid-column:1/-1}
+.cardHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.cardTitle{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:900}
+.iconBox{width:28px;height:28px;border-radius:10px;display:grid;place-items:center;font-size:12px}
+.iProfile{background:var(--blueSoft);color:#397FC8}.iSocial{background:var(--mint);color:var(--mintInk)}.iStats{background:var(--yellow);color:var(--yellowInk)}.iDraft{background:var(--violet);color:var(--violetInk)}
+.cardHint{font-size:8px;color:#8597AC;font-weight:750}
+
+.profile{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px}
+.avatar{
+ width:54px;height:54px;border-radius:18px;display:grid;place-items:center;
+ background:linear-gradient(145deg,#D9EEFF,#DDF6E8);color:#2E80C9;font-size:19px;font-weight:900;
+ border:1px solid rgba(255,255,255,.92);box-shadow:0 9px 24px rgba(68,133,184,.12)
+}
+.profileName{font-size:17px;font-weight:900;letter-spacing:-.02em}
+.profileMeta{font-size:9px;color:var(--soft);font-weight:700;margin-top:3px}
+.badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.badge{font-size:7.5px;font-weight:850;padding:5px 7px;border-radius:999px;background:#EDF6FF;color:#6682A0}
+.badge.ok{background:#DDF8EB;color:#168B65}
+.badge.plan{background:#FFF1C7;color:#B87800}
+.profileAction{
+ border:0;border-radius:13px;padding:9px 12px;background:#EAF5FF;color:#457AA7;
+ font-size:8.5px;font-weight:900;cursor:pointer
+}
+
+.socials{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.social{
+ border:1px solid rgba(144,181,214,.21);border-radius:15px;padding:9px;background:rgba(255,255,255,.92);
+ min-width:0;cursor:pointer;transition:.2s ease
+}
+.social:hover{transform:translateY(-2px);box-shadow:0 9px 20px rgba(66,108,145,.08)}
+.socialTop{display:flex;align-items:center;gap:7px}
+.socialLogo{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-size:13px;font-weight:900}
+.social[data-social="youtube"] .socialLogo{background:#FFE7E7;color:#FF0033}
+.social[data-social="tiktok"] .socialLogo{background:#EEF2F6;color:#101820}
+.social[data-social="instagram"] .socialLogo{background:#F5E7F7;color:#C13584}
+.social[data-social="facebook"] .socialLogo{background:#E5EFFF;color:#1877F2}
+.social b{font-size:9px}
+.social span{display:block;font-size:7.5px;color:#8A9BAF;margin-top:5px;font-weight:750}
+.social.connected span{color:#168B65}
+.social.connected{border-color:rgba(96,201,157,.26)}
+
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.stat{border:1px solid rgba(144,181,214,.21);border-radius:15px;padding:9px;background:rgba(255,255,255,.92)}
+.stat b{display:block;font-size:18px;line-height:1;font-weight:900}
+.stat small{display:block;margin-top:4px;font-size:7.5px;color:#8798AD;font-weight:750}
+
+.rows{display:grid;gap:6px}
+.row{
+ display:grid;grid-template-columns:minmax(0,1.5fr) .6fr .7fr auto;align-items:center;gap:8px;
+ padding:9px 10px;border:1px solid rgba(144,181,214,.20);border-radius:14px;background:rgba(255,255,255,.92);
+ font-size:8.5px
+}
+.row b{font-size:9.5px}.muted{color:#8798AE}.status{color:#478CC4;font-weight:850}
+.action{border:0;border-radius:10px;padding:7px 9px;background:#E8F5FF;color:#428BC8;font-size:8px;font-weight:900;cursor:pointer}
+.empty{padding:11px 10px;border:1px dashed #DCE8F1;border-radius:13px;color:#8A9AB0;font-size:9px;background:#FBFDFF}
+
+.projectBox{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid rgba(144,181,214,.20);border-radius:14px;background:rgba(255,255,255,.92)}
+.projectInfo b{display:block;font-size:10px}.projectInfo span{display:block;margin-top:3px;font-size:8px;color:#8798AE}
+.quick{display:flex;gap:6px;flex-wrap:wrap}
+.quick button{border:0;border-radius:10px;padding:7px 9px;background:#EDF6FF;color:#4F789C;font-size:8px;font-weight:900;cursor:pointer}
+.quick .mint{background:#E3F8EC;color:#148763}
+.quick .yellow{background:#FFF1C7;color:#B87800}
+
+@media(max-width:900px){
+ #hub{padding:12px 10px 11px}
+ .guide{display:none}
+ .grid{grid-template-columns:1fr}
+ .full{grid-column:auto}
+}
+@media(max-width:520px){
+ #hub{padding:9px 7px 10px}
+ .top{margin-bottom:8px}
+ .titleIcon{width:40px;height:40px;border-radius:14px}
+ h1{font-size:20px}
+ .subtitle{font-size:8.5px;max-width:235px}
+ .closeTop{padding:8px 10px;font-size:8px}
+ .card{padding:9px;border-radius:20px}
+ .cardHead{margin-bottom:7px}.cardTitle{font-size:11px}.cardHint{display:none}
+ .profile{grid-template-columns:auto 1fr}.profileAction{grid-column:1/-1;width:100%}
+ .avatar{width:45px;height:45px;border-radius:15px;font-size:16px}
+ .profileName{font-size:14px}.profileMeta{font-size:8px}
+ .socials,.stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .row{grid-template-columns:1fr auto}.row .hide{display:none}
+ .projectBox{align-items:stretch;flex-direction:column}
+ .quick{display:grid;grid-template-columns:repeat(3,1fr)}
+}
 </style>
 </head>
 <body>
 <main id="hub">
-<header class="top"><div class="brand">GAMING SHORTS FACTORY</div><button class="back">← Torna alla Home</button></header>
-<div class="layout">
-<aside class="side">
-<div class="sideTitle">CREATOR HUB</div>
-<button class="on" data-target="overview">⌂ &nbsp; Panoramica</button>
-<button data-target="social">◎ &nbsp; Account Social</button>
-<button data-target="drafts">✎ &nbsp; Le mie bozze</button>
-<button data-target="shorts">↗ &nbsp; I miei Short</button>
-<button data-target="stats">⌁ &nbsp; Statistiche</button>
-<button data-target="settings">⚙ &nbsp; Impostazioni</button>
-</aside>
-<section class="main">
-<div class="intro"><div><h1>Creator Hub</h1><p id="accountLine">Il tuo spazio creator resta collegato al progetto attivo.</p></div><button class="new">＋ Nuovo Short</button></div>
-<div class="grid">
-<section class="box"><h2>Account collegati</h2><div class="socials">
-<div class="social" data-social="youtube">▶ YouTube<span>○ Non collegato</span></div>
-<div class="social" data-social="tiktok">♪ TikTok<span>○ Non collegato</span></div>
-<div class="social" data-social="instagram">◎ Instagram<span>○ Non collegato</span></div>
-<div class="social" data-social="facebook">f Facebook<span>○ Non collegato</span></div>
-</div></section>
-<section class="box"><h2>Le tue statistiche</h2><div class="stats">
-<div class="stat"><b id="statCreated">0</b><small>Short creati</small></div>
-<div class="stat"><b id="statPublished">0</b><small>Pubblicati</small></div>
-<div class="stat"><b id="statSocial">0</b><small>Social</small></div>
-<div class="stat"><b id="statDrafts">0</b><small>Bozze</small></div>
-</div></section>
-<section class="box full"><h2>Le tue bozze</h2><div class="rows" id="draftRows"><div class="empty">Caricamento bozze…</div></div></section>
-<section class="box full"><h2>Progetto attivo</h2><div class="rows" id="projectRows"><div class="empty">Nessun progetto attivo recuperato.</div></div></section>
-</div>
-</section>
-</div>
-<nav class="nav"><button data-target="home">⌂ Home</button><button data-target="ai">✦ AI</button><button data-target="editor">🎮 Editor</button><button class="on" data-target="overview">▢ Progetti</button><button data-target="social">⌯ Social</button></nav>
+ <div class="top">
+  <div class="titleWrap">
+   <div class="titleIcon">
+    <svg viewBox="0 0 24 24"><path d="M4 19V9l8-5 8 5v10"/><path d="M8 19v-5h8v5"/><path d="M17.5 5.5 20 3v5"/></svg>
+   </div>
+   <div><h1>Creator Hub</h1><p class="subtitle">Il tuo profilo, i tuoi account e il progetto attivo. Tutto resta nello stesso spazio.</p></div>
+  </div>
+  <button class="closeTop">Torna alla Home</button>
+ </div>
+
+ <div class="guide left"><span id="guideLeft">Qui vive<br>il tuo profilo</span></div>
+ <div class="guide right"><span id="guideRight">Account, bozze,<br>social: senza perdere il filo</span></div>
+
+ <div class="grid">
+  <section class="card full" data-zone="profile">
+   <div class="cardHead"><div class="cardTitle"><span class="iconBox iProfile">⌂</span>Il tuo profilo</div><div class="cardHint">Identità e sincronizzazione</div></div>
+   <div class="profile">
+    <div class="avatar" id="avatar">C</div>
+    <div>
+     <div class="profileName" id="profileName">Creator</div>
+     <div class="profileMeta" id="profileMeta">Caricamento profilo…</div>
+     <div class="badges"><span class="badge plan" id="planBadge">FREE</span><span class="badge" id="syncBadge">Sessione locale</span></div>
+    </div>
+    <button class="profileAction" id="profileAction">Account e accesso</button>
+   </div>
+  </section>
+
+  <section class="card" data-zone="social">
+   <div class="cardHead"><div class="cardTitle"><span class="iconBox iSocial">◎</span>Account Social</div><div class="cardHint">Pubblicazione collegata</div></div>
+   <div class="socials">
+    <button class="social" data-social="youtube"><div class="socialTop"><span class="socialLogo">▶</span><b>YouTube</b></div><span>○ Non collegato</span></button>
+    <button class="social" data-social="tiktok"><div class="socialTop"><span class="socialLogo">♪</span><b>TikTok</b></div><span>○ Non collegato</span></button>
+    <button class="social" data-social="instagram"><div class="socialTop"><span class="socialLogo">◎</span><b>Instagram</b></div><span>○ Non collegato</span></button>
+    <button class="social" data-social="facebook"><div class="socialTop"><span class="socialLogo">f</span><b>Facebook</b></div><span>○ Non collegato</span></button>
+   </div>
+  </section>
+
+  <section class="card" data-zone="stats">
+   <div class="cardHead"><div class="cardTitle"><span class="iconBox iStats">⌁</span>Il tuo spazio</div><div class="cardHint">Solo i numeri utili</div></div>
+   <div class="stats">
+    <div class="stat"><b id="statCreated">0</b><small>Short creati</small></div>
+    <div class="stat"><b id="statPublished">0</b><small>Pubblicati</small></div>
+    <div class="stat"><b id="statDrafts">0</b><small>Bozze</small></div>
+    <div class="stat"><b id="statSocial">0</b><small>Social</small></div>
+   </div>
+  </section>
+
+  <section class="card" data-zone="drafts">
+   <div class="cardHead"><div class="cardTitle"><span class="iconBox iDraft">✎</span>Le tue bozze</div><div class="cardHint">Riprendi da dove hai lasciato</div></div>
+   <div class="rows" id="draftRows"><div class="empty">Caricamento bozze…</div></div>
+  </section>
+
+  <section class="card" data-zone="project">
+   <div class="cardHead"><div class="cardTitle"><span class="iconBox iProfile">▢</span>Progetto attivo</div><div class="cardHint">Il lavoro corrente</div></div>
+   <div id="projectRows"><div class="empty">Nessun progetto attivo recuperato.</div></div>
+  </section>
+ </div>
 </main>
+
 <script>
-const $=q=>document.querySelector(q);
-function parentClick(words){
+(()=>{
+ const $=q=>document.querySelector(q);
+ let seq=0;
+ const gl=$("#guideLeft"),gr=$("#guideRight");
+ const copy={
+  profile:["Qui vive<br>il tuo profilo","Account e progetto<br>restano nello stesso posto"],
+  social:["Collega una volta","Poi pubblichi<br>senza perdere il filo"],
+  stats:["Quattro numeri","Solo quelli che<br>ti servono davvero"],
+  drafts:["Hai lasciato<br>qualcosa a metà?","Riparti da qui<br>senza rifare niente"],
+  project:["Questo è il<br>tuo progetto vivo","IA, Editor e Social<br>partono da qui"]
+ };
+ const morph=(el,html,s)=>{if(!el||el.innerHTML===html)return;el.classList.remove("in");el.classList.add("out");setTimeout(()=>{if(s!==seq)return;el.innerHTML=html;el.classList.remove("out");void el.offsetWidth;el.classList.add("in");setTimeout(()=>el.classList.remove("in"),1120)},440)};
+ const guide=(key)=>{const c=copy[key]||copy.profile,s=++seq;morph(gl,c[0],s);morph(gr,c[1],s)};
+
+ function shell(target,data={}){
+   try{parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin)}catch(e){}
+ }
+ function closeHub(target="home",data={}){
+   const h=$("#hub");h.classList.add("closing");
+   setTimeout(()=>shell(target,data),180);
+ }
+ function ago(ts){
+   if(!ts)return"Salvata";
+   const d=Math.max(0,Date.now()/1000-Number(ts));
+   if(d<90)return"Adesso";
+   if(d<3600)return Math.floor(d/60)+" min fa";
+   if(d<86400)return Math.floor(d/3600)+" h fa";
+   return Math.floor(d/86400)+" g fa";
+ }
+ function escapeHtml(v){return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+ async function loadState(){
   try{
-    const doc=parent.document;
-    const nodes=[...doc.querySelectorAll("button,a,[role=button],[role=tab],[role=radio]")].filter(x=>!x.closest("#gsf-creator-hub-portal-v107"));
-    const hit=nodes.find(x=>words.some(w=>String(x.innerText||x.textContent||"").toLowerCase().includes(w)));
-    if(hit){hit.click();return true}
-  }catch(e){}
-  return false;
-}
-function shell(target,data={}){
-  try{
-    const doc=parent.document,panel=doc.getElementById("gsf-creator-hub-live-v160")||doc.getElementById("gsf-creator-hub-panel");
-    if(panel){panel.classList.remove("is-open");panel.style.opacity="0";panel.style.visibility="hidden";panel.style.pointerEvents="none";}
-    try{parent.sessionStorage.setItem("gsf_creator_hub_open_v107","0")}catch(_e){}
-    try{parent.history.replaceState(null,"",parent.location.pathname+parent.location.search)}catch(_e){}
-    if(target==="close"||target==="home")return true;
-    if(target==="new")return parentClick(["nuovo video","carica il tuo gameplay"]);
-    if(target==="editor"||target==="resume_draft")return parentClick(["apri game editor","game editor","manuale"]);
-    if(target==="ai")return parentClick(["crea con ia","crea con ai","analizza con ia"]);
-    if(target==="social"){parent.postMessage({type:"GSF_SHELL_NAV",target:"social"},location.origin);return true}
-    parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin);
-  }catch(e){try{parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin)}catch(_e){}}
-  return false;
-}
-function closeHub(target="close",data={}){const h=$("#hub");h.classList.add("closing");setTimeout(()=>shell(target,data),180)}
-function ago(ts){if(!ts)return"Salvata";const d=Math.max(0,Date.now()/1000-Number(ts));if(d<90)return"Adesso";if(d<3600)return Math.floor(d/60)+" min fa";if(d<86400)return Math.floor(d/3600)+" h fa";return Math.floor(d/86400)+" g fa"}
-async function loadState(){
-  try{
-    const r=await fetch("/creator-hub/state",{cache:"no-store",credentials:"same-origin"});
-    const j=await r.json();
-    if(!r.ok||!j.ok)throw new Error(j.error||"Hub non disponibile");
-    const a=j.account||{},st=j.stats||{},social=j.social||{};
-    $("#accountLine").textContent=a.connected?((a.display_name||"Creator")+" · progetto e modifiche sincronizzati"):"Progetto salvato in questa sessione · collega un account per sincronizzarlo";
-    $("#statCreated").textContent=st.shorts_created||0;$("#statPublished").textContent=st.shorts_published||0;$("#statSocial").textContent=st.social||0;$("#statDrafts").textContent=st.drafts||0;
-    document.querySelectorAll("[data-social]").forEach(el=>{const yes=!!social[el.dataset.social];el.classList.toggle("connected",yes);el.querySelector("span").textContent=yes?"● Collegato":"○ Non collegato"});
-    const drafts=Array.isArray(j.drafts)?j.drafts:[];
-    $("#draftRows").innerHTML=drafts.length?drafts.map(d=>'<div class="row"><b>'+escapeHtml(d.title||d.source_name||"Gameplay")+'</b><span class="muted hide">'+(d.duration?d.duration+" sec":"Bozza")+'</span><span class="status hide">'+ago(d.updated_at)+'</span><button class="action" data-resume="'+escapeHtml(d.id||"")+'">Continua</button></div>').join(""):'<div class="empty">Nessuna bozza salvata.</div>';
-    const p=j.project||{};
-    $("#projectRows").innerHTML=p.id?'<div class="row"><b>Progetto corrente</b><span class="muted hide">'+(p.has_source?"Gameplay collegato":"In preparazione")+'</span><span class="status hide">'+ago(p.updated_at)+'</span><button class="action" data-project-editor="1">Apri Editor</button></div>':'<div class="empty">Nessun progetto attivo recuperato.</div>';
-    document.querySelectorAll("[data-resume]").forEach(b=>b.onclick=()=>resumeDraft(b.dataset.resume));
-    document.querySelectorAll("[data-project-editor]").forEach(b=>b.onclick=()=>closeHub("editor"));
-  }catch(e){$("#draftRows").innerHTML='<div class="empty">Creator Hub non disponibile. Riprova tra poco.</div>'}
-}
-function escapeHtml(v){return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-async function resumeDraft(id){
+   const r=await fetch("/creator-hub/state",{cache:"no-store",credentials:"same-origin"});
+   const j=await r.json();
+   if(!r.ok||!j.ok)throw new Error(j.error||"Hub non disponibile");
+   const a=j.account||{},st=j.stats||{},social=j.social||{};
+   const name=String(a.display_name||"Creator").trim()||"Creator";
+   $("#profileName").textContent=name;
+   $("#avatar").textContent=(name[0]||"C").toUpperCase();
+   $("#planBadge").textContent=String(a.plan||"FREE").toUpperCase();
+   $("#profileMeta").textContent=a.connected?"Profilo collegato · progetto sincronizzato":"Profilo locale · collega un account quando vuoi";
+   $("#syncBadge").textContent=a.connected?"✓ Sincronizzato":"Sessione locale";
+   $("#syncBadge").classList.toggle("ok",!!a.connected);
+
+   $("#statCreated").textContent=st.shorts_created||0;
+   $("#statPublished").textContent=st.shorts_published||0;
+   $("#statDrafts").textContent=st.drafts||0;
+   $("#statSocial").textContent=st.social||0;
+
+   document.querySelectorAll("[data-social]").forEach(el=>{
+    const yes=!!social[el.dataset.social];
+    el.classList.toggle("connected",yes);
+    el.querySelector("span:last-child").textContent=yes?"✓ Collegato":"○ Non collegato";
+   });
+
+   const drafts=Array.isArray(j.drafts)?j.drafts:[];
+   $("#draftRows").innerHTML=drafts.length
+    ?drafts.slice(0,4).map(d=>'<div class="row"><b>'+escapeHtml(d.title||d.source_name||"Gameplay")+'</b><span class="muted hide">'+(d.duration?d.duration+" sec":"Bozza")+'</span><span class="status hide">'+ago(d.updated_at)+'</span><button class="action" data-resume="'+escapeHtml(d.id||"")+'">Continua</button></div>').join("")
+    :'<div class="empty">Nessuna bozza salvata.</div>';
+
+   const p=j.project||{};
+   $("#projectRows").innerHTML=p.id
+    ?'<div class="projectBox"><div class="projectInfo"><b>Progetto corrente</b><span>'+(p.has_source?"Gameplay collegato · ":"In preparazione · ")+ago(p.updated_at)+'</span></div><div class="quick"><button data-quick="ai">IA</button><button class="mint" data-quick="editor">Editor</button><button class="yellow" data-quick="social">Social</button></div></div>'
+    :'<div class="empty">Nessun progetto attivo recuperato.</div>';
+
+   document.querySelectorAll("[data-resume]").forEach(b=>b.onclick=()=>resumeDraft(b.dataset.resume));
+   document.querySelectorAll("[data-quick]").forEach(b=>b.onclick=()=>closeHub(b.dataset.quick));
+  }catch(e){
+   $("#draftRows").innerHTML='<div class="empty">Creator Hub non disponibile. Riprova tra poco.</div>';
+  }
+ }
+
+ async function resumeDraft(id){
   if(!id)return;
   try{
-    const r=await fetch("/drafts/resume?id="+encodeURIComponent(id)+"&json=1",{cache:"no-store",credentials:"same-origin"});const j=await r.json();
-    if(!r.ok||!j.ok)throw new Error(j.error||"Bozza non disponibile");
-    closeHub("resume_draft",{draft_id:id});
-  }catch(e){alert(e.message||"Bozza non disponibile")}
-}
-$(".back").onclick=()=>closeHub("close");
-$(".new").onclick=()=>closeHub("new");
-document.querySelectorAll("[data-target]").forEach(b=>b.addEventListener("click",()=>{const t=b.dataset.target;if(t==="overview")return;if(["drafts","shorts","stats","settings"].includes(t)){document.querySelectorAll(".side button").forEach(x=>x.classList.toggle("on",x===b));return}closeHub(t)}));
-document.querySelectorAll("[data-social]").forEach(b=>b.addEventListener("click",()=>closeHub("social",{platform:b.dataset.social})));
-loadState();
+   const r=await fetch("/drafts/resume?id="+encodeURIComponent(id)+"&json=1",{cache:"no-store",credentials:"same-origin"});
+   const j=await r.json();
+   if(!r.ok||!j.ok)throw new Error(j.error||"Bozza non disponibile");
+   closeHub("editor",{draft_id:id,resume:true});
+  }catch(e){
+   $("#draftRows").innerHTML='<div class="empty">'+escapeHtml(e.message||"Bozza non disponibile")+'</div>';
+  }
+ }
+
+ $(".closeTop").onclick=()=>closeHub("home");
+ $("#profileAction").onclick=()=>shell("profile");
+ document.querySelectorAll("[data-social]").forEach(b=>b.addEventListener("click",()=>closeHub("social",{platform:b.dataset.social})));
+ document.querySelectorAll("[data-zone]").forEach(z=>{
+  const key=z.dataset.zone;
+  z.addEventListener("mouseenter",()=>guide(key));
+  z.addEventListener("focusin",()=>guide(key));
+  z.addEventListener("touchstart",()=>guide(key),{passive:true});
+ });
+ guide("profile");
+ loadState();
+
+ // Historical V160 contract marker: gsf-creator-hub-live-v160
+ // Shell messaging contract: GSF_SHELL_NAV
+})();
 </script>
 </body>
 </html>
