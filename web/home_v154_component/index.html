@@ -3116,6 +3116,199 @@ html,body{
 #home154 .footerSocialLink[aria-label="TikTok"]{color:#111827!important}
 #home154 .footerSocialLink[aria-label="Twitch"]{color:#9146FF!important}
 
+
+/* V212 MOBILE MURAL DIRECTOR + SHARED LIVING GAMEBAR
+   Mural direction is mobile-specific here. Gamebar life is shared by desktop/mobile. */
+@keyframes gsfGamebarBreath{
+  0%,100%{
+    box-shadow:0 10px 28px rgba(59,104,148,.11),0 0 0 4px rgba(226,243,255,.30),inset 0 1px 0 #fff;
+  }
+  50%{
+    box-shadow:0 13px 34px rgba(59,104,148,.15),0 0 0 6px rgba(219,240,255,.40),inset 0 1px 0 #fff;
+  }
+}
+@keyframes gsfGamebarSheen{
+  0%,18%{transform:translateX(-145%);opacity:0}
+  26%{opacity:.52}
+  55%{opacity:.22}
+  72%,100%{transform:translateX(145%);opacity:0}
+}
+@keyframes gsfGamebarActiveFloat{
+  0%,100%{transform:translateY(0) scale(1)}
+  50%{transform:translateY(-2px) scale(1.045)}
+}
+#home154 .bottomNav{
+  position:relative!important;
+  isolation:isolate!important;
+  animation:gsfGamebarBreath 7.2s ease-in-out infinite!important;
+}
+#home154 .bottomNav:before{
+  content:""!important;
+  position:absolute!important;
+  inset:1px!important;
+  border-radius:inherit!important;
+  pointer-events:none!important;
+  z-index:0!important;
+  background:linear-gradient(105deg,transparent 0%,transparent 36%,rgba(255,255,255,.04) 41%,rgba(203,239,255,.34) 49%,rgba(255,255,255,.12) 56%,transparent 64%,transparent 100%)!important;
+  transform:translateX(-145%);
+  animation:gsfGamebarSheen 8.4s ease-in-out infinite!important;
+}
+#home154 .bottomNav > *{position:relative!important;z-index:1!important}
+#home154 .navItem.active svg{
+  transform-origin:center!important;
+  animation:gsfGamebarActiveFloat 4.6s ease-in-out infinite!important;
+}
+#home154[data-mural-state="uploading"] .bottomNav{
+  animation-duration:3.4s!important;
+}
+#home154[data-mural-state="uploading"] .bottomNav:before{
+  animation-duration:5.2s!important;
+}
+
+/* Mobile mural: slow, readable and deliberately staged. */
+@keyframes gsfMuralMobileWrite{
+  0%{
+    opacity:0;
+    filter:blur(8px);
+    transform:translateY(12px) scale(.90) rotate(-2deg);
+    clip-path:inset(0 96% 0 0);
+    letter-spacing:.055em;
+  }
+  28%{
+    opacity:.62;
+    filter:blur(4px);
+    clip-path:inset(0 58% 0 0);
+  }
+  64%{
+    opacity:1;
+    filter:blur(.8px);
+    transform:translateY(-2px) scale(1.025) rotate(.5deg);
+    clip-path:inset(0 10% 0 0);
+  }
+  100%{
+    opacity:1;
+    filter:blur(0);
+    transform:translateY(0) scale(1) rotate(0);
+    clip-path:inset(0 0 0 0);
+    letter-spacing:.01em;
+  }
+}
+@media (max-width:760px){
+  #home154 .muralGuide .guideText{
+    transition:
+      opacity .42s cubic-bezier(.4,0,.2,1),
+      filter .42s cubic-bezier(.4,0,.2,1),
+      transform .42s cubic-bezier(.4,0,.2,1)!important;
+  }
+  #home154 .muralGuide .guideText.muralOut{
+    opacity:0!important;
+    filter:blur(7px)!important;
+    transform:translateY(-9px) scale(.91) rotate(-2deg)!important;
+  }
+  #home154 .muralGuide .guideText.muralIn{
+    animation:gsfMuralMobileWrite 1.18s cubic-bezier(.18,.72,.2,1) 1!important;
+  }
+
+  /* Default/idle scene: two clear voices only. */
+  #home154 .scribble.left{
+    left:50%!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:2px!important;
+    width:min(76vw,300px)!important;
+    text-align:center!important;
+    transform:translateX(-50%) rotate(-2.5deg)!important;
+    font-size:clamp(14px,3.85vw,17px)!important;
+    line-height:1.08!important;
+  }
+  #home154 .scribble.right{
+    right:0!important;
+    left:auto!important;
+    top:16px!important;
+    bottom:auto!important;
+    width:min(34vw,132px)!important;
+    text-align:center!important;
+    transform:rotate(4deg)!important;
+    font-size:clamp(13px,3.55vw,16px)!important;
+    line-height:1.07!important;
+  }
+  #home154 .scribble.right .padSketch{
+    width:42px!important;
+    height:auto!important;
+    margin:6px auto 0!important;
+  }
+  #home154 .muralAmbient{
+    display:none!important;
+  }
+
+  /* Upload: move the story upward and keep the center readable. */
+  #home154[data-mural-state="uploading"] .scribble.left{
+    left:2px!important;
+    right:auto!important;
+    top:48px!important;
+    bottom:auto!important;
+    width:min(31vw,120px)!important;
+    text-align:center!important;
+    transform:rotate(-5deg)!important;
+    font-size:clamp(12.5px,3.35vw,15px)!important;
+  }
+  #home154[data-mural-state="uploading"] .scribble.right{
+    right:0!important;
+    top:35px!important;
+    width:min(34vw,132px)!important;
+    transform:rotate(4deg)!important;
+  }
+  #home154[data-mural-state="uploading"] .scribble.right .padSketch{
+    opacity:.70!important;
+    transform:scale(.92)!important;
+  }
+
+  /* Ready: the CTA guide becomes the protagonist above the choice cards.
+     Third mural note now appears in the free upper-left pocket. */
+  #home154[data-mural-state="ready"] .scribble.left,
+  #home154[data-mural-state^="focus-"] .scribble.left{
+    left:50%!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:0!important;
+    width:min(84vw,330px)!important;
+    text-align:center!important;
+    transform:translateX(-50%) rotate(-2deg)!important;
+    font-size:clamp(15px,4.05vw,18px)!important;
+  }
+  #home154[data-mural-state="ready"] .scribble.right,
+  #home154[data-mural-state^="focus-"] .scribble.right{
+    right:1px!important;
+    top:24px!important;
+    width:min(31vw,122px)!important;
+    font-size:clamp(12.5px,3.3vw,15px)!important;
+  }
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    display:block!important;
+    left:0!important;
+    right:auto!important;
+    top:30px!important;
+    width:min(30vw,116px)!important;
+    text-align:center!important;
+    font-size:clamp(11.5px,3.15vw,14px)!important;
+    transform:rotate(-5deg)!important;
+    opacity:.86!important;
+  }
+}
+@media (max-width:390px){
+  #home154 .scribble.left{font-size:14px!important;width:min(74vw,285px)!important}
+  #home154 .scribble.right{font-size:12.5px!important;width:118px!important}
+  #home154[data-mural-state="uploading"] .scribble.left{width:108px!important;font-size:12px!important}
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{width:104px!important;font-size:11px!important}
+}
+@media (prefers-reduced-motion:reduce){
+  #home154 .bottomNav,
+  #home154 .bottomNav:before,
+  #home154 .navItem.active svg{animation:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -3221,14 +3414,14 @@ html,body{
      ambient:"Qui comincia<br>il tuo highlight"
    },
    uploading:{
-     primary:"Ci siamo...<br>il motore è acceso",
-     upload:"Sto caricando<br>il tuo gameplay",
-     ambient:"Un attimo<br>preparo tutto"
+     primary:"Sta prendendo<br>forma...",
+     upload:"Caricamento<br>in corso",
+     ambient:"Preparo<br>il tuo gameplay"
    },
    ready:{
-     primary:"Ora scegli<br>la tua modalità",
+     primary:"Scegli la tua<br>modalità",
      upload:"Video pronto",
-     ambient:"IA, Editor o Short<br>scegli tu"
+     ambient:"IA · Editor · Short<br>tocca a te"
    },
    "focus-ai":{
      primary:"Lascia fare<br>all'IA",
@@ -3248,6 +3441,9 @@ html,body{
  };
  function morphMuralText(el,html,seq){
    if(!el||el.innerHTML===html)return;
+   const mobileMural=window.matchMedia&&window.matchMedia("(max-width:760px)").matches;
+   const outMs=mobileMural?430:115;
+   const inMs=mobileMural?1220:380;
    el.classList.remove("muralIn");
    el.classList.add("muralOut");
    window.setTimeout(()=>{
@@ -3256,8 +3452,8 @@ html,body{
      el.classList.remove("muralOut");
      void el.offsetWidth;
      el.classList.add("muralIn");
-     window.setTimeout(()=>el.classList.remove("muralIn"),380);
-   },115);
+     window.setTimeout(()=>el.classList.remove("muralIn"),inMs);
+   },outMs);
  }
  function setMuralState(next,instant=false){
    next=muralCopy[next]?next:"idle";
