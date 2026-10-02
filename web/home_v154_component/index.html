@@ -3165,6 +3165,25 @@ button{appearance:none;-webkit-appearance:none}
  }
 }
 
+
+/* V182 MOBILE BRAND FINAL
+   Final phone-only header trim: keep the brand fully visible without
+   changing uploader/cards/gamebar/footer geometry. */
+@media (max-width:760px){
+ .topbar{
+   position:relative!important;
+   z-index:20!important;
+   transform:translateY(8px)!important;
+   overflow:visible!important;
+ }
+ .brandOnly{
+   font-size:8px!important;
+   line-height:1!important;
+   letter-spacing:.22em!important;
+   white-space:nowrap!important;
+ }
+}
+
 </style>
 </head>
 <body>
