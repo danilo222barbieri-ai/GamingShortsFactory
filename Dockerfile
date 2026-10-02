@@ -93,6 +93,7 @@ RUN python /app/web/test_v160_hub_shell.py
 RUN python /app/web/test_v161_viewport_fit.py
 RUN python /app/web/test_v161_1_zero_scroll.py
 RUN python /app/web/test_v162_1_short_desktop_fit.py
+RUN python /app/web/test_v163_adaptive_artboard.py
 RUN python /app/web/test_v162_1_home_lift.py
 RUN python -m compileall -q /app/web
 COPY .streamlit /app/.streamlit
