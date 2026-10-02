@@ -3606,6 +3606,200 @@ button{appearance:none;-webkit-appearance:none}
  }
 }
 
+
+/* V191 TRUE MOBILE VISUAL PORT
+   Root fix: desktop now reuses the actual approved mobile visual language
+   from V176/V179 instead of approximating it. Desktop layout/ads remain desktop. */
+@media (min-width:761px){
+ #home154{
+   background:
+     radial-gradient(circle at 12% 8%,rgba(111,209,255,.17),transparent 23%),
+     radial-gradient(circle at 88% 10%,rgba(106,229,185,.15),transparent 24%),
+     linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important;
+ }
+ #home154:before{
+   background:
+     radial-gradient(circle at 23% 44%,rgba(111,211,255,.05),transparent 31%),
+     radial-gradient(circle at 77% 52%,rgba(91,226,178,.05),transparent 31%)!important;
+   animation:gsfHomeGlowAlive 9s ease-in-out infinite!important;
+   opacity:1!important;
+ }
+
+ /* Exact mobile uploader treatment. */
+ .rings{
+   background:
+     radial-gradient(circle at 36% 27%,rgba(255,255,255,.995) 0%,rgba(246,252,255,.985) 34%,rgba(238,249,255,.965) 61%,rgba(232,251,246,.955) 100%) padding-box,
+     linear-gradient(102deg,rgba(109,195,244,.68) 0%,rgba(124,207,249,.48) 44%,rgba(132,221,214,.36) 66%,rgba(113,229,192,.42) 100%) border-box!important;
+   border:1.35px solid transparent!important;
+   box-shadow:
+     -18px 0 48px rgba(89,198,247,.18),
+     20px 7px 52px rgba(92,225,182,.14),
+     inset 0 0 0 1px rgba(255,255,255,.86),
+     0 16px 42px rgba(70,126,166,.07)!important;
+   filter:none!important;
+   opacity:1!important;
+ }
+ .rings:before{
+   content:""!important;
+   display:block!important;
+   inset:-8.8%!important;
+   padding:1.1px!important;
+   border:0!important;
+   border-radius:50%!important;
+   background:linear-gradient(104deg,rgba(105,203,248,.35) 0%,rgba(122,211,250,.24) 46%,rgba(122,225,207,.20) 67%,rgba(103,231,190,.28) 100%)!important;
+   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)!important;
+   -webkit-mask-composite:xor!important;
+   mask-composite:exclude!important;
+   opacity:.86!important;
+   animation:gsfSecondRingAlive 5.8s ease-in-out infinite!important;
+ }
+ .rings:after{
+   content:""!important;
+   display:block!important;
+   inset:-16.1%!important;
+   padding:1px!important;
+   border:0!important;
+   border-radius:50%!important;
+   background:linear-gradient(106deg,rgba(110,205,249,.22) 0%,rgba(126,213,250,.15) 45%,rgba(125,226,209,.13) 68%,rgba(106,231,191,.20) 100%)!important;
+   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)!important;
+   -webkit-mask-composite:xor!important;
+   mask-composite:exclude!important;
+   opacity:.58!important;
+   animation:gsfThirdRingAlive 6.6s .9s ease-in-out infinite!important;
+ }
+ .rings:not(.uploading):not(.uploaded){
+   animation:gsfUploaderBreathe 5.4s ease-in-out infinite!important;
+ }
+ .circle:not(.loaded) .icon{
+   animation:gsfCloudAlive 4.4s ease-in-out infinite!important;
+ }
+ .circle.busy strong{animation:gsfLoadingWord 1.35s ease-in-out infinite!important}
+
+ /* Exact mobile cards, scaled only by desktop width. */
+ .features{
+   width:min(72vw,760px)!important;
+   max-width:760px!important;
+   gap:9px!important;
+   margin:0 auto 22px!important;
+ }
+ .feature{
+   min-height:150px!important;
+   height:150px!important;
+   padding:14px 7px 12px!important;
+   border-radius:24px!important;
+   background:rgba(255,255,255,.74)!important;
+   border:1px solid rgba(160,190,218,.24)!important;
+   -webkit-backdrop-filter:blur(16px)!important;
+   backdrop-filter:blur(16px)!important;
+   box-shadow:0 14px 34px rgba(62,107,150,.09),inset 0 1px 0 rgba(255,255,255,.96)!important;
+   filter:none!important;
+   opacity:1!important;
+ }
+ .featureIcon{
+   width:58px!important;
+   height:58px!important;
+   margin-bottom:9px!important;
+   border-radius:50%!important;
+   animation:gsfIconAlive 5.8s ease-in-out infinite!important;
+   box-shadow:inset 0 0 0 1px rgba(255,255,255,.52),0 10px 26px rgba(85,124,159,.08)!important;
+ }
+ .fAi .featureIcon{
+   background:#D8E9FF!important;
+   color:#1875E6!important;
+   animation-delay:0s!important;
+ }
+ .fEditor .featureIcon{
+   background:#CFF4DD!important;
+   color:#078F61!important;
+   animation-delay:-1.8s!important;
+ }
+ .fShort .featureIcon{
+   background:#FFE9A8!important;
+   color:#D68000!important;
+   animation-delay:-3.6s!important;
+ }
+ .featureIcon svg{
+   stroke-width:2.05!important;
+ }
+ .feature b{
+   font-size:11px!important;
+   font-weight:850!important;
+   color:#0D2A66!important;
+ }
+ .feature small{
+   font-size:7.8px!important;
+   font-weight:700!important;
+   color:#7185A6!important;
+   line-height:1.22!important;
+ }
+
+ /* Exact mobile gamebar treatment, with desktop width preserved. */
+ .bottomNav{
+   min-height:64px!important;
+   height:64px!important;
+   padding:7px 8px 6px!important;
+   border-radius:999px!important;
+   background:rgba(255,255,255,.93)!important;
+   border:1px solid rgba(139,181,218,.30)!important;
+   box-shadow:
+     0 10px 28px rgba(59,104,148,.11),
+     0 0 0 4px rgba(226,243,255,.30),
+     inset 0 1px 0 #fff!important;
+   -webkit-backdrop-filter:none!important;
+   backdrop-filter:none!important;
+   overflow:hidden!important;
+ }
+ .navItem{
+   gap:2px!important;
+   font-size:7.5px!important;
+   font-weight:800!important;
+   padding:1px 2px!important;
+   color:#7185A6!important;
+   background:transparent!important;
+ }
+ .navItem svg{
+   width:18px!important;
+   height:18px!important;
+   padding:5px!important;
+   box-sizing:content-box!important;
+   border-radius:50%!important;
+   background:linear-gradient(145deg,#F9FCFF,#EDF5FC)!important;
+   border:1px solid rgba(150,184,215,.24)!important;
+   box-shadow:none!important;
+ }
+ .navItem.active{
+   color:#1674E8!important;
+   background:transparent!important;
+ }
+ .navItem.active svg{
+   animation:gsfActiveNavAlive 4.8s ease-in-out infinite!important;
+   background:linear-gradient(145deg,#E8F5FF,#D8EBFF)!important;
+   border-color:rgba(71,153,226,.40)!important;
+ }
+
+ /* Reference arrows: shorter, curved and detached from the copy. */
+ .scribble .arrow{
+   width:clamp(74px,5.3vw,94px)!important;
+   height:44px!important;
+   overflow:visible!important;
+ }
+ .scribble .arrow svg{
+   width:100%!important;
+   height:100%!important;
+   stroke-width:2.35!important;
+ }
+ .scribble.left .arrow{
+   right:clamp(-78px,-4.8vw,-62px)!important;
+   top:72%!important;
+   transform:translateY(-50%) rotate(0deg)!important;
+ }
+ .scribble.right .arrow{
+   left:clamp(-78px,-4.8vw,-62px)!important;
+   top:2%!important;
+   transform:rotate(0deg)!important;
+ }
+}
+
 </style>
 </head>
 <body>
@@ -3619,8 +3813,8 @@ button{appearance:none;-webkit-appearance:none}
 
  <div id="view">
   <div class="stage">
-   <div class="scribble left">Trasforma<br>il tuo gameplay<br>in Shorts<span class="arrow"><svg viewBox="0 0 80 44" aria-hidden="true"><path d="M4 8C20 27 42 32 72 24"/><path d="m61 18 11 6-9 9"/></svg></span></div>
-   <div class="scribble right"><span class="arrow"><svg viewBox="0 0 80 44" aria-hidden="true"><path d="M76 8C60 27 38 32 8 24"/><path d="m19 18-11 6 9 9"/></svg></span>Trascina qui<br>o tocca per caricare<span class="padSketch"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M15.5 22.5c2.2-5.6 8.5-8.2 13.8-5.4l3.2 1.7 3.2-1.7c5.3-2.8 11.6-.2 13.8 5.4l5.2 13.4c2.6 6.7-2.3 13.9-9.5 13.9-4.4 0-7.2-2.4-10.2-7.4l-1.6-2.7h-2.8L29 42.4c-3 5-5.8 7.4-10.2 7.4-7.2 0-12.1-7.2-9.5-13.9l5.2-13.4Z"/><path d="M20 27.5v10M15 32.5h10"/><circle cx="42" cy="27.5" r="2.1"/><circle cx="48" cy="32.5" r="2.1"/><circle cx="42" cy="37.5" r="2.1"/><circle cx="36" cy="32.5" r="2.1"/></svg></span></div>
+   <div class="scribble left">Trasforma<br>il tuo gameplay<br>in Shorts<span class="arrow"><svg viewBox="0 0 70 44" aria-hidden="true"><path d="M6 6C9 18 18 28 34 30C45 32 53 28 61 22"/><path d="M52 18L62 22L55 31"/></svg></span></div>
+   <div class="scribble right"><span class="arrow"><svg viewBox="0 0 70 44" aria-hidden="true"><path d="M64 6C61 18 52 28 36 30C25 32 17 28 9 22"/><path d="M18 18L8 22L15 31"/></svg></span>Trascina qui<br>o tocca per caricare<span class="padSketch"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M15.5 22.5c2.2-5.6 8.5-8.2 13.8-5.4l3.2 1.7 3.2-1.7c5.3-2.8 11.6-.2 13.8 5.4l5.2 13.4c2.6 6.7-2.3 13.9-9.5 13.9-4.4 0-7.2-2.4-10.2-7.4l-1.6-2.7h-2.8L29 42.4c-3 5-5.8 7.4-10.2 7.4-7.2 0-12.1-7.2-9.5-13.9l5.2-13.4Z"/><path d="M20 27.5v10M15 32.5h10"/><circle cx="42" cy="27.5" r="2.1"/><circle cx="48" cy="32.5" r="2.1"/><circle cx="42" cy="37.5" r="2.1"/><circle cx="36" cy="32.5" r="2.1"/></svg></span></div>
    <div class="rings">
     <input id="pick" class="pick" type="file" accept="video/mp4,video/quicktime,video/x-matroska,.mp4,.mov,.mkv">
     <label id="circle" class="circle" for="pick">
