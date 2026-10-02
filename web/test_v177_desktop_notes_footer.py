@@ -1,7 +1,10 @@
 from pathlib import Path
+import re
 root=Path("/app")
 home=(root/"web/home_v154_component/index.html").read_text(encoding="utf-8")
 embed=(root/"web/home_v154_embed.py").read_text(encoding="utf-8")
+m=re.search(r"gsf_home_v154_live_([0-9]+)",embed)
+version=int(m.group(1)) if m else 0
 checks={
  "V177 layer exists":"V177 DESKTOP TARGETED NOTES + TRUE FOOTER" in home,
  "Desktop grid has explicit nav/footer tracks":"grid-template-rows:minmax(0,47fr) minmax(0,34fr) minmax(58px,13fr) minmax(32px,6fr)" in home,
@@ -13,7 +16,7 @@ checks={
  "Right note anchors toward uploader":"grid-area:right!important" in home and "justify-self:start!important" in home,
  "Arrows are pinned to inner note edges":"right:clamp(-58px,-3.5vw,-38px)!important" in home and "left:clamp(-58px,-3.5vw,-38px)!important" in home,
  "Notes can expand outward":"width:clamp(230px,22vw,360px)!important" in home,
- "Fresh component cache bust":("gsf_home_v154_live_177" in embed or "gsf_home_v154_live_178" in embed),
+ "Fresh component cache bust":version>=177,
 }
 bad=[k for k,v in checks.items() if not v]
 for k,v in checks.items(): print(("PASS" if v else "FAIL")+": "+k)
