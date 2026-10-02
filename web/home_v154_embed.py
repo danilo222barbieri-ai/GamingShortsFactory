@@ -7,7 +7,7 @@ _HOME_V154_COMPONENT = components.declare_component(
     path=str(_COMPONENT_DIR),
 )
 
-def render_home_v154(*, loaded=False, duration=15, engine="", height=760, key="gsf_home_v155"):
+def render_home_v154(*, loaded=False, duration=15, engine="", height=900, key="gsf_home_v155"):
     value = _HOME_V154_COMPONENT(
         loaded=bool(loaded),
         duration=int(duration or 15),

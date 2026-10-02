@@ -24,6 +24,25 @@ if GSF_WEB_MODE:
 
     st.html(r"""
     <style id="gsf-v154-parent-shell">
+    /* V161 VIEWPORT CONTRACT — desktop reference 1920×1080, fit actual browser viewport. */
+    @media (min-width:761px){
+      html,body,[data-testid="stAppViewContainer"],[data-testid="stMain"],.stApp{
+        min-height:100dvh !important;
+      }
+      [data-testid="stMainBlockContainer"]{
+        max-width:none !important;
+        padding-top:0 !important;
+        padding-bottom:0 !important;
+        padding-left:0 !important;
+        padding-right:0 !important;
+      }
+      iframe[title*="gsf_home_v154"],iframe[src*="web.home_v154_embed"]{
+        width:100% !important;
+        max-width:1920px !important;
+        margin:0 auto !important;
+      }
+    }
+    /* V161 VIEWPORT CONTRACT */
     /* The new component owns the production Home. Keep the old uploader
        mounted only as an invisible fallback so its backend/state contracts
        remain available during migration. */
@@ -79,7 +98,7 @@ if GSF_WEB_MODE:
         loaded=bool(video is not None),
         duration=_gsf_v154_duration,
         engine=_gsf_v154_engine,
-        height=690 if video is not None else 650,
+        height=900,
         key="gsf_home_v154_live",
     )
 
@@ -136,8 +155,8 @@ if GSF_WEB_MODE:
       transition:opacity .22s ease !important;
     }
     #gsf-creator-hub-portal-v107 .gsf-creator-hub-shell{
-      width:min(1380px,calc(100vw - 30px)) !important;
-      height:min(700px,calc(100vh - 30px)) !important;
+      width:min(1920px,calc(100vw - 20px)) !important;
+      height:calc(100dvh - 20px) !important;
       border-radius:30px !important;
       background:#F7FBFF !important;
       transform:scale(.985) !important;
@@ -223,7 +242,7 @@ if GSF_WEB_MODE:
     <style id="gsf-v159-social-shell">
     #gsf-social-overlay-v159{position:fixed;inset:0;z-index:2147483650;display:flex;align-items:center;justify-content:center;padding:15px;background:rgba(219,235,244,.52);-webkit-backdrop-filter:blur(4px) saturate(.96);backdrop-filter:blur(4px) saturate(.96);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease,visibility .22s ease}
     #gsf-social-overlay-v159.is-open{opacity:1;visibility:visible;pointer-events:auto}
-    #gsf-social-overlay-v159 .gsf-social-shell{position:relative;width:min(1380px,calc(100vw - 30px));height:min(690px,calc(100vh - 30px));border:1px solid #D3E3ED;border-radius:30px;overflow:hidden;background:#F7FBFF;box-shadow:0 30px 86px rgba(19,45,65,.24);transform:scale(.985);transition:transform .26s cubic-bezier(.2,.8,.2,1)}
+    #gsf-social-overlay-v159 .gsf-social-shell{position:relative;width:min(1920px,calc(100vw - 20px));height:calc(100dvh - 20px);border:1px solid #D3E3ED;border-radius:30px;overflow:hidden;background:#F7FBFF;box-shadow:0 30px 86px rgba(19,45,65,.24);transform:scale(.985);transition:transform .26s cubic-bezier(.2,.8,.2,1)}
     #gsf-social-overlay-v159.is-open .gsf-social-shell{transform:scale(1)}
     #gsf-social-overlay-v159 iframe{width:100%;height:100%;border:0;background:#F7FBFF}
     #gsf-social-overlay-v159 .gsf-social-close{position:absolute;z-index:5;right:14px;top:12px;width:34px;height:34px;border:1px solid #dce9f3;border-radius:12px;background:#fff;color:#617b9d;font-size:20px;cursor:pointer}
@@ -250,7 +269,7 @@ if GSF_WEB_MODE:
     <style id="gsf-v160-hub-shell">
     #gsf-creator-hub-live-v160{position:fixed;inset:0;z-index:2147483660;display:flex;align-items:center;justify-content:center;padding:15px;background:rgba(219,235,244,.52);-webkit-backdrop-filter:blur(4px) saturate(.96);backdrop-filter:blur(4px) saturate(.96);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease,visibility .22s ease}
     #gsf-creator-hub-live-v160.is-open{opacity:1;visibility:visible;pointer-events:auto}
-    #gsf-creator-hub-live-v160 .gsf-hub-shell-v160{position:relative;width:min(1380px,calc(100vw - 30px));height:min(690px,calc(100vh - 30px));border:1px solid #D3E3ED;border-radius:30px;overflow:hidden;background:#F7FBFF;box-shadow:0 30px 86px rgba(19,45,65,.24);transform:scale(.985);transition:transform .26s cubic-bezier(.2,.8,.2,1)}
+    #gsf-creator-hub-live-v160 .gsf-hub-shell-v160{position:relative;width:min(1920px,calc(100vw - 20px));height:calc(100dvh - 20px);border:1px solid #D3E3ED;border-radius:30px;overflow:hidden;background:#F7FBFF;box-shadow:0 30px 86px rgba(19,45,65,.24);transform:scale(.985);transition:transform .26s cubic-bezier(.2,.8,.2,1)}
     #gsf-creator-hub-live-v160.is-open .gsf-hub-shell-v160{transform:scale(1)}
     #gsf-creator-hub-live-v160 iframe{width:100%;height:100%;border:0;background:#F7FBFF}
     #gsf-creator-hub-live-v160 .gsf-hub-close-v160{position:absolute;z-index:5;right:14px;top:12px;width:34px;height:34px;border:1px solid #dce9f3;border-radius:12px;background:#fff;color:#617b9d;font-size:20px;cursor:pointer}
