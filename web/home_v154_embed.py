@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 
 _COMPONENT_DIR = Path(__file__).resolve().parent / "home_v154_component"
 _HOME_V154_COMPONENT = components.declare_component(
-    "gsf_home_v154_live_223",
+    "gsf_home_v154_live_225",
     path=str(_COMPONENT_DIR),
 )
 
@@ -64,7 +64,7 @@ def render_home_v154(*, loaded=False, duration=15, engine="", height=900, key="g
         margin:0 !important;
         padding:0 !important;
         overflow:hidden !important;
-        z-index:30 !important;
+        z-index:1 !important;
       }
 
       [data-testid="stCustomComponentV1"]:has(iframe[title*="gsf_home_v154"]){
@@ -94,6 +94,18 @@ def render_home_v154(*, loaded=False, duration=15, engine="", height=900, key="g
         border:0 !important;
       }
     }
+
+      /* V225 MOBILE APP-SURFACE STACKING
+         The Home iframe must stay fullscreen but must not cover persistent
+         app surfaces rendered later in the Streamlit parent. */
+      [data-testid="stElementContainer"]:has(#gsf-creator-hub-live-v160),
+      [data-testid="stElementContainer"]:has(#gsf-social-overlay-v159),
+      [data-testid="stElementContainer"]:has(#gsf-editor-overlay-v220),
+      [data-testid="stElementContainer"]:has(#gsf-ai-overlay-v221){
+        position:relative !important;
+        z-index:120 !important;
+        overflow:visible !important;
+      }
     </style>
     """)
 
