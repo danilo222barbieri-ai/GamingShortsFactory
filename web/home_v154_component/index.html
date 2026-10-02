@@ -168,7 +168,7 @@ button{appearance:none;-webkit-appearance:none}
    else{rings.classList.remove("uploading","uploaded");uploadIcon.innerHTML=`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 42h-1C10.4 42 5 36.6 5 30s5.4-12 12-12c1.6 0 3.1.3 4.5.9C24.7 12.4 31.3 8 39 8c10.5 0 19 8.5 19 19 0 .7 0 1.4-.1 2.1C61.5 30.9 64 34.6 64 39c0 6.1-4.9 11-11 11H38"/><path d="M32 52V28"/><path d="m24 36 8-8 8 8"/></svg>`;uploadLabel.textContent="CARICA IL TUO GAMEPLAY";uploadHint.textContent="";pick.disabled=false;}
    height(loaded?690:650);
  }
- function parentClick(candidates,exact=false){
+ function shellNav(target,data={}){try{window.parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin)}catch(e){}}\n function parentClick(candidates,exact=false){
    try{
      const doc=window.parent.document;
      const els=[...doc.querySelectorAll("button,[role=radio],[role=tab],label,a")];
@@ -249,11 +249,11 @@ button{appearance:none;-webkit-appearance:none}
    const nav=b.dataset.nav||"";
    if(nav==="ai"){document.getElementById("aiPanel").classList.add("open");height(930);}
    if(nav==="editor")parentClick(["game editor","editor"]);
-   if(nav==="projects")parentClick(["creator hub","progetti"]);
+   if(nav==="projects")shellNav("hub");
    if(nav==="social")parentClick(["social","condividi"]);
  }));
- const hub=document.getElementById("hubBtn"); if(hub)hub.addEventListener("click",()=>parentClick(["creator hub"]));
- const see=document.getElementById("seeAll"); if(see)see.addEventListener("click",()=>parentClick(["creator hub","vedi tutti","progetti"]));
+ const hub=document.getElementById("hubBtn"); if(hub)hub.addEventListener("click",()=>shellNav("hub"));
+ const see=document.getElementById("seeAll"); if(see)see.addEventListener("click",()=>shellNav("hub"));
  document.querySelectorAll(".dur").forEach(b=>b.addEventListener("click",()=>setDuration(b.dataset.duration)));
  document.querySelectorAll(".engine").forEach(b=>b.addEventListener("click",()=>setEngine(b.dataset.engine)));
  cta.addEventListener("click",()=>{
