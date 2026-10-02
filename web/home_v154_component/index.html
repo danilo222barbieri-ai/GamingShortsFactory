@@ -283,7 +283,7 @@ button{appearance:none;-webkit-appearance:none}
    if(nav==="ai"){document.getElementById("aiPanel").classList.add("open");height(930);}
    if(nav==="editor")parentClick(["game editor","editor"]);
    if(nav==="projects")shellNav("hub");
-   if(nav==="social")parentClick(["social","condividi"]);
+   if(nav==="social")shellNav("social");
  }));
  const hub=document.getElementById("hubBtn"); if(hub)hub.addEventListener("click",()=>shellNav("hub"));
  const see=document.getElementById("seeAll"); if(see)see.addEventListener("click",()=>shellNav("hub"));

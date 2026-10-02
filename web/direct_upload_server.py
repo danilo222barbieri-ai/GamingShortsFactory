@@ -3339,6 +3339,47 @@ class Handler(BaseHTTPRequestHandler):
                 _draft_delete(sid,draft_id)
             _redirect(self,"/account")
             return
+        if clean=="/share/state":
+            sid=_social_sid(self)
+            if not sid:
+                _json(self,400,{"ok":False,"error":"Sessione browser non valida."})
+                return
+            stable,_job=_final_local_paths(sid)
+            ready=bool(stable and stable.is_file() and stable.stat().st_size>1024)
+            final_bytes=int(stable.stat().st_size) if ready else 0
+            if not ready and _bucket_enabled():
+                try:
+                    head=_s3().head_object(Bucket=S3_BUCKET,Key=_final_bucket_key(sid))
+                    final_bytes=int(head.get("ContentLength") or 0)
+                    ready=final_bytes>1024
+                except Exception:
+                    pass
+            _json(self,200,{
+                "ok":True,
+                "ready":ready,
+                "final_bytes":final_bytes,
+                "video_url":"/share/final" if ready else "",
+                "social":{
+                    "youtube":bool(_youtube_user_load(sid)),
+                    "tiktok":bool(_tiktok_user_load(sid)),
+                    "instagram":bool(_instagram_user_load(sid)),
+                    "facebook":False,
+                },
+            })
+            return
+        if clean=="/share/final":
+            sid=_social_sid(self)
+            if not sid:
+                _html(self,400,"Sessione browser non valida.")
+                return
+            stable,_job=_final_local_paths(sid)
+            if not (stable and stable.is_file() and stable.stat().st_size>1024):
+                _final_restore_from_bucket(sid)
+            if stable and stable.is_file() and stable.stat().st_size>1024:
+                _redirect(self,f"/media/{sid}/media/gaming_short_finale_share.mp4")
+            else:
+                _html(self,404,"Short finale non ancora disponibile.")
+            return
         if clean=="/creator-hub/state":
             sid=_social_sid(self)
             if not sid:

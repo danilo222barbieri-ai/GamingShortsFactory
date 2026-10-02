@@ -74,7 +74,7 @@ function shell(target,data={}){
     if(target==="new")return parentClick(["nuovo video","carica il tuo gameplay"]);
     if(target==="editor"||target==="resume_draft")return parentClick(["apri game editor","game editor","manuale"]);
     if(target==="ai")return parentClick(["crea con ia","crea con ai","analizza con ia"]);
-    if(target==="social")return parentClick(["condividi o scarica","social","condividi"]);
+    if(target==="social"){parent.postMessage({type:"GSF_SHELL_NAV",target:"social"},location.origin);return true}
     parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin);
   }catch(e){try{parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin)}catch(_e){}}
   return false;

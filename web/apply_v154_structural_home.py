@@ -191,7 +191,10 @@ if GSF_WEB_MODE:
           if(t==='new') clickTarget(['nuovo video','carica il tuo gameplay']);
           else if(t==='editor' || t==='resume_draft') clickTarget(['apri game editor','game editor','manuale']);
           else if(t==='ai') clickTarget(['crea con ia','crea con ai','analizza con ia']);
-          else if(t==='social') clickTarget(['condividi o scarica','social','condividi']);
+          else if(t==='social'){
+            const so=document.getElementById('gsf-social-overlay-v159');
+            if(so){so.classList.add('is-open');so.style.opacity='1';so.style.visibility='visible';so.style.pointerEvents='auto';}
+          }
         },210);
       });
     })();
@@ -199,6 +202,33 @@ if GSF_WEB_MODE:
     """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _shell_v158.lstrip()
+
+
+# V159 — Social/Share is a persistent surface over the live project.
+_social_surface_v159 = r'''
+if GSF_WEB_MODE:
+    st.markdown(r"""
+    <style id="gsf-v159-social-shell">
+    #gsf-social-overlay-v159{position:fixed;inset:0;z-index:2147483650;display:flex;align-items:center;justify-content:center;padding:15px;background:rgba(219,235,244,.52);-webkit-backdrop-filter:blur(4px) saturate(.96);backdrop-filter:blur(4px) saturate(.96);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease,visibility .22s ease}
+    #gsf-social-overlay-v159.is-open{opacity:1;visibility:visible;pointer-events:auto}
+    #gsf-social-overlay-v159 .gsf-social-shell{position:relative;width:min(1380px,calc(100vw - 30px));height:min(690px,calc(100vh - 30px));border:1px solid #D3E3ED;border-radius:30px;overflow:hidden;background:#F7FBFF;box-shadow:0 30px 86px rgba(19,45,65,.24);transform:scale(.985);transition:transform .26s cubic-bezier(.2,.8,.2,1)}
+    #gsf-social-overlay-v159.is-open .gsf-social-shell{transform:scale(1)}
+    #gsf-social-overlay-v159 iframe{width:100%;height:100%;border:0;background:#F7FBFF}
+    #gsf-social-overlay-v159 .gsf-social-close{position:absolute;z-index:5;right:14px;top:12px;width:34px;height:34px;border:1px solid #dce9f3;border-radius:12px;background:#fff;color:#617b9d;font-size:20px;cursor:pointer}
+    @media(max-width:760px){#gsf-social-overlay-v159{padding:5px}#gsf-social-overlay-v159 .gsf-social-shell{width:calc(100vw - 10px);height:calc(100vh - 10px);border-radius:22px}}
+    </style>
+    <div id="gsf-social-overlay-v159" aria-hidden="true">
+      <section class="gsf-social-shell" role="dialog" aria-modal="true" aria-label="Condividi o scarica">
+        <button class="gsf-social-close" type="button" aria-label="Chiudi">×</button>
+        <iframe src="/share-v156/" title="Condividi o scarica"></iframe>
+      </section>
+    </div>
+    <script>
+    (()=>{const o=document.getElementById('gsf-social-overlay-v159');if(!o)return;const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none'};o.querySelector('.gsf-social-close').onclick=close;o.addEventListener('click',e=>{if(e.target===o)close()});window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;if(String(e.data.target||'')==='close'||String(e.data.target||'')==='home')close()});})();
+    </script>
+    """, unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _social_surface_v159.lstrip()
 
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
