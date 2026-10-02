@@ -113,6 +113,7 @@ RUN python /app/web/test_v176_mobile_visual_parity.py
 RUN python /app/web/test_v176_1_mobile_cache_bust.py
 RUN python /app/web/test_v177_desktop_notes_footer.py
 RUN python /app/web/test_v177_2_visible_social_footer.py
+RUN python /app/web/test_v178_reference_geometry.py
 RUN python /app/web/test_v162_1_home_lift.py
 RUN python -m compileall -q /app/web
 COPY .streamlit /app/.streamlit

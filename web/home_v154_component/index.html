@@ -2758,6 +2758,161 @@ button{appearance:none;-webkit-appearance:none}
  .footLinks button,.footLinks span{font-size:7px!important}
 }
 
+
+/* V178 REFERENCE-LOCKED NOTES + BOTTOM FOOTER
+   Desktop geometry now keys note positions directly to the uploader diameter.
+   Footer is pinned to the true bottom edge; gamebar floats above it. */
+@media (min-width:761px){
+ #home154{position:relative!important;overflow:hidden!important}
+ #view{
+   position:relative!important;
+   display:grid!important;
+   grid-template-rows:minmax(0,56fr) minmax(0,44fr)!important;
+   row-gap:0!important;
+   padding-bottom:118px!important;
+   height:calc(100% - 52px)!important;
+   min-height:0!important;
+ }
+ .stage{
+   grid-row:1!important;
+   position:relative!important;
+   width:100%!important;
+   height:100%!important;
+   display:flex!important;
+   align-items:center!important;
+   justify-content:center!important;
+   overflow:visible!important;
+ }
+ .features{
+   grid-row:2!important;
+   align-self:center!important;
+   justify-self:center!important;
+ }
+
+ /* Anchor each note to the actual uploader edge, not to the page margin. */
+ .scribble{
+   position:absolute!important;
+   top:50%!important;
+   width:clamp(250px,24vw,390px)!important;
+   max-width:none!important;
+   font-size:clamp(18px,1.72vw,29px)!important;
+   line-height:1.06!important;
+   color:#637DA8!important;
+   overflow:visible!important;
+ }
+ .scribble.left{
+   left:auto!important;
+   right:calc(50% + (var(--gsf-hero-size) / 2) + clamp(22px,2vw,34px))!important;
+   transform:translateY(-46%) rotate(-4deg)!important;
+   text-align:right!important;
+   margin:0!important;
+ }
+ .scribble.right{
+   right:auto!important;
+   left:calc(50% + (var(--gsf-hero-size) / 2) + clamp(22px,2vw,34px))!important;
+   transform:translateY(-44%) rotate(4deg)!important;
+   text-align:left!important;
+   margin:0!important;
+ }
+
+ /* Arrow tips finish almost on the ring, as in the approved reference. */
+ .scribble .arrow{
+   position:absolute!important;
+   display:block!important;
+   width:clamp(92px,7vw,126px)!important;
+   height:clamp(44px,5.4vh,66px)!important;
+   margin:0!important;
+   color:#637DA8!important;
+   pointer-events:none!important;
+ }
+ .scribble .arrow svg{width:100%!important;height:100%!important}
+ .scribble.left .arrow{
+   right:clamp(-104px,-6.1vw,-76px)!important;
+   left:auto!important;
+   top:64%!important;
+   transform:translateY(-50%) rotate(1deg)!important;
+ }
+ .scribble.right .arrow{
+   left:clamp(-104px,-6.1vw,-76px)!important;
+   right:auto!important;
+   top:-2%!important;
+   transform:rotate(-1deg)!important;
+ }
+ .scribble.right .padSketch{
+   margin:10px 0 0 clamp(22px,2.6vw,44px)!important;
+ }
+
+ /* True bottom bar: never participates in the content grid. */
+ .bottomNav{
+   position:absolute!important;
+   left:50%!important;
+   bottom:54px!important;
+   transform:translateX(-50%)!important;
+   width:min(62vw,720px)!important;
+   height:52px!important;
+   min-height:52px!important;
+   margin:0!important;
+   z-index:40!important;
+ }
+
+ .siteFooter{
+   position:absolute!important;
+   left:0!important;
+   right:0!important;
+   bottom:0!important;
+   width:100%!important;
+   height:44px!important;
+   min-height:44px!important;
+   margin:0!important;
+   padding:5px clamp(18px,2.5vw,42px)!important;
+   display:grid!important;
+   grid-template-columns:1fr auto 1fr!important;
+   align-items:center!important;
+   border-top:1px solid rgba(146,183,214,.28)!important;
+   background:linear-gradient(180deg,rgba(250,253,255,.62),rgba(246,251,255,.88))!important;
+   z-index:35!important;
+   overflow:visible!important;
+ }
+ .footerBrand{justify-self:start!important}
+ .footerSocial{
+   position:static!important;
+   transform:none!important;
+   justify-self:center!important;
+   display:flex!important;
+   align-items:center!important;
+   justify-content:center!important;
+   gap:10px!important;
+ }
+ .footLinks{justify-self:end!important}
+ .footerSocialLink{
+   width:26px!important;height:26px!important;
+   min-width:26px!important;min-height:26px!important;
+   opacity:1!important;visibility:visible!important;
+ }
+
+ .sectionHead,.projects{display:none!important}
+}
+
+@media (min-width:761px) and (max-width:1199px){
+ #view{padding-bottom:108px!important}
+ .scribble{width:clamp(190px,22vw,260px)!important;font-size:clamp(14px,1.5vw,21px)!important}
+ .scribble.left{right:calc(50% + (var(--gsf-hero-size) / 2) + 14px)!important}
+ .scribble.right{left:calc(50% + (var(--gsf-hero-size) / 2) + 14px)!important}
+ .scribble .arrow{width:78px!important;height:42px!important}
+ .scribble.left .arrow{right:-64px!important}
+ .scribble.right .arrow{left:-64px!important}
+ .bottomNav{bottom:48px!important;width:min(70vw,650px)!important;height:46px!important;min-height:46px!important}
+ .siteFooter{height:40px!important;min-height:40px!important;padding-left:14px!important;padding-right:14px!important}
+ .footerSocialLink{width:22px!important;height:22px!important;min-width:22px!important;min-height:22px!important}
+}
+
+@media (min-width:761px) and (max-height:650px){
+ #view{padding-bottom:96px!important;grid-template-rows:minmax(0,54fr) minmax(0,46fr)!important}
+ .bottomNav{bottom:42px!important;height:42px!important;min-height:42px!important}
+ .siteFooter{height:36px!important;min-height:36px!important}
+ .footerSocialLink{width:20px!important;height:20px!important;min-width:20px!important;min-height:20px!important}
+}
+
 </style>
 </head>
 <body>
