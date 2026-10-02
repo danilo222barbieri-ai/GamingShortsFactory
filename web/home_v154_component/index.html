@@ -2527,6 +2527,112 @@ button{appearance:none;-webkit-appearance:none}
 @media (min-width:1600px) and (max-width:760px){.legacy174big{height:clamp(340px,44vh,455px)!important}}
 @media (min-width:761px) and (max-width:760px) and (max-height:650px){.legacy175short{--v175-ring:clamp(205px,min(23vw,34vh),280px)}}
 
+
+/* V207 HANDWRITTEN GUIDE SYSTEM
+   The handwritten language is now genuine UI guidance, not arrows.
+   Same visual identity on desktop and mobile; placement adapts to available space. */
+#home154 .scribble .arrow{display:none!important}
+#home154 .scribble{
+  color:#637DA8!important;
+  filter:none!important;
+  opacity:1!important;
+  pointer-events:none!important;
+}
+#home154 .scribble .padSketch{
+  color:#637DA8!important;
+  filter:none!important;
+  opacity:1!important;
+}
+
+/* Desktop: CTA guide fills the breathing room above the three cards.
+   Upload guide stays high-right and keeps the controller sketch. */
+@media (min-width:761px){
+  #home154 .scribble.left{
+    left:50%!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:8px!important;
+    width:min(520px,46vw)!important;
+    max-width:none!important;
+    text-align:center!important;
+    transform:translateX(-50%) rotate(-3deg)!important;
+    font-size:clamp(19px,1.45vw,24px)!important;
+    line-height:1.06!important;
+    white-space:normal!important;
+    z-index:8!important;
+  }
+  #home154 .scribble.right{
+    right:clamp(42px,8vw,150px)!important;
+    left:auto!important;
+    top:7%!important;
+    bottom:auto!important;
+    width:clamp(220px,18vw,300px)!important;
+    max-width:none!important;
+    text-align:center!important;
+    transform:rotate(4deg)!important;
+    font-size:clamp(18px,1.35vw,23px)!important;
+    line-height:1.07!important;
+    z-index:8!important;
+  }
+  #home154 .scribble.right .padSketch{
+    width:clamp(48px,4vw,62px)!important;
+    height:auto!important;
+    margin:7px auto 0!important;
+  }
+}
+
+/* Mobile/tablet: the same guide language occupies natural blank areas
+   without covering uploader, CTA cards or gamebar. */
+@media (max-width:760px){
+  #home154 .scribble.left{
+    display:block!important;
+    left:50%!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:4px!important;
+    width:min(82vw,320px)!important;
+    max-width:none!important;
+    text-align:center!important;
+    transform:translateX(-50%) rotate(-3deg)!important;
+    font-size:clamp(14px,3.9vw,17px)!important;
+    line-height:1.04!important;
+    z-index:7!important;
+  }
+  #home154 .scribble.right{
+    display:block!important;
+    right:2px!important;
+    left:auto!important;
+    top:18px!important;
+    bottom:auto!important;
+    width:min(35vw,132px)!important;
+    max-width:none!important;
+    text-align:center!important;
+    transform:rotate(4deg)!important;
+    font-size:clamp(13px,3.6vw,16px)!important;
+    line-height:1.04!important;
+    z-index:7!important;
+  }
+  #home154 .scribble.right .padSketch{
+    width:44px!important;
+    height:auto!important;
+    margin:5px auto 0!important;
+  }
+}
+@media (max-width:390px){
+  #home154 .scribble.left{
+    bottom:2px!important;
+    width:min(80vw,295px)!important;
+    font-size:14px!important;
+  }
+  #home154 .scribble.right{
+    top:15px!important;
+    right:0!important;
+    width:126px!important;
+    font-size:13px!important;
+  }
+  #home154 .scribble.right .padSketch{width:40px!important}
+}
+
 </style>
 </head>
 <body>
@@ -2541,8 +2647,8 @@ button{appearance:none;-webkit-appearance:none}
 
  <div id="view">
   <div class="stage">
-   <div class="scribble left">Trasforma<br>il tuo gameplay<br>in Shorts<span class="arrow arrowToBoxes"><svg viewBox="0 0 68 86" aria-hidden="true"><path d="M18 6C11 23 12 42 23 56C31 66 40 72 50 75"/><path d="M41 68L51 76L40 80"/></svg></span></div>
-   <div class="scribble right"><span class="arrow arrowToUploader"><svg viewBox="0 0 70 44" aria-hidden="true"><path d="M64 7C56 18 46 24 34 25C23 26 15 24 8 20"/><path d="M17 15L7 20L14 29"/></svg></span>Trascina qui<br>o tocca per caricare<span class="padSketch"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M15.5 22.5c2.2-5.6 8.5-8.2 13.8-5.4l3.2 1.7 3.2-1.7c5.3-2.8 11.6-.2 13.8 5.4l5.2 13.4c2.6 6.7-2.3 13.9-9.5 13.9-4.4 0-7.2-2.4-10.2-7.4l-1.6-2.7h-2.8L29 42.4c-3 5-5.8 7.4-10.2 7.4-7.2 0-12.1-7.2-9.5-13.9l5.2-13.4Z"/><path d="M20 27.5v10M15 32.5h10"/><circle cx="42" cy="27.5" r="2.1"/><circle cx="48" cy="32.5" r="2.1"/><circle cx="42" cy="37.5" r="2.1"/><circle cx="36" cy="32.5" r="2.1"/></svg></span></div>
+   <div class="scribble left">Trasforma<br>il tuo gameplay<br>in Shorts</div>
+   <div class="scribble right">Trascina e tocca<br>per caricare<span class="padSketch"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M15.5 22.5c2.2-5.6 8.5-8.2 13.8-5.4l3.2 1.7 3.2-1.7c5.3-2.8 11.6-.2 13.8 5.4l5.2 13.4c2.6 6.7-2.3 13.9-9.5 13.9-4.4 0-7.2-2.4-10.2-7.4l-1.6-2.7h-2.8L29 42.4c-3 5-5.8 7.4-10.2 7.4-7.2 0-12.1-7.2-9.5-13.9l5.2-13.4Z"/><path d="M20 27.5v10M15 32.5h10"/><circle cx="42" cy="27.5" r="2.1"/><circle cx="48" cy="32.5" r="2.1"/><circle cx="42" cy="37.5" r="2.1"/><circle cx="36" cy="32.5" r="2.1"/></svg></span></div>
    <div class="rings">
     <input id="pick" class="pick" type="file" accept="video/mp4,video/quicktime,video/x-matroska,.mp4,.mov,.mkv">
     <label id="circle" class="circle" for="pick">
