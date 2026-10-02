@@ -424,7 +424,7 @@ if GSF_WEB_MODE:
     <div id="gsf-social-overlay-v159" aria-hidden="true">
       <section class="gsf-social-shell" role="dialog" aria-modal="false" aria-label="Condividi o scarica">
         <button class="gsf-social-close" type="button" aria-label="Chiudi">×</button>
-        <iframe src="about:blank" data-src="/share-v156/" title="Condividi o scarica"></iframe>
+        <iframe src="/share-v156/?v=226" data-src="/share-v156/" data-loaded="1" title="Condividi o scarica"></iframe>
       </section>
     </div>
     <script>
@@ -517,7 +517,7 @@ if GSF_WEB_MODE:
     <div id="gsf-creator-hub-live-v160" aria-hidden="true">
       <section class="gsf-hub-shell-v160" role="dialog" aria-modal="false" aria-label="Creator Hub">
         <button class="gsf-hub-close-v160" type="button" aria-label="Chiudi">×</button>
-        <iframe src="about:blank" data-src="/creator-hub-v156/" title="Creator Hub"></iframe>
+        <iframe src="/creator-hub-v156/?v=226" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
       </section>
     </div>
     <script>
@@ -595,7 +595,7 @@ if GSF_WEB_MODE:
         <div class="gsf-editor-head"><div>Game Editor<small>Il tuo gameplay resta nel progetto mentre modifichi.</small></div></div>
         <div class="gsf-editor-body">
           <div class="editor-note left"><span id="gsf-editor-note-left">Qui modelli<br>la tua giocata</span></div>
-          <iframe class="gsf-editor-frame" src="about:blank" data-src="/editor-live/" title="Game Editor"></iframe>
+          <iframe class="gsf-editor-frame" src="/editor-live/?v=226" data-src="/editor-live/" data-loaded="1" title="Game Editor"></iframe>
           <div class="editor-note right"><span id="gsf-editor-note-right">Tocca uno strumento<br>e guarda cosa cambia</span></div>
         </div>
       </section>
@@ -682,7 +682,7 @@ if GSF_WEB_MODE:
     <div id="gsf-ai-overlay-v221" aria-hidden="true">
       <section class="gsf-ai-shell" role="dialog" aria-modal="false" aria-label="Motori IA">
         <button class="gsf-ai-close" type="button" aria-label="Chiudi">×</button>
-        <iframe src="about:blank" data-src="/ai-v221/" title="Motori IA"></iframe>
+        <iframe src="/ai-v221/?v=226" data-src="/ai-v221/" data-loaded="1" title="Motori IA"></iframe>
       </section>
     </div>
     <script>
@@ -751,7 +751,7 @@ if GSF_WEB_MODE:
     <div id="gsf-account-overlay-v223" aria-hidden="true">
       <section class="gsf-account-shell" role="dialog" aria-modal="false" aria-label="Account">
         <button class="gsf-account-close" type="button" aria-label="Chiudi">×</button>
-        <iframe src="about:blank" data-src="/account/" title="Account"></iframe>
+        <iframe src="/account/?v=226" data-src="/account/" data-loaded="1" title="Account"></iframe>
       </section>
     </div>
     <script>
@@ -782,7 +782,7 @@ s = s.rstrip() + "\n\n" + _account_surface_v223.lstrip()
 
 # V224 legacy JS-regex escape cleanup: generated Python source must contain
 # a doubled backslash so Python emits the intended JS /\s/ regex without SyntaxWarning.
-s=s.replace("replace(/\\s/g,'')","replace(/\\\\s/g,'')")
+s=s.replace("replace(/"+chr(92)+"s/g,'')","replace(/"+chr(92)+chr(92)+"s/g,'')")
 # V221 final write must happen AFTER V220 + V221 surfaces are appended.
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
