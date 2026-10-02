@@ -107,6 +107,7 @@ RUN python /app/web/test_v174_1_loaded_check_scribbles.py
 RUN python /app/web/test_v174_2_two_ring_uploader.py
 RUN python /app/web/test_v174_3_three_ring_uploader.py
 RUN python /app/web/test_v174_4_upload_transition.py
+RUN python /app/web/test_v175_adaptive_geometry.py
 RUN python /app/web/test_v162_1_home_lift.py
 RUN python -m compileall -q /app/web
 COPY .streamlit /app/.streamlit

@@ -2144,6 +2144,149 @@ button{appearance:none;-webkit-appearance:none}
  .circle.busy strong{animation:none!important}
 }
 
+
+/* V175 BALANCED ADAPTIVE GEOMETRY
+   Fix the proportions without returning to a fixed canvas.
+   The notes grow toward the OUTER screen edges, never into the uploader. */
+@media (min-width:761px){
+ :root{
+   --v175-ring:clamp(230px,min(23vw,38vh),340px);
+   --v175-note:clamp(190px,20vw,320px);
+ }
+ .topbar{
+   flex:0 0 clamp(38px,5.4vh,52px)!important;
+ }
+
+ #view{
+   grid-template-rows:minmax(0,49fr) minmax(0,33fr) 0 0 minmax(52px,12fr) minmax(22px,6fr)!important;
+   row-gap:clamp(2px,.45vh,5px)!important;
+ }
+
+ .stage{
+   width:100%!important;
+   height:100%!important;
+   display:grid!important;
+   grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;
+   grid-template-areas:"left center right"!important;
+   align-items:center!important;
+   column-gap:clamp(18px,2.3vw,44px)!important;
+   overflow:visible!important;
+ }
+
+ .rings{
+   grid-area:center!important;
+   width:var(--v175-ring)!important;
+   height:var(--v175-ring)!important;
+   min-width:0!important;
+   min-height:0!important;
+   align-self:center!important;
+   justify-self:center!important;
+ }
+
+ /* Notes use the outer thirds of the screen.
+    Their inside edge stays away from the circle even when the viewport grows. */
+ .scribble{
+   position:relative!important;
+   inset:auto!important;
+   width:var(--v175-note)!important;
+   max-width:none!important;
+   font-size:clamp(16px,1.55vw,27px)!important;
+   line-height:1.08!important;
+ }
+ .scribble.left{
+   grid-area:left!important;
+   justify-self:start!important;
+   margin-left:clamp(10px,4.2vw,82px)!important;
+   text-align:center!important;
+   transform:rotate(-5deg)!important;
+ }
+ .scribble.right{
+   grid-area:right!important;
+   justify-self:end!important;
+   margin-right:clamp(10px,4.2vw,82px)!important;
+   text-align:center!important;
+   transform:rotate(4deg)!important;
+ }
+ .scribble.left .arrow{
+   transform:translateX(clamp(52px,4.5vw,86px)) rotate(5deg)!important;
+ }
+ .scribble.right .arrow{
+   transform:translateX(clamp(-86px,-4.5vw,-52px)) rotate(-3deg)!important;
+ }
+ .scribble .arrow{height:clamp(32px,4.6vh,52px)!important}
+ .scribble .arrow svg{width:clamp(66px,6vw,96px)!important}
+ .scribble .padSketch{width:clamp(46px,4.6vw,66px)!important}
+
+ /* Restore tall, readable cards instead of the compressed strip. */
+ .features{
+   width:min(58vw,820px)!important;
+   max-width:820px!important;
+   height:88%!important;
+   align-self:center!important;
+   justify-self:center!important;
+   margin:auto!important;
+   gap:clamp(14px,1.5vw,24px)!important;
+ }
+ .feature{
+   height:100%!important;
+   min-height:0!important;
+   border-radius:clamp(22px,1.65vw,30px)!important;
+   padding:clamp(10px,1.25vh,15px) clamp(12px,1.15vw,20px)!important;
+ }
+ .featureIcon{
+   width:clamp(54px,7.2vh,76px)!important;
+   height:clamp(54px,7.2vh,76px)!important;
+   margin-bottom:clamp(5px,.8vh,9px)!important;
+ }
+ .feature b{font-size:clamp(14px,1.15vw,19px)!important}
+ .feature small{font-size:clamp(8px,.72vw,11px)!important;max-width:210px!important}
+ .feature:after{
+   width:clamp(27px,3.8vh,38px)!important;
+   height:clamp(27px,3.8vh,38px)!important;
+ }
+
+ .bottomNav{
+   width:min(62%,720px)!important;
+   min-width:0!important;
+   height:calc(100% - 6px)!important;
+   margin:3px auto!important;
+ }
+ .siteFooter{
+   min-height:0!important;
+   height:100%!important;
+ }
+}
+
+/* Medium desktop / laptop */
+@media (min-width:761px) and (max-width:1199px){
+ :root{
+   --v175-ring:clamp(220px,min(25vw,37vh),290px);
+   --v175-note:clamp(155px,18vw,220px);
+ }
+ .scribble{
+   font-size:clamp(14px,1.55vw,20px)!important;
+ }
+ .scribble.left{margin-left:clamp(4px,1.3vw,18px)!important}
+ .scribble.right{margin-right:clamp(4px,1.3vw,18px)!important}
+ .scribble.left .arrow{transform:translateX(clamp(36px,3.4vw,54px)) rotate(5deg)!important}
+ .scribble.right .arrow{transform:translateX(clamp(-54px,-3.4vw,-36px)) rotate(-3deg)!important}
+ .features{width:min(67vw,760px)!important}
+}
+
+/* Short laptop: preserve hierarchy instead of crushing everything. */
+@media (min-width:761px) and (max-height:650px){
+ :root{
+   --v175-ring:clamp(205px,min(24vw,36vh),255px);
+   --v175-note:clamp(145px,18vw,205px);
+ }
+ #view{
+   grid-template-rows:minmax(0,48fr) minmax(0,34fr) 0 0 minmax(48px,12fr) minmax(20px,6fr)!important;
+ }
+ .features{height:90%!important;width:min(68vw,700px)!important}
+ .featureIcon{width:clamp(44px,6.4vh,58px)!important;height:clamp(44px,6.4vh,58px)!important}
+ .bottomNav{width:min(70vw,650px)!important}
+}
+
 </style>
 </head>
 <body>
