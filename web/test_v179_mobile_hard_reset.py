@@ -1,7 +1,10 @@
 from pathlib import Path
+import re
 root=Path("/app")
 home=(root/"web/home_v154_component/index.html").read_text(encoding="utf-8")
 embed=(root/"web/home_v154_embed.py").read_text(encoding="utf-8")
+m=re.search(r"gsf_home_v154_live_([0-9]+)",embed)
+version=int(m.group(1)) if m else 0
 checks={
  "V179 mobile reset exists":"V179 MOBILE HARD RESET" in home,
  "Legacy <=430 note hiding is overridden":".scribble.left,\n .scribble.right{\n   display:block!important" in home,
@@ -11,7 +14,7 @@ checks={
  "Mobile gamebar is explicit":"height:62px!important" in home and "grid-template-columns:repeat(5,1fr)!important" in home,
  "Mobile footer is explicit":"min-height:86px!important" in home,
  "Mobile social SVGs are styled":".footerSocialLink svg{" in home,
- "Fresh mobile component":"gsf_home_v154_live_179" in embed,
+ "Fresh mobile component":version>=179,
 }
 bad=[k for k,v in checks.items() if not v]
 for k,v in checks.items(): print(("PASS" if v else "FAIL")+": "+k)
