@@ -2287,6 +2287,66 @@ button{appearance:none;-webkit-appearance:none}
  .bottomNav{width:min(70vw,650px)!important}
 }
 
+
+/* V174.5 OUTER PROPORTION REBALANCE
+   Fix ONLY the external Home geometry: hero/card balance, uploader outer diameter and ring spacing.
+   Internal uploader icon/text/check styling is intentionally untouched. */
+@media (min-width:761px){
+ #view{
+   grid-template-rows:minmax(0,47fr) minmax(0,34fr) 0 0 minmax(56px,13fr) minmax(24px,6fr)!important;
+   row-gap:2px!important;
+ }
+
+ :root{
+   --gsf-hero-size:clamp(260px,min(26vw,37vh),325px)!important;
+ }
+
+ .stage{
+   align-items:center!important;
+   justify-items:stretch!important;
+   overflow:visible!important;
+ }
+
+ .rings{
+   width:var(--gsf-hero-size)!important;
+   height:var(--gsf-hero-size)!important;
+   min-width:0!important;
+   min-height:0!important;
+ }
+
+ /* Keep three rings, but tighten the external spacing so the whole uploader
+    reads as one balanced object instead of a huge target. */
+ .rings:before{inset:-25px!important}
+ .rings:after{inset:-46px!important}
+
+ .features{
+   width:min(72vw,760px)!important;
+   max-width:760px!important;
+   height:100%!important;
+   align-self:stretch!important;
+ }
+
+ .feature{
+   height:100%!important;
+   min-height:0!important;
+ }
+}
+
+@media (min-width:1500px) and (min-height:820px){
+ :root{--gsf-hero-size:clamp(285px,min(24vw,38vh),340px)!important}
+ .rings:before{inset:-27px!important}
+ .rings:after{inset:-49px!important}
+}
+
+@media (min-width:761px) and (max-height:650px){
+ #view{
+   grid-template-rows:minmax(0,46fr) minmax(0,35fr) 0 0 minmax(50px,13fr) minmax(22px,6fr)!important;
+ }
+ :root{--gsf-hero-size:clamp(235px,min(25vw,35vh),285px)!important}
+ .rings:before{inset:-22px!important}
+ .rings:after{inset:-40px!important}
+}
+
 </style>
 </head>
 <body>
