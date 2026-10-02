@@ -180,7 +180,45 @@ if GSF_WEB_MODE:
       }
     }
 
-    </style>
+    
+    /* V166.1 REAL VIEWPORT CLEANUP — reclaim the dead Streamlit band above Home. */
+    @media (min-width:761px){
+      html,body,.stApp,[data-testid="stAppViewContainer"],[data-testid="stMain"]{
+        width:100vw !important;
+        max-width:none !important;
+        height:100dvh !important;
+        max-height:100dvh !important;
+        margin:0 !important;
+        padding:0 !important;
+        overflow:hidden !important;
+      }
+      [data-testid="stMainBlockContainer"],.main .block-container{
+        width:100vw !important;
+        max-width:none !important;
+        height:100dvh !important;
+        max-height:100dvh !important;
+        margin:0 !important;
+        padding:0 !important;
+        overflow:hidden !important;
+      }
+      body:has(iframe[title*="gsf_home_v154"]) [data-testid="stVerticalBlock"],
+      body:has(iframe[title*="gsf_home_v154_live_155"]) [data-testid="stVerticalBlock"]{
+        row-gap:0 !important;
+        gap:0 !important;
+      }
+      [data-testid="stCustomComponentV1"]:has(iframe[title*="gsf_home_v154"]),
+      [data-testid="stCustomComponentV1"]:has(iframe[title*="gsf_home_v154_live_155"]),
+      [data-testid="stElementContainer"]:has(iframe[title*="gsf_home_v154"]),
+      [data-testid="stElementContainer"]:has(iframe[title*="gsf_home_v154_live_155"]){
+        width:100% !important;
+        max-width:none !important;
+        min-height:0 !important;
+        margin:0 !important;
+        padding:0 !important;
+        transform:none !important;
+      }
+    }
+</style>
     """)
 
     _gsf_v154_duration=int(st.session_state.get("gsf_v154_duration",15) or 15)

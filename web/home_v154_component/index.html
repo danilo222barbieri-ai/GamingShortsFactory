@@ -468,9 +468,9 @@ button{appearance:none;-webkit-appearance:none}
    independently to the real iframe/browser viewport while keeping zero-scroll. */
 @media (min-width:761px){
  :root{
-   --gsf-side:clamp(18px,4vw,72px);
+   --gsf-side:clamp(14px,3vw,54px);
    --gsf-gap:clamp(5px,.75vh,9px);
-   --gsf-hero-size:clamp(220px,min(24vw,34vh),340px);
+   --gsf-hero-size:clamp(250px,min(28vw,40vh),390px);
  }
  html,body{
    width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
@@ -503,7 +503,7 @@ button{appearance:none;-webkit-appearance:none}
  #view{
    flex:1 1 auto!important;height:auto!important;min-height:0!important;width:100%!important;
    display:grid!important;
-   grid-template-rows:44% 24% 5% 12% 9% 3%!important;
+   grid-template-rows:42% 26% 4% 12% 9% 3%!important;
    row-gap:.6%!important;align-content:stretch!important;
  }
  .stage{
@@ -603,7 +603,7 @@ button{appearance:none;-webkit-appearance:none}
 
 /* Compact desktop/tablet: keep the same hierarchy, not a miniaturized poster. */
 @media (min-width:761px) and (max-width:1100px){
- :root{--gsf-side:clamp(14px,2.5vw,28px);--gsf-hero-size:clamp(205px,min(25vw,32vh),280px)}
+ :root{--gsf-side:clamp(14px,2.5vw,28px);--gsf-hero-size:clamp(220px,min(27vw,36vh),315px)}
  .stage{grid-template-columns:minmax(110px,1fr) minmax(205px,auto) minmax(110px,1fr)!important;column-gap:10px!important}
  .scribble{font-size:clamp(13px,1.65vw,19px)!important;max-width:210px!important}
  .features{gap:10px!important}.feature{padding-left:9px!important;padding-right:9px!important}
@@ -611,9 +611,9 @@ button{appearance:none;-webkit-appearance:none}
 
 /* Short laptop viewport: preserve readable sizes; only tighten spacing. */
 @media (min-width:761px) and (max-height:650px){
- :root{--gsf-hero-size:clamp(205px,min(23vw,36vh),245px);--gsf-gap:3px}
+ :root{--gsf-hero-size:clamp(195px,min(25vw,38vh),255px);--gsf-gap:3px}
  .topbar{flex-basis:36px!important}
- #view{grid-template-rows:46% 23% 4% 12% 9% 3%!important;row-gap:.5%!important}
+ #view{grid-template-rows:44% 25% 4% 12% 9% 3%!important;row-gap:.5%!important}
  .rings{min-width:0!important;min-height:0!important}
  .icon{width:clamp(38px,5.8vh,50px)!important;height:clamp(38px,5.8vh,50px)!important;margin-bottom:4px!important}
  .circle strong{font-size:clamp(13px,1.2vw,18px)!important}
@@ -707,6 +707,67 @@ button{appearance:none;-webkit-appearance:none}
  let loaded=false,duration=15,engine="",uploadBusy=false,previewData=[];
  const norm=s=>String(s||"").replace(/\s+/g," ").trim().toLowerCase();
 
+ function normalizeParentHomeShell(){
+   try{
+     const doc=window.parent.document;
+     const frame=[...doc.querySelectorAll("iframe")].find(f=>f.contentWindow===window)||null;
+     const main=doc.querySelector('[data-testid="stMainBlockContainer"]');
+     const app=doc.querySelector('[data-testid="stAppViewContainer"]');
+     const stMain=doc.querySelector('[data-testid="stMain"]');
+     [app,stMain,main].filter(Boolean).forEach(el=>{
+       el.style.setProperty("width","100vw","important");
+       el.style.setProperty("max-width","none","important");
+       el.style.setProperty("height","100dvh","important");
+       el.style.setProperty("max-height","100dvh","important");
+       el.style.setProperty("min-height","0","important");
+       el.style.setProperty("margin","0","important");
+       el.style.setProperty("padding","0","important");
+       el.style.setProperty("overflow","hidden","important");
+     });
+     if(!frame) return {frame:null,top:0};
+
+     const own=frame.closest('[data-testid="stElementContainer"]');
+     const custom=frame.closest('[data-testid="stCustomComponentV1"]');
+     [own,custom,frame.parentElement].filter(Boolean).forEach(el=>{
+       el.style.setProperty("width","100%","important");
+       el.style.setProperty("max-width","none","important");
+       el.style.setProperty("min-height","0","important");
+       el.style.setProperty("margin","0","important");
+       el.style.setProperty("padding","0","important");
+     });
+     frame.style.setProperty("display","block","important");
+     frame.style.setProperty("width","100%","important");
+     frame.style.setProperty("max-width","none","important");
+     frame.style.setProperty("margin","0","important");
+     frame.style.setProperty("padding","0","important");
+     frame.style.setProperty("border","0","important");
+
+     const safeToCollapse=(el)=>{
+       if(!el||el.contains(frame)) return false;
+       if(el.querySelector('iframe,button,input,textarea,select,video,audio,canvas,img,[role="alert"],[role="dialog"],a[href]')) return false;
+       return true;
+     };
+     let cursor=own;
+     while(cursor&&main&&cursor!==main){
+       let sib=cursor.previousElementSibling;
+       while(sib){
+         if(safeToCollapse(sib)){
+           sib.style.setProperty("height","0","important");
+           sib.style.setProperty("min-height","0","important");
+           sib.style.setProperty("max-height","0","important");
+           sib.style.setProperty("margin","0","important");
+           sib.style.setProperty("padding","0","important");
+           sib.style.setProperty("overflow","hidden","important");
+         }
+         sib=sib.previousElementSibling;
+       }
+       cursor=cursor.parentElement;
+     }
+
+     return {frame,own,custom,top:Math.max(0,frame.getBoundingClientRect().top)};
+   }catch(_e){return {frame:null,own:null,custom:null,top:0}}
+ }
+
  function fitViewport(){
    try{
      const pw=Math.max(320,Number(window.parent.innerWidth||window.innerWidth||1920));
@@ -714,16 +775,18 @@ button{appearance:none;-webkit-appearance:none}
        const natural=Math.max(760,Math.ceil(document.documentElement.scrollHeight||root.scrollHeight||760));
        height(natural); return natural;
      }
-     let top=0,frame=null;
-     try{
-       frame=[...window.parent.document.querySelectorAll("iframe")].find(f=>f.contentWindow===window)||null;
-       if(frame) top=Math.max(0,frame.getBoundingClientRect().top); // ph-top-2: exact remaining viewport anchor
-     }catch(_e){}
-     const vw=Math.max(760,Number(window.parent.innerWidth||window.innerWidth||1366));
-     const available=Math.max(430,Number(window.parent.innerHeight||window.innerHeight||768)-top-2);
-     const vh=Math.max(430,available);
-     const artH=Math.min(vh,vw*9/16);
-     const target=Math.max(430,Math.floor(available)); // V166: use the exact available desktop height; never scale the Home as an artboard
+     const shell=normalizeParentHomeShell();
+     const top=shell.top; // ph-top-2: exact remaining viewport anchor
+     const available=Math.max(430,Number(window.parent.innerHeight||window.innerHeight||768)-top);
+     const target=Math.max(430,Math.floor(available));
+     [shell.own,shell.custom].filter(Boolean).forEach(el=>{
+       el.style.setProperty("height",target+"px","important");
+       el.style.setProperty("max-height",target+"px","important");
+     });
+     if(shell.frame){
+       shell.frame.style.setProperty("height",target+"px","important");
+       shell.frame.style.setProperty("max-height",target+"px","important");
+     }
      height(target); return target;
    }catch(e){height(720);return 720}
  }
@@ -744,6 +807,8 @@ button{appearance:none;-webkit-appearance:none}
    }catch(e){}
  }
  try{purgeLegacySync();new MutationObserver(purgeLegacySync).observe(window.parent.document.body,{childList:true,subtree:true});}catch(e){}
+ function collapseParentHomeSpacers(){try{normalizeParentHomeShell()}catch(_e){}}
+ try{new MutationObserver(()=>{collapseParentHomeSpacers();scheduleFit()}).observe(window.parent.document.body,{childList:true,subtree:true})}catch(_e){}
  function setLoaded(on){
    loaded=!!on; view.classList.toggle("loadedView",loaded); circle.classList.toggle("loaded",loaded);
    if(loaded){rings.classList.remove("uploading");rings.classList.add("uploaded");uploadIcon.textContent="✓";uploadLabel.textContent="Video caricato";uploadHint.innerHTML="MP4 · MOV · AVI<br>MAX 4 GB";pick.disabled=true;}
