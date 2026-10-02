@@ -343,6 +343,15 @@ button{appearance:none;-webkit-appearance:none}
  .projects{gap:10px;margin-bottom:5px}.project{grid-template-columns:78px 1fr;min-height:58px}.thumb{height:58px}.pBody{padding:8px 10px}
  .bottomNav{padding:3px 8px}.navItem svg{width:16px;height:16px}.navItem span{font-size:8px}
 }
+/* V162.1 HOME LIFT COMPATIBILITY — reference layout keeps the same raised desktop geometry */
+@media (min-width:761px){
+ #home154{padding:0 clamp(28px,4vw,70px) 4px;transform:translateY(-6px)}
+ .topbar{height:40px;min-height:40px}
+ .stage{max-height:320px;margin-top:-4px}
+ .features{margin:-6px auto 6px}
+ .projects{margin:0 auto 6px}
+ .bottomNav{margin:-1px auto 0}
+}
 </style>
 </head>
 <body>
