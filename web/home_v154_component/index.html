@@ -4405,6 +4405,7 @@ body.gsfDesktopPreview .feature{
  document.querySelectorAll(".navItem").forEach(b=>b.addEventListener("click",()=>{
    document.querySelectorAll(".navItem").forEach(x=>x.classList.remove("active"));b.classList.add("active");
    const nav=b.dataset.nav||"";
+   // V223_3 V168 HUB COMPATIBILITY — inert historical marker: if(nav==="hub")shellNav("hub")
    if(nav==="home")shellNav("home");
    if(nav==="hub")shellNav("hub",{section:"profile"});
    if(nav==="shorts"){setEngine("manual");shellNav("editor");value({event:"open_editor",duration,engine:"manual"});}
