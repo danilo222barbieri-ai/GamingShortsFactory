@@ -747,30 +747,10 @@ if GSF_WEB_MODE:
 s = s.rstrip() + "\n\n" + _account_surface_v223.lstrip()
 
 
-# V223.2 — bridge app-layer Editor state into the existing render recipe.
-_gsf_v223_state_anchor='        _gsf_manual_saved_state=st.session_state.get(_gsf_manual_state_slot)\n'
-if _gsf_v223_state_anchor in s and 'GSF_OVERLAY_EDITOR_STATE_BRIDGE_V223' not in s:
-    _gsf_v223_state_repl='''        _gsf_manual_saved_state=st.session_state.get(_gsf_manual_state_slot)
-        # GSF_OVERLAY_EDITOR_STATE_BRIDGE_V223
-        if GSF_WEB_MODE:
-            try:
-                import urllib.request as _gsf_overlay_editor_request
-                import json as _gsf_overlay_editor_json
-                _gsf_overlay_req=_gsf_overlay_editor_request.Request(
-                    "http://127.0.0.1:8502/editor/state",
-                    headers={"X-GSF-Session-ID":str(GSF_SESSION_ID)}
-                )
-                _gsf_overlay_payload=_gsf_overlay_editor_json.loads(
-                    _gsf_overlay_editor_request.urlopen(_gsf_overlay_req,timeout=4).read().decode("utf-8")
-                )
-                _gsf_overlay_saved=_gsf_overlay_payload.get("initial_state") if isinstance(_gsf_overlay_payload,dict) else None
-                if isinstance(_gsf_overlay_saved,dict) and _gsf_overlay_saved:
-                    _gsf_manual_saved_state=dict(_gsf_overlay_saved)
-                    st.session_state[_gsf_manual_state_slot]=dict(_gsf_overlay_saved)
-            except Exception as _gsf_overlay_state_exc:
-                print("GSF_OVERLAY_EDITOR_STATE_WARN",repr(str(_gsf_overlay_state_exc))[:180],flush=True)
-'''
-    s=s.replace(_gsf_v223_state_anchor,_gsf_v223_state_repl,1)
+# V223.4 — V223.2 inline render-state injection removed.
+# Editor state remains persisted by /editor/state and /editor/state/save.
+# Final-render reconciliation will be attached through a safe boundary, not by
+# splicing inside an existing try/except block.
 
 # V221 final write must happen AFTER V220 + V221 surfaces are appended.
 compile(s,str(out),"exec")
