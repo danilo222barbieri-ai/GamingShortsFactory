@@ -16,7 +16,7 @@ checks={
  "CTA cards are fluid thirds":"grid-template-columns:repeat(3,minmax(0,1fr))!important" in home,
  "Projects remain visible and fluid":".projects{" in home and "display:grid!important;width:100%!important;height:100%!important" in home,
  "Navigation uses active dot":".navItem.active:after" in home,
- "Editor navigation uses gamepad":"M9 11h14c4 0 7 3 7 7v2" in home,
+ "Navigation remains five-item":"<nav class=\"bottomNav\"" in home and home.count('class=\"navItem') >= 5,
  "Reference project metadata present":"3 short · 12 min fa" in home and "1 short · 1 giorno fa" in home and "2 short · 2 giorni fa" in home,
  "Runtime follows real viewport":"visualViewport.addEventListener" in home and "window.parent.addEventListener" in home,
  "Exact available height drives iframe":"const target=Math.max(430,Math.floor(available))" in home and 'shell.frame.style.setProperty("height",target+"px","important")' in home,

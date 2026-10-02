@@ -824,13 +824,116 @@ button{appearance:none;-webkit-appearance:none}
  .bottomNav{width:min(88%,860px)!important}
 }
 
+
+/* V168 HOME NAV + SIDE ADS — visual/navigation refinement only.
+   No logo: the header is intentionally text-only. */
+@media (min-width:761px){
+ #home154{
+   background:
+    radial-gradient(circle at 8% 13%,rgba(128,218,255,.22),transparent 23%),
+    radial-gradient(circle at 91% 16%,rgba(119,231,199,.20),transparent 25%),
+    radial-gradient(circle at 86% 84%,rgba(255,226,126,.08),transparent 24%),
+    linear-gradient(180deg,#FBFDFF 0%,#F7FBFF 44%,#F3FAFF 100%)!important;
+ }
+ #home154:before{
+   background:
+    radial-gradient(circle at 50% 30%,rgba(255,255,255,.64),transparent 32%),
+    linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,.08))!important;
+ }
+ .topbar{justify-content:flex-start!important}
+ .hubLegacy{display:none!important}
+ .brandOnly{
+   color:#6680A8!important;
+   font-size:clamp(11px,1.05vw,17px)!important;
+   letter-spacing:clamp(.24em,.34vw,.38em)!important;
+ }
+
+ /* Make the reference's blue/mint split unmistakable while preserving pulse. */
+ .rings{
+   background:
+    radial-gradient(circle at 38% 28%,#FFFFFF 0%,#F2FAFF 48%,#E9FFF7 100%) padding-box,
+    linear-gradient(90deg,#79D9FF 0%,#79D9FF 47%,#8BEBD0 53%,#75E7C2 100%) border-box!important;
+   border:2px solid transparent!important;
+   box-shadow:
+    -22px 0 62px rgba(91,205,255,.36),
+    24px 0 64px rgba(87,232,190,.36),
+    0 0 0 clamp(16px,2.2vh,28px) rgba(112,217,255,.11),
+    0 0 0 clamp(30px,4vh,50px) rgba(102,233,197,.09),
+    0 19px 50px rgba(68,126,169,.10)!important;
+ }
+ .rings:before{
+   border-color:rgba(99,211,249,.50)!important;
+   background:linear-gradient(90deg,rgba(114,218,255,.05),rgba(104,234,198,.08))!important;
+ }
+ .rings:after{border-color:rgba(105,229,198,.36)!important}
+ .scribble{
+   color:#687FA7!important;
+   font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive!important;
+   font-weight:500!important;
+   text-shadow:0 1px 0 rgba(255,255,255,.92)!important;
+ }
+ .scribble .arrow,.scribble .padSketch{color:#687FA7!important}
+ .scribble .padSketch svg,.scribble .arrow svg{stroke-width:2.15!important}
+
+ /* Compact central navigation: creation belongs in the three CTA cards above. */
+ .bottomNav{
+   width:min(64%,760px)!important;
+   max-width:760px!important;
+   min-width:560px!important;
+   justify-self:center!important;
+   border-radius:999px!important;
+   padding:clamp(4px,.65vh,7px) clamp(10px,1vw,16px)!important;
+   background:rgba(255,255,255,.90)!important;
+   border:1px solid rgba(156,188,217,.28)!important;
+   box-shadow:0 14px 38px rgba(67,110,151,.11),inset 0 1px 0 rgba(255,255,255,.98)!important;
+ }
+ .navItem{font-size:clamp(8px,.6vw,10px)!important;color:#7186A8!important}
+ .navItem svg{width:clamp(18px,2.35vh,23px)!important;height:clamp(18px,2.35vh,23px)!important}
+ .navItem.active{color:#2476DA!important;background:rgba(221,239,255,.82)!important}
+
+ /* Wide desktop-only ad rails. They disappear before they can squeeze the Home. */
+ .sideAd{
+   display:none;
+   position:absolute;
+   top:50%;
+   transform:translateY(-42%);
+   width:clamp(104px,8.5vw,148px);
+   height:clamp(220px,35vh,330px);
+   border-radius:24px;
+   border:1px solid rgba(154,187,216,.24);
+   background:rgba(255,255,255,.52);
+   backdrop-filter:blur(18px);
+   box-shadow:0 15px 42px rgba(70,111,151,.08),inset 0 1px 0 rgba(255,255,255,.90);
+   align-items:center;justify-content:center;
+   color:#8DA0B9;font-size:9px;font-weight:800;
+   letter-spacing:.11em;text-transform:uppercase;
+   z-index:3;pointer-events:none;
+ }
+ .sideAdLeft{left:clamp(8px,1.1vw,20px)}
+ .sideAdRight{right:clamp(8px,1.1vw,20px)}
+}
+@media (min-width:1450px) and (min-height:700px){
+ .sideAd{display:flex}
+ .stage{width:min(72%,1040px)!important}
+ .features{width:min(58vw,760px)!important}
+}
+@media (min-width:761px) and (max-width:1100px){
+ .bottomNav{width:min(82%,720px)!important;min-width:0!important}
+}
+@media (max-width:760px){
+ .hubLegacy{display:none!important}
+ .sideAd{display:none!important}
+}
+
 </style>
 </head>
 <body>
 <div id="home154"><div class="ui">
+ <aside id="gsfSideAdLeft" class="sideAd sideAdLeft" aria-label="Pubblicità"><span>Pubblicità</span></aside>
+ <aside id="gsfSideAdRight" class="sideAd sideAdRight" aria-label="Pubblicità"><span>Pubblicità</span></aside>
  <div class="topbar">
   <div class="brandOnly">GAMING SHORTS FACTORY</div>
-  <button id="hubBtn" class="hub"><span>Creator Hub</span><span class="arr">›</span></button>
+  <button id="hubBtn" class="hub hubLegacy" aria-hidden="true" tabindex="-1"><span>Creator Hub</span><span class="arr">›</span></button>
  </div>
 
  <div id="view">
@@ -878,8 +981,8 @@ button{appearance:none;-webkit-appearance:none}
 
   <nav class="bottomNav" aria-label="Navigazione principale">
    <button class="navItem active" data-nav="home"><svg viewBox="0 0 32 32"><path d="M4 14 16 4l12 10"/><path d="M7 13v14h18V13"/><path d="M13 27v-8h6v8"/></svg><span>Home</span></button>
-   <button class="navItem" data-nav="ai"><svg viewBox="0 0 32 32"><path d="m16 3 2 6 6 2-6 2-2 6-2-6-6-2 6-2Z"/><path d="m25 18 1.2 3.6L30 23l-3.8 1.4L25 28l-1.2-3.6L20 23l3.8-1.4Z"/></svg><span>AI</span></button>
-   <button class="navItem" data-nav="editor"><svg viewBox="0 0 32 32"><path d="M9 11h14c4 0 7 3 7 7v2c0 4-3 7-6.5 7-2.4 0-4-1.2-5.6-3.8L17 22h-2l-.9 1.2C12.5 25.8 10.9 27 8.5 27 5 27 2 24 2 20v-2c0-4 3-7 7-7Z"/><path d="M9 15v7M5.5 18.5h7"/><circle cx="22" cy="16" r="1.3"/><circle cx="26" cy="20" r="1.3"/></svg><span>Editor</span></button>
+   <button class="navItem" data-nav="hub"><svg viewBox="0 0 32 32"><rect x="5" y="5" width="8" height="8" rx="2"/><rect x="19" y="5" width="8" height="8" rx="2"/><rect x="5" y="19" width="8" height="8" rx="2"/><rect x="19" y="19" width="8" height="8" rx="2"/></svg><span>Hub</span></button>
+   <button class="navItem" data-nav="shorts"><svg viewBox="0 0 32 32"><rect x="7" y="4" width="18" height="24" rx="5"/><path d="m13 11 8 5-8 5Z"/></svg><span>I miei Short</span></button>
    <button class="navItem" data-nav="projects"><svg viewBox="0 0 32 32"><path d="M4 10h9l3 3h12v14H4Z"/><path d="M4 10V7h10l3 3"/></svg><span>Progetti</span></button>
    <button class="navItem" data-nav="social"><svg viewBox="0 0 32 32"><circle cx="24" cy="7" r="3"/><circle cx="8" cy="16" r="3"/><circle cx="24" cy="25" r="3"/><path d="m11 14.5 10-5.7M11 17.5l10 5.7"/></svg><span>Social</span></button>
   </nav>
@@ -1110,9 +1213,9 @@ button{appearance:none;-webkit-appearance:none}
  document.querySelectorAll(".navItem").forEach(b=>b.addEventListener("click",()=>{
    document.querySelectorAll(".navItem").forEach(x=>x.classList.remove("active"));b.classList.add("active");
    const nav=b.dataset.nav||"";
-   if(nav==="ai"){document.getElementById("aiPanel").classList.add("open");height(930);}
-   if(nav==="editor")parentClick(["game editor","editor"]);
-   if(nav==="projects")shellNav("hub");
+   if(nav==="hub")shellNav("hub");
+   if(nav==="shorts"){shellNav("hub",{section:"shorts"});value({event:"open_my_shorts",section:"shorts"});}
+   if(nav==="projects"){shellNav("hub",{section:"projects"});value({event:"open_projects",section:"projects"});}
    if(nav==="social")shellNav("social");
  }));
  const hub=document.getElementById("hubBtn"); if(hub)hub.addEventListener("click",()=>shellNav("hub"));
