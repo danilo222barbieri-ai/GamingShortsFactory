@@ -198,7 +198,7 @@ if GSF_WEB_MODE:
     </script>
     """, unsafe_allow_html=True)
 '''
-s = s.rstrip() + "\\n\\n" + _shell_v158.lstrip()
+s = s.rstrip() + "\n\n" + _shell_v158.lstrip()
 
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
