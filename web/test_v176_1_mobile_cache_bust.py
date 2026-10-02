@@ -2,7 +2,7 @@ from pathlib import Path
 import re
 embed=(Path("/app")/"web/home_v154_embed.py").read_text(encoding="utf-8")
 home=(Path("/app")/"web/home_v154_component/index.html").read_text(encoding="utf-8")
-m=re.search(r'gsf_home_v154_live_(\\d+)',embed)
+m=re.search(r'gsf_home_v154_live_([0-9]+)',embed)
 version=int(m.group(1)) if m else 0
 checks={
  "Mobile cache-bust component is V176 or newer":version>=176,
