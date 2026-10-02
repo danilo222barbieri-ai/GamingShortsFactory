@@ -334,6 +334,15 @@ button{appearance:none;-webkit-appearance:none}
  .sectionHead{display:flex!important;margin:0 3px 10px}.projects{display:grid!important;margin-bottom:18px}
  .featureIcon{border-radius:50%}
 }
+
+/* V162.1 SHORT DESKTOP FIT — preserved contract for compact laptop viewports */
+@media (min-width:761px) and (max-height:720px){
+ .stage{min-height:250px;max-height:285px}
+ .rings{width:210px;height:210px}
+ .features{gap:12px;margin-bottom:6px}.feature{min-height:88px;padding:7px 12px}
+ .projects{gap:10px;margin-bottom:5px}.project{grid-template-columns:78px 1fr;min-height:58px}.thumb{height:58px}.pBody{padding:8px 10px}
+ .bottomNav{padding:3px 8px}.navItem svg{width:16px;height:16px}.navItem span{font-size:8px}
+}
 </style>
 </head>
 <body>
@@ -426,7 +435,8 @@ button{appearance:none;-webkit-appearance:none}
        if(frame) top=Math.max(0,frame.getBoundingClientRect().top); // ph-top-2: exact remaining viewport anchor
      }catch(_e){}
      const vw=Math.max(760,Number(window.parent.innerWidth||window.innerWidth||1366));
-     const vh=Math.max(430,Number(window.parent.innerHeight||window.innerHeight||768)-top-2);
+     const available=Math.max(430,Number(window.parent.innerHeight||window.innerHeight||768)-top-2);
+     const vh=Math.max(430,available);
      const artH=Math.min(vh,vw*9/16);
      const target=Math.max(430,Math.floor(artH));
      height(target); return target;
