@@ -185,7 +185,7 @@ button{appearance:none;-webkit-appearance:none}
    try{
      if(target==="hub"){
        const doc=window.parent.document;
-       const panel=doc.getElementById("gsf-creator-hub-panel");
+       const panel=doc.getElementById("gsf-creator-hub-live-v160")||doc.getElementById("gsf-creator-hub-panel");
        const frame=doc.querySelector("#gsf-creator-hub-portal-v107 .gsf-creator-hub-frame, #gsf-creator-hub-panel .gsf-creator-hub-frame");
        if(frame && !String(frame.src||"").includes("/creator-hub-v156/")) frame.src="/creator-hub-v156/";
        if(panel){

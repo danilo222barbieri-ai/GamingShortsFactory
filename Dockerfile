@@ -89,6 +89,7 @@ RUN python /app/web/test_v153_living_tail.py
 RUN python /app/web/test_v154_structural_home.py
 RUN python /app/web/test_v158_persistent_shell.py
 RUN python /app/web/test_v159_surface_shell.py
+RUN python /app/web/test_v160_hub_shell.py
 RUN python -m compileall -q /app/web
 COPY .streamlit /app/.streamlit
 RUN PORT=8080 envsubst '${PORT}' < /app/web/nginx.conf.template > /tmp/gsf-nginx-test.conf && cp /tmp/gsf-nginx-test.conf /etc/nginx/conf.d/default.conf && nginx -t

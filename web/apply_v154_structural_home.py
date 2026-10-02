@@ -164,7 +164,7 @@ if GSF_WEB_MODE:
     (()=>{
       const KEY='gsf_creator_hub_open_v107';
       const closeHub=()=>{
-        const panel=document.getElementById('gsf-creator-hub-panel');
+        const panel=document.getElementById('gsf-creator-hub-live-v160')||document.getElementById('gsf-creator-hub-panel');
         if(!panel)return;
         panel.classList.remove('is-open');
         panel.style.opacity='0';panel.style.visibility='hidden';panel.style.pointerEvents='none';
@@ -185,7 +185,19 @@ if GSF_WEB_MODE:
       window.addEventListener('message',ev=>{
         if(ev.origin!==location.origin || !ev.data || ev.data.type!=='GSF_SHELL_NAV')return;
         const t=String(ev.data.target||'');
-        if(t==='close' || t==='home'){closeHub();return}
+        if(t==='close' || t==='home'){
+          closeHub();
+          const so=document.getElementById('gsf-social-overlay-v159');
+          if(so){so.classList.remove('is-open');so.style.opacity='0';so.style.visibility='hidden';so.style.pointerEvents='none';}
+          return
+        }
+        if(t==='hub'){
+          const so=document.getElementById('gsf-social-overlay-v159');
+          if(so){so.classList.remove('is-open');so.style.opacity='0';so.style.visibility='hidden';so.style.pointerEvents='none';}
+          const hp=document.getElementById('gsf-creator-hub-live-v160');
+          if(hp){hp.classList.add('is-open');hp.style.opacity='1';hp.style.visibility='visible';hp.style.pointerEvents='auto';}
+          return
+        }
         closeHub();
         setTimeout(()=>{
           if(t==='new') clickTarget(['nuovo video','carica il tuo gameplay']);
@@ -229,6 +241,33 @@ if GSF_WEB_MODE:
     """, unsafe_allow_html=True)
 '''
 s = s.rstrip() + "\n\n" + _social_surface_v159.lstrip()
+
+
+# V160 — guaranteed Creator Hub overlay owned by the current production shell.
+_hub_surface_v160 = r'''
+if GSF_WEB_MODE:
+    st.markdown(r"""
+    <style id="gsf-v160-hub-shell">
+    #gsf-creator-hub-live-v160{position:fixed;inset:0;z-index:2147483660;display:flex;align-items:center;justify-content:center;padding:15px;background:rgba(219,235,244,.52);-webkit-backdrop-filter:blur(4px) saturate(.96);backdrop-filter:blur(4px) saturate(.96);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease,visibility .22s ease}
+    #gsf-creator-hub-live-v160.is-open{opacity:1;visibility:visible;pointer-events:auto}
+    #gsf-creator-hub-live-v160 .gsf-hub-shell-v160{position:relative;width:min(1380px,calc(100vw - 30px));height:min(690px,calc(100vh - 30px));border:1px solid #D3E3ED;border-radius:30px;overflow:hidden;background:#F7FBFF;box-shadow:0 30px 86px rgba(19,45,65,.24);transform:scale(.985);transition:transform .26s cubic-bezier(.2,.8,.2,1)}
+    #gsf-creator-hub-live-v160.is-open .gsf-hub-shell-v160{transform:scale(1)}
+    #gsf-creator-hub-live-v160 iframe{width:100%;height:100%;border:0;background:#F7FBFF}
+    #gsf-creator-hub-live-v160 .gsf-hub-close-v160{position:absolute;z-index:5;right:14px;top:12px;width:34px;height:34px;border:1px solid #dce9f3;border-radius:12px;background:#fff;color:#617b9d;font-size:20px;cursor:pointer}
+    @media(max-width:760px){#gsf-creator-hub-live-v160{padding:5px}#gsf-creator-hub-live-v160 .gsf-hub-shell-v160{width:calc(100vw - 10px);height:calc(100vh - 10px);border-radius:22px}}
+    </style>
+    <div id="gsf-creator-hub-live-v160" aria-hidden="true">
+      <section class="gsf-hub-shell-v160" role="dialog" aria-modal="true" aria-label="Creator Hub">
+        <button class="gsf-hub-close-v160" type="button" aria-label="Chiudi">×</button>
+        <iframe src="/creator-hub-v156/" title="Creator Hub"></iframe>
+      </section>
+    </div>
+    <script>
+    (()=>{const o=document.getElementById('gsf-creator-hub-live-v160');if(!o)return;const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none'};o.querySelector('.gsf-hub-close-v160').onclick=close;o.addEventListener('click',e=>{if(e.target===o)close()});})();
+    </script>
+    """, unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _hub_surface_v160.lstrip()
 
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
