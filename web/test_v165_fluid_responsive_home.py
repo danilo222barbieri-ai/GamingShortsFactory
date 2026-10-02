@@ -5,7 +5,7 @@ apply=(root/"web/apply_v154_structural_home.py").read_text(encoding="utf-8")
 checks={
  "Fluid responsive override exists":"V165 FLUID RESPONSIVE HOME" in home,
  "Desktop Home fills full width":"width:100%;height:100dvh" in home and "max-width:none;max-height:none;aspect-ratio:auto" in home,
- "Centered 16:9 artboard is neutralized":"body{display:block" in home and "transform:none" in home,
+ "Centered 16:9 artboard is neutralized":"html,body{" in home and "overflow:hidden;display:block;place-items:initial" in home and "aspect-ratio:auto" in home and "transform:none" in home,
  "Hero is a responsive three-column grid":'grid-template-areas:"left center right"' in home,
  "Handwritten notes participate in the grid":".scribble.left{grid-area:left" in home and ".scribble.right{grid-area:right" in home,
  "Primary sections use fluid desktop width":"width:min(100%,1400px)" in home,
