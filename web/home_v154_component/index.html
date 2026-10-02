@@ -4296,24 +4296,49 @@ body.gsfDesktopPreview .feature{
    fitViewport();
  }
  function shellNav(target,data={}){
+   let handled=false;
    try{
-     if(target==="hub"){
-       const doc=window.parent.document;
-       const panel=doc.getElementById("gsf-creator-hub-live-v160")||doc.getElementById("gsf-creator-hub-panel");
-       const frame=doc.querySelector("#gsf-creator-hub-portal-v107 .gsf-creator-hub-frame, #gsf-creator-hub-panel .gsf-creator-hub-frame");
-       if(frame && !String(frame.src||"").includes("/creator-hub-v156/")) frame.src="/creator-hub-v156/";
-       if(panel){
-         panel.classList.add("is-open");
-         panel.style.opacity="1";panel.style.visibility="visible";panel.style.pointerEvents="auto";
-         try{window.parent.sessionStorage.setItem("gsf_creator_hub_open_v107","1")}catch(_e){}
-         try{window.parent.history.replaceState(null,"",window.parent.location.pathname+window.parent.location.search+"#gsf-creator-hub-panel")}catch(_e){}
-         return true;
+     const doc=window.parent.document;
+     const ids={
+       hub:"gsf-creator-hub-live-v160",
+       editor:"gsf-editor-overlay-v220",
+       social:"gsf-social-overlay-v159",
+       ai:"gsf-ai-overlay-v221",
+       account:"gsf-account-overlay-v223"
+     };
+     const hide=(el)=>{if(!el)return;el.classList.remove("is-open");el.style.opacity="0";el.style.visibility="hidden";el.style.pointerEvents="none";el.setAttribute("aria-hidden","true");};
+     const show=(el)=>{if(!el)return false;el.classList.add("is-open");el.style.opacity="1";el.style.visibility="visible";el.style.pointerEvents="auto";el.setAttribute("aria-hidden","false");return true;};
+     const overlays=Object.values(ids).map(id=>doc.getElementById(id)).filter(Boolean);
+
+     if(target==="home"||target==="close"){
+       overlays.forEach(hide);
+       handled=true;
+     }else if(ids[target]){
+       overlays.forEach(hide);
+       const panel=doc.getElementById(ids[target]);
+       handled=show(panel);
+       if(target==="hub"&&panel){
+         const frame=panel.querySelector("iframe");
+         const section=String(data.section||"profile");
+         const focus=()=>{try{frame&&frame.contentWindow&&frame.contentWindow.postMessage({type:"GSF_HUB_FOCUS",section},location.origin)}catch(_e){}};
+         if(frame){
+           if(frame.contentDocument&&frame.contentDocument.readyState==="complete")setTimeout(focus,60);
+           else frame.addEventListener("load",focus,{once:true});
+         }
        }
-       const fab=doc.querySelector(".gsf-account-fab"); if(fab){fab.click();return true;}
+       if(target==="social"&&panel&&data.platform){
+         const frame=panel.querySelector("iframe"),platform=String(data.platform||"");
+         setTimeout(()=>{try{frame&&frame.contentWindow&&frame.contentWindow.postMessage({type:"GSF_SHARE_FOCUS",platform},location.origin)}catch(_e){}},80);
+       }
      }
+
+     // Always send the canonical shell event too: direct DOM manipulation is
+     // a mobile-safe fallback, while parent listeners keep state and side-effects aligned.
      window.parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin);
-   }catch(e){}
-   return false;
+   }catch(e){
+     try{window.parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin)}catch(_e){}
+   }
+   return handled;
  }
  function parentClick(candidates,exact=false){
    try{
@@ -4330,7 +4355,6 @@ body.gsfDesktopPreview .feature{
  }
  function setDuration(n,emit=true){
    duration=Number(n)===30?30:15;
-   document.querySelectorAll("[data-foot]").forEach(b=>b.addEventListener("click",()=>parentClick([b.dataset.foot==="privacy"?"privacy":b.dataset.foot==="terms"?"termini":"contatti"])));
  document.querySelectorAll(".dur").forEach(b=>b.classList.toggle("active",Number(b.dataset.duration)===duration));
    parentClick(duration===15?["15s","15 s","15 sec","15 secondi"]:["30s","30 s","30 sec","30 secondi"],true);
    if(emit)value({event:"duration",duration,engine});
@@ -4454,6 +4478,7 @@ body.gsfDesktopPreview .feature{
  syncAccountEntry();
  const hub=document.getElementById("hubBtn"); if(hub)hub.addEventListener("click",()=>shellNav("hub"));
  const see=document.getElementById("seeAll"); if(see)see.addEventListener("click",()=>shellNav("hub"));
+ document.querySelectorAll("[data-foot]").forEach(b=>b.addEventListener("click",()=>parentClick([b.dataset.foot==="privacy"?"privacy":b.dataset.foot==="terms"?"termini":"contatti"])));
  document.querySelectorAll(".dur").forEach(b=>b.addEventListener("click",()=>setDuration(b.dataset.duration)));
  document.querySelectorAll(".engine").forEach(b=>b.addEventListener("click",()=>setEngine(b.dataset.engine)));
  cta.addEventListener("click",()=>{
