@@ -1440,6 +1440,335 @@ s = s.rstrip() + "\n\n" + _page_visual_v250.lstrip()
 # END V250 PAGE VISUAL SYSTEM
 
 
+# V250 SHARED PAGE CHROME
+# Secondary pages inherit the approved Home visual language without touching Home.
+# Header, responsive ad rails and page Game Bar belong to the active page surface.
+_page_chrome_v250 = r'''
+if GSF_WEB_MODE:
+    st.markdown(r"""
+    <style id="gsf-v250-shared-page-chrome">
+    :root{
+      --gsf-shell-top:46px;
+      --gsf-shell-bottom:78px;
+      --gsf-shell-ad-w:clamp(118px,9.5vw,164px);
+      --gsf-shell-side:calc(var(--gsf-shell-ad-w) + clamp(18px,2vw,30px));
+    }
+
+    /* Same approved Home canvas. */
+    #gsf-social-overlay-v159,
+    #gsf-creator-hub-live-v160,
+    #gsf-editor-overlay-v220,
+    #gsf-ai-overlay-v221,
+    #gsf-account-overlay-v223{
+      padding:
+        var(--gsf-shell-top)
+        var(--gsf-shell-side)
+        var(--gsf-shell-bottom)!important;
+      background:
+        radial-gradient(circle at 12% 8%,rgba(111,209,255,.17),transparent 23%),
+        radial-gradient(circle at 88% 10%,rgba(106,229,185,.15),transparent 24%),
+        linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important;
+    }
+
+    /* Content is a page, never a floating translucent modal. */
+    #gsf-social-overlay-v159 .gsf-social-shell,
+    #gsf-creator-hub-live-v160 .gsf-hub-shell-v160,
+    #gsf-editor-overlay-v220 .gsf-editor-shell,
+    #gsf-ai-overlay-v221 .gsf-ai-shell,
+    #gsf-account-overlay-v223 .gsf-account-shell{
+      width:100%!important;
+      height:100%!important;
+      max-width:none!important;
+      max-height:none!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+      transform:translateX(7px)!important;
+      transition:transform .075s cubic-bezier(.22,.78,.22,1)!important;
+    }
+    #gsf-social-overlay-v159.is-open .gsf-social-shell,
+    #gsf-creator-hub-live-v160.is-open .gsf-hub-shell-v160,
+    #gsf-editor-overlay-v220.is-open .gsf-editor-shell,
+    #gsf-ai-overlay-v221.is-open .gsf-ai-shell,
+    #gsf-account-overlay-v223.is-open .gsf-account-shell{
+      transform:translateX(0)!important;
+    }
+
+    #gsf-social-overlay-v159 iframe,
+    #gsf-creator-hub-live-v160 iframe,
+    #gsf-editor-overlay-v220 iframe,
+    #gsf-ai-overlay-v221 iframe,
+    #gsf-account-overlay-v223 iframe{
+      width:100%!important;
+      height:100%!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+    }
+
+    /* Old modal close buttons are redundant: Home in the page Game Bar handles exit. */
+    #gsf-social-overlay-v159 .gsf-social-close,
+    #gsf-creator-hub-live-v160 .gsf-hub-close-v160,
+    #gsf-editor-overlay-v220 .gsf-editor-close,
+    #gsf-ai-overlay-v221 .gsf-ai-close,
+    #gsf-account-overlay-v223 .gsf-account-close{
+      display:none!important;
+    }
+
+    #gsf-page-chrome-v250{
+      position:fixed;
+      inset:0;
+      z-index:2147483590;
+      pointer-events:none;
+      opacity:0;
+      visibility:hidden;
+      transition:none;
+      color:#637DA8;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    #gsf-page-chrome-v250.is-open{
+      opacity:1;
+      visibility:visible;
+    }
+
+    #gsf-page-chrome-v250 .gsf-page-head{
+      position:absolute;
+      left:clamp(14px,2vw,30px);
+      right:clamp(14px,2vw,30px);
+      top:0;
+      height:var(--gsf-shell-top);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      pointer-events:none;
+    }
+    #gsf-page-chrome-v250 .gsf-page-brand{
+      color:#6C81A1;
+      font-size:clamp(9px,.75vw,12px);
+      line-height:1;
+      font-weight:850;
+      letter-spacing:.25em;
+      white-space:nowrap;
+    }
+    #gsf-page-chrome-v250 .gsf-page-account{
+      pointer-events:auto;
+      min-height:28px;
+      max-width:190px;
+      padding:4px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      border:1px solid rgba(145,181,214,.28);
+      border-radius:999px;
+      background:rgba(255,255,255,.88);
+      color:#637DA8;
+      box-shadow:0 7px 20px rgba(63,108,151,.08);
+      font-size:9px;
+      font-weight:800;
+      cursor:pointer;
+    }
+
+    #gsf-page-chrome-v250 .gsf-page-ad{
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      width:var(--gsf-shell-ad-w);
+      height:clamp(300px,43vh,430px);
+      box-sizing:border-box;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:10px;
+      border:1px solid rgba(150,184,214,.22);
+      border-radius:20px;
+      background:rgba(255,255,255,.72);
+      box-shadow:0 12px 34px rgba(59,104,148,.07),inset 0 1px 0 rgba(255,255,255,.94);
+      color:#7D90AD;
+      font-size:clamp(8px,.65vw,10px);
+      font-weight:750;
+      letter-spacing:.04em;
+      text-align:center;
+    }
+    #gsf-page-chrome-v250 .gsf-page-ad.left{left:clamp(12px,1.35vw,24px)}
+    #gsf-page-chrome-v250 .gsf-page-ad.right{right:clamp(12px,1.35vw,24px)}
+
+    /* V249 page Game Bar, rescaled to match Home across desktop sizes. */
+    #gsf-page-nav-v249{
+      width:min(760px,72vw)!important;
+      height:clamp(52px,6.8vh,60px)!important;
+      min-height:clamp(52px,6.8vh,60px)!important;
+      bottom:clamp(7px,1vh,10px)!important;
+      padding:4px 10px!important;
+      background:rgba(255,255,255,.93)!important;
+      border:1px solid rgba(139,181,218,.30)!important;
+      box-shadow:0 10px 28px rgba(59,104,148,.11),0 0 0 4px rgba(226,243,255,.30),inset 0 1px 0 #fff!important;
+    }
+    #gsf-page-nav-v249 .gsf-page-nav-item{
+      font-size:clamp(7.5px,.62vw,8.5px)!important;
+    }
+    #gsf-page-nav-v249 .gsf-page-nav-item svg{
+      width:clamp(17px,2.35vh,21px)!important;
+      height:clamp(17px,2.35vh,21px)!important;
+    }
+
+    /* Short laptops: keep ad rails useful without squeezing the content. */
+    @media(min-width:1000px) and (max-height:720px){
+      :root{
+        --gsf-shell-top:40px;
+        --gsf-shell-bottom:68px;
+        --gsf-shell-ad-w:clamp(104px,8.5vw,134px);
+        --gsf-shell-side:calc(var(--gsf-shell-ad-w) + 16px);
+      }
+      #gsf-page-chrome-v250 .gsf-page-ad{
+        height:clamp(240px,38vh,320px);
+      }
+      #gsf-page-nav-v249{
+        height:48px!important;
+        min-height:48px!important;
+      }
+    }
+
+    /* Compact landscape/tablet: preserve page space; ad rails collapse first. */
+    @media(min-width:761px) and (max-width:999px){
+      :root{
+        --gsf-shell-top:40px;
+        --gsf-shell-bottom:70px;
+        --gsf-shell-side:14px;
+      }
+      #gsf-page-chrome-v250 .gsf-page-ad{display:none}
+      #gsf-page-nav-v249{width:calc(100vw - 28px)!important}
+    }
+
+    /* Mobile pages keep the same approved Home language, without side rails. */
+    @media(max-width:760px){
+      :root{
+        --gsf-shell-top:34px;
+        --gsf-shell-bottom:70px;
+        --gsf-shell-side:8px;
+      }
+      #gsf-social-overlay-v159,
+      #gsf-creator-hub-live-v160,
+      #gsf-editor-overlay-v220,
+      #gsf-ai-overlay-v221,
+      #gsf-account-overlay-v223{
+        padding:
+          var(--gsf-shell-top)
+          var(--gsf-shell-side)
+          var(--gsf-shell-bottom)!important;
+      }
+      #gsf-page-chrome-v250 .gsf-page-head{
+        left:10px;right:10px;height:34px;
+      }
+      #gsf-page-chrome-v250 .gsf-page-brand{
+        font-size:8px;
+        letter-spacing:.22em;
+      }
+      #gsf-page-chrome-v250 .gsf-page-account{
+        min-height:25px;
+        padding:3px 8px;
+        font-size:8px;
+      }
+      #gsf-page-chrome-v250 .gsf-page-ad{display:none}
+      #gsf-page-nav-v249{
+        width:calc(100vw - 24px)!important;
+        height:58px!important;
+        min-height:58px!important;
+        bottom:6px!important;
+        padding:4px 8px!important;
+      }
+      #gsf-page-nav-v249 .gsf-page-nav-item{font-size:7px!important}
+      #gsf-page-nav-v249 .gsf-page-nav-item svg{width:18px!important;height:18px!important}
+    }
+
+    @media(prefers-reduced-motion:reduce){
+      #gsf-social-overlay-v159 .gsf-social-shell,
+      #gsf-creator-hub-live-v160 .gsf-hub-shell-v160,
+      #gsf-editor-overlay-v220 .gsf-editor-shell,
+      #gsf-ai-overlay-v221 .gsf-ai-shell,
+      #gsf-account-overlay-v223 .gsf-account-shell{
+        transition:none!important;
+        transform:none!important;
+      }
+    }
+    </style>
+
+    <div id="gsf-page-chrome-v250" aria-hidden="true">
+      <header class="gsf-page-head">
+        <div class="gsf-page-brand">GAMING SHORTS FACTORY</div>
+        <button class="gsf-page-account" type="button" aria-label="Apri account">Accedi</button>
+      </header>
+      <aside class="gsf-page-ad left"><span>Spazio pubblicitario</span></aside>
+      <aside class="gsf-page-ad right"><span>Spazio pubblicitario</span></aside>
+    </div>
+    """, unsafe_allow_html=True)
+
+    import streamlit.components.v1 as components
+    components.html(r"""<!doctype html><html><body style="margin:0;display:none"><script>
+    ((P)=>{
+      const d=P.document;
+      const chrome=d.getElementById('gsf-page-chrome-v250');
+      const nav=d.getElementById('gsf-page-nav-v249');
+      if(!chrome)return;
+
+      const ids=[
+        'gsf-social-overlay-v159',
+        'gsf-creator-hub-live-v160',
+        'gsf-editor-overlay-v220',
+        'gsf-ai-overlay-v221',
+        'gsf-account-overlay-v223'
+      ];
+
+      const anyOpen=()=>ids.some(id=>{
+        const el=d.getElementById(id);
+        return !!(el&&el.classList.contains('is-open'));
+      });
+
+      const sync=()=>{
+        const open=anyOpen();
+        chrome.classList.toggle('is-open',open);
+        chrome.setAttribute('aria-hidden',open?'false':'true');
+        if(nav)nav.classList.toggle('is-open',open);
+      };
+
+      const account=chrome.querySelector('.gsf-page-account');
+      if(account){
+        account.addEventListener('click',()=>{
+          P.postMessage({type:'GSF_SHELL_NAV',target:'account'},P.location.origin);
+        });
+        fetch('/creator-hub/state',{cache:'no-store',credentials:'same-origin'})
+          .then(r=>r.json())
+          .then(j=>{
+            const a=(j&&j.ok&&j.account)?j.account:{};
+            if(a.connected){
+              const name=String(a.display_name||a.nickname||a.name||'Creator').trim()||'Creator';
+              account.textContent=name;
+              account.setAttribute('aria-label',name+' · apri account');
+            }
+          })
+          .catch(()=>{});
+      }
+
+      const obs=new P.MutationObserver(sync);
+      ids.forEach(id=>{
+        const el=d.getElementById(id);
+        if(el)obs.observe(el,{attributes:true,attributeFilter:['class','style','aria-hidden']});
+      });
+
+      P.addEventListener('message',e=>{
+        if(e.origin!==P.location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
+        queueMicrotask(sync);
+      });
+
+      sync();
+    })(window.parent);
+    </script></body></html>""", height=0, scrolling=False)
+'''
+s = s.rstrip() + "\n\n" + _page_chrome_v250.lstrip()
+# END V250 SHARED PAGE CHROME
+
 # V221 final write must happen AFTER V220 + V221 surfaces are appended.
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
