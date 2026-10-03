@@ -3692,6 +3692,45 @@ body.gsfDesktopPreview .feature{
 }
 /* END V246 DESKTOP SCALE + HALO REBALANCE */
 
+
+/* V247 MOBILE GUIDE EDGE CLEARANCE — mobile only. */
+@media (max-width:760px){
+  /* Raise only the upload guide a little more. */
+  #home154 .scribble.right,
+  #home154[data-mural-state="uploading"] .scribble.right,
+  #home154[data-mural-state="ready"] .scribble.right,
+  #home154[data-mural-state^="focus-"] .scribble.right{
+    top:58px!important;
+    bottom:auto!important;
+  }
+
+  /* Lower the center note slightly so it clears the outer halo. */
+  #home154 .muralAmbient,
+  #home154[data-mural-state="uploading"] .muralAmbient,
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    top:auto!important;
+    bottom:40px!important;
+  }
+}
+
+@media (max-width:390px){
+  #home154 .scribble.right,
+  #home154[data-mural-state="uploading"] .scribble.right,
+  #home154[data-mural-state="ready"] .scribble.right,
+  #home154[data-mural-state^="focus-"] .scribble.right{
+    top:56px!important;
+  }
+
+  #home154 .muralAmbient,
+  #home154[data-mural-state="uploading"] .muralAmbient,
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    bottom:36px!important;
+  }
+}
+/* END V247 MOBILE GUIDE EDGE CLEARANCE */
+
 </style>
 </head>
 <body>
