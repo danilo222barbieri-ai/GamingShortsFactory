@@ -113,6 +113,71 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
  .profileName{font-size:14.5px}
  .profileMeta{font-size:8.7px}
 }
+
+/* V265 CREATOR HUB MINIMAL */
+.hubMural{
+ color:#637DA8;font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive;
+ font-weight:700;line-height:1.06;text-align:center;transform:rotate(-2.5deg);
+ font-size:13px;padding:0 6px 2px;pointer-events:none
+}
+.dashboard{grid-template-rows:auto auto minmax(0,1fr);gap:7px}
+.profileCard{
+ border:0!important;border-bottom:1px solid rgba(143,181,216,.20)!important;
+ border-radius:0!important;background:transparent!important;box-shadow:none!important;
+ backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding:7px 4px 8px!important
+}
+.folders{grid-template-columns:1fr!important;grid-template-rows:repeat(4,minmax(0,1fr))!important;gap:2px!important}
+.folder{
+ display:grid!important;grid-template-columns:auto minmax(0,1fr) auto!important;
+ grid-template-rows:auto auto!important;align-items:center!important;column-gap:10px!important;
+ row-gap:1px!important;min-height:54px!important;padding:6px 5px!important;
+ border:0!important;border-bottom:1px solid rgba(143,181,216,.16)!important;
+ border-radius:0!important;background:transparent!important;box-shadow:none!important;
+ backdrop-filter:none!important;-webkit-backdrop-filter:none!important
+}
+.folder>div:first-child{display:contents!important}.folderTop{display:contents!important}
+.folderIcon{grid-column:1;grid-row:1/3;width:34px!important;height:34px!important;border-radius:11px!important}
+.folderArrow{grid-column:3;grid-row:1/3;align-self:center;font-size:19px!important}
+.folder h2{grid-column:2;grid-row:1;margin:0!important;font-size:14px!important;line-height:1.05!important}
+.folder p{grid-column:2;grid-row:2;margin:1px 0 0!important;font-size:9.5px!important;line-height:1.18!important}
+.folderFoot{display:none!important}
+.folder[data-folder="projects"] .folderIcon{background:#E4F2FF;color:#397FC8}
+
+.projectSection+.projectSection{margin-top:14px}
+.projectSectionHead{display:flex;align-items:center;justify-content:space-between;padding:3px 2px 7px;color:#7187A0;font-size:8.5px;font-weight:950;letter-spacing:.08em}
+.projectSectionHead b{min-width:22px;text-align:center;padding:3px 6px;border-radius:999px;background:#EDF6FF;color:#4D80AA;font-size:8px}
+
+.liveRootFolders{display:grid;gap:5px;margin-bottom:10px}
+.liveFolder,.liveMiniFolder{
+ width:100%;border:0;border-bottom:1px solid rgba(143,181,216,.18);background:transparent;
+ color:var(--ink);display:grid;grid-template-columns:auto 1fr auto;align-items:center;text-align:left;
+ gap:9px;padding:9px 5px;cursor:pointer
+}
+.liveFolderIcon,.liveMiniFolder>span{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#EEE8FF;color:#735DD1;font-weight:950}
+.liveFolder b,.liveMiniFolder b{display:block;font-size:11px}.liveFolder small,.liveMiniFolder small{display:block;margin-top:2px;color:#8294A9;font-size:8.5px;font-weight:700}
+.liveFolder i,.liveMiniFolder i{font-style:normal;color:#9BAEBE;font-size:18px}.liveFolder.active,.liveMiniFolder.active{background:rgba(239,247,255,.54)}
+.livePane{display:none}.livePane.active{display:block}.livePaneTitle{font-size:13px;font-weight:950;margin:4px 2px 6px}
+.liveMiniFolders{display:grid;gap:2px}.liveMiniContent{margin-top:8px}
+
+@media(max-width:760px){
+ #hub{padding:6px 6px 6px;gap:5px}
+ .top{min-height:40px}.titleIcon{width:38px;height:38px}
+ h1{font-size:22px!important}.subtitle{font-size:10.5px!important;max-width:61vw}
+ .closeTop,.backBtn{font-size:10px!important}
+ .profileCard{min-height:76px!important}
+ .avatar{width:42px!important;height:42px!important;font-size:17px!important}
+ .profileName{font-size:17px!important}.profileMeta{font-size:10.5px!important}.badge{font-size:8.5px!important}
+ .profileSocials{margin-top:4px!important}.socialDot{width:27px!important;height:27px!important;font-size:10px!important}
+ .hubMural{font-size:14px;padding:0 0 1px}
+ .folders{gap:0!important}.folder{min-height:55px!important;padding:6px 4px!important}
+ .folder h2{font-size:15px!important}.folder p{font-size:10.2px!important}.folderIcon{width:35px!important;height:35px!important;font-size:15px!important}
+ .detailHeadText h2{font-size:18px!important}.detailHeadText p{font-size:10.5px!important}
+ .detailCard{padding:7px!important}
+ .row{font-size:10px!important}.row b{font-size:11px!important}.action{font-size:9.5px!important}
+ .empty{font-size:10.5px!important}.socialName{font-size:12px!important}.socialState{font-size:10px!important}.connectBtn{font-size:10px!important}
+ .projectInfo b{font-size:12px!important}.projectInfo span{font-size:10px!important}
+ .liveFolder b,.liveMiniFolder b{font-size:12px!important}.liveFolder small,.liveMiniFolder small{font-size:10px!important}.livePaneTitle{font-size:14px!important}
+}
 </style>
 </head>
 <body>
@@ -145,20 +210,33 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
      <button class="profileAction" data-open-folder="profile" type="button">Profilo</button>
     </div>
 
+    <div class="hubMural">Tutto quello che crei,<br>vive qui</div>
     <div class="folders">
-     <button class="folder" data-folder="shorts"><div><div class="folderTop"><span class="folderIcon">▶</span><span class="folderArrow">›</span></div><h2>I tuoi Shorts</h2><p>Finali salvati, pubblicati e scaricabili.</p></div><div class="folderFoot" id="shortsCount">0 Shorts</div></button>
-     <button class="folder" data-folder="drafts"><div><div class="folderTop"><span class="folderIcon">✎</span><span class="folderArrow">›</span></div><h2>Bozze</h2><p>Riprendi il lavoro esattamente da dove eri.</p></div><div class="folderFoot" id="draftsCount">0 Bozze</div></button>
-     <button class="folder" data-folder="project"><div><div class="folderTop"><span class="folderIcon">▢</span><span class="folderArrow">›</span></div><h2>Progetti</h2><p>Il progetto attivo e i suoi accessi rapidi.</p></div><div class="folderFoot">Progetto corrente</div></button>
+     <button class="folder" data-folder="projects"><div><div class="folderTop"><span class="folderIcon">▢</span><span class="folderArrow">›</span></div><h2>Progetti</h2><p>In lavorazione e Shorts completati, nello stesso posto.</p></div><div class="folderFoot" id="projectsCount">0 elementi</div></button>
      <button class="folder" data-folder="social"><div><div class="folderTop"><span class="folderIcon">◎</span><span class="folderArrow">›</span></div><h2>Social</h2><p>Collega gli account e controlla lo stato.</p></div><div class="folderFoot" id="socialCount">0 collegati</div></button>
      <button class="folder" data-folder="profile"><div><div class="folderTop"><span class="folderIcon">⌂</span><span class="folderArrow">›</span></div><h2>Profilo</h2><p>Account, piano e sincronizzazione.</p></div><div class="folderFoot">Gestisci profilo</div></button>
-     <button class="folder" data-folder="live"><div><div class="folderTop"><span class="folderIcon">◧</span><span class="folderArrow">›</span></div><h2>Live</h2><p>Twitch e YouTube Live per Auto Highlights.</p></div><div class="folderFoot">Preparato per il futuro</div></button>
+     <button class="folder" data-folder="live"><div><div class="folderTop"><span class="folderIcon">◧</span><span class="folderArrow">›</span></div><h2>Live</h2><p>Twitch, YouTube Live e Auto Highlights.</p></div><div class="folderFoot">Live future</div></button>
+    </div>
     </div>
    </div>
   </section>
 
-  <section class="view" data-view="shorts"><div class="detail"><div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2>I tuoi Shorts</h2><p>Archivio dei finali. Elimini solo quando decidi tu.</p></div></div><div class="detailCard"><div class="folderScroller"><div class="rows" id="shortRows"><div class="empty">Caricamento Shorts…</div></div></div></div></div></section>
-  <section class="view" data-view="drafts"><div class="detail"><div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2>Bozze</h2><p>Il lavoro salvato prima di cambiare video.</p></div></div><div class="detailCard"><div class="folderScroller"><div class="rows" id="draftRows"><div class="empty">Caricamento bozze…</div></div></div></div></div></section>
-  <section class="view" data-view="project"><div class="detail"><div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2>Progetti</h2><p>Il progetto corrente e le scorciatoie operative.</p></div></div><div class="detailCard"><div id="projectRows"><div class="empty">Nessun progetto attivo recuperato.</div></div></div></div></section>
+  <section class="view" data-view="projects">
+   <div class="detail">
+    <div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2>Progetti</h2><p>Quello che stai creando e gli Shorts già completati.</p></div></div>
+    <div class="detailCard"><div class="folderScroller">
+      <div class="projectSection">
+       <div class="projectSectionHead"><span>IN LAVORAZIONE</span><b id="draftProjectCount">0</b></div>
+       <div id="projectRows"></div>
+       <div class="rows" id="draftRows"><div class="empty">Caricamento progetti…</div></div>
+      </div>
+      <div class="projectSection">
+       <div class="projectSectionHead"><span>SHORTS COMPLETATI</span><b id="shortProjectCount">0</b></div>
+       <div class="rows" id="shortRows"><div class="empty">Caricamento Shorts…</div></div>
+      </div>
+    </div></div>
+   </div>
+  </section>
 
   <section class="view" data-view="social">
    <div class="detail">
@@ -182,8 +260,27 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
 
   <section class="view" data-view="live">
    <div class="detail">
-    <div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2>Live</h2><p>Preparazione per Twitch e YouTube Live.</p></div></div>
-    <div class="detailCard"><div class="folderScroller"><div class="liveNote">Twitch è già previsto nella struttura del Creator Hub. Quando attiveremo il collegamento live, questa cartella ospiterà VOD, live collegate e Auto Highlights senza cambiare l'architettura.</div></div></div>
+    <div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2>Live</h2><p>Le tue dirette diventano una libreria di momenti.</p></div></div>
+    <div class="detailCard"><div class="folderScroller">
+      <div class="liveRootFolders">
+       <button class="liveFolder active" data-live-folder="twitch"><span class="liveFolderIcon">◧</span><span><b>Twitch</b><small>Le tue live e i VOD</small></span><i>›</i></button>
+       <button class="liveFolder" data-live-folder="youtube"><span class="liveFolderIcon">▶</span><span><b>YouTube Live</b><small>Dirette e replay</small></span><i>›</i></button>
+       <button class="liveFolder" data-live-folder="highlights"><span class="liveFolderIcon">✦</span><span><b>Auto Highlights</b><small>Momenti trovati automaticamente</small></span><i>›</i></button>
+      </div>
+
+      <div class="livePane active" data-live-pane="twitch">
+       <div class="livePaneTitle">Twitch</div>
+       <div class="liveMiniFolders">
+        <button class="liveMiniFolder active" data-live-mini="sessions"><span>▣</span><div><b>Le tue live</b><small>Ogni diretta diventerà una mini-cartella</small></div><i>›</i></button>
+        <button class="liveMiniFolder" data-live-mini="vod"><span>▶</span><div><b>VOD</b><small>Replay completi delle live</small></div><i>›</i></button>
+        <button class="liveMiniFolder" data-live-mini="twitch-highlights"><span>✦</span><div><b>Highlights</b><small>Short e momenti estratti da Twitch</small></div><i>›</i></button>
+       </div>
+       <div id="liveMiniContent" class="liveMiniContent"><div class="empty">Le tue live Twitch compariranno qui come mini-cartelle, una per ogni diretta.</div></div>
+      </div>
+
+      <div class="livePane" data-live-pane="youtube"><div class="livePaneTitle">YouTube Live</div><div class="empty">Quando collegheremo YouTube Live, dirette e replay compariranno qui con la stessa struttura a cartelle.</div></div>
+      <div class="livePane" data-live-pane="highlights"><div class="livePaneTitle">Auto Highlights</div><div class="empty">Qui finiranno automaticamente i momenti trovati nelle live Twitch e YouTube.</div></div>
+    </div></div>
    </div>
   </section>
  </div>
@@ -197,8 +294,8 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
  function ago(ts){if(!ts)return"Salvata";const d=Math.max(0,Date.now()/1000-Number(ts));if(d<90)return"Adesso";if(d<3600)return Math.floor(d/60)+" min fa";if(d<86400)return Math.floor(d/3600)+" h fa";return Math.floor(d/86400)+" g fa"}
  function esc(v){return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
  function openView(view="dashboard"){
-   view=view==="projects"?"project":view;
-   if(!["dashboard","shorts","drafts","project","social","profile","live"].includes(view))view="dashboard";
+   view=(view==="shorts"||view==="drafts"||view==="project")?"projects":view;
+   if(!["dashboard","projects","social","profile","live"].includes(view))view="dashboard";
    current=view;
    $$("[data-view]").forEach(v=>v.classList.toggle("active",v.dataset.view===view));
  }
@@ -224,8 +321,10 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
    $("#profileMeta").textContent=a.connected?"Profilo collegato · progetto sincronizzato":"Profilo locale · collega un account quando vuoi";
    $("#syncBadge").textContent=a.connected?"✓ Sincronizzato":"Sessione locale";$("#syncBadge").classList.toggle("ok",!!a.connected);
    $("#profileDetailState").textContent=a.connected?"Sincronizzato":"Sessione locale";
-   $("#shortsCount").textContent=String(u.shorts||0)+"/"+String(lim.shorts||10)+" Shorts";
-   $("#draftsCount").textContent=String(u.drafts||0)+"/"+String(lim.drafts||5)+" Bozze";
+   const pc=$("#projectsCount");if(pc)pc.textContent=String((u.drafts||0)+(u.shorts||0))+" elementi";
+   const dpc=$("#draftProjectCount"),spc=$("#shortProjectCount");
+   if(dpc)dpc.textContent=String(u.drafts||0);
+   if(spc)spc.textContent=String(u.shorts||0);
    $("#socialCount").textContent=String(st.social||0)+" collegati";
    setSocialVisuals();
 
@@ -233,7 +332,7 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
    $("#shortRows").innerHTML=shorts.length?shorts.map(s=>'<div class="row shortRow"><b>'+esc(s.title||"Short")+'</b><span class="muted">'+((Number(s.final_bytes)||0)>1048576?Math.max(1,Math.round(Number(s.final_bytes)/1048576))+" MB":"Short")+'</span><span class="status">'+((s.published||[]).length?"Pubblicato":"Salvato")+'</span><button class="action" data-short-download="'+esc(s.id||"")+'">Scarica</button><button class="action danger" data-short-delete="'+esc(s.id||"")+'">Elimina</button></div>').join(""):'<div class="empty">Nessuno Short archiviato.</div>';
 
    const drafts=Array.isArray(state.drafts)?state.drafts:[];
-   $("#draftRows").innerHTML=drafts.length?drafts.map(d=>'<div class="row"><b>'+esc(d.title||d.source_name||"Gameplay")+'</b><span class="muted hideMobile">'+(d.duration?d.duration+" sec":"Bozza")+'</span><span class="status hideMobile">'+ago(d.updated_at)+'</span><button class="action" data-resume="'+esc(d.id||"")+'">Continua</button></div>').join(""):'<div class="empty">Nessuna bozza salvata.</div>';
+   $("#draftRows").innerHTML=drafts.length?drafts.map(d=>'<div class="row"><b>'+esc(d.title||d.source_name||"Gameplay")+'</b><span class="muted hideMobile">'+(d.duration?d.duration+" sec":"Bozza")+'</span><span class="status hideMobile">'+ago(d.updated_at)+'</span><button class="action" data-resume="'+esc(d.id||"")+'">Continua</button></div>').join(""):'<div class="empty">Nessun progetto in lavorazione salvato.</div>';
 
    const p=state.project||{};
    $("#projectRows").innerHTML=p.id?'<div class="projectBox"><div class="projectInfo"><b>Progetto corrente</b><span>'+(p.has_source?"Gameplay collegato · ":"In preparazione · ")+ago(p.updated_at)+'</span></div><div class="quick"><button data-quick="ai">IA</button><button data-quick="editor">Editor</button><button data-quick="social">Social</button></div></div><div class="stats"><div class="stat"><b>'+String(st.shorts_created||0)+'</b><small>Short</small></div><div class="stat"><b>'+String(st.shorts_published||0)+'</b><small>Pubblicati</small></div><div class="stat"><b>'+String(st.drafts||0)+'</b><small>Bozze</small></div><div class="stat"><b>'+String(st.social||0)+'</b><small>Social</small></div></div>':'<div class="empty">Nessun progetto attivo recuperato.</div>';
@@ -280,7 +379,20 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
    else if(key==="instagram")top.location.href="/social-connect/instagram/start";
    else if(key==="facebook")top.location.href="/account/facebook/start";
  }
- $$(".folder").forEach(b=>b.onclick=()=>openView(b.dataset.folder));
+ function openLiveFolder(key){
+   $("[data-live-folder]").forEach(b=>b.classList.toggle("active",b.dataset.liveFolder===key));
+   $("[data-live-pane]").forEach(p=>p.classList.toggle("active",p.dataset.livePane===key));
+ }
+ function openLiveMini(key){
+   $("[data-live-mini]").forEach(b=>b.classList.toggle("active",b.dataset.liveMini===key));
+   const box=$("#liveMiniContent");if(!box)return;
+   if(key==="sessions")box.innerHTML='<div class="empty">Le tue live Twitch compariranno qui come mini-cartelle, una per ogni diretta.</div>';
+   else if(key==="vod")box.innerHTML='<div class="empty">I VOD Twitch compariranno qui appena attiveremo la sincronizzazione.</div>';
+   else box.innerHTML='<div class="empty">Gli Highlights generati dalle live Twitch compariranno qui automaticamente.</div>';
+ }
+ $("[data-live-folder]").forEach(b=>b.onclick=()=>openLiveFolder(b.dataset.liveFolder));
+ $("[data-live-mini]").forEach(b=>b.onclick=()=>openLiveMini(b.dataset.liveMini));
+ $(".folder").forEach(b=>b.onclick=()=>openView(b.dataset.folder));
  $$("[data-open-folder]").forEach(b=>b.onclick=()=>openView(b.dataset.openFolder));
  $$(".backBtn").forEach(b=>b.onclick=()=>openView("dashboard"));
  $$(".socialDot").forEach(b=>b.onclick=()=>{openView("social");setTimeout(()=>{const c=document.querySelector('[data-platform="'+b.dataset.social+'"]');if(c)c.animate([{transform:"scale(1)"},{transform:"scale(1.025)"},{transform:"scale(1)"}],{duration:420})},40)});
@@ -299,5 +411,7 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
 })();
 // V263.3 legacy V159 test marker only: target:"social"
 </script>
+
+<!-- V265 compatibility: data-view="shorts" data-view="drafts" data-view="project" data-folder="shorts" data-folder="drafts" data-folder="project" -->
 </body>
 </html>
