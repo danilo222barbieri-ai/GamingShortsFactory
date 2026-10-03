@@ -2766,7 +2766,7 @@ body.gsfDesktopPreview .feature{
 
 
 
-/* V220/V223 GAME BAR EDITOR SLOT.
+/* V262 GAME BAR SHORTS SLOT.
    Historical V168 contract marker only: <span>I miei Short</span> */
 #home154 .navItem[data-nav="shorts"] span{font-size:9px!important}
 #home154 .navItem[data-nav="shorts"] span:after{content:none!important}
@@ -4103,7 +4103,7 @@ body.gsfDesktopPreview .feature{
   <nav class="bottomNav" aria-label="Navigazione principale">
    <button class="navItem active" data-nav="home"><svg viewBox="0 0 32 32"><path d="M4 14 16 4l12 10"/><path d="M7 13v14h18V13"/><path d="M13 27v-8h6v8"/></svg><span>Home</span></button>
    <button class="navItem" data-nav="hub"><svg viewBox="0 0 32 32"><rect x="5" y="5" width="8" height="8" rx="2"/><rect x="19" y="5" width="8" height="8" rx="2"/><rect x="5" y="19" width="8" height="8" rx="2"/><rect x="19" y="19" width="8" height="8" rx="2"/></svg><span>Hub</span></button>
-   <button class="navItem" data-nav="shorts"><svg viewBox="0 0 32 32"><rect x="7" y="4" width="18" height="24" rx="5"/><path d="m13 11 8 5-8 5Z"/></svg><span>Editor</span></button>
+   <button class="navItem" data-nav="shorts"><svg viewBox="0 0 32 32"><rect x="7" y="4" width="18" height="24" rx="5"/><path d="m13 11 8 5-8 5Z"/></svg><span>Shorts</span></button>
    <button class="navItem" data-nav="projects"><svg viewBox="0 0 32 32"><path d="M4 10h9l3 3h12v14H4Z"/><path d="M4 10V7h10l3 3"/></svg><span>Progetti</span></button>
    <button class="navItem" data-nav="social"><svg viewBox="0 0 32 32"><circle cx="24" cy="7" r="3"/><circle cx="8" cy="16" r="3"/><circle cx="24" cy="25" r="3"/><path d="m11 14.5 10-5.7M11 17.5l10 5.7"/></svg><span>Social</span></button>
   </nav>
@@ -4560,7 +4560,7 @@ body.gsfDesktopPreview .feature{
    // V223_3 V168 HUB COMPATIBILITY — inert historical marker: if(nav==="hub")shellNav("hub")
    if(nav==="home")shellNav("home");
    if(nav==="hub")shellNav("hub",{section:"profile"});
-   if(nav==="shorts"){setEngine("manual");shellNav("editor");value({event:"open_editor",duration,engine:"manual"});}
+   if(nav==="shorts"){shellNav("hub",{section:"shorts"});value({event:"open_shorts",section:"shorts"});}
    if(nav==="projects"){shellNav("hub",{section:"project"});value({event:"open_projects",section:"project"});}
    if(nav==="social")shellNav("social");
  }));

@@ -1036,8 +1036,8 @@ if GSF_WEB_MODE:
       <button class="gsf-page-nav-item" data-target="hub" data-section="profile" type="button">
         <svg viewBox="0 0 32 32"><rect x="5" y="5" width="8" height="8" rx="2"/><rect x="19" y="5" width="8" height="8" rx="2"/><rect x="5" y="19" width="8" height="8" rx="2"/><rect x="19" y="19" width="8" height="8" rx="2"/></svg><span>Hub</span>
       </button>
-      <button class="gsf-page-nav-item" data-target="editor" type="button">
-        <svg viewBox="0 0 32 32"><rect x="7" y="4" width="18" height="24" rx="5"/><path d="m13 11 8 5-8 5Z"/></svg><span>Editor</span>
+      <button class="gsf-page-nav-item" data-target="hub" data-section="shorts" data-active="shorts" type="button">
+        <svg viewBox="0 0 32 32"><rect x="7" y="4" width="18" height="24" rx="5"/><path d="m13 11 8 5-8 5Z"/></svg><span>Shorts</span>
       </button>
       <button class="gsf-page-nav-item" data-target="hub" data-section="project" data-active="projects" type="button">
         <svg viewBox="0 0 32 32"><path d="M4 10h9l3 3h12v14H4Z"/><path d="M4 10V7h10l3 3"/></svg><span>Progetti</span>
@@ -1078,7 +1078,8 @@ if GSF_WEB_MODE:
           const activeKey=String(b.dataset.active||target);
           let active=false;
           if(activeKey==='projects') active=(lastTarget==='hub'&&lastSection==='project');
-          else if(target==='hub') active=(lastTarget==='hub'&&lastSection!=='project');
+          else if(activeKey==='shorts') active=(lastTarget==='hub'&&lastSection==='shorts');
+          else if(target==='hub') active=(lastTarget==='hub'&&lastSection!=='project'&&lastSection!=='shorts');
           else active=(lastTarget===target);
           b.classList.toggle('active',active);
         });
