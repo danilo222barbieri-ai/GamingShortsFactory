@@ -3950,16 +3950,17 @@ body.gsfDesktopPreview .feature{
 /* V259 native replacement-upload notification.
    Same Home visual language; behavior only, no layout geometry changes. */
 #home154 .replaceToast{
-  position:fixed;
-  right:10px;
-  bottom:max(76px,calc(env(safe-area-inset-bottom,0px) + 68px));
-  z-index:2147483000;
-  width:min(272px,calc(100vw - 20px));
+  position:absolute;
+  left:50%;
+  right:auto;
+  bottom:clamp(18px,8%,32px);
+  z-index:40;
+  width:min(86%,270px);
   box-sizing:border-box;
-  padding:10px 11px 9px;
+  padding:9px 10px 8px;
   border:1px solid rgba(194,219,236,.86);
   border-radius:16px;
-  background:rgba(255,255,255,.96);
+  background:rgba(255,255,255,.95);
   -webkit-backdrop-filter:blur(16px);
   backdrop-filter:blur(16px);
   box-shadow:0 10px 28px rgba(37,72,101,.14),inset 0 1px 0 rgba(255,255,255,.9);
@@ -3967,45 +3968,48 @@ body.gsfDesktopPreview .feature{
   opacity:0;
   visibility:hidden;
   pointer-events:none;
-  transform:translateY(8px) rotate(-.7deg) scale(.985);
+  transform:translate(-50%,8px) rotate(-.7deg) scale(.985);
   transition:opacity .16s ease,transform .16s ease,visibility .16s ease;
 }
 #home154 .replaceToast.is-open{
   opacity:1;
   visibility:visible;
   pointer-events:auto;
-  transform:translateY(0) rotate(-.7deg) scale(1);
+  transform:translate(-50%,0) rotate(-.7deg) scale(1);
 }
 #home154 .replaceToastTitle{
-  font-size:12px;
+  font-size:11px;
   line-height:1.15;
   font-weight:900;
+  text-align:center;
 }
 #home154 .replaceToastBody{
-  margin-top:3px;
-  font-size:10px;
-  line-height:1.25;
+  margin-top:2px;
+  font-size:9px;
+  line-height:1.2;
   font-weight:650;
   color:#71889A;
+  text-align:center;
 }
 #home154 .replaceToastActions{
   display:flex;
-  justify-content:flex-end;
-  gap:7px;
-  margin-top:8px;
+  justify-content:center;
+  gap:6px;
+  margin-top:7px;
+  white-space:nowrap;
 }
 #home154 .replaceToastBtn{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-height:30px;
+  min-height:28px;
   box-sizing:border-box;
-  padding:7px 10px;
+  padding:6px 9px;
   border:1px solid rgba(142,186,220,.42);
   border-radius:999px;
   background:rgba(255,255,255,.96);
   color:#587694;
-  font:850 10px/1 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font:850 9px/1 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   text-decoration:none;
   cursor:pointer;
   -webkit-tap-highlight-color:transparent;
@@ -4017,9 +4021,16 @@ body.gsfDesktopPreview .feature{
 }
 @media(max-width:760px){
   #home154 .replaceToast{
-    right:10px;
-    bottom:max(74px,calc(env(safe-area-inset-bottom,0px) + 66px));
-    width:min(260px,calc(100vw - 20px));
+    bottom:18px;
+    width:min(88%,218px);
+    padding:8px 9px 7px;
+  }
+  #home154 .replaceToastTitle{font-size:10.5px}
+  #home154 .replaceToastBody{font-size:8.7px}
+  #home154 .replaceToastBtn{
+    min-height:27px;
+    padding:6px 8px;
+    font-size:8.7px;
   }
 }
 </style>
@@ -4049,14 +4060,14 @@ body.gsfDesktopPreview .feature{
      <!-- legacy regression token only, never rendered: MP4 · MOV · AVI<br>MAX 4 GB -->
     </label>
     <div id="status" class="status"><div id="statusText">Caricamento video… 0%</div><div class="track"><div id="bar" class="bar"></div></div></div>
-   </div>
 
-   <div id="replaceToast" class="replaceToast" aria-hidden="true">
-    <div class="replaceToastTitle">Caricare un nuovo video?</div>
-    <div class="replaceToastBody">Il lavoro attuale verrà salvato nelle Bozze.</div>
-    <div class="replaceToastActions">
-     <button id="replaceCancel" class="replaceToastBtn" type="button">Annulla</button>
-     <label id="replaceConfirm" class="replaceToastBtn primary" for="pick">Carica nuovo</label>
+    <div id="replaceToast" class="replaceToast" aria-hidden="true">
+     <div class="replaceToastTitle">Caricare un nuovo video?</div>
+     <div class="replaceToastBody">Il lavoro attuale verrà salvato nelle Bozze.</div>
+     <div class="replaceToastActions">
+      <button id="replaceCancel" class="replaceToastBtn" type="button">Annulla</button>
+      <label id="replaceConfirm" class="replaceToastBtn primary" for="pick">Carica nuovo</label>
+     </div>
     </div>
    </div>
   </div>
