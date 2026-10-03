@@ -4522,7 +4522,7 @@ body.gsfDesktopPreview .feature{
    replacePending=false;
 
    uploadBusy=true;setMuralState("uploading");circle.classList.add("busy");rings.classList.remove("uploaded");rings.classList.add("uploading");try{window.parent.postMessage({type:"gsf-upload",state:"running",name:file.name},location.origin)}catch(_e){};status.className="status show";uploadLabel.textContent="CARICAMENTO";uploadHint.textContent="";bar.style.width="1%";
-   try{const caps=await capabilities();if(caps&&caps.bucket===true)await bucketUpload(file,caps);else await fallbackUpload(file);bar.style.width="100%";statusText.textContent="Video caricato";setLoaded(true);try{window.parent.postMessage({type:"gsf-upload",state:"done",name:file.name},location.origin)}catch(_e){};value({event:"upload_complete",duration,engine});}
+   try{const caps=await capabilities();if(caps&&caps.bucket===true)await bucketUpload(file,caps);else await fallbackUpload(file);bar.style.width="100%";statusText.textContent="Video caricato";setLoaded(true);circle.classList.remove("busy");uploadBusy=false;try{window.parent.postMessage({type:"gsf-upload",state:"done",name:file.name},location.origin)}catch(_e){};value({event:"upload_complete",duration,engine});}
    catch(e){setMuralState(loaded?"ready":"idle");rings.classList.remove("uploading");if(loaded)rings.classList.add("uploaded");status.className="status show error";statusText.textContent="Upload interrotto — riprova";bar.style.width="0";circle.classList.remove("busy");uploadBusy=false;try{window.parent.postMessage({type:"gsf-upload",state:"error",name:file.name},location.origin)}catch(_e){}}
  });
  
