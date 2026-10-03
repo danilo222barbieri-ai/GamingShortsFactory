@@ -118,6 +118,7 @@ RUN python /app/web/test_v179_mobile_hard_reset.py
 RUN python /app/web/test_v267_global_desktop_polish.py
 RUN python /app/web/test_v268_desktop_aesthetic_calibration.py
 RUN python /app/web/test_v268_1_desktop_to_mobile_parity.py
+RUN python /app/web/test_v269_creator_hub_recovery.py
 RUN python /app/web/test_v162_1_home_lift.py
 RUN python -m compileall -q /app/web
 COPY .streamlit /app/.streamlit
