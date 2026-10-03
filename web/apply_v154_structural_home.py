@@ -1901,9 +1901,16 @@ if GSF_WEB_MODE:
         });
       };
 
-      const homeFrame=()=>[...d.querySelectorAll('iframe')].find(f=>
-        /gsf_home_v154|home_v154/i.test((f.title||'')+' '+(f.src||''))
-      )||null;
+      const homeFrame=()=>{
+        const frames=[...d.querySelectorAll('iframe')];
+        for(const f of frames){
+          try{
+            const fd=f.contentDocument;
+            if(fd&&fd.getElementById('home154'))return f;
+          }catch(_e){}
+        }
+        return frames.find(f=>/gsf_home_v154|home_v154/i.test((f.title||'')+' '+(f.src||'')))||null;
+      };
 
       let replaceSaving=false;
 
@@ -1911,12 +1918,6 @@ if GSF_WEB_MODE:
         if(replaceSaving)return;
         replaceSaving=true;
         try{
-          P.GSFNotify&&P.GSFNotify.show(
-            'Metto al sicuro il lavoro…',
-            'Salvo la bozza prima di aprire il nuovo video.',
-            'success'
-          );
-
           const r=await P.fetch('/drafts/save-current',{
             method:'POST',
             credentials:'same-origin',
@@ -1929,11 +1930,7 @@ if GSF_WEB_MODE:
             throw new Error((j&&j.error)||'Salvataggio non verificato.');
           }
 
-          P.GSFNotify&&P.GSFNotify.show(
-            'Lavoro salvato',
-            'La bozza è al sicuro. Ora puoi scegliere un nuovo video.',
-            'success'
-          );
+          P.GSFNotify&&P.GSFNotify.show('Bozza salvata','','success');
 
           // Only here is replacement allowed.
           pick.disabled=false;
@@ -1958,8 +1955,8 @@ if GSF_WEB_MODE:
         try{doc=frame.contentDocument}catch(_e){return}
         if(!doc)return;
         const circle=doc.getElementById('circle'),pick=doc.getElementById('pick');
-        if(!circle||!pick||circle.dataset.gsfReplaceBound==='253')return;
-        circle.dataset.gsfReplaceBound='253';
+        if(!circle||!pick||circle.dataset.gsfReplaceBound==='256')return;
+        circle.dataset.gsfReplaceBound='256';
 
         // Visual Home is untouched. Only the second-upload click is intercepted.
         circle.addEventListener('click',(ev)=>{
@@ -1984,6 +1981,8 @@ if GSF_WEB_MODE:
       const obs=new P.MutationObserver(()=>{wireUploader().catch(()=>{})});
       obs.observe(d.body,{childList:true,subtree:true});
       wireUploader().catch(()=>{});
+      const uploaderWatch=P.setInterval(()=>{wireUploader().catch(()=>{})},700);
+      P.addEventListener('beforeunload',()=>P.clearInterval(uploaderWatch),{once:true});
 
       // Existing global notifications remain available from every page.
       P.addEventListener('message',(e)=>{
