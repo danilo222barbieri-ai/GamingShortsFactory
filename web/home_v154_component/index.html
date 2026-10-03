@@ -3006,6 +3006,180 @@ body.gsfDesktopPreview .feature{
   }
 }
 
+
+/* V236 MOBILE/PWA PARITY
+   Safari mobile is the visual master. Installed iOS/PWA must reuse the same
+   geometry; palette is shared so there is no separate "app blue" skin. */
+#home154{
+  background:
+    radial-gradient(ellipse at 50% 2%,rgba(188,225,245,.48) 0%,rgba(221,241,251,.28) 34%,transparent 61%),
+    radial-gradient(circle at 12% 43%,rgba(107,206,248,.09),transparent 30%),
+    radial-gradient(circle at 88% 45%,rgba(101,225,187,.08),transparent 31%),
+    linear-gradient(180deg,#F1F9FE 0%,#F7FCFF 55%,#FBFEFF 100%)!important;
+}
+#home154:before{
+  background:
+    radial-gradient(circle at 24% 39%,rgba(119,210,249,.045),transparent 31%),
+    radial-gradient(circle at 76% 47%,rgba(101,225,188,.04),transparent 31%)!important;
+}
+#home154 .rings{
+  background:
+    radial-gradient(circle at 38% 29%,#FFFFFF 0%,#FEFFFF 45%,#FBFEFF 72%,#F7FFF9 100%) padding-box,
+    linear-gradient(102deg,rgba(114,198,241,.48) 0%,rgba(126,209,246,.34) 45%,rgba(132,220,210,.27) 68%,rgba(117,226,191,.31) 100%) border-box!important;
+  border:1.2px solid transparent!important;
+  box-shadow:
+    -14px 0 42px rgba(89,198,247,.11),
+    16px 6px 44px rgba(92,225,182,.09),
+    inset 0 0 0 1px rgba(255,255,255,.94),
+    0 14px 36px rgba(70,126,166,.055)!important;
+}
+#home154 .circle{background:transparent!important}
+
+/* If iOS launches the site in standalone with a desktop-like iframe viewport,
+   force the exact phone composition instead of letting desktop rules win. */
+html.gsfPwaPhone,
+body.gsfPwaPhone{
+  width:100%!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  max-height:100dvh!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+html.gsfPwaPhone #home154{
+  width:100%!important;
+  max-width:100%!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  max-height:100dvh!important;
+  margin:0!important;
+  padding:5px 12px 10px!important;
+  border-radius:0!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+}
+html.gsfPwaPhone #home154 .ui{
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:100%!important;
+  overflow:hidden!important;
+}
+html.gsfPwaPhone #home154 .topbar{
+  min-height:24px!important;
+  height:24px!important;
+  flex:0 0 24px!important;
+  margin:0!important;
+  padding:0!important;
+  transform:translateY(2px)!important;
+}
+html.gsfPwaPhone #home154 .brandOnly{
+  font-size:8px!important;
+  letter-spacing:.24em!important;
+  margin:0!important;
+  padding:0!important;
+  line-height:1!important;
+}
+html.gsfPwaPhone #home154 #view{
+  min-height:0!important;
+  overflow:hidden!important;
+  row-gap:0!important;
+}
+html.gsfPwaPhone #home154 .sectionHead,
+html.gsfPwaPhone #home154 .projects,
+html.gsfPwaPhone #home154 .momentShelf{display:none!important}
+html.gsfPwaPhone #home154 .stage{
+  position:relative!important;
+  flex:1 1 auto!important;
+  min-height:356px!important;
+  height:356px!important;
+  margin-top:-2px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow:visible!important;
+  transform:none!important;
+}
+html.gsfPwaPhone #home154 .rings{
+  width:clamp(216px,61vw,242px)!important;
+  height:clamp(216px,61vw,242px)!important;
+  min-width:0!important;
+  min-height:0!important;
+}
+html.gsfPwaPhone #home154 .rings:before{inset:-20px!important}
+html.gsfPwaPhone #home154 .rings:after{inset:-35px!important}
+html.gsfPwaPhone #home154 .scribble,
+html.gsfPwaPhone #home154 .scribble.left,
+html.gsfPwaPhone #home154 .scribble.right{
+  display:block!important;
+  visibility:visible!important;
+  opacity:.94!important;
+}
+html.gsfPwaPhone #home154 .scribble.left{
+  left:8px!important;right:auto!important;top:18px!important;bottom:auto!important;
+  width:min(35vw,136px)!important;text-align:center!important;
+  transform:rotate(-4deg)!important;font-size:clamp(13px,3.55vw,16px)!important;
+  line-height:1.08!important;z-index:8!important;
+}
+html.gsfPwaPhone #home154 .scribble.right{
+  right:6px!important;left:auto!important;top:16px!important;bottom:auto!important;
+  width:min(36vw,140px)!important;text-align:center!important;
+  transform:rotate(4deg)!important;font-size:clamp(13px,3.5vw,16px)!important;
+  line-height:1.08!important;z-index:8!important;
+}
+html.gsfPwaPhone #home154 .scribble.right .padSketch{
+  width:42px!important;height:auto!important;margin:6px auto 0!important;
+}
+html.gsfPwaPhone #home154 .muralAmbient{display:none!important}
+html.gsfPwaPhone #home154 .features{
+  width:100%!important;
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:7px!important;
+  margin:0 0 18px!important;
+}
+html.gsfPwaPhone #home154 .feature,
+html.gsfPwaPhone #home154 .feature.fAi,
+html.gsfPwaPhone #home154 .feature.fEditor,
+html.gsfPwaPhone #home154 .feature.fShort{
+  min-width:0!important;
+  min-height:132px!important;
+  height:132px!important;
+  padding:11px 5px 10px!important;
+  border-radius:22px!important;
+}
+html.gsfPwaPhone #home154 .featureIcon{
+  width:48px!important;height:48px!important;margin-bottom:7px!important;border-radius:50%!important;
+}
+html.gsfPwaPhone #home154 .feature b{font-size:10.5px!important}
+html.gsfPwaPhone #home154 .feature small{font-size:7.3px!important;line-height:1.18!important}
+html.gsfPwaPhone #home154 .bottomNav{
+  position:relative!important;
+  left:auto!important;right:auto!important;bottom:auto!important;
+  transform:none!important;
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  height:62px!important;min-height:62px!important;
+  margin:0 0 10px!important;padding:7px 7px 6px!important;
+  border-radius:999px!important;
+  display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  z-index:20!important;
+}
+html.gsfPwaPhone #home154 .navItem{font-size:7px!important;gap:2px!important;min-width:0!important}
+html.gsfPwaPhone #home154 .navItem svg{width:18px!important;height:18px!important;padding:5px!important;box-sizing:content-box!important}
+html.gsfPwaPhone #home154 .siteFooter{
+  position:relative!important;
+  left:auto!important;right:auto!important;bottom:auto!important;
+  width:100%!important;min-width:0!important;
+  height:auto!important;min-height:86px!important;
+  margin:0!important;padding:8px 0 4px!important;
+  display:grid!important;grid-template-columns:1fr!important;
+  justify-items:center!important;align-items:center!important;gap:8px!important;
+  overflow:visible!important;
+}
+html.gsfPwaPhone #home154 .sideAd{display:none!important}
+
 </style>
 </head>
 <body>
@@ -3094,6 +3268,41 @@ body.gsfDesktopPreview .feature{
  const value=(v)=>send(SET_COMPONENT_VALUE,{value:v,dataType:"json"});
  const height=(h)=>send(SET_FRAME_HEIGHT,{height:h});
  const DESKTOP_PREVIEW=new URLSearchParams(window.location.search).get("desktopPreview")==="1";
+ const GSF_DEVICE_W=Math.min(
+   Number((window.screen&&window.screen.width)||9999),
+   Number((window.screen&&window.screen.height)||9999)
+ );
+ let GSF_PARENT_STANDALONE=false;
+ try{
+   GSF_PARENT_STANDALONE=(
+     (window.parent.matchMedia&&window.parent.matchMedia("(display-mode: standalone)").matches)||
+     window.parent.navigator.standalone===true
+   );
+ }catch(_e){
+   GSF_PARENT_STANDALONE=(
+     (window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||
+     window.navigator.standalone===true
+   );
+ }
+ const GSF_PWA_PHONE=GSF_PARENT_STANDALONE&&GSF_DEVICE_W<=760;
+ const GSF_MOBILE_SHELL=GSF_PWA_PHONE||Math.max(320,Number(window.parent.innerWidth||window.innerWidth||1920))<=760;
+ if(GSF_PWA_PHONE){
+   document.documentElement.classList.add("gsfPwaPhone");
+   document.body.classList.add("gsfPwaPhone");
+   try{
+     const pd=window.parent.document;
+     let vp=pd.querySelector('meta[name="viewport"]');
+     if(!vp){
+       vp=pd.createElement("meta");
+       vp.setAttribute("name","viewport");
+       (pd.head||pd.documentElement).appendChild(vp);
+     }
+     vp.setAttribute("content","width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover");
+     pd.documentElement.style.setProperty("width","100%","important");
+     pd.body&&pd.body.style.setProperty("width","100%","important");
+     window.setTimeout(()=>{try{window.parent.dispatchEvent(new Event("resize"))}catch(_e){}},40);
+   }catch(_e){}
+ }
  const root=document.getElementById("home154"),view=document.getElementById("view");
  if(DESKTOP_PREVIEW){
    document.documentElement.classList.add("gsfDesktopPreview");
@@ -3218,7 +3427,7 @@ body.gsfDesktopPreview .feature{
      frame.style.setProperty("padding","0","important");
      frame.style.setProperty("border","0","important");
 
-     const mobileShell=Math.max(320,Number(window.parent.innerWidth||window.innerWidth||1920))<=760;
+     const mobileShell=GSF_MOBILE_SHELL;
      const safeToCollapse=(el)=>{
        if(!el||el.contains(frame)) return false;
        if(el.querySelector('[role="alert"],[role="dialog"]')) return false;
@@ -3251,7 +3460,7 @@ body.gsfDesktopPreview .feature{
    try{
      const pw=Math.max(320,Number(window.parent.innerWidth||window.innerWidth||1920));
      const shell=normalizeParentHomeShell();
-     if(pw<=760){
+     if(GSF_MOBILE_SHELL){
        const viewport=Math.max(720,Math.floor(Number(window.parent.innerHeight||window.innerHeight||780)));
        [shell.own,shell.custom].filter(Boolean).forEach(el=>{
          el.style.setProperty("height",viewport+"px","important");
