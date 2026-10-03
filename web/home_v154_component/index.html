@@ -3014,6 +3014,126 @@ body.gsfDesktopPreview .feature{
   }
 }
 
+
+/* V242 MOBILE GUIDE PLACEMENT — mobile only. */
+@media (max-width:760px){
+  #home154 .scribble .padSketch{
+    display:none!important;
+  }
+
+  #home154 .scribble,
+  #home154 .muralAmbient,
+  #home154[data-mural-state="uploading"] .scribble,
+  #home154[data-mural-state="ready"] .scribble,
+  #home154[data-mural-state^="focus-"] .scribble,
+  #home154[data-mural-state="uploading"] .muralAmbient,
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    display:block!important;
+    font-size:clamp(16px,4.15vw,19px)!important;
+    line-height:1.06!important;
+    letter-spacing:.01em!important;
+    opacity:.96!important;
+    z-index:9!important;
+    transition:
+      opacity .34s ease,
+      top .42s cubic-bezier(.22,.78,.22,1),
+      left .42s cubic-bezier(.22,.78,.22,1),
+      right .42s cubic-bezier(.22,.78,.22,1),
+      bottom .42s cubic-bezier(.22,.78,.22,1)!important;
+    will-change:transform,opacity;
+  }
+
+  #home154 .scribble.left,
+  #home154[data-mural-state="uploading"] .scribble.left,
+  #home154[data-mural-state="ready"] .scribble.left,
+  #home154[data-mural-state^="focus-"] .scribble.left{
+    left:18px!important;
+    right:auto!important;
+    top:82px!important;
+    bottom:auto!important;
+    width:156px!important;
+    text-align:left!important;
+    --gsf-guide-base:rotate(-11deg);
+    animation:gsfGuideFloatMobile 7.2s ease-in-out infinite!important;
+  }
+
+  #home154 .scribble.right,
+  #home154[data-mural-state="uploading"] .scribble.right,
+  #home154[data-mural-state="ready"] .scribble.right,
+  #home154[data-mural-state^="focus-"] .scribble.right{
+    right:16px!important;
+    left:auto!important;
+    top:102px!important;
+    bottom:auto!important;
+    width:160px!important;
+    text-align:center!important;
+    --gsf-guide-base:rotate(5deg);
+    animation:gsfGuideFloatMobile 7.6s ease-in-out -.9s infinite!important;
+  }
+
+  #home154 .muralAmbient,
+  #home154[data-mural-state="uploading"] .muralAmbient,
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    left:50%!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:10px!important;
+    width:min(72vw,280px)!important;
+    text-align:center!important;
+    font-size:clamp(15px,3.9vw,18px)!important;
+    --gsf-guide-base:translateX(-50%) rotate(-3deg);
+    animation:gsfGuideFloatMobile 8s ease-in-out -1.8s infinite!important;
+  }
+
+  @keyframes gsfGuideFloatMobile{
+    0%,100%{transform:var(--gsf-guide-base) translateY(0)}
+    50%{transform:var(--gsf-guide-base) translateY(-4px)}
+  }
+}
+
+@media (max-width:390px){
+  #home154 .scribble.left,
+  #home154[data-mural-state="uploading"] .scribble.left,
+  #home154[data-mural-state="ready"] .scribble.left,
+  #home154[data-mural-state^="focus-"] .scribble.left{
+    left:12px!important;
+    top:78px!important;
+    width:144px!important;
+    font-size:15.5px!important;
+  }
+
+  #home154 .scribble.right,
+  #home154[data-mural-state="uploading"] .scribble.right,
+  #home154[data-mural-state="ready"] .scribble.right,
+  #home154[data-mural-state^="focus-"] .scribble.right{
+    right:8px!important;
+    top:98px!important;
+    width:148px!important;
+    font-size:15.5px!important;
+  }
+
+  #home154 .muralAmbient,
+  #home154[data-mural-state="uploading"] .muralAmbient,
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    bottom:8px!important;
+    width:min(74vw,265px)!important;
+    font-size:14.5px!important;
+  }
+}
+
+@media (prefers-reduced-motion:reduce) and (max-width:760px){
+  #home154 .scribble.left,
+  #home154 .scribble.right,
+  #home154 .muralAmbient{
+    animation:none!important;
+    transform:var(--gsf-guide-base)!important;
+  }
+}
+/* END V242 MOBILE GUIDE PLACEMENT */
+
 </style>
 </head>
 <body>
