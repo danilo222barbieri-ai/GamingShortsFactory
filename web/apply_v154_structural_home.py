@@ -1583,6 +1583,10 @@ if GSF_WEB_MODE:
       opacity:1;
       visibility:visible;
     }
+    #gsf-page-chrome-v250.is-open .gsf-page-head{
+      z-index:3;
+      background:linear-gradient(180deg,rgba(254,255,255,.98),rgba(249,253,255,.94));
+    }
 
     #gsf-page-chrome-v250 .gsf-page-head{
       position:absolute;
@@ -1778,11 +1782,51 @@ if GSF_WEB_MODE:
         return !!(el&&el.classList.contains('is-open'));
       });
 
+      const findHomeDoc=()=>{
+        for(const f of [...d.querySelectorAll('iframe')]){
+          try{
+            const fd=f.contentDocument;
+            if(fd&&fd.getElementById('home154'))return fd;
+          }catch(_e){}
+        }
+        return null;
+      };
+
+      const syncHomeHeader=(open)=>{
+        const hd=findHomeDoc();
+        if(!hd)return;
+        const top=hd.querySelector('#home154 .topbar');
+        if(!top)return;
+        if(open){
+          if(!top.dataset.gsfPageHidden){
+            top.dataset.gsfPageHidden='1';
+            top.dataset.gsfPrevVisibility=top.style.visibility||'';
+            top.dataset.gsfPrevOpacity=top.style.opacity||'';
+            top.dataset.gsfPrevPointerEvents=top.style.pointerEvents||'';
+          }
+          top.style.setProperty('visibility','hidden','important');
+          top.style.setProperty('opacity','0','important');
+          top.style.setProperty('pointer-events','none','important');
+        }else if(top.dataset.gsfPageHidden==='1'){
+          top.style.removeProperty('visibility');
+          top.style.removeProperty('opacity');
+          top.style.removeProperty('pointer-events');
+          if(top.dataset.gsfPrevVisibility)top.style.visibility=top.dataset.gsfPrevVisibility;
+          if(top.dataset.gsfPrevOpacity)top.style.opacity=top.dataset.gsfPrevOpacity;
+          if(top.dataset.gsfPrevPointerEvents)top.style.pointerEvents=top.dataset.gsfPrevPointerEvents;
+          delete top.dataset.gsfPageHidden;
+          delete top.dataset.gsfPrevVisibility;
+          delete top.dataset.gsfPrevOpacity;
+          delete top.dataset.gsfPrevPointerEvents;
+        }
+      };
+
       const sync=()=>{
         const open=anyOpen();
         chrome.classList.toggle('is-open',open);
         chrome.setAttribute('aria-hidden',open?'false':'true');
         if(nav)nav.classList.toggle('is-open',open);
+        syncHomeHeader(open);
       };
 
       const account=chrome.querySelector('.gsf-page-account');
@@ -1808,6 +1852,8 @@ if GSF_WEB_MODE:
         const el=d.getElementById(id);
         if(el)obs.observe(el,{attributes:true,attributeFilter:['class','style','aria-hidden']});
       });
+      const pageShellObs=new P.MutationObserver(()=>queueMicrotask(sync));
+      pageShellObs.observe(d.body,{childList:true,subtree:true});
 
       P.addEventListener('message',e=>{
         if(e.origin!==P.location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
