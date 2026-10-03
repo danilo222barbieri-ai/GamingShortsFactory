@@ -783,6 +783,48 @@ s = s.rstrip() + "\n\n" + _account_surface_v223.lstrip()
 # V224 legacy JS-regex escape cleanup: generated Python source must contain
 # a doubled backslash so Python emits the intended JS /\s/ regex without SyntaxWarning.
 s=s.replace("replace(/"+chr(92)+"s/g,'')","replace(/"+chr(92)+chr(92)+"s/g,'')")
+# V235 — APP SHELL RUNTIME ISOLATION
+# Streamlit markdown may expose <script> contents as visible text on some clients.
+# Extract every guarded shell script from the generated source, remove it from
+# the visible DOM markup, and execute the combined runtime in one zero-size
+# components.html iframe against the parent Streamlit document.
+import re as _gsf_re_v235
+_gsf_shell_scripts_v235=[]
+
+def _gsf_capture_script_v235(match):
+    _gsf_shell_scripts_v235.append(match.group(1))
+    return '<div class="gsf-script-guard" style="display:none!important"></div>'
+
+_gsf_guard_rx_v235=_gsf_re_v235.compile(
+    r'<div class="gsf-script-guard" style="display:none!important"><script>\s*([\s\S]*?)\s*</script></div>'
+)
+s=_gsf_guard_rx_v235.sub(_gsf_capture_script_v235,s)
+
+if _gsf_shell_scripts_v235:
+    _gsf_runtime_js_v235="\n".join(_gsf_shell_scripts_v235)
+    _gsf_runtime_html_v235=(
+        "<!doctype html><html><body style='margin:0;display:none'>"
+        "<script>"
+        "((P)=>{"
+        "const window=P;"
+        "const document=P.document;"
+        "const location=P.location;"
+        "const history=P.history;"
+        "const sessionStorage=P.sessionStorage;"
+        "const MutationObserver=P.MutationObserver;"
+        "const setTimeout=P.setTimeout.bind(P);"
+        "const clearTimeout=P.clearTimeout.bind(P);"
+        + _gsf_runtime_js_v235 +
+        "})(window.parent);"
+        "</script></body></html>"
+    )
+    s=s.rstrip()+"\n\n"+(
+        "# V235 isolated shell runtime — no visible JS leakage\n"
+        "if GSF_WEB_MODE:\n"
+        "    import streamlit.components.v1 as components\n"
+        "    components.html("+repr(_gsf_runtime_html_v235)+", height=0, scrolling=False)\n"
+    )
+
 # V221 final write must happen AFTER V220 + V221 surfaces are appended.
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")

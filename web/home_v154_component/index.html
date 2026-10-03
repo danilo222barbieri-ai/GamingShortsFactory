@@ -2909,9 +2909,23 @@ body.gsfDesktopPreview .feature{
   }
 
   #home154 .sideAd{
-    display:block!important;
+    display:flex!important;
+    position:absolute!important;
+    top:50%!important;
+    transform:translateY(-50%)!important;
+    z-index:2!important;
+    flex:0 0 auto!important;
+    margin:0!important;
     width:clamp(116px,9.1vw,160px)!important;
     height:clamp(300px,48vh,460px)!important;
+  }
+  #home154 .sideAdLeft{
+    left:clamp(10px,1.35vw,24px)!important;
+    right:auto!important;
+  }
+  #home154 .sideAdRight{
+    right:clamp(10px,1.35vw,24px)!important;
+    left:auto!important;
   }
 }
 
