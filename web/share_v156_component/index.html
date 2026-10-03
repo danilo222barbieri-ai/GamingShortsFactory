@@ -278,6 +278,25 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:880;lett
 }
 /* END V268 DESKTOP AESTHETIC CALIBRATION */
 
+
+/* V268.1 DESKTOP MASTER -> MOBILE PARITY — Share.
+   Existing mobile murals remain independent. */
+@media (max-width:760px){
+  #share{overflow:hidden!important;background:radial-gradient(circle at 9% 6%,rgba(126,214,255,.16),transparent 24%),radial-gradient(circle at 91% 8%,rgba(127,236,197,.14),transparent 25%),linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important}
+  #share .section{border-color:rgba(143,181,216,.22)!important;border-radius:24px!important;box-shadow:0 12px 30px rgba(61,104,145,.075),inset 0 1px 0 rgba(255,255,255,.97)!important}
+  #share .card{border-color:rgba(144,181,214,.21)!important;box-shadow:0 7px 20px rgba(65,105,145,.055),inset 0 1px 0 #fff!important;transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s cubic-bezier(.2,.8,.2,1),border-color .24s ease!important}
+  #share .logo{border-radius:50%!important;transition:transform .24s cubic-bezier(.2,.8,.2,1)!important}
+  #share .logo svg{stroke-width:1.9!important}
+  #share .open,#share .downloadBtn,#share .secondary{transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s ease,border-color .2s ease!important}
+  #share h1{font-size:22px!important} #share .subtitle{font-size:10.7px!important}
+  #share .sectionTitle{font-size:12.8px!important} #share .card h3{font-size:13.1px!important}
+  #share .card p{font-size:9.3px!important} #share .open{font-size:9.3px!important}
+  #share .downloadTitle h2{font-size:16.2px!important} #share .downloadTitle p{font-size:9.5px!important}
+  #share .chip{font-size:7.5px!important} #share .downloadBtn{font-size:11.3px!important} #share .secondary{font-size:9.3px!important}
+  #share .open:active,#share .downloadBtn:active,#share .secondary:active{transform:scale(.98)!important}
+}
+/* END V268.1 DESKTOP MASTER -> MOBILE PARITY */
+
 </style>
 </head>
 <body>
