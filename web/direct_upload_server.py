@@ -3735,21 +3735,81 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 root=ROOT/"sessions"/sid
                 state={}
+
+                # Start from the app/session state if present.
                 state_path=root/"session_state.json"
                 if state_path.is_file():
                     raw=json.loads(state_path.read_text(encoding="utf-8"))
                     if isinstance(raw,dict):
-                        state=raw.get("state") if isinstance(raw.get("state"),dict) else raw
-                if not isinstance(state,dict):
-                    state={}
-                draft=_draft_save(sid,{
-                    "title":"Bozza automatica · "+str(state.get("gsf_source_name") or "Gameplay")[:120],
-                    "source_name":str(state.get("gsf_source_name") or "Gameplay")[:160],
+                        candidate=raw.get("state") if isinstance(raw.get("state"),dict) else raw
+                        if isinstance(candidate,dict):
+                            state.update(candidate)
+
+                # Merge the latest Editor state so the draft resumes exactly where the user left it.
+                editor_state=_editor_overlay_state_load(sid)
+                if isinstance(editor_state,dict):
+                    state.update(editor_state)
+
+                # Bind the snapshot to the exact source currently loaded.
+                marker=root/"media"/".direct_upload_ready.json"
+                meta={}
+                if marker.is_file():
+                    raw_meta=json.loads(marker.read_text(encoding="utf-8"))
+                    if isinstance(raw_meta,dict):
+                        meta=dict(raw_meta)
+
+                source_path=str(meta.get("path") or state.get("gsf_source_path") or state.get("gsf_editor_source_path") or "")
+                source_name=str(meta.get("name") or state.get("gsf_source_name") or "Gameplay")[:160]
+                upload_id=_safe_id(meta.get("upload_id",""))
+
+                if not source_path:
+                    raise RuntimeError("Nessuna sorgente corrente da mettere al sicuro.")
+
+                source=Path(source_path)
+                if not source.is_file() and not meta.get("bucket_key"):
+                    raise RuntimeError("La sorgente corrente non è recuperabile: nuovo upload bloccato.")
+
+                # If this was a direct-fallback upload, make it persistent before we approve replacement.
+                if _bucket_enabled() and source.is_file() and upload_id and not meta.get("bucket_key"):
+                    persisted=_persist_fallback_source_to_bucket(
+                        sid,upload_id,str(source),source_name,int(meta.get("size") or source.stat().st_size)
+                    )
+                    if persisted:
+                        meta.update(persisted)
+                    if not meta.get("bucket_key"):
+                        raise RuntimeError("Salvataggio persistente non verificato: nuovo upload bloccato.")
+
+                state["gsf_source_path"]=source_path
+                state["gsf_editor_source_path"]=source_path
+                state["gsf_source_name"]=source_name
+
+                # One automatic snapshot per current source: cancel/retry does not create duplicate drafts.
+                draft_id=("draft_auto_"+upload_id) if upload_id else ""
+                payload={
+                    "id":draft_id,
+                    "title":"Bozza automatica · "+source_name[:120],
+                    "source_name":source_name,
                     "state":state,
+                }
+                draft=_draft_save(sid,payload)
+
+                # Verify the snapshot can actually be recovered before releasing the new uploader.
+                saved=_draft_load(sid,draft.get("id"))
+                source_ref=dict(saved.get("source_ref") or {}) if isinstance(saved,dict) else {}
+                local_ref=Path(str(source_ref.get("draft_path") or source_ref.get("path") or source_path))
+                recoverable=bool(local_ref.is_file() or source_ref.get("bucket_key") or meta.get("bucket_key"))
+                if not saved or not recoverable:
+                    raise RuntimeError("Verifica bozza non riuscita: nuovo upload bloccato.")
+
+                _json(self,200,{
+                    "ok":True,
+                    "verified":True,
+                    "id":draft.get("id"),
+                    "title":draft.get("title"),
+                    "persistent":bool(source_ref.get("bucket_key") or meta.get("bucket_key")),
                 })
-                _json(self,200,{"ok":True,"id":draft.get("id"),"title":draft.get("title")})
             except Exception as exc:
-                _json(self,400,{"ok":False,"error":str(exc)[:180]})
+                _json(self,409,{"ok":False,"verified":False,"error":str(exc)[:220]})
             return
 
         if path=="/drafts/save":
