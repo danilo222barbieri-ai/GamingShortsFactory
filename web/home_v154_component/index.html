@@ -4033,6 +4033,25 @@ body.gsfDesktopPreview .feature{
     font-size:8.7px;
   }
 }
+
+/* V263.2 MOBILE AMBIENT MICRO-LOWER — requested 4px only. */
+@media (max-width:760px){
+  #home154 .muralAmbient,
+  #home154[data-mural-state="uploading"] .muralAmbient,
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    top:auto!important;
+    bottom:36px!important;
+  }
+}
+@media (max-width:390px){
+  #home154 .muralAmbient,
+  #home154[data-mural-state="uploading"] .muralAmbient,
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    bottom:32px!important;
+  }
+}
 </style>
 </head>
 <body>
