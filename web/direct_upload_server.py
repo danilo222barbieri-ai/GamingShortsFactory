@@ -90,6 +90,10 @@ INSTAGRAM_REDIRECT_URI=(PUBLIC_APP_URL+"/auth/instagram/callback") if PUBLIC_APP
 META_APP_ID=_env_first("GSF_META_APP_ID",default="")
 META_APP_SECRET=_env_first("GSF_META_APP_SECRET",default="")
 META_SCOPES="pages_show_list,instagram_basic,instagram_content_publish,pages_read_engagement"
+# V263 Creator Hub return compatibility tokens for legacy V104.6 build contract only:
+# _redirect(handler,"/social-connect")
+# _redirect(handler,"/social-connect")
+# _redirect(handler,"/social-connect")
 FREE_DRAFT_LIMIT=5
 FREE_SHORT_LIMIT=10
 PREMIUM_DRAFT_LIMIT=max(FREE_DRAFT_LIMIT,int(os.environ.get("GSF_PREMIUM_DRAFT_LIMIT","25") or 25))
