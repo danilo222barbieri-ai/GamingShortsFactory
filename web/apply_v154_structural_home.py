@@ -532,7 +532,18 @@ if GSF_WEB_MODE:
         <iframe src="/creator-hub-v156/?v=226" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
       </section>
     </div>
-    <div class="gsf-script-guard" style="display:none!important"><script>
+    <div class="gsf-script-guard" style="display:none!important"></div>
+
+    """, unsafe_allow_html=True)
+
+    import streamlit.components.v1 as components
+    components.html(r"""<!doctype html><html><body style="margin:0;display:none">
+    <script>
+    ((P)=>{
+      const window=P;
+      const document=P.document;
+      const location=P.location;
+
     (()=>{
       const o=document.getElementById('gsf-creator-hub-live-v160');if(!o)return;
       const frame=o.querySelector('iframe');
@@ -568,8 +579,10 @@ if GSF_WEB_MODE:
         if(t==='home'||t==='close'||t==='editor'||t==='social'||t==='ai'||t==='account')close();
       });
     })();
-    </script></div>
-    """, unsafe_allow_html=True)
+    
+    })(window.parent);
+    </script>
+    </body></html>""", height=0, scrolling=False)
 '''
 s = s.rstrip() + "\n\n" + _hub_surface_v160.lstrip()
 
@@ -612,7 +625,18 @@ if GSF_WEB_MODE:
         </div>
       </section>
     </div>
-    <div class="gsf-script-guard" style="display:none!important"><script>
+    <div class="gsf-script-guard" style="display:none!important"></div>
+
+    """, unsafe_allow_html=True)
+
+    import streamlit.components.v1 as components
+    components.html(r"""<!doctype html><html><body style="margin:0;display:none">
+    <script>
+    ((P)=>{
+      const window=P;
+      const document=P.document;
+      const location=P.location;
+
     (()=>{
       const o=document.getElementById('gsf-editor-overlay-v220'); if(!o)return;
       const frame=o.querySelector('.gsf-editor-frame'),left=document.getElementById('gsf-editor-note-left'),right=document.getElementById('gsf-editor-note-right');
@@ -680,8 +704,10 @@ if GSF_WEB_MODE:
       });
       try{if(sessionStorage.getItem(KEY)==='1')setTimeout(()=>open(false),90)}catch(e){};
     })();
-    </script></div>
-    """, unsafe_allow_html=True)
+    
+    })(window.parent);
+    </script>
+    </body></html>""", height=0, scrolling=False)
 '''
 s = s.rstrip() + "\n\n" + _editor_surface_v220.lstrip()
 
@@ -704,7 +730,18 @@ if GSF_WEB_MODE:
         <iframe src="/ai-v221/?v=226" data-src="/ai-v221/" data-loaded="1" title="Motori IA"></iframe>
       </section>
     </div>
-    <div class="gsf-script-guard" style="display:none!important"><script>
+    <div class="gsf-script-guard" style="display:none!important"></div>
+
+    """, unsafe_allow_html=True)
+
+    import streamlit.components.v1 as components
+    components.html(r"""<!doctype html><html><body style="margin:0;display:none">
+    <script>
+    ((P)=>{
+      const window=P;
+      const document=P.document;
+      const location=P.location;
+
     (()=>{
       const KEY='gsf_ai_overlay_open_v221';
       const o=document.getElementById('gsf-ai-overlay-v221');if(!o)return;
@@ -748,8 +785,10 @@ if GSF_WEB_MODE:
       });
       try{if(sessionStorage.getItem(KEY)==='1')setTimeout(()=>open(false),90)}catch(e){}
     })();
-    </script></div>
-    """, unsafe_allow_html=True)
+    
+    })(window.parent);
+    </script>
+    </body></html>""", height=0, scrolling=False)
 '''
 s = s.rstrip() + "\n\n" + _ai_surface_v221.lstrip()
 
@@ -773,7 +812,18 @@ if GSF_WEB_MODE:
         <iframe src="/account/?v=226" data-src="/account/" data-loaded="1" title="Account"></iframe>
       </section>
     </div>
-    <div class="gsf-script-guard" style="display:none!important"><script>
+    <div class="gsf-script-guard" style="display:none!important"></div>
+
+    """, unsafe_allow_html=True)
+
+    import streamlit.components.v1 as components
+    components.html(r"""<!doctype html><html><body style="margin:0;display:none">
+    <script>
+    ((P)=>{
+      const window=P;
+      const document=P.document;
+      const location=P.location;
+
     (()=>{
       const o=document.getElementById('gsf-account-overlay-v223');if(!o)return;
       const frame=o.querySelector('iframe');
@@ -788,8 +838,10 @@ if GSF_WEB_MODE:
         if(t==='home'||t==='close'||t==='hub'||t==='editor'||t==='social'||t==='ai')close();
       });
     })();
-    </script></div>
-    """, unsafe_allow_html=True)
+    
+    })(window.parent);
+    </script>
+    </body></html>""", height=0, scrolling=False)
 '''
 s = s.rstrip() + "\n\n" + _account_surface_v223.lstrip()
 
@@ -1768,6 +1820,57 @@ if GSF_WEB_MODE:
 '''
 s = s.rstrip() + "\n\n" + _page_chrome_v250.lstrip()
 # END V250 SHARED PAGE CHROME
+
+# V251 ROUTE GUARD
+_route_guard_v251 = r'''
+if GSF_WEB_MODE:
+    import streamlit.components.v1 as components
+    components.html(r"""<!doctype html><html><body style="margin:0;display:none"><script>
+    ((P)=>{
+      const d=P.document;
+      const ids={
+        hub:'gsf-creator-hub-live-v160',
+        editor:'gsf-editor-overlay-v220',
+        social:'gsf-social-overlay-v159',
+        ai:'gsf-ai-overlay-v221',
+        account:'gsf-account-overlay-v223'
+      };
+      const hide=(el)=>{
+        if(!el)return;
+        el.classList.remove('is-open');
+        el.style.opacity='0';
+        el.style.visibility='hidden';
+        el.style.pointerEvents='none';
+        el.setAttribute('aria-hidden','true');
+      };
+      const show=(el)=>{
+        if(!el)return;
+        el.classList.add('is-open');
+        el.style.opacity='1';
+        el.style.visibility='visible';
+        el.style.pointerEvents='auto';
+        el.setAttribute('aria-hidden','false');
+      };
+      P.addEventListener('message',e=>{
+        if(e.origin!==P.location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
+        const t=String(e.data.target||'');
+        if(t==='ai-state')return;
+        if(t==='home'||t==='close'){
+          Object.values(ids).forEach(id=>hide(d.getElementById(id)));
+          return;
+        }
+        const key=(t==='profile')?'hub':t;
+        if(!ids[key])return;
+        Object.entries(ids).forEach(([name,id])=>{
+          const el=d.getElementById(id);
+          if(name===key)show(el); else hide(el);
+        });
+      },true);
+    })(window.parent);
+    </script></body></html>""",height=0,scrolling=False)
+'''
+s = s.rstrip() + "\n\n" + _route_guard_v251.lstrip()
+# END V251 ROUTE GUARD
 
 # V221 final write must happen AFTER V220 + V221 surfaces are appended.
 compile(s,str(out),"exec")
