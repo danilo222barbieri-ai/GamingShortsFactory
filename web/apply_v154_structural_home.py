@@ -1930,7 +1930,7 @@ if GSF_WEB_MODE:
       const ensurePush=()=>{
         if(P.GSFNotify)return Promise.resolve(true);
         return new Promise((resolve)=>{
-          let s=d.getElementById('gsf-global-push-client-v255');
+          let s=d.getElementById('gsf-global-push-client-v258');
           if(s){
             if(P.GSFNotify)return resolve(true);
             s.addEventListener('load',()=>resolve(!!P.GSFNotify),{once:true});
@@ -1938,8 +1938,8 @@ if GSF_WEB_MODE:
             return;
           }
           s=d.createElement('script');
-          s.id='gsf-global-push-client-v255';
-          s.src='/gsf-push.js?v=255';
+          s.id='gsf-global-push-client-v258';
+          s.src='/gsf-push.js?v=258';
           s.async=true;
           s.onload=()=>resolve(!!P.GSFNotify);
           s.onerror=()=>resolve(false);
@@ -1947,89 +1947,7 @@ if GSF_WEB_MODE:
         });
       };
 
-      const homeFrame=()=>{
-        const frames=[...d.querySelectorAll('iframe')];
-        for(const f of frames){
-          try{
-            const fd=f.contentDocument;
-            if(fd&&fd.getElementById('home154'))return f;
-          }catch(_e){}
-        }
-        return frames.find(f=>/gsf_home_v154|home_v154/i.test((f.title||'')+' '+(f.src||'')))||null;
-      };
-
-      let replaceSaving=false;
-
-      const saveBeforeReplace=async(pick)=>{
-        if(replaceSaving)return;
-        replaceSaving=true;
-        try{
-          const r=await P.fetch('/drafts/save-current',{
-            method:'POST',
-            credentials:'same-origin',
-            headers:{'Content-Type':'application/json'},
-            body:'{}'
-          });
-          let j={};
-          try{j=await r.json()}catch(_e){}
-          if(!r.ok||!j||!j.ok||!j.verified){
-            throw new Error((j&&j.error)||'Salvataggio non verificato.');
-          }
-
-          P.GSFNotify&&P.GSFNotify.show('Bozza salvata','','success');
-
-          // Only here is replacement allowed.
-          pick.disabled=false;
-          pick.value='';
-          pick.click();
-        }catch(err){
-          P.GSFNotify&&P.GSFNotify.show(
-            'Nuovo video bloccato',
-            String((err&&err.message)||'Non posso verificare la bozza. Il lavoro corrente resta intatto.'),
-            'error'
-          );
-        }finally{
-          replaceSaving=false;
-        }
-      };
-
-      const wireUploader=async()=>{
-        await ensurePush();
-        const frame=homeFrame();
-        if(!frame)return;
-        let doc;
-        try{doc=frame.contentDocument}catch(_e){return}
-        if(!doc)return;
-        const circle=doc.getElementById('circle'),pick=doc.getElementById('pick');
-        if(!circle||!pick||circle.dataset.gsfReplaceBound==='256')return;
-        circle.dataset.gsfReplaceBound='256';
-
-        // Visual Home is untouched. Only the second-upload click is intercepted.
-        circle.addEventListener('click',(ev)=>{
-          if(!circle.classList.contains('loaded'))return;
-          ev.preventDefault();
-          ev.stopPropagation();
-          if(!P.GSFNotify||typeof P.GSFNotify.confirm!=='function')return;
-
-          P.GSFNotify.confirm(
-            'Caricare un nuovo video?',
-            'Prima salvo e verifico il lavoro attuale nelle Bozze. Nulla viene cancellato automaticamente.',
-            {
-              confirmText:'Salva e carica',
-              cancelText:'Resta qui',
-              onConfirm:()=>saveBeforeReplace(pick)
-            }
-          );
-        },true);
-      };
-
-      // Streamlit can remount the Home iframe; keep the protection attached.
-      const obs=new P.MutationObserver(()=>{wireUploader().catch(()=>{})});
-      obs.observe(d.body,{childList:true,subtree:true});
-      wireUploader().catch(()=>{});
-      const uploaderWatch=P.setInterval(()=>{wireUploader().catch(()=>{})},700);
-      P.addEventListener('beforeunload',()=>P.clearInterval(uploaderWatch),{once:true});
-
+      // V258: replacement upload is owned by the Home uploader itself.
       // Existing global notifications remain available from every page.
       P.addEventListener('message',(e)=>{
         const data=e.data||{};

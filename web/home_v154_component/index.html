@@ -4044,7 +4044,7 @@ body.gsfDesktopPreview .feature{
  const uploadLabel=document.getElementById("uploadLabel"),uploadHint=document.getElementById("uploadHint");
  const status=document.getElementById("status"),statusText=document.getElementById("statusText"),bar=document.getElementById("bar");
  const cta=document.getElementById("primaryCta");
- let loaded=false,duration=15,engine="",uploadBusy=false,previewData=[];
+ let loaded=false,duration=15,engine="",uploadBusy=false,previewData=[],replacePending=false;
 
  const muralPrimary=document.querySelector("#muralPrimary .guideText");
  const muralUpload=document.querySelector("#muralUpload .guideText");
@@ -4333,6 +4333,79 @@ body.gsfDesktopPreview .feature{
    if(emit)value({event:"engine",duration,engine});
  }
 
+ async function ensureParentNotify(){
+   try{
+     const P=window.parent,d=P.document;
+     if(P.GSFNotify&&typeof P.GSFNotify.confirm==="function")return P.GSFNotify;
+     let s=d.getElementById("gsf-global-push-client-v258")||d.getElementById("gsf-global-push-client-v255");
+     if(!s){
+       s=d.createElement("script");
+       s.id="gsf-global-push-client-v258";
+       s.src="/gsf-push.js?v=258";
+       s.async=true;
+       d.head.appendChild(s);
+     }
+     const deadline=Date.now()+1800;
+     while(Date.now()<deadline){
+       if(P.GSFNotify&&typeof P.GSFNotify.confirm==="function")return P.GSFNotify;
+       await new Promise(r=>setTimeout(r,40));
+     }
+   }catch(_e){}
+   return null;
+ }
+ function parentToast(title,body="",kind="success"){
+   try{
+     const n=window.parent&&window.parent.GSFNotify;
+     if(n&&typeof n.show==="function"){n.show(title,body,kind);return true;}
+   }catch(_e){}
+   return false;
+ }
+ async function saveCurrentBeforeReplacement(){
+   const r=await fetch("/drafts/save-current",{
+     method:"POST",
+     credentials:"same-origin",
+     headers:{"Content-Type":"application/json"},
+     body:"{}"
+   });
+   let j={};try{j=await r.json()}catch(_e){}
+   if(!r.ok||!j||!j.ok||!j.verified){
+     const err=new Error((j&&j.error)||"Salvataggio della bozza non verificato.");
+     err.code=(j&&j.code)||"";
+     err.limit=(j&&j.limit)||0;
+     throw err;
+   }
+   return j;
+ }
+ async function showReplaceNotification(){
+   const n=await ensureParentNotify();
+   if(!n||typeof n.confirm!=="function"){
+     parentToast("Riprova","Il sistema notifiche non è ancora pronto.","error");
+     return;
+   }
+   n.confirm(
+     "Caricare un nuovo video?",
+     "Il lavoro attuale verrà salvato nelle Bozze.",
+     {
+       confirmText:"Carica nuovo",
+       cancelText:"Annulla",
+       onConfirm:()=>{
+         replacePending=true;
+         pick.disabled=false;
+         pick.value="";
+         // Must stay synchronous with the notification button tap for iPhone/Safari.
+         pick.click();
+       }
+     }
+   );
+ }
+ circle.addEventListener("click",(ev)=>{
+   if(!loaded||uploadBusy)return;
+   ev.preventDefault();
+   ev.stopPropagation();
+   if(typeof ev.stopImmediatePropagation==="function")ev.stopImmediatePropagation();
+   showReplaceNotification().catch(()=>{});
+ },true);
+
  async function capabilities(){try{const r=await fetch("/direct-upload/capabilities",{cache:"no-store"});return r.ok?await r.json():{bucket:false};}catch(e){return {bucket:false};}}
  function put(url,blob,onProgress){return new Promise((resolve,reject)=>{const x=new XMLHttpRequest();x.open("PUT",url,true);x.upload.onprogress=e=>{if(e.lengthComputable)onProgress(e.loaded)};x.onload=()=>{if(x.status>=200&&x.status<300){const et=x.getResponseHeader("ETag")||x.getResponseHeader("etag");et?resolve(et):reject(new Error("ETag mancante"));}else reject(new Error("HTTP "+x.status));};x.onerror=()=>reject(new Error("Errore rete"));x.timeout=240000;x.ontimeout=()=>reject(new Error("Timeout"));x.send(blob);});}
  async function bucketUpload(file,caps){
@@ -4360,10 +4433,28 @@ body.gsfDesktopPreview .feature{
  }
  pick.addEventListener("change",async()=>{
    const file=pick.files&&pick.files[0];if(!file||uploadBusy)return;
-   const ext=(file.name.split(".").pop()||"").toLowerCase();if(!["mp4","mov","mkv"].includes(ext)){status.className="status show error";statusText.textContent="Formato non supportato";return;}
+   const ext=(file.name.split(".").pop()||"").toLowerCase();if(!["mp4","mov","mkv"].includes(ext)){status.className="status show error";statusText.textContent="Formato non supportato";pick.value="";replacePending=false;return;}
+
+   if(loaded&&replacePending){
+     try{
+       await saveCurrentBeforeReplacement();
+       parentToast("Bozza salvata","","success");
+     }catch(e){
+       pick.value="";
+       replacePending=false;
+       if(e&&e.code==="storage_limit"){
+         parentToast("Bozze piene","Hai raggiunto il limite di "+String(e.limit||5)+" bozze. Elimina una bozza dal Creator Hub prima di caricare un nuovo video.","error");
+       }else{
+         parentToast("Nuovo video bloccato",String((e&&e.message)||"Non posso verificare la bozza. Il lavoro corrente resta intatto."),"error");
+       }
+       return;
+     }
+   }
+   replacePending=false;
+
    uploadBusy=true;setMuralState("uploading");circle.classList.add("busy");rings.classList.remove("uploaded");rings.classList.add("uploading");try{window.parent.postMessage({type:"gsf-upload",state:"running",name:file.name},location.origin)}catch(_e){};status.className="status show";uploadLabel.textContent="CARICAMENTO";uploadHint.textContent="";bar.style.width="1%";
    try{const caps=await capabilities();if(caps&&caps.bucket===true)await bucketUpload(file,caps);else await fallbackUpload(file);bar.style.width="100%";statusText.textContent="Video caricato";setLoaded(true);try{window.parent.postMessage({type:"gsf-upload",state:"done",name:file.name},location.origin)}catch(_e){};value({event:"upload_complete",duration,engine});}
-   catch(e){setMuralState("idle");rings.classList.remove("uploading","uploaded");status.className="status show error";statusText.textContent="Upload interrotto — riprova";bar.style.width="0";uploadLabel.innerHTML="CARICA<br>IL TUO GAMEPLAY";uploadHint.textContent="";circle.classList.remove("busy");uploadBusy=false;try{window.parent.postMessage({type:"gsf-upload",state:"error",name:file.name},location.origin)}catch(_e){}}
+   catch(e){setMuralState(loaded?"ready":"idle");rings.classList.remove("uploading");if(loaded)rings.classList.add("uploaded");status.className="status show error";statusText.textContent="Upload interrotto — riprova";bar.style.width="0";circle.classList.remove("busy");uploadBusy=false;try{window.parent.postMessage({type:"gsf-upload",state:"error",name:file.name},location.origin)}catch(_e){}}
  });
  
 
