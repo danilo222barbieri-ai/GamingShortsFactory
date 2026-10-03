@@ -1883,7 +1883,7 @@ if GSF_WEB_MODE:
       const ensurePush=()=>{
         if(P.GSFNotify)return Promise.resolve(true);
         return new Promise((resolve)=>{
-          let s=d.getElementById('gsf-global-push-client-v253');
+          let s=d.getElementById('gsf-global-push-client-v255');
           if(s){
             if(P.GSFNotify)return resolve(true);
             s.addEventListener('load',()=>resolve(!!P.GSFNotify),{once:true});
@@ -1891,8 +1891,8 @@ if GSF_WEB_MODE:
             return;
           }
           s=d.createElement('script');
-          s.id='gsf-global-push-client-v253';
-          s.src='/gsf-push.js?v=253';
+          s.id='gsf-global-push-client-v255';
+          s.src='/gsf-push.js?v=255';
           s.async=true;
           s.onload=()=>resolve(!!P.GSFNotify);
           s.onerror=()=>resolve(false);
