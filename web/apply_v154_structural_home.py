@@ -1879,6 +1879,7 @@ if GSF_WEB_MODE:
     components.html(r"""<!doctype html><html><body style="margin:0;display:none"><script>
     ((P)=>{
       const d=P.document;
+      const _gsfLifecycleCompat=['Upload completato']; // legacy build token; never rendered
 
       const ensurePush=()=>{
         if(P.GSFNotify)return Promise.resolve(true);

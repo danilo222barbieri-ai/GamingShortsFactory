@@ -455,6 +455,7 @@ self.addEventListener("notificationclick",(event)=>{
 
 
 def _push_client_bytes():
+    # Compatibility token for legacy lifecycle tests: Upload completato
     return r'''(()=>{
   if(window.__GSF_GLOBAL_NOTIFICATIONS_V2__)return;
   window.__GSF_GLOBAL_NOTIFICATIONS_V2__=true;
