@@ -529,7 +529,7 @@ if GSF_WEB_MODE:
     <div id="gsf-creator-hub-live-v160" aria-hidden="true">
       <section class="gsf-hub-shell-v160" role="dialog" aria-modal="false" aria-label="Creator Hub">
         <button class="gsf-hub-close-v160" type="button" aria-label="Chiudi">×</button>
-        <iframe src="/creator-hub-v156/?v=265" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
+        <iframe src="/creator-hub-v156/?v=266" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
       </section>
     </div>
     <div class="gsf-script-guard" style="display:none!important"></div>
@@ -1579,7 +1579,7 @@ if GSF_WEB_MODE:
       visibility:hidden;
       transition:none;
       color:#637DA8;
-      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     }
     #gsf-page-chrome-v250.is-open{
       opacity:1;
@@ -2019,7 +2019,14 @@ if GSF_WEB_MODE:
     #gsf-account-overlay-v223 iframe{
       background:#F7FCFF!important;
     }
-    </style>
+    
+    /* V266 SECONDARY HEADER REMOVED */
+    :root{--gsf-shell-top:0px!important}
+    #gsf-page-chrome-v250 .gsf-page-head{display:none!important}
+    #gsf-social-overlay-v159,#gsf-creator-hub-live-v160,#gsf-editor-overlay-v220,#gsf-ai-overlay-v221,#gsf-account-overlay-v223{padding-top:0!important;font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important}
+    #gsf-page-chrome-v250,#gsf-page-nav-v249,#gsf-page-nav-v249 button{font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important}
+    @media(max-width:760px){#gsf-page-nav-v249 .gsf-page-nav-item{font-size:8px!important}}
+</style>
     """, unsafe_allow_html=True)
     import streamlit.components.v1 as components
     components.html(r"""<!doctype html><html><body style="display:none"><script>
