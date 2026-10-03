@@ -529,7 +529,7 @@ if GSF_WEB_MODE:
     <div id="gsf-creator-hub-live-v160" aria-hidden="true">
       <section class="gsf-hub-shell-v160" role="dialog" aria-modal="false" aria-label="Creator Hub">
         <button class="gsf-hub-close-v160" type="button" aria-label="Chiudi">×</button>
-        <iframe src="/creator-hub-v156/?v=263" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
+        <iframe src="/creator-hub-v156/?v=264" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
       </section>
     </div>
     <div class="gsf-script-guard" style="display:none!important"></div>
