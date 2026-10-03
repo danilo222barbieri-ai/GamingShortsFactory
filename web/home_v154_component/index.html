@@ -3946,6 +3946,82 @@ body.gsfDesktopPreview .feature{
 }
 /* END V248 DESKTOP = MOBILE VISUAL SKIN */
 
+
+/* V259 native replacement-upload notification.
+   Same Home visual language; behavior only, no layout geometry changes. */
+#home154 .replaceToast{
+  position:fixed;
+  right:10px;
+  bottom:max(76px,calc(env(safe-area-inset-bottom,0px) + 68px));
+  z-index:2147483000;
+  width:min(272px,calc(100vw - 20px));
+  box-sizing:border-box;
+  padding:10px 11px 9px;
+  border:1px solid rgba(194,219,236,.86);
+  border-radius:16px;
+  background:rgba(255,255,255,.96);
+  -webkit-backdrop-filter:blur(16px);
+  backdrop-filter:blur(16px);
+  box-shadow:0 10px 28px rgba(37,72,101,.14),inset 0 1px 0 rgba(255,255,255,.9);
+  color:#315B75;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transform:translateY(8px) rotate(-.7deg) scale(.985);
+  transition:opacity .16s ease,transform .16s ease,visibility .16s ease;
+}
+#home154 .replaceToast.is-open{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+  transform:translateY(0) rotate(-.7deg) scale(1);
+}
+#home154 .replaceToastTitle{
+  font-size:12px;
+  line-height:1.15;
+  font-weight:900;
+}
+#home154 .replaceToastBody{
+  margin-top:3px;
+  font-size:10px;
+  line-height:1.25;
+  font-weight:650;
+  color:#71889A;
+}
+#home154 .replaceToastActions{
+  display:flex;
+  justify-content:flex-end;
+  gap:7px;
+  margin-top:8px;
+}
+#home154 .replaceToastBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:30px;
+  box-sizing:border-box;
+  padding:7px 10px;
+  border:1px solid rgba(142,186,220,.42);
+  border-radius:999px;
+  background:rgba(255,255,255,.96);
+  color:#587694;
+  font:850 10px/1 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  text-decoration:none;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+#home154 .replaceToastBtn.primary{
+  background:linear-gradient(145deg,#DFF3FF,#DFF8EE);
+  color:#2F7190;
+  border-color:rgba(112,194,208,.38);
+}
+@media(max-width:760px){
+  #home154 .replaceToast{
+    right:10px;
+    bottom:max(74px,calc(env(safe-area-inset-bottom,0px) + 66px));
+    width:min(260px,calc(100vw - 20px));
+  }
+}
 </style>
 </head>
 <body>
@@ -3973,6 +4049,15 @@ body.gsfDesktopPreview .feature{
      <!-- legacy regression token only, never rendered: MP4 · MOV · AVI<br>MAX 4 GB -->
     </label>
     <div id="status" class="status"><div id="statusText">Caricamento video… 0%</div><div class="track"><div id="bar" class="bar"></div></div></div>
+   </div>
+
+   <div id="replaceToast" class="replaceToast" aria-hidden="true">
+    <div class="replaceToastTitle">Caricare un nuovo video?</div>
+    <div class="replaceToastBody">Il lavoro attuale verrà salvato nelle Bozze.</div>
+    <div class="replaceToastActions">
+     <button id="replaceCancel" class="replaceToastBtn" type="button">Annulla</button>
+     <label id="replaceConfirm" class="replaceToastBtn primary" for="pick">Carica nuovo</label>
+    </div>
    </div>
   </div>
 
@@ -4333,26 +4418,6 @@ body.gsfDesktopPreview .feature{
    if(emit)value({event:"engine",duration,engine});
  }
 
- async function ensureParentNotify(){
-   try{
-     const P=window.parent,d=P.document;
-     if(P.GSFNotify&&typeof P.GSFNotify.confirm==="function")return P.GSFNotify;
-     let s=d.getElementById("gsf-global-push-client-v258")||d.getElementById("gsf-global-push-client-v255");
-     if(!s){
-       s=d.createElement("script");
-       s.id="gsf-global-push-client-v258";
-       s.src="/gsf-push.js?v=258";
-       s.async=true;
-       d.head.appendChild(s);
-     }
-     const deadline=Date.now()+1800;
-     while(Date.now()<deadline){
-       if(P.GSFNotify&&typeof P.GSFNotify.confirm==="function")return P.GSFNotify;
-       await new Promise(r=>setTimeout(r,40));
-     }
-   }catch(_e){}
-   return null;
- }
  function parentToast(title,body="",kind="success"){
    try{
      const n=window.parent&&window.parent.GSFNotify;
@@ -4376,34 +4441,38 @@ body.gsfDesktopPreview .feature{
    }
    return j;
  }
- async function showReplaceNotification(){
-   const n=await ensureParentNotify();
-   if(!n||typeof n.confirm!=="function"){
-     parentToast("Riprova","Il sistema notifiche non è ancora pronto.","error");
-     return;
-   }
-   n.confirm(
-     "Caricare un nuovo video?",
-     "Il lavoro attuale verrà salvato nelle Bozze.",
-     {
-       confirmText:"Carica nuovo",
-       cancelText:"Annulla",
-       onConfirm:()=>{
-         replacePending=true;
-         pick.disabled=false;
-         pick.value="";
-         // Must stay synchronous with the notification button tap for iPhone/Safari.
-         pick.click();
-       }
-     }
-   );
+
+ const replaceToast=document.getElementById("replaceToast");
+ const replaceCancel=document.getElementById("replaceCancel");
+ const replaceConfirm=document.getElementById("replaceConfirm");
+ function closeReplaceToast(){
+   if(!replaceToast)return;
+   replaceToast.classList.remove("is-open");
+   replaceToast.setAttribute("aria-hidden","true");
  }
+ function openReplaceToast(){
+   if(!replaceToast)return;
+   replaceToast.classList.add("is-open");
+   replaceToast.setAttribute("aria-hidden","false");
+ }
+ if(replaceCancel)replaceCancel.addEventListener("click",(ev)=>{
+   ev.preventDefault();ev.stopPropagation();
+   replacePending=false;
+   closeReplaceToast();
+ });
+ if(replaceConfirm)replaceConfirm.addEventListener("click",()=>{
+   // Native <label for="pick"> activation keeps the iOS user gesture.
+   replacePending=true;
+   pick.disabled=false;
+   pick.value="";
+   closeReplaceToast();
+ });
  circle.addEventListener("click",(ev)=>{
    if(!loaded||uploadBusy)return;
    ev.preventDefault();
    ev.stopPropagation();
    if(typeof ev.stopImmediatePropagation==="function")ev.stopImmediatePropagation();
-   showReplaceNotification().catch(()=>{});
+   openReplaceToast();
  },true);
 
  async function capabilities(){try{const r=await fetch("/direct-upload/capabilities",{cache:"no-store"});return r.ok?await r.json():{bucket:false};}catch(e){return {bucket:false};}}
