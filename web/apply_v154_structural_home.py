@@ -638,21 +638,28 @@ if GSF_WEB_MODE:
         }catch(e){}
       };
       frame.addEventListener('load',()=>{wire();setTimeout(sendRender,70)});
-      const open=async(remember=true)=>{
-        try{
-          const r=await fetch('/editor/state',{cache:'no-store',credentials:'same-origin'});
-          const j=await r.json();
-          if(r.ok&&j&&j.ok)editorMeta=j;
-        }catch(e){}
+      const open=(remember=true)=>{
+        // V249: switch page immediately; refresh editor state after the surface is visible.
+        o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false');
+        if(remember)try{sessionStorage.setItem(KEY,'1')}catch(e){}
+        guide('idle');
+
         if(frame.dataset.loaded!=='1'){
           frame.src=(frame.dataset.src||'/editor-live/')+'?v=224';
           frame.dataset.loaded='1';
         }else{
-          setTimeout(sendRender,40);
+          setTimeout(sendRender,16);
         }
-        o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false');
-        if(remember)try{sessionStorage.setItem(KEY,'1')}catch(e){}
-        guide('idle');
+
+        fetch('/editor/state',{cache:'no-store',credentials:'same-origin'})
+          .then(r=>r.json().then(j=>({ok:r.ok,j})))
+          .then(({ok,j})=>{
+            if(ok&&j&&j.ok){
+              editorMeta=j;
+              setTimeout(sendRender,0);
+            }
+          })
+          .catch(()=>{});
       };
       const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true');try{sessionStorage.setItem(KEY,'0')}catch(e){}};
       o.querySelector('.gsf-editor-close').onclick=close;o.addEventListener('click',e=>{if(e.target===o)close()});
@@ -795,6 +802,285 @@ s = s.rstrip() + "\n\n" + _account_surface_v223.lstrip()
 # V224 legacy JS-regex escape cleanup: generated Python source must contain
 # a doubled backslash so Python emits the intended JS /\s/ regex without SyntaxWarning.
 s=s.replace("replace(/"+chr(92)+"s/g,'')","replace(/"+chr(92)+chr(92)+"s/g,'')")
+# V249 FULL PAGE APP SHELL
+# Navigation surfaces are true opaque pages. Home remains mounted for state,
+# but is never visible behind Editor / AI / Hub / Projects / Social / Account.
+# Each page gets its own persistent Game Bar, so transitions feel like moving
+# inside the same app instead of opening a translucent modal.
+_page_shell_v249 = r'''
+if GSF_WEB_MODE:
+    st.markdown(r"""
+    <style id="gsf-v249-full-page-shell">
+    :root{--gsf-pagebar-h:78px}
+
+    #gsf-social-overlay-v159,
+    #gsf-creator-hub-live-v160,
+    #gsf-editor-overlay-v220,
+    #gsf-ai-overlay-v221,
+    #gsf-account-overlay-v223{
+      position:fixed!important;
+      inset:0!important;
+      bottom:0!important;
+      padding:0 0 var(--gsf-pagebar-h)!important;
+      display:flex!important;
+      align-items:stretch!important;
+      justify-content:stretch!important;
+      background:#F7FCFF!important;
+      -webkit-backdrop-filter:none!important;
+      backdrop-filter:none!important;
+      opacity:0;
+      visibility:hidden;
+      pointer-events:none;
+      transition:none!important;
+      overflow:hidden!important;
+    }
+
+    #gsf-social-overlay-v159.is-open,
+    #gsf-creator-hub-live-v160.is-open,
+    #gsf-editor-overlay-v220.is-open,
+    #gsf-ai-overlay-v221.is-open,
+    #gsf-account-overlay-v223.is-open{
+      opacity:1!important;
+      visibility:visible!important;
+      pointer-events:auto!important;
+    }
+
+    #gsf-social-overlay-v159 .gsf-social-shell,
+    #gsf-creator-hub-live-v160 .gsf-hub-shell-v160,
+    #gsf-editor-overlay-v220 .gsf-editor-shell,
+    #gsf-ai-overlay-v221 .gsf-ai-shell,
+    #gsf-account-overlay-v223 .gsf-account-shell{
+      position:relative!important;
+      width:100%!important;
+      max-width:none!important;
+      height:calc(100dvh - var(--gsf-pagebar-h))!important;
+      max-height:none!important;
+      margin:0!important;
+      border:0!important;
+      border-radius:0!important;
+      background:#F7FCFF!important;
+      box-shadow:none!important;
+      opacity:1!important;
+      transform:translateX(10px)!important;
+      transition:transform .11s cubic-bezier(.2,.82,.25,1)!important;
+      overflow:hidden!important;
+    }
+
+    #gsf-social-overlay-v159.is-open .gsf-social-shell,
+    #gsf-creator-hub-live-v160.is-open .gsf-hub-shell-v160,
+    #gsf-editor-overlay-v220.is-open .gsf-editor-shell,
+    #gsf-ai-overlay-v221.is-open .gsf-ai-shell,
+    #gsf-account-overlay-v223.is-open .gsf-account-shell{
+      transform:translateX(0)!important;
+      opacity:1!important;
+    }
+
+    #gsf-social-overlay-v159 iframe,
+    #gsf-creator-hub-live-v160 iframe,
+    #gsf-editor-overlay-v220 iframe,
+    #gsf-ai-overlay-v221 iframe,
+    #gsf-account-overlay-v223 iframe{
+      background:#F7FCFF!important;
+    }
+
+    /* One Game Bar owned by the active page, never the Home underneath. */
+    #gsf-page-nav-v249{
+      position:fixed;
+      left:50%;
+      bottom:10px;
+      transform:translateX(-50%);
+      z-index:2147483647;
+      width:min(760px,72vw);
+      height:58px;
+      min-height:58px;
+      padding:4px 10px;
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:4px;
+      border:1px solid rgba(139,181,218,.30);
+      border-radius:999px;
+      background:rgba(255,255,255,.96);
+      box-shadow:0 10px 28px rgba(59,104,148,.11),0 0 0 4px rgba(226,243,255,.30),inset 0 1px 0 #fff;
+      -webkit-backdrop-filter:blur(22px);
+      backdrop-filter:blur(22px);
+      opacity:0;
+      visibility:hidden;
+      pointer-events:none;
+      transition:none;
+    }
+    #gsf-page-nav-v249.is-open{
+      opacity:1;
+      visibility:visible;
+      pointer-events:auto;
+    }
+    #gsf-page-nav-v249 .gsf-page-nav-item{
+      border:0;
+      background:transparent;
+      border-radius:21px;
+      padding:2px 3px;
+      color:#8192AA;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:2px;
+      font-size:8px;
+      font-weight:800;
+      cursor:pointer;
+    }
+    #gsf-page-nav-v249 .gsf-page-nav-item svg{
+      width:19px;
+      height:19px;
+      padding:5px;
+      box-sizing:content-box;
+      border-radius:50%;
+      color:currentColor;
+      fill:none;
+      stroke:currentColor;
+      stroke-width:2;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      background:linear-gradient(145deg,#F9FCFF,#EDF5FC);
+      border:1px solid rgba(150,184,215,.24);
+    }
+    #gsf-page-nav-v249 .gsf-page-nav-item.active{
+      color:#4F93D7;
+      background:rgba(219,241,255,.70);
+    }
+    #gsf-page-nav-v249 .gsf-page-nav-item.active svg{
+      color:#4F93D7;
+      background:linear-gradient(145deg,#E8F5FF,#D8EBFF);
+    }
+
+    @media(max-width:760px){
+      :root{--gsf-pagebar-h:70px}
+      #gsf-page-nav-v249{
+        width:calc(100vw - 24px);
+        height:58px;
+        min-height:58px;
+        bottom:6px;
+        padding:4px 8px;
+      }
+      #gsf-page-nav-v249 .gsf-page-nav-item{font-size:7px}
+      #gsf-page-nav-v249 .gsf-page-nav-item svg{width:18px;height:18px;padding:5px}
+    }
+
+    @media(prefers-reduced-motion:reduce){
+      #gsf-social-overlay-v159 .gsf-social-shell,
+      #gsf-creator-hub-live-v160 .gsf-hub-shell-v160,
+      #gsf-editor-overlay-v220 .gsf-editor-shell,
+      #gsf-ai-overlay-v221 .gsf-ai-shell,
+      #gsf-account-overlay-v223 .gsf-account-shell{
+        transition:none!important;
+        transform:none!important;
+      }
+    }
+    </style>
+
+    <nav id="gsf-page-nav-v249" aria-label="Navigazione pagina">
+      <button class="gsf-page-nav-item" data-target="home" type="button">
+        <svg viewBox="0 0 32 32"><path d="M4 14 16 4l12 10"/><path d="M7 13v14h18V13"/><path d="M13 27v-8h6v8"/></svg><span>Home</span>
+      </button>
+      <button class="gsf-page-nav-item" data-target="hub" data-section="profile" type="button">
+        <svg viewBox="0 0 32 32"><rect x="5" y="5" width="8" height="8" rx="2"/><rect x="19" y="5" width="8" height="8" rx="2"/><rect x="5" y="19" width="8" height="8" rx="2"/><rect x="19" y="19" width="8" height="8" rx="2"/></svg><span>Hub</span>
+      </button>
+      <button class="gsf-page-nav-item" data-target="editor" type="button">
+        <svg viewBox="0 0 32 32"><rect x="7" y="4" width="18" height="24" rx="5"/><path d="m13 11 8 5-8 5Z"/></svg><span>Editor</span>
+      </button>
+      <button class="gsf-page-nav-item" data-target="hub" data-section="project" data-active="projects" type="button">
+        <svg viewBox="0 0 32 32"><path d="M4 10h9l3 3h12v14H4Z"/><path d="M4 10V7h10l3 3"/></svg><span>Progetti</span>
+      </button>
+      <button class="gsf-page-nav-item" data-target="social" type="button">
+        <svg viewBox="0 0 32 32"><circle cx="24" cy="7" r="3"/><circle cx="8" cy="16" r="3"/><circle cx="24" cy="25" r="3"/><path d="m11 14.5 10-5.7M11 17.5l10 5.7"/></svg><span>Social</span>
+      </button>
+    </nav>
+    """, unsafe_allow_html=True)
+
+    import streamlit.components.v1 as components
+    components.html(r"""<!doctype html><html><body style="margin:0;display:none"><script>
+    ((P)=>{
+      const document=P.document;
+      const nav=document.getElementById('gsf-page-nav-v249');
+      if(!nav)return;
+
+      const ids={
+        hub:'gsf-creator-hub-live-v160',
+        editor:'gsf-editor-overlay-v220',
+        social:'gsf-social-overlay-v159',
+        ai:'gsf-ai-overlay-v221',
+        account:'gsf-account-overlay-v223'
+      };
+
+      let lastTarget='home',lastSection='';
+
+      const anyOpen=()=>Object.values(ids).some(id=>{
+        const el=document.getElementById(id);
+        return !!(el&&el.classList.contains('is-open'));
+      });
+
+      const sync=()=>{
+        nav.classList.toggle('is-open',anyOpen());
+        nav.querySelectorAll('.gsf-page-nav-item').forEach(b=>{
+          const target=String(b.dataset.target||'');
+          const section=String(b.dataset.section||'');
+          const activeKey=String(b.dataset.active||target);
+          let active=false;
+          if(activeKey==='projects') active=(lastTarget==='hub'&&lastSection==='project');
+          else if(target==='hub') active=(lastTarget==='hub'&&lastSection!=='project');
+          else active=(lastTarget===target);
+          b.classList.toggle('active',active);
+        });
+      };
+
+      const go=(target,section='')=>{
+        lastTarget=target;
+        lastSection=section;
+        P.postMessage({type:'GSF_SHELL_NAV',target,section},P.location.origin);
+        sync();
+      };
+
+      nav.querySelectorAll('.gsf-page-nav-item').forEach(b=>{
+        b.addEventListener('click',()=>{
+          go(String(b.dataset.target||'home'),String(b.dataset.section||''));
+        });
+      });
+
+      P.addEventListener('message',e=>{
+        if(e.origin!==P.location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
+        const t=String(e.data.target||'');
+        if(t==='home'||t==='close'){
+          lastTarget='home';lastSection='';
+        }else if(t==='profile'){
+          lastTarget='hub';lastSection='profile';
+        }else if(t==='hub'){
+          lastTarget='hub';lastSection=String(e.data.section||'profile');
+        }else if(t==='editor'||t==='social'||t==='ai'||t==='account'){
+          lastTarget=t;lastSection='';
+        }
+        queueMicrotask(sync);
+      });
+
+      const obs=new P.MutationObserver(sync);
+      Object.values(ids).forEach(id=>{
+        const el=document.getElementById(id);
+        if(el)obs.observe(el,{attributes:true,attributeFilter:['class','style','aria-hidden']});
+      });
+
+      document.querySelectorAll(
+        '#gsf-social-overlay-v159 .gsf-social-close,'+
+        '#gsf-creator-hub-live-v160 .gsf-hub-close-v160,'+
+        '#gsf-editor-overlay-v220 .gsf-editor-close,'+
+        '#gsf-ai-overlay-v221 .gsf-ai-close,'+
+        '#gsf-account-overlay-v223 .gsf-account-close'
+      ).forEach(b=>b.addEventListener('click',()=>queueMicrotask(sync)));
+
+      sync();
+    })(window.parent);
+    </script></body></html>""", height=0, scrolling=False)
+'''
+s = s.rstrip() + "\n\n" + _page_shell_v249.lstrip()
+# END V249 FULL PAGE APP SHELL
+
 # V221 final write must happen AFTER V220 + V221 surfaces are appended.
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
