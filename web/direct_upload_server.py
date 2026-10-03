@@ -459,7 +459,7 @@ def _push_client_bytes():
     if(host)return host;
     const style=document.createElement("style");
     style.id="gsf-site-toast-style";
-    style.textContent="#gsf-site-toast-stack{position:fixed;top:max(14px,env(safe-area-inset-top,0px));right:14px;z-index:2147483640;width:min(360px,calc(100vw - 28px));display:flex;flex-direction:column;gap:9px;pointer-events:none;font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}.gsf-site-toast{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) 24px;gap:10px;align-items:center;padding:10px 10px 10px 11px;border:1px solid rgba(194,219,236,.92);border-radius:18px;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 15px 38px rgba(37,72,101,.18),inset 0 1px 0 rgba(255,255,255,.86);color:#24475f;pointer-events:auto;overflow:hidden;opacity:0;transform:translateY(-12px) scale(.98);transition:opacity .22s ease,transform .22s ease}.gsf-site-toast.gsf-show{opacity:1;transform:translateY(0) scale(1)}.gsf-site-toast.gsf-hide{opacity:0;transform:translateY(-9px) scale(.985)}.gsf-site-toast-icon{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,#eaf8ff,#bfe8ff);box-shadow:inset 0 1px 0 rgba(255,255,255,.88)}.gsf-site-toast-icon img{width:34px;height:34px;border-radius:10px;display:block}.gsf-site-toast-copy{min-width:0}.gsf-site-toast-title{font-size:13px;font-weight:900;line-height:1.15;color:#315b75;letter-spacing:.005em}.gsf-site-toast-body{margin-top:3px;font-size:11px;font-weight:650;line-height:1.3;color:#668195;white-space:normal}.gsf-site-toast-close{border:0;background:transparent;color:#86a0b1;width:24px;height:24px;border-radius:8px;font-size:18px;line-height:20px;padding:0;cursor:pointer}.gsf-site-toast-bar{position:absolute;left:0;bottom:0;height:3px;width:100%;background:linear-gradient(90deg,#8bd9f8,#8cc9ff);transform-origin:left center;animation:gsfToastLife 5.8s linear forwards}.gsf-site-toast[data-kind=error]{border-color:rgba(235,187,187,.9)}.gsf-site-toast[data-kind=error] .gsf-site-toast-icon{background:linear-gradient(145deg,#fff0f0,#ffd8d8)}.gsf-site-toast[data-kind=error] .gsf-site-toast-bar{background:linear-gradient(90deg,#ff9d9d,#ffc0c0)}@keyframes gsfToastLife{from{transform:scaleX(1)}to{transform:scaleX(0)}}@media(max-width:600px){#gsf-site-toast-stack{top:max(10px,env(safe-area-inset-top,0px));right:10px;width:calc(100vw - 20px)}.gsf-site-toast{grid-template-columns:42px minmax(0,1fr) 22px;border-radius:16px}.gsf-site-toast-icon{width:42px;height:42px}.gsf-site-toast-icon img{width:32px;height:32px}}";
+    style.textContent="#gsf-site-toast-stack{position:fixed;top:max(14px,env(safe-area-inset-top,0px));right:14px;z-index:2147483640;width:min(360px,calc(100vw - 28px));display:flex;flex-direction:column;gap:9px;pointer-events:none;font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}.gsf-site-toast{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) 24px;gap:10px;align-items:center;padding:10px 10px 10px 11px;border:1px solid rgba(194,219,236,.92);border-radius:18px;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 15px 38px rgba(37,72,101,.18),inset 0 1px 0 rgba(255,255,255,.86);color:#24475f;pointer-events:auto;overflow:hidden;opacity:0;transform:translateY(-12px) rotate(-1deg) scale(.98);transition:opacity .22s ease,transform .22s ease}.gsf-site-toast:nth-child(even){transform:translateY(-12px) rotate(.7deg) scale(.98)}.gsf-site-toast.gsf-show{opacity:1;transform:translateY(0) rotate(-1deg) scale(1)}.gsf-site-toast:nth-child(even).gsf-show{transform:translateY(0) rotate(.7deg) scale(1)}.gsf-site-toast.gsf-hide{opacity:0;transform:translateY(-9px) scale(.985)}.gsf-site-toast-icon{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,#eaf8ff,#bfe8ff);box-shadow:inset 0 1px 0 rgba(255,255,255,.88)}.gsf-site-toast-icon img{width:34px;height:34px;border-radius:10px;display:block}.gsf-site-toast-copy{min-width:0}.gsf-site-toast-actions{grid-column:2/4;display:flex;justify-content:flex-end;gap:7px;margin-top:2px}.gsf-site-toast-action{border:1px solid rgba(142,186,220,.42);border-radius:999px;background:rgba(255,255,255,.92);color:#587694;font-size:10px;font-weight:850;padding:7px 10px;cursor:pointer}.gsf-site-toast-action.primary{background:linear-gradient(145deg,#dff3ff,#dff8ee);color:#2f7190;border-color:rgba(112,194,208,.38)}.gsf-site-toast-title{font-size:13px;font-weight:900;line-height:1.15;color:#315b75;letter-spacing:.005em}.gsf-site-toast-body{margin-top:3px;font-size:11px;font-weight:650;line-height:1.3;color:#668195;white-space:normal}.gsf-site-toast-close{border:0;background:transparent;color:#86a0b1;width:24px;height:24px;border-radius:8px;font-size:18px;line-height:20px;padding:0;cursor:pointer}.gsf-site-toast-bar{position:absolute;left:0;bottom:0;height:3px;width:100%;background:linear-gradient(90deg,#8bd9f8,#8cc9ff);transform-origin:left center;animation:gsfToastLife 5.8s linear forwards}.gsf-site-toast[data-kind=error]{border-color:rgba(235,187,187,.9)}.gsf-site-toast[data-kind=error] .gsf-site-toast-icon{background:linear-gradient(145deg,#fff0f0,#ffd8d8)}.gsf-site-toast[data-kind=error] .gsf-site-toast-bar{background:linear-gradient(90deg,#ff9d9d,#ffc0c0)}@keyframes gsfToastLife{from{transform:scaleX(1)}to{transform:scaleX(0)}}@media(max-width:600px){#gsf-site-toast-stack{top:max(10px,env(safe-area-inset-top,0px));right:10px;width:calc(100vw - 20px)}.gsf-site-toast{grid-template-columns:42px minmax(0,1fr) 22px;border-radius:16px}.gsf-site-toast-icon{width:42px;height:42px}.gsf-site-toast-icon img{width:32px;height:32px}}";
     document.head.appendChild(style);
     host=document.createElement("div");
     host.id="gsf-site-toast-stack";
@@ -491,7 +491,29 @@ def _push_client_bytes():
   };
 
   window.GSFPush={enable:()=>subscribe(true),ensure:()=>subscribe(false)};
-  window.GSFNotify={show:(title,body,kind)=>showToast(title,body,kind||"success")};
+  window.GSFNotify={
+    show:(title,body,kind)=>showToast(title,body,kind||"success"),
+    confirm:(title,body,opts={})=>{
+      const host=ensureToastUi(),el=document.createElement("div");
+      el.className="gsf-site-toast";el.dataset.kind="confirm";
+      const icon=document.createElement("div");icon.className="gsf-site-toast-icon";
+      const img=document.createElement("img");img.src="/app-icon.png?v=4";img.alt="";icon.appendChild(img);
+      const copy=document.createElement("div");copy.className="gsf-site-toast-copy";
+      const strong=document.createElement("div");strong.className="gsf-site-toast-title";strong.textContent=String(title||"Gaming Shorts Factory");
+      const small=document.createElement("div");small.className="gsf-site-toast-body";small.textContent=String(body||"");copy.append(strong,small);
+      const close=document.createElement("button");close.className="gsf-site-toast-close";close.type="button";close.setAttribute("aria-label","Chiudi");close.textContent="×";
+      const actions=document.createElement("div");actions.className="gsf-site-toast-actions";
+      const cancel=document.createElement("button");cancel.className="gsf-site-toast-action";cancel.type="button";cancel.textContent=String(opts.cancelText||"Annulla");
+      const ok=document.createElement("button");ok.className="gsf-site-toast-action primary";ok.type="button";ok.textContent=String(opts.confirmText||"Continua");
+      actions.append(cancel,ok);el.append(icon,copy,close,actions);host.prepend(el);
+      while(host.children.length>3)host.lastElementChild?.remove();
+      const remove=()=>{if(!el.isConnected)return;el.classList.add("gsf-hide");setTimeout(()=>el.remove(),240);};
+      close.onclick=remove;cancel.onclick=remove;
+      ok.onclick=(ev)=>{ev.stopPropagation();try{if(typeof opts.onConfirm==="function")opts.onConfirm();}finally{remove();}};
+      requestAnimationFrame(()=>el.classList.add("gsf-show"));
+      return {close:remove};
+    }
+  };
 
   let uploadActive=false,uploadCycle=0,uploadDoneCycle=0,lastRenderStatus="";
   window.addEventListener("message",(event)=>{
@@ -3707,6 +3729,27 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,200,{"ok":True,"context":_analytics_context(sid)})
             except Exception as exc:
                 _json(self,500,{"ok":False,"error":str(exc)[:220]})
+            return
+
+        if path=="/drafts/save-current":
+            try:
+                root=ROOT/"sessions"/sid
+                state={}
+                state_path=root/"session_state.json"
+                if state_path.is_file():
+                    raw=json.loads(state_path.read_text(encoding="utf-8"))
+                    if isinstance(raw,dict):
+                        state=raw.get("state") if isinstance(raw.get("state"),dict) else raw
+                if not isinstance(state,dict):
+                    state={}
+                draft=_draft_save(sid,{
+                    "title":"Bozza automatica · "+str(state.get("gsf_source_name") or "Gameplay")[:120],
+                    "source_name":str(state.get("gsf_source_name") or "Gameplay")[:160],
+                    "state":state,
+                })
+                _json(self,200,{"ok":True,"id":draft.get("id"),"title":draft.get("title")})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
             return
 
         if path=="/drafts/save":

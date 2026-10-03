@@ -1872,6 +1872,130 @@ if GSF_WEB_MODE:
 s = s.rstrip() + "\n\n" + _route_guard_v251.lstrip()
 # END V251 ROUTE GUARD
 
+# V252 GLOBAL NOTIFICATION BRIDGE
+_notification_bridge_v252 = r'''
+if GSF_WEB_MODE:
+    import streamlit.components.v1 as components
+    components.html(r"""<!doctype html><html><body style="margin:0;display:none"><script>
+    ((P)=>{
+      const d=P.document;
+      const ensurePush=()=>{
+        if(P.GSFNotify)return Promise.resolve(true);
+        return new Promise((resolve)=>{
+          let s=d.getElementById('gsf-global-push-client-v252');
+          if(s){
+            if(P.GSFNotify)return resolve(true);
+            s.addEventListener('load',()=>resolve(!!P.GSFNotify),{once:true});
+            setTimeout(()=>resolve(!!P.GSFNotify),900);
+            return;
+          }
+          s=d.createElement('script');
+          s.id='gsf-global-push-client-v252';
+          s.src='/gsf-push.js?v=252';
+          s.async=true;
+          s.onload=()=>resolve(!!P.GSFNotify);
+          s.onerror=()=>resolve(false);
+          d.head.appendChild(s);
+        });
+      };
+
+      const homeFrame=()=>[...d.querySelectorAll('iframe')].find(f=>
+        /gsf_home_v154|home_v154/i.test((f.title||'')+' '+(f.src||''))
+      )||null;
+
+      const wireUploader=async()=>{
+        await ensurePush();
+        const frame=homeFrame();
+        if(!frame)return;
+        let doc;
+        try{doc=frame.contentDocument;}catch(_e){return}
+        if(!doc)return;
+        const circle=doc.getElementById('circle'),pick=doc.getElementById('pick');
+        if(!circle||!pick||circle.dataset.gsfReplaceBound==='1')return;
+        circle.dataset.gsfReplaceBound='1';
+
+        // Home appearance stays unchanged. We only intercept the second upload.
+        circle.addEventListener('click',(ev)=>{
+          if(!circle.classList.contains('loaded'))return;
+          ev.preventDefault();ev.stopPropagation();
+          if(!P.GSFNotify||typeof P.GSFNotify.confirm!=='function')return;
+          P.GSFNotify.confirm(
+            'Caricare un nuovo video?',
+            'Il lavoro attuale verrà salvato nelle Bozze. Il nuovo video sostituirà quello corrente.',
+            {
+              confirmText:'Carica nuovo',
+              cancelText:'Resta qui',
+              onConfirm:()=>{
+                try{
+                  pick.disabled=false;
+                  pick.value='';
+                  pick.click();
+                }catch(_e){}
+              }
+            }
+          );
+        },true);
+      };
+
+      // Home can remount after Streamlit reruns, so keep the behavior attached.
+      const obs=new P.MutationObserver(()=>{wireUploader().catch(()=>{})});
+      obs.observe(d.body,{childList:true,subtree:true});
+      wireUploader().catch(()=>{});
+
+      // Save current work to Drafts ONLY after a replacement upload succeeds.
+      let replacementArmed=false;
+      P.addEventListener('message',async(e)=>{
+        const data=e.data||{};
+        const frame=homeFrame();
+        if(frame && e.source===frame.contentWindow && data.type==='streamlit:setComponentValue'){
+          const v=data.value||{};
+          if(v.event==='upload_complete'){
+            // If the circle was already loaded before the file picker, this is a replacement.
+            try{
+              const doc=frame.contentDocument;
+              const circle=doc&&doc.getElementById('circle');
+              replacementArmed=!!(circle&&circle.dataset.gsfWasLoadedBeforeReplace==='1');
+            }catch(_e){}
+            if(replacementArmed){
+              try{
+                await P.fetch('/drafts/save-current',{
+                  method:'POST',
+                  credentials:'same-origin',
+                  headers:{'Content-Type':'application/json'},
+                  body:'{}'
+                });
+                P.GSFNotify&&P.GSFNotify.show('Bozza salvata','Il lavoro precedente è al sicuro nelle tue Bozze.','success');
+              }catch(_e){}
+              replacementArmed=false;
+            }
+          }
+        }
+        if(data.type==='GSF_NOTIFY'&&P.GSFNotify){
+          P.GSFNotify.show(String(data.title||'Gaming Shorts Factory'),String(data.body||''),String(data.kind||'success'));
+        }
+      });
+
+      // Mark replacement at confirm time without touching visual state.
+      const markReplacement=()=>{
+        const frame=homeFrame();if(!frame)return;
+        try{
+          const doc=frame.contentDocument,circle=doc&&doc.getElementById('circle');
+          if(circle&&circle.classList.contains('loaded'))circle.dataset.gsfWasLoadedBeforeReplace='1';
+        }catch(_e){}
+      };
+      d.addEventListener('click',(e)=>{
+        const b=e.target&&e.target.closest?e.target.closest('.gsf-site-toast-action.primary'):null;
+        if(b)markReplacement();
+      },true);
+
+      // Re-enable silent Web Push subscription if the user had already granted it.
+      ensurePush().then(()=>{try{P.GSFPush&&P.GSFPush.ensure&&P.GSFPush.ensure()}catch(_e){}});
+    })(window.parent);
+    </script></body></html>""",height=0,scrolling=False)
+'''
+s = s.rstrip() + "\n\n" + _notification_bridge_v252.lstrip()
+# END V252 GLOBAL NOTIFICATION BRIDGE
+
 # V221 final write must happen AFTER V220 + V221 surfaces are appended.
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
