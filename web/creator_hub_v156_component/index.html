@@ -111,6 +111,7 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:900;lett
 }
 .row b{font-size:9.5px}.muted{color:#8798AE}.status{color:#478CC4;font-weight:850}
 .action{border:0;border-radius:10px;padding:7px 9px;background:#E8F5FF;color:#428BC8;font-size:8px;font-weight:900;cursor:pointer}
+.action.danger{background:#FFF0F0;color:#B95B67}.shortRow{grid-template-columns:minmax(0,1.45fr) .55fr .7fr auto auto}
 .empty{padding:11px 10px;border:1px dashed #DCE8F1;border-radius:13px;color:#8A9AB0;font-size:9px;background:#FBFDFF}
 
 .projectBox{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid rgba(144,181,214,.20);border-radius:14px;background:rgba(255,255,255,.92)}
@@ -201,8 +202,13 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:900;lett
    </div>
   </section>
 
+  <section class="card" data-zone="shorts">
+   <div class="cardHead"><div class="cardTitle"><span class="iconBox iStats">▶</span>I tuoi Shorts</div><div class="cardHint" id="shortsHint">Archivio</div></div>
+   <div class="rows" id="shortRows"><div class="empty">Caricamento Shorts…</div></div>
+  </section>
+
   <section class="card" data-zone="drafts">
-   <div class="cardHead"><div class="cardTitle"><span class="iconBox iDraft">✎</span>Le tue bozze</div><div class="cardHint">Riprendi da dove hai lasciato</div></div>
+   <div class="cardHead"><div class="cardTitle"><span class="iconBox iDraft">✎</span>Le tue bozze</div><div class="cardHint" id="draftsHint">Riprendi da dove hai lasciato</div></div>
    <div class="rows" id="draftRows"><div class="empty">Caricamento bozze…</div></div>
   </section>
 
@@ -222,6 +228,7 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:900;lett
   profile:["Qui vive<br>il tuo profilo","Account e progetto<br>restano nello stesso posto"],
   social:["Collega una volta","Poi pubblichi<br>senza perdere il filo"],
   stats:["Quattro numeri","Solo quelli che<br>ti servono davvero"],
+  shorts:["I tuoi Short<br>restano qui","Scarica o elimina<br>solo quando vuoi"],
   drafts:["Hai lasciato<br>qualcosa a metà?","Riparti da qui<br>senza rifare niente"],
   project:["Questo è il<br>tuo progetto vivo","IA, Editor e Social<br>partono da qui"]
  };
@@ -264,11 +271,20 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:900;lett
    $("#statDrafts").textContent=st.drafts||0;
    $("#statSocial").textContent=st.social||0;
 
+   const limits=j.limits||{},usage=j.usage||{};
+   if($("#shortsHint"))$("#shortsHint").textContent="Archivio · "+String(usage.shorts||0)+"/"+String(limits.shorts||10);
+   if($("#draftsHint"))$("#draftsHint").textContent="Bozze · "+String(usage.drafts||0)+"/"+String(limits.drafts||5);
+
    document.querySelectorAll("[data-social]").forEach(el=>{
     const yes=!!social[el.dataset.social];
     el.classList.toggle("connected",yes);
     el.querySelector("span:last-child").textContent=yes?"✓ Collegato":"○ Non collegato";
    });
+
+   const shorts=Array.isArray(j.shorts)?j.shorts:[];
+   $("#shortRows").innerHTML=shorts.length
+    ?shorts.map(s=>'<div class="row shortRow"><b>'+escapeHtml(s.title||"Short")+'</b><span class="muted">'+((Number(s.final_bytes)||0)>1048576?Math.max(1,Math.round(Number(s.final_bytes)/1048576))+" MB":"Short")+'</span><span class="status">'+((s.published||[]).length?"Pubblicato":"Salvato")+'</span><button class="action" data-short-download="'+escapeHtml(s.id||"")+'">Scarica</button><button class="action danger" data-short-delete="'+escapeHtml(s.id||"")+'">Elimina</button></div>').join("")
+    :'<div class="empty">Nessuno Short archiviato.</div>';
 
    const drafts=Array.isArray(j.drafts)?j.drafts:[];
    $("#draftRows").innerHTML=drafts.length
@@ -281,10 +297,34 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:900;lett
     :'<div class="empty">Nessun progetto attivo recuperato.</div>';
 
    document.querySelectorAll("[data-resume]").forEach(b=>b.onclick=()=>resumeDraft(b.dataset.resume));
+   document.querySelectorAll("[data-short-download]").forEach(b=>b.onclick=()=>{location.href="/shorts/file?id="+encodeURIComponent(b.dataset.shortDownload||"")});
+   document.querySelectorAll("[data-short-delete]").forEach(b=>b.onclick=()=>confirmDeleteShort(b.dataset.shortDelete));
    document.querySelectorAll("[data-quick]").forEach(b=>b.onclick=()=>closeHub(b.dataset.quick));
   }catch(e){
    $("#draftRows").innerHTML='<div class="empty">Creator Hub non disponibile. Riprova tra poco.</div>';
   }
+ }
+
+ async function deleteShort(id){
+  if(!id)return;
+  try{
+   const r=await fetch("/shorts/delete",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});
+   const j=await r.json();
+   if(!r.ok||!j.ok)throw new Error(j.error||"Eliminazione non riuscita");
+   try{parent.GSFNotify&&parent.GSFNotify.show("Short eliminato","Lo Short è stato rimosso dal tuo archivio.","success")}catch(_e){}
+   loadState();
+  }catch(e){
+   try{parent.GSFNotify&&parent.GSFNotify.show("Operazione non riuscita",String(e.message||e),"error")}catch(_e){}
+  }
+ }
+ function confirmDeleteShort(id){
+  try{
+   if(parent.GSFNotify&&typeof parent.GSFNotify.confirm==="function"){
+    parent.GSFNotify.confirm("Eliminare questo Short?","Questa è una cancellazione volontaria e definitiva.",{confirmText:"Elimina",cancelText:"Annulla",onConfirm:()=>deleteShort(id)});
+    return;
+   }
+  }catch(_e){}
+  if(confirm("Eliminare definitivamente questo Short?"))deleteShort(id);
  }
 
  async function resumeDraft(id){

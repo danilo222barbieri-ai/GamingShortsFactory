@@ -90,6 +90,18 @@ INSTAGRAM_REDIRECT_URI=(PUBLIC_APP_URL+"/auth/instagram/callback") if PUBLIC_APP
 META_APP_ID=_env_first("GSF_META_APP_ID",default="")
 META_APP_SECRET=_env_first("GSF_META_APP_SECRET",default="")
 META_SCOPES="pages_show_list,instagram_basic,instagram_content_publish,pages_read_engagement"
+FREE_DRAFT_LIMIT=5
+FREE_SHORT_LIMIT=10
+PREMIUM_DRAFT_LIMIT=max(FREE_DRAFT_LIMIT,int(os.environ.get("GSF_PREMIUM_DRAFT_LIMIT","25") or 25))
+PREMIUM_SHORT_LIMIT=max(FREE_SHORT_LIMIT,int(os.environ.get("GSF_PREMIUM_SHORT_LIMIT","100") or 100))
+
+class StorageQuotaError(RuntimeError):
+    def __init__(self,kind,limit,plan="FREE"):
+        self.kind=str(kind or "storage")
+        self.limit=int(limit or 0)
+        self.plan=str(plan or "FREE").upper()
+        super().__init__(f"Limite {self.kind} raggiunto ({self.limit})")
+
 _S3_CLIENT=None
 _S3_LOCK=threading.Lock()
 
@@ -158,26 +170,21 @@ def _final_persist_to_bucket(sid,source_path,started_at=0.0):
     expected=stable.resolve()
     if source!=expected or not source.is_file() or source.stat().st_size<=1024:
         raise ValueError("finale locale non valido")
-    size=int(source.stat().st_size)
-    completed=time.time()
-    key=_final_bucket_key(sid)
-    _s3().upload_file(
-        str(source),S3_BUCKET,key,
-        ExtraArgs={"ContentType":"video/mp4","CacheControl":"no-store"},
-    )
+    archived=_short_archive_store(sid,source,started_at)
     meta={
         "status":"ready",
         "started_at":float(started_at or 0.0),
-        "completed_at":completed,
-        "final_bytes":size,
-        "bucket_key":key,
+        "completed_at":float(archived.get("completed_at") or time.time()),
+        "final_bytes":int(archived.get("final_bytes") or source.stat().st_size),
+        "bucket_key":str(archived.get("bucket_key") or ""),
+        "short_id":str(archived.get("id") or ""),
     }
     _s3().put_object(
         Bucket=S3_BUCKET,Key=_final_meta_key(sid),
         Body=json.dumps(meta,ensure_ascii=False,separators=(",",":")).encode("utf-8"),
         ContentType="application/json",CacheControl="no-store",
     )
-    print("GSF_FINAL_BUCKET_READY",sid,size,flush=True)
+    print("GSF_FINAL_BUCKET_READY",sid,meta["final_bytes"],meta["short_id"],flush=True)
     return meta
 
 def _final_restore_from_bucket(sid):
@@ -1236,6 +1243,33 @@ def _creator_account_save(sid,profile):
         )
 
 
+def _storage_owner_id(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return ""
+    try:
+        profile=_creator_account_load(sid) or {}
+        account_id=_safe_id(profile.get("account_id","")) if isinstance(profile,dict) else ""
+        if account_id:
+            return account_id
+    except Exception:
+        pass
+    return sid
+
+def _storage_limits_for_sid(sid):
+    profile={}
+    try:
+        profile=_creator_account_load(sid) or {}
+    except Exception:
+        profile={}
+    plan=str(profile.get("plan") or "FREE").strip().upper() if isinstance(profile,dict) else "FREE"
+    premium=plan in ("PREMIUM","PRO")
+    return {
+        "plan":plan,
+        "drafts":PREMIUM_DRAFT_LIMIT if premium else FREE_DRAFT_LIMIT,
+        "shorts":PREMIUM_SHORT_LIMIT if premium else FREE_SHORT_LIMIT,
+    }
+
 def _draft_dir(sid):
     sid=_safe_id(sid)
     root=ROOT/"sessions"/sid/"drafts"
@@ -1243,12 +1277,12 @@ def _draft_dir(sid):
     return root
 
 def _draft_key(sid,draft_id):
-    sid=_safe_id(sid); draft_id=_safe_id(draft_id)
-    return f"drafts/{sid}/{draft_id}.json" if sid and draft_id else ""
+    owner=_storage_owner_id(sid); draft_id=_safe_id(draft_id)
+    return f"drafts/{owner}/{draft_id}.json" if owner and draft_id else ""
 
 def _draft_index_key(sid):
-    sid=_safe_id(sid)
-    return f"drafts/{sid}/_index.json" if sid else ""
+    owner=_storage_owner_id(sid)
+    return f"drafts/{owner}/_index.json" if owner else ""
 
 def _draft_index_path(sid):
     return _draft_dir(sid)/"_index.json"
@@ -1301,7 +1335,7 @@ def _draft_index_save(sid,rows):
             continue
         seen.add(did)
         cleaned.append(summary)
-        if len(cleaned)>=50:
+        if len(cleaned)>=200:
             break
     payload={"version":2,"updated_at":time.time(),"drafts":cleaned}
     _write_json_atomic(_draft_index_path(sid),payload)
@@ -1341,6 +1375,11 @@ def _draft_save(sid,payload):
     if len(raw_state)>900000:
         raise ValueError("bozza troppo grande")
     draft_id=_safe_id(payload.get("id","")) or ("draft_"+uuid.uuid4().hex[:16])
+    current_rows=_draft_list(sid)
+    current_ids={_safe_id((row or {}).get("id","")) for row in current_rows if isinstance(row,dict)}
+    limits=_storage_limits_for_sid(sid)
+    if draft_id not in current_ids and len(current_ids)>=int(limits.get("drafts") or FREE_DRAFT_LIMIT):
+        raise StorageQuotaError("bozze",int(limits.get("drafts") or FREE_DRAFT_LIMIT),limits.get("plan") or "FREE")
     now=time.time()
     source_name=str(payload.get("source_name") or state.get("gsf_source_name") or "Gameplay")[:160]
     desired_source=str(state.get("gsf_source_path") or state.get("gsf_editor_source_path") or "")
@@ -1501,6 +1540,181 @@ def _draft_delete(sid,draft_id):
     _draft_index_remove(sid,draft_id)
     print("GSF_DRAFT_DELETED",sid,draft_id,flush=True)
     return True
+
+def _short_index_path(sid):
+    sid=_safe_id(sid)
+    root=ROOT/"sessions"/sid/"shorts"
+    root.mkdir(parents=True,exist_ok=True)
+    return root/"_index.json"
+
+def _short_index_key(sid):
+    owner=_storage_owner_id(sid)
+    return f"shorts/{owner}/_index.json" if owner else ""
+
+def _short_object_key(sid,short_id):
+    owner=_storage_owner_id(sid)
+    short_id=_safe_id(short_id)
+    return f"shorts/{owner}/{short_id}.mp4" if owner and short_id else ""
+
+def _short_index_load(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return []
+    local=_short_index_path(sid)
+    if _bucket_enabled():
+        try:
+            obj=_s3().get_object(Bucket=S3_BUCKET,Key=_short_index_key(sid))
+            payload=json.loads(obj["Body"].read().decode("utf-8"))
+            rows=list(payload.get("shorts") or []) if isinstance(payload,dict) else []
+            _write_json_atomic(local,{"version":1,"updated_at":time.time(),"shorts":rows})
+            return rows
+        except Exception:
+            pass
+    try:
+        payload=json.loads(local.read_text(encoding="utf-8"))
+        return list(payload.get("shorts") or []) if isinstance(payload,dict) else []
+    except Exception:
+        return []
+
+def _short_index_save(sid,rows):
+    cleaned=[]
+    seen=set()
+    for row in sorted(list(rows or []),key=lambda x:float((x or {}).get("completed_at") or 0),reverse=True):
+        if not isinstance(row,dict):
+            continue
+        short_id=_safe_id(row.get("id",""))
+        if not short_id or short_id in seen:
+            continue
+        seen.add(short_id)
+        cleaned.append({
+            "id":short_id,
+            "title":str(row.get("title") or "Short")[:160],
+            "source_name":str(row.get("source_name") or "")[:160],
+            "completed_at":float(row.get("completed_at") or 0),
+            "final_bytes":int(row.get("final_bytes") or 0),
+            "bucket_key":str(row.get("bucket_key") or _short_object_key(sid,short_id)),
+            "published":list(dict.fromkeys([str(x)[:32] for x in (row.get("published") or []) if x]))[:8],
+            "published_at":float(row.get("published_at") or 0),
+        })
+        if len(cleaned)>=200:
+            break
+    payload={"version":1,"updated_at":time.time(),"shorts":cleaned}
+    _write_json_atomic(_short_index_path(sid),payload)
+    if _bucket_enabled():
+        _s3().put_object(
+            Bucket=S3_BUCKET,Key=_short_index_key(sid),
+            Body=json.dumps(payload,ensure_ascii=False,separators=(",",":")).encode("utf-8"),
+            ContentType="application/json",CacheControl="no-store",
+        )
+    return cleaned
+
+def _short_list(sid):
+    return _short_index_load(sid)
+
+def _short_source_name(sid):
+    try:
+        state_path=ROOT/"sessions"/_safe_id(sid)/"session_state.json"
+        if state_path.is_file():
+            raw=json.loads(state_path.read_text(encoding="utf-8"))
+            state=raw.get("state") if isinstance(raw,dict) and isinstance(raw.get("state"),dict) else raw
+            if isinstance(state,dict):
+                return str(state.get("gsf_source_name") or "Gameplay")[:160]
+    except Exception:
+        pass
+    return "Gameplay"
+
+def _short_archive_store(sid,source_path,started_at=0.0):
+    sid=_safe_id(sid)
+    if not sid or not _bucket_enabled():
+        raise RuntimeError("storage persistente non disponibile")
+    source=Path(str(source_path or "")).resolve()
+    if not source.is_file() or source.stat().st_size<=1024:
+        raise ValueError("finale locale non valido")
+    size=int(source.stat().st_size)
+    owner=_storage_owner_id(sid)
+    token=f"{owner}:{float(started_at or 0.0):.6f}:{size}:{int(source.stat().st_mtime_ns)}"
+    short_id="short_"+uuid.uuid5(uuid.NAMESPACE_URL,token).hex[:20]
+    rows=_short_list(sid)
+    for row in rows:
+        if _safe_id((row or {}).get("id",""))==short_id:
+            return dict(row)
+    limits=_storage_limits_for_sid(sid)
+    limit=int(limits.get("shorts") or FREE_SHORT_LIMIT)
+    if len(rows)>=limit:
+        raise StorageQuotaError("short",limit,limits.get("plan") or "FREE")
+    key=_short_object_key(sid,short_id)
+    _s3().upload_file(
+        str(source),S3_BUCKET,key,
+        ExtraArgs={"ContentType":"video/mp4","CacheControl":"private, max-age=0"},
+    )
+    source_name=_short_source_name(sid)
+    completed=time.time()
+    row={
+        "id":short_id,
+        "title":"Short · "+Path(source_name).stem[:120],
+        "source_name":source_name,
+        "completed_at":completed,
+        "final_bytes":size,
+        "bucket_key":key,
+        "published":[],
+        "published_at":0.0,
+    }
+    rows.append(row)
+    _short_index_save(sid,rows)
+    try:
+        _push_notify_sid(
+            sid,
+            title="Short completato",
+            body="Il tuo Short è pronto ed è stato salvato in I tuoi Shorts.",
+            url="/",
+            tag="gsf-short-ready-"+short_id,
+        )
+    except Exception:
+        pass
+    print("GSF_SHORT_ARCHIVED",sid,short_id,size,flush=True)
+    return row
+
+def _short_delete(sid,short_id):
+    sid=_safe_id(sid)
+    short_id=_safe_id(short_id)
+    if not sid or not short_id:
+        return False
+    rows=_short_list(sid)
+    target=next((dict(r) for r in rows if _safe_id((r or {}).get("id",""))==short_id),None)
+    if not target:
+        return False
+    if _bucket_enabled():
+        try:
+            _s3().delete_object(Bucket=S3_BUCKET,Key=str(target.get("bucket_key") or _short_object_key(sid,short_id)))
+        except Exception:
+            pass
+    remaining=[r for r in rows if _safe_id((r or {}).get("id",""))!=short_id]
+    _short_index_save(sid,remaining)
+    print("GSF_SHORT_DELETED",sid,short_id,flush=True)
+    return True
+
+def _short_mark_published(sid,short_id,platform):
+    sid=_safe_id(sid)
+    short_id=_safe_id(short_id)
+    platform=re.sub(r"[^a-z0-9_-]+","",str(platform or "").lower())[:32]
+    if not sid or not short_id or not platform:
+        return {}
+    rows=_short_list(sid)
+    changed={}
+    for row in rows:
+        if _safe_id((row or {}).get("id",""))!=short_id:
+            continue
+        published=list(row.get("published") or [])
+        if platform not in published:
+            published.append(platform)
+        row["published"]=published
+        row["published_at"]=time.time()
+        changed=dict(row)
+        break
+    if changed:
+        _short_index_save(sid,rows)
+    return changed
+
 
 def _draft_prepare_resume(sid,draft):
     state=dict(draft.get("state") or {})
@@ -3473,11 +3687,20 @@ class Handler(BaseHTTPRequestHandler):
             final_bytes=int(stable.stat().st_size) if ready else 0
             if not ready and _bucket_enabled():
                 try:
-                    head=_s3().head_object(Bucket=S3_BUCKET,Key=_final_bucket_key(sid))
-                    final_bytes=int(head.get("ContentLength") or 0)
-                    ready=final_bytes>1024
+                    obj=_s3().get_object(Bucket=S3_BUCKET,Key=_final_meta_key(sid))
+                    meta=json.loads(obj["Body"].read().decode("utf-8"))
+                    key=str((meta or {}).get("bucket_key") or "")
+                    if key:
+                        head=_s3().head_object(Bucket=S3_BUCKET,Key=key)
+                        final_bytes=int(head.get("ContentLength") or 0)
+                        ready=final_bytes>1024
                 except Exception:
-                    pass
+                    try:
+                        head=_s3().head_object(Bucket=S3_BUCKET,Key=_final_bucket_key(sid))
+                        final_bytes=int(head.get("ContentLength") or 0)
+                        ready=final_bytes>1024
+                    except Exception:
+                        pass
             _json(self,200,{
                 "ok":True,
                 "ready":ready,
@@ -3504,6 +3727,30 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 _html(self,404,"Short finale non ancora disponibile.")
             return
+        if clean=="/shorts/file":
+            sid=_social_sid(self)
+            short_id=_safe_id((parse_qs(path.query).get("id") or [""])[0])
+            row=next((dict(r) for r in _short_list(sid) if _safe_id((r or {}).get("id",""))==short_id),None)
+            if not sid or not short_id or not row or not _bucket_enabled():
+                _json(self,404,{"ok":False,"error":"Short non trovato"})
+                return
+            try:
+                key=str(row.get("bucket_key") or _short_object_key(sid,short_id))
+                filename=re.sub(r"[^A-Za-z0-9_.-]+","_",str(row.get("title") or short_id))[:100]+".mp4"
+                url=_s3().generate_presigned_url(
+                    "get_object",
+                    Params={
+                        "Bucket":S3_BUCKET,
+                        "Key":key,
+                        "ResponseContentDisposition":f'attachment; filename="{filename}"',
+                        "ResponseContentType":"video/mp4",
+                    },
+                    ExpiresIn=900,
+                )
+                _redirect(self,url)
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:180]})
+            return
         if clean=="/creator-hub/state":
             sid=_social_sid(self)
             if not sid:
@@ -3511,8 +3758,11 @@ class Handler(BaseHTTPRequestHandler):
                 return
             profile=_creator_account_load(sid) or {}
             providers=dict(profile.get("providers") or {}) if isinstance(profile,dict) else {}
+            limits=_storage_limits_for_sid(sid)
+            all_drafts=_draft_list(sid)
+            all_shorts=_short_list(sid)
             drafts=[]
-            for row in _draft_list(sid)[:6]:
+            for row in all_drafts[:max(1,int(limits.get("drafts") or FREE_DRAFT_LIMIT))]:
                 if not isinstance(row,dict):
                     continue
                 drafts.append({
@@ -3552,12 +3802,22 @@ class Handler(BaseHTTPRequestHandler):
                     "facebook":False,
                 },
                 "stats":{
-                    "shorts_created":int(profile.get("shorts_created") or 0) if isinstance(profile,dict) else 0,
-                    "shorts_published":int(profile.get("shorts_published") or 0) if isinstance(profile,dict) else 0,
-                    "drafts":len(_draft_list(sid)),
+                    "shorts_created":len(all_shorts),
+                    "shorts_published":sum(1 for row in all_shorts if (row or {}).get("published")),
+                    "drafts":len(all_drafts),
                     "social":sum(1 for x in (_youtube_user_load(sid),_tiktok_user_load(sid),_instagram_user_load(sid)) if x),
                 },
+                "limits":limits,
+                "usage":{"drafts":len(all_drafts),"shorts":len(all_shorts)},
                 "drafts":drafts,
+                "shorts":[{
+                    "id":_safe_id((row or {}).get("id","")),
+                    "title":str((row or {}).get("title") or "Short")[:120],
+                    "source_name":str((row or {}).get("source_name") or "")[:120],
+                    "completed_at":float((row or {}).get("completed_at") or 0),
+                    "final_bytes":int((row or {}).get("final_bytes") or 0),
+                    "published":list((row or {}).get("published") or [])[:8],
+                } for row in all_shorts[:max(1,int(limits.get("shorts") or FREE_SHORT_LIMIT))]],
                 "project":project,
             })
             return
@@ -3808,6 +4068,8 @@ class Handler(BaseHTTPRequestHandler):
                     "title":draft.get("title"),
                     "persistent":bool(source_ref.get("bucket_key") or meta.get("bucket_key")),
                 })
+            except StorageQuotaError as exc:
+                _json(self,409,{"ok":False,"verified":False,"code":"storage_limit","kind":exc.kind,"limit":exc.limit,"plan":exc.plan,"error":str(exc)})
             except Exception as exc:
                 _json(self,409,{"ok":False,"verified":False,"error":str(exc)[:220]})
             return
@@ -3817,6 +4079,8 @@ class Handler(BaseHTTPRequestHandler):
                 data=_read_json(self,max_bytes=1024*1024)
                 draft=_draft_save(sid,data)
                 _json(self,200,{"ok":True,"id":draft.get("id"),"title":draft.get("title")})
+            except StorageQuotaError as exc:
+                _json(self,409,{"ok":False,"code":"storage_limit","kind":exc.kind,"limit":exc.limit,"plan":exc.plan,"error":str(exc)})
             except Exception as exc:
                 _json(self,400,{"ok":False,"error":str(exc)[:180]})
             return
@@ -3844,6 +4108,36 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,500,{"ok":False,"error":str(exc)[:180]})
             return
 
+        if path=="/shorts/delete":
+            try:
+                data=_read_json(self,max_bytes=16*1024)
+                short_id=_safe_id(data.get("id","")) if isinstance(data,dict) else ""
+                ok=_short_delete(sid,short_id)
+                _json(self,200 if ok else 404,{"ok":bool(ok),"id":short_id})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+
+        if path=="/shorts/mark-published":
+            try:
+                data=_read_json(self,max_bytes=16*1024)
+                row=_short_mark_published(sid,data.get("id"),data.get("platform"))
+                if row:
+                    try:
+                        _push_notify_sid(
+                            sid,
+                            title="Short pubblicato",
+                            body="Pubblicazione completata. Il video resta salvato in I tuoi Shorts.",
+                            url="/",
+                            tag="gsf-short-published-"+str(row.get("id") or ""),
+                        )
+                    except Exception:
+                        pass
+                _json(self,200 if row else 404,{"ok":bool(row),"short":row})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+
         if path=="/final/persist":
             try:
                 data=_read_json(self,max_bytes=64*1024)
@@ -3852,7 +4146,9 @@ class Handler(BaseHTTPRequestHandler):
                     data.get("path"),
                     float(data.get("started_at") or 0.0),
                 )
-                _json(self,200,{"ok":True,"final_bytes":meta.get("final_bytes"),"completed_at":meta.get("completed_at")})
+                _json(self,200,{"ok":True,"short_id":meta.get("short_id"),"final_bytes":meta.get("final_bytes"),"completed_at":meta.get("completed_at")})
+            except StorageQuotaError as exc:
+                _json(self,409,{"ok":False,"code":"storage_limit","kind":exc.kind,"limit":exc.limit,"plan":exc.plan,"error":str(exc)})
             except Exception as exc:
                 _json(self,500,{"ok":False,"error":str(exc)[:220]})
             return
