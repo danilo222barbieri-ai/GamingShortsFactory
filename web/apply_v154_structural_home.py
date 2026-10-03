@@ -1080,6 +1080,365 @@ if GSF_WEB_MODE:
 '''
 s = s.rstrip() + "\n\n" + _page_shell_v249.lstrip()
 # END V249 FULL PAGE APP SHELL
+# V250 PAGE VISUAL SYSTEM
+# Shared chrome for all non-Home app pages. Home files remain untouched.
+_page_visual_v250 = r'''
+if GSF_WEB_MODE:
+    st.markdown(r"""
+    <style id="gsf-v250-page-visual-system">
+    :root{
+      --gsf-page-top:44px;
+      --gsf-page-bottom:108px;
+      --gsf-page-side:clamp(118px,9.5vw,160px);
+      --gsf-page-gap:clamp(12px,1.4vw,24px);
+      --gsf-page-bg:#F7FCFF;
+      --gsf-page-ink:#0D2A66;
+      --gsf-page-soft:#7185A6;
+    }
+
+    #gsf-social-overlay-v159,
+    #gsf-creator-hub-live-v160,
+    #gsf-editor-overlay-v220,
+    #gsf-ai-overlay-v221,
+    #gsf-account-overlay-v223{
+      background:
+        radial-gradient(circle at 12% 8%,rgba(111,209,255,.15),transparent 23%),
+        radial-gradient(circle at 88% 10%,rgba(106,229,185,.13),transparent 24%),
+        linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important;
+      overflow:hidden!important;
+    }
+
+    .gsf-page-top-v250{
+      position:absolute;
+      left:0;right:0;top:0;
+      height:var(--gsf-page-top);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 clamp(16px,2vw,34px);
+      z-index:20;
+      color:#6C81A1;
+      pointer-events:none;
+    }
+    .gsf-page-brand-v250{
+      font-size:clamp(10px,.8vw,13px);
+      line-height:1;
+      font-weight:800;
+      letter-spacing:.28em;
+      white-space:nowrap;
+    }
+    .gsf-page-title-v250{
+      position:absolute;
+      left:50%;
+      transform:translateX(-50%);
+      color:var(--gsf-page-ink);
+      font-size:clamp(11px,.9vw,14px);
+      font-weight:900;
+      letter-spacing:.03em;
+      white-space:nowrap;
+    }
+    .gsf-page-state-v250{
+      min-width:64px;
+      text-align:right;
+      font-size:8px;
+      font-weight:800;
+      letter-spacing:.08em;
+      opacity:.78;
+    }
+
+    .gsf-page-ad-v250{
+      position:absolute;
+      top:calc(var(--gsf-page-top) + 12px);
+      bottom:calc(var(--gsf-page-bottom) + 12px);
+      width:var(--gsf-page-side);
+      z-index:16;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:10px;
+      border:1px solid rgba(150,184,214,.22);
+      border-radius:20px;
+      background:rgba(255,255,255,.72);
+      box-shadow:0 12px 34px rgba(59,104,148,.07),inset 0 1px 0 rgba(255,255,255,.94);
+      color:#7D90AD;
+      font-size:clamp(8px,.65vw,10px);
+      font-weight:700;
+      letter-spacing:.03em;
+      text-align:center;
+      pointer-events:auto;
+      overflow:hidden;
+    }
+    .gsf-page-ad-v250.left{left:clamp(12px,1.4vw,24px)}
+    .gsf-page-ad-v250.right{right:clamp(12px,1.4vw,24px)}
+
+    .gsf-page-footer-v250{
+      position:absolute;
+      left:0;right:0;
+      bottom:72px;
+      height:30px;
+      z-index:20;
+      display:grid;
+      grid-template-columns:1fr auto 1fr;
+      align-items:center;
+      gap:12px;
+      padding:0 clamp(16px,2vw,34px);
+      border-top:1px solid rgba(150,184,214,.18);
+      color:#7D90AD;
+      pointer-events:none;
+    }
+    .gsf-page-footer-brand-v250{
+      justify-self:start;
+      font-size:7px;
+      font-weight:700;
+    }
+    .gsf-page-footer-social-v250{
+      justify-self:center;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      pointer-events:auto;
+    }
+    .gsf-page-footer-social-v250 a{
+      width:22px;height:22px;
+      display:grid;
+      place-items:center;
+      border-radius:50%;
+      background:rgba(255,255,255,.90);
+      border:1px solid rgba(150,183,213,.24);
+      box-shadow:0 5px 13px rgba(65,105,145,.08);
+      text-decoration:none;
+      font-size:8px;
+      font-weight:900;
+    }
+    .gsf-page-footer-social-v250 a:nth-child(1){color:#1877F2}
+    .gsf-page-footer-social-v250 a:nth-child(2){color:#C13584}
+    .gsf-page-footer-social-v250 a:nth-child(3){color:#FF0033}
+    .gsf-page-footer-social-v250 a:nth-child(4){color:#111827}
+    .gsf-page-footer-social-v250 a:nth-child(5){color:#9146FF}
+    .gsf-page-footer-meta-v250{
+      justify-self:end;
+      font-size:7px;
+      font-weight:700;
+    }
+
+    /* Each page owns its content area; Home is completely covered. */
+    #gsf-social-overlay-v159 .gsf-social-shell,
+    #gsf-creator-hub-live-v160 .gsf-hub-shell-v160,
+    #gsf-editor-overlay-v220 .gsf-editor-shell,
+    #gsf-ai-overlay-v221 .gsf-ai-shell,
+    #gsf-account-overlay-v223 .gsf-account-shell{
+      position:absolute!important;
+      top:var(--gsf-page-top)!important;
+      bottom:var(--gsf-page-bottom)!important;
+      left:calc(var(--gsf-page-side) + var(--gsf-page-gap) + 12px)!important;
+      right:calc(var(--gsf-page-side) + var(--gsf-page-gap) + 12px)!important;
+      width:auto!important;
+      height:auto!important;
+      max-width:none!important;
+      max-height:none!important;
+      margin:0!important;
+      border:1px solid rgba(157,193,219,.22)!important;
+      border-radius:24px!important;
+      background:rgba(255,255,255,.82)!important;
+      box-shadow:0 18px 54px rgba(42,86,126,.09),inset 0 1px 0 rgba(255,255,255,.96)!important;
+      transform:none!important;
+      transition:none!important;
+      opacity:1!important;
+      overflow:hidden!important;
+    }
+
+    #gsf-editor-overlay-v220 .gsf-editor-head{
+      background:rgba(255,255,255,.88)!important;
+      border-bottom:1px solid rgba(148,183,213,.18)!important;
+    }
+
+    #gsf-social-overlay-v159 iframe,
+    #gsf-creator-hub-live-v160 iframe,
+    #gsf-editor-overlay-v220 iframe,
+    #gsf-ai-overlay-v221 iframe,
+    #gsf-account-overlay-v223 iframe{
+      width:100%!important;
+      height:100%!important;
+      border:0!important;
+      background:#F7FCFF!important;
+    }
+
+    #gsf-page-nav-v249{
+      bottom:10px!important;
+      height:54px!important;
+      min-height:54px!important;
+      width:min(760px,72vw)!important;
+      padding:3px 10px!important;
+      z-index:30!important;
+    }
+
+    #gsf-social-overlay-v159 .gsf-social-close,
+    #gsf-creator-hub-live-v160 .gsf-hub-close-v160,
+    #gsf-editor-overlay-v220 .gsf-editor-close,
+    #gsf-ai-overlay-v221 .gsf-ai-close,
+    #gsf-account-overlay-v223 .gsf-account-close{
+      top:7px!important;
+      right:9px!important;
+      width:30px!important;
+      height:30px!important;
+      border-radius:10px!important;
+      z-index:24!important;
+      box-shadow:0 5px 14px rgba(64,104,143,.07)!important;
+    }
+
+    /* Responsive scaling: no giant fixed desktop and no cramped small screen. */
+    @media(min-width:1600px) and (min-height:850px){
+      :root{
+        --gsf-page-top:48px;
+        --gsf-page-bottom:114px;
+        --gsf-page-side:clamp(145px,9vw,180px);
+        --gsf-page-gap:clamp(18px,1.6vw,28px);
+      }
+      .gsf-page-footer-v250{bottom:76px;height:32px}
+      #gsf-page-nav-v249{height:58px!important;min-height:58px!important}
+    }
+
+    @media(min-width:761px) and (max-height:720px){
+      :root{
+        --gsf-page-top:38px;
+        --gsf-page-bottom:96px;
+        --gsf-page-side:clamp(102px,8.4vw,132px);
+        --gsf-page-gap:10px;
+      }
+      .gsf-page-footer-v250{bottom:65px;height:24px}
+      #gsf-page-nav-v249{
+        bottom:7px!important;
+        height:48px!important;
+        min-height:48px!important;
+      }
+      .gsf-page-ad-v250{
+        top:calc(var(--gsf-page-top) + 8px);
+        bottom:calc(var(--gsf-page-bottom) + 8px);
+      }
+    }
+
+    @media(max-width:1000px) and (min-width:761px){
+      :root{
+        --gsf-page-side:86px;
+        --gsf-page-gap:8px;
+      }
+      .gsf-page-ad-v250{
+        width:86px;
+        border-radius:16px;
+        font-size:8px;
+      }
+    }
+
+    @media(max-width:760px){
+      :root{
+        --gsf-page-top:32px;
+        --gsf-page-bottom:88px;
+        --gsf-page-side:0px;
+        --gsf-page-gap:0px;
+      }
+
+      .gsf-page-top-v250{
+        height:32px;
+        padding:0 10px;
+      }
+      .gsf-page-brand-v250{
+        font-size:7.5px;
+        letter-spacing:.22em;
+      }
+      .gsf-page-title-v250{
+        font-size:9px;
+      }
+      .gsf-page-state-v250{font-size:7px}
+
+      .gsf-page-ad-v250{
+        display:none!important;
+      }
+
+      #gsf-social-overlay-v159 .gsf-social-shell,
+      #gsf-creator-hub-live-v160 .gsf-hub-shell-v160,
+      #gsf-editor-overlay-v220 .gsf-editor-shell,
+      #gsf-ai-overlay-v221 .gsf-ai-shell,
+      #gsf-account-overlay-v223 .gsf-account-shell{
+        top:var(--gsf-page-top)!important;
+        bottom:var(--gsf-page-bottom)!important;
+        left:5px!important;
+        right:5px!important;
+        border-radius:18px!important;
+      }
+
+      .gsf-page-footer-v250{
+        display:none!important;
+      }
+
+      #gsf-page-nav-v249{
+        width:calc(100vw - 20px)!important;
+        bottom:5px!important;
+        height:56px!important;
+        min-height:56px!important;
+      }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    import streamlit.components.v1 as components
+    components.html(r"""<!doctype html><html><body style="margin:0;display:none"><script>
+    ((P)=>{
+      const d=P.document;
+      const pages=[
+        ['gsf-social-overlay-v159','Social'],
+        ['gsf-creator-hub-live-v160','Creator Hub'],
+        ['gsf-editor-overlay-v220','Game Editor'],
+        ['gsf-ai-overlay-v221','Crea con IA'],
+        ['gsf-account-overlay-v223','Account']
+      ];
+
+      const chrome=(title)=>`
+        <div class="gsf-page-top-v250">
+          <div class="gsf-page-brand-v250">GAMING SHORTS FACTORY</div>
+          <div class="gsf-page-title-v250">${title}</div>
+          <div class="gsf-page-state-v250">GSF</div>
+        </div>
+        <aside class="gsf-page-ad-v250 left"><span>Spazio pubblicitario</span></aside>
+        <aside class="gsf-page-ad-v250 right"><span>Spazio pubblicitario</span></aside>
+        <footer class="gsf-page-footer-v250">
+          <span class="gsf-page-footer-brand-v250">Gaming Shorts Factory</span>
+          <div class="gsf-page-footer-social-v250" aria-label="Canali social">
+            <a href="https://www.facebook.com/profile.php?id=61595124112318&amp;locale=it_IT" target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a>
+            <a href="https://www.instagram.com/gamingshortsfactory/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">◎</a>
+            <a href="https://www.youtube.com/@Dans222nrg" target="_blank" rel="noopener noreferrer" aria-label="YouTube">▶</a>
+            <a href="https://www.tiktok.com/@gamingshortsfactory" target="_blank" rel="noopener noreferrer" aria-label="TikTok">♪</a>
+            <a href="https://www.twitch.tv/dan222s86" target="_blank" rel="noopener noreferrer" aria-label="Twitch">◈</a>
+          </div>
+          <span class="gsf-page-footer-meta-v250">© 2026</span>
+        </footer>`;
+
+      pages.forEach(([id,title])=>{
+        const el=d.getElementById(id);
+        if(!el||el.querySelector('.gsf-page-top-v250'))return;
+        el.insertAdjacentHTML('afterbegin',chrome(title));
+      });
+
+      // Fast-open policy: keep all route frames warm. They are already mounted,
+      // so page switches only toggle the active surface; no iframe reload.
+      const warm=()=>{
+        pages.forEach(([id])=>{
+          const el=d.getElementById(id);
+          if(!el)return;
+          const f=el.querySelector('iframe');
+          if(!f)return;
+          f.loading='eager';
+          try{f.contentWindow&&f.contentWindow.document}catch(_e){}
+        });
+      };
+
+      if('requestIdleCallback' in P) P.requestIdleCallback(warm,{timeout:450});
+      else P.setTimeout(warm,180);
+    })(window.parent);
+    </script></body></html>""",height=0,scrolling=False)
+'''
+s = s.rstrip() + "\n\n" + _page_visual_v250.lstrip()
+# END V250 PAGE VISUAL SYSTEM
+
 
 # V221 final write must happen AFTER V220 + V221 surfaces are appended.
 compile(s,str(out),"exec")
