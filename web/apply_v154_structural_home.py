@@ -427,7 +427,17 @@ if GSF_WEB_MODE:
         <iframe src="/share-v156/?v=226" data-src="/share-v156/" data-loaded="1" title="Condividi o scarica"></iframe>
       </section>
     </div>
-    <div class="gsf-script-guard" style="display:none!important"><script>
+    <div class="gsf-script-guard" style="display:none!important"></div>
+
+    """, unsafe_allow_html=True)
+
+    import streamlit.components.v1 as components
+    components.html(r"""<!doctype html><html><body style="margin:0;display:none">
+    <script>
+    ((P)=>{
+      const window=P;
+      const document=P.document;
+      const location=P.location;
     (()=>{
       const o=document.getElementById('gsf-social-overlay-v159');
       if(!o)return;
@@ -469,8 +479,10 @@ if GSF_WEB_MODE:
         if(t==='close'||t==='home'||t==='hub'||t==='editor'||t==='ai'||t==='account')close();
       });
     })();
-    </script></div>
-    """, unsafe_allow_html=True)
+
+    })(window.parent);
+    </script>
+    </body></html>""", height=0, scrolling=False)
 '''
 s = s.rstrip() + "\n\n" + _social_surface_v159.lstrip()
 
