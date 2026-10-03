@@ -3472,6 +3472,226 @@ body.gsfDesktopPreview .feature{
 }
 /* END V245 MOBILE GUIDE LIFT */
 
+
+/* V246 DESKTOP SCALE + HALO REBALANCE — desktop only, mobile untouched. */
+@media (min-width:761px){
+  #home154{
+    --gsf-desk-ring:clamp(280px,min(27vw,44vh),370px);
+    --gsf-desk-content:clamp(620px,62vw,820px);
+    --gsf-desk-card-h:clamp(98px,13vh,118px);
+    --gsf-desk-nav-h:clamp(50px,6.8vh,60px);
+    --gsf-desk-footer-h:clamp(32px,4.6vh,40px);
+  }
+
+  /* Softer mobile-like uploader aura: white core, blue/mint diffusion, no hard blue donut. */
+  #home154 .rings{
+    isolation:isolate!important;
+    background:
+      radial-gradient(circle at 50% 48%,
+        rgba(255,255,255,.99) 0%,
+        rgba(255,255,255,.97) 45%,
+        rgba(238,250,255,.88) 63%,
+        rgba(236,255,247,.78) 77%,
+        rgba(226,246,255,.30) 100%)!important;
+    border:1px solid rgba(110,205,240,.34)!important;
+    box-shadow:
+      -28px -5px 78px rgba(89,198,247,.22),
+      30px 8px 82px rgba(92,225,182,.20),
+      0 0 58px 18px rgba(255,255,255,.66),
+      inset 0 0 0 1px rgba(255,255,255,.92)!important;
+  }
+
+  #home154 .rings:before{
+    content:""!important;
+    display:block!important;
+    inset:-30px!important;
+    padding:0!important;
+    border:1px solid rgba(100,202,241,.23)!important;
+    background:
+      radial-gradient(circle at 36% 42%,rgba(124,214,255,.08),transparent 54%),
+      radial-gradient(circle at 68% 55%,rgba(112,232,194,.08),transparent 56%)!important;
+    -webkit-mask:none!important;
+    mask:none!important;
+    box-shadow:
+      -12px 0 34px rgba(101,207,248,.10),
+      14px 4px 36px rgba(105,230,191,.09),
+      inset 0 0 26px rgba(255,255,255,.52)!important;
+    opacity:.88!important;
+    filter:blur(.15px)!important;
+  }
+
+  #home154 .rings:after{
+    content:""!important;
+    display:block!important;
+    inset:-56px!important;
+    padding:0!important;
+    border:1px solid rgba(119,221,199,.14)!important;
+    background:
+      radial-gradient(circle at 34% 48%,rgba(110,205,249,.055),transparent 58%),
+      radial-gradient(circle at 70% 52%,rgba(104,229,190,.065),transparent 60%)!important;
+    -webkit-mask:none!important;
+    mask:none!important;
+    box-shadow:
+      -18px 0 44px rgba(100,207,248,.075),
+      20px 6px 48px rgba(100,229,190,.085),
+      0 0 34px rgba(255,255,255,.44)!important;
+    opacity:.72!important;
+    filter:blur(.25px)!important;
+  }
+
+  #home154 .circle{
+    background:#FFFFFF!important;
+  }
+
+  /* Slightly larger upload icon/copy to match the enlarged responsive core. */
+  #home154 .icon{
+    width:clamp(48px,6.4vh,64px)!important;
+    height:clamp(48px,6.4vh,64px)!important;
+    margin-bottom:clamp(8px,1.1vh,12px)!important;
+  }
+  #home154 .circle strong{
+    max-width:255px!important;
+    font-size:clamp(16px,1.28vw,21px)!important;
+  }
+
+  /* Larger central action group while keeping the same proportions. */
+  #home154 .features{
+    width:var(--gsf-desk-content)!important;
+    gap:clamp(10px,1vw,14px)!important;
+  }
+  #home154 .feature,
+  #home154 .feature.fAi,
+  #home154 .feature.fEditor,
+  #home154 .feature.fShort{
+    height:var(--gsf-desk-card-h)!important;
+    min-height:var(--gsf-desk-card-h)!important;
+    padding:clamp(8px,1.15vh,12px) 11px 9px!important;
+  }
+  #home154 .featureIcon{
+    width:clamp(44px,5.8vh,54px)!important;
+    height:clamp(44px,5.8vh,54px)!important;
+    margin-bottom:clamp(5px,.8vh,9px)!important;
+  }
+  #home154 .feature b{
+    font-size:clamp(12px,1vw,14px)!important;
+  }
+  #home154 .feature small{
+    font-size:clamp(7.5px,.66vw,9px)!important;
+  }
+
+  #home154 .bottomNav{
+    width:min(var(--gsf-desk-content),72vw)!important;
+    height:var(--gsf-desk-nav-h)!important;
+    min-height:var(--gsf-desk-nav-h)!important;
+  }
+  #home154 .navItem{
+    font-size:clamp(7.5px,.62vw,8.5px)!important;
+  }
+  #home154 .navItem svg{
+    width:clamp(17px,2.35vh,21px)!important;
+    height:clamp(17px,2.35vh,21px)!important;
+  }
+
+  #home154 .siteFooter{
+    height:var(--gsf-desk-footer-h)!important;
+    min-height:var(--gsf-desk-footer-h)!important;
+  }
+  #home154 .footerSocialLink{
+    width:clamp(22px,2.9vh,27px)!important;
+    height:clamp(22px,2.9vh,27px)!important;
+    min-width:clamp(22px,2.9vh,27px)!important;
+    min-height:clamp(22px,2.9vh,27px)!important;
+  }
+
+  /* Handwritten copy stays outside the halo perimeter. */
+  #home154 .scribble.left{
+    left:calc(50% - (var(--gsf-desk-ring) / 2) - clamp(235px,18vw,300px))!important;
+    right:auto!important;
+    top:clamp(24%,27%,30%)!important;
+    width:clamp(175px,15vw,235px)!important;
+    font-size:clamp(14px,1.45vw,19px)!important;
+    text-align:right!important;
+    transform:rotate(-5deg)!important;
+  }
+
+  #home154 .scribble.right{
+    right:calc(50% - (var(--gsf-desk-ring) / 2) - clamp(235px,18vw,300px))!important;
+    left:auto!important;
+    top:clamp(22%,25%,28%)!important;
+    width:clamp(175px,15vw,235px)!important;
+    font-size:clamp(14px,1.45vw,19px)!important;
+    text-align:left!important;
+    transform:rotate(5deg)!important;
+  }
+
+  #home154 .muralAmbient{
+    left:clamp(145px,15vw,225px)!important;
+    right:auto!important;
+    top:clamp(13%,16%,18%)!important;
+    width:clamp(135px,11vw,175px)!important;
+    font-size:clamp(11px,1vw,14px)!important;
+    text-align:center!important;
+    transform:rotate(-5deg)!important;
+  }
+
+  /* Bigger desktop advertising slots. */
+  #home154 .sideAd{
+    width:clamp(112px,9.5vw,150px)!important;
+    height:clamp(290px,43vh,410px)!important;
+    padding:10px!important;
+    border-radius:20px!important;
+    background:rgba(255,255,255,.64)!important;
+    border:1px solid rgba(139,181,218,.25)!important;
+    box-shadow:
+      0 14px 36px rgba(59,104,148,.07),
+      inset 0 1px 0 rgba(255,255,255,.86)!important;
+  }
+  #home154 .sideAd span{
+    font-size:clamp(8.5px,.7vw,10.5px)!important;
+  }
+  #home154 .sideAdLeft{
+    left:clamp(12px,1.4vw,24px)!important;
+  }
+  #home154 .sideAdRight{
+    right:clamp(12px,1.4vw,24px)!important;
+  }
+}
+
+/* 1366-class laptops: keep everything larger than V244, but protect vertical fit. */
+@media (min-width:1000px) and (max-height:720px){
+  #home154{
+    --gsf-desk-ring:clamp(255px,min(25vw,38vh),305px);
+    --gsf-desk-content:clamp(600px,60vw,760px);
+    --gsf-desk-card-h:clamp(88px,12vh,102px);
+    --gsf-desk-nav-h:48px;
+    --gsf-desk-footer-h:30px;
+  }
+  #home154 .sideAd{
+    width:clamp(108px,9vw,136px)!important;
+    height:clamp(250px,39vh,330px)!important;
+  }
+  #home154 .scribble.left{
+    left:calc(50% - (var(--gsf-desk-ring) / 2) - clamp(205px,16vw,250px))!important;
+  }
+  #home154 .scribble.right{
+    right:calc(50% - (var(--gsf-desk-ring) / 2) - clamp(205px,16vw,250px))!important;
+  }
+}
+
+/* Large desktop: allow the composition to breathe without becoming oversized. */
+@media (min-width:1600px) and (min-height:800px){
+  #home154{
+    --gsf-desk-ring:clamp(330px,min(24vw,42vh),395px);
+    --gsf-desk-content:clamp(760px,55vw,880px);
+    --gsf-desk-card-h:clamp(108px,12vh,126px);
+  }
+  #home154 .sideAd{
+    width:clamp(138px,8.5vw,170px)!important;
+    height:clamp(350px,42vh,460px)!important;
+  }
+}
+/* END V246 DESKTOP SCALE + HALO REBALANCE */
+
 </style>
 </head>
 <body>
