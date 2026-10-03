@@ -516,7 +516,7 @@ h1,h2,h3,p,label { color:var(--text) !important; }
   --gsf-muted:#6d8497;
 }
 html,body,[class*="css"]{
-  font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
 .stApp{
   background:linear-gradient(180deg,#f8fdff 0%,#ffffff 38%,#f5fbff 100%);
