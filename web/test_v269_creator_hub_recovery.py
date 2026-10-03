@@ -10,7 +10,7 @@ checks={
  "Folder icons restored":"#hub .folderIcon{" in hub and 'data-folder="profile"' in hub and 'data-folder="projects"' in hub and 'data-folder="live"' in hub,
  "Folder click handlers use querySelectorAll":'$$(".folder").forEach' in hub,
  "Live folder handlers use querySelectorAll":'$$("[data-live-folder]").forEach' in hub and '$$("[data-live-mini]").forEach' in hub,
- "Broken single-selector forEach removed":'$("[data-live-folder]").forEach' not in hub and '$("[data-live-mini]").forEach' not in hub and '$(".folder").forEach' not in hub,
+ "No broken collection handlers remain":'\n $("[data-live-folder]").forEach' not in hub and '\n $("[data-live-mini]").forEach' not in hub and '\n $(".folder").forEach' not in hub,
  "State load still starts":'openView("dashboard");loadState();' in hub,
  "Profile fetch retained":'fetch("/creator-hub/state"' in hub,
  "Profile save retained":'fetch("/creator-hub/profile"' in hub,
