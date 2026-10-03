@@ -3799,13 +3799,16 @@ class Handler(BaseHTTPRequestHandler):
                     "connected":bool(account_id),
                     "id":account_id,
                     "display_name":str(profile.get("display_name") or "Creator")[:120] if isinstance(profile,dict) else "Creator",
+                    "avatar":str(profile.get("avatar") or "")[:1800000] if isinstance(profile,dict) else "",
                     "plan":str(profile.get("plan") or "FREE")[:24] if isinstance(profile,dict) else "FREE",
+                    "creator_level":int(profile.get("creator_level") or 1) if isinstance(profile,dict) else 1,
                 },
                 "social":{
                     "youtube":bool(_youtube_user_load(sid)),
                     "tiktok":bool(_tiktok_user_load(sid)),
                     "instagram":bool(_instagram_user_load(sid)),
-                    "facebook":False,
+                    "facebook":bool(providers.get("facebook")),
+                    "twitch":bool(providers.get("twitch")),
                 },
                 "stats":{
                     "shorts_created":len(all_shorts),
@@ -3995,6 +3998,44 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,200,{"ok":True,"context":_analytics_context(sid)})
             except Exception as exc:
                 _json(self,500,{"ok":False,"error":str(exc)[:220]})
+            return
+
+        if path=="/creator-hub/profile":
+            try:
+                data=_read_json(self,max_bytes=2*1024*1024)
+                profile=_creator_account_load(sid) or {}
+                if not _safe_id(profile.get("account_id","")):
+                    _json(self,409,{"ok":False,"error":"Collega prima un account al Creator Hub."}); return
+                name=str(data.get("display_name") or profile.get("display_name") or "Creator").strip()[:80] or "Creator"
+                avatar=str(data.get("avatar") or "").strip()
+                if avatar:
+                    if len(avatar)>1800000 or not (avatar.startswith("data:image/jpeg;base64,") or avatar.startswith("data:image/png;base64,") or avatar.startswith("data:image/webp;base64,") or avatar.startswith("https://") or avatar.startswith("http://")): raise ValueError("Immagine profilo non valida")
+                    profile["avatar"]=avatar
+                profile["display_name"]=name; profile["updated_at"]=time.time(); _creator_account_save(sid,profile)
+                _json(self,200,{"ok":True,"display_name":name})
+            except Exception as exc: _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+        if path=="/creator-hub/social/disconnect":
+            try:
+                data=_read_json(self,max_bytes=16*1024); platform=re.sub(r"[^a-z0-9_-]+","",str(data.get("platform") or "").lower())[:24]
+                if platform not in ("youtube","tiktok","instagram","facebook","twitch"): raise ValueError("Social non valido")
+                social_dir=ROOT/"sessions"/sid/"social"; local_files={"youtube":["youtube_token.json"],"tiktok":["tiktok_token.json","tiktok_config.json"],"instagram":["instagram_config.json"]}
+                for name in local_files.get(platform,[]):
+                    try:(social_dir/name).unlink(missing_ok=True)
+                    except Exception:pass
+                key_fn={"youtube":_youtube_user_key,"tiktok":_tiktok_user_key,"instagram":_instagram_user_key}.get(platform)
+                if key_fn and _bucket_enabled():
+                    try:_s3().delete_object(Bucket=S3_BUCKET,Key=key_fn(sid))
+                    except Exception:pass
+                if platform in ("facebook","twitch"):
+                    profile=_creator_account_load(sid) or {}; providers=dict(profile.get("providers") or {}); providers.pop(platform,None); profile["providers"]=providers; profile["updated_at"]=time.time()
+                    if _safe_id(profile.get("account_id","")):_creator_account_save(sid,profile)
+                _json(self,200,{"ok":True,"platform":platform})
+            except Exception as exc:_json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+        if path=="/creator-hub/logout":
+            try:_creator_logout(sid); _json(self,200,{"ok":True})
+            except Exception as exc:_json(self,400,{"ok":False,"error":str(exc)[:180]})
             return
 
         if path=="/drafts/save-current":
