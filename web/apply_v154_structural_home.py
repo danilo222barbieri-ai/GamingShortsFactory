@@ -2078,3 +2078,6 @@ if GSF_WEB_MODE:
     </script></body></html>""",height=0,scrolling=False)
 '''
 s = s.rstrip() + "\n\n" + _page_guard_v263.lstrip()
+
+
+# V266 COMPLETE — Creator Hub folders, unified typography, compact secondary shell
