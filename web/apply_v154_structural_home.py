@@ -529,7 +529,7 @@ if GSF_WEB_MODE:
     <div id="gsf-creator-hub-live-v160" aria-hidden="true">
       <section class="gsf-hub-shell-v160" role="dialog" aria-modal="false" aria-label="Creator Hub">
         <button class="gsf-hub-close-v160" type="button" aria-label="Chiudi">×</button>
-        <iframe src="/creator-hub-v156/?v=226" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
+        <iframe src="/creator-hub-v156/?v=263" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
       </section>
     </div>
     <div class="gsf-script-guard" style="display:none!important"></div>
@@ -1042,7 +1042,7 @@ if GSF_WEB_MODE:
       <button class="gsf-page-nav-item" data-target="hub" data-section="project" data-active="projects" type="button">
         <svg viewBox="0 0 32 32"><path d="M4 10h9l3 3h12v14H4Z"/><path d="M4 10V7h10l3 3"/></svg><span>Progetti</span>
       </button>
-      <button class="gsf-page-nav-item" data-target="social" type="button">
+      <button class="gsf-page-nav-item" data-target="hub" data-section="social" data-active="social" type="button">
         <svg viewBox="0 0 32 32"><circle cx="24" cy="7" r="3"/><circle cx="8" cy="16" r="3"/><circle cx="24" cy="25" r="3"/><path d="m11 14.5 10-5.7M11 17.5l10 5.7"/></svg><span>Social</span>
       </button>
     </nav>
@@ -1079,7 +1079,8 @@ if GSF_WEB_MODE:
           let active=false;
           if(activeKey==='projects') active=(lastTarget==='hub'&&lastSection==='project');
           else if(activeKey==='shorts') active=(lastTarget==='hub'&&lastSection==='shorts');
-          else if(target==='hub') active=(lastTarget==='hub'&&lastSection!=='project'&&lastSection!=='shorts');
+          else if(activeKey==='social') active=(lastTarget==='hub'&&lastSection==='social');
+          else if(target==='hub') active=(lastTarget==='hub'&&lastSection!=='project'&&lastSection!=='shorts'&&lastSection!=='social');
           else active=(lastTarget===target);
           b.classList.toggle('active',active);
         });
@@ -1975,3 +1976,98 @@ s = s.rstrip() + "\n\n" + _notification_bridge_v253.lstrip()
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
 print("V221 AI SURFACE applied:",out)
+
+
+# V263 FIXED SECONDARY PAGES — NO PAGE SCROLL / NO FADE
+_page_guard_v263 = r'''
+if GSF_WEB_MODE:
+    st.markdown(r"""
+    <style id="gsf-v263-fixed-pages">
+    #gsf-social-overlay-v159,
+    #gsf-creator-hub-live-v160,
+    #gsf-editor-overlay-v220,
+    #gsf-ai-overlay-v221,
+    #gsf-account-overlay-v223{
+      overflow:hidden!important;
+    }
+    #gsf-social-overlay-v159.is-open,
+    #gsf-creator-hub-live-v160.is-open,
+    #gsf-editor-overlay-v220.is-open,
+    #gsf-ai-overlay-v221.is-open,
+    #gsf-account-overlay-v223.is-open{
+      opacity:1!important;
+      visibility:visible!important;
+      pointer-events:auto!important;
+      background:#F7FCFF!important;
+      -webkit-backdrop-filter:none!important;
+      backdrop-filter:none!important;
+    }
+    #gsf-social-overlay-v159.is-open .gsf-social-shell,
+    #gsf-creator-hub-live-v160.is-open .gsf-hub-shell-v160,
+    #gsf-editor-overlay-v220.is-open .gsf-editor-shell,
+    #gsf-ai-overlay-v221.is-open .gsf-ai-shell,
+    #gsf-account-overlay-v223.is-open .gsf-account-shell{
+      opacity:1!important;
+      visibility:visible!important;
+      background:#F7FCFF!important;
+      transform:none!important;
+    }
+    #gsf-social-overlay-v159 iframe,
+    #gsf-creator-hub-live-v160 iframe,
+    #gsf-editor-overlay-v220 iframe,
+    #gsf-ai-overlay-v221 iframe,
+    #gsf-account-overlay-v223 iframe{
+      background:#F7FCFF!important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    import streamlit.components.v1 as components
+    components.html(r"""<!doctype html><html><body style="display:none"><script>
+    ((P)=>{
+      const d=P.document;
+      const ids=['gsf-social-overlay-v159','gsf-creator-hub-live-v160','gsf-editor-overlay-v220','gsf-ai-overlay-v221','gsf-account-overlay-v223'];
+      const lockFrame=(frame)=>{
+        try{
+          const fd=frame&&frame.contentDocument;if(!fd)return;
+          fd.documentElement.style.setProperty('overflow','hidden','important');
+          if(fd.body)fd.body.style.setProperty('overflow','hidden','important');
+        }catch(_e){}
+      };
+      const enforce=()=>{
+        let open=false;
+        ids.forEach(id=>{
+          const el=d.getElementById(id);if(!el)return;
+          if(el.classList.contains('is-open')){
+            open=true;
+            el.style.setProperty('opacity','1','important');
+            el.style.setProperty('visibility','visible','important');
+            el.style.setProperty('background','#F7FCFF','important');
+            const sh=el.querySelector('section');
+            if(sh){sh.style.setProperty('opacity','1','important');sh.style.setProperty('background','#F7FCFF','important')}
+            const fr=el.querySelector('iframe');if(fr)lockFrame(fr);
+          }
+        });
+        if(open){
+          d.documentElement.style.setProperty('overflow','hidden','important');
+          d.body.style.setProperty('overflow','hidden','important');
+        }else{
+          d.documentElement.style.removeProperty('overflow');
+          d.body.style.removeProperty('overflow');
+        }
+      };
+      const obs=new P.MutationObserver(enforce);
+      obs.observe(d.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});
+      d.querySelectorAll('iframe').forEach(f=>f.addEventListener('load',()=>{lockFrame(f);enforce()}));
+      P.setInterval(enforce,800);
+      enforce();
+
+      const params=new URLSearchParams(P.location.search);
+      const requested=params.get('gsf_hub');
+      if(requested){
+        P.setTimeout(()=>P.postMessage({type:'GSF_SHELL_NAV',target:'hub',section:requested},P.location.origin),450);
+        try{params.delete('gsf_hub');const q=params.toString();P.history.replaceState({},'',P.location.pathname+(q?'?'+q:'')+P.location.hash)}catch(_e){}
+      }
+    })(window.parent);
+    </script></body></html>""",height=0,scrolling=False)
+'''
+s = s.rstrip() + "\n\n" + _page_guard_v263.lstrip()

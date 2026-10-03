@@ -4562,7 +4562,7 @@ body.gsfDesktopPreview .feature{
    if(nav==="hub")shellNav("hub",{section:"profile"});
    if(nav==="shorts"){shellNav("hub",{section:"shorts"});value({event:"open_shorts",section:"shorts"});}
    if(nav==="projects"){shellNav("hub",{section:"project"});value({event:"open_projects",section:"project"});}
-   if(nav==="social")shellNav("social");
+   if(nav==="social")shellNav("hub",{section:"social"});
  }));
  const accountEntry=document.getElementById("accountEntry");
  async function syncAccountEntry(){

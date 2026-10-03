@@ -2074,7 +2074,7 @@ def _creator_facebook_callback(handler,query):
             email=info.get("email",""),
             avatar=picture,
         )
-        _redirect(handler,"/account")
+        _redirect(handler,"/?gsf_hub=social")
     except Exception as exc:
         _html(handler,500,_creator_page(sid,"Accesso Facebook fallito: "+str(exc)[:220]))
 
@@ -2459,7 +2459,7 @@ def _tiktok_oauth_callback(handler,query):
         token["expires_at"]=now+int(token.get("expires_in",0) or 0)
         token["refresh_expires_at"]=now+int(token.get("refresh_expires_in",0) or 0)
         _tiktok_user_save(sid,token)
-        _redirect(handler,"/social-connect")
+        _redirect(handler,"/?gsf_hub=social")
     except Exception as exc:
         _html(handler,500,_social_page(sid,"Collegamento TikTok fallito: "+str(exc)[:220]))
 
@@ -2548,7 +2548,7 @@ def _youtube_oauth_callback(handler,query):
             "scopes":scopes or [YOUTUBE_SCOPE],
         }
         _youtube_user_save(sid,token)
-        _redirect(handler,"/social-connect")
+        _redirect(handler,"/?gsf_hub=social")
     except Exception as exc:
         _html(handler,500,_social_page(sid,"Collegamento YouTube fallito: "+str(exc)[:220]))
 
@@ -2720,7 +2720,7 @@ def _instagram_oauth_callback(handler,query):
                 "saved_at":now,
                 "expires_at":now+long_expires if long_expires else 0,
             })
-            _redirect(handler,"/social-connect")
+            _redirect(handler,"/?gsf_hub=social")
         except Exception as exc:
             _html(handler,500,_social_page(sid,"Collegamento Instagram fallito: "+str(exc)[:220]))
         return
@@ -2797,7 +2797,7 @@ def _instagram_oauth_callback(handler,query):
             "oauth_mode":"facebook_login",
             "saved_at":time.time(),
         })
-        _redirect(handler,"/social-connect")
+        _redirect(handler,"/?gsf_hub=social")
     except Exception as exc:
         _html(handler,500,_social_page(sid,"Collegamento Instagram fallito: "+str(exc)[:220]))
 
@@ -3711,7 +3711,8 @@ class Handler(BaseHTTPRequestHandler):
                     "youtube":bool(_youtube_user_load(sid)),
                     "tiktok":bool(_tiktok_user_load(sid)),
                     "instagram":bool(_instagram_user_load(sid)),
-                    "facebook":False,
+                    "facebook":bool(providers.get("facebook")),
+                    "twitch":bool(providers.get("twitch")),
                 },
             })
             return
@@ -3806,7 +3807,7 @@ class Handler(BaseHTTPRequestHandler):
                     "shorts_created":len(all_shorts),
                     "shorts_published":sum(1 for row in all_shorts if (row or {}).get("published")),
                     "drafts":len(all_drafts),
-                    "social":sum(1 for x in (_youtube_user_load(sid),_tiktok_user_load(sid),_instagram_user_load(sid)) if x),
+                    "social":sum(1 for x in (_youtube_user_load(sid),_tiktok_user_load(sid),_instagram_user_load(sid),providers.get("facebook"),providers.get("twitch")) if x),
                 },
                 "limits":limits,
                 "usage":{"drafts":len(all_drafts),"shorts":len(all_shorts)},
