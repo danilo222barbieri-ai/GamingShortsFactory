@@ -190,6 +190,89 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
 .profileGroup{margin-top:12px;padding-top:10px;border-top:1px solid rgba(143,181,216,.16)}.profileGroupTitle{margin-bottom:7px}.profileSocialGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.profileSocialGrid .socialCard{padding:8px}.connectBtn.disconnect{background:#FFF1F1!important;color:#A55E6A!important}
 .planRow{display:grid;grid-template-columns:1fr auto;align-items:center;gap:9px;padding:9px;border:1px solid rgba(144,181,214,.2);border-radius:13px;background:#fff}.planRow b{font-size:11px}.planRow span{display:block;margin-top:2px;font-size:8.5px;color:#8294A8}.planBtn[disabled]{opacity:.62;cursor:default}.logoutProfile{margin-top:10px;background:#FFF1F1;color:#A55E6A;width:100%}
 @media(max-width:760px){.hubMural{font-size:14.5px!important;padding:2px 0 3px}.folders{grid-template-rows:repeat(3,minmax(0,1fr))!important}.folder{min-height:64px!important}.folder h2{font-size:15.5px!important}.folder p{font-size:10.5px!important}.profileEdit{grid-template-columns:70px minmax(0,1fr);gap:9px}.profilePhotoEdit .avatar{width:56px!important;height:56px!important}.photoBtn,.saveProfileBtn,.logoutProfile,.planBtn{font-size:9.8px!important;padding:8px 9px}.profileField label,.profileGroupTitle{font-size:8.8px!important}.profileField input{font-size:11.5px!important}.profileSocialGrid{grid-template-columns:1fr!important}.planRow b{font-size:11.5px}.planRow span{font-size:9.2px}}
+
+/* V267 GLOBAL DESKTOP POLISH — Creator Hub, desktop only. */
+@media (min-width:761px){
+  #hub{
+    overflow:hidden!important;
+    padding:clamp(11px,1.45vh,14px) clamp(13px,1.35vw,18px) clamp(10px,1.3vh,13px)!important;
+    gap:clamp(8px,1vh,10px)!important;
+    background:
+      radial-gradient(circle at 9% 6%,rgba(126,214,255,.16),transparent 24%),
+      radial-gradient(circle at 91% 8%,rgba(127,236,197,.14),transparent 25%),
+      linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important;
+  }
+  #hub .profileCard,
+  #hub .folder,
+  #hub .detailCard{
+    border-color:rgba(143,181,216,.22)!important;
+    box-shadow:
+      0 11px 27px rgba(61,104,145,.07),
+      inset 0 1px 0 rgba(255,255,255,.98)!important;
+  }
+  #hub .folder{
+    transition:
+      transform .26s cubic-bezier(.2,.8,.2,1),
+      box-shadow .26s ease,
+      border-color .24s ease!important;
+  }
+  #hub .folder:hover,
+  #hub .folder:focus-visible{
+    transform:translateY(-3px)!important;
+    border-color:rgba(108,173,219,.34)!important;
+    box-shadow:
+      0 15px 32px rgba(61,104,145,.095),
+      inset 0 1px 0 #fff!important;
+  }
+  #hub .folderIcon,
+  #hub .socialDot,
+  #hub .socialLogo{
+    border-radius:50%!important;
+  }
+  #hub .socialDot,
+  #hub .socialCard,
+  #hub .liveFolder,
+  #hub .liveMiniFolder,
+  #hub .row,
+  #hub .stat,
+  #hub .projectBox,
+  #hub .profileAction,
+  #hub .connectBtn,
+  #hub .photoBtn,
+  #hub .saveProfileBtn,
+  #hub .logoutProfile,
+  #hub .planBtn{
+    transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s ease,border-color .22s ease,background .22s ease!important;
+  }
+  #hub .socialCard:hover,
+  #hub .liveFolder:hover,
+  #hub .liveMiniFolder:hover,
+  #hub .row:hover,
+  #hub .projectBox:hover{
+    transform:translateY(-2px)!important;
+    border-color:rgba(112,174,219,.32)!important;
+    box-shadow:0 9px 20px rgba(65,105,145,.07)!important;
+  }
+  #hub .socialDot:hover,
+  #hub .profileAction:hover,
+  #hub .connectBtn:hover,
+  #hub .photoBtn:hover,
+  #hub .saveProfileBtn:hover{
+    transform:translateY(-1px)!important;
+  }
+  #hub .folderScroller{
+    overscroll-behavior:contain!important;
+  }
+}
+@media (prefers-reduced-motion:reduce) and (min-width:761px){
+  #hub .folder,#hub .socialDot,#hub .socialCard,#hub .liveFolder,#hub .liveMiniFolder,
+  #hub .row,#hub .stat,#hub .projectBox,#hub .profileAction,#hub .connectBtn,
+  #hub .photoBtn,#hub .saveProfileBtn,#hub .logoutProfile,#hub .planBtn{
+    transition:none!important;
+  }
+}
+/* END V267 GLOBAL DESKTOP POLISH */
+
 </style>
 </head>
 <body>
