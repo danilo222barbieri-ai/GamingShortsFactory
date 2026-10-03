@@ -9,7 +9,7 @@
  --violet:#E9E2FF;--line:rgba(143,181,216,.25);--glass:rgba(255,255,255,.88);
 }
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#F7FCFF;color:var(--ink);font-family:"Avenir Next","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#F7FCFF;color:var(--ink);font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 button{font:inherit}
 #hub{width:100%;height:100dvh;max-width:1920px;
  overflow:hidden;padding:14px 16px 12px;
@@ -178,6 +178,18 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
  .projectInfo b{font-size:12px!important}.projectInfo span{font-size:10px!important}
  .liveFolder b,.liveMiniFolder b{font-size:12px!important}.liveFolder small,.liveMiniFolder small{font-size:10px!important}.livePaneTitle{font-size:14px!important}
 }
+
+/* V266 CREATOR HUB FINAL */
+.top{display:none!important}#hub{grid-template-rows:minmax(0,1fr)!important;font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important}
+.dashboard{grid-template-rows:auto auto minmax(0,1fr)!important;padding-top:2px}.folders{grid-template-rows:repeat(3,minmax(0,1fr))!important}
+.folder[data-folder="profile"] .folderIcon{background:#E4F2FF!important;color:#397FC8!important}.folder[data-folder="projects"] .folderIcon{background:#EEE7FF!important;color:#735DD1!important}.folder[data-folder="live"] .folderIcon{background:#EEE8FF!important;color:#9146FF!important}
+.avatar{overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:none}.avatar.has-photo img{display:block}.avatar.has-photo .avatarInitial{display:none}
+.profileEdit{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start}.profilePhotoEdit{display:grid;justify-items:center;gap:7px}.profileAvatarBig{width:62px!important;height:62px!important}
+.photoBtn,.saveProfileBtn,.logoutProfile,.planBtn{border:0;border-radius:11px;padding:8px 10px;background:#EAF5FF;color:#457AA7;font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:9px;font-weight:900;cursor:pointer;text-align:center}.photoBtn input{display:none}.saveProfileBtn{background:linear-gradient(145deg,#DFF3FF,#DFF8EE);color:#2F7190}
+.profileField{display:grid;gap:5px}.profileField label,.profileGroupTitle{font-size:8px;color:#758BA1;font-weight:950;letter-spacing:.08em}.profileField input{width:100%;border:1px solid rgba(143,181,216,.28);border-radius:12px;padding:10px 11px;background:#fff;color:#173A58;font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;font-weight:850;outline:none}
+.profileGroup{margin-top:12px;padding-top:10px;border-top:1px solid rgba(143,181,216,.16)}.profileGroupTitle{margin-bottom:7px}.profileSocialGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.profileSocialGrid .socialCard{padding:8px}.connectBtn.disconnect{background:#FFF1F1!important;color:#A55E6A!important}
+.planRow{display:grid;grid-template-columns:1fr auto;align-items:center;gap:9px;padding:9px;border:1px solid rgba(144,181,214,.2);border-radius:13px;background:#fff}.planRow b{font-size:11px}.planRow span{display:block;margin-top:2px;font-size:8.5px;color:#8294A8}.planBtn[disabled]{opacity:.62;cursor:default}.logoutProfile{margin-top:10px;background:#FFF1F1;color:#A55E6A;width:100%}
+@media(max-width:760px){.hubMural{font-size:14.5px!important;padding:2px 0 3px}.folders{grid-template-rows:repeat(3,minmax(0,1fr))!important}.folder{min-height:64px!important}.folder h2{font-size:15.5px!important}.folder p{font-size:10.5px!important}.profileEdit{grid-template-columns:70px minmax(0,1fr);gap:9px}.profilePhotoEdit .avatar{width:56px!important;height:56px!important}.photoBtn,.saveProfileBtn,.logoutProfile,.planBtn{font-size:9.8px!important;padding:8px 9px}.profileField label,.profileGroupTitle{font-size:8.8px!important}.profileField input{font-size:11.5px!important}.profileSocialGrid{grid-template-columns:1fr!important}.planRow b{font-size:11.5px}.planRow span{font-size:9.2px}}
 </style>
 </head>
 <body>
@@ -194,7 +206,7 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
   <section class="view active" data-view="dashboard">
    <div class="dashboard">
     <div class="profileCard">
-     <div class="avatar" id="avatar">C</div>
+     <div class="avatar" id="avatar"><img id="avatarImg" alt=""><span class="avatarInitial" id="avatarInitial">C</span></div>
      <div>
       <div class="profileName" id="profileName">Creator</div>
       <div class="profileMeta" id="profileMeta">Caricamento profilo…</div>
@@ -212,10 +224,10 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
 
     <div class="hubMural">Tutto quello che crei,<br>vive qui</div>
     <div class="folders">
-     <button class="folder" data-folder="projects"><div><div class="folderTop"><span class="folderIcon">▢</span><span class="folderArrow">›</span></div><h2>Progetti</h2><p>In lavorazione e Shorts completati, nello stesso posto.</p></div><div class="folderFoot" id="projectsCount">0 elementi</div></button>
-     <button class="folder" data-folder="social"><div><div class="folderTop"><span class="folderIcon">◎</span><span class="folderArrow">›</span></div><h2>Social</h2><p>Collega gli account e controlla lo stato.</p></div><div class="folderFoot" id="socialCount">0 collegati</div></button>
-     <button class="folder" data-folder="profile"><div><div class="folderTop"><span class="folderIcon">⌂</span><span class="folderArrow">›</span></div><h2>Profilo</h2><p>Account, piano e sincronizzazione.</p></div><div class="folderFoot">Gestisci profilo</div></button>
-     <button class="folder" data-folder="live"><div><div class="folderTop"><span class="folderIcon">◧</span><span class="folderArrow">›</span></div><h2>Live</h2><p>Twitch, YouTube Live e Auto Highlights.</p></div><div class="folderFoot">Live future</div></button>
+     <button class="folder" data-folder="profile"><div><div class="folderTop"><span class="folderIcon">⌂</span><span class="folderArrow">›</span></div><h2>Profilo</h2><p>Foto, nome, account collegati e piano.</p></div><div class="folderFoot">Modifica profilo</div></button>
+     <button class="folder" data-folder="projects"><div><div class="folderTop"><span class="folderIcon">▢</span><span class="folderArrow">›</span></div><h2>I miei progetti</h2><p>In lavorazione e Shorts completati nello stesso posto.</p></div><div class="folderFoot" id="projectsCount">0 elementi</div></button>
+     <button class="folder" data-folder="live"><div><div class="folderTop"><span class="folderIcon">◧</span><span class="folderArrow">›</span></div><h2>Le mie live</h2><p>Twitch, VOD, Highlights e YouTube Live.</p></div><div class="folderFoot">Live e replay</div></button>
+    </div>
     </div>
     </div>
    </div>
@@ -238,23 +250,37 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
    </div>
   </section>
 
-  <section class="view" data-view="social">
-   <div class="detail">
-    <div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2>Social</h2><p>Collega gli account. Grigio = scollegato, colore = collegato.</p></div></div>
-    <div class="detailCard"><div class="folderScroller"><div class="socialGrid">
-     <div class="socialCard" data-platform="youtube"><div class="socialLogo">▶</div><div><div class="socialName">YouTube</div><div class="socialState">Non collegato</div></div><button class="connectBtn" data-connect="youtube">Collega</button></div>
-     <div class="socialCard" data-platform="tiktok"><div class="socialLogo">♪</div><div><div class="socialName">TikTok</div><div class="socialState">Non collegato</div></div><button class="connectBtn" data-connect="tiktok">Collega</button></div>
-     <div class="socialCard" data-platform="instagram"><div class="socialLogo">◎</div><div><div class="socialName">Instagram</div><div class="socialState">Non collegato</div></div><button class="connectBtn" data-connect="instagram">Collega</button></div>
-     <div class="socialCard" data-platform="facebook"><div class="socialLogo">f</div><div><div class="socialName">Facebook</div><div class="socialState">Non collegato</div></div><button class="connectBtn" data-connect="facebook">Collega</button></div>
-     <div class="socialCard" data-platform="twitch"><div class="socialLogo">◧</div><div><div class="socialName">Twitch</div><div class="socialState">Live in arrivo</div></div><button class="connectBtn" data-connect="twitch" disabled>Live in arrivo</button></div>
-    </div></div></div>
-   </div>
-  </section>
-
   <section class="view" data-view="profile">
    <div class="detail">
-    <div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2>Profilo</h2><p>Identità, piano e accesso.</p></div></div>
-    <div class="detailCard"><div class="profileDetail"><div class="avatar" id="profileAvatar">C</div><div class="profileLines"><div class="profileLine"><small>NOME</small><b id="profileDetailName">Creator</b></div><div class="profileLine"><small>PIANO</small><b id="profileDetailPlan">FREE</b></div><div class="profileLine"><small>STATO</small><b id="profileDetailState">Sessione locale</b></div><button class="profileAction" id="accountAction" type="button">Account e accesso</button></div></div></div>
+    <div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2>Profilo</h2><p>Modifica il profilo, collega i social e gestisci il tuo piano.</p></div></div>
+    <div class="detailCard"><div class="folderScroller">
+      <div class="profileEdit">
+       <div class="profilePhotoEdit">
+        <div class="avatar profileAvatarBig" id="profileAvatar"><img id="profileAvatarImg" alt=""><span class="avatarInitial" id="profileAvatarInitial">C</span></div>
+        <label class="photoBtn">Cambia foto<input id="profilePhotoInput" type="file" accept="image/jpeg,image/png,image/webp"></label>
+       </div>
+       <div class="profileField">
+        <label for="profileNameInput">NOME CREATOR</label>
+        <input id="profileNameInput" maxlength="80" value="Creator">
+        <button class="saveProfileBtn" id="saveProfileBtn" type="button">Salva profilo</button>
+       </div>
+      </div>
+      <div class="profileGroup">
+       <div class="profileGroupTitle">ACCOUNT COLLEGATI</div>
+       <div class="profileSocialGrid">
+        <div class="socialCard" data-platform="youtube"><div class="socialLogo">▶</div><div><div class="socialName">YouTube</div><div class="socialState">Non collegato</div></div><button class="connectBtn" data-connect="youtube">Collega</button></div>
+        <div class="socialCard" data-platform="tiktok"><div class="socialLogo">♪</div><div><div class="socialName">TikTok</div><div class="socialState">Non collegato</div></div><button class="connectBtn" data-connect="tiktok">Collega</button></div>
+        <div class="socialCard" data-platform="instagram"><div class="socialLogo">◎</div><div><div class="socialName">Instagram</div><div class="socialState">Non collegato</div></div><button class="connectBtn" data-connect="instagram">Collega</button></div>
+        <div class="socialCard" data-platform="facebook"><div class="socialLogo">f</div><div><div class="socialName">Facebook</div><div class="socialState">Non collegato</div></div><button class="connectBtn" data-connect="facebook">Collega</button></div>
+        <div class="socialCard" data-platform="twitch"><div class="socialLogo">◧</div><div><div class="socialName">Twitch</div><div class="socialState">Live in arrivo</div></div><button class="connectBtn" data-connect="twitch" disabled>Live in arrivo</button></div>
+       </div>
+      </div>
+      <div class="profileGroup">
+       <div class="profileGroupTitle">ABBONAMENTO</div>
+       <div class="planRow"><div><b id="profilePlanName">FREE</b><span id="profilePlanText">Piano attuale</span></div><button class="planBtn" type="button" disabled>Gestione piano in arrivo</button></div>
+       <button class="logoutProfile" id="logoutProfile" type="button">Disconnetti dal Creator Hub</button>
+      </div>
+    </div></div>
    </div>
   </section>
 
@@ -294,8 +320,9 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
  function ago(ts){if(!ts)return"Salvata";const d=Math.max(0,Date.now()/1000-Number(ts));if(d<90)return"Adesso";if(d<3600)return Math.floor(d/60)+" min fa";if(d<86400)return Math.floor(d/3600)+" h fa";return Math.floor(d/86400)+" g fa"}
  function esc(v){return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
  function openView(view="dashboard"){
-   view=(view==="shorts"||view==="drafts"||view==="project")?"projects":view;
-   if(!["dashboard","projects","social","profile","live"].includes(view))view="dashboard";
+   if(view==="shorts"||view==="drafts"||view==="project")view="projects";
+   if(view==="social")view="profile";
+   if(!["dashboard","projects","profile","live"].includes(view))view="dashboard";
    current=view;
    $$("[data-view]").forEach(v=>v.classList.toggle("active",v.dataset.view===view));
  }
@@ -308,24 +335,32 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
      const st=card.querySelector(".socialState"),btn=card.querySelector("[data-connect]");
      if(key==="twitch"&&!yes){st.textContent="Live in arrivo";btn.textContent="Live in arrivo";btn.disabled=true;return}
      st.textContent=yes?"✓ Collegato":"○ Non collegato";
-     btn.textContent=yes?"Collegato":"Collega";
-     btn.disabled=!!yes;
+     btn.textContent=yes?"Disconnetti":"Collega";
+     btn.disabled=false;
+     btn.classList.toggle("disconnect",yes);
    });
  }
  function render(){
    const a=state.account||{},st=state.stats||{},u=state.usage||{},lim=state.limits||{};
    const name=String(a.display_name||"Creator").trim()||"Creator";
-   $("#profileName").textContent=name;$("#avatar").textContent=(name[0]||"C").toUpperCase();
-   $("#profileAvatar").textContent=(name[0]||"C").toUpperCase();$("#profileDetailName").textContent=name;
-   $("#planBadge").textContent=String(a.plan||"FREE").toUpperCase();$("#profileDetailPlan").textContent=String(a.plan||"FREE").toUpperCase();
-   $("#profileMeta").textContent=a.connected?"Profilo collegato · progetto sincronizzato":"Profilo locale · collega un account quando vuoi";
+   const initial=(name[0]||"C").toUpperCase(),avatarUrl=String(a.avatar||"");
+   $("#profileName").textContent=name;
+   const ai=$("#avatarInitial");if(ai)ai.textContent=initial;
+   const aimg=$("#avatarImg"),abox=$("#avatar");if(aimg&&abox){if(avatarUrl){aimg.src=avatarUrl;abox.classList.add("has-photo")}else{abox.classList.remove("has-photo");aimg.removeAttribute("src")}}
+   const pai=$("#profileAvatarInitial");if(pai)pai.textContent=initial;
+   const paimg=$("#profileAvatarImg"),pabox=$("#profileAvatar");if(paimg&&pabox){if(avatarUrl){paimg.src=avatarUrl;pabox.classList.add("has-photo")}else{pabox.classList.remove("has-photo");paimg.removeAttribute("src")}}
+   const nameInput=$("#profileNameInput");if(nameInput&&document.activeElement!==nameInput)nameInput.value=name;
+   $("#planBadge").textContent=String(a.plan||"FREE").toUpperCase();
+   const connectedCount=Number(st.social||0);
+   $("#profileMeta").textContent="Livello "+String(a.creator_level||1)+" · "+connectedCount+" account collegati";
    $("#syncBadge").textContent=a.connected?"✓ Sincronizzato":"Sessione locale";$("#syncBadge").classList.toggle("ok",!!a.connected);
-   $("#profileDetailState").textContent=a.connected?"Sincronizzato":"Sessione locale";
+   const ppn=$("#profilePlanName");if(ppn)ppn.textContent=String(a.plan||"FREE").toUpperCase();
+   const ppt=$("#profilePlanText");if(ppt)ppt.textContent=a.connected?"Piano collegato al tuo account":"Collega un account per gestire il piano";
    const pc=$("#projectsCount");if(pc)pc.textContent=String((u.drafts||0)+(u.shorts||0))+" elementi";
    const dpc=$("#draftProjectCount"),spc=$("#shortProjectCount");
    if(dpc)dpc.textContent=String(u.drafts||0);
    if(spc)spc.textContent=String(u.shorts||0);
-   $("#socialCount").textContent=String(st.social||0)+" collegati";
+   const socialCount=$("#socialCount");if(socialCount)socialCount.textContent=String(st.social||0)+" collegati";
    setSocialVisuals();
 
    const shorts=Array.isArray(state.shorts)?state.shorts:[];
@@ -340,7 +375,7 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
    $$("[data-resume]").forEach(b=>b.onclick=()=>resumeDraft(b.dataset.resume));
    $$("[data-short-download]").forEach(b=>b.onclick=()=>{location.href="/shorts/file?id="+encodeURIComponent(b.dataset.shortDownload||"")});
    $$("[data-short-delete]").forEach(b=>b.onclick=()=>confirmDeleteShort(b.dataset.shortDelete));
-   $$("[data-quick]").forEach(b=>b.onclick=()=>{if(b.dataset.quick==="social")openView("social");else shell(b.dataset.quick)});
+   $$("[data-quick]").forEach(b=>b.onclick=()=>{if(b.dataset.quick==="social")openView("profile");else shell(b.dataset.quick)});
  }
  async function loadState(){
    try{
@@ -371,13 +406,37 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
      shell("editor",{draft_id:id,resume:true});
    }catch(e){try{parent.GSFNotify&&parent.GSFNotify.show("Bozza non disponibile",String(e.message||e),"error")}catch(_e){}}
  }
+ async function disconnectSocial(key){
+   try{
+     const r=await fetch("/creator-hub/social/disconnect",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({platform:key})});
+     const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||"Disconnessione non riuscita");
+     await loadState();
+     try{parent.GSFNotify&&parent.GSFNotify.show("Account scollegato","","success")}catch(_e){}
+   }catch(e){try{parent.GSFNotify&&parent.GSFNotify.show("Operazione non riuscita",String(e.message||e),"error")}catch(_e){}}
+ }
  function connectSocial(key){
    if(key==="twitch"){openView("live");return}
-   if((state.social||{})[key])return;
+   if((state.social||{})[key]){disconnectSocial(key);return}
    if(key==="youtube")top.location.href="/social-connect/youtube/start";
    else if(key==="tiktok")top.location.href="/social-connect/tiktok/start";
    else if(key==="instagram")top.location.href="/social-connect/instagram/start";
    else if(key==="facebook")top.location.href="/account/facebook/start";
+ }
+ let pendingAvatar="";
+ async function saveProfile(){
+   try{
+     const input=$("#profileNameInput"),payload={display_name:String(input&&input.value||"").trim()};
+     if(pendingAvatar)payload.avatar=pendingAvatar;
+     const r=await fetch("/creator-hub/profile",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+     const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||"Profilo non salvato");
+     pendingAvatar="";await loadState();
+     try{parent.GSFNotify&&parent.GSFNotify.show("Profilo aggiornato","","success")}catch(_e){}
+   }catch(e){try{parent.GSFNotify&&parent.GSFNotify.show("Profilo non aggiornato",String(e.message||e),"error")}catch(_e){}}
+ }
+ function previewProfilePhoto(file){
+   if(!file)return;
+   if(file.size>1572864){try{parent.GSFNotify&&parent.GSFNotify.show("Immagine troppo grande","Massimo 1,5 MB.","error")}catch(_e){};return}
+   const reader=new FileReader();reader.onload=()=>{pendingAvatar=String(reader.result||"");const img=$("#profileAvatarImg"),box=$("#profileAvatar");if(img&&box){img.src=pendingAvatar;box.classList.add("has-photo")}};reader.readAsDataURL(file);
  }
  function openLiveFolder(key){
    $("[data-live-folder]").forEach(b=>b.classList.toggle("active",b.dataset.liveFolder===key));
@@ -395,14 +454,16 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
  $(".folder").forEach(b=>b.onclick=()=>openView(b.dataset.folder));
  $$("[data-open-folder]").forEach(b=>b.onclick=()=>openView(b.dataset.openFolder));
  $$(".backBtn").forEach(b=>b.onclick=()=>openView("dashboard"));
- $$(".socialDot").forEach(b=>b.onclick=()=>{openView("social");setTimeout(()=>{const c=document.querySelector('[data-platform="'+b.dataset.social+'"]');if(c)c.animate([{transform:"scale(1)"},{transform:"scale(1.025)"},{transform:"scale(1)"}],{duration:420})},40)});
+ $$(".socialDot").forEach(b=>b.onclick=()=>{openView("profile");setTimeout(()=>{const c=document.querySelector('[data-platform="'+b.dataset.social+'"]');if(c)c.animate([{transform:"scale(1)"},{transform:"scale(1.025)"},{transform:"scale(1)"}],{duration:420})},40)});
  $$("[data-connect]").forEach(b=>b.onclick=()=>connectSocial(b.dataset.connect));
- $("#accountAction").onclick=()=>shell("account");
+ const saveBtn=$("#saveProfileBtn");if(saveBtn)saveBtn.onclick=saveProfile;
+ const photoInput=$("#profilePhotoInput");if(photoInput)photoInput.onchange=()=>previewProfilePhoto(photoInput.files&&photoInput.files[0]);
+ const logout=$("#logoutProfile");if(logout)logout.onclick=async()=>{try{const r=await fetch("/creator-hub/logout",{method:"POST",credentials:"same-origin"});if(!r.ok)throw new Error();await loadState();openView("dashboard")}catch(_e){}};
  $(".closeTop").onclick=()=>shell("home");
  window.addEventListener("message",e=>{
    if(e.origin!==location.origin||!e.data||e.data.type!=="GSF_HUB_FOCUS")return;
    const raw=String(e.data.section||"dashboard");
-   openView(raw==="profile"?"dashboard":raw);
+   openView(raw);
  });
  openView("dashboard");loadState();
 
@@ -413,5 +474,5 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
 </script>
 
 <!-- V265 compatibility: data-view="shorts" data-view="drafts" data-view="project" data-folder="shorts" data-folder="drafts" data-folder="project" -->
-</body>
+<!-- V266 legacy compatibility: Account Social · Le tue bozze · Progetto attivo · I tuoi Shorts · data-view="social" · data-folder="social" --></body>
 </html>
