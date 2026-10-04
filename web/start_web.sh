@@ -17,6 +17,10 @@ export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
 export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
 mkdir -p "$GSF_RUNTIME_ROOT"
 
+# V285: repair Creator Hub collection selectors before Nginx/Streamlit serve the page.
+python /app/web/fix_v285_creator_hub_clicks.py
+python /app/web/test_v285_creator_hub_clicks.py /app/web/creator_hub_v156_component/index.html
+
 # V105.7: publish ads.txt only when a real Google publisher id is configured.
 python - <<'PY'
 import os,re
