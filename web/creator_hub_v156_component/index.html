@@ -643,19 +643,19 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
    const reader=new FileReader();reader.onload=()=>{pendingAvatar=String(reader.result||"");const img=$("#profileAvatarImg"),box=$("#profileAvatar");if(img&&box){img.src=pendingAvatar;box.classList.add("has-photo")}};reader.readAsDataURL(file);
  }
  function openLiveFolder(key){
-   $("[data-live-folder]").forEach(b=>b.classList.toggle("active",b.dataset.liveFolder===key));
-   $("[data-live-pane]").forEach(p=>p.classList.toggle("active",p.dataset.livePane===key));
+   $$("[data-live-folder]").forEach(b=>b.classList.toggle("active",b.dataset.liveFolder===key));
+   $$("[data-live-pane]").forEach(p=>p.classList.toggle("active",p.dataset.livePane===key));
  }
  function openLiveMini(key){
-   $("[data-live-mini]").forEach(b=>b.classList.toggle("active",b.dataset.liveMini===key));
+   $$("[data-live-mini]").forEach(b=>b.classList.toggle("active",b.dataset.liveMini===key));
    const box=$("#liveMiniContent");if(!box)return;
    if(key==="sessions")box.innerHTML='<div class="empty">Le tue live Twitch compariranno qui come mini-cartelle, una per ogni diretta.</div>';
    else if(key==="vod")box.innerHTML='<div class="empty">I VOD Twitch compariranno qui appena attiveremo la sincronizzazione.</div>';
    else box.innerHTML='<div class="empty">Gli Highlights generati dalle live Twitch compariranno qui automaticamente.</div>';
  }
- $("[data-live-folder]").forEach(b=>b.onclick=()=>openLiveFolder(b.dataset.liveFolder));
- $("[data-live-mini]").forEach(b=>b.onclick=()=>openLiveMini(b.dataset.liveMini));
- $(".folder").forEach(b=>b.onclick=()=>openView(b.dataset.folder));
+ $$("[data-live-folder]").forEach(b=>b.onclick=()=>openLiveFolder(b.dataset.liveFolder));
+ $$("[data-live-mini]").forEach(b=>b.onclick=()=>openLiveMini(b.dataset.liveMini));
+ $$(".folder").forEach(b=>b.onclick=()=>openView(b.dataset.folder));
  $$("[data-open-folder]").forEach(b=>b.onclick=()=>openView(b.dataset.openFolder));
  $$(".backBtn").forEach(b=>b.onclick=()=>openView("dashboard"));
  $$(".socialDot").forEach(b=>b.onclick=()=>{openView("profile");setTimeout(()=>{const c=document.querySelector('[data-platform="'+b.dataset.social+'"]');if(c)c.animate([{transform:"scale(1)"},{transform:"scale(1.025)"},{transform:"scale(1)"}],{duration:420})},40)});
