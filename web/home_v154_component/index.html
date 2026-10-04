@@ -4772,6 +4772,35 @@ body.gsfDesktopPreview .feature{
 }
 /* END V281 GLOBAL TYPE SCALE HOME */
 
+
+/* V284 PROFILE AVATAR IN TOP LOGIN
+   Show the Creator Hub profile image beside the top-right account/login label. */
+@media (min-width:761px){
+  #home154 .accountEntry.isConnected{
+    padding-left:5px!important;
+    gap:8px!important;
+  }
+  #home154 .accountAvatar{
+    width:28px!important;
+    height:28px!important;
+    min-width:28px!important;
+    border-radius:50%!important;
+    box-shadow:0 4px 12px rgba(59,104,148,.10)!important;
+  }
+}
+@media (max-width:760px){
+  #home154 .accountEntry.isConnected{
+    padding-left:3px!important;
+    gap:6px!important;
+  }
+  #home154 .accountAvatar{
+    width:22px!important;
+    height:22px!important;
+    min-width:22px!important;
+  }
+}
+/* END V284 PROFILE AVATAR IN TOP LOGIN */
+
 </style>
 </head>
 <body>
@@ -5323,7 +5352,7 @@ body.gsfDesktopPreview .feature{
      }
      const display=String(a.display_name||a.nickname||a.name||"Creator").trim()||"Creator";
      nameEl.textContent=display;
-     const picture=String(a.avatar_url||a.picture||a.photo_url||a.image_url||"").trim();
+     const picture=String(a.avatar||a.avatar_url||a.picture||a.photo_url||a.image_url||"").trim();
      avatarEl.hidden=false;
      avatarEl.innerHTML="";
      if(picture){
