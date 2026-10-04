@@ -4316,6 +4316,43 @@ body.gsfDesktopPreview .feature{
 }
 /* END V268.1 DESKTOP MASTER -> MOBILE PARITY */
 
+
+/* V270 HOME DESKTOP MICRO-CALIBRATION
+   Raise uploader slightly and park the ambient mural at the far left under the logo,
+   in the visual pocket between uploader and CTA row. Mobile murals remain untouched. */
+@media (min-width:761px){
+  #home154 .rings{
+    top:-9px!important;
+  }
+  #home154 .muralAmbient,
+  #home154[data-mural-state="uploading"] .muralAmbient,
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    display:block!important;
+    left:clamp(22px,2.6vw,48px)!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:clamp(10px,1.8vh,18px)!important;
+    width:clamp(145px,11vw,185px)!important;
+    text-align:left!important;
+    transform:rotate(-5deg)!important;
+    font-size:clamp(12px,1vw,14px)!important;
+    line-height:1.06!important;
+    z-index:8!important;
+  }
+}
+@media (min-width:761px) and (max-height:720px){
+  #home154 .rings{top:-6px!important}
+  #home154 .muralAmbient,
+  #home154[data-mural-state="uploading"] .muralAmbient,
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    bottom:8px!important;
+    font-size:12px!important;
+  }
+}
+/* END V270 HOME DESKTOP MICRO-CALIBRATION */
+
 </style>
 </head>
 <body>
