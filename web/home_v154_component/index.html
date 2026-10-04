@@ -4621,6 +4621,90 @@ body.gsfDesktopPreview .feature{
 }
 /* END V274 DESKTOP MOBILE-PROPORTION CTA + CENTER MURAL */
 
+
+/* V275 DESKTOP MURAL CALIBRATION
+   Desktop only: enlarge/widen the two upper murals and raise the center mural above CTA cards.
+   Mobile mural geometry is intentionally untouched. */
+@media (min-width:761px){
+  #home154 .scribble.left,
+  #home154[data-mural-state="uploading"] .scribble.left,
+  #home154[data-mural-state="ready"] .scribble.left,
+  #home154[data-mural-state^="focus-"] .scribble.left{
+    left:clamp(82px,8.5vw,158px)!important;
+    right:auto!important;
+    top:clamp(112px,15.5vh,168px)!important;
+    bottom:auto!important;
+    width:clamp(190px,15.5vw,260px)!important;
+    max-width:none!important;
+    font-size:clamp(20px,1.7vw,28px)!important;
+    line-height:1.04!important;
+    text-align:right!important;
+    transform:rotate(-7deg)!important;
+  }
+
+  #home154 .scribble.right,
+  #home154[data-mural-state="uploading"] .scribble.right,
+  #home154[data-mural-state="ready"] .scribble.right,
+  #home154[data-mural-state^="focus-"] .scribble.right{
+    right:clamp(82px,8.5vw,158px)!important;
+    left:auto!important;
+    top:clamp(112px,15.5vh,168px)!important;
+    bottom:auto!important;
+    width:clamp(190px,15.5vw,260px)!important;
+    max-width:none!important;
+    font-size:clamp(20px,1.7vw,28px)!important;
+    line-height:1.04!important;
+    text-align:left!important;
+    transform:rotate(6deg)!important;
+  }
+
+  #home154 .muralAmbient,
+  #home154[data-mural-state="uploading"] .muralAmbient,
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    left:50%!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:clamp(30px,4vh,44px)!important;
+    width:clamp(235px,20vw,315px)!important;
+    max-width:none!important;
+    font-size:clamp(18px,1.5vw,24px)!important;
+    line-height:1.03!important;
+    text-align:center!important;
+    transform:translateX(-50%) rotate(-3deg)!important;
+  }
+}
+
+@media (min-width:761px) and (max-height:720px){
+  #home154 .scribble.left,
+  #home154[data-mural-state="uploading"] .scribble.left,
+  #home154[data-mural-state="ready"] .scribble.left,
+  #home154[data-mural-state^="focus-"] .scribble.left{
+    top:92px!important;
+    width:170px!important;
+    font-size:18px!important;
+  }
+
+  #home154 .scribble.right,
+  #home154[data-mural-state="uploading"] .scribble.right,
+  #home154[data-mural-state="ready"] .scribble.right,
+  #home154[data-mural-state^="focus-"] .scribble.right{
+    top:92px!important;
+    width:170px!important;
+    font-size:18px!important;
+  }
+
+  #home154 .muralAmbient,
+  #home154[data-mural-state="uploading"] .muralAmbient,
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    bottom:20px!important;
+    width:220px!important;
+    font-size:16px!important;
+  }
+}
+/* END V275 DESKTOP MURAL CALIBRATION */
+
 </style>
 </head>
 <body>
