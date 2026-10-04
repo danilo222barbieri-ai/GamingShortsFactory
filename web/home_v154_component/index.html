@@ -4518,6 +4518,109 @@ body.gsfDesktopPreview .feature{
 }
 /* END V272.1 TRUE PORTRAIT CTA CARDS */
 
+
+/* V274 DESKTOP MOBILE-PROPORTION CTA + CENTER MURAL
+   Match the approved phone card proportions on desktop, keep icons high in the cards,
+   and place the "Qui comincia..." mural between uploader and CTA cards. Desktop only. */
+@media (min-width:761px){
+  #home154{
+    --gsf-desk-content:clamp(400px,31vw,440px)!important;
+    --gsf-desk-card-h:clamp(150px,18vh,162px)!important;
+  }
+
+  #home154 .features{
+    width:var(--gsf-desk-content)!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:clamp(12px,1vw,16px)!important;
+    margin:0 auto clamp(5px,.7vh,8px)!important;
+    transform:none!important;
+    align-items:stretch!important;
+  }
+
+  #home154 .feature,
+  #home154 .feature.fAi,
+  #home154 .feature.fEditor,
+  #home154 .feature.fShort{
+    width:100%!important;
+    height:var(--gsf-desk-card-h)!important;
+    min-height:var(--gsf-desk-card-h)!important;
+    max-height:var(--gsf-desk-card-h)!important;
+    padding:12px 8px 11px!important;
+    border-radius:22px!important;
+    justify-content:flex-start!important;
+  }
+
+  #home154 .featureIcon{
+    width:54px!important;
+    height:54px!important;
+    margin:0 auto 10px!important;
+    flex:0 0 54px!important;
+    transform:translateY(-1px)!important;
+  }
+
+  #home154 .featureIcon svg{
+    width:28px!important;
+    height:28px!important;
+  }
+
+  #home154 .feature b{
+    margin-top:0!important;
+    line-height:1.08!important;
+  }
+
+  #home154 .feature small{
+    margin-top:5px!important;
+    max-width:118px!important;
+    line-height:1.18!important;
+  }
+
+  /* Same position used by the approved phone composition: between ring and cards. */
+  #home154 .muralAmbient,
+  #home154[data-mural-state="uploading"] .muralAmbient,
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    display:block!important;
+    left:50%!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:clamp(3px,.65vh,7px)!important;
+    width:clamp(210px,18vw,270px)!important;
+    text-align:center!important;
+    transform:translateX(-50%) rotate(-3deg)!important;
+    font-size:clamp(15px,1.25vw,18px)!important;
+    line-height:1.05!important;
+    z-index:8!important;
+  }
+}
+
+@media (min-width:761px) and (max-height:720px){
+  #home154{
+    --gsf-desk-content:390px!important;
+    --gsf-desk-card-h:138px!important;
+  }
+  #home154 .features{gap:11px!important}
+  #home154 .feature,
+  #home154 .feature.fAi,
+  #home154 .feature.fEditor,
+  #home154 .feature.fShort{
+    padding:10px 7px 9px!important;
+  }
+  #home154 .featureIcon{
+    width:48px!important;
+    height:48px!important;
+    flex-basis:48px!important;
+    margin-bottom:7px!important;
+  }
+  #home154 .muralAmbient,
+  #home154[data-mural-state="uploading"] .muralAmbient,
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    bottom:2px!important;
+    font-size:14px!important;
+  }
+}
+/* END V274 DESKTOP MOBILE-PROPORTION CTA + CENTER MURAL */
+
 </style>
 </head>
 <body>
