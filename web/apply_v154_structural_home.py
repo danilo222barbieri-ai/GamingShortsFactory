@@ -834,7 +834,7 @@ if GSF_WEB_MODE:
       window.addEventListener('message',e=>{
         if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
         const t=String(e.data.target||'');
-        if(t==='account'){open();return}
+        if(t==='account'){close();window.postMessage({type:'GSF_SHELL_NAV',target:'hub',section:'profile'},location.origin);return}
         if(t==='home'||t==='close'||t==='hub'||t==='editor'||t==='social'||t==='ai')close();
       });
     })();
@@ -1834,7 +1834,7 @@ if GSF_WEB_MODE:
       const account=chrome.querySelector('.gsf-page-account');
       if(account){
         account.addEventListener('click',()=>{
-          P.postMessage({type:'GSF_SHELL_NAV',target:'account'},P.location.origin);
+          P.postMessage({type:'GSF_SHELL_NAV',target:'hub',section:'profile'},P.location.origin);
         });
         fetch('/creator-hub/state',{cache:'no-store',credentials:'same-origin'})
           .then(r=>r.json())
@@ -1907,7 +1907,7 @@ if GSF_WEB_MODE:
           Object.values(ids).forEach(id=>hide(d.getElementById(id)));
           return;
         }
-        const key=(t==='profile')?'hub':t;
+        const key=(t==='profile'||t==='account')?'hub':t;
         if(!ids[key])return;
         Object.entries(ids).forEach(([name,id])=>{
           const el=d.getElementById(id);
