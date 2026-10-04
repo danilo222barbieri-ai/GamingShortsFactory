@@ -809,6 +809,231 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
 }
 /* END V276.1 CREATOR HUB DESKTOP DASHBOARD PARITY */
 
+
+/* V280 CREATOR HUB DASHBOARD REDESIGN
+   One premium folder panel instead of three floating cards.
+   Same visual language on desktop and mobile; no navigation or data behavior changes. */
+#hub .view[data-view="dashboard"] .dashboard{
+  height:100%!important;
+  min-height:0!important;
+  display:grid!important;
+  grid-template-rows:auto auto minmax(0,1fr)!important;
+  gap:clamp(9px,1.2vh,14px)!important;
+  align-content:stretch!important;
+}
+
+#hub .view[data-view="dashboard"] .profileCard{
+  min-height:0!important;
+  padding:clamp(8px,1.1vh,12px) clamp(8px,1vw,14px)!important;
+  border:0!important;
+  border-bottom:1px solid rgba(143,181,216,.18)!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+#hub .view[data-view="dashboard"] .hubMural{
+  font-size:clamp(20px,1.75vw,28px)!important;
+  line-height:1.02!important;
+  padding:clamp(5px,.8vh,9px) 8px clamp(4px,.6vh,7px)!important;
+  margin:0!important;
+  transform:rotate(-2.7deg)!important;
+}
+
+#hub .view[data-view="dashboard"] .folders{
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  grid-template-rows:repeat(3,minmax(0,1fr))!important;
+  gap:0!important;
+  align-content:stretch!important;
+  overflow:hidden!important;
+  border:1px solid rgba(143,181,216,.22)!important;
+  border-radius:clamp(22px,2vw,30px)!important;
+  background:rgba(255,255,255,.90)!important;
+  box-shadow:
+    0 18px 46px rgba(61,104,145,.085),
+    inset 0 1px 0 rgba(255,255,255,.98)!important;
+  backdrop-filter:blur(18px)!important;
+  -webkit-backdrop-filter:blur(18px)!important;
+}
+
+#hub .view[data-view="dashboard"] .folder,
+#hub .view[data-view="dashboard"] .folder[data-folder="profile"],
+#hub .view[data-view="dashboard"] .folder[data-folder="projects"],
+#hub .view[data-view="dashboard"] .folder[data-folder="live"]{
+  position:relative!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:clamp(14px,2vh,20px) clamp(16px,1.8vw,24px)!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr) auto!important;
+  grid-template-rows:auto auto!important;
+  column-gap:clamp(13px,1.4vw,18px)!important;
+  row-gap:clamp(3px,.45vh,5px)!important;
+  align-items:center!important;
+  text-align:left!important;
+  transform:none!important;
+  transition:background .22s ease,transform .22s cubic-bezier(.2,.8,.2,1)!important;
+}
+
+#hub .view[data-view="dashboard"] .folder:not(:last-child)::after{
+  content:""!important;
+  position:absolute!important;
+  left:clamp(16px,1.8vw,24px)!important;
+  right:clamp(16px,1.8vw,24px)!important;
+  bottom:0!important;
+  height:1px!important;
+  background:rgba(143,181,216,.16)!important;
+  pointer-events:none!important;
+}
+
+#hub .view[data-view="dashboard"] .folder:hover,
+#hub .view[data-view="dashboard"] .folder:focus-visible{
+  background:linear-gradient(90deg,rgba(232,246,255,.45),rgba(238,252,247,.40))!important;
+  transform:none!important;
+  box-shadow:none!important;
+}
+
+#hub .view[data-view="dashboard"] .folder>div:first-child,
+#hub .view[data-view="dashboard"] .folderTop{
+  display:contents!important;
+}
+
+#hub .view[data-view="dashboard"] .folderIcon{
+  grid-column:1!important;
+  grid-row:1/3!important;
+  width:clamp(50px,4.4vw,62px)!important;
+  height:clamp(50px,4.4vw,62px)!important;
+  border-radius:clamp(16px,1.45vw,20px)!important;
+  font-size:clamp(18px,1.5vw,22px)!important;
+  align-self:center!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.72),0 8px 22px rgba(76,112,150,.06)!important;
+}
+
+#hub .view[data-view="dashboard"] .folderArrow{
+  grid-column:3!important;
+  grid-row:1/3!important;
+  align-self:center!important;
+  font-size:clamp(24px,2vw,30px)!important;
+  color:#9CB0C2!important;
+}
+
+#hub .view[data-view="dashboard"] .folder h2{
+  grid-column:2!important;
+  grid-row:1!important;
+  margin:0!important;
+  align-self:end!important;
+  font-size:clamp(19px,1.55vw,25px)!important;
+  line-height:1.03!important;
+  letter-spacing:-.025em!important;
+}
+
+#hub .view[data-view="dashboard"] .folder p{
+  grid-column:2!important;
+  grid-row:2!important;
+  margin:0!important;
+  align-self:start!important;
+  max-width:720px!important;
+  font-size:clamp(11px,.85vw,13px)!important;
+  line-height:1.25!important;
+  color:#7D90A8!important;
+}
+
+#hub .view[data-view="dashboard"] .folderFoot{
+  display:none!important;
+}
+
+@media (max-width:760px){
+  #hub .view[data-view="dashboard"] .dashboard{
+    gap:clamp(8px,1.05vh,11px)!important;
+  }
+
+  #hub .view[data-view="dashboard"] .profileCard{
+    padding:8px 5px 9px!important;
+  }
+
+  #hub .view[data-view="dashboard"] .hubMural{
+    font-size:clamp(21px,5.8vw,26px)!important;
+    padding:6px 4px 7px!important;
+  }
+
+  #hub .view[data-view="dashboard"] .folders{
+    border-radius:24px!important;
+  }
+
+  #hub .view[data-view="dashboard"] .folder,
+  #hub .view[data-view="dashboard"] .folder[data-folder="profile"],
+  #hub .view[data-view="dashboard"] .folder[data-folder="projects"],
+  #hub .view[data-view="dashboard"] .folder[data-folder="live"]{
+    padding:clamp(13px,1.75vh,17px) 14px!important;
+    column-gap:13px!important;
+  }
+
+  #hub .view[data-view="dashboard"] .folder:not(:last-child)::after{
+    left:14px!important;
+    right:14px!important;
+  }
+
+  #hub .view[data-view="dashboard"] .folderIcon{
+    width:50px!important;
+    height:50px!important;
+    border-radius:16px!important;
+    font-size:18px!important;
+  }
+
+  #hub .view[data-view="dashboard"] .folder h2{
+    font-size:clamp(18px,5vw,21px)!important;
+  }
+
+  #hub .view[data-view="dashboard"] .folder p{
+    font-size:clamp(10.5px,2.9vw,12px)!important;
+    line-height:1.22!important;
+  }
+
+  #hub .view[data-view="dashboard"] .folderArrow{
+    font-size:24px!important;
+  }
+}
+
+@media (max-width:390px){
+  #hub .view[data-view="dashboard"] .hubMural{
+    font-size:20px!important;
+    padding:4px 4px 5px!important;
+  }
+
+  #hub .view[data-view="dashboard"] .folder,
+  #hub .view[data-view="dashboard"] .folder[data-folder="profile"],
+  #hub .view[data-view="dashboard"] .folder[data-folder="projects"],
+  #hub .view[data-view="dashboard"] .folder[data-folder="live"]{
+    padding:11px 12px!important;
+    column-gap:11px!important;
+  }
+
+  #hub .view[data-view="dashboard"] .folderIcon{
+    width:45px!important;
+    height:45px!important;
+    border-radius:14px!important;
+  }
+
+  #hub .view[data-view="dashboard"] .folder h2{
+    font-size:17px!important;
+  }
+
+  #hub .view[data-view="dashboard"] .folder p{
+    font-size:10px!important;
+  }
+}
+/* END V280 CREATOR HUB DASHBOARD REDESIGN */
+
 </style>
 </head>
 <body>
