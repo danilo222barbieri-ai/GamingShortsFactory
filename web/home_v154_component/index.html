@@ -4353,6 +4353,94 @@ body.gsfDesktopPreview .feature{
 }
 /* END V270 HOME DESKTOP MICRO-CALIBRATION */
 
+
+/* V272 DESKTOP FILL + VERTICAL CTA
+   Desktop-only calibration from the 1440x900 preview:
+   larger/raised uploader, taller vertical CTA cards, fuller viewport use.
+   Palette, typography family, murals and mobile geometry stay unchanged. */
+@media (min-width:761px){
+  #home154{
+    --gsf-desk-ring:clamp(286px,min(23.5vw,36vh),336px)!important;
+    --gsf-desk-content:clamp(700px,61vw,820px)!important;
+    --gsf-desk-card-h:clamp(158px,19vh,184px)!important;
+  }
+
+  #home154 #view{
+    row-gap:clamp(4px,.7vh,8px)!important;
+  }
+
+  #home154 .stage{
+    padding:0 0 clamp(2px,.35vh,4px)!important;
+  }
+
+  #home154 .rings{
+    width:var(--gsf-desk-ring)!important;
+    height:var(--gsf-desk-ring)!important;
+    top:clamp(-24px,-2.5vh,-16px)!important;
+  }
+
+  #home154 .features{
+    width:var(--gsf-desk-content)!important;
+    gap:clamp(18px,1.55vw,24px)!important;
+    margin:clamp(-10px,-1vh,-5px) auto clamp(5px,.75vh,8px)!important;
+    transform:none!important;
+    align-items:stretch!important;
+  }
+
+  #home154 .feature,
+  #home154 .feature.fAi,
+  #home154 .feature.fEditor,
+  #home154 .feature.fShort{
+    height:var(--gsf-desk-card-h)!important;
+    min-height:var(--gsf-desk-card-h)!important;
+    padding:clamp(17px,2.1vh,22px) 14px clamp(15px,1.9vh,20px)!important;
+    justify-content:center!important;
+  }
+
+  #home154 .featureIcon{
+    width:clamp(58px,7.4vh,68px)!important;
+    height:clamp(58px,7.4vh,68px)!important;
+    margin:0 auto clamp(10px,1.35vh,13px)!important;
+  }
+
+  #home154 .featureIcon svg{
+    width:clamp(28px,2.5vw,34px)!important;
+    height:clamp(28px,2.5vw,34px)!important;
+  }
+
+  #home154 .bottomNav{
+    margin-top:0!important;
+  }
+
+  /* Keep the V270 left mural pocket while the larger uploader moves upward. */
+  #home154 .muralAmbient,
+  #home154[data-mural-state="uploading"] .muralAmbient,
+  #home154[data-mural-state="ready"] .muralAmbient,
+  #home154[data-mural-state^="focus-"] .muralAmbient{
+    bottom:clamp(16px,2.2vh,24px)!important;
+  }
+}
+
+@media (min-width:761px) and (max-height:720px){
+  #home154{
+    --gsf-desk-ring:clamp(250px,min(22vw,34vh),286px)!important;
+    --gsf-desk-content:clamp(640px,60vw,760px)!important;
+    --gsf-desk-card-h:clamp(132px,18vh,148px)!important;
+  }
+  #home154 .rings{top:-12px!important}
+  #home154 .features{gap:14px!important;margin:-4px auto 4px!important}
+  #home154 .feature,
+  #home154 .feature.fAi,
+  #home154 .feature.fEditor,
+  #home154 .feature.fShort{
+    padding:13px 12px 12px!important;
+  }
+  #home154 .featureIcon{
+    width:54px!important;height:54px!important;margin-bottom:8px!important;
+  }
+}
+/* END V272 DESKTOP FILL + VERTICAL CTA */
+
 </style>
 </head>
 <body>
