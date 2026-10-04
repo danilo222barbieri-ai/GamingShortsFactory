@@ -1083,6 +1083,81 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
 }
 /* END V282 GAMEBAR OWNS HUB RETURN */
 
+
+/* V283 MODULAR CREATOR HUB FOLDERS
+   Profile, Projects, Live, Social and Subscription are independent expandable modules. */
+#hub .view .detailHead .backBtn{display:none!important}
+#hub .view[data-view="dashboard"] .folders{
+  grid-template-rows:repeat(5,minmax(0,1fr))!important;
+}
+#hub .folder[data-folder="social"] .folderIcon{
+  background:#DDF8EB!important;color:#168B65!important;
+}
+#hub .folder[data-folder="subscription"] .folderIcon{
+  background:#FFF1D9!important;color:#B87916!important;
+}
+#hub .profileOnlyScroller{
+  display:flex!important;flex-direction:column!important;height:100%!important;min-height:0!important;
+}
+#hub .profileOnlyMural{
+  display:block!important;
+  margin:clamp(18px,3vh,34px) 0 8px!important;
+  font-size:clamp(22px,1.75vw,29px)!important;
+}
+#hub .profileOnlyScroller .logoutProfile{
+  margin-top:auto!important;
+}
+#hub .socialFolderScroller,
+#hub .subscriptionScroller{
+  height:100%!important;min-height:0!important;overflow:hidden!important;
+}
+#hub .socialFolderMural,
+#hub .subscriptionMural{
+  display:block!important;
+  margin:clamp(4px,.8vh,8px) 0 clamp(12px,1.8vh,18px)!important;
+  font-size:clamp(22px,1.75vw,29px)!important;
+}
+#hub .socialFolderGroup,
+#hub .subscriptionGroup{
+  margin-top:0!important;
+}
+#hub .subscriptionFuture{
+  margin-top:clamp(12px,1.8vh,18px)!important;
+  padding:clamp(14px,1.8vh,18px)!important;
+  border:1px dashed rgba(143,181,216,.30)!important;
+  border-radius:16px!important;
+  background:linear-gradient(145deg,rgba(239,248,255,.76),rgba(242,249,247,.74))!important;
+  color:#7186A0!important;
+  font-size:clamp(11.5px,.86vw,13px)!important;
+  font-weight:750!important;
+  line-height:1.35!important;
+}
+@media(max-width:760px){
+  #hub .view[data-view="dashboard"] .folders{
+    grid-template-rows:repeat(5,minmax(0,1fr))!important;
+  }
+  #hub .view[data-view="dashboard"] .folder,
+  #hub .view[data-view="dashboard"] .folder[data-folder="profile"],
+  #hub .view[data-view="dashboard"] .folder[data-folder="projects"],
+  #hub .view[data-view="dashboard"] .folder[data-folder="live"],
+  #hub .view[data-view="dashboard"] .folder[data-folder="social"],
+  #hub .view[data-view="dashboard"] .folder[data-folder="subscription"]{
+    padding:clamp(10px,1.25vh,13px) 14px!important;
+  }
+  #hub .profileOnlyMural,
+  #hub .socialFolderMural,
+  #hub .subscriptionMural{
+    font-size:clamp(20px,5.5vw,24px)!important;
+  }
+  #hub .socialFolderScroller{
+    overflow:auto!important;
+  }
+  #hub .subscriptionFuture{
+    font-size:11px!important;
+  }
+}
+/* END V283 MODULAR CREATOR HUB FOLDERS */
+
 </style>
 </head>
 <body>
@@ -1117,9 +1192,11 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
 
     <div class="hubMural">Tutto quello che crei,<br>vive qui</div>
     <div class="folders">
-     <button class="folder" data-folder="profile"><div><div class="folderTop"><span class="folderIcon">⌂</span><span class="folderArrow">›</span></div><h2>Profilo</h2><p>Foto, nome, account collegati e piano.</p></div><div class="folderFoot">Modifica profilo</div></button>
-     <button class="folder" data-folder="projects"><div><div class="folderTop"><span class="folderIcon">▢</span><span class="folderArrow">›</span></div><h2>I miei progetti</h2><p>In lavorazione e Shorts completati nello stesso posto.</p></div><div class="folderFoot" id="projectsCount">0 elementi</div></button>
+     <button class="folder" data-folder="profile"><div><div class="folderTop"><span class="folderIcon">⌂</span><span class="folderArrow">›</span></div><h2>Profilo</h2><p>Foto e nome del creator.</p></div><div class="folderFoot">Modifica profilo</div></button>
+     <button class="folder" data-folder="projects"><div><div class="folderTop"><span class="folderIcon">▢</span><span class="folderArrow">›</span></div><h2>I miei progetti</h2><p>Bozze e Shorts completati nello stesso posto.</p></div><div class="folderFoot" id="projectsCount">0 elementi</div></button>
      <button class="folder" data-folder="live"><div><div class="folderTop"><span class="folderIcon">◧</span><span class="folderArrow">›</span></div><h2>Le mie live</h2><p>Twitch, VOD, Highlights e YouTube Live.</p></div><div class="folderFoot">Live e replay</div></button>
+     <button class="folder" data-folder="social"><div><div class="folderTop"><span class="folderIcon">⌯</span><span class="folderArrow">›</span></div><h2>Social</h2><p>Collega o disconnetti i tuoi account.</p></div><div class="folderFoot">Gestisci account</div></button>
+     <button class="folder" data-folder="subscription"><div><div class="folderTop"><span class="folderIcon">◇</span><span class="folderArrow">›</span></div><h2>Abbonamento</h2><p>Piano attuale e gestione futura.</p></div><div class="folderFoot">Piano e vantaggi</div></button>
     </div>
     </div>
     </div>
@@ -1145,8 +1222,8 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
 
   <section class="view" data-view="profile">
    <div class="detail">
-    <div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2>Profilo</h2><p>Modifica il profilo, collega i social e gestisci il tuo piano.</p></div></div>
-    <div class="detailCard"><div class="folderScroller">
+    <div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2>Profilo</h2><p>Modifica foto e nome del creator.</p></div></div>
+    <div class="detailCard"><div class="folderScroller profileOnlyScroller">
       <div class="profileEdit">
        <div class="profilePhotoEdit">
         <div class="avatar profileAvatarBig" id="profileAvatar"><img id="profileAvatarImg" alt=""><span class="avatarInitial" id="profileAvatarInitial">C</span></div>
@@ -1158,8 +1235,18 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
         <button class="saveProfileBtn" id="saveProfileBtn" type="button">Salva profilo</button>
        </div>
       </div>
-      <div class="profileMural" aria-hidden="true">Collega i tuoi mondi,<br>crea tutto da qui</div>
-      <div class="profileGroup">
+      <div class="profileMural profileOnlyMural" aria-hidden="true">Questo è il tuo spazio,<br>fallo tuo</div>
+      <button class="logoutProfile" id="logoutProfile" type="button">Disconnetti dal Creator Hub</button>
+    </div></div>
+   </div>
+  </section>
+
+  <section class="view" data-view="social">
+   <div class="detail">
+    <div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2>Social</h2><p>Collega o disconnetti i tuoi account.</p></div></div>
+    <div class="detailCard"><div class="folderScroller socialFolderScroller">
+      <div class="profileMural socialFolderMural" aria-hidden="true">Collega i tuoi mondi,<br>crea tutto da qui</div>
+      <div class="profileGroup socialFolderGroup">
        <div class="profileGroupTitle">ACCOUNT COLLEGATI</div>
        <div class="profileSocialGrid">
         <div class="socialCard" data-platform="youtube"><div class="socialLogo">▶</div><div><div class="socialName">YouTube</div><div class="socialState">Non collegato</div></div><button class="connectBtn" data-connect="youtube">Collega</button></div>
@@ -1169,11 +1256,20 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
         <div class="socialCard" data-platform="twitch"><div class="socialLogo">◧</div><div><div class="socialName">Twitch</div><div class="socialState">Live in arrivo</div></div><button class="connectBtn" data-connect="twitch" disabled>Live in arrivo</button></div>
        </div>
       </div>
-      <div class="profileGroup profilePlanGroup">
+    </div></div>
+   </div>
+  </section>
+
+  <section class="view" data-view="subscription">
+   <div class="detail">
+    <div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2>Abbonamento</h2><p>Il tuo piano e lo spazio per le funzioni future.</p></div></div>
+    <div class="detailCard"><div class="folderScroller subscriptionScroller">
+      <div class="profileMural subscriptionMural" aria-hidden="true">Il tuo Creator Hub,<br>pronto a crescere</div>
+      <div class="profileGroup profilePlanGroup subscriptionGroup">
        <div class="profileGroupTitle">ABBONAMENTO</div>
        <div class="planRow"><div><b id="profilePlanName">FREE</b><span id="profilePlanText">Piano attuale</span></div><button class="planBtn" type="button" disabled>Gestione piano in arrivo</button></div>
+       <div class="subscriptionFuture">Qui aggiungeremo piani, vantaggi, crediti e nuove funzioni senza dover ridisegnare il Creator Hub.</div>
       </div>
-      <button class="logoutProfile" id="logoutProfile" type="button">Disconnetti dal Creator Hub</button>
     </div></div>
    </div>
   </section>
@@ -1215,8 +1311,7 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
  function esc(v){return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
  function openView(view="dashboard"){
    if(view==="shorts"||view==="drafts"||view==="project")view="projects";
-   if(view==="social")view="profile";
-   if(!["dashboard","projects","profile","live"].includes(view))view="dashboard";
+   if(!["dashboard","projects","profile","live","social","subscription"].includes(view))view="dashboard";
    current=view;
    $$("[data-view]").forEach(v=>v.classList.toggle("active",v.dataset.view===view));
  }
@@ -1348,7 +1443,7 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
  $$(".folder").forEach(b=>b.onclick=()=>openView(b.dataset.folder));
  $$("[data-open-folder]").forEach(b=>b.onclick=()=>openView(b.dataset.openFolder));
  $$(".backBtn").forEach(b=>b.onclick=()=>openView("dashboard"));
- $$(".socialDot").forEach(b=>b.onclick=()=>{openView("profile");setTimeout(()=>{const c=document.querySelector('[data-platform="'+b.dataset.social+'"]');if(c)c.animate([{transform:"scale(1)"},{transform:"scale(1.025)"},{transform:"scale(1)"}],{duration:420})},40)});
+ $(".socialDot").forEach(b=>b.onclick=()=>{openView("social");setTimeout(()=>{const c=document.querySelector('[data-platform="'+b.dataset.social+'"]');if(c)c.animate([{transform:"scale(1)"},{transform:"scale(1.025)"},{transform:"scale(1)"}],{duration:420})},40)});
  $$("[data-connect]").forEach(b=>b.onclick=()=>connectSocial(b.dataset.connect));
  const saveBtn=$("#saveProfileBtn");if(saveBtn)saveBtn.onclick=saveProfile;
  const photoInput=$("#profilePhotoInput");if(photoInput)photoInput.onchange=()=>previewProfilePhoto(photoInput.files&&photoInput.files[0]);
