@@ -529,7 +529,7 @@ if GSF_WEB_MODE:
     <div id="gsf-creator-hub-live-v160" aria-hidden="true">
       <section class="gsf-hub-shell-v160" role="dialog" aria-modal="false" aria-label="Creator Hub">
         <button class="gsf-hub-close-v160" type="button" aria-label="Chiudi">×</button>
-        <iframe src="/creator-hub-v156/?v=281" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
+        <iframe src="/creator-hub-v156/?v=282" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
       </section>
     </div>
     <div class="gsf-script-guard" style="display:none!important"></div>
@@ -1033,7 +1033,7 @@ if GSF_WEB_MODE:
       <button class="gsf-page-nav-item" data-target="home" type="button">
         <svg viewBox="0 0 32 32"><path d="M4 14 16 4l12 10"/><path d="M7 13v14h18V13"/><path d="M13 27v-8h6v8"/></svg><span>Home</span>
       </button>
-      <button class="gsf-page-nav-item" data-target="hub" data-section="profile" type="button">
+      <button class="gsf-page-nav-item" data-target="hub" data-section="dashboard" type="button">
         <svg viewBox="0 0 32 32"><rect x="5" y="5" width="8" height="8" rx="2"/><rect x="19" y="5" width="8" height="8" rx="2"/><rect x="5" y="19" width="8" height="8" rx="2"/><rect x="19" y="19" width="8" height="8" rx="2"/></svg><span>Hub</span>
       </button>
       <button class="gsf-page-nav-item" data-target="hub" data-section="shorts" data-active="shorts" type="button">
