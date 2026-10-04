@@ -529,7 +529,7 @@ if GSF_WEB_MODE:
     <div id="gsf-creator-hub-live-v160" aria-hidden="true">
       <section class="gsf-hub-shell-v160" role="dialog" aria-modal="false" aria-label="Creator Hub">
         <button class="gsf-hub-close-v160" type="button" aria-label="Chiudi">×</button>
-        <iframe src="/creator-hub-v156/?v=283" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
+        <iframe src="/creator-hub-v156/?v=284" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
       </section>
     </div>
     <div class="gsf-script-guard" style="display:none!important"></div>
@@ -1037,10 +1037,10 @@ if GSF_WEB_MODE:
         <svg viewBox="0 0 32 32"><rect x="5" y="5" width="8" height="8" rx="2"/><rect x="19" y="5" width="8" height="8" rx="2"/><rect x="5" y="19" width="8" height="8" rx="2"/><rect x="19" y="19" width="8" height="8" rx="2"/></svg><span>Hub</span>
       </button>
       <button class="gsf-page-nav-item" data-target="hub" data-section="shorts" data-active="shorts" type="button">
-        <svg viewBox="0 0 32 32"><rect x="7" y="4" width="18" height="24" rx="5"/><path d="m13 11 8 5-8 5Z"/></svg><span>Shorts</span>
+        <svg viewBox="0 0 32 32"><rect x="7" y="4" width="18" height="24" rx="5"/><path d="m13 11 8 5-8 5Z"/></svg><span>I miei Shorts</span>
       </button>
-      <button class="gsf-page-nav-item" data-target="hub" data-section="project" data-active="projects" type="button">
-        <svg viewBox="0 0 32 32"><path d="M4 10h9l3 3h12v14H4Z"/><path d="M4 10V7h10l3 3"/></svg><span>Progetti</span>
+      <button class="gsf-page-nav-item" data-target="hub" data-section="drafts" data-active="drafts" type="button">
+        <svg viewBox="0 0 32 32"><path d="M4 10h9l3 3h12v14H4Z"/><path d="M4 10V7h10l3 3"/></svg><span>Bozze</span>
       </button>
       <button class="gsf-page-nav-item" data-target="hub" data-section="social" data-active="social" type="button">
         <svg viewBox="0 0 32 32"><circle cx="24" cy="7" r="3"/><circle cx="8" cy="16" r="3"/><circle cx="24" cy="25" r="3"/><path d="m11 14.5 10-5.7M11 17.5l10 5.7"/></svg><span>Social</span>
@@ -1077,10 +1077,10 @@ if GSF_WEB_MODE:
           const section=String(b.dataset.section||'');
           const activeKey=String(b.dataset.active||target);
           let active=false;
-          if(activeKey==='projects') active=(lastTarget==='hub'&&lastSection==='project');
+          if(activeKey==='drafts') active=(lastTarget==='hub'&&lastSection==='drafts');
           else if(activeKey==='shorts') active=(lastTarget==='hub'&&lastSection==='shorts');
           else if(activeKey==='social') active=(lastTarget==='hub'&&lastSection==='social');
-          else if(target==='hub') active=(lastTarget==='hub'&&lastSection!=='project'&&lastSection!=='shorts'&&lastSection!=='social');
+          else if(target==='hub') active=(lastTarget==='hub'&&lastSection!=='drafts'&&lastSection!=='shorts'&&lastSection!=='social');
           else active=(lastTarget===target);
           b.classList.toggle('active',active);
         });

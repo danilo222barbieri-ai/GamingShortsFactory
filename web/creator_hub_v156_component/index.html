@@ -1158,6 +1158,23 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
 }
 /* END V283 MODULAR CREATOR HUB FOLDERS */
 
+
+/* V284 GAMEBAR DIRECT HUB FOLDERS
+   Direct Game Bar routes can open My Shorts or Drafts as their own folder view. */
+#hub .projectSection[data-project-pane="drafts"],
+#hub .projectSection[data-project-pane="shorts"]{
+  min-height:0!important;
+}
+#hub .projectSection[data-project-pane="drafts"] + .projectSection[data-project-pane="shorts"]{
+  margin-top:14px;
+}
+@media(max-width:760px){
+  #hub .view[data-view="projects"] .detailCard{
+    padding-bottom:8px!important;
+  }
+}
+/* END V284 GAMEBAR DIRECT HUB FOLDERS */
+
 </style>
 </head>
 <body>
@@ -1205,15 +1222,15 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
 
   <section class="view" data-view="projects">
    <div class="detail">
-    <div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2>Progetti</h2><p>Quello che stai creando e gli Shorts già completati.</p></div></div>
+    <div class="detailHead"><button class="backBtn" type="button">‹ Creator Hub</button><div class="detailHeadText"><h2 id="projectsViewTitle">Progetti</h2><p id="projectsViewSubtitle">Quello che stai creando e gli Shorts già completati.</p></div></div>
     <div class="detailCard"><div class="folderScroller">
-      <div class="projectSection">
-       <div class="projectSectionHead"><span>IN LAVORAZIONE</span><b id="draftProjectCount">0</b></div>
+      <div class="projectSection" data-project-pane="drafts">
+       <div class="projectSectionHead"><span>BOZZE</span><b id="draftProjectCount">0</b></div>
        <div id="projectRows"></div>
        <div class="rows" id="draftRows"><div class="empty">Caricamento progetti…</div></div>
       </div>
-      <div class="projectSection">
-       <div class="projectSectionHead"><span>SHORTS COMPLETATI</span><b id="shortProjectCount">0</b></div>
+      <div class="projectSection" data-project-pane="shorts">
+       <div class="projectSectionHead"><span>I MIEI SHORTS</span><b id="shortProjectCount">0</b></div>
        <div class="rows" id="shortRows"><div class="empty">Caricamento Shorts…</div></div>
       </div>
     </div></div>
@@ -1310,10 +1327,19 @@ h1{margin:0;font-size:clamp(21px,2vw,31px);line-height:1;font-weight:900;letter-
  function ago(ts){if(!ts)return"Salvata";const d=Math.max(0,Date.now()/1000-Number(ts));if(d<90)return"Adesso";if(d<3600)return Math.floor(d/60)+" min fa";if(d<86400)return Math.floor(d/3600)+" h fa";return Math.floor(d/86400)+" g fa"}
  function esc(v){return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
  function openView(view="dashboard"){
-   if(view==="shorts"||view==="drafts"||view==="project")view="projects";
+   const requested=String(view||"dashboard");
+   if(view==="project")view="projects";
+   const projectMode=(view==="shorts"||view==="drafts")?view:"";
+   if(projectMode)view="projects";
    if(!["dashboard","projects","profile","live","social","subscription"].includes(view))view="dashboard";
-   current=view;
-   $$("[data-view]").forEach(v=>v.classList.toggle("active",v.dataset.view===view));
+   current=projectMode||view;
+   $("[data-view]").forEach(v=>v.classList.toggle("active",v.dataset.view===view));
+   const title=$("#projectsViewTitle"),sub=$("#projectsViewSubtitle");
+   if(view==="projects"){
+     $("[data-project-pane]").forEach(p=>{p.style.display=(!projectMode||p.dataset.projectPane===projectMode)?"":"none"});
+     if(title)title.textContent=projectMode==="shorts"?"I miei Shorts":projectMode==="drafts"?"Bozze":"Progetti";
+     if(sub)sub.textContent=projectMode==="shorts"?"Tutti gli Shorts completati e salvati nel Creator Hub.":projectMode==="drafts"?"Progetti salvati da riprendere quando vuoi.":"Quello che stai creando e gli Shorts già completati.";
+   }
  }
  function setSocialVisuals(){
    const s=state.social||{};
