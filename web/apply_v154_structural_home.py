@@ -424,7 +424,7 @@ if GSF_WEB_MODE:
     <div id="gsf-social-overlay-v159" aria-hidden="true">
       <section class="gsf-social-shell" role="dialog" aria-modal="false" aria-label="Condividi o scarica">
         <button class="gsf-social-close" type="button" aria-label="Chiudi">×</button>
-        <iframe src="/share-v156/?v=226" data-src="/share-v156/" data-loaded="1" title="Condividi o scarica"></iframe>
+        <iframe src="/share-v156/?v=281" data-src="/share-v156/" data-loaded="1" title="Condividi o scarica"></iframe>
       </section>
     </div>
     <div class="gsf-script-guard" style="display:none!important"></div>
@@ -529,7 +529,7 @@ if GSF_WEB_MODE:
     <div id="gsf-creator-hub-live-v160" aria-hidden="true">
       <section class="gsf-hub-shell-v160" role="dialog" aria-modal="false" aria-label="Creator Hub">
         <button class="gsf-hub-close-v160" type="button" aria-label="Chiudi">×</button>
-        <iframe src="/creator-hub-v156/?v=280" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
+        <iframe src="/creator-hub-v156/?v=281" data-src="/creator-hub-v156/" data-loaded="1" title="Creator Hub"></iframe>
       </section>
     </div>
     <div class="gsf-script-guard" style="display:none!important"></div>
@@ -620,7 +620,7 @@ if GSF_WEB_MODE:
         <div class="gsf-editor-head"><div>Game Editor<small>Il tuo gameplay resta nel progetto mentre modifichi.</small></div></div>
         <div class="gsf-editor-body">
           <div class="editor-note left"><span id="gsf-editor-note-left">Qui modelli<br>la tua giocata</span></div>
-          <iframe class="gsf-editor-frame" src="/editor-live/?v=226" data-src="/editor-live/" data-loaded="1" title="Game Editor"></iframe>
+          <iframe class="gsf-editor-frame" src="/editor-live/?v=281" data-src="/editor-live/" data-loaded="1" title="Game Editor"></iframe>
           <div class="editor-note right"><span id="gsf-editor-note-right">Tocca uno strumento<br>e guarda cosa cambia</span></div>
         </div>
       </section>
@@ -727,7 +727,7 @@ if GSF_WEB_MODE:
     <div id="gsf-ai-overlay-v221" aria-hidden="true">
       <section class="gsf-ai-shell" role="dialog" aria-modal="false" aria-label="Motori IA">
         <button class="gsf-ai-close" type="button" aria-label="Chiudi">×</button>
-        <iframe src="/ai-v221/?v=226" data-src="/ai-v221/" data-loaded="1" title="Motori IA"></iframe>
+        <iframe src="/ai-v221/?v=281" data-src="/ai-v221/" data-loaded="1" title="Motori IA"></iframe>
       </section>
     </div>
     <div class="gsf-script-guard" style="display:none!important"></div>
@@ -1973,6 +1973,45 @@ s = s.rstrip() + "\n\n" + _notification_bridge_v253.lstrip()
 # END V253 LOSS-PROOF REPLACE UPLOAD + GLOBAL NOTIFICATIONS
 
 # V221 final write must happen AFTER V220 + V221 surfaces are appended.
+
+# V281 GAMEBAR RETURN + TYPE SCALE
+# Keep the page Game Bar visibly above Creator Hub and every other secondary surface.
+_v281_gamebar_type = r'''
+if GSF_WEB_MODE:
+    st.markdown(r"""
+    <style id="gsf-v281-gamebar-return-type">
+      #gsf-social-overlay-v159,
+      #gsf-creator-hub-live-v160,
+      #gsf-editor-overlay-v220,
+      #gsf-ai-overlay-v221,
+      #gsf-account-overlay-v223{
+        z-index:2147483500!important;
+      }
+      #gsf-page-chrome-v250{
+        z-index:2147483550!important;
+      }
+      #gsf-page-nav-v249{
+        z-index:2147483646!important;
+      }
+      #gsf-page-nav-v249.is-open{
+        opacity:1!important;
+        visibility:visible!important;
+        pointer-events:auto!important;
+      }
+      #gsf-page-nav-v249 .gsf-page-nav-item{
+        font-size:clamp(11px,.78vw,13px)!important;
+      }
+      @media(max-width:760px){
+        #gsf-page-nav-v249 .gsf-page-nav-item{
+          font-size:9.5px!important;
+        }
+      }
+    </style>
+    """, unsafe_allow_html=True)
+'''
+s = s.rstrip() + "\n\n" + _v281_gamebar_type.lstrip()
+# END V281 GAMEBAR RETURN + TYPE SCALE
+
 compile(s,str(out),"exec")
 out.write_text(s,encoding="utf-8")
 print("V221 AI SURFACE applied:",out)
