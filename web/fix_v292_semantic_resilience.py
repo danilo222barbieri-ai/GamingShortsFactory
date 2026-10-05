@@ -52,6 +52,13 @@ def main() -> None:
         "file-processing timeout",
     )
 
+    text = replace_once(
+        text,
+        '''                if quota and index+1<len(models):\n                    continue\n                raise\n''',
+        '''                if quota and index+1<len(models) and _env_bool("GSF_SEMANTIC_RETRY_MODEL_ON_QUOTA",False):\n                    continue\n                raise\n''',
+        "quota retry policy",
+    )
+
     success_anchor = '''        events=normalize_semantic_events(payload,max_events=max_events)\n        return {\n'''
     success_replacement = '''        events=normalize_semantic_events(payload,max_events=max_events)\n        _semantic_circuit_record_success()\n        return {\n'''
     text = replace_once(text, success_anchor, success_replacement, "circuit success reset")
