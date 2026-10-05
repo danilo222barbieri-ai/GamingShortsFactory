@@ -56,6 +56,11 @@ python /app/web/test_v292_hub_state_efficiency.py
 python /app/web/fix_v292_share_state.py
 python /app/web/test_v292_share_state.py
 
+# V292: connected share cards must reach the real Publish control even when
+# selecting a platform causes a Streamlit rerun. The intent survives the rerun.
+python /app/web/fix_v292_share_publish_bridge.py
+python /app/web/test_v292_share_publish_bridge.py /app/web/share_v156_component/index.html
+
 # V105.7: publish ads.txt only when a real Google publisher id is configured.
 python - <<'PY'
 import os,re
