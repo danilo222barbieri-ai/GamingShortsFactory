@@ -51,6 +51,7 @@ run("Final share surface", str(WEB / "test_v289_share_final.py"), str(SHARE), st
 run("AI engine bridge", str(WEB / "test_v291_ai_engine_bridge.py"), str(HOME), str(APP))
 run("Semantic provider resilience", str(WEB / "test_v292_semantic_circuit.py"))
 run("AI profile differentiation", str(WEB / "test_v292_ai_profiles.py"))
+run("Creator Hub state efficiency", str(WEB / "test_v292_hub_state_efficiency.py"))
 run("Share state provider initialization", str(WEB / "test_v292_share_state.py"))
 
 run("No-audio final master", str(WEB / "test_v105_no_audio_master.py"), str(APP))
