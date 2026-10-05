@@ -5,6 +5,9 @@ HUB = Path("/app/web/creator_hub_v156_component/index.html")
 APP = Path("/app/GamingShortsFactory_V154_STRUCTURAL_HOME.py")
 
 
+_CACHE_RE = re.compile(r'/creator-hub-v156/\?v=(\d+)')
+
+
 def patch_hub() -> None:
     text = HUB.read_text(encoding="utf-8")
     before = text
@@ -45,22 +48,35 @@ def patch_shell() -> None:
         return
 
     text = APP.read_text(encoding="utf-8")
-    patched = text.replace('/creator-hub-v156/?v=284', '/creator-hub-v156/?v=286')
-    patched = patched.replace('/creator-hub-v156/?v=285', '/creator-hub-v156/?v=286')
+
+    # V286 is an old bootstrap step and must remain safe when newer releases
+    # have already bumped the Creator Hub cache version. Upgrade only older
+    # versions; never downgrade V287+ back to V286.
+    def bump_cache(match: re.Match) -> str:
+        current = int(match.group(1))
+        return f'/creator-hub-v156/?v={max(current, 286)}'
+
+    patched = _CACHE_RE.sub(bump_cache, text)
+    cache_versions = [int(v) for v in _CACHE_RE.findall(patched)]
 
     required = [
         'data-target="hub" data-section="dashboard"',
         'data-target="hub" data-section="shorts"',
         'data-target="hub" data-section="drafts"',
         "type:'GSF_HUB_FOCUS',section",
-        '/creator-hub-v156/?v=286',
     ]
     missing = [marker for marker in required if marker not in patched]
+    if not cache_versions or max(cache_versions) < 286:
+        missing.append('/creator-hub-v156/?v>=286')
     if missing:
         raise RuntimeError("V286: global Game Bar shell markers missing: " + ", ".join(missing))
 
     APP.write_text(patched, encoding="utf-8")
-    print("V286 global Game Bar shell verified and Creator Hub cache busted", flush=True)
+    print(
+        "V286 global Game Bar shell verified; Creator Hub cache version=",
+        max(cache_versions),
+        flush=True,
+    )
 
 
 if __name__ == "__main__":
