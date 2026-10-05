@@ -12,8 +12,6 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Verify social publish bridge contract
-        run: python web/test_v290_publish_bridge.py web/share_v156_component/index.html web/apply_v154_structural_home.py
       - name: Build production image
         run: docker build --progress=plain -t gsf-v290-audit .
       - name: Audit generated runtime
@@ -26,16 +24,21 @@ jobs:
             /app/web/nginx.conf.template
       - name: Start production image
         run: docker run -d --name gsf-v290 -p 8080:8080 -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v290-audit
-      - name: HTTP smoke
+      - name: HTTP and startup-gate smoke
         run: |
           set -eu
-          for i in $(seq 1 60); do
+          for i in $(seq 1 90); do
+            if ! docker inspect -f '{{.State.Running}}' gsf-v290 2>/dev/null | grep -q true; then
+              docker logs gsf-v290 || true
+              exit 1
+            fi
             if curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1; then break; fi
             sleep 2
           done
-          curl -fsS http://127.0.0.1:8080/share-v156/?v=289 | grep -q 'Condividi o scarica'
+          curl -fsS 'http://127.0.0.1:8080/share-v156/?v=290' | grep -q 'Condividi o scarica'
           curl -fsS http://127.0.0.1:8080/social-connect | grep -q 'YouTube'
-          echo 'V290 HTTP SMOKE: PASS'
+          docker logs gsf-v290 2>&1 | grep -q 'V290 SOCIAL PUBLISH BRIDGE: PASS'
+          echo 'V290 HTTP + STARTUP SMOKE: PASS'
       - name: Logs on failure
         if: failure()
         run: docker logs gsf-v290 || true
