@@ -13,13 +13,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build exact production image
+      - name: Build exact production web image
         run: docker build --progress=plain -t gsf-v292 .
 
-      - name: V292 semantic circuit regression
-        run: docker run --rm --entrypoint python gsf-v292 /app/web/test_v292_semantic_circuit.py
+      - name: V292 semantic regression in web image
+        run: |
+          docker run --rm --entrypoint /bin/sh gsf-v292 -lc \
+            'python /app/web/fix_v292_semantic_resilience.py && python /app/web/test_v292_semantic_circuit.py'
 
-      - name: Start production image
+      - name: Build exact production worker image
+        run: docker build --progress=plain -f web/Dockerfile.worker -t gsf-v292-worker .
+
+      - name: V292 semantic regression in worker image
+        run: docker run --rm --entrypoint python gsf-v292-worker /app/web/test_v292_semantic_circuit.py
+
+      - name: Start production web image
         run: |
           docker run -d --name gsf-v292-run -p 8080:8080 \
             -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v292
