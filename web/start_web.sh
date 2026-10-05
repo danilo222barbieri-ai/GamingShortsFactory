@@ -61,6 +61,12 @@ python /app/web/test_v292_share_state.py
 python /app/web/fix_v292_share_publish_bridge.py
 python /app/web/test_v292_share_publish_bridge.py /app/web/share_v156_component/index.html
 
+# Heavy certification is opt-in and used only on the isolated audit service.
+# Production startup keeps the lightweight feature gates above.
+if [ "${GSF_RUN_V292_AUDIT:-0}" = "1" ]; then
+  python /app/web/audit_v292_production.py
+fi
+
 # V105.7: publish ads.txt only when a real Google publisher id is configured.
 python - <<'PY'
 import os,re
