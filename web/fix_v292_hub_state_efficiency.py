@@ -1,8 +1,21 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import sys
 
 MARKER='GSF_V292_HUB_STATE_SINGLE_SOCIAL_LOAD'
+ROUTE_RE=re.compile(r'^        if (?:clean|path)==["\']/[^"\']+["\']:',re.M)
+
+
+def route_block(source,route):
+    needle=f'        if clean=="{route}":'
+    start=source.find(needle)
+    if start<0:
+        return -1,-1,''
+    nxt=ROUTE_RE.search(source,start+len(needle))
+    end=nxt.start() if nxt else len(source)
+    return start,end,source[start:end]
+
 
 def main():
     target=Path(sys.argv[1] if len(sys.argv)>1 else '/app/web/direct_upload_server.py')
@@ -14,11 +27,10 @@ def main():
         print('V292 hub-state efficiency already applied:',target)
         return
 
-    start=source.find('if clean=="/creator-hub/state":')
-    end=source.find('if clean=="/share/state":',start)
-    if start<0 or end<0:
-        raise SystemExit('V292 hub-state route anchors missing')
-    block=source[start:end]
+    start,end,block=route_block(source,'/creator-hub/state')
+    if start<0 or end<=start:
+        raise SystemExit('V292 hub-state route anchor missing')
+
     for provider in ('youtube','tiktok','instagram'):
         old=f'bool(_{provider}_user_load(sid))'
         if block.count(old)<1:
