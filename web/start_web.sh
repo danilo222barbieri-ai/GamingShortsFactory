@@ -25,6 +25,10 @@ python /app/web/test_v285_creator_hub_clicks.py /app/web/creator_hub_v156_compon
 python /app/web/fix_v286_global_gamebar.py
 python /app/web/test_v286_global_gamebar.py /app/web/creator_hub_v156_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
 
+# V287: turn Profile into a real account overview with live counts and direct links.
+python /app/web/fix_v287_profile_overview.py
+python /app/web/test_v287_profile_overview.py /app/web/creator_hub_v156_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
+
 # V105.7: publish ads.txt only when a real Google publisher id is configured.
 python - <<'PY'
 import os,re
