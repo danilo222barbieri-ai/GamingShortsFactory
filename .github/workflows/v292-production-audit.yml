@@ -6,6 +6,10 @@ on:
       - audit/full-production-2026-10-05
   workflow_dispatch:
 
+concurrency:
+  group: v292-production-audit-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   production-audit:
     runs-on: ubuntu-latest
