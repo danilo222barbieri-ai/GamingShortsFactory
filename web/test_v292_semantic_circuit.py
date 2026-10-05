@@ -71,6 +71,7 @@ for marker in (
     'GSF_SEMANTIC_TIMEOUT_SECONDS","45"',
     "types.HttpOptions(timeout=int(semantic_timeout*1000))",
     "deadline=time.time()+semantic_timeout",
+    'GSF_SEMANTIC_RETRY_MODEL_ON_QUOTA",False',
 ):
     if marker not in source:
         raise SystemExit("V292 semantic runtime resilience integration missing: " + marker)
