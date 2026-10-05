@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 
 path=Path('/app/web/direct_upload_server.py')
 source=path.read_text(encoding='utf-8')
-start=source.find('if clean=="/creator-hub/state":')
-end=source.find('if clean=="/share/state":',start)
-if start<0 or end<0:
+needle='        if clean=="/creator-hub/state":'
+start=source.find(needle)
+if start<0:
     raise SystemExit('V292 creator-hub/state route not found')
+route_re=re.compile(r'^        if (?:clean|path)==["\']/[^"\']+["\']:',re.M)
+nxt=route_re.search(source,start+len(needle))
+end=nxt.start() if nxt else len(source)
 block=source[start:end]
 
 for provider in ('youtube','tiktok','instagram'):
