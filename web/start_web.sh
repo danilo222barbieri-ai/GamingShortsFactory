@@ -33,6 +33,10 @@ python /app/web/test_v287_profile_overview.py /app/web/creator_hub_v156_componen
 python /app/web/fix_v288_ai_journey.py
 python /app/web/test_v288_ai_journey.py /app/web/ai_v221_component/index.html /app/web/home_v154_component/index.html /app/web/editor_2027_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
 
+# V289: final playerless GSF publish/download page.
+python /app/web/fix_v289_share_final.py
+python /app/web/test_v289_share_final.py /app/web/share_v156_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
+
 # V105.7: publish ads.txt only when a real Google publisher id is configured.
 python - <<'PY'
 import os,re
