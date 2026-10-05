@@ -1,0 +1,46 @@
+name: V288 AI Journey branch check
+
+on:
+  push:
+    branches:
+      - v288-ai-journey
+  workflow_dispatch:
+
+jobs:
+  build-and-start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build production image
+        run: docker build --progress=plain -t gsf-v288 .
+
+      - name: Start production image
+        run: |
+          docker run -d --name gsf-v288-run -p 8080:8080 \
+            -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v288
+
+      - name: Wait for health and V288 startup gate
+        run: |
+          set -eu
+          for i in $(seq 1 60); do
+            if ! docker inspect -f '{{.State.Running}}' gsf-v288-run 2>/dev/null | grep -q true; then
+              echo 'Container exited before becoming healthy'
+              docker logs gsf-v288-run || true
+              exit 1
+            fi
+            if curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1; then
+              echo 'V288 production container: HEALTHY'
+              docker logs gsf-v288-run | tail -n 160
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'Timed out waiting for V288 container'
+          docker logs gsf-v288-run || true
+          exit 1
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker logs gsf-v288-run || true
