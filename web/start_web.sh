@@ -21,6 +21,10 @@ mkdir -p "$GSF_RUNTIME_ROOT"
 python /app/web/fix_v285_creator_hub_clicks.py
 python /app/web/test_v285_creator_hub_clicks.py /app/web/creator_hub_v156_component/index.html
 
+# V286: keep the Game Bar global and guarantee Creator Hub receives Hub/Shorts/Drafts routes.
+python /app/web/fix_v286_global_gamebar.py
+python /app/web/test_v286_global_gamebar.py /app/web/creator_hub_v156_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
+
 # V105.7: publish ads.txt only when a real Google publisher id is configured.
 python - <<'PY'
 import os,re
