@@ -12,6 +12,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Verify social publish bridge contract
+        run: python web/test_v290_publish_bridge.py web/share_v156_component/index.html web/apply_v154_structural_home.py
       - name: Build production image
         run: docker build --progress=plain -t gsf-v290-audit .
       - name: Audit generated runtime
