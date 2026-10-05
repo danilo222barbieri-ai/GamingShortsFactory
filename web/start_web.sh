@@ -47,6 +47,10 @@ python /app/web/test_v291_ai_engine_bridge.py /app/web/home_v154_component/index
 python /app/web/fix_v292_semantic_resilience.py
 python /app/web/test_v292_semantic_circuit.py
 
+# V292: load each persisted social provider state only once per Hub request.
+python /app/web/fix_v292_hub_state_efficiency.py
+python /app/web/test_v292_hub_state_efficiency.py
+
 # V292: /share/state used provider flags without loading the account provider
 # map, causing a NameError and an Nginx 502 on every share-page state refresh.
 python /app/web/fix_v292_share_state.py
