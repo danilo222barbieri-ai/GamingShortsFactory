@@ -61,14 +61,18 @@ if semantic._semantic_circuit_status(now=2001.0).get("open"):
 
 source = open("/app/web/semantic_video_v114.py", "r", encoding="utf-8").read()
 for marker in (
+    "GSF_V292_SEMANTIC_RESILIENCE",
     "_semantic_circuit_status()",
     "provider-circuit-open",
     "_semantic_circuit_record_failure(exc)",
     "_semantic_circuit_record_success()",
     "GSF_SEMANTIC_COOLDOWN_429_SECONDS",
     "GSF_SEMANTIC_COOLDOWN_503_SECONDS",
+    'GSF_SEMANTIC_TIMEOUT_SECONDS","45"',
+    "types.HttpOptions(timeout=int(semantic_timeout*1000))",
+    "deadline=time.time()+semantic_timeout",
 ):
     if marker not in source:
-        raise SystemExit("V292 semantic runtime circuit integration missing: " + marker)
+        raise SystemExit("V292 semantic runtime resilience integration missing: " + marker)
 
-print("V292 semantic provider cooldown/circuit contract: PASS")
+print("V292 semantic provider timeout/cooldown/circuit contract: PASS")
