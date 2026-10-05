@@ -1,3 +1,4 @@
+import re
 import sys
 from pathlib import Path
 
@@ -19,6 +20,8 @@ def main():
     share = read(sys.argv[1])
     shell = read(sys.argv[2])
     visible = share.split("<script>", 1)[0].lower()
+    visible = re.sub(r"/\*.*?\*/", "", visible, flags=re.S)
+    visible = re.sub(r"<!--.*?-->", "", visible, flags=re.S)
 
     require("V289 final-share marker", "V289 SHARE FINAL" in share)
     require("GSF final title", "Condividi o scarica" in share and "Il tuo Short è pronto" in share)
