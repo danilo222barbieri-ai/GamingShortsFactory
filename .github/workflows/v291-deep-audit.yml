@@ -1,0 +1,113 @@
+name: V291 Deep Production Audit
+
+on:
+  push:
+    branches:
+      - v290-full-flow-audit
+  workflow_dispatch:
+
+jobs:
+  deep-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout production main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Build exact production image
+        run: docker build --progress=plain -t gsf-v291-deep-audit .
+
+      - name: Compile critical runtime modules
+        run: |
+          docker run --rm --entrypoint sh gsf-v291-deep-audit -c '
+            set -eu
+            python -m py_compile /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
+            python -m py_compile /app/web/direct_upload_server.py
+            python -m py_compile /app/web/ai_worker_server.py
+            python -m py_compile /app/web/game_brain_v112.py
+            python -m py_compile /app/web/ai_director_v124.py
+            python -m py_compile /app/web/quality_control_v124.py
+            python -m py_compile /app/web/guardian_watchdog_v128.py
+            python -m py_compile /app/web/one_click_v130.py
+            python -m py_compile /app/web/editor_2027_embed.py
+            echo "V291 COMPILE MATRIX: PASS"
+          '
+
+      - name: Full generated-runtime audit
+        run: |
+          docker run --rm --entrypoint python gsf-v291-deep-audit \
+            /app/web/audit_v290_full_flow.py \
+            /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py \
+            /app/web/share_v156_component/index.html \
+            /app/web/direct_upload_server.py \
+            /app/web/nginx.conf.template
+
+      - name: Core regression matrix
+        run: |
+          docker run --rm --entrypoint sh gsf-v291-deep-audit -c '
+            set -eu
+            APP=/app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
+            python /app/web/test_v150_end_to_end_stability.py "$APP" /app/web/direct_upload_server.py /app/web/ai_worker_server.py
+            python /app/web/test_v124_ai_core.py
+            python /app/web/test_v124_ai_os.py "$APP"
+            python /app/web/test_v125_cinematic_ai.py "$APP"
+            python /app/web/test_v126_creative_director.py "$APP"
+            python /app/web/test_v127_learning_ranker.py
+            python /app/web/test_v128_proactive_guardian.py
+            python /app/web/test_v129_auto_highlights.py
+            python /app/web/test_v130_one_click_ai.py "$APP"
+            python /app/web/test_editor_2027_component.py "$APP"
+            python /app/web/test_v103_final_quality.py "$APP"
+            python /app/web/test_v105_render_contract.py
+            python /app/web/test_v105_upload_policy.py
+            python /app/web/test_v105_dependency_lock.py
+            python /app/web/test_v107_ffmpeg_smoke.py
+            python /app/web/test_v107_mobile_codec_smoke.py
+            python /app/web/test_v286_global_gamebar.py /app/web/creator_hub_v156_component/index.html "$APP"
+            python /app/web/test_v287_profile_overview.py /app/web/creator_hub_v156_component/index.html "$APP"
+            python /app/web/test_v288_ai_journey.py /app/web/ai_v221_component/index.html /app/web/home_v154_component/index.html /app/web/editor_2027_component/index.html "$APP"
+            python /app/web/test_v289_share_final.py /app/web/share_v156_component/index.html "$APP"
+            python /app/web/test_v291_ai_engine_bridge.py "$APP" /app/web/home_v154_component/index.html /app/web/ai_v221_component/index.html
+            echo "V291 CORE REGRESSION MATRIX: PASS"
+          '
+
+      - name: Start production image
+        run: docker run -d --name gsf-v291-audit -p 8080:8080 -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v291-deep-audit
+
+      - name: HTTP surface smoke
+        run: |
+          set -eu
+          ready=0
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1; then ready=1; break; fi
+            sleep 2
+          done
+          test "$ready" = 1
+          curl -fsS http://127.0.0.1:8080/ | grep -qi 'Gaming Shorts Factory'
+          curl -fsS http://127.0.0.1:8080/creator-hub-v156/ | grep -qi 'Profilo'
+          curl -fsS http://127.0.0.1:8080/ai-v221/ | grep -qi 'Crea con IA'
+          curl -fsS http://127.0.0.1:8080/editor-2027/ | grep -qi 'GAME EDITOR'
+          curl -fsS http://127.0.0.1:8080/share-v156/?v=289 | grep -qi 'Condividi o scarica'
+          curl -fsS http://127.0.0.1:8080/social-connect | grep -qi 'YouTube'
+          curl -fsS http://127.0.0.1:8080/privacy | grep -qi 'Privacy'
+          curl -fsS http://127.0.0.1:8080/terms | grep -qi 'Termini'
+          echo 'V291 HTTP SURFACE SMOKE: PASS'
+
+      - name: Runtime error scan
+        run: |
+          sleep 5
+          docker logs gsf-v291-audit > /tmp/gsf.log 2>&1 || true
+          cat /tmp/gsf.log
+          if grep -Eqi 'Traceback|NameError|SyntaxError|ModuleNotFoundError|ImportError|RuntimeError:' /tmp/gsf.log; then
+            echo 'Runtime error signature found in logs'
+            exit 1
+          fi
+          echo 'V291 RUNTIME ERROR SCAN: PASS'
+
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          docker ps -a || true
+          docker logs gsf-v291-audit || true
