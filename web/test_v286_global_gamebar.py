@@ -9,6 +9,7 @@ hub_text = hub.read_text(encoding="utf-8")
 app_text = app.read_text(encoding="utf-8") if app.is_file() else ""
 
 broken_collection_calls = re.findall(r'(?<!\$)\$\([^\n]{0,120}?\)\.forEach', hub_text)
+cache_versions = [int(v) for v in re.findall(r'/creator-hub-v156/\?v=(\d+)', app_text)]
 
 checks = {
     "Creator Hub has no querySelector().forEach collection crash": not broken_collection_calls,
@@ -19,7 +20,7 @@ checks = {
     "global Game Bar routes My Shorts": 'data-target="hub" data-section="shorts"' in app_text,
     "global Game Bar routes Drafts": 'data-target="hub" data-section="drafts"' in app_text,
     "global shell forwards section to Creator Hub": "type:'GSF_HUB_FOCUS',section" in app_text,
-    "Creator Hub iframe cache is V286": '/creator-hub-v156/?v=286' in app_text,
+    "Creator Hub iframe cache is V286 or newer": bool(cache_versions) and max(cache_versions) >= 286,
 }
 
 for name, ok in checks.items():
