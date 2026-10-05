@@ -6,9 +6,6 @@ export GSF_LOW_MEMORY_WEB="${GSF_LOW_MEMORY_WEB:-1}"
 export GSF_AI_VOICE_TRANSCRIPTION="${GSF_AI_VOICE_TRANSCRIPTION:-0}"
 export GSF_MEDIA_BIND="${GSF_MEDIA_BIND:-0.0.0.0}"
 export GSF_MEDIA_PORT="${GSF_MEDIA_PORT:-8765}"
-export GSF_MEDIA_BASE_URL="${GSF_MEDIA_BASE_URL:-/media}"
-export GSF_RUNTIME_ROOT="${GSF_RUNTIME_ROOT:-/tmp/gsf-runtime}"
-export GSF_DIRECT_UPLOAD_PORT="${GSF_DIRECT_UPLOAD_PORT:-8502}"
 export GSF_CONTACT_PORT="${GSF_CONTACT_PORT:-8503}"
 export GSF_SESSION_TTL_SECONDS="${GSF_SESSION_TTL_SECONDS:-21600}"
 export HF_HOME="${HF_HOME:-/app/.cache/huggingface}"
@@ -46,6 +43,11 @@ python /app/web/test_v291_ai_engine_bridge.py /app/web/home_v154_component/index
 # providers so local/game-brain fallback stays fast and deterministic.
 python /app/web/fix_v292_semantic_resilience.py
 python /app/web/test_v292_semantic_circuit.py
+
+# V292: /share/state used provider flags without loading the account provider
+# map, causing a NameError and an Nginx 502 on every share-page state refresh.
+python /app/web/fix_v292_share_state.py
+python /app/web/test_v292_share_state.py
 
 # V105.7: publish ads.txt only when a real Google publisher id is configured.
 python - <<'PY'
