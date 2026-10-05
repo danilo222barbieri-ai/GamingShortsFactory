@@ -1,0 +1,88 @@
+name: V292 Production Audit
+
+on:
+  push:
+    branches:
+      - audit/full-production-2026-10-05
+  workflow_dispatch:
+
+jobs:
+  production-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build exact production image
+        run: docker build --progress=plain -t gsf-v292 .
+
+      - name: V292 semantic circuit regression
+        run: docker run --rm --entrypoint python gsf-v292 /app/web/test_v292_semantic_circuit.py
+
+      - name: Start production image
+        run: |
+          docker run -d --name gsf-v292-run -p 8080:8080 \
+            -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v292
+
+      - name: Wait for production HTTP health
+        run: |
+          set -eu
+          for i in $(seq 1 90); do
+            if ! docker inspect -f '{{.State.Running}}' gsf-v292-run 2>/dev/null | grep -q true; then
+              echo 'Container exited before becoming healthy'
+              docker logs gsf-v292-run || true
+              exit 1
+            fi
+            if curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1; then
+              echo 'V292 production container: HEALTHY'
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'Timed out waiting for V292 container'
+          docker logs gsf-v292-run || true
+          exit 1
+
+      - name: Current navigation and AI contracts
+        run: |
+          set -eu
+          for test in \
+            test_v285_creator_hub_clicks.py \
+            test_v286_global_gamebar.py \
+            test_v287_profile_overview.py \
+            test_v288_ai_journey.py \
+            test_v289_share_final.py \
+            test_v291_ai_engine_bridge.py \
+            test_v292_semantic_circuit.py; do
+            docker exec gsf-v292-run python /app/web/$test
+          done
+
+      - name: Render upload editor memory contracts
+        run: |
+          set -eu
+          for test in \
+            test_v105_no_audio_master.py \
+            test_v105_render_contract.py \
+            test_v105_upload_policy.py \
+            test_v105_worker_image.py \
+            test_v107_ffmpeg_smoke.py \
+            test_v107_mobile_codec_smoke.py \
+            test_editor_2027_component.py \
+            test_v145_content_memory.py; do
+            docker exec gsf-v292-run python /app/web/$test
+          done
+
+      - name: Runtime error scan
+        run: |
+          set -eu
+          docker logs gsf-v292-run > /tmp/gsf-v292.log 2>&1 || true
+          if grep -E 'Traceback|Unhandled exception|Container exited|GSF worker failed' /tmp/gsf-v292.log; then
+            echo 'Runtime error marker detected'
+            cat /tmp/gsf-v292.log
+            exit 1
+          fi
+          tail -n 200 /tmp/gsf-v292.log
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker logs gsf-v292-run || true
