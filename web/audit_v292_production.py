@@ -33,8 +33,6 @@ def need(label: str, ok: bool) -> None:
 for path in (APP, HOME, HUB, AI, EDITOR, SHARE, SERVER, NGINX):
     need(f"required production artifact exists: {path.name}", path.is_file())
 
-# Parse the actual generated Streamlit application first. This catches broken
-# patch chains before individual feature contracts can hide the syntax error.
 app_text = APP.read_text(encoding="utf-8")
 compile(app_text, str(APP), "exec")
 print("PASS: generated production app compiles", flush=True)
@@ -53,6 +51,7 @@ run("Semantic provider resilience", str(WEB / "test_v292_semantic_circuit.py"))
 run("AI profile differentiation", str(WEB / "test_v292_ai_profiles.py"))
 run("Creator Hub state efficiency", str(WEB / "test_v292_hub_state_efficiency.py"))
 run("Share state provider initialization", str(WEB / "test_v292_share_state.py"))
+run("Share connected-account publish bridge", str(WEB / "test_v292_share_publish_bridge.py"), str(SHARE))
 
 run("No-audio final master", str(WEB / "test_v105_no_audio_master.py"), str(APP))
 run("Render contract", str(WEB / "test_v105_render_contract.py"))
@@ -69,7 +68,6 @@ run(
     str(APP), str(SHARE), str(SERVER), str(NGINX),
 )
 
-# Current production invariants that span several older feature tests.
 need("three AI candidates remain the production target", "numero_clip=3" in app_text)
 need("15-second path remains supported", "15" in app_text)
 need("30-second path remains supported", "30" in app_text)
@@ -77,9 +75,6 @@ need("V291 authoritative engine state is present", "gsf_v291_engine_profile" in 
 need("final app keeps content-memory integration", "GSF_V145_MEMORY_FINAL" in app_text)
 need("final app keeps no-audio fallback", "anullsrc=channel_layout=stereo:sample_rate=48000" in app_text)
 
-# Keep memory/concurrency safety explicit: Railway currently has 1 GB per
-# service and the worker is intentionally serialized. Do not let a future
-# optimization silently multiply concurrent whole-video scans.
 worker_docker = (WEB / "Dockerfile.worker").read_text(encoding="utf-8")
 need("worker scan slots stay at one", "GSF_WORKER_SCAN_SLOTS=1" in worker_docker)
 need("semantic hard timeout is explicit", "GSF_SEMANTIC_TIMEOUT_SECONDS=45" in worker_docker)
