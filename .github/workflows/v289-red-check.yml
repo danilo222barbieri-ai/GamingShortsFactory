@@ -1,4 +1,4 @@
-name: V289 Share Final RED check
+name: V289 Share Final branch check
 
 on:
   push:
@@ -7,9 +7,42 @@ on:
   workflow_dispatch:
 
 jobs:
-  red-contract:
+  build-and-start:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Run V289 contract before implementation
-        run: python web/test_v289_share_final.py web/share_v156_component/index.html web/apply_v154_structural_home.py
+
+      - name: Build production image
+        run: docker build --progress=plain -t gsf-v289 .
+
+      - name: Start production image
+        run: |
+          docker run -d --name gsf-v289-run -p 8080:8080 \
+            -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v289
+
+      - name: Wait for health and V289 startup gate
+        run: |
+          set -eu
+          for i in $(seq 1 60); do
+            if ! docker inspect -f '{{.State.Running}}' gsf-v289-run 2>/dev/null | grep -q true; then
+              echo 'Container exited before becoming healthy'
+              docker logs gsf-v289-run || true
+              exit 1
+            fi
+            if curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1; then
+              logs="$(docker logs gsf-v289-run 2>&1)"
+              echo "$logs" | tail -n 180
+              echo "$logs" | grep -q 'V289 Share Final: PASS'
+              echo 'V289 production container: HEALTHY + CONTRACT PASS'
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'Timed out waiting for V289 container'
+          docker logs gsf-v289-run || true
+          exit 1
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker logs gsf-v289-run || true
