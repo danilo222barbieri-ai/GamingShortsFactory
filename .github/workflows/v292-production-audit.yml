@@ -57,31 +57,8 @@ jobs:
           docker logs gsf-v292-run || true
           exit 1
 
-      - name: Current navigation and AI contracts
-        run: |
-          set -eu
-          APP=/app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
-          docker exec gsf-v292-run python /app/web/test_v285_creator_hub_clicks.py /app/web/creator_hub_v156_component/index.html
-          docker exec gsf-v292-run python /app/web/test_v286_global_gamebar.py /app/web/creator_hub_v156_component/index.html $APP
-          docker exec gsf-v292-run python /app/web/test_v287_profile_overview.py /app/web/creator_hub_v156_component/index.html $APP
-          docker exec gsf-v292-run python /app/web/test_v288_ai_journey.py /app/web/ai_v221_component/index.html /app/web/home_v154_component/index.html /app/web/editor_2027_component/index.html $APP
-          docker exec gsf-v292-run python /app/web/test_v289_share_final.py /app/web/share_v156_component/index.html $APP
-          docker exec gsf-v292-run python /app/web/test_v291_ai_engine_bridge.py /app/web/home_v154_component/index.html $APP
-          docker exec gsf-v292-run python /app/web/test_v292_semantic_circuit.py
-          docker exec gsf-v292-run python /app/web/test_v292_ai_profiles.py
-
-      - name: Render upload editor memory contracts
-        run: |
-          set -eu
-          APP=/app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
-          docker exec gsf-v292-run python /app/web/test_v105_no_audio_master.py $APP
-          docker exec gsf-v292-run python /app/web/test_v105_render_contract.py
-          docker exec gsf-v292-run python /app/web/test_v105_upload_policy.py
-          docker exec gsf-v292-run python /app/web/test_v105_worker_image.py
-          docker exec gsf-v292-run python /app/web/test_v107_ffmpeg_smoke.py
-          docker exec gsf-v292-run python /app/web/test_v107_mobile_codec_smoke.py
-          docker exec gsf-v292-run python /app/web/test_editor_2027_component.py $APP
-          docker exec gsf-v292-run python /app/web/test_v145_content_memory.py /app/web/direct_upload_server.py $APP
+      - name: Consolidated V292 production audit
+        run: docker exec gsf-v292-run python /app/web/audit_v292_production.py
 
       - name: Runtime error scan
         run: |
