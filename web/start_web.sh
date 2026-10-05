@@ -29,6 +29,10 @@ python /app/web/test_v286_global_gamebar.py /app/web/creator_hub_v156_component/
 python /app/web/fix_v287_profile_overview.py
 python /app/web/test_v287_profile_overview.py /app/web/creator_hub_v156_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
 
+# V288: guided AI journey and explicit Game Editor -> Create Short handoff.
+python /app/web/fix_v288_ai_journey.py
+python /app/web/test_v288_ai_journey.py /app/web/ai_v221_component/index.html /app/web/home_v154_component/index.html /app/web/editor_2027_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
+
 # V105.7: publish ads.txt only when a real Google publisher id is configured.
 python - <<'PY'
 import os,re
