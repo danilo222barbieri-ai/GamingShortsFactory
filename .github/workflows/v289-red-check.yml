@@ -1,0 +1,15 @@
+name: V289 Share Final RED check
+
+on:
+  push:
+    branches:
+      - v289-share-final
+  workflow_dispatch:
+
+jobs:
+  red-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V289 contract before implementation
+        run: python web/test_v289_share_final.py web/share_v156_component/index.html web/apply_v154_structural_home.py
