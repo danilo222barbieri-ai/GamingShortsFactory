@@ -57,6 +57,22 @@ jobs:
           docker logs gsf-v292-run || true
           exit 1
 
+      - name: Verify share state live HTTP contract
+        run: |
+          set -eu
+          rm -f /tmp/gsf-cookie /tmp/share.json
+          code=$(curl -sS -c /tmp/gsf-cookie -b /tmp/gsf-cookie -o /tmp/share.json -w '%{http_code}' http://127.0.0.1:8080/share/state)
+          cat /tmp/share.json
+          test "$code" = "200"
+          python - <<'PY'
+          import json
+          payload=json.load(open('/tmp/share.json',encoding='utf-8'))
+          assert payload.get('ok') is True, payload
+          assert 'ready' in payload, payload
+          assert isinstance(payload.get('social'),dict), payload
+          print('V292 /share/state live HTTP: PASS')
+          PY
+
       - name: Consolidated V292 production audit
         run: docker exec gsf-v292-run python /app/web/audit_v292_production.py
 
