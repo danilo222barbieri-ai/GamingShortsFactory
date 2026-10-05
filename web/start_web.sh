@@ -37,6 +37,10 @@ python /app/web/test_v288_ai_journey.py /app/web/ai_v221_component/index.html /a
 python /app/web/fix_v289_share_final.py
 python /app/web/test_v289_share_final.py /app/web/share_v156_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
 
+# V290: make final social cards reach the real direct-publish controls across Streamlit reruns.
+python /app/web/fix_v290_publish_bridge.py
+python /app/web/test_v290_publish_bridge.py /app/web/share_v156_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
+
 # V105.7: publish ads.txt only when a real Google publisher id is configured.
 python - <<'PY'
 import os,re
