@@ -42,6 +42,11 @@ python /app/web/test_v289_share_final.py /app/web/share_v156_component/index.htm
 python /app/web/fix_v291_ai_engine_bridge.py
 python /app/web/test_v291_ai_engine_bridge.py /app/web/home_v154_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
 
+# V292: hard-cap unstable cloud semantic calls and cool down quota/unavailable
+# providers so local/game-brain fallback stays fast and deterministic.
+python /app/web/fix_v292_semantic_resilience.py
+python /app/web/test_v292_semantic_circuit.py
+
 # V105.7: publish ads.txt only when a real Google publisher id is configured.
 python - <<'PY'
 import os,re
