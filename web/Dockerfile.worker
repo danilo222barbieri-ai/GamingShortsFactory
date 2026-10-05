@@ -6,6 +6,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     GSF_AI_APP_PATH=/app/GamingShortsFactory_V99_FINAL_ARCH.py \
     GSF_WORKER_SCAN_SLOTS=1 \
     GSF_WORKER_DOWNLOAD_CONCURRENCY=8 \
+    GSF_SEMANTIC_TIMEOUT_SECONDS=45 \
+    GSF_SEMANTIC_COOLDOWN_429_SECONDS=900 \
+    GSF_SEMANTIC_COOLDOWN_503_SECONDS=120 \
     OMP_NUM_THREADS=1 \
     OPENBLAS_NUM_THREADS=1 \
     MKL_NUM_THREADS=1
@@ -61,6 +64,8 @@ RUN chmod +x /usr/local/bin/ffmpeg && \
     python /app/web/apply_v98_final_6lanes.py && \
     python /app/web/apply_v99_ai_turbo.py && \
     python /app/web/apply_v99_final_arch.py && \
+    python /app/web/fix_v292_semantic_resilience.py && \
+    python /app/web/test_v292_semantic_circuit.py && \
     python /app/web/test_v114_semantic_video.py && \
     python /app/web/test_v124_ai_core.py && \
     python /app/web/test_v129_auto_highlights.py && \
