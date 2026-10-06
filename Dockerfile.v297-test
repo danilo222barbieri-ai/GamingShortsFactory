@@ -1,0 +1,12 @@
+FROM python:3.12-slim
+WORKDIR /app
+COPY web/creator_hub_v156_component/index.html /app/web/creator_hub_v156_component/index.html
+COPY web/ai_v221_component/index.html /app/web/ai_v221_component/index.html
+COPY web/editor_2027_component/index.html /app/web/editor_2027_component/index.html
+COPY web/share_v156_component/index.html /app/web/share_v156_component/index.html
+COPY web/editor_2027_embed.py /app/web/editor_2027_embed.py
+COPY web/start_web.sh /app/web/start_web.sh
+COPY web/test_v297_desk_rebuild.py /app/web/test_v297_desk_rebuild.py
+COPY src_payload /app/src_payload
+COPY web/apply_v154_structural_home.py /app/web/apply_v154_structural_home.py
+CMD ["sh","-lc","python /app/web/apply_v154_structural_home.py >/dev/null 2>&1 || true; python /app/web/test_v297_desk_rebuild.py /app"]
