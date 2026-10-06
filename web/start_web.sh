@@ -63,6 +63,11 @@ python /app/web/test_v295_internal_pages_responsive.py /app
 python /app/web/fix_v296_visible_internal_pages.py
 python /app/web/test_v296_visible_internal_pages.py /app
 
+# V299: preserve the last clean Editor before V297/V298 desktop DOM rebuilds.
+# V297 still updates Hub/AI/Share, but the Editor is restored immediately after
+# the V297 regression checks so the legacy player/cockpit stays intact.
+cp /app/web/editor_2027_component/index.html /tmp/gsf_editor_pre_v297.html
+
 # V297: rebuild the real desktop DOM for Hub / AI / Editor / Share using the
 # approved desk composition, while leaving mobile and the Home untouched.
 # V289 owns the Share root class, so normalize only during the structural patch
@@ -78,9 +83,11 @@ python /app/web/fix_v297_1_ai_grid_hotfix.py
 python /app/web/test_v297_1_ai_grid_hotfix.py
 python /app/web/test_v297_desk_rebuild.py /app
 
-# V298: desktop Game Editor graphic-only rebuild. Keep the working player and
-# controls intact; only move their existing DOM nodes into the approved layout.
-python /app/web/fix_v298_editor_graphic_only.py
+# V299: remove the Editor-only V297/V298 overlay stack and return to the clean
+# pre-V297 player/cockpit. The old controls, timeline and fullscreen behavior
+# stay exactly where the Editor component originally owns them.
+cp /tmp/gsf_editor_pre_v297.html /app/web/editor_2027_component/index.html
+python /app/web/fix_v299_editor_clean_restore.py
 
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
