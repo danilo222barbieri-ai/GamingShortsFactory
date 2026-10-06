@@ -1,0 +1,16 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    OMP_NUM_THREADS=1 \
+    OPENBLAS_NUM_THREADS=1 \
+    MKL_NUM_THREADS=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY web/v105_render_benchmark.py /app/v105_render_benchmark.py
+COPY web/v105_stress_matrix.py /app/v105_stress_matrix.py
+
+CMD ["sh","-lc","n=${GSF_RENDER_CONCURRENCY:-1}; pids=''; i=1; while [ $i -le $n ]; do python /app/v105_stress_matrix.py --workdir /tmp/gsf-stress-$i & pids=\"$pids $!\"; i=$((i+1)); done; rc=0; for p in $pids; do wait $p || rc=1; done; exit $rc"]
