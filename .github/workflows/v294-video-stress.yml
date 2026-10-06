@@ -13,6 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+
       - name: Generate real H264 AAC fixture
         run: |
           ffmpeg -hide_banner -loglevel error -y \
@@ -27,7 +32,7 @@ jobs:
           BASE_URL: https://gaming-shorts-factory-v79-production.up.railway.app
         run: |
           python - <<'PY'
-          import concurrent.futures, json, os, pathlib, time, uuid, urllib.request, urllib.error
+          import concurrent.futures, json, os, pathlib, time, uuid, urllib.request
 
           BASE=os.environ['BASE_URL'].rstrip('/')
           VIDEO=pathlib.Path('/tmp/gsf-v294.mp4').read_bytes()
@@ -46,9 +51,7 @@ jobs:
           def upload_one(stage,index):
               sid=f"v294s{stage}_{int(time.time())}_{uuid.uuid4().hex[:8]}"
               t0=time.perf_counter()
-              status,init=request_json('/bucket/init',sid,{
-                  'name':NAME,'size':SIZE,'type':'video/mp4'
-              },'POST')
+              status,init=request_json('/bucket/init',sid,{'name':NAME,'size':SIZE,'type':'video/mp4'},'POST')
               if status!=200 or not init.get('ok'):
                   raise RuntimeError(f'init failed sid={sid} status={status} body={init}')
               parts=init.get('parts') or []
@@ -60,19 +63,14 @@ jobs:
               })
               up0=time.perf_counter()
               with urllib.request.urlopen(put_req,timeout=90) as r:
-                  etag=(r.headers.get('ETag') or '').strip()
-                  put_status=r.status
+                  etag=(r.headers.get('ETag') or '').strip(); put_status=r.status
               upload_s=time.perf_counter()-up0
               if put_status not in (200,201) or not etag:
                   raise RuntimeError(f'part upload failed sid={sid} status={put_status} etag={etag!r}')
 
               status,complete=request_json('/bucket/complete',sid,{
-                  'upload_id':init['upload_id'],
-                  'multipart_id':init['multipart_id'],
-                  'key':init['key'],
-                  'analysis_key':init['analysis_key'],
-                  'name':NAME,
-                  'size':SIZE,
+                  'upload_id':init['upload_id'],'multipart_id':init['multipart_id'],'key':init['key'],
+                  'analysis_key':init['analysis_key'],'name':NAME,'size':SIZE,
                   'parts':[{'PartNumber':1,'ETag':etag}],
               },'POST')
               if status!=202 or not complete.get('ok'):
@@ -81,8 +79,7 @@ jobs:
               prep0=time.perf_counter(); last={}
               while time.perf_counter()-prep0 < 120:
                   s,last=request_json('/bucket/status?upload_id='+init['upload_id'],sid)
-                  if s==200 and last.get('ready'):
-                      break
+                  if s==200 and last.get('ready'): break
                   if s>=500 or last.get('error'):
                       raise RuntimeError(f'materialize failed sid={sid} status={s} body={last}')
                   time.sleep(1)
@@ -90,12 +87,9 @@ jobs:
                   raise RuntimeError(f'materialize timeout sid={sid} body={last}')
 
               total_s=time.perf_counter()-t0
-              row={
-                  'stage':stage,'index':index,'sid':sid,'upload_id':init['upload_id'],
-                  'analysis_key':init['analysis_key'],'bytes':SIZE,
-                  'upload_s':round(upload_s,3),'materialize_s':round(time.perf_counter()-prep0,3),
-                  'total_s':round(total_s,3)
-              }
+              row={'stage':stage,'index':index,'sid':sid,'upload_id':init['upload_id'],
+                   'analysis_key':init['analysis_key'],'bytes':SIZE,'upload_s':round(upload_s,3),
+                   'materialize_s':round(time.perf_counter()-prep0,3),'total_s':round(total_s,3)}
               print('VIDEO_FLOW='+json.dumps(row,sort_keys=True),flush=True)
               return row
 
@@ -110,18 +104,15 @@ jobs:
                       except Exception as exc:
                           errors.append(repr(exc)); print('VIDEO_ERROR='+repr(exc),flush=True)
               elapsed=time.perf_counter()-started
-              summary={
-                  'stage':n,'submitted':n,'completed':len(rows),'errors':len(errors),
-                  'elapsed_s':round(elapsed,3),
-                  'avg_total_s':round(sum(r['total_s'] for r in rows)/len(rows),3) if rows else None,
-                  'max_total_s':max((r['total_s'] for r in rows),default=None),
-              }
+              summary={'stage':n,'submitted':n,'completed':len(rows),'errors':len(errors),
+                       'elapsed_s':round(elapsed,3),
+                       'avg_total_s':round(sum(r['total_s'] for r in rows)/len(rows),3) if rows else None,
+                       'max_total_s':max((r['total_s'] for r in rows),default=None)}
               print('VIDEO_STAGE='+json.dumps(summary,sort_keys=True),flush=True)
               if errors:
                   print('V294 SAFETY STOP: stage failed; higher concurrency will not run',flush=True)
                   raise SystemExit(2)
               all_rows.extend(rows)
-              # Give the two AI worker replicas time to drain queued prescans before escalating.
               time.sleep(12)
 
           print('V294_ANALYSIS_KEYS='+json.dumps([r['analysis_key'] for r in all_rows]),flush=True)
