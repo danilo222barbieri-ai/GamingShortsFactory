@@ -42,6 +42,11 @@ python /app/web/test_v289_share_final.py /app/web/share_v156_component/index.htm
 python /app/web/fix_v291_ai_engine_bridge.py
 python /app/web/test_v291_ai_engine_bridge.py /app/web/home_v154_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
 
+# V293: keep the final Share state endpoint alive by defining Creator Hub
+# provider state before Facebook/Twitch connection flags are read.
+python /app/web/fix_v293_share_state_resilience.py /app/web/direct_upload_server.py
+python /app/web/test_v293_share_state_resilience.py /app/web/direct_upload_server.py
+
 # V105.7: publish ads.txt only when a real Google publisher id is configured.
 python - <<'PY'
 import os,re
