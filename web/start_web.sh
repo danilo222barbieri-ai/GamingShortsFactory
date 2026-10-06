@@ -78,6 +78,12 @@ python /app/web/fix_v297_1_ai_grid_hotfix.py
 python /app/web/test_v297_1_ai_grid_hotfix.py
 python /app/web/test_v297_desk_rebuild.py /app
 
+# V298: rebuild only the desktop Game Editor around the approved reference:
+# two side ads, central 9:16 player, mural, three best moments, timeline below,
+# and the existing real editor controls moved into one horizontal toolbar.
+python /app/web/fix_v298_editor_reference_layout.py
+python /app/web/test_v298_editor_reference_layout.py /app
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
