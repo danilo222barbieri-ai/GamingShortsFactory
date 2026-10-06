@@ -31,7 +31,10 @@ if new_materialize not in upload_src:
     UPLOAD_SERVER.write_text(upload_src, encoding="utf-8")
 
 
-# 2) Serialize the actual final FFmpeg subprocess across Streamlit sessions.
+# 2) Serialize the real final FFmpeg execution across Streamlit sessions.
+# Later GSF versions may wrap subprocess.run in a helper, so anchor on the
+# established render result variable `r` plus the command object `cmd` instead
+# of depending on a specific callable name.
 s = APP_SRC.read_text(encoding="utf-8")
 tree = ast.parse(s)
 core = next(
@@ -45,23 +48,26 @@ if core is None:
 def is_render_run(assign):
     if not isinstance(assign, ast.Assign):
         return False
+    if not any(isinstance(target, ast.Name) and target.id == "r" for target in assign.targets):
+        return False
     call = assign.value
-    return (
-        isinstance(call, ast.Call)
-        and isinstance(call.func, ast.Attribute)
-        and isinstance(call.func.value, ast.Name)
-        and call.func.value.id == "subprocess"
-        and call.func.attr == "run"
-        and call.args
-        and isinstance(call.args[0], ast.Name)
-        and call.args[0].id == "cmd"
-        and any(isinstance(target, ast.Name) and target.id == "r" for target in assign.targets)
-    )
+    if not isinstance(call, ast.Call):
+        return False
+    return any(isinstance(node, ast.Name) and node.id == "cmd" for node in ast.walk(call))
 
 
 render_assigns = [node for node in ast.walk(core) if is_render_run(node)]
 if len(render_assigns) != 1:
-    raise RuntimeError(f"V293 expected one final subprocess.run(cmd), found {len(render_assigns)}")
+    candidates = []
+    for node in ast.walk(core):
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "r" for target in node.targets
+        ):
+            candidates.append(ast.unparse(node)[:500])
+    raise RuntimeError(
+        f"V293 expected one final r=<call using cmd>, found {len(render_assigns)}; "
+        f"r_candidates={candidates}"
+    )
 render_assign = render_assigns[0]
 
 parents = {}
@@ -70,7 +76,7 @@ for parent in ast.walk(core):
         parents[child] = parent
 parent = parents.get(render_assign)
 if parent is None or not hasattr(parent, "body") or render_assign not in parent.body:
-    raise RuntimeError("V293 render subprocess parent body missing")
+    raise RuntimeError("V293 render execution parent body missing")
 
 with_node = ast.With(
     items=[
