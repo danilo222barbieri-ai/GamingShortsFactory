@@ -47,6 +47,11 @@ python /app/web/test_v291_ai_engine_bridge.py /app/web/home_v154_component/index
 python /app/web/fix_v293_share_state_resilience.py /app/web/direct_upload_server.py
 python /app/web/test_v293_share_state_resilience.py /app/web/direct_upload_server.py
 
+# V293 render-memory guard: generate the production app only after all runtime
+# V154 patches above have been applied, and narrow direct-upload materialization
+# before the upload server starts.
+python /app/web/apply_v293_render_memory_guard.py
+
 # V105.7: publish ads.txt only when a real Google publisher id is configured.
 python - <<'PY'
 import os,re
@@ -68,5 +73,5 @@ python /app/web/direct_upload_server.py &
 python /app/web/contact_server.py &
 nginx
 python /app/web/runtime_smoke_v107.py &
-exec python -m streamlit run /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py \
+exec python -m streamlit run /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py \
   --server.address=127.0.0.1 --server.port=8501 --server.maxUploadSize=4096 --server.maxMessageSize=4096 --server.headless=true
