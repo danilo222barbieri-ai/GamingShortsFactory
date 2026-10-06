@@ -64,6 +64,7 @@ need("createShortJourneyBtn" in editor, "Editor keeps the real Create Short acti
 # Share: actual preview + social publication area + download row.
 need("V297 DESK REBUILD — SHARE" in share, "Share has V297 rebuild marker")
 need('data-v297-layout="share"' in share, "Share exposes V297 desktop layout")
+need('class="gsfFinalSurface" data-v297-layout="share"' in share, "Share preserves the V289 final-surface class")
 need("v297ShareGrid" in share and "v297SharePreview" in share and "v297ShareMain" in share, "Share has preview + publication workspace DOM")
 need("<video" in share and "v297PreviewVideo" in share, "Share includes a real video preview element")
 need("state.video_url" in share, "Share preview is wired to the real final video URL")
@@ -75,9 +76,12 @@ for route in ("creator-hub-v156", "share-v156", "ai-v221"):
     need(f"/{route}/?v=297" in app, f"{route} cache key is V297")
 need('"gsf_editor_2027_v297"' in embed, "Editor component cache key is V297")
 
-# Startup must apply and verify V297 after V296.
+# Startup must apply and verify V297 after V296, preserving the V289 Share root.
+need("fix_v297_share_anchor_compat.py pre" in start, "startup normalizes V289 Share root before V297")
 need("fix_v297_desk_rebuild.py" in start, "startup applies V297")
+need("fix_v297_share_anchor_compat.py post" in start, "startup restores V289 Share class after V297")
 need("test_v297_desk_rebuild.py" in start, "startup verifies V297")
 need(start.index("fix_v296_visible_internal_pages.py") < start.index("fix_v297_desk_rebuild.py"), "V297 runs after V296")
+need(start.index("fix_v297_share_anchor_compat.py pre") < start.index("fix_v297_desk_rebuild.py") < start.index("fix_v297_share_anchor_compat.py post"), "Share compatibility brackets the V297 rebuild")
 
 print("V297 desk rebuild: PASS")
