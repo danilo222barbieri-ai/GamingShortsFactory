@@ -18,6 +18,7 @@ def need(ok, msg):
 app = Path(sys.argv[1] if len(sys.argv) > 1 else "/app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py")
 upload_server = Path(sys.argv[2] if len(sys.argv) > 2 else "/app/web/direct_upload_server.py")
 gate = Path(sys.argv[3] if len(sys.argv) > 3 else "/app/web/render_gate_v293.py")
+original_app = Path(sys.argv[4] if len(sys.argv) > 4 else "/app/GamingShortsFactory_V154_STRUCTURAL_HOME.py")
 
 need(gate.is_file(), "V293 render gate module exists")
 gate_src = gate.read_text(encoding="utf-8")
@@ -52,6 +53,7 @@ for thread in threads:
     thread.start()
 for thread in threads:
     thread.join(timeout=3)
+need(all(not thread.is_alive() for thread in threads), "render gate releases all waiting callers")
 need(state["max_active"] == 1, "render gate serializes concurrent final renders")
 
 need(upload_server.is_file(), "direct upload server exists")
@@ -61,39 +63,62 @@ need('GSF_MATERIALIZE_CONCURRENCY","1"' in compact_upload, "materialization defa
 need("returnmax(1,min(2,value))" in compact_upload, "materialization concurrency is hard-capped at two")
 
 need(app.is_file(), "V293 guarded production app exists")
+need(original_app.is_file(), "V154 source app exists for semantic comparison")
 app_src = app.read_text(encoding="utf-8")
+original_src = original_app.read_text(encoding="utf-8")
 tree = ast.parse(app_src)
+original_tree = ast.parse(original_src)
 core = next((n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "_gsf_render_core"), None)
+original_core = next((n for n in original_tree.body if isinstance(n, ast.FunctionDef) and n.name == "_gsf_render_core"), None)
 need(core is not None, "final render core still exists")
+need(original_core is not None, "original final render core exists")
 segment = ast.get_source_segment(app_src, core) or ""
 need("_gsf_render_slot_v293" in segment, "final render core acquires V293 render slot")
 
-with_nodes = [n for n in ast.walk(core) if isinstance(n, ast.With)]
-protected = False
-for node in with_nodes:
-    for item in node.items:
-        expr = item.context_expr
-        if isinstance(expr, ast.Call) and isinstance(expr.func, ast.Name) and expr.func.id == "_gsf_render_slot_v293":
-            protected = True
-need(protected, "FFmpeg final render is wrapped by the global render gate")
+
+def is_gate_with(node):
+    if not isinstance(node, ast.With) or len(node.items) != 1:
+        return False
+    expr = node.items[0].context_expr
+    return (
+        isinstance(expr, ast.Call)
+        and isinstance(expr.func, ast.Name)
+        and expr.func.id == "_gsf_render_slot_v293"
+    )
 
 
-def list_has_pair(flag, value):
-    for node in ast.walk(core):
-        if not isinstance(node, ast.List):
-            continue
-        vals = [x.value if isinstance(x, ast.Constant) else None for x in node.elts]
-        for i in range(len(vals) - 1):
-            if vals[i] == flag and vals[i + 1] == value:
-                return True
-    return False
+gate_nodes = [node for node in ast.walk(core) if is_gate_with(node)]
+need(len(gate_nodes) == 1, "exactly one final render execution is guarded")
+need(len(gate_nodes[0].body) == 1 and isinstance(gate_nodes[0].body[0], ast.Assign), "gate wraps only the final render assignment")
+
+# Strong regression check: remove only the V293 guard and verify the complete
+# render function is AST-equivalent to V154. This proves preset/CRF/threading,
+# crop/scale, audio, timeout and fallback behavior were not changed by V293.
+class StripV293Guard(ast.NodeTransformer):
+    def visit_With(self, node):
+        node = self.generic_visit(node)
+        if is_gate_with(node):
+            if len(node.body) != 1:
+                raise AssertionError("V293 guard unexpectedly wraps multiple statements")
+            return node.body[0]
+        return node
 
 
-need(list_has_pair("-preset", "medium"), "render keeps x264 medium preset")
-need(list_has_pair("-crf", "14"), "render keeps CRF 14")
-need(list_has_pair("-threads", "1"), "render keeps one x264 thread")
-need(list_has_pair("-profile:v", "high"), "render keeps H.264 High profile")
-need(list_has_pair("-level:v", "4.2"), "render keeps H.264 level 4.2")
+def normalized_function(node):
+    # Round-trip both sides through unparse/parse so formatting and source-line
+    # metadata cannot create false differences.
+    return ast.parse(ast.unparse(node)).body[0]
+
+
+guarded_norm = normalized_function(core)
+guarded_without_gate = StripV293Guard().visit(guarded_norm)
+ast.fix_missing_locations(guarded_without_gate)
+original_norm = normalized_function(original_core)
+need(
+    ast.dump(guarded_without_gate, include_attributes=False)
+    == ast.dump(original_norm, include_attributes=False),
+    "V293 leaves final render semantics unchanged except serialization gate",
+)
 need("GSF_FINAL_RENDER_SLOTS" in app_src, "production app exposes the render slot setting")
 
 py_compile.compile(str(gate), doraise=True)
