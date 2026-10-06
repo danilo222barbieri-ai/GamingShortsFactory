@@ -53,6 +53,11 @@ python /app/web/test_v293_share_state_resilience.py /app/web/direct_upload_serve
 python /app/web/fix_v294_home_desktop_realign.py
 python /app/web/test_v294_home_desktop_realign.py /app/web/home_v154_component/index.html /app/web/home_v154_embed.py
 
+# V295: pair every internal creation/account surface across desktop and mobile
+# while keeping the approved Home mobile geometry untouched.
+python /app/web/fix_v295_internal_pages_responsive.py
+python /app/web/test_v295_internal_pages_responsive.py /app
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
