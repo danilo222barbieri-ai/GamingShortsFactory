@@ -1,0 +1,32 @@
+name: V294 Render Concurrency Stress
+
+on:
+  push:
+    branches:
+      - v294-video-stress
+
+permissions:
+  contents: read
+
+jobs:
+  render_stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build current production image
+        run: docker build -t gsf-v294-render .
+      - name: Run render concurrency stress at Railway frontend limits
+        run: |
+          set +e
+          docker run --name gsf-v294-render-run \
+            --cpus=2 --memory=1g --memory-swap=1g \
+            -e GSF_BENCH_FFMPEG=/usr/local/bin/ffmpeg \
+            -e GSF_BENCH_FFPROBE=/usr/bin/ffprobe \
+            --entrypoint python \
+            gsf-v294-render /app/web/v294_render_concurrency_stress.py
+          rc=$?
+          echo "V294_RENDER_CONTAINER_RC=$rc"
+          docker inspect gsf-v294-render-run --format 'OOMKilled={{.State.OOMKilled}} ExitCode={{.State.ExitCode}} Error={{.State.Error}}' || true
+          docker rm -f gsf-v294-render-run >/dev/null 2>&1 || true
+          exit $rc
