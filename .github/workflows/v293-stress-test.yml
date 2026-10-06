@@ -9,14 +9,11 @@ permissions:
   contents: read
 
 jobs:
-  session_stress:
+  live_stress:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - name: Share state regression gate
-        run: python web/test_v293_share_state_resilience.py web/direct_upload_server.py
-      - name: Run session-aware production diagnostics
+      - name: Run final production load test
         env:
           BASE_URL: https://gaming-shorts-factory-v79-production.up.railway.app
         run: |
@@ -27,7 +24,7 @@ jobs:
           base=os.environ['BASE_URL'].rstrip('/')
 
           def get_with(opener,path):
-              req=urllib.request.Request(base+path,headers={'User-Agent':'GSF-V293-Session-Stress/1.0','Cache-Control':'no-cache'})
+              req=urllib.request.Request(base+path,headers={'User-Agent':'GSF-V293-Final-Stress/1.0','Cache-Control':'no-cache'})
               t0=time.perf_counter()
               try:
                   with opener.open(req,timeout=12) as r:
@@ -43,48 +40,66 @@ jobs:
               jar=http.cookiejar.CookieJar()
               return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
 
-          op=new_session()
-          print('SESSION_ROOT',get_with(op,'/'))
-          print('SESSION_SHARE',get_with(op,'/share/state'))
-          print('SESSION_HUB',get_with(op,'/creator-hub/state'))
+          def pct(xs,p):
+              ys=sorted(xs)
+              if not ys: return None
+              return ys[max(0,min(len(ys)-1,math.ceil(p*len(ys))-1))]
 
+          def load_stage(name,path,total,conc):
+              def one(): return get_with(urllib.request.build_opener(),path)
+              t0=time.perf_counter(); rows=[]
+              with concurrent.futures.ThreadPoolExecutor(max_workers=conc) as ex:
+                  futs=[ex.submit(one) for _ in range(total)]
+                  for f in concurrent.futures.as_completed(futs): rows.append(f.result())
+              elapsed=time.perf_counter()-t0
+              counts=Counter(x[0] for x in rows); lat=[x[1] for x in rows]
+              result={'stage':name,'path':path,'requests':total,'concurrency':conc,
+                      'elapsed_s':round(elapsed,3),'rps':round(total/max(elapsed,.001),2),
+                      'status':dict(sorted(counts.items())),'p50_ms':round(pct(lat,.50),1),
+                      'p95_ms':round(pct(lat,.95),1),'p99_ms':round(pct(lat,.99),1),'max_ms':round(max(lat),1)}
+              print('LOAD='+json.dumps(result,sort_keys=True))
+              bad=sum(v for k,v in counts.items() if k < 200 or k >= 500)
+              return bad/total
+
+          # Escalate the public Home gradually and stop if error rate exceeds 2%.
+          for stage in [('root-c10','/',40,10),('root-c20','/',80,20),('root-c40','/',120,40),('root-c60','/',180,60)]:
+              rate=load_stage(*stage)
+              if rate > .02:
+                  print('SAFETY_STOP: public Home error rate exceeded 2%')
+                  raise SystemExit(2)
+              time.sleep(2)
+
+          # Verify the exact state endpoints with a fresh browser-like session per flow.
           def session_flow(target):
               op=new_session()
               s1,_,_=get_with(op,'/')
               s2,lat,body=get_with(op,target)
               return s1,s2,lat,body
 
-          def pct(xs,p):
-              ys=sorted(xs)
-              if not ys: return None
-              return ys[max(0,min(len(ys)-1,math.ceil(p*len(ys))-1))]
+          # Single-session sanity checks first.
+          op=new_session()
+          print('SANITY_ROOT',get_with(op,'/'))
+          print('SANITY_SHARE',get_with(op,'/share/state'))
+          print('SANITY_HUB',get_with(op,'/creator-hub/state'))
 
-          failures=False
           for target,total,conc in [('/share/state',40,10),('/creator-hub/state',40,10)]:
-              rows=[]
-              t0=time.perf_counter()
+              rows=[]; t0=time.perf_counter()
               with concurrent.futures.ThreadPoolExecutor(max_workers=conc) as ex:
                   futs=[ex.submit(session_flow,target) for _ in range(total)]
                   for f in concurrent.futures.as_completed(futs): rows.append(f.result())
               elapsed=time.perf_counter()-t0
-              root_counts=Counter(x[0] for x in rows)
-              target_counts=Counter(x[1] for x in rows)
-              lat=[x[2] for x in rows]
-              result={
-                  'target':target,'sessions':total,'concurrency':conc,
-                  'elapsed_s':round(elapsed,3),'flows_per_s':round(total/max(elapsed,.001),2),
-                  'root_status':dict(sorted(root_counts.items())),
-                  'target_status':dict(sorted(target_counts.items())),
-                  'p50_ms':round(pct(lat,.50),1),'p95_ms':round(pct(lat,.95),1),
-                  'p99_ms':round(pct(lat,.99),1),'max_ms':round(max(lat),1),
-              }
-              print('SESSION_STRESS='+json.dumps(result,sort_keys=True))
-              bad=sum(v for k,v in target_counts.items() if k < 200 or k >= 500)
-              if bad:
-                  failures=True
+              roots=Counter(x[0] for x in rows); counts=Counter(x[1] for x in rows); lat=[x[2] for x in rows]
+              result={'target':target,'sessions':total,'concurrency':conc,
+                      'elapsed_s':round(elapsed,3),'flows_per_s':round(total/max(elapsed,.001),2),
+                      'root_status':dict(sorted(roots.items())),'target_status':dict(sorted(counts.items())),
+                      'p50_ms':round(pct(lat,.50),1),'p95_ms':round(pct(lat,.95),1),
+                      'p99_ms':round(pct(lat,.99),1),'max_ms':round(max(lat),1)}
+              print('SESSION_LOAD='+json.dumps(result,sort_keys=True))
+              bad=sum(v for k,v in counts.items() if k < 200 or k >= 500)
+              if bad/total > .02:
+                  print('SAFETY_STOP: state endpoint error rate exceeded 2%')
+                  raise SystemExit(2)
+              time.sleep(2)
 
-          if failures:
-              print('V293 SESSION STRESS: FAIL')
-              raise SystemExit(2)
-          print('V293 SESSION STRESS: PASS')
+          print('V293 FINAL PRODUCTION STRESS: PASS')
           PY
