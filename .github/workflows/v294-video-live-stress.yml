@@ -1,0 +1,123 @@
+name: V294 Live Video Stress
+
+on:
+  push:
+    branches:
+      - v294-video-stress
+
+permissions:
+  contents: read
+
+jobs:
+  video_stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Generate synthetic gameplay-like source
+        run: |
+          ffmpeg -hide_banner -loglevel error -y \
+            -f lavfi -i 'testsrc2=size=1920x1080:rate=60' \
+            -f lavfi -i 'sine=frequency=659:sample_rate=48000' \
+            -t 8 -shortest -c:v libx264 -preset ultrafast -crf 24 -threads 2 \
+            -pix_fmt yuv420p -c:a aac -b:a 160k -ar 48000 -ac 2 \
+            -movflags +faststart /tmp/gsf-v294-source.mp4
+          ffprobe -v error -show_entries format=duration,size -show_entries stream=codec_type,codec_name,width,height,avg_frame_rate -of json /tmp/gsf-v294-source.mp4
+          ls -lh /tmp/gsf-v294-source.mp4
+
+      - name: Stress production upload and AI prescan queue 1-2-4-6
+        env:
+          BASE_URL: https://gaming-shorts-factory-v79-production.up.railway.app
+        run: |
+          python - <<'PY'
+          import concurrent.futures, http.cookiejar, json, math, os, pathlib, time, urllib.request, urllib.error, uuid
+
+          BASE=os.environ['BASE_URL'].rstrip('/')
+          DATA=pathlib.Path('/tmp/gsf-v294-source.mp4').read_bytes()
+          SIZE=len(DATA)
+
+          def pct(xs,p):
+              xs=sorted(xs)
+              if not xs:return 0.0
+              return xs[max(0,min(len(xs)-1,math.ceil(len(xs)*p)-1))]
+
+          def opener():
+              jar=http.cookiejar.CookieJar()
+              return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar)),jar
+
+          def json_req(op,path,payload=None,timeout=30):
+              body=None if payload is None else json.dumps(payload).encode()
+              headers={'User-Agent':'GSF-V294-Video-Stress/1.0','Cache-Control':'no-cache'}
+              if body is not None: headers['Content-Type']='application/json'
+              req=urllib.request.Request(BASE+path,data=body,headers=headers,method='POST' if body is not None else 'GET')
+              t=time.perf_counter()
+              with op.open(req,timeout=timeout) as r:
+                  raw=r.read()
+                  return r.status,json.loads(raw.decode() or '{}'),time.perf_counter()-t
+
+          def upload_part(url,chunk,timeout=120):
+              req=urllib.request.Request(url,data=chunk,method='PUT',headers={'Content-Length':str(len(chunk)),'Content-Type':'application/octet-stream'})
+              t=time.perf_counter()
+              with urllib.request.urlopen(req,timeout=timeout) as r:
+                  etag=r.headers.get('ETag','')
+                  r.read()
+                  if not etag: raise RuntimeError('missing ETag')
+                  return etag,time.perf_counter()-t
+
+          def one(stage,index):
+              op,jar=opener()
+              name=f'v294-{stage}-{index}-{uuid.uuid4().hex[:8]}.mp4'
+              started=time.perf_counter()
+              st,init,t_init=json_req(op,'/direct-upload/bucket/init',{'name':name,'size':SIZE,'type':'video/mp4'},timeout=30)
+              if st!=200 or not init.get('ok'): raise RuntimeError(f'init {st} {init}')
+              part_size=int(init['part_size']); parts=[]; upload_s=0.0
+              for row in init['parts']:
+                  pn=int(row['number']); a=(pn-1)*part_size; b=min(SIZE,a+part_size)
+                  etag,dt=upload_part(row['url'],DATA[a:b]); upload_s+=dt
+                  parts.append({'PartNumber':pn,'ETag':etag})
+              payload={'upload_id':init['upload_id'],'multipart_id':init['multipart_id'],'key':init['key'],'analysis_key':init['analysis_key'],'name':name,'size':SIZE,'parts':parts}
+              st,done,t_complete=json_req(op,'/direct-upload/bucket/complete',payload,timeout=30)
+              if st!=202 or not done.get('ok'): raise RuntimeError(f'complete {st} {done}')
+              deadline=time.time()+180; ready=False; polls=0
+              while time.time()<deadline:
+                  polls+=1
+                  try:
+                      st,state,_=json_req(op,'/direct-upload/bucket/status?upload_id='+init['upload_id'],None,timeout=20)
+                  except urllib.error.HTTPError as e:
+                      if e.code>=500: raise
+                      st=0; state={}
+                  if st==200 and state.get('ready'):
+                      ready=True; break
+                  time.sleep(.5)
+              if not ready: raise RuntimeError('materialization timeout')
+              sid=''
+              for c in jar:
+                  if c.name=='gsf_sid': sid=c.value
+              return {
+                  'stage':stage,'index':index,'sid':sid,'upload_id':init['upload_id'],'analysis_key':init['analysis_key'],
+                  'bytes':SIZE,'parts':len(parts),'init_s':round(t_init,3),'upload_s':round(upload_s,3),
+                  'complete_s':round(t_complete,3),'ready_s':round(time.perf_counter()-started,3),'polls':polls
+              }
+
+          for n in (1,2,4,6):
+              stage=f'c{n}'
+              print(f'V294_STAGE_START {stage}',flush=True)
+              t=time.perf_counter(); rows=[]; errors=[]
+              with concurrent.futures.ThreadPoolExecutor(max_workers=n) as ex:
+                  futs={ex.submit(one,stage,i):i for i in range(n)}
+                  for f in concurrent.futures.as_completed(futs):
+                      try:
+                          row=f.result(); rows.append(row); print('V294_FLOW '+json.dumps(row,sort_keys=True),flush=True)
+                      except Exception as exc:
+                          errors.append({'index':futs[f],'error':repr(exc)}); print('V294_FLOW_ERROR '+repr(exc),flush=True)
+              wall=time.perf_counter()-t
+              times=[r['ready_s'] for r in rows]
+              summary={'stage':stage,'jobs':n,'ok':len(rows),'failed':len(errors),'wall_s':round(wall,3),
+                       'p50_ready_s':round(pct(times,.5),3),'p95_ready_s':round(pct(times,.95),3),'max_ready_s':round(max(times) if times else 0,3),
+                       'analysis_keys':[r['analysis_key'] for r in rows]}
+              print('V294_STAGE '+json.dumps(summary,sort_keys=True),flush=True)
+              if errors:
+                  print('V294_SAFETY_STOP '+json.dumps(errors),flush=True)
+                  raise SystemExit(2)
+              time.sleep(5)
+          print('V294_LIVE_VIDEO_UPLOAD_STRESS: PASS',flush=True)
+          PY
