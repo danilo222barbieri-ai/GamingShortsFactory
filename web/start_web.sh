@@ -40,7 +40,11 @@ python /app/web/test_v296_visible_internal_pages.py /app
 
 # V297: rebuild the real desktop DOM for Hub / AI / Editor / Share using the
 # approved desk composition, while leaving mobile and the Home untouched.
+# V289 owns the Share root class, so normalize only during the structural patch
+# and restore it immediately afterward.
+python /app/web/fix_v297_share_anchor_compat.py pre
 python /app/web/fix_v297_desk_rebuild.py
+python /app/web/fix_v297_share_anchor_compat.py post
 python /app/web/test_v297_desk_rebuild.py /app
 
 python /app/web/apply_v293_render_memory_guard.py
