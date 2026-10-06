@@ -70,6 +70,12 @@ python /app/web/test_v296_visible_internal_pages.py /app
 python /app/web/fix_v297_share_anchor_compat.py pre
 python /app/web/fix_v297_desk_rebuild.py
 python /app/web/fix_v297_share_anchor_compat.py post
+
+# V297.1: keep the AI journey stepper inside the wide desk workspace so it
+# cannot consume the second root-grid cell and push the real AI controls into
+# the 180px sidebar column.
+python /app/web/fix_v297_1_ai_grid_hotfix.py
+python /app/web/test_v297_1_ai_grid_hotfix.py
 python /app/web/test_v297_desk_rebuild.py /app
 
 # V293 render-memory guard: generate the production app only after all runtime
