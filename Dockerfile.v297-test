@@ -1,4 +1,0 @@
-FROM python:3.12-slim
-WORKDIR /app
-COPY web/creator_hub_v156_component/index.html /app/web/creator_hub_v156_component/index.html
-CMD ["python","-c","from pathlib import Path; s=Path('/app/web/creator_hub_v156_component/index.html').read_text(encoding='utf-8'); assert 'V297 DESK REBUILD — HUB' in s, 'Hub has V297 rebuild marker'"]
