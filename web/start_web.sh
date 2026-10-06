@@ -78,6 +78,10 @@ python /app/web/fix_v297_1_ai_grid_hotfix.py
 python /app/web/test_v297_1_ai_grid_hotfix.py
 python /app/web/test_v297_desk_rebuild.py /app
 
+# V298: desktop Game Editor graphic-only rebuild. Keep the working player and
+# controls intact; only move their existing DOM nodes into the approved layout.
+python /app/web/fix_v298_editor_graphic_only.py
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
