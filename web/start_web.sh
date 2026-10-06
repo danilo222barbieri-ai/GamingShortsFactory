@@ -63,6 +63,15 @@ python /app/web/test_v295_internal_pages_responsive.py /app
 python /app/web/fix_v296_visible_internal_pages.py
 python /app/web/test_v296_visible_internal_pages.py /app
 
+# V297: rebuild the real desktop DOM for Hub / AI / Editor / Share using the
+# approved desk composition, while leaving mobile and the Home untouched.
+# V289 owns the Share root class, so normalize only during the structural patch
+# and restore it immediately afterward.
+python /app/web/fix_v297_share_anchor_compat.py pre
+python /app/web/fix_v297_desk_rebuild.py
+python /app/web/fix_v297_share_anchor_compat.py post
+python /app/web/test_v297_desk_rebuild.py /app
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
