@@ -13,6 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - uses: actions/checkout@v4
+      - name: Share state regression gate
+        run: python web/test_v293_share_state_resilience.py web/direct_upload_server.py
       - name: Run session-aware production diagnostics
         env:
           BASE_URL: https://gaming-shorts-factory-v79-production.up.railway.app
@@ -40,15 +43,10 @@ jobs:
               jar=http.cookiejar.CookieJar()
               return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
 
-          # First prove what happens with and without a browser-like session.
-          plain=urllib.request.build_opener()
-          for path in ['/share/state','/hub/state']:
-              print('COLD',path,get_with(plain,path))
-
           op=new_session()
           print('SESSION_ROOT',get_with(op,'/'))
           print('SESSION_SHARE',get_with(op,'/share/state'))
-          print('SESSION_HUB',get_with(op,'/hub/state'))
+          print('SESSION_HUB',get_with(op,'/creator-hub/state'))
 
           def session_flow(target):
               op=new_session()
@@ -62,7 +60,7 @@ jobs:
               return ys[max(0,min(len(ys)-1,math.ceil(p*len(ys))-1))]
 
           failures=False
-          for target,total,conc in [('/share/state',40,10),('/hub/state',40,10)]:
+          for target,total,conc in [('/share/state',40,10),('/creator-hub/state',40,10)]:
               rows=[]
               t0=time.perf_counter()
               with concurrent.futures.ThreadPoolExecutor(max_workers=conc) as ex:
