@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Isolated regression for the V297 desktop AI grid collapse.
 from fix_v297_1_ai_grid_hotfix import repair_text
 
 OLD = "const movable=[...root.children].filter(el=>el.classList.contains('top')||el.classList.contains('panel'));"
