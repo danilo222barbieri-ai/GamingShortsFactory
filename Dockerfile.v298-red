@@ -1,7 +1,0 @@
-FROM python:3.12-slim
-WORKDIR /app
-COPY web/editor_2027_component /app/web/editor_2027_component
-COPY web/editor_2027_embed.py /app/web/editor_2027_embed.py
-COPY web/fix_v298_editor_reference_layout.py /app/web/fix_v298_editor_reference_layout.py
-COPY web/test_v298_editor_reference_layout.py /app/web/test_v298_editor_reference_layout.py
-CMD ["sh","-lc","python /app/web/fix_v298_editor_reference_layout.py && python /app/web/test_v298_editor_reference_layout.py /app"]
