@@ -12,10 +12,12 @@ from pathlib import Path
 from PIL import Image
 from cinematic_render_v125 import probe_media
 from ocr_privacy_v146 import classify_sensitive
+from web.render_gate_v293 import render_slot as _gsf_render_slot_v293
 
 
 def _run(cmd, timeout=180):
-    p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=timeout,check=False)
+    with _gsf_render_slot_v293("privacy-v149"):
+        p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=timeout,check=False)
     if p.returncode!=0:
         raise RuntimeError((p.stderr or p.stdout or "command failed")[-1400:])
     return p
@@ -53,7 +55,7 @@ def _ocr_line_boxes(image_path,languages="eng+ita"):
     img=Image.open(image_path)
     iw,ih=img.size
     groups={}
-    reader=csv.DictReader(io.StringIO(p.stdout),delimiter="	")
+    reader=csv.DictReader(io.StringIO(p.stdout),delimiter="\t")
     for row in reader:
         text=str(row.get("text") or "").strip()
         if not text:continue
