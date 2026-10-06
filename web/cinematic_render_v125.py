@@ -7,6 +7,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from web.render_gate_v293 import render_slot as _gsf_render_slot_v293
 
 ENGINE_VERSION="v125-cinematic-ai"
 
@@ -57,10 +58,11 @@ def _encode_tail(has_audio=True):
 
 
 def _run(cmd,timeout=180):
-    proc=subprocess.run(
-        cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,
-        timeout=timeout,check=False,
-    )
+    with _gsf_render_slot_v293("cinematic-v125"):
+        proc=subprocess.run(
+            cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,
+            timeout=timeout,check=False,
+        )
     if proc.returncode!=0:
         raise RuntimeError((proc.stderr or proc.stdout or "ffmpeg failed")[-1200:])
     return proc
