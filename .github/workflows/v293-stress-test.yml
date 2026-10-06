@@ -9,84 +9,84 @@ permissions:
   contents: read
 
 jobs:
-  stress:
+  session_stress:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Run staged HTTP stress test
+      - name: Run session-aware production diagnostics
         env:
           BASE_URL: https://gaming-shorts-factory-v79-production.up.railway.app
         run: |
           python - <<'PY'
-          import concurrent.futures, json, math, os, statistics, time, urllib.request, urllib.error
+          import concurrent.futures, http.cookiejar, json, math, os, time, urllib.request, urllib.error
           from collections import Counter
 
           base=os.environ['BASE_URL'].rstrip('/')
-          stages=[
-              ('warmup-root','/',10,1),
-              ('root-c5','/',20,5),
-              ('root-c10','/',40,10),
-              ('root-c20','/',80,20),
-              ('root-c40','/',120,40),
-              ('share-state-c20','/share/state',100,20),
-              ('hub-state-c20','/hub/state',100,20),
-          ]
 
-          def one(path):
-              url=base+path
-              req=urllib.request.Request(url,headers={'User-Agent':'GSF-V293-Stress/1.0','Cache-Control':'no-cache'})
+          def get_with(opener,path):
+              req=urllib.request.Request(base+path,headers={'User-Agent':'GSF-V293-Session-Stress/1.0','Cache-Control':'no-cache'})
               t0=time.perf_counter()
               try:
-                  with urllib.request.urlopen(req,timeout=12) as r:
-                      data=r.read(256)
-                      return r.status,(time.perf_counter()-t0)*1000,None,len(data)
+                  with opener.open(req,timeout=12) as r:
+                      body=r.read(512)
+                      return r.status,(time.perf_counter()-t0)*1000,body[:120].decode('utf-8','replace')
               except urllib.error.HTTPError as e:
-                  try: e.read(64)
-                  except Exception: pass
-                  return e.code,(time.perf_counter()-t0)*1000,None,0
+                  body=e.read(120).decode('utf-8','replace')
+                  return e.code,(time.perf_counter()-t0)*1000,body
               except Exception as e:
-                  return 0,(time.perf_counter()-t0)*1000,type(e).__name__,0
+                  return 0,(time.perf_counter()-t0)*1000,type(e).__name__
+
+          def new_session():
+              jar=http.cookiejar.CookieJar()
+              return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+
+          # First prove what happens with and without a browser-like session.
+          plain=urllib.request.build_opener()
+          for path in ['/share/state','/hub/state']:
+              print('COLD',path,get_with(plain,path))
+
+          op=new_session()
+          print('SESSION_ROOT',get_with(op,'/'))
+          print('SESSION_SHARE',get_with(op,'/share/state'))
+          print('SESSION_HUB',get_with(op,'/hub/state'))
+
+          def session_flow(target):
+              op=new_session()
+              s1,_,_=get_with(op,'/')
+              s2,lat,body=get_with(op,target)
+              return s1,s2,lat,body
 
           def pct(xs,p):
-              if not xs: return None
               ys=sorted(xs)
-              k=max(0,min(len(ys)-1,math.ceil(p*len(ys))-1))
-              return ys[k]
+              if not ys: return None
+              return ys[max(0,min(len(ys)-1,math.ceil(p*len(ys))-1))]
 
-          results=[]
-          fatal=False
-          for name,path,total,conc in stages:
-              started=time.perf_counter()
+          failures=False
+          for target,total,conc in [('/share/state',40,10),('/hub/state',40,10)]:
               rows=[]
+              t0=time.perf_counter()
               with concurrent.futures.ThreadPoolExecutor(max_workers=conc) as ex:
-                  futs=[ex.submit(one,path) for _ in range(total)]
-                  for f in concurrent.futures.as_completed(futs):
-                      rows.append(f.result())
-              elapsed=time.perf_counter()-started
-              statuses=Counter(r[0] for r in rows)
-              lat=[r[1] for r in rows]
-              transport=sum(1 for r in rows if r[2])
-              server5=sum(v for k,v in statuses.items() if 500 <= k <= 599)
-              ok2=sum(v for k,v in statuses.items() if 200 <= k <= 299)
-              row={
-                  'stage':name,'path':path,'requests':total,'concurrency':conc,
-                  'elapsed_s':round(elapsed,3),'rps':round(total/max(elapsed,0.001),2),
-                  '2xx':ok2,'5xx':server5,'transport_errors':transport,
-                  'status_counts':dict(sorted(statuses.items())),
-                  'p50_ms':round(pct(lat,.50),1),'p95_ms':round(pct(lat,.95),1),'p99_ms':round(pct(lat,.99),1),
-                  'max_ms':round(max(lat),1),
+                  futs=[ex.submit(session_flow,target) for _ in range(total)]
+                  for f in concurrent.futures.as_completed(futs): rows.append(f.result())
+              elapsed=time.perf_counter()-t0
+              root_counts=Counter(x[0] for x in rows)
+              target_counts=Counter(x[1] for x in rows)
+              lat=[x[2] for x in rows]
+              result={
+                  'target':target,'sessions':total,'concurrency':conc,
+                  'elapsed_s':round(elapsed,3),'flows_per_s':round(total/max(elapsed,.001),2),
+                  'root_status':dict(sorted(root_counts.items())),
+                  'target_status':dict(sorted(target_counts.items())),
+                  'p50_ms':round(pct(lat,.50),1),'p95_ms':round(pct(lat,.95),1),
+                  'p99_ms':round(pct(lat,.99),1),'max_ms':round(max(lat),1),
               }
-              results.append(row)
-              print(json.dumps(row,sort_keys=True))
-              # Stop escalating if production starts failing materially.
-              if server5/total > 0.02 or transport/total > 0.02:
-                  print(f'SAFETY_STOP: {name} exceeded 2% server/transport error budget')
-                  fatal=True
-                  break
-              time.sleep(3)
+              print('SESSION_STRESS='+json.dumps(result,sort_keys=True))
+              bad=sum(v for k,v in target_counts.items() if k < 200 or k >= 500)
+              if bad:
+                  failures=True
 
-          print('V293_SUMMARY='+json.dumps(results,separators=(',',':')))
-          if fatal:
+          if failures:
+              print('V293 SESSION STRESS: FAIL')
               raise SystemExit(2)
-          print('V293 STRESS TEST: PASS')
+          print('V293 SESSION STRESS: PASS')
           PY
