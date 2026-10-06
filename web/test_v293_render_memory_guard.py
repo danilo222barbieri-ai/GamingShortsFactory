@@ -19,6 +19,7 @@ app = Path(sys.argv[1] if len(sys.argv) > 1 else "/app/GamingShortsFactory_V293_
 upload_server = Path(sys.argv[2] if len(sys.argv) > 2 else "/app/web/direct_upload_server.py")
 gate = Path(sys.argv[3] if len(sys.argv) > 3 else "/app/web/render_gate_v293.py")
 original_app = Path(sys.argv[4] if len(sys.argv) > 4 else "/app/GamingShortsFactory_V154_STRUCTURAL_HOME.py")
+web_root = gate.parent
 
 need(gate.is_file(), "V293 render gate module exists")
 gate_src = gate.read_text(encoding="utf-8")
@@ -88,8 +89,8 @@ def is_gate_with(node):
 
 
 gate_nodes = [node for node in ast.walk(core) if is_gate_with(node)]
-need(len(gate_nodes) == 1, "exactly one final render execution is guarded")
-need(len(gate_nodes[0].body) == 1 and isinstance(gate_nodes[0].body[0], ast.Assign), "gate wraps only the final render assignment")
+need(len(gate_nodes) == 1, "exactly one base final render execution is guarded")
+need(len(gate_nodes[0].body) == 1 and isinstance(gate_nodes[0].body[0], ast.Assign), "base gate wraps only the final render assignment")
 
 # Strong regression check: remove only the V293 guard and verify the complete
 # render function is AST-equivalent to V154. This proves preset/CRF/threading,
@@ -105,8 +106,6 @@ class StripV293Guard(ast.NodeTransformer):
 
 
 def normalized_function(node):
-    # Round-trip both sides through unparse/parse so formatting and source-line
-    # metadata cannot create false differences.
     return ast.parse(ast.unparse(node)).body[0]
 
 
@@ -117,9 +116,29 @@ original_norm = normalized_function(original_core)
 need(
     ast.dump(guarded_without_gate, include_attributes=False)
     == ast.dump(original_norm, include_attributes=False),
-    "V293 leaves final render semantics unchanged except serialization gate",
+    "V293 leaves base final render semantics unchanged except serialization gate",
 )
 need("GSF_FINAL_RENDER_SLOTS" in app_src, "production app exposes the render slot setting")
+
+# V125/V126/V143/V149 can run FFmpeg after the base render. They must share
+# the same process-wide gate or two sessions could overlap in a later stage.
+post_render_targets = {
+    "cinematic_render_v125.py": "_run",
+    "creative_render_v126.py": "apply_sound_design",
+    "director_render_exec_v143.py": "_run",
+    "privacy_cleanup_v149.py": "_run",
+}
+for filename, function_name in post_render_targets.items():
+    path = web_root / filename
+    need(path.is_file(), f"{filename} exists")
+    source = path.read_text(encoding="utf-8")
+    module_tree = ast.parse(source)
+    fn = next((n for n in module_tree.body if isinstance(n, ast.FunctionDef) and n.name == function_name), None)
+    need(fn is not None, f"{filename} target function exists")
+    fn_gates = [n for n in ast.walk(fn) if is_gate_with(n)]
+    need(len(fn_gates) == 1, f"{filename} FFmpeg execution shares V293 render gate")
+    need("_gsf_render_slot_v293" in source, f"{filename} imports V293 render gate")
+    py_compile.compile(str(path), doraise=True)
 
 py_compile.compile(str(gate), doraise=True)
 py_compile.compile(str(upload_server), doraise=True)
