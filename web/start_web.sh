@@ -58,6 +58,11 @@ python /app/web/test_v294_home_desktop_realign.py /app/web/home_v154_component/i
 python /app/web/fix_v295_internal_pages_responsive.py
 python /app/web/test_v295_internal_pages_responsive.py /app
 
+# V296: make the desktop internal pages visibly different, not just technically
+# responsive, and force fresh asset/cache keys so browsers load the new layouts.
+python /app/web/fix_v296_visible_internal_pages.py
+python /app/web/test_v296_visible_internal_pages.py /app
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
