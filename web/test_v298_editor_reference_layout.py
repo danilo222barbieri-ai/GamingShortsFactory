@@ -4,7 +4,9 @@ import sys
 
 root = Path(sys.argv[1] if len(sys.argv) > 1 else "/app")
 editor = root / "web" / "editor_2027_component" / "index.html"
+embed = root / "web" / "editor_2027_embed.py"
 text = editor.read_text(encoding="utf-8")
+embed_text = embed.read_text(encoding="utf-8") if embed.is_file() else ""
 
 checks = {
     "V298 editor marker": "V298 EDITOR REFERENCE LAYOUT" in text,
@@ -17,6 +19,7 @@ checks = {
     "timeline below player": "v298EditorTimeline" in text,
     "horizontal toolbar": "v298EditorToolbar" in text,
     "legacy V297 sidebar neutralized": ".v297EditorSidebar{display:none!important}" in text,
+    "editor cache key V298": '"gsf_editor_2027_v298"' in embed_text,
 }
 
 failed = [name for name, ok in checks.items() if not ok]
