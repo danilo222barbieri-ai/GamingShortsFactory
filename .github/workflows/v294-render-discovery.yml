@@ -16,11 +16,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Find upload analysis and render entrypoints
         run: |
+          echo '=== ANALYSIS REFERENCES ==='
+          grep -RInE 'analysis_key|/analysis|bucket/status|preparing' web --exclude='*.pyc' | head -n 350 || true
           echo '=== FINAL ARTIFACT REFERENCES ==='
           grep -RInE 'gaming_short_finale_share|render_job\.json|create_short|CREA SHORT|Crea Short|triggerCreateShort' --exclude-dir=.git . | head -n 250 || true
           echo '=== FFMPEG / RENDER START REFERENCES ==='
           grep -RInE 'subprocess\.(Popen|run).*ffmpeg|ffmpeg.*(final|short|render)|render.*(start|job|final)' --exclude-dir=.git . | head -n 300 || true
           echo '=== DIRECT SERVER ROUTES ==='
-          grep -nE 'if path==|if clean==' web/direct_upload_server.py | grep -E 'render|job|short|bucket|analysis|share|editor' | head -n 200 || true
-          echo '=== WEB FILES WITH RENDER NAMES ==='
-          find web -maxdepth 2 -type f | grep -Ei 'render|stress|worker|short|quality' | sort | head -n 250 || true
+          grep -nE 'if path==|if clean==|startswith\(' web/direct_upload_server.py | grep -E 'render|job|short|bucket|analysis|share|editor' | head -n 250 || true
