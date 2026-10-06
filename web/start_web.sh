@@ -47,6 +47,12 @@ python /app/web/test_v291_ai_engine_bridge.py /app/web/home_v154_component/index
 python /app/web/fix_v293_share_state_resilience.py /app/web/direct_upload_server.py
 python /app/web/test_v293_share_state_resilience.py /app/web/direct_upload_server.py
 
+# V294: restore a true desktop Home composition after V274 compressed CTA +
+# Game Bar to phone-scale width. This is desktop-only and bumps the component
+# cache so browsers do not retain the old geometry.
+python /app/web/fix_v294_home_desktop_realign.py
+python /app/web/test_v294_home_desktop_realign.py /app/web/home_v154_component/index.html /app/web/home_v154_embed.py
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
