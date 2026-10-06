@@ -10,10 +10,10 @@ END_MARKER = '/* END V294 HOME DESKTOP REALIGN */'
 CSS = r'''
 /* V294 HOME DESKTOP REALIGN */
 /*
-   The desktop Home had inherited V274's phone-width CTA variable (390-440px),
-   so a 1366-class laptop rendered the CTA row and Game Bar as a tiny island in
-   the middle of a wide canvas. Restore a true desktop row while keeping the
-   approved compact/mobile-sized uploader and the no-scroll shell.
+   V274 accidentally made the desktop CTA row and Game Bar inherit phone-scale
+   width. V279 then left the murals and ad rails oversized around that tiny
+   center. Restore the approved desktop balance while keeping the compact
+   uploader, current palette, global type scale and mobile layout untouched.
 */
 @media (min-width:761px){
   #home154{
@@ -86,7 +86,8 @@ CSS = r'''
     line-height:1.16!important;
   }
 
-  /* Decouple the main navigation from V274's old phone-width CTA island. */
+  /* The Game Bar is a desktop navigation surface, not a phone-width child of
+     the CTA strip. Keep it readable on 1366-class laptops. */
   #home154 .bottomNav{
     width:min(var(--gsf-desk-content),72vw)!important;
     min-width:560px!important;
@@ -101,8 +102,8 @@ CSS = r'''
     height:clamp(20px,2.7vh,24px)!important;
   }
 
-  /* Pull both handwritten guides back toward the uploader instead of leaving
-     them stranded beside the advertising rails. */
+  /* Pull the two handwritten guides back toward the uploader and undo the
+     oversized V279 orbit. */
   #home154 .scribble.left,
   #home154[data-mural-state="uploading"] .scribble.left,
   #home154[data-mural-state="ready"] .scribble.left,
@@ -110,9 +111,11 @@ CSS = r'''
     left:calc(50% - (var(--gsf-desk-ring) / 2) - clamp(220px,17vw,265px))!important;
     right:auto!important;
     top:clamp(92px,14.5vh,132px)!important;
-    width:clamp(190px,15vw,235px)!important;
-    font-size:clamp(21px,1.65vw,27px)!important;
+    width:clamp(190px,15.5vw,260px)!important;
+    font-size:clamp(20px,1.7vw,28px)!important;
+    line-height:1.04!important;
     text-align:right!important;
+    transform:rotate(-7deg)!important;
   }
 
   #home154 .scribble.right,
@@ -122,18 +125,34 @@ CSS = r'''
     right:calc(50% - (var(--gsf-desk-ring) / 2) - clamp(220px,17vw,265px))!important;
     left:auto!important;
     top:clamp(92px,14.5vh,132px)!important;
-    width:clamp(190px,15vw,235px)!important;
-    font-size:clamp(21px,1.65vw,27px)!important;
+    width:clamp(190px,15.5vw,260px)!important;
+    font-size:clamp(20px,1.7vw,28px)!important;
+    line-height:1.04!important;
     text-align:left!important;
+    transform:rotate(6deg)!important;
   }
 
   #home154 .muralAmbient,
   #home154[data-mural-state="uploading"] .muralAmbient,
   #home154[data-mural-state="ready"] .muralAmbient,
   #home154[data-mural-state^="focus-"] .muralAmbient{
-    bottom:clamp(12px,1.8vh,20px)!important;
-    width:clamp(220px,18vw,285px)!important;
-    font-size:clamp(16px,1.3vw,20px)!important;
+    left:50%!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:clamp(18px,2.7vh,30px)!important;
+    width:clamp(235px,20vw,315px)!important;
+    max-width:none!important;
+    font-size:clamp(17px,1.4vw,22px)!important;
+    line-height:1.03!important;
+    text-align:center!important;
+    transform:translateX(-50%) rotate(-3deg)!important;
+  }
+
+  /* V279 made the ad columns dominate short desktop screens. Preserve both
+     slots, but return them to supporting proportions. */
+  #home154 .sideAd{
+    height:clamp(220px,35vh,310px)!important;
+    width:clamp(104px,8.4vw,136px)!important;
   }
 }
 /* END V294 HOME DESKTOP REALIGN */
