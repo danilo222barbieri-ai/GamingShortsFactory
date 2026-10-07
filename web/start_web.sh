@@ -62,8 +62,14 @@ python /app/web/test_v308_editor_mobile_master.py /app
 python /app/web/test_v308_cache_contract.py /app
 python /app/web/test_v308_startup_contract.py /app
 
-# Generate the production app only after the canonical V308 UI passes. The
-# render-memory guard remains authoritative for 1 GB frontend safety.
+# V310: final mobile-only Profile cleanup, applied after V308 so its media
+# query remains scoped to phones. Removes the duplicated plan block, restores
+# vertical card content and keeps Profile scrolling inside the page.
+python /app/web/fix_v310_profile_mobile.py /app/web/creator_hub_v156_component/index.html
+python /app/web/test_v310_profile_overview_preserved.py /app
+
+# Generate the production app only after the canonical V308 UI and V310 mobile
+# Profile pass. The render-memory guard remains authoritative for 1 GB safety.
 python /app/web/apply_v293_render_memory_guard.py
 
 # V105.7: publish ads.txt only when a real Google publisher id is configured.
