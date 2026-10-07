@@ -90,16 +90,14 @@ python /app/web/test_v307_mobile_visual_source.py /app
 python /app/web/fix_v308_mobile_ai_flow.py /app/web/ai_v221_component/index.html
 python /app/web/test_v308_mobile_ai_flow.py /app
 
-# V310: clean the mobile Creator Hub profile, remove the current-project block
-# from Bozze, and remove the placeholder bubble at the bottom of Live.
+# V310: historical Hub cleanup still normalizes the data/runtime structure.
 python /app/web/fix_v310_creator_hub_mobile_cleanup.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v310_creator_hub_mobile_cleanup.py /app
 
-# V311: final mobile Hub pass requested from the live iPhone screens: remove
-# duplicate profile bars, remove Bozze stats, split Live into Twitch + YouTube,
-# and compact the Hub dashboard so every folder is visible above the Game Bar.
-python /app/web/fix_v311_mobile_hub_clean_pass.py /app/web/creator_hub_v156_component/index.html
-python /app/web/test_v311_mobile_hub_clean_pass.py /app
+# V312: one authoritative Creator Hub finalizer. It replaces the old V311
+# runtime layer, applies the approved design on every Hub page and bumps cache.
+python /app/web/fix_v312_creator_hub_final.py /app/web/creator_hub_v156_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
+python /app/web/test_v312_creator_hub_final.py /app
 
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
