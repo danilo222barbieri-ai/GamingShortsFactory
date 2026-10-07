@@ -15,8 +15,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run Creator Hub contract
         run: |
-          python -m py_compile web/fix_v311_mobile_hub_clean_pass.py web/test_v311_mobile_hub_clean_pass.py
+          python -m py_compile web/fix_v311_mobile_hub_clean_pass.py web/test_v311_mobile_hub_clean_pass.py web/test_v3114_restart_idempotency.py
           python web/test_v311_mobile_hub_clean_pass.py .
+          python web/test_v3114_restart_idempotency.py .
       - name: Build production image
         run: docker build -q -t gsf-creator-reference .
       - name: Start production image
