@@ -5,47 +5,40 @@ import sys
 
 DEFAULT_HUB = Path('/app/web/creator_hub_v156_component/index.html')
 DEFAULT_APP = Path('/app/GamingShortsFactory_V154_STRUCTURAL_HOME.py')
-CACHE_KEY = '3112'
+CACHE_KEY = '3113'
 
-# This route is mobile-gated by nginx. The final Hub contract must therefore be
-# independent from iframe CSS width and from historical data-vXXX layout attrs.
-# Put one final stylesheet at the end of <head> so old V2xx/V3xx rules cannot
-# win the cascade, then enforce the structural removals once the DOM is live.
+# V311.3 stops relying on late CSS to hide legacy Creator Hub pieces. The route
+# is mobile-gated by nginx, so the startup pass rewrites the served HTML itself:
+# obsolete dashboard/profile/live nodes are removed from the DOM and the Bozze
+# renderer no longer emits the old project/stats strip. CSS is only layout now.
 STYLE = r'''
 <style id="v311HubForce">
 /* V311 MOBILE HUB CLEAN PASS */
+/* V311 SOURCE NORMALIZED */
 html,body{overflow:hidden!important}
 #hub{height:100dvh!important;min-height:0!important;overflow:hidden!important;padding:7px 6px 6px!important}
 #hub .stage{height:100%!important;min-height:0!important;overflow:hidden!important}
 
 /* PROFILE: editor + the four real overview cards only. */
-#hub .view[data-view="profile"] .profileMobilePlan,
-#hub .view[data-view="profile"] .profilePlanGroup,
-#hub .view[data-view="profile"] .profileOverviewActions{display:none!important}
 #hub .view[data-view="profile"] .profileOnlyMural{display:none!important}
 #hub .view[data-view="profile"] .profileOnlyScroller{overflow-y:auto!important;overflow-x:hidden!important;padding-bottom:86px!important}
 #hub .view[data-view="profile"] .profileOverviewGrid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin:10px 0 0!important}
-#hub .view[data-view="profile"] .profileOverviewCard{min-height:104px!important;padding:10px!important;border-radius:16px!important}
+#hub .view[data-view="profile"] .profileOverviewCard{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:flex-start!important;min-height:104px!important;padding:10px!important;border-radius:16px!important}
+#hub .view[data-view="profile"] .profileOverviewValue{margin-top:7px!important}
+#hub .view[data-view="profile"] .profileOverviewHint{margin-top:auto!important;padding-top:8px!important}
 
-/* BOZZE: no four-stat strip. Keep title/count and the saved drafts/empty state. */
-#hub .view[data-view="projects"] #projectRows .stats,
-#hub .view[data-view="drafts"] #projectRows .stats{display:none!important}
-
-/* LIVE: remove the three launcher tiles. Twitch and YouTube each own a section. */
-#hub .view[data-view="live"] .liveRootFolders{display:none!important}
+/* LIVE: Twitch and YouTube are direct sections; old launcher layer is gone. */
+#hub .view[data-view="live"] .folderScroller{overflow-y:auto!important;overflow-x:hidden!important;padding-bottom:86px!important}
 #hub .view[data-view="live"] .livePane[data-live-pane="twitch"],
 #hub .view[data-view="live"] .livePane[data-live-pane="youtube"]{display:block!important}
-#hub .view[data-view="live"] .livePane[data-live-pane="highlights"]{display:none!important}
 #hub .view[data-view="live"] .livePane[data-live-pane="youtube"]{margin-top:14px!important;padding-top:12px!important;border-top:1px solid rgba(143,181,216,.22)!important}
 #hub .view[data-view="live"] .livePaneTitle{font-size:17px!important;margin:3px 4px 7px!important}
 #hub .view[data-view="live"] .liveMiniFolders{display:grid!important;grid-template-columns:1fr!important;gap:7px!important}
 #hub .view[data-view="live"] .liveMiniFolder{min-height:62px!important;padding:9px 10px!important;border-radius:15px!important}
 
-/* HUB HOME: four destinations, all visible above the fixed Game Bar. */
+/* HUB HOME: exactly four destinations, all above the fixed Game Bar. */
 #hub .view[data-view="dashboard"]{overflow:hidden!important}
 #hub .view[data-view="dashboard"] .dashboard{height:100%!important;min-height:0!important;display:grid!important;grid-template-rows:auto minmax(0,1fr)!important;gap:6px!important}
-#hub .view[data-view="dashboard"] .hubMural{display:none!important}
-#hub .view[data-view="dashboard"] .folder[data-folder="subscription"]{display:none!important}
 #hub .view[data-view="dashboard"] .profileCard{min-height:80px!important;height:auto!important;padding:7px 8px!important;border-radius:18px!important;grid-template-columns:auto minmax(0,1fr)!important;gap:8px!important}
 #hub .view[data-view="dashboard"] .profileCard .avatar{width:43px!important;height:43px!important;border-radius:14px!important;font-size:16px!important}
 #hub .view[data-view="dashboard"] .profileName{font-size:16px!important}
@@ -70,7 +63,6 @@ html,body{overflow:hidden!important}
 </style>
 '''
 
-YOUTUBE_OLD = '<div class="livePane" data-live-pane="youtube"><div class="livePaneTitle">YouTube Live</div><div class="empty">Quando collegheremo YouTube Live, dirette e replay compariranno qui con la stessa struttura a cartelle.</div></div>'
 YOUTUBE_NEW = '''<div class="livePane" data-live-pane="youtube">
        <div class="livePaneTitle">YouTube</div>
        <div class="liveMiniFolders youtubeLiveFolders">
@@ -82,32 +74,103 @@ YOUTUBE_NEW = '''<div class="livePane" data-live-pane="youtube">
 
 RUNTIME = r'''
 <script id="v311HubRuntime">
-(()=>{
-  const apply=()=>{
-    document.documentElement.dataset.gsfHubVersion='3112';
-    const hide=(selector)=>document.querySelectorAll(selector).forEach((el)=>el.style.setProperty('display','none','important'));
-    hide('#hub .view[data-view="profile"] .profileMobilePlan,#hub .view[data-view="profile"] .profilePlanGroup,#hub .view[data-view="profile"] .profileOverviewActions');
-    hide('#hub .view[data-view="projects"] #projectRows .stats,#hub .view[data-view="drafts"] #projectRows .stats');
-    hide('#hub .view[data-view="live"] .liveRootFolders,#hub .view[data-view="live"] .livePane[data-live-pane="highlights"]');
-    hide('#hub .view[data-view="dashboard"] .hubMural,#hub .view[data-view="dashboard"] .folder[data-folder="subscription"]');
-    document.querySelectorAll('#hub .view[data-view="live"] .livePane[data-live-pane="twitch"],#hub .view[data-view="live"] .livePane[data-live-pane="youtube"]').forEach((el)=>el.style.setProperty('display','block','important'));
-  };
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',apply,{once:true}); else apply();
-  const observer=new MutationObserver(()=>requestAnimationFrame(apply));
-  const startObserver=()=>observer.observe(document.body||document.documentElement,{childList:true,subtree:true});
-  if(document.body) startObserver(); else document.addEventListener('DOMContentLoaded',startObserver,{once:true});
-})();
+(()=>{document.documentElement.dataset.gsfHubVersion='3113';})();
 </script>
 '''
 
 
-def patch_hub_text(text: str) -> str:
-    if 'id="v311HubForce"' in text and 'id="v311HubRuntime"' in text:
+def _strip_old_v311(text: str) -> str:
+    text = re.sub(
+        r'\s*<style id="v311HubForce">.*?</style>\s*(?=</head>)',
+        '\n', text, count=1, flags=re.DOTALL,
+    )
+    text = re.sub(
+        r'\s*<script id="v311HubRuntime">.*?</script>\s*(?=</body>)',
+        '\n', text, count=1, flags=re.DOTALL,
+    )
+    return text
+
+
+def _remove_profile_mobile_plan(text: str) -> str:
+    token = '<div class="profileGroup profilePlanGroup profileMobilePlan"'
+    start = text.find(token)
+    if start < 0:
         return text
-    if YOUTUBE_OLD in text:
-        text = text.replace(YOUTUBE_OLD, YOUTUBE_NEW, 1)
-    elif 'youtubeLiveFolders' not in text:
-        raise RuntimeError('V311: YouTube Live pane anchor missing')
+    line_start = text.rfind('\n', 0, start) + 1
+    anchors = [
+        text.find('<div class="profileMural profileOnlyMural"', start),
+        text.find('<div class="profileOverviewGrid"', start),
+    ]
+    anchors = [p for p in anchors if p >= 0]
+    if not anchors:
+        raise RuntimeError('V311: profile mobile plan end anchor missing')
+    end = min(anchors)
+    return text[:line_start] + text[end:]
+
+
+def _remove_profile_overview_actions(text: str) -> str:
+    token = '<div class="profileOverviewActions">'
+    start = text.find(token)
+    if start < 0:
+        return text
+    line_start = text.rfind('\n', 0, start) + 1
+    end = text.find('<button class="logoutProfile"', start)
+    if end < 0:
+        raise RuntimeError('V311: profile overview actions end anchor missing')
+    return text[:line_start] + text[end:]
+
+
+def _remove_live_root(text: str) -> str:
+    token = '<div class="liveRootFolders">'
+    start = text.find(token)
+    if start < 0:
+        return text
+    line_start = text.rfind('\n', 0, start) + 1
+    end = text.find('<div class="livePane', start)
+    if end < 0:
+        raise RuntimeError('V311: live root end anchor missing')
+    return text[:line_start] + text[end:]
+
+
+def _normalize_structure(text: str) -> str:
+    # Dashboard: delete legacy decoration + fifth subscription tile from markup.
+    text = re.sub(r'^\s*<div class="hubMural">.*?</div>\s*$', '', text, count=1, flags=re.MULTILINE)
+    text = re.sub(r'^\s*<button class="folder" data-folder="subscription">.*?</button>\s*$', '', text, count=1, flags=re.MULTILINE)
+
+    # Profile: remove only the duplicate V303 plan block and V287 action rows.
+    # The four profileOverviewCard buttons are intentionally preserved.
+    text = _remove_profile_mobile_plan(text)
+    text = _remove_profile_overview_actions(text)
+
+    # Bozze: do not generate current-project or four-stat strips at all.
+    text = re.sub(
+        r'^[ \t]*\$\("#projectRows"\)\.innerHTML=.*?;\s*$',
+        '   $("#projectRows").innerHTML="";',
+        text, count=1, flags=re.MULTILINE,
+    )
+
+    # Live: remove the three launcher tiles and the obsolete Auto Highlights pane.
+    text = _remove_live_root(text)
+    text = re.sub(
+        r'^\s*<div class="livePane" data-live-pane="highlights">.*?</div></div>\s*$',
+        '', text, count=1, flags=re.MULTILINE,
+    )
+
+    # Replace the old YouTube placeholder with its own visible section.
+    if 'youtubeLiveFolders' not in text:
+        text, count = re.subn(
+            r'^\s*<div class="livePane" data-live-pane="youtube">.*?</div></div>\s*$',
+            YOUTUBE_NEW,
+            text, count=1, flags=re.MULTILINE,
+        )
+        if count != 1:
+            raise RuntimeError('V311: YouTube Live pane anchor missing')
+    return text
+
+
+def patch_hub_text(text: str) -> str:
+    text = _strip_old_v311(text)
+    text = _normalize_structure(text)
     if '</head>' not in text:
         raise RuntimeError('V311: head anchor missing')
     if '</body>' not in text:
@@ -148,7 +211,7 @@ def main():
     compile(shell_after, str(app), 'exec')
     app.write_text(shell_after, encoding='utf-8')
 
-    print('V311 mobile Hub clean pass applied:', hub, 'changed=', before != after, 'force=3112', flush=True)
+    print('V311 mobile Hub clean pass applied:', hub, 'changed=', before != after, 'source=normalized', flush=True)
     print('V311 Creator Hub cache key:', 'v='+CACHE_KEY, 'changed=', shell_before != shell_after, flush=True)
 
 
