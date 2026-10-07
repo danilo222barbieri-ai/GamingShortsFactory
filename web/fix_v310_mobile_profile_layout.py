@@ -19,7 +19,8 @@ CSS = r'''
     overscroll-behavior-y:contain!important;
     -webkit-overflow-scrolling:touch!important;
     scrollbar-width:none!important;
-    padding:0 1px 96px!important;
+    padding:0 1px!important;
+    padding-bottom:96px!important;
   }
   #hub .view[data-view="profile"] .profileOnlyScroller::-webkit-scrollbar{display:none!important}
 
