@@ -9,13 +9,14 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from game_vision_v108 import window_event_map, vision_zones_for_genre
+from web.ui_release import GSF_UI_RELEASE
 
 
 _COMPONENT_DIR = Path(__file__).resolve().parent / "editor_2027_component"
 # One stable component name/path for every clip. Dynamic per-video component
 # folders caused intermittent asset 404s behind Railway/Streamlit.
 _EDITOR_2027_COMPONENT = components.declare_component(
-    "gsf_editor_2027_v1086",
+    f"gsf_editor_2027_v{GSF_UI_RELEASE}",
     path=str(_COMPONENT_DIR),
 )
 
@@ -125,6 +126,7 @@ def _editor_video_url(video_path):
     raw = base64.b64encode(p.read_bytes()).decode("ascii")
     return f"data:{mime};base64,{raw}"
 
+
 def _editor_component_for(video_path):
     # Frontend assets are served from the repository's static component
     # directory. The actual clip URL/state arrives through Streamlit's render
@@ -154,36 +156,39 @@ def render_editor_2027_embed(
     # Undo/Redo remains tiny and global. The timeline receives only events that
     # actually belong to the currently loaded clip.
     try:
-        _raw_events=st.session_state.get("gsf_v108_event_map") or []
-        _genre=str(st.session_state.get("gsf_v108_game_genre") or "Auto")
+        _raw_events = st.session_state.get("gsf_v108_event_map") or []
+        _genre = str(st.session_state.get("gsf_v108_game_genre") or "Auto")
     except Exception:
-        _raw_events=[]
-        _genre="Auto"
-    _window_duration=(
-        _clamp(source_duration,0.05,21600.0,state.get("outPoint",15.0))
-        if source_duration is not None else
-        _clamp(state.get("outPoint",15.0),0.05,21600.0,15.0)
+        _raw_events = []
+        _genre = "Auto"
+    _window_duration = (
+        _clamp(source_duration, 0.05, 21600.0, state.get("outPoint", 15.0))
+        if source_duration is not None
+        else _clamp(state.get("outPoint", 15.0), 0.05, 21600.0, 15.0)
     )
-    _events=window_event_map(
+    _events = window_event_map(
         _raw_events,
-        clip_start=_clamp(clip_start,0.0,21600.0,0.0),
+        clip_start=_clamp(clip_start, 0.0, 21600.0, 0.0),
         clip_duration=_window_duration,
         max_events=14,
     )
-    _brain_hint={}
+    _brain_hint = {}
     try:
-        _brain=st.session_state.get("gsf_v112_brain_context") or {}
-        _selected=list(_brain.get("selected") or []) if isinstance(_brain,dict) else []
+        _brain = st.session_state.get("gsf_v112_brain_context") or {}
+        _selected = list(_brain.get("selected") or []) if isinstance(_brain, dict) else []
         if _selected:
-            _clip_start=float(clip_start or 0.0)
-            _nearest=min(_selected,key=lambda row:abs(float((row or {}).get("start") or 0.0)-_clip_start))
-            _distance=abs(float((_nearest or {}).get("start") or 0.0)-_clip_start)
-            if _distance<=max(1.5,min(5.0,_window_duration*0.25)):
-                _brain_hint=dict(_nearest or {})
-                _brain_hint["engine"]=str(_brain.get("engine") or "game-brain-v112")
-                _brain_hint["genre"]=str(_brain.get("genre") or _genre)
+            _clip_start = float(clip_start or 0.0)
+            _nearest = min(
+                _selected,
+                key=lambda row: abs(float((row or {}).get("start") or 0.0) - _clip_start),
+            )
+            _distance = abs(float((_nearest or {}).get("start") or 0.0) - _clip_start)
+            if _distance <= max(1.5, min(5.0, _window_duration * 0.25)):
+                _brain_hint = dict(_nearest or {})
+                _brain_hint["engine"] = str(_brain.get("engine") or "game-brain-v112")
+                _brain_hint["genre"] = str(_brain.get("genre") or _genre)
     except Exception:
-        _brain_hint={}
+        _brain_hint = {}
     value = component(
         video_url=video_url,
         initial_state=state,
@@ -227,11 +232,7 @@ def editor_2027_render_kwargs(state, session_state=None):
         subtitle_words = None
 
     try:
-        subtitle_mode = (
-            ss.get("editor_sub_mode_v18")
-            or ss.get("editor_sub_mode")
-            or "Automatici"
-        )
+        subtitle_mode = ss.get("editor_sub_mode_v18") or ss.get("editor_sub_mode") or "Automatici"
         subtitle_font = ss.get("editor_sub_font_v18") or "Arial"
     except Exception:
         subtitle_mode = "Automatici"
