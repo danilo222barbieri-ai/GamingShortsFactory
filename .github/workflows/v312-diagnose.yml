@@ -1,0 +1,69 @@
+name: V312 diagnose
+
+on:
+  push:
+    branches:
+      - v312-mainline-creator-final
+  workflow_dispatch:
+
+jobs:
+  import-final:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python - <<'PY'
+          import importlib.util
+          p='web/fix_v312_creator_hub_final.py'
+          s=importlib.util.spec_from_file_location('f',p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
+          assert 'V312 CREATOR HUB FINAL' in m.FINAL_CSS
+          assert '@media(max-width:760px)' not in m.FINAL_CSS
+          PY
+
+  v310-stage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python - <<'PY'
+          import importlib.util, pathlib
+          def load(n,p):
+            s=importlib.util.spec_from_file_location(n,p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+          m=load('v310','web/fix_v310_creator_hub_mobile_cleanup.py')
+          src=pathlib.Path('web/creator_hub_v156_component/index.html').read_text()
+          out=m.patch_hub_text(src)
+          assert 'V310 CREATOR HUB MOBILE CLEANUP' in out
+          PY
+
+  hub-final-stage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python - <<'PY'
+          import importlib.util, pathlib
+          def load(n,p):
+            s=importlib.util.spec_from_file_location(n,p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+          v310=load('v310','web/fix_v310_creator_hub_mobile_cleanup.py')
+          final=load('final','web/fix_v312_creator_hub_final.py')
+          src=pathlib.Path('web/creator_hub_v156_component/index.html').read_text()
+          mid=v310.patch_hub_text(src)
+          out=final.patch_hub_text(mid)
+          assert 'V312 CREATOR HUB FINAL' in out
+          assert 'projectHubCards' in out
+          assert 'profilePortalPlan' in out
+          assert 'youtubeDesignSection' in out
+          PY
+
+  shell-stage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python - <<'PY'
+          import importlib.util, pathlib
+          s=importlib.util.spec_from_file_location('final','web/fix_v312_creator_hub_final.py');m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
+          src=pathlib.Path('GamingShortsFactory_V154_STRUCTURAL_HOME.py').read_text()
+          out=m.patch_shell_text(src)
+          assert '/creator-hub-v156/?v=312' in out
+          PY
