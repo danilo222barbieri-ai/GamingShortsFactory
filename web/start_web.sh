@@ -61,10 +61,10 @@ python /app/web/test_v300_creator_hub_clean.py /app
 python /app/web/fix_v302_global_live_gamebar.py
 python /app/web/test_v302_global_live_gamebar.py /app
 
-# V306: keep the approved shared/mobile Home palette. V307 removes historical
-# desktop-only geometry while preserving this visual source.
+# V306: restore the approved shared/mobile Home palette only. Its old regression
+# test expected V294 desktop geometry to remain available, which conflicts with
+# the V307 desktop purge. V307 is now the single final visual regression gate.
 python /app/web/fix_v306_home_visual_lock.py
-python /app/web/test_v306_home_visual_lock.py /app
 
 # V303: compact only the mobile Creator Hub. V307 promotes this mobile geometry
 # to the desktop visual source as well.
