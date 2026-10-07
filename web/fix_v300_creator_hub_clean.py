@@ -52,9 +52,7 @@ CSS = r'''
 #hub[data-v300-layout="hub"] .badges{margin-top:7px!important;gap:6px!important}
 #hub[data-v300-layout="hub"] .badge{font-size:9px!important;padding:5px 8px!important}
 #hub[data-v300-layout="hub"] .profileSocials{margin-top:7px!important;gap:6px!important}
-#hub[data-v300-layout="hub"] .profileSocials .socialDot{
-  width:30px!important;height:30px!important;border-radius:10px!important;font-size:10px!important;
-}
+#hub[data-v300-layout="hub"] .profileSocials .socialDot{width:30px!important;height:30px!important;border-radius:10px!important;font-size:10px!important}
 #hub[data-v300-layout="hub"] .profileAction{
   min-width:116px!important;min-height:42px!important;border-radius:14px!important;
   font-size:10.5px!important;background:linear-gradient(145deg,#E6F5FF,#EBF2FF)!important;
@@ -89,10 +87,7 @@ CSS = r'''
 }
 #hub[data-v300-layout="hub"] .folder>div:first-child{display:block!important}
 #hub[data-v300-layout="hub"] .folderTop{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important}
-#hub[data-v300-layout="hub"] .folderIcon{
-  width:52px!important;height:52px!important;border-radius:17px!important;display:grid!important;place-items:center!important;
-  font-size:20px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.92)!important;
-}
+#hub[data-v300-layout="hub"] .folderIcon{width:52px!important;height:52px!important;border-radius:17px!important;display:grid!important;place-items:center!important;font-size:20px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.92)!important}
 #hub[data-v300-layout="hub"] .folder[data-folder="profile"] .folderIcon{background:linear-gradient(145deg,#E3F3FF,#D7EBFF)!important;color:#397FC8!important}
 #hub[data-v300-layout="hub"] .folder[data-folder="projects"] .folderIcon{background:linear-gradient(145deg,#EEE8FF,#E3DCFF)!important;color:#735DD1!important}
 #hub[data-v300-layout="hub"] .folder[data-folder="live"] .folderIcon{background:linear-gradient(145deg,#F0E9FF,#E7DEFF)!important;color:#9146FF!important}
@@ -114,27 +109,24 @@ CSS = r'''
 }
 #hub[data-v300-layout="hub"] .view .backBtn{display:none!important}
 
-#hub[data-v300-layout="hub"] .v300ProfileOverview{
-  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important;
-  margin:12px 0 2px!important;
+#hub[data-v300-layout="hub"] .profileOverviewGrid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important;margin:12px 0 0!important}
+#hub[data-v300-layout="hub"] .profileOverviewCard{
+  min-height:92px!important;padding:13px!important;border-radius:18px!important;
+  border:1px solid rgba(143,181,216,.20)!important;background:linear-gradient(145deg,#fff,#F3F9FF)!important;
+  box-shadow:0 8px 20px rgba(61,104,145,.055)!important;
 }
-#hub[data-v300-layout="hub"] .v300ProfileStat{
-  min-height:82px!important;padding:12px 13px!important;border:1px solid rgba(143,181,216,.20)!important;
-  border-radius:17px!important;background:linear-gradient(145deg,#FFFFFF,#F3F9FF)!important;color:#163E73!important;
-  text-align:left!important;cursor:pointer!important;box-shadow:0 8px 20px rgba(61,104,145,.055)!important;
-}
-#hub[data-v300-layout="hub"] .v300ProfileStat b{display:block!important;font-size:clamp(18px,1.4vw,24px)!important;line-height:1!important}
-#hub[data-v300-layout="hub"] .v300ProfileStat span{display:block!important;margin-top:7px!important;font-size:10px!important;color:#7D90A8!important;font-weight:800!important}
+#hub[data-v300-layout="hub"] .profileOverviewCard small{font-size:10px!important}
+#hub[data-v300-layout="hub"] .profileOverviewValue{font-size:clamp(23px,1.8vw,30px)!important}
+#hub[data-v300-layout="hub"] .profileOverviewHint{font-size:9.5px!important}
+#hub[data-v300-layout="hub"] .profileOverviewActions{gap:10px!important;margin-top:10px!important}
+#hub[data-v300-layout="hub"] .profileOverviewAction{min-height:48px!important;border-radius:15px!important;font-size:10.5px!important}
 #hub[data-v300-layout="hub"] .profileOnlyMural{margin:clamp(13px,2vh,22px) 0 8px!important;font-size:clamp(19px,1.5vw,25px)!important}
-#hub[data-v300-layout="hub"] .profileOnlyScroller{overflow:hidden!important}
 #hub[data-v300-layout="hub"] .logoutProfile{margin-top:auto!important}
 
 @media(max-width:760px){
   #hub[data-v300-layout="hub"]{padding:7px 6px 6px!important}
   #hub[data-v300-layout="hub"] .view[data-view="dashboard"] .dashboard{gap:7px!important}
-  #hub[data-v300-layout="hub"] .profileCard{
-    min-height:91px!important;padding:8px 9px!important;grid-template-columns:auto minmax(0,1fr)!important;gap:9px!important;border-radius:20px!important;
-  }
+  #hub[data-v300-layout="hub"] .profileCard{min-height:91px!important;padding:8px 9px!important;grid-template-columns:auto minmax(0,1fr)!important;gap:9px!important;border-radius:20px!important}
   #hub[data-v300-layout="hub"] .profileCard .avatar{width:48px!important;height:48px!important;border-radius:15px!important;font-size:17px!important}
   #hub[data-v300-layout="hub"] .profileName{font-size:17px!important}
   #hub[data-v300-layout="hub"] .profileMeta{font-size:9.5px!important;margin-top:3px!important}
@@ -143,9 +135,7 @@ CSS = r'''
   #hub[data-v300-layout="hub"] .profileSocials .socialDot{width:24px!important;height:24px!important;border-radius:8px!important}
   #hub[data-v300-layout="hub"] .profileAction{display:none!important}
   #hub[data-v300-layout="hub"] .hubMural{font-size:clamp(18px,5vw,22px)!important;padding:0 4px 2px!important}
-  #hub[data-v300-layout="hub"] .view[data-view="dashboard"] .folders{
-    grid-template-columns:1fr!important;grid-template-rows:repeat(5,minmax(0,1fr))!important;gap:6px!important;overflow:hidden!important;
-  }
+  #hub[data-v300-layout="hub"] .view[data-view="dashboard"] .folders{grid-template-columns:1fr!important;grid-template-rows:repeat(5,minmax(0,1fr))!important;gap:6px!important;overflow:hidden!important}
   #hub[data-v300-layout="hub"] .view[data-view="dashboard"] .folder,
   #hub[data-v300-layout="hub"] .view[data-view="dashboard"] .folder[data-folder]{
     min-height:0!important;padding:8px 10px!important;border-radius:18px!important;
@@ -163,44 +153,14 @@ CSS = r'''
   #hub[data-v300-layout="hub"] .detailHeadText h2{font-size:18px!important}
   #hub[data-v300-layout="hub"] .detailHeadText p{font-size:9.5px!important}
   #hub[data-v300-layout="hub"] .detailCard{padding:8px!important;border-radius:19px!important}
-  #hub[data-v300-layout="hub"] .v300ProfileOverview{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;margin:8px 0 2px!important}
-  #hub[data-v300-layout="hub"] .v300ProfileStat{min-height:58px!important;padding:8px 9px!important;border-radius:13px!important}
-  #hub[data-v300-layout="hub"] .v300ProfileStat b{font-size:17px!important}
-  #hub[data-v300-layout="hub"] .v300ProfileStat span{font-size:8.5px!important;margin-top:4px!important}
+  #hub[data-v300-layout="hub"] .profileOverviewGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;margin-top:8px!important}
+  #hub[data-v300-layout="hub"] .profileOverviewCard{min-height:72px!important;padding:9px!important;border-radius:14px!important}
+  #hub[data-v300-layout="hub"] .profileOverviewValue{font-size:21px!important}
+  #hub[data-v300-layout="hub"] .profileOverviewActions{grid-template-columns:1fr!important;gap:6px!important;margin-top:6px!important}
+  #hub[data-v300-layout="hub"] .profileOverviewAction{min-height:42px!important;font-size:9.5px!important}
   #hub[data-v300-layout="hub"] .profileOnlyMural{font-size:17px!important;margin:7px 0 4px!important}
 }
 /* END V300 CREATOR HUB CLEAN REBUILD */
-'''
-
-OVERVIEW = '''
-      <div class="v300ProfileOverview" aria-label="Panoramica account">
-       <button class="v300ProfileStat" type="button" data-v300-focus="shorts"><b id="v300ShortsCount">0</b><span>Shorts creati</span></button>
-       <button class="v300ProfileStat" type="button" data-v300-focus="drafts"><b id="v300DraftsCount">0</b><span>Bozze</span></button>
-       <button class="v300ProfileStat" type="button" data-v300-focus="subscription"><b id="v300PlanName">FREE</b><span>Piano</span></button>
-       <button class="v300ProfileStat" type="button" data-v300-focus="social"><b id="v300SocialCount">0</b><span>Social collegati</span></button>
-      </div>
-'''
-
-JS = r'''
-<script id="v300HubRuntime">
-(()=>{
- const root=document.getElementById('hub'); if(!root)return;
- const text=(q,fallback='0')=>{const el=root.querySelector(q);return el?String(el.textContent||fallback).trim():fallback};
- const sync=()=>{
-   const shorts=root.querySelector('#v300ShortsCount'),drafts=root.querySelector('#v300DraftsCount'),plan=root.querySelector('#v300PlanName'),social=root.querySelector('#v300SocialCount');
-   if(shorts)shorts.textContent=text('#shortProjectCount','0');
-   if(drafts)drafts.textContent=text('#draftProjectCount','0');
-   if(plan)plan.textContent=text('#profilePlanName','FREE');
-   if(social)social.textContent=String(root.querySelectorAll('.socialCard.connected').length);
- };
- root.querySelectorAll('[data-v300-focus]').forEach(btn=>btn.addEventListener('click',()=>{
-   window.postMessage({type:'GSF_HUB_FOCUS',section:btn.dataset.v300Focus},location.origin);
- }));
- const observer=new MutationObserver(sync);
- observer.observe(root,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class']});
- sync();setTimeout(sync,350);
-})();
-</script>
 '''
 
 
@@ -219,19 +179,14 @@ def patch_hub():
         return
     if '<main id="hub">' not in text:
         raise RuntimeError('V300 Hub root anchor missing')
+    if 'profileOverviewGrid' not in text:
+        raise RuntimeError('V300 requires the real V287 profile overview')
     text = text.replace('<main id="hub">', '<main id="hub" data-v300-layout="hub">', 1)
     text = text.replace('<h2>Le mie live</h2>', '<h2>Live</h2>', 1)
-    profile_anchor = '      <div class="profileMural profileOnlyMural" aria-hidden="true">Questo è il tuo spazio,<br>fallo tuo</div>'
-    if profile_anchor not in text:
-        raise RuntimeError('V300 profile overview anchor missing')
-    text = text.replace(profile_anchor, OVERVIEW + profile_anchor, 1)
     style_pos = text.rfind('</style>')
     if style_pos < 0:
         raise RuntimeError('V300 style anchor missing')
     text = text[:style_pos] + CSS + '\n' + text[style_pos:]
-    if '</body>' not in text:
-        raise RuntimeError('V300 body anchor missing')
-    text = text.replace('</body>', JS + '\n</body>', 1)
     HUB.write_text(text, encoding='utf-8')
     print('V300 Creator Hub clean rebuild applied:', HUB, flush=True)
 
