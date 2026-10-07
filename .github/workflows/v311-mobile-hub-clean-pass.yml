@@ -1,0 +1,18 @@
+name: V311 Mobile Hub clean pass
+
+on:
+  push:
+    branches:
+      - v311-mobile-hub-clean-pass-2
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V311 contract
+        run: |
+          python -m py_compile web/fix_v311_mobile_hub_clean_pass.py web/test_v311_mobile_hub_clean_pass.py
+          python web/test_v311_mobile_hub_clean_pass.py .

@@ -95,6 +95,12 @@ python /app/web/test_v308_mobile_ai_flow.py /app
 python /app/web/fix_v310_creator_hub_mobile_cleanup.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v310_creator_hub_mobile_cleanup.py /app
 
+# V311: final mobile Hub pass requested from the live iPhone screens: remove
+# duplicate profile bars, remove Bozze stats, split Live into Twitch + YouTube,
+# and compact the Hub dashboard so every folder is visible above the Game Bar.
+python /app/web/fix_v311_mobile_hub_clean_pass.py /app/web/creator_hub_v156_component/index.html
+python /app/web/test_v311_mobile_hub_clean_pass.py /app
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
