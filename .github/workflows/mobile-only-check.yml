@@ -18,3 +18,6 @@ jobs:
 
       - name: Mobile AI contract
         run: python web/test_mobile_ai_surface.py .
+
+      - name: Mobile scroll contract
+        run: python web/test_mobile_scroll_contract.py .
