@@ -15,3 +15,6 @@ jobs:
 
       - name: Gate contract
         run: python web/test_mobile_only_gate.py web/nginx.conf.template web/mobile_only_gate.html
+
+      - name: Mobile AI contract
+        run: python web/test_mobile_ai_surface.py .
