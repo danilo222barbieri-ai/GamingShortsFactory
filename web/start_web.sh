@@ -110,6 +110,11 @@ python /app/web/test_v302_global_live_gamebar.py /app
 python /app/web/fix_v303_mobile_hub_compact.py
 python /app/web/test_v303_mobile_hub_compact.py
 
+# V304: make current project and saved drafts real openable folders on mobile + desktop.
+# Their detail sheet owns continue/save, rename and delete actions; the list stays clean.
+python /app/web/fix_v304_project_folder_details.py
+python /app/web/test_v304_project_folder_details.py
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
