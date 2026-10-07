@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 
-HUB = Path('/app/web/creator_hub_v156_component/index.html')
+ROOT = Path('/app')
+HUB = ROOT / 'web/creator_hub_v156_component/index.html'
+APP = ROOT / 'GamingShortsFactory_V154_STRUCTURAL_HOME.py'
 text = HUB.read_text(encoding='utf-8')
 MARK = '/* V304 PROJECT + DRAFT DETAILS */'
 if MARK in text:
@@ -76,7 +79,7 @@ if '</style>' not in text:
     raise SystemExit('V304 details: style anchor missing')
 text = text.replace('</style>', css + '\n</style>', 1)
 
-# Keep the existing outer Bozze screen; only let a renamed current project show its real title.
+# Keep the existing Bozze screen intact; only show a renamed current project title.
 title_anchor = '<div class="projectInfo"><b>Progetto corrente</b><span>'
 title_repl = '<div class="projectInfo"><b>'+"'+esc(p.title||\"Progetto corrente\")+'"+'</b><span>'
 if title_anchor not in text:
@@ -180,13 +183,14 @@ runtime = r'''
        notify('Bozza salvata',j.draft&&j.draft.title||'');return;
      }
      if(name==='delete'){
-       const label=selected.kind==='draft'?'questa bozza':'il progetto corrente';
+       const deletedKind=selected.kind;
+       const label=deletedKind==='draft'?'questa bozza':'il progetto corrente';
        if(!confirm('Eliminare '+label+'?'))return;
-       const url=selected.kind==='draft'?'/creator-hub/draft/delete':'/creator-hub/project/delete';
-       const body=selected.kind==='draft'?{id:selected.id}:{};
+       const url=deletedKind==='draft'?'/creator-hub/draft/delete':'/creator-hub/project/delete';
+       const body=deletedKind==='draft'?{id:selected.id}:{};
        await jsonFetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
        closeDetail();const h=window.GSFHubV304||{};if(h.loadState)await h.loadState();
-       notify(selected.kind==='draft'?'Bozza eliminata':'Progetto eliminato');return;
+       notify(deletedKind==='draft'?'Bozza eliminata':'Progetto eliminato');return;
      }
    }catch(e){notify('Operazione non riuscita',String(e.message||e),'error')}
  }
@@ -205,6 +209,11 @@ runtime = r'''
 if '</body>' not in text:
     raise SystemExit('V304 details: body anchor missing')
 text = text.replace('</body>', runtime + '\n</body>', 1)
-
 HUB.write_text(text, encoding='utf-8')
-print('V304 project/draft detail UI applied', flush=True)
+
+app = APP.read_text(encoding='utf-8')
+app, count = re.subn(r'/creator-hub-v156/\?v=\d+', '/creator-hub-v156/?v=304', app)
+if count < 1 and '/creator-hub-v156/?v=304' not in app:
+    raise SystemExit('V304 details: Creator Hub cache anchor missing')
+APP.write_text(app, encoding='utf-8')
+print('V304 project/draft detail UI + cache v304 applied', flush=True)
