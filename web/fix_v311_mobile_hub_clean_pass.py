@@ -248,12 +248,26 @@ def _replace_gamebar(text: str) -> str:
 
     home_pat=_page_nav_button_pattern('home')
     m=home_pat.search(text)
-    if not m:raise RuntimeError('V311: global Home Game Bar button missing')
-    home=m.group(0)
-    home=re.sub(r'\sdata-section="[^"]*"','',home)
-    home=re.sub(r'data-target="[^"]*"','data-target="hub"',home,count=1)
-    home=home.replace('data-active="home"','data-section="dashboard" data-active="home"',1)
-    text=home_pat.sub(home,text,count=1)
+    if m:
+        home=m.group(0)
+        home=re.sub(r'\sdata-section="[^"]*"','',home)
+        home=re.sub(r'data-target="[^"]*"','data-target="hub"',home,count=1)
+        home=home.replace('data-active="home"','data-section="dashboard" data-active="home"',1)
+        text=home_pat.sub(home,text,count=1)
+    else:
+        # The production shell guaranteed by V286/V302 can have no page-level
+        # Home button at all. Build Home from the real Hub button instead of
+        # aborting startup, then let the normal pass reduce the bar to 4 items.
+        hub_pat=_page_nav_button_pattern('hub')
+        hub_match=hub_pat.search(text)
+        if not hub_match:raise RuntimeError('V311: global Hub Game Bar button missing')
+        home=hub_match.group(0)
+        home=home.replace('data-active="hub"','data-active="home"',1)
+        home=re.sub(r'\sdata-section="[^"]*"','',home)
+        home=re.sub(r'data-target="[^"]*"','data-target="hub"',home,count=1)
+        home=home.replace('data-active="home"','data-section="dashboard" data-active="home"',1)
+        home=re.sub(r'<span>.*?</span>','<span>Home</span>',home,count=1,flags=re.DOTALL)
+        text=text[:hub_match.start()]+home+'\n'+text[hub_match.start():]
 
     shorts_pat=_page_nav_button_pattern('shorts')
     text,count=shorts_pat.subn('',text,count=1)
