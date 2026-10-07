@@ -84,6 +84,12 @@ python /app/web/test_v304_project_draft_details.py /app
 python /app/web/fix_v307_mobile_visual_source.py /app
 python /app/web/test_v307_mobile_visual_source.py /app
 
+# V308: mobile-only AI page cleanup. Hide the journey line-up on phones, keep
+# scrolling inside the AI page, enlarge the three moment cards, and open each
+# selected clip in a full-screen preview that can return to Editor/Create Short.
+python /app/web/fix_v308_mobile_ai_flow.py /app/web/ai_v221_component/index.html
+python /app/web/test_v308_mobile_ai_flow.py /app
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
