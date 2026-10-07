@@ -4,6 +4,12 @@ from pathlib import Path
 HUB = Path('/app/web/creator_hub_v156_component/index.html')
 APP = Path('/app/GamingShortsFactory_V154_STRUCTURAL_HOME.py')
 
+MODERN_HUB_MARKERS = (
+    'V311 APPROVED CREATOR REFERENCE',
+    'id="v311HubRuntime"',
+    "gsfHubVersion='3114'",
+)
+
 CSS = '''
 /* V287 PROFILE OVERVIEW
    Real account summary cards inside Profile, optimized for mobile and desktop. */
@@ -52,6 +58,14 @@ def replace_once(text: str, old: str, new: str, label: str) -> str:
 def patch_hub() -> None:
     text = HUB.read_text(encoding='utf-8')
     before = text
+
+    # V311 is the authoritative Hub source. On a container restart the already
+    # normalized file must pass through V287 without trying to recreate legacy
+    # anchors that V311 deliberately removed.
+    if any(marker in text for marker in MODERN_HUB_MARKERS):
+        print('V287 Creator Hub profile overview skipped: modern V311 Hub already active', flush=True)
+        return
+
     if 'V287 PROFILE OVERVIEW' not in text:
         text = replace_once(text, '</style>', CSS + '\n</style>', 'profile overview CSS')
     if 'id="profileOverviewShorts"' not in text:
@@ -75,6 +89,13 @@ def patch_shell() -> None:
         return
     text = APP.read_text(encoding='utf-8')
     before = text
+
+    # Same restart rule for the shell: a newer V311 cache key means this older
+    # migration already ran and must not turn a healthy restart into a crash.
+    if re.search(r'/creator-hub-v156/\?v=311\d*', text):
+        print('V287 Creator Hub cache bump skipped: newer V311 cache already active', flush=True)
+        return
+
     text = text.replace('/creator-hub-v156/?v=286', '/creator-hub-v156/?v=287')
     if '/creator-hub-v156/?v=287' not in text:
         raise RuntimeError('V287: Creator Hub iframe cache marker missing')
