@@ -9,8 +9,43 @@ on:
 jobs:
   contract:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+
       - name: Run V312 contract
-        run: python web/test_v312_creator_hub_design_sync.py .
+        run: |
+          python -m py_compile web/fix_v312_creator_hub_design_sync.py web/test_v312_creator_hub_design_sync.py
+          python web/test_v312_creator_hub_design_sync.py .
+
+      - name: Build production image
+        run: docker build --progress=plain -t gsf-v312 .
+
+      - name: Start production image
+        run: |
+          docker run -d --name gsf-v312-run -p 8080:8080 \
+            -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v312
+
+      - name: Wait for production health
+        run: |
+          set -eu
+          for i in $(seq 1 90); do
+            if ! docker inspect -f '{{.State.Running}}' gsf-v312-run 2>/dev/null | grep -q true; then
+              echo 'Container exited before becoming healthy'
+              docker logs gsf-v312-run || true
+              exit 1
+            fi
+            if curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1; then
+              echo 'V312 production container: HEALTHY'
+              docker logs gsf-v312-run | tail -n 260
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'Timed out waiting for V312 container'
+          docker logs gsf-v312-run || true
+          exit 1
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker logs gsf-v312-run || true
