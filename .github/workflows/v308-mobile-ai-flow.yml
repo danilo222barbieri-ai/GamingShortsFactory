@@ -9,8 +9,43 @@ on:
 jobs:
   contract:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+
       - name: Run V308 contract
-        run: python web/test_v308_mobile_ai_flow.py .
+        run: |
+          python -m py_compile web/fix_v308_mobile_ai_flow.py web/test_v308_mobile_ai_flow.py
+          python web/test_v308_mobile_ai_flow.py .
+
+      - name: Build production image
+        run: docker build --progress=plain -t gsf-v308 .
+
+      - name: Start production image
+        run: |
+          docker run -d --name gsf-v308-run -p 8080:8080 \
+            -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v308
+
+      - name: Wait for health and V308 startup gate
+        run: |
+          set -eu
+          for i in $(seq 1 90); do
+            if ! docker inspect -f '{{.State.Running}}' gsf-v308-run 2>/dev/null | grep -q true; then
+              echo 'Container exited before becoming healthy'
+              docker logs gsf-v308-run || true
+              exit 1
+            fi
+            if curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1; then
+              echo 'V308 production container: HEALTHY'
+              docker logs gsf-v308-run | tail -n 220
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'Timed out waiting for V308 container'
+          docker logs gsf-v308-run || true
+          exit 1
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker logs gsf-v308-run || true
