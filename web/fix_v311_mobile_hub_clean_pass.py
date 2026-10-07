@@ -169,6 +169,16 @@ def _normalize_structure(text: str) -> str:
 
 
 def patch_hub_text(text: str) -> str:
+    # Already-normalized input must be byte-for-byte stable. This matters because
+    # startup/tests can call the pass more than once while the service is booting.
+    if (
+        'V311 SOURCE NORMALIZED' in text
+        and 'id="v311HubForce"' in text
+        and 'id="v311HubRuntime"' in text
+        and "gsfHubVersion='3113'" in text
+        and 'youtubeLiveFolders' in text
+    ):
+        return text
     text = _strip_old_v311(text)
     text = _normalize_structure(text)
     if '</head>' not in text:
