@@ -4,23 +4,22 @@ import importlib.util
 import sys
 
 ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parents[1]
-PATCH = ROOT / 'web' / 'fix_v308_mobile_master.py'
+V308 = ROOT / 'web' / 'fix_v308_mobile_master.py'
+V287 = ROOT / 'web' / 'fix_v287_profile_overview.py'
 
-spec = importlib.util.spec_from_file_location('gsf_v308_mobile_master', PATCH)
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
 
-sample = '''<!doctype html><html><head><style>
-/* V287 PROFILE OVERVIEW
-   Real account summary cards inside Profile, optimized for mobile and desktop. */
-#hub .profileOverviewCard small{display:block!important}
-#hub .profileOverviewValue{display:block!important}
-#hub .profileOverviewHint{display:block!important}
-@media(max-width:760px){#hub .profileOverviewGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
-/* END V287 PROFILE OVERVIEW */
-</style></head><body><main id="hub"></main></body></html>'''
+def load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
-out = module.canonicalize_text('hub', sample)
+master = load('gsf_v308_mobile_master', V308)
+profile = load('gsf_v287_profile_overview', V287)
+
+sample = '<!doctype html><html><head><style>' + profile.CSS + '</style></head><body><main id="hub"></main></body></html>'
+out = master.canonicalize_text('hub', sample)
+
 required = (
     '#hub .profileOverviewCard small{display:block!important}',
     '#hub .profileOverviewValue{display:block!important}',
@@ -33,4 +32,5 @@ if missing:
     for marker in missing:
         print(' -', marker)
     raise SystemExit(1)
+
 print('V310 profile overview preservation contract: PASS')
