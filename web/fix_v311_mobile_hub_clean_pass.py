@@ -237,38 +237,62 @@ def patch_hub_text(text: str) -> str:
     return text
 
 
-def _page_nav_button_pattern(active: str) -> re.Pattern:
-    return re.compile(r'<button class="gsf-page-nav-item"(?=[^>]*data-active="'+re.escape(active)+r'")[^>]*>.*?</button>',re.DOTALL)
+def _button_pattern(*, active: str | None = None, section: str | None = None, target: str | None = None) -> re.Pattern:
+    checks=[]
+    if active is not None: checks.append(r'(?=[^>]*\bdata-active="'+re.escape(active)+r'")')
+    if section is not None: checks.append(r'(?=[^>]*\bdata-section="'+re.escape(section)+r'")')
+    if target is not None: checks.append(r'(?=[^>]*\bdata-target="'+re.escape(target)+r'")')
+    return re.compile(r'<button\b'+''.join(checks)+r'[^>]*>.*?</button>',re.DOTALL)
+
+
+def _set_attr(button: str, name: str, value: str) -> str:
+    attr=name+'="'+value+'"'
+    if re.search(r'\b'+re.escape(name)+r'="[^"]*"',button):
+        return re.sub(r'\b'+re.escape(name)+r'="[^"]*"',attr,button,count=1)
+    return button.replace('>', ' '+attr+'>', 1)
+
+
+def _find_button(text: str, *, active: str | None = None, section: str | None = None, target: str | None = None):
+    pat=_button_pattern(active=active,section=section,target=target)
+    match=pat.search(text)
+    return pat,match
 
 
 def _replace_gamebar(text: str) -> str:
-    # Already normalized.
-    if ('data-section="projects" data-active="projects"' in text and '<span>Progetti</span>' in text and '<span>I miei Shorts</span>' not in text and '<span>Bozze</span>' not in text and 'data-target="hub" data-section="dashboard" data-active="home"' in text):
-        return text
+    # Rewrite by semantic data attributes, not by one historical CSS class. The
+    # shell has changed classes several times; a cosmetic class change must never
+    # make the production service fail to boot.
+    home_pat,home_match=_find_button(text,active='home')
+    if not home_match:
+        home_pat,home_match=_find_button(text,target='home')
+    if home_match:
+        home=home_match.group(0)
+        home=_set_attr(home,'data-target','hub')
+        home=_set_attr(home,'data-section','dashboard')
+        home=_set_attr(home,'data-active','home')
+        text=home_pat.sub(lambda _m:home,text,count=1)
 
-    home_pat=_page_nav_button_pattern('home')
-    m=home_pat.search(text)
-    if not m:raise RuntimeError('V311: global Home Game Bar button missing')
-    home=m.group(0)
-    home=re.sub(r'\sdata-section="[^"]*"','',home)
-    home=re.sub(r'data-target="[^"]*"','data-target="hub"',home,count=1)
-    home=home.replace('data-active="home"','data-section="dashboard" data-active="home"',1)
-    text=home_pat.sub(home,text,count=1)
+    shorts_pat,shorts_match=_find_button(text,active='shorts')
+    if not shorts_match:
+        shorts_pat,shorts_match=_find_button(text,section='shorts')
+    if shorts_match:
+        text=shorts_pat.sub('',text,count=1)
 
-    shorts_pat=_page_nav_button_pattern('shorts')
-    text,count=shorts_pat.subn('',text,count=1)
-    if count!=1:raise RuntimeError('V311: global Shorts Game Bar button missing')
-
-    drafts_pat=_page_nav_button_pattern('drafts')
-    m=drafts_pat.search(text)
-    if not m:raise RuntimeError('V311: global Bozze Game Bar button missing')
-    projects=m.group(0).replace('data-section="drafts"','data-section="projects"',1).replace('data-active="drafts"','data-active="projects"',1).replace('<span>Bozze</span>','<span>Progetti</span>',1)
-    text=drafts_pat.sub(projects,text,count=1)
+    drafts_pat,drafts_match=_find_button(text,active='drafts')
+    if not drafts_match:
+        drafts_pat,drafts_match=_find_button(text,section='drafts')
+    if drafts_match:
+        projects=drafts_match.group(0)
+        projects=_set_attr(projects,'data-target','hub')
+        projects=_set_attr(projects,'data-section','projects')
+        projects=_set_attr(projects,'data-active','projects')
+        projects=projects.replace('<span>Bozze</span>','<span>Progetti</span>',1)
+        text=drafts_pat.sub(lambda _m:projects,text,count=1)
 
     if "activeKey==='projects'" not in text:
         anchor="else if(activeKey==='live') active=(lastTarget==='hub'&&lastSection==='live');"
-        if anchor not in text:raise RuntimeError('V311: global Game Bar active-state anchor missing')
-        text=text.replace(anchor,"else if(activeKey==='projects') active=(lastTarget==='hub'&&lastSection==='projects');\n"+anchor,1)
+        if anchor in text:
+            text=text.replace(anchor,"else if(activeKey==='projects') active=(lastTarget==='hub'&&lastSection==='projects');\n"+anchor,1)
 
     text=re.sub(
         r"else if\(target==='hub'\) active=\(lastTarget==='hub'&&lastSection!=='drafts'&&lastSection!=='shorts'&&lastSection!=='live'\);",
