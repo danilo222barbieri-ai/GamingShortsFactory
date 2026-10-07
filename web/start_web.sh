@@ -90,6 +90,11 @@ python /app/web/test_v307_mobile_visual_source.py /app
 python /app/web/fix_v308_mobile_ai_flow.py /app/web/ai_v221_component/index.html
 python /app/web/test_v308_mobile_ai_flow.py /app
 
+# V310: clean the mobile Creator Hub profile, remove the current-project block
+# from Bozze, and remove the placeholder bubble at the bottom of Live.
+python /app/web/fix_v310_creator_hub_mobile_cleanup.py /app/web/creator_hub_v156_component/index.html
+python /app/web/test_v310_creator_hub_mobile_cleanup.py /app
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
