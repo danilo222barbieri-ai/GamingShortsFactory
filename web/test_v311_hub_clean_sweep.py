@@ -6,6 +6,7 @@ import sys
 ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parents[1]
 WEB = ROOT / 'web'
 PATCH = WEB / 'fix_v311_hub_clean_sweep.py'
+PREV_PATCH = WEB / 'fix_v310_creator_hub_mobile_cleanup.py'
 HUB = WEB / 'creator_hub_v156_component' / 'index.html'
 START = WEB / 'start_web.sh'
 
@@ -19,6 +20,13 @@ def ok(message):
     print('[ OK ]', message)
 
 
+def load_module(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 if not PATCH.exists():
     fail('V311 patch file missing')
 if not HUB.exists():
@@ -26,14 +34,20 @@ if not HUB.exists():
 if not START.exists():
     fail('start_web.sh missing')
 
-spec = importlib.util.spec_from_file_location('gsf_v311_hub_clean_sweep', PATCH)
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
+module = load_module('gsf_v311_hub_clean_sweep', PATCH)
 if not hasattr(module, 'patch_hub_text'):
     fail('patch_hub_text() missing')
 ok('pure patch_hub_text helper present')
 
+# Production applies V310 before V311. Exercise the same sequence so V311 is
+# proven compatible with the already-deployed cleanup rather than only raw HTML.
 source = HUB.read_text(encoding='utf-8')
+if PREV_PATCH.exists():
+    prev = load_module('gsf_v310_creator_hub_mobile_cleanup', PREV_PATCH)
+    if hasattr(prev, 'patch_hub_text'):
+        source = prev.patch_hub_text(source)
+        ok('V310 runtime state reproduced')
+
 patched = module.patch_hub_text(source)
 
 required = (
@@ -61,12 +75,10 @@ for forbidden in (
         fail('stale Live content remains: ' + forbidden)
 ok('Live landing page is clean and non-duplicated')
 
-# The old current-project renderer must no longer be visible on mobile.
 if '#hub .view[data-view="drafts"] #projectRows{display:none!important}' not in patched:
     fail('Drafts current project/stats container is still exposed on mobile')
 ok('Drafts only exposes saved draft list on mobile')
 
-# Idempotency matters because startup patches may be retried locally.
 patched_twice = module.patch_hub_text(patched)
 if patched_twice != patched:
     fail('V311 patch is not idempotent')
@@ -76,8 +88,8 @@ start = START.read_text(encoding='utf-8')
 needle = 'python /app/web/fix_v311_hub_clean_sweep.py /app/web/creator_hub_v156_component/index.html'
 if needle not in start:
     fail('V311 startup patch is not registered')
-if start.index(needle) < start.index('python /app/web/fix_v307_mobile_visual_source.py /app'):
-    fail('V311 must run after the canonical V307 visual pass')
+if start.index(needle) < start.index('python /app/web/fix_v310_creator_hub_mobile_cleanup.py /app/web/creator_hub_v156_component/index.html'):
+    fail('V311 must run after V310')
 if start.index(needle) > start.index('python /app/web/apply_v293_render_memory_guard.py'):
     fail('V311 must run before production app generation')
 ok('startup order is correct')
