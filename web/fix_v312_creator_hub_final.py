@@ -28,11 +28,27 @@ def _make_width_independent(css: str) -> str:
     if end not in body:
         raise RuntimeError('V312 final: mobile media closing anchor missing')
     body = body.replace(end, '\n/* END V312 CREATOR HUB DESIGN SYNC */', 1)
+    # V310 still computes the old project stats for compatibility. They are no
+    # longer part of the approved Bozze design, so the final visual contract
+    # removes them authoritatively.
+    body += '\n#hub #projectRows .stats{display:none!important}\n'
     return '/* V312 CREATOR HUB FINAL */\n' + body
 
 
 _base = _load_base()
 FINAL_CSS = _make_width_independent(_base.CSS)
+
+
+def _normalize_v310_runtime(text: str) -> str:
+    # V310 intentionally removed `const p=...` before #projectRows. The approved
+    # V312 renderer was authored against the older anchor, so restore only that
+    # harmless declaration before applying the structural redesign. This keeps
+    # the finalizer compatible with the actual production patch order.
+    marker = '   $("#projectRows").innerHTML='
+    declaration = '   const p=state.project||{};\n'
+    if declaration not in text and marker in text:
+        text = text.replace(marker, declaration + marker, 1)
+    return text
 
 
 def patch_hub_text(text: str) -> str:
@@ -41,7 +57,7 @@ def patch_hub_text(text: str) -> str:
     if 'V312 CREATOR HUB FINAL' in text:
         return text
     _base.CSS = FINAL_CSS
-    return _base.patch_hub_text(text)
+    return _base.patch_hub_text(_normalize_v310_runtime(text))
 
 
 def patch_shell_text(text: str) -> str:
