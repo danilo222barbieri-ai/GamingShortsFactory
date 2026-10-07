@@ -1,0 +1,16 @@
+name: V308 Mobile AI flow check
+
+on:
+  push:
+    branches:
+      - v308-mobile-ai-flow
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V308 contract
+        run: python web/test_v308_mobile_ai_flow.py .
