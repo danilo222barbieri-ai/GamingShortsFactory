@@ -29,6 +29,36 @@ DESK_LAYOUT_ATTR_RE = re.compile(r'\sdata-v29[78]-layout=(?:"[^"]*"|\'[^\']*\')'
 MEDIA_START_RE = re.compile(r'@media\s*([^\{]+)\{', re.IGNORECASE)
 MOBILE_MAX_RE = re.compile(r'max-width\s*:\s*(\d+(?:\.\d+)?)px', re.IGNORECASE)
 
+MOBILE_SCROLL_MARK = '/* GSF MOBILE-ONLY SCROLL CONTRACT */'
+MOBILE_SCROLL_CSS = {
+    'creator_hub_v156_component/index.html': r'''
+/* GSF MOBILE-ONLY SCROLL CONTRACT */
+html,body{overflow:hidden!important}
+#hub{overflow:hidden!important}
+#hub .stage{overflow:hidden!important}
+#hub .view.active{
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+#hub .view.active .profileOnlyScroller{overflow:visible!important}
+/* END GSF MOBILE-ONLY SCROLL CONTRACT */
+''',
+    'editor_2027_component/index.html': r'''
+/* GSF MOBILE-ONLY SCROLL CONTRACT */
+html,body{overflow:hidden!important;width:100%;height:100%;margin:0}
+#ng27{height:100dvh!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch!important}
+/* END GSF MOBILE-ONLY SCROLL CONTRACT */
+''',
+    'share_v156_component/index.html': r'''
+/* GSF MOBILE-ONLY SCROLL CONTRACT */
+html,body{overflow:hidden!important}
+#share{height:100dvh!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch!important}
+/* END GSF MOBILE-ONLY SCROLL CONTRACT */
+''',
+}
+
 
 def _find_matching_brace(text: str, open_index: int) -> int:
     depth = 0
@@ -105,14 +135,12 @@ def transform_media(text: str) -> str:
 
 
 def _remove_marked_desktop_blocks(text: str) -> str:
-    # V296 was entirely a desktop visual pass even though its marker omitted the word desktop.
     text = re.sub(
         r'/\*\s*V296 VISIBLE INTERNAL PAGES\b.*?/\*\s*END V296 VISIBLE INTERNAL PAGES\b.*?\*/',
         '',
         text,
         flags=re.IGNORECASE | re.DOTALL,
     )
-    # Remove any historical version block explicitly named DESKTOP/DESK in its opening marker.
     start_re = re.compile(r'/\*\s*(V\d+[^*]*(?:DESKTOP|\bDESK\b|EDITOR GRAPHIC ONLY)[^*]*)\*/', re.IGNORECASE)
     scan = 0
     while True:
@@ -142,7 +170,6 @@ def sanitize_text(text: str) -> str:
     text = DESK_LAYOUT_ATTR_RE.sub('', text)
     text = _remove_marked_desktop_blocks(text)
     text = transform_media(text)
-    # Remove orphaned comments that only label old desktop passes.
     text = re.sub(r'/\*[^*]*(?:DESKTOP|\bDESK\b)[^*]*\*/', '', text, flags=re.IGNORECASE)
     return text
 
@@ -166,6 +193,23 @@ def _rewrite_component(path: Path) -> None:
         print('V307 already clean:', path, flush=True)
 
 
+def _append_mobile_scroll_contracts() -> None:
+    """Apply one final scroll owner after all historical mobile visual patches."""
+    for relative, css in MOBILE_SCROLL_CSS.items():
+        path = WEB / relative
+        if not path.is_file():
+            raise RuntimeError('V307 scroll target missing: ' + str(path))
+        text = path.read_text(encoding='utf-8')
+        if MOBILE_SCROLL_MARK in text:
+            print('V307 mobile scroll already applied:', path, flush=True)
+            continue
+        if '</style>' not in text:
+            raise RuntimeError('V307 scroll style anchor missing: ' + str(path))
+        text = text.replace('</style>', css + '\n</style>', 1)
+        path.write_text(text, encoding='utf-8')
+        print('V307 mobile scroll contract:', path, flush=True)
+
+
 def _bump_cache_keys() -> None:
     if HOME_EMBED.is_file():
         text = HOME_EMBED.read_text(encoding='utf-8')
@@ -180,8 +224,6 @@ def _bump_cache_keys() -> None:
             raise RuntimeError('V307 Editor cache key anchor missing')
         EDITOR_EMBED.write_text(text, encoding='utf-8')
     if SHELL.is_file():
-        # The shell is Python and can contain f-strings with doubled CSS braces.
-        # Only update route cache keys; never run the raw CSS/media sanitizer on it.
         text = SHELL.read_text(encoding='utf-8')
         for route in ('creator-hub-v156', 'share-v156', 'ai-v221'):
             text = re.sub(rf'/{route}/\?v=[^"\'&\s]+', f'/{route}/?v=307', text)
@@ -206,8 +248,9 @@ def main(root: Path = ROOT) -> None:
         EDITOR_EMBED = WEB / 'editor_2027_embed.py'
     for path in COMPONENTS:
         _rewrite_component(path)
+    _append_mobile_scroll_contracts()
     _bump_cache_keys()
-    print('V307 mobile visual source applied: HTML visual history purged; Python shell preserved', flush=True)
+    print('V307 mobile visual source applied: HTML visual history purged; mobile scroll ownership enforced; Python shell preserved', flush=True)
 
 
 if __name__ == '__main__':
