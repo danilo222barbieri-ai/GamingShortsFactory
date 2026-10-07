@@ -54,7 +54,11 @@ def patch_hub() -> None:
     before = text
     if 'V287 PROFILE OVERVIEW' not in text:
         text = replace_once(text, '</style>', CSS + '\n</style>', 'profile overview CSS')
-    if 'id="profileOverviewShorts"' not in text:
+    # A later authoritative Hub pass may intentionally remove Shorts/Bozze from
+    # Profile while preserving the overview grid for plan/social. On a container
+    # restart, treat that existing grid as already initialized instead of trying
+    # to inject the original four-card V287 block again.
+    if 'class="profileOverviewGrid"' not in text:
         pattern = re.compile(r'\s*<div class="profileMural profileOnlyMural" aria-hidden="true">Questo è il tuo spazio,<br>fallo tuo</div>\s*<button class="logoutProfile" id="logoutProfile" type="button">Disconnetti dal Creator Hub</button>')
         text, count = pattern.subn('\n' + OVERVIEW_HTML, text, count=1)
         if count != 1:
