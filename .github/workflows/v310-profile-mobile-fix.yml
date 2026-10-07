@@ -1,0 +1,16 @@
+name: V310 Profile mobile fix
+
+on:
+  push:
+    branches:
+      - v310-profile-mobile-fix
+  workflow_dispatch:
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reproduce profile overview stripping
+        run: python web/test_v310_profile_overview_preserved.py .
