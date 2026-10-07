@@ -3,7 +3,7 @@ name: V311 Mobile Hub clean pass
 on:
   push:
     branches:
-      - v3113-hub-source-normalize
+      - v311-mobile-hub-clean-pass-2
   workflow_dispatch:
 
 jobs:
