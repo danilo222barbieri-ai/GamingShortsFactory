@@ -89,6 +89,12 @@ python /app/web/test_v297_desk_rebuild.py /app
 cp /tmp/gsf_editor_pre_v297.html /app/web/editor_2027_component/index.html
 python /app/web/fix_v299_editor_clean_restore.py
 
+# V300: rebuild only the Creator Hub visual structure. Remove the V297 Hub
+# sidebar/runtime, keep the real profile/projects/social/live/subscription
+# behavior, add the account overview, and let the global Game Bar own navigation.
+python /app/web/fix_v300_creator_hub_clean.py
+python /app/web/test_v300_creator_hub_clean.py /app
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
