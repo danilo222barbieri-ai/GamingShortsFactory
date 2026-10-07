@@ -47,10 +47,10 @@ python /app/web/test_v291_ai_engine_bridge.py /app/web/home_v154_component/index
 python /app/web/fix_v293_share_state_resilience.py /app/web/direct_upload_server.py
 python /app/web/test_v293_share_state_resilience.py /app/web/direct_upload_server.py
 
-# V295: keep the mobile/internal interaction system. V307 strips its desktop
-# branch and promotes the mobile branch to every viewport after all patches run.
+# V295: keep its mobile/internal interaction patch only. The old V295 regression
+# test required a paired desktop branch, which V307 intentionally removes, so it
+# must not abort startup before the V307 final visual contract can run.
 python /app/web/fix_v295_internal_pages_responsive.py
-python /app/web/test_v295_internal_pages_responsive.py /app
 
 # V300: keep the real Creator Hub structure/profile/project/social behavior and
 # its mobile presentation. The legacy desktop portion is removed by V307.
