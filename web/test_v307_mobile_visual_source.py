@@ -52,6 +52,8 @@ def unit_contract(mod) -> None:
 
 def integration_contract(mod, root: Path) -> None:
     web = root / "web"
+    home_embed = web / "home_v154_embed.py"
+    editor_embed = web / "editor_2027_embed.py"
     targets = [
         web / "home_v154_component" / "index.html",
         web / "ai_v221_component" / "index.html",
@@ -59,6 +61,8 @@ def integration_contract(mod, root: Path) -> None:
         web / "editor_2027_component" / "index.html",
         web / "share_v156_component" / "index.html",
         root / "GamingShortsFactory_V154_STRUCTURAL_HOME.py",
+        home_embed,
+        editor_embed,
     ]
     missing = [str(path) for path in targets if not path.is_file()]
     if missing:
@@ -79,7 +83,7 @@ def integration_contract(mod, root: Path) -> None:
     )
 
     failures = []
-    for path in targets:
+    for path in targets[:6]:
         text = path.read_text(encoding="utf-8")
         if mod.has_viewport_min_width_media(text):
             failures.append(path.name + ": viewport min-width media remains")
@@ -89,17 +93,25 @@ def integration_contract(mod, root: Path) -> None:
         if "@media (max-width:760px)" in text or "@media(max-width:760px)" in text:
             failures.append(path.name + ": mobile 760px rules were not promoted")
 
+    shell = targets[5].read_text(encoding="utf-8")
+    home_embed_text = home_embed.read_text(encoding="utf-8")
+    editor_embed_text = editor_embed.read_text(encoding="utf-8")
     logic_checks = {
         "Home upload logic": "GSF" in targets[0].read_text(encoding="utf-8") and "upload" in targets[0].read_text(encoding="utf-8").lower(),
         "AI engine logic": "engine" in targets[1].read_text(encoding="utf-8").lower(),
         "Hub folder logic": "data-folder" in targets[2].read_text(encoding="utf-8"),
         "Editor controls": 'data-panel="frame"' in targets[3].read_text(encoding="utf-8") and 'data-panel="caption"' in targets[3].read_text(encoding="utf-8"),
         "Share actions": "download" in targets[4].read_text(encoding="utf-8").lower(),
+        "Home final cache": '"gsf_home_v154_live_307"' in home_embed_text,
+        "Editor final cache": '"gsf_editor_2027_v307"' in editor_embed_text,
+        "Hub final cache": '/creator-hub-v156/?v=307' in shell,
+        "Share final cache": '/share-v156/?v=307' in shell,
+        "AI final cache": '/ai-v221/?v=307' in shell,
     }
     for name, ok in logic_checks.items():
         print(("PASS" if ok else "FAIL") + ": " + name)
         if not ok:
-            failures.append("logic missing: " + name)
+            failures.append("logic/cache missing: " + name)
 
     if failures:
         raise SystemExit("V307 integration contract failed: " + " | ".join(failures))
