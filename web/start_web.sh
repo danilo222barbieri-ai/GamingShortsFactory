@@ -62,8 +62,15 @@ python /app/web/test_v308_editor_mobile_master.py /app
 python /app/web/test_v308_cache_contract.py /app
 python /app/web/test_v308_startup_contract.py /app
 
-# Generate the production app only after the canonical V308 UI passes. The
-# render-memory guard remains authoritative for 1 GB frontend safety.
+# V309 is a deliberately mobile-only delta applied after the canonical V308
+# surface checks. Home remains fixed; only the AI page gains internal scrolling,
+# fullscreen moment previews and the return path to its existing next actions.
+python /app/web/fix_v309_mobile_ai_flow.py /app/web/ai_v221_component/index.html
+python /app/web/test_v309_mobile_ai_flow.py /app
+python /app/web/test_v309_editor_release_import.py /app
+
+# Generate the production app only after the canonical V308 UI and V309 mobile
+# AI flow pass. The render-memory guard remains authoritative for 1 GB safety.
 python /app/web/apply_v293_render_memory_guard.py
 
 # V105.7: publish ads.txt only when a real Google publisher id is configured.
