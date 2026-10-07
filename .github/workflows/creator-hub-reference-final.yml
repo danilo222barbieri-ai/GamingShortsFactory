@@ -18,7 +18,7 @@ jobs:
           python -m py_compile web/fix_v311_mobile_hub_clean_pass.py web/test_v311_mobile_hub_clean_pass.py
           python web/test_v311_mobile_hub_clean_pass.py .
       - name: Build production image
-        run: docker build --progress=plain -t gsf-creator-reference .
+        run: docker build -q -t gsf-creator-reference .
       - name: Start production image
         run: |
           docker run -d --name gsf-creator-reference-run -p 8080:8080 \
@@ -28,7 +28,8 @@ jobs:
           set -eu
           for i in $(seq 1 90); do
             if ! docker inspect -f '{{.State.Running}}' gsf-creator-reference-run 2>/dev/null | grep -q true; then
-              docker logs gsf-creator-reference-run || true
+              echo '--- container stopped: startup tail ---'
+              docker logs --tail 160 gsf-creator-reference-run || true
               exit 1
             fi
             if curl -fsS -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148' http://127.0.0.1:8080/creator-hub-v156/ | grep -q 'V311 APPROVED CREATOR REFERENCE'; then
@@ -37,8 +38,9 @@ jobs:
             fi
             sleep 2
           done
-          docker logs gsf-creator-reference-run || true
+          echo '--- health route timeout: startup tail ---'
+          docker logs --tail 160 gsf-creator-reference-run || true
           exit 1
-      - name: Show logs on failure
+      - name: Show startup tail on failure
         if: failure()
-        run: docker logs gsf-creator-reference-run || true
+        run: docker logs --tail 160 gsf-creator-reference-run || true
