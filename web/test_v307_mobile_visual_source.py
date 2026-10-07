@@ -54,16 +54,15 @@ def integration_contract(mod, root: Path) -> None:
     web = root / "web"
     home_embed = web / "home_v154_embed.py"
     editor_embed = web / "editor_2027_embed.py"
-    targets = [
+    components = [
         web / "home_v154_component" / "index.html",
         web / "ai_v221_component" / "index.html",
         web / "creator_hub_v156_component" / "index.html",
         web / "editor_2027_component" / "index.html",
         web / "share_v156_component" / "index.html",
-        root / "GamingShortsFactory_V154_STRUCTURAL_HOME.py",
-        home_embed,
-        editor_embed,
     ]
+    shell_path = root / "GamingShortsFactory_V154_STRUCTURAL_HOME.py"
+    targets = components + [shell_path, home_embed, editor_embed]
     missing = [str(path) for path in targets if not path.is_file()]
     if missing:
         raise SystemExit("V307 integration targets missing: " + ", ".join(missing))
@@ -83,7 +82,10 @@ def integration_contract(mod, root: Path) -> None:
     )
 
     failures = []
-    for path in targets[:6]:
+    # V307's CSS/media sanitizer is intentionally scoped to HTML components.
+    # The Python shell may contain f-strings whose doubled CSS braces must never
+    # be rewritten as raw CSS text.
+    for path in components:
         text = path.read_text(encoding="utf-8")
         if mod.has_viewport_min_width_media(text):
             failures.append(path.name + ": viewport min-width media remains")
@@ -93,15 +95,22 @@ def integration_contract(mod, root: Path) -> None:
         if "@media (max-width:760px)" in text or "@media(max-width:760px)" in text:
             failures.append(path.name + ": mobile 760px rules were not promoted")
 
-    shell = targets[5].read_text(encoding="utf-8")
+    shell = shell_path.read_text(encoding="utf-8")
+    try:
+        compile(shell, str(shell_path), "exec")
+        print("PASS: Python shell compiles after V307")
+    except SyntaxError as exc:
+        failures.append("Python shell syntax invalid after V307: " + str(exc))
+        print("FAIL: Python shell compiles after V307")
+
     home_embed_text = home_embed.read_text(encoding="utf-8")
     editor_embed_text = editor_embed.read_text(encoding="utf-8")
     logic_checks = {
-        "Home upload logic": "GSF" in targets[0].read_text(encoding="utf-8") and "upload" in targets[0].read_text(encoding="utf-8").lower(),
-        "AI engine logic": "engine" in targets[1].read_text(encoding="utf-8").lower(),
-        "Hub folder logic": "data-folder" in targets[2].read_text(encoding="utf-8"),
-        "Editor controls": 'data-panel="frame"' in targets[3].read_text(encoding="utf-8") and 'data-panel="caption"' in targets[3].read_text(encoding="utf-8"),
-        "Share actions": "download" in targets[4].read_text(encoding="utf-8").lower(),
+        "Home upload logic": "GSF" in components[0].read_text(encoding="utf-8") and "upload" in components[0].read_text(encoding="utf-8").lower(),
+        "AI engine logic": "engine" in components[1].read_text(encoding="utf-8").lower(),
+        "Hub folder logic": "data-folder" in components[2].read_text(encoding="utf-8"),
+        "Editor controls": 'data-panel="frame"' in components[3].read_text(encoding="utf-8") and 'data-panel="caption"' in components[3].read_text(encoding="utf-8"),
+        "Share actions": "download" in components[4].read_text(encoding="utf-8").lower(),
         "Home final cache": '"gsf_home_v154_live_307"' in home_embed_text,
         "Editor final cache": '"gsf_editor_2027_v307"' in editor_embed_text,
         "Hub final cache": '/creator-hub-v156/?v=307' in shell,
