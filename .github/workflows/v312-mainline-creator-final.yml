@@ -1,0 +1,51 @@
+name: V312 mainline Creator Hub final
+
+on:
+  push:
+    branches:
+      - v312-mainline-creator-final
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run final Creator Hub contract
+        run: |
+          python -m py_compile web/test_v312_creator_hub_final.py
+          python web/test_v312_creator_hub_final.py .
+
+      - name: Build production image
+        run: docker build --progress=plain -t gsf-v312-final .
+
+      - name: Start production image
+        run: |
+          docker run -d --name gsf-v312-final-run -p 8080:8080 \
+            -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v312-final
+
+      - name: Wait for mobile route health
+        run: |
+          set -eu
+          for i in $(seq 1 90); do
+            if ! docker inspect -f '{{.State.Running}}' gsf-v312-final-run 2>/dev/null | grep -q true; then
+              echo 'Container exited before becoming healthy'
+              docker logs gsf-v312-final-run || true
+              exit 1
+            fi
+            if curl -fsS -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148' http://127.0.0.1:8080/creator-hub-v156/ >/dev/null 2>&1; then
+              echo 'V312 mainline Creator Hub: HEALTHY'
+              docker logs gsf-v312-final-run | tail -n 260
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'Timed out waiting for mobile Creator Hub route'
+          docker logs gsf-v312-final-run || true
+          exit 1
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker logs gsf-v312-final-run || true
