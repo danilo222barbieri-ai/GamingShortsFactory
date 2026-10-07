@@ -136,6 +136,7 @@ def _remove_marked_desktop_blocks(text: str) -> str:
 
 
 def sanitize_text(text: str) -> str:
+    """Sanitize HTML/CSS component source only. Never pass Python source here."""
     text = LEGACY_STYLE_RE.sub('', text)
     text = LEGACY_SCRIPT_RE.sub('', text)
     text = DESK_LAYOUT_ATTR_RE.sub('', text)
@@ -153,9 +154,9 @@ def has_viewport_min_width_media(text: str) -> bool:
     return False
 
 
-def _rewrite(path: Path) -> None:
+def _rewrite_component(path: Path) -> None:
     if not path.is_file():
-        raise RuntimeError('V307 required file missing: ' + str(path))
+        raise RuntimeError('V307 required component missing: ' + str(path))
     original = path.read_text(encoding='utf-8')
     cleaned = sanitize_text(original)
     if cleaned != original:
@@ -179,9 +180,12 @@ def _bump_cache_keys() -> None:
             raise RuntimeError('V307 Editor cache key anchor missing')
         EDITOR_EMBED.write_text(text, encoding='utf-8')
     if SHELL.is_file():
+        # The shell is Python and can contain f-strings with doubled CSS braces.
+        # Only update route cache keys; never run the raw CSS/media sanitizer on it.
         text = SHELL.read_text(encoding='utf-8')
         for route in ('creator-hub-v156', 'share-v156', 'ai-v221'):
             text = re.sub(rf'/{route}/\?v=[^"\'&\s]+', f'/{route}/?v=307', text)
+        compile(text, str(SHELL), 'exec')
         SHELL.write_text(text, encoding='utf-8')
 
 
@@ -201,10 +205,9 @@ def main(root: Path = ROOT) -> None:
         HOME_EMBED = WEB / 'home_v154_embed.py'
         EDITOR_EMBED = WEB / 'editor_2027_embed.py'
     for path in COMPONENTS:
-        _rewrite(path)
-    _rewrite(SHELL)
+        _rewrite_component(path)
     _bump_cache_keys()
-    print('V307 mobile visual source applied: desktop visual history purged', flush=True)
+    print('V307 mobile visual source applied: HTML visual history purged; Python shell preserved', flush=True)
 
 
 if __name__ == '__main__':
