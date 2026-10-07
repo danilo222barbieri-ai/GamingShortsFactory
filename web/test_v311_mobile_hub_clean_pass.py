@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+from tempfile import TemporaryDirectory
 import importlib.util
 import re
 import sys
@@ -112,16 +113,39 @@ if mod.patch_hub_text(patched)!=patched:
     fail('Hub patch is not idempotent')
 ok('Hub patch is idempotent')
 
-# Synthetic shell mirrors the global bar generated before V311. It must become
-# Home / Hub / Progetti / Live, with Home deliberately routing to Hub dashboard.
+# A restart runs V287 again against the already-normalized V311 source. That
+# older migration must no-op instead of looking for legacy profile anchors.
+with TemporaryDirectory() as tmp:
+    tmp=Path(tmp)
+    restart_hub=tmp/'hub.html'
+    restart_app=tmp/'app.py'
+    restart_hub.write_text(patched,encoding='utf-8')
+    restart_app.write_text('HUB_URL="/creator-hub-v156/?v=3114"\n',encoding='utf-8')
+    old_hub,old_app=mod287.HUB,mod287.APP
+    mod287.HUB,mod287.APP=restart_hub,restart_app
+    try:
+        before_hub=restart_hub.read_text(encoding='utf-8')
+        before_app=restart_app.read_text(encoding='utf-8')
+        mod287.patch_hub()
+        mod287.patch_shell()
+        if restart_hub.read_text(encoding='utf-8')!=before_hub:
+            fail('V287 changed an already-normalized V311 Hub on restart')
+        if restart_app.read_text(encoding='utf-8')!=before_app:
+            fail('V287 changed a newer V311 shell cache on restart')
+    finally:
+        mod287.HUB,mod287.APP=old_hub,old_app
+ok('V287 is restart-safe after V311 normalization')
+
+# Synthetic shell mirrors the semantic attributes generated before V311 but
+# intentionally uses a different CSS class. V311 must not depend on one class.
 shell_sample='''
-<style>.gsf-page-gamebar-inner{grid-template-columns:repeat(5,minmax(0,1fr))}</style>
-<div class="gsf-page-gamebar">
-<button class="gsf-page-nav-item" data-target="home" data-active="home" type="button"><svg></svg><span>Home</span></button>
-<button class="gsf-page-nav-item" data-target="hub" data-section="dashboard" data-active="hub" type="button"><svg></svg><span>Hub</span></button>
-<button class="gsf-page-nav-item" data-target="hub" data-section="shorts" data-active="shorts" type="button"><svg></svg><span>I miei Shorts</span></button>
-<button class="gsf-page-nav-item" data-target="hub" data-section="drafts" data-active="drafts" type="button"><svg></svg><span>Bozze</span></button>
-<button class="gsf-page-nav-item" data-target="hub" data-section="live" data-active="live" type="button"><svg></svg><span>Live</span></button>
+<style>.mobile-gamebar-inner{grid-template-columns:repeat(5,minmax(0,1fr))}</style>
+<div class="mobile-gamebar">
+<button class="mobile-gamebar-item home-slot" data-target="home" type="button"><svg></svg><span>Home</span></button>
+<button class="mobile-gamebar-item" data-target="hub" data-section="dashboard" data-active="hub" type="button"><svg></svg><span>Hub</span></button>
+<button class="mobile-gamebar-item" data-target="hub" data-section="shorts" data-active="shorts" type="button"><svg></svg><span>I miei Shorts</span></button>
+<button class="mobile-gamebar-item" data-target="hub" data-section="drafts" data-active="drafts" type="button"><svg></svg><span>Bozze</span></button>
+<button class="mobile-gamebar-item" data-target="hub" data-section="live" data-active="live" type="button"><svg></svg><span>Live</span></button>
 </div>
 <script>
 if(activeKey==='home') active=lastTarget==='home';
@@ -133,25 +157,45 @@ const hubUrl="/creator-hub-v156/?v=307";
 </script>
 '''
 shell_patched=mod.patch_shell_text(shell_sample)
-if shell_patched.count('class="gsf-page-nav-item"') != 4:
+if len(re.findall(r'<button\b',shell_patched)) != 4:
     fail('global Game Bar is not exactly four buttons')
 if '<span>I miei Shorts</span>' in shell_patched or '<span>Bozze</span>' in shell_patched:
     fail('legacy Shorts/Bozze Game Bar buttons remain')
 for marker in (
-    'data-target="hub" data-section="dashboard" data-active="home"',
-    'data-target="hub" data-section="dashboard" data-active="hub"',
-    'data-target="hub" data-section="projects" data-active="projects"',
+    'data-target="hub"',
+    'data-section="dashboard"',
+    'data-active="home"',
+    'data-section="projects"',
+    'data-active="projects"',
     '<span>Progetti</span>',
-    'data-target="hub" data-section="live" data-active="live"',
+    'data-section="live"',
     "activeKey==='projects'",
     'grid-template-columns:repeat(4,minmax(0,1fr))',
     '/creator-hub-v156/?v=3114',
 ):
     if marker not in shell_patched: fail('Game Bar marker missing: '+marker)
-ok('Game Bar is Home / Hub / Progetti / Live and Home routes to Creator Hub')
+ok('Game Bar rewrite follows semantic attributes, not historical CSS classes')
 if mod.patch_shell_text(shell_patched)!=shell_patched:
     fail('Shell patch is not idempotent')
 ok('Shell patch is idempotent')
+
+# Production safety: if one optional Home button is absent, the Hub cache and
+# remaining navigation must still patch without taking the whole service down.
+no_home_shell='''
+<div class="different-gamebar">
+<button class="x" data-target="hub" data-section="dashboard" data-active="hub"><span>Hub</span></button>
+<button class="x" data-target="hub" data-section="drafts" data-active="drafts"><span>Bozze</span></button>
+<button class="x" data-target="hub" data-section="live" data-active="live"><span>Live</span></button>
+</div>
+const hubUrl="/creator-hub-v156/?v=307";
+'''
+try:
+    no_home_patched=mod.patch_shell_text(no_home_shell)
+except Exception as exc:
+    fail('missing optional Home slot still crashes startup: '+repr(exc))
+if '/creator-hub-v156/?v=3114' not in no_home_patched or '<span>Progetti</span>' not in no_home_patched:
+    fail('safe fallback did not preserve cache/project rewrite')
+ok('missing historical Home button can no longer crash production startup')
 
 start=START.read_text(encoding='utf-8')
 needle='python /app/web/fix_v311_mobile_hub_clean_pass.py /app/web/creator_hub_v156_component/index.html'
