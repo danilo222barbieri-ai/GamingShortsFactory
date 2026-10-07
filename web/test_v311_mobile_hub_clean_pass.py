@@ -30,7 +30,8 @@ patched=mod.patch_hub_text(source)
 
 required=(
     'V311 MOBILE HUB CLEAN PASS',
-    '#hub[data-v300-layout="hub"] .view[data-view="profile"] .profileMobilePlan{display:none!important}',
+    '#hub[data-v300-layout="hub"] .view[data-view="profile"] .profileMobilePlan,',
+    '#hub[data-v300-layout="hub"] .view[data-view="profile"] .profilePlanGroup{display:none!important}',
     '.profileOverviewActions{display:none!important}',
     '#projectRows .stats{display:none!important}',
     '.liveRootFolders{display:none!important}',
