@@ -117,6 +117,12 @@ python /app/web/fix_v304_project_draft_api.py
 python /app/web/fix_v304_project_draft_details.py
 python /app/web/test_v304_project_draft_details.py /app
 
+# V305: clean only the desktop Game Editor geometry. Keep the working player,
+# controls and mobile cockpit untouched while restoring a compact, readable
+# rail / 9:16 player / rail composition with a visible stage and timeline.
+python /app/web/fix_v305_editor_desktop_cleanup.py
+python /app/web/test_v305_editor_desktop_cleanup.py /app
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
