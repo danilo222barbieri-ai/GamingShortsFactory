@@ -1,0 +1,17 @@
+name: GSF mobile-only check
+
+on:
+  push:
+    branches:
+      - gsf-mobile-only
+  workflow_dispatch:
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gate contract
+        run: python web/test_mobile_only_gate.py web/nginx.conf.template web/mobile_only_gate.html
