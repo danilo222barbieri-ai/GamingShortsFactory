@@ -29,27 +29,78 @@ patched=mod.patch_hub_text(source)
 
 required=(
     'V311 MOBILE HUB CLEAN PASS',
+    'V311 SOURCE NORMALIZED',
     'id="v311HubForce"',
-    '#hub .view[data-view="profile"] .profileMobilePlan',
-    '#hub .view[data-view="profile"] .profilePlanGroup',
-    '#hub .view[data-view="profile"] .profileOverviewActions',
-    '#hub .view[data-view="projects"] #projectRows .stats',
-    '#hub .view[data-view="drafts"] #projectRows .stats',
-    '#hub .view[data-view="live"] .liveRootFolders',
     'data-live-pane="youtube"',
     'youtubeLiveFolders',
     '<b>Le tue live</b><small>Dirette YouTube salvate nel Creator Hub</small>',
     '<b>VOD</b><small>Replay completi delle live YouTube</small>',
     '<b>Highlights</b><small>Short e momenti estratti da YouTube</small>',
     'grid-template-rows:repeat(4,minmax(0,1fr))!important',
-    '.folder[data-folder="subscription"]{display:none!important}',
     'id="v311HubRuntime"',
-    "gsfHubVersion='3112'",
-    'MutationObserver',
+    "gsfHubVersion='3113'",
 )
 for marker in required:
     if marker not in patched: fail('missing marker: '+marker)
     ok('found '+marker)
+
+# V311.3 must change the actual DOM/JS source, not merely hide the old UI with CSS.
+dashboard=patched.split('<section class="view active" data-view="dashboard">',1)[1].split('<section class="view" data-view="projects">',1)[0]
+if 'data-folder="subscription"' in dashboard:
+    fail('subscription dashboard tile still exists in DOM')
+if 'hubMural' in dashboard:
+    fail('dashboard mural still exists in DOM')
+ok('dashboard old nodes removed structurally')
+
+live=patched.split('<section class="view" data-view="live">',1)[1].split('</main>',1)[0]
+if 'liveRootFolders' in live:
+    fail('Live launcher tiles still exist in DOM')
+if 'data-live-pane="highlights"' in live:
+    fail('old Auto Highlights pane still exists in DOM')
+if 'youtubeLiveFolders' not in live:
+    fail('dedicated YouTube section missing')
+ok('Live is structurally Twitch + YouTube')
+
+if '$("#projectRows").innerHTML=' in patched and '$("#projectRows").innerHTML="";' not in patched:
+    fail('Bozze still renders current-project/stats source')
+if '<div class="stats">' in patched:
+    fail('Bozze four-stat strip is still generated')
+ok('Bozze old project/stats source removed')
+
+# Simulate the runtime state after V287 + V303 with the same multiline shape as
+# the production component. Keep the four cards; delete only duplicate strips.
+profile_fixture='''<html><head></head><body>
+<main id="hub">
+<section class="view" data-view="profile">
+ <div class="profileGroup profilePlanGroup profileMobilePlan" aria-label="Abbonamento"><div class="profileGroupTitle">ABBONAMENTO</div><div class="planRow">old plan</div></div>
+ <div class="profileOverviewGrid"><button class="profileOverviewCard">Shorts creati</button><button class="profileOverviewCard">Bozze</button><button class="profileOverviewCard">Il tuo piano</button><button class="profileOverviewCard">Social collegati</button></div>
+ <div class="profileOverviewActions"><button>Gestisci il tuo abbonamento</button><button>Account collegati</button></div>
+ <button class="logoutProfile" type="button">Disconnetti</button>
+</section>
+<section class="view" data-view="live">
+ <div class="liveRootFolders"><button>old</button></div>
+ <div class="livePane" data-live-pane="twitch"></div>
+ <div class="livePane" data-live-pane="youtube"><div class="livePaneTitle">YouTube Live</div><div class="empty">Quando collegheremo YouTube Live, dirette e replay compariranno qui con la stessa struttura a cartelle.</div></div>
+ <div class="livePane" data-live-pane="highlights"><div class="livePaneTitle">Auto Highlights</div><div class="empty">old</div></div>
+</section>
+<section class="view active" data-view="dashboard">
+ <div class="dashboard"><div class="hubMural">old</div><div class="folders">
+  <button class="folder" data-folder="subscription"><div>old</div></button>
+ </div></div>
+</section>
+<section class="view" data-view="projects"><div id="projectRows"></div></section>
+</main>
+<script>
+   $("#projectRows").innerHTML=p.id?'<div class="projectBox">old</div><div class="stats"><div class="stat">old</div></div>':'<div class="empty">old</div>';
+</script>
+</body></html>'''
+fixture=mod.patch_hub_text(profile_fixture)
+profile=fixture.split('<section class="view" data-view="profile">',1)[1].split('<section class="view" data-view="live">',1)[0]
+if 'profileMobilePlan' in profile or 'profileOverviewActions' in profile:
+    fail('Profile duplicate plan/action strips were not removed structurally')
+if 'profileOverviewGrid' not in profile or profile.count('profileOverviewCard') != 4:
+    fail('Profile four overview cards were not preserved')
+ok('Profile keeps four cards and removes duplicate strips')
 
 style_block=patched.split('<style id="v311HubForce">',1)[1].split('</style>',1)[0]
 if '@media(' in style_block:
@@ -58,28 +109,19 @@ if 'data-v300-layout' in style_block:
     fail('V311 final rules must not depend on historical layout attributes')
 ok('V311 final rules are independent from historical CSS/layout markers')
 
-# The force style must be appended as the last head style, not inserted before
-# historical CSS where the cascade can override it.
-head=patched.split('</head>',1)[0]
-if head.rfind('id="v311HubForce"') < head.rfind('</style>') - 20000:
-    fail('V311 force style is not at the end of the head cascade')
-if head.rfind('id="v311HubForce"') <= head.find('<style>'):
-    fail('V311 force style must come after the base stylesheet')
-ok('V311 force style is appended after historical styles')
-
 if mod.patch_hub_text(patched)!=patched:
     fail('V311 Hub patch is not idempotent')
 ok('Hub patch is idempotent')
 
 shell_sample='x="/creator-hub-v156/?v=307"\ny="/share-v156/?v=307"\n'
 shell_patched=mod.patch_shell_text(shell_sample)
-if '/creator-hub-v156/?v=3112' not in shell_patched:
-    fail('Creator Hub cache key not bumped to v3112')
+if '/creator-hub-v156/?v=3113' not in shell_patched:
+    fail('Creator Hub cache key not bumped to v3113')
 if '/share-v156/?v=307' not in shell_patched:
     fail('V311 must not alter unrelated routes')
 if mod.patch_shell_text(shell_patched)!=shell_patched:
     fail('V311 shell patch is not idempotent')
-ok('Creator Hub cache key v3112')
+ok('Creator Hub cache key v3113')
 
 start=START.read_text(encoding='utf-8')
 needle='python /app/web/fix_v311_mobile_hub_clean_pass.py /app/web/creator_hub_v156_component/index.html'
