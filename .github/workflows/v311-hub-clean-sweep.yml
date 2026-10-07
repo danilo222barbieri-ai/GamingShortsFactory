@@ -1,0 +1,16 @@
+name: V311 Hub clean sweep
+
+on:
+  push:
+    branches:
+      - v311-hub-clean-sweep
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V311 contract
+        run: python web/test_v311_hub_clean_sweep.py .
