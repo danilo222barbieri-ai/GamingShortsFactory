@@ -29,14 +29,20 @@ mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
 spec287=importlib.util.spec_from_file_location('v287',V287)
 mod287=importlib.util.module_from_spec(spec287); spec287.loader.exec_module(mod287)
 
-# Production runs V287 before V311. Reproduce the relevant V287 DOM injection so
-# the contract checks the same Profile structure that V311 actually receives.
+# The contract can run in two valid states:
+# 1) CI/source state, before V311 has rewritten the Hub; reproduce V287 first.
+# 2) production startup state, immediately after fix_v311 has already normalized
+#    the same file; validate it directly instead of trying to recreate deleted
+#    legacy anchors. This makes the test itself idempotent across restarts.
 source=HUB.read_text(encoding='utf-8')
-if 'id="profileOverviewShorts"' not in source:
-    pattern=re.compile(r'\s*<div class="profileMural profileOnlyMural" aria-hidden="true">Questo è il tuo spazio,<br>fallo tuo</div>\s*<button class="logoutProfile" id="logoutProfile" type="button">Disconnetti dal Creator Hub</button>')
-    source,count=pattern.subn('\n'+mod287.OVERVIEW_HTML,source,count=1)
-    if count!=1: fail('could not simulate V287 Profile overview injection')
-patched=mod.patch_hub_text(source)
+if 'V311 APPROVED CREATOR REFERENCE' in source:
+    patched=source
+else:
+    if 'id="profileOverviewShorts"' not in source:
+        pattern=re.compile(r'\s*<div class="profileMural profileOnlyMural" aria-hidden="true">Questo è il tuo spazio,<br>fallo tuo</div>\s*<button class="logoutProfile" id="logoutProfile" type="button">Disconnetti dal Creator Hub</button>')
+        source,count=pattern.subn('\n'+mod287.OVERVIEW_HTML,source,count=1)
+        if count!=1: fail('could not simulate V287 Profile overview injection')
+    patched=mod.patch_hub_text(source)
 
 required=(
     'V311 MOBILE HUB CLEAN PASS',
@@ -204,6 +210,8 @@ if start.index(needle)<start.index('python /app/web/test_v310_creator_hub_mobile
     fail('V311 must run after V310')
 if start.index(needle)>start.index('python /app/web/apply_v293_render_memory_guard.py'):
     fail('V311 must run before production app generation')
-ok('startup order correct')
+if 'V311_RESTART_SAFE' not in start or 'GSF_HISTORY_READY' not in start or 'touch "$GSF_V311_READY"' not in start:
+    fail('startup restart-safe migration guard missing')
+ok('startup order and restart-safe guard correct')
 
 print('\nV311 APPROVED CREATOR HUB REFERENCE: PASS')
