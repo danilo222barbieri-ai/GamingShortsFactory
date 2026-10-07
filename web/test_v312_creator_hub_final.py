@@ -7,7 +7,6 @@ ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).reso
 WEB = ROOT / 'web'
 PATCH = WEB / 'fix_v312_creator_hub_final.py'
 HUB = WEB / 'creator_hub_v156_component' / 'index.html'
-APP = ROOT / 'GamingShortsFactory_V154_STRUCTURAL_HOME.py'
 START = WEB / 'start_web.sh'
 V310 = WEB / 'fix_v310_creator_hub_mobile_cleanup.py'
 
@@ -21,7 +20,7 @@ def ok(msg):
     print('[ OK ]', msg)
 
 
-for path, label in [(PATCH, 'V312 final patch'), (HUB, 'Creator Hub source'), (APP, 'shell source'), (START, 'start_web.sh'), (V310, 'V310 patch')]:
+for path, label in [(PATCH, 'V312 final patch'), (HUB, 'Creator Hub source'), (START, 'start_web.sh'), (V310, 'V310 patch')]:
     if not path.exists():
         fail(f'{label} missing')
 
@@ -70,8 +69,12 @@ if mod.patch_hub_text(patched) != patched:
     fail('Hub patch not idempotent')
 ok('Hub patch idempotent')
 
-shell = APP.read_text(encoding='utf-8')
-shell_patched = mod.patch_shell_text(shell)
+# The V154 shell is generated inside Docker by apply_v154_structural_home.py,
+# so it does not exist in the repository checkout. Test the cache transformer
+# against the exact route shape; the production-image gate below exercises the
+# real generated V154 file at startup.
+shell_fixture = 'HUB_URL = "/creator-hub-v156/?v=3112"\n'
+shell_patched = mod.patch_shell_text(shell_fixture)
 if '/creator-hub-v156/?v=312' not in shell_patched:
     fail('Creator Hub cache key not bumped to v312')
 ok('Creator Hub cache key bumped')
