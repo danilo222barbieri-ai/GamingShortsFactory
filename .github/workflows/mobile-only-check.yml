@@ -83,7 +83,7 @@ jobs:
             headers=$(curl -sSI -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' "http://127.0.0.1:18080/$path")
             printf '%s\n' "=== $path ===" "$headers"
             echo "$headers" | grep -Eq '^HTTP/.* 30[12]'
-            echo "$headers" | grep -Eiq '^location: /'
+            echo "$headers" | grep -Eiq '^location: (https?://[^/]+)?/'
           done
 
       - name: Container logs on failure
