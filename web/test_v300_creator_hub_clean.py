@@ -11,12 +11,12 @@ checks = [
     ('V300 root marker exists', 'data-v300-layout="hub"' in hub),
     ('V297 Hub sidebar removed', 'v297HubSidebar' not in hub),
     ('V297 Hub CSS removed', 'V297 DESK REBUILD — HUB' not in hub),
-    ('internal top nav hidden', '#hub>.top{display:none!important}' in hub),
-    ('profile overview exists', 'v300ProfileOverview' in hub),
-    ('profile routes Shorts directly', 'data-v300-focus="shorts"' in hub),
-    ('profile routes Drafts directly', 'data-v300-focus="drafts"' in hub),
-    ('profile routes Social directly', 'data-v300-focus="social"' in hub),
-    ('profile routes Subscription directly', 'data-v300-focus="subscription"' in hub),
+    ('internal top nav hidden', '#hub[data-v300-layout="hub"]>.top{display:none!important}' in hub),
+    ('real V287 profile overview preserved', 'profileOverviewGrid' in hub),
+    ('profile routes Shorts directly', 'data-profile-overview="shorts"' in hub),
+    ('profile routes Drafts directly', 'data-profile-overview="drafts"' in hub),
+    ('profile routes Social directly', 'data-profile-overview="social"' in hub),
+    ('profile routes Subscription directly', 'data-profile-overview="subscription"' in hub),
     ('Creator Hub cache is V300', '/creator-hub-v156/?v=300' in app),
 ]
 folders = re.findall(r'<button class="folder" data-folder="([^"]+)"', hub)
