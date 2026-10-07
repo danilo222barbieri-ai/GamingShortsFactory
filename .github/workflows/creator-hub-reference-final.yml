@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - creator-hub-reference-final
+      - hotfix-v3114-gamebar-runtime
   workflow_dispatch:
 
 jobs:
