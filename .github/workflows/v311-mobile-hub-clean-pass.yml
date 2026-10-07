@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - v311-mobile-hub-clean-pass-2
-      - v3114-startup-hotfix
   workflow_dispatch:
 
 jobs:
