@@ -105,6 +105,11 @@ python /app/web/test_v301_home_desk_rebalance.py /app
 python /app/web/fix_v302_global_live_gamebar.py
 python /app/web/test_v302_global_live_gamebar.py /app
 
+# V303: compact only the mobile Creator Hub. Remove dashboard/profile murals,
+# move subscription into Profile and let the four main folders fill the space.
+python /app/web/fix_v303_mobile_hub_compact.py
+python /app/web/test_v303_mobile_hub_compact.py
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
