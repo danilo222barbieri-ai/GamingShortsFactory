@@ -2,9 +2,11 @@ from pathlib import Path
 import streamlit as st
 import streamlit.components.v1 as components
 
+from web.ui_release import GSF_UI_RELEASE
+
 _COMPONENT_DIR = Path(__file__).resolve().parent / "home_v154_component"
 _HOME_V154_COMPONENT = components.declare_component(
-    "gsf_home_v154_live_284",
+    f"gsf_home_v154_live_{GSF_UI_RELEASE}",
     path=str(_COMPONENT_DIR),
 )
 
