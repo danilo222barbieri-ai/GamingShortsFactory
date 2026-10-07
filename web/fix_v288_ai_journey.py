@@ -9,9 +9,6 @@ APP = Path('/app/GamingShortsFactory_V154_STRUCTURAL_HOME.py')
 
 AI_CSS = r'''
 /* V288 AI JOURNEY */
-#ai221 .journeySteps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:0 2px 10px;padding:6px;border:1px solid rgba(143,181,216,.22);border-radius:16px;background:rgba(255,255,255,.66)}
-#ai221 .journeyStep{min-width:0;padding:7px 5px;border-radius:11px;text-align:center;color:#8294AA;font-size:8.5px;font-weight:850;white-space:nowrap}
-#ai221 .journeyStep.active{background:linear-gradient(145deg,#E4F4FF,#E4F8EF);color:#3479AD;box-shadow:inset 0 0 0 1px rgba(118,190,226,.16)}
 #ai221 .moment{border:1px solid rgba(143,181,216,.23);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
 #ai221 .moment.selected{border-color:#65BDF1!important;box-shadow:0 0 0 3px rgba(92,190,240,.15),0 12px 28px rgba(65,105,145,.10)!important;transform:translateY(-2px)}
 #ai221 .moment .thumb video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#0D1F35;z-index:1}
@@ -24,19 +21,11 @@ AI_CSS = r'''
 #ai221 .momentAction.editor{background:linear-gradient(145deg,#DDF6EA,#CFF0DD);color:#24765B}
 #ai221 .momentAction.short{background:linear-gradient(135deg,#77D3FB,#4EA7F3);color:white}
 @media(max-width:520px){
- #ai221 .journeySteps{gap:3px;padding:4px;margin-bottom:7px}
- #ai221 .journeyStep{font-size:7px;padding:6px 2px}
  #ai221 .momentActionGrid{grid-template-columns:1fr}
  #ai221 .momentAction{min-height:46px;font-size:10px}
  #ai221 .momentChoiceTitle{font-size:10.5px}
 }
 /* END V288 AI JOURNEY */
-'''
-
-AI_STEPS = '''
- <div class="journeySteps" aria-label="Percorso creazione Short">
-  <div class="journeyStep active">1 Motore</div><div class="journeyStep">2 Momento</div><div class="journeyStep">3 Editor</div><div class="journeyStep">4 Crea Short</div><div class="journeyStep">5 Pronto</div>
- </div>
 '''
 
 AI_ACTIONS = '''
@@ -67,7 +56,6 @@ AI_JS = r'''
     const v=document.createElement("video");v.src=d.video;v.controls=true;v.autoplay=true;v.playsInline=true;v.muted=false;thumb.prepend(v);
    }
   }
-  document.querySelectorAll(".journeyStep").forEach((step,n)=>step.classList.toggle("active",n<=1));
   if(emit)send("select_moment",{index:i,duration:state.duration,engine:state.engine});
  }
 '''
@@ -171,7 +159,6 @@ def patch_ai():
     text=AI.read_text(encoding='utf-8');before=text
     if 'V288 AI JOURNEY' not in text:
         text=replace_once(text,'</style>',AI_CSS+'\n</style>','AI CSS')
-        text=replace_once(text,'<main id="ai221">','<main id="ai221">'+AI_STEPS,'AI journey steps')
         text=replace_once(text,'<button class="create" id="createAi" disabled>Crea con IA</button>','<button class="create" id="createAi" disabled>TROVA I 3 MOMENTI MIGLIORI →</button>','AI CTA copy')
         text=replace_once(text,'</main>\n<script>',' '+AI_ACTIONS+'\n</main>\n<script>','AI moment actions')
         text=replace_once(text,'let state={loaded:false,duration:15,engine:"auto",previews:[]},seq=0;','let state={loaded:false,duration:15,engine:"auto",previews:[],selectedMoment:-1},seq=0;','AI state')

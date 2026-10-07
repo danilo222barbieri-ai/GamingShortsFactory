@@ -3,6 +3,23 @@ map $cookie_gsf_sid $gsf_session_cookie {
     default                     $request_id;
 }
 
+map $http_sec_ch_ua_mobile $gsf_ch_mobile {
+    default 0;
+    "~*\\?1" 1;
+}
+
+map $http_user_agent $gsf_ua_mobile {
+    default 0;
+    "~*(iphone|ipod|ipad|android|mobile|tablet)" 1;
+}
+
+map "$gsf_ch_mobile:$gsf_ua_mobile" $gsf_mobile_client {
+    default 0;
+    "1:0" 1;
+    "0:1" 1;
+    "1:1" 1;
+}
+
 server {
     listen ${PORT};
     server_name _;
@@ -10,6 +27,13 @@ server {
     client_max_body_size 4096m;
     proxy_read_timeout 86400s;
     proxy_send_timeout 86400s;
+
+    location = /__gsf_mobile_gate {
+        internal;
+        alias /app/web/mobile_only_gate.html;
+        default_type text/html;
+        add_header Cache-Control "no-store, max-age=0" always;
+    }
 
     # V105.7: Google AdSense ownership / authorized seller declaration.
     # The file exists only when GSF_ADSENSE_CLIENT contains a valid ca-pub id.
@@ -189,35 +213,32 @@ server {
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
     }
 
-    # V217 phone-accessible desktop preview. The inner iframe has a real
-    # 1440px layout viewport, then the wrapper scales it down visually.
+    # Legacy desktop routes are intentionally retired. Root decides mobile vs desktop gate.
     location = /desktop-preview {
-        return 302 /desktop-preview/;
+        return 302 /;
     }
 
     location /desktop-preview/ {
-        alias /app/web/desktop_preview/;
-        index index.html;
-        try_files $uri $uri/ /desktop-preview/index.html;
-        add_header Cache-Control "no-store" always;
+        return 302 /;
     }
 
     location = /desktop-home {
-        return 302 /desktop-home/;
+        return 302 /;
     }
 
     location /desktop-home/ {
-        alias /app/web/home_v154_component/;
-        index index.html;
-        try_files $uri $uri/ /desktop-home/index.html;
-        add_header Cache-Control "no-store" always;
+        return 302 /;
     }
 
-    # V220 persistent Game Editor surface. The editor component itself is unchanged.
+    # V220 persistent Game Editor surface.
     location = /editor-live {
         return 302 /editor-live/;
     }
     location /editor-live/ {
+        error_page 424 = /__gsf_mobile_gate;
+        if ($gsf_mobile_client = 0) {
+            return 424;
+        }
         alias /app/web/editor_2027_component/;
         index index.html;
         try_files $uri $uri/ /editor-live/index.html;
@@ -248,6 +269,10 @@ server {
         return 302 /ai-v221/;
     }
     location /ai-v221/ {
+        error_page 424 = /__gsf_mobile_gate;
+        if ($gsf_mobile_client = 0) {
+            return 424;
+        }
         alias /app/web/ai_v221_component/;
         index index.html;
         try_files $uri $uri/ /ai-v221/index.html;
@@ -260,6 +285,10 @@ server {
     }
 
     location /creator-hub-v156/ {
+        error_page 424 = /__gsf_mobile_gate;
+        if ($gsf_mobile_client = 0) {
+            return 424;
+        }
         alias /app/web/creator_hub_v156_component/;
         index index.html;
         try_files $uri $uri/ /creator-hub-v156/index.html;
@@ -296,6 +325,10 @@ server {
     }
 
     location /share-v156/ {
+        error_page 424 = /__gsf_mobile_gate;
+        if ($gsf_mobile_client = 0) {
+            return 424;
+        }
         alias /app/web/share_v156_component/;
         index index.html;
         try_files $uri $uri/ /share-v156/index.html;
@@ -430,7 +463,7 @@ server {
     }
 
     # V104.4: reuse the already-registered app root as TikTok OAuth callback.
-    # Only our cryptographic state prefix is diverted; ordinary "/" still goes to Streamlit.
+    # Only our cryptographic state prefix is diverted; ordinary "/" goes to mobile GSF or the desktop gate.
     location = / {
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
 
@@ -462,6 +495,11 @@ server {
         error_page 423 = @gsf_account_tiktok_callback;
         if ($arg_state ~ "^gsfact_") {
             return 423;
+        }
+
+        error_page 424 = /__gsf_mobile_gate;
+        if ($gsf_mobile_client = 0) {
+            return 424;
         }
 
         proxy_pass http://127.0.0.1:8501;
@@ -553,6 +591,11 @@ server {
     }
 
     location / {
+        error_page 424 = /__gsf_mobile_gate;
+        if ($gsf_mobile_client = 0) {
+            return 424;
+        }
+
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
 
         proxy_pass http://127.0.0.1:8501;
