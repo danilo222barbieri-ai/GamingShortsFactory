@@ -112,8 +112,7 @@ if mod.patch_hub_text(patched)!=patched:
     fail('Hub patch is not idempotent')
 ok('Hub patch is idempotent')
 
-# Synthetic shell mirrors the global bar generated before V311. It must become
-# Home / Hub / Progetti / Live, with Home deliberately routing to Hub dashboard.
+# Synthetic shell with an explicit Home button: normalize to Home / Hub / Progetti / Live.
 shell_sample='''
 <style>.gsf-page-gamebar-inner{grid-template-columns:repeat(5,minmax(0,1fr))}</style>
 <div class="gsf-page-gamebar">
@@ -148,10 +147,44 @@ for marker in (
     '/creator-hub-v156/?v=3114',
 ):
     if marker not in shell_patched: fail('Game Bar marker missing: '+marker)
-ok('Game Bar is Home / Hub / Progetti / Live and Home routes to Creator Hub')
+ok('Game Bar with explicit Home normalizes correctly')
 if mod.patch_shell_text(shell_patched)!=shell_patched:
     fail('Shell patch is not idempotent')
 ok('Shell patch is idempotent')
+
+# Regression for the exact Railway failure: the real runtime shell guaranteed by
+# V286/V302 exposes Hub / Shorts / Drafts / Live but does not guarantee a
+# data-active="home" page button. V311 must create Home from the Hub button
+# instead of aborting startup.
+runtime_shell_without_home='''
+<style>.gsf-page-gamebar-inner{grid-template-columns:repeat(5,minmax(0,1fr))}</style>
+<div class="gsf-page-gamebar">
+<button class="gsf-page-nav-item" data-target="hub" data-section="dashboard" data-active="hub" type="button"><svg viewBox="0 0 32 32"><path d="M4 16h24"/></svg><span>Hub</span></button>
+<button class="gsf-page-nav-item" data-target="hub" data-section="shorts" data-active="shorts" type="button"><svg></svg><span>I miei Shorts</span></button>
+<button class="gsf-page-nav-item" data-target="hub" data-section="drafts" data-active="drafts" type="button"><svg></svg><span>Bozze</span></button>
+<button class="gsf-page-nav-item" data-target="hub" data-section="live" data-active="live" type="button"><svg></svg><span>Live</span></button>
+</div>
+<script>
+else if(activeKey==='shorts') active=(lastTarget==='hub'&&lastSection==='shorts');
+else if(activeKey==='drafts') active=(lastTarget==='hub'&&lastSection==='drafts');
+else if(activeKey==='live') active=(lastTarget==='hub'&&lastSection==='live');
+else if(target==='hub') active=(lastTarget==='hub'&&lastSection!=='drafts'&&lastSection!=='shorts'&&lastSection!=='live');
+const hubUrl="/creator-hub-v156/?v=307";
+</script>
+'''
+runtime_patched=mod.patch_shell_text(runtime_shell_without_home)
+if runtime_patched.count('class="gsf-page-nav-item"') != 4:
+    fail('runtime Game Bar without Home must normalize to exactly four buttons')
+for marker in (
+    'data-target="hub" data-section="dashboard" data-active="home"',
+    '<span>Home</span>',
+    'data-target="hub" data-section="dashboard" data-active="hub"',
+    'data-target="hub" data-section="projects" data-active="projects"',
+    'data-target="hub" data-section="live" data-active="live"',
+):
+    if marker not in runtime_patched:
+        fail('runtime Game Bar regression marker missing: '+marker)
+ok('runtime Game Bar can create Home from existing Hub button')
 
 start=START.read_text(encoding='utf-8')
 needle='python /app/web/fix_v311_mobile_hub_clean_pass.py /app/web/creator_hub_v156_component/index.html'
