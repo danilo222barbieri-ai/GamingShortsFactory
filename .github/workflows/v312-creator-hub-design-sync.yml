@@ -1,0 +1,16 @@
+name: V312 Creator Hub design sync
+
+on:
+  push:
+    branches:
+      - v312-creator-hub-design-sync
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V312 contract
+        run: python web/test_v312_creator_hub_design_sync.py .
