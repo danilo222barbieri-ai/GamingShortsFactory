@@ -1,0 +1,64 @@
+name: V308 Mobile Master Check
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - gsf-v308-mobile-master
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build production image
+        run: docker build --progress=plain -t gsf-v308 .
+
+      - name: V308 source contracts
+        run: |
+          set -eu
+          docker run --rm --entrypoint sh gsf-v308 -lc '
+            cd /app &&
+            python web/test_v308_ui_release.py /app &&
+            python web/test_v308_home_mobile_master.py /app &&
+            python web/test_v308_surfaces_mobile_master.py /app &&
+            python web/test_v308_editor_mobile_master.py /app &&
+            python web/test_v308_cache_contract.py /app &&
+            python web/test_v308_startup_contract.py /app &&
+            python -m py_compile web/ui_release.py web/fix_v308_mobile_master.py web/fix_v308_runtime_shell.py web/home_v154_embed.py web/editor_2027_embed.py
+          '
+
+      - name: Start production image
+        run: docker run -d --name gsf-v308-live -p 8080:8080 -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v308
+
+      - name: HTTP smoke
+        run: |
+          set -eu
+          ok=0
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1; then ok=1; break; fi
+            sleep 2
+          done
+          test "$ok" = "1"
+          curl -fsS 'http://127.0.0.1:8080/ai-v221/?v=308' | grep -qi 'engine'
+          curl -fsS 'http://127.0.0.1:8080/creator-hub-v156/?v=308' | grep -qi 'profile'
+          curl -fsS 'http://127.0.0.1:8080/share-v156/?v=308' | grep -qi 'download\|scarica'
+          curl -I -s http://127.0.0.1:8080/desktop-home | grep -qi '302'
+          curl -I -s http://127.0.0.1:8080/desktop-preview | grep -qi '302'
+
+      - name: Verify V308 startup markers
+        run: |
+          docker logs gsf-v308-live 2>&1 | tee /tmp/gsf-v308.log
+          grep -q 'V308 mobile-master canonicalization: PASS' /tmp/gsf-v308.log
+          grep -q 'V308 UI release contract: PASS' /tmp/gsf-v308.log
+          grep -q 'V308 Home mobile-master: PASS' /tmp/gsf-v308.log
+          grep -q 'V308 responsive surfaces: PASS' /tmp/gsf-v308.log
+          grep -q 'V308 Editor mobile-master: PASS' /tmp/gsf-v308.log
+          grep -q 'V308 cache contract: PASS' /tmp/gsf-v308.log
+          grep -q 'V308 startup contract: PASS' /tmp/gsf-v308.log
+
+      - name: Logs on failure
+        if: failure()
+        run: docker logs gsf-v308-live 2>&1 || true
