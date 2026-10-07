@@ -62,6 +62,11 @@ python /app/web/test_v308_editor_mobile_master.py /app
 python /app/web/test_v308_cache_contract.py /app
 python /app/web/test_v308_startup_contract.py /app
 
+# V310 is intentionally mobile-only and runs after the canonical V308 checks.
+# It cleans the Profile overview without touching Home or desktop behavior.
+python /app/web/fix_v310_mobile_profile_layout.py /app/web/creator_hub_v156_component/index.html
+python /app/web/test_v310_mobile_profile_layout.py /app
+
 # Generate the production app only after the canonical V308 UI passes. The
 # render-memory guard remains authoritative for 1 GB frontend safety.
 python /app/web/apply_v293_render_memory_guard.py

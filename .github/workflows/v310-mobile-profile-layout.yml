@@ -1,0 +1,18 @@
+name: V310 Mobile profile layout check
+
+on:
+  push:
+    branches:
+      - v310-mobile-profile-layout
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V310 contract
+        run: |
+          python -m py_compile web/fix_v310_mobile_profile_layout.py web/test_v310_mobile_profile_layout.py
+          python web/test_v310_mobile_profile_layout.py .
