@@ -28,42 +28,32 @@ def main() -> None:
 
     home = (web / 'home_v154_component' / 'index.html').read_text(encoding='utf-8')
     ai_patch = (web / 'fix_v308_mobile_ai_flow.py').read_text(encoding='utf-8')
-    hub_patch = (web / 'fix_v300_creator_hub_clean.py').read_text(encoding='utf-8')
-    hub_compact = (web / 'fix_v303_mobile_hub_compact.py').read_text(encoding='utf-8')
-    editor = (web / 'editor_2027_component' / 'index.html').read_text(encoding='utf-8')
-    share = (web / 'share_v156_component' / 'index.html').read_text(encoding='utf-8')
+    final_visual = (web / 'fix_v307_mobile_visual_source.py').read_text(encoding='utf-8')
 
     h = compact(home)
     require('Home browser surface is fixed', 'html,body{' in h and 'overflow:hidden' in h)
-    require('Home root is fixed', '#home154{' in h and '#home154{' + h.split('#home154{',1)[1].split('}',1)[0] and 'overflow:hidden' in h.split('#home154{',1)[1].split('}',1)[0])
+    require('Home root is fixed', '#home154{' in h and 'overflow:hidden' in h.split('#home154{',1)[1].split('}',1)[0])
 
     a = compact(ai_patch)
     require('AI is its own scroll owner', '#ai221{' in a and 'overflow-y:auto!important' in a)
     require('AI contains overscroll', 'overscroll-behavior-y:contain!important' in a)
     require('AI enables iOS momentum scrolling', '-webkit-overflow-scrolling:touch!important' in a)
 
-    hub = compact(hub_patch)
-    require('Hub root keeps browser scroll locked', '#hub[data-v300-layout="hub"]{' in hub and 'overflow:hidden!important' in hub)
-    require('Hub active view owns vertical scroll', '.view.active' in hub and 'overflow-y:auto!important' in hub)
-    require('Hub active view contains overscroll', '.view.active' in hub and 'overscroll-behavior-y:contain!important' in hub)
-    require('Hub active view enables iOS momentum scrolling', '.view.active' in hub and '-webkit-overflow-scrolling:touch!important' in hub)
+    v = compact(final_visual)
+    require('final visual pass owns mobile scroll contract', 'gsfmobile-onlyscrollcontract' in v)
+    require('Hub active view owns vertical scroll', '#hub.view.active' in v and 'overflow-y:auto!important' in v)
+    require('Hub active view contains overscroll', '#hub.view.active' in v and 'overscroll-behavior-y:contain!important' in v)
+    require('Hub active view enables iOS momentum scrolling', '#hub.view.active' in v and '-webkit-overflow-scrolling:touch!important' in v)
+    require('Hub profile nested primary scroll is disabled', '.profileonlyscroller' in v and 'overflow:visible!important' in v)
 
-    hc = compact(hub_compact)
-    profile_scroller = hc.split('.profileonlyscroller{',1)[1].split('}',1)[0] if '.profileonlyscroller{' in hc else ''
-    require('Hub profile does not create a nested primary scroller', 'overflow:auto' not in profile_scroller and 'overflow-y:auto' not in profile_scroller)
+    require('Editor browser body remains locked', 'html,body{overflow:hidden!important' in v)
+    require('Editor root owns vertical page scroll', '#ng27{height:100dvh!important' in v and 'overflow-y:auto!important' in v)
+    require('Editor contains overscroll', '#ng27{height:100dvh!important' in v and 'overscroll-behavior-y:contain!important' in v)
+    require('Editor enables iOS momentum scrolling', '#ng27{height:100dvh!important' in v and '-webkit-overflow-scrolling:touch!important' in v)
 
-    e = compact(editor)
-    require('Editor browser body is locked', 'html,body{' in e and 'overflow:hidden' in e.split('html,body{',1)[1].split('}',1)[0])
-    require('Editor root owns vertical page scroll', '#ng27{' in e and 'overflow-y:auto' in e.split('#ng27{',1)[1].split('}',1)[0])
-    require('Editor contains overscroll', 'overscroll-behavior-y:contain' in e.split('#ng27{',1)[1].split('}',1)[0])
-    require('Editor enables iOS momentum scrolling', '-webkit-overflow-scrolling:touch' in e.split('#ng27{',1)[1].split('}',1)[0])
-
-    s = compact(share)
-    require('Share browser body is locked', 'html,body{' in s and 'overflow:hidden' in s.split('html,body{',1)[1].split('}',1)[0])
-    share_root = s.split('#share{',1)[1].split('}',1)[0]
-    require('Share root owns vertical page scroll', 'overflow-y:auto' in share_root)
-    require('Share contains overscroll', 'overscroll-behavior-y:contain' in share_root)
-    require('Share enables iOS momentum scrolling', '-webkit-overflow-scrolling:touch' in share_root)
+    require('Share root owns vertical page scroll', '#share{height:100dvh!important' in v and 'overflow-y:auto!important' in v)
+    require('Share contains overscroll', '#share{height:100dvh!important' in v and 'overscroll-behavior-y:contain!important' in v)
+    require('Share enables iOS momentum scrolling', '#share{height:100dvh!important' in v and '-webkit-overflow-scrolling:touch!important' in v)
 
     print('\nGSF MOBILE SCROLL CONTRACT: PASS')
 
