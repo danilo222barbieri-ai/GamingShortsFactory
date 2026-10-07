@@ -47,68 +47,27 @@ python /app/web/test_v291_ai_engine_bridge.py /app/web/home_v154_component/index
 python /app/web/fix_v293_share_state_resilience.py /app/web/direct_upload_server.py
 python /app/web/test_v293_share_state_resilience.py /app/web/direct_upload_server.py
 
-# V294: restore a true desktop Home composition after V274 compressed CTA +
-# Game Bar to phone-scale width. This is desktop-only and bumps the component
-# cache so browsers do not retain the old geometry.
-python /app/web/fix_v294_home_desktop_realign.py
-python /app/web/test_v294_home_desktop_realign.py /app/web/home_v154_component/index.html /app/web/home_v154_embed.py
-
-# V295: pair every internal creation/account surface across desktop and mobile
-# while keeping the approved Home mobile geometry untouched.
+# V295: keep the mobile/internal interaction system. V307 strips its desktop
+# branch and promotes the mobile branch to every viewport after all patches run.
 python /app/web/fix_v295_internal_pages_responsive.py
 python /app/web/test_v295_internal_pages_responsive.py /app
 
-# V296: make the desktop internal pages visibly different, not just technically
-# responsive, and force fresh asset/cache keys so browsers load the new layouts.
-python /app/web/fix_v296_visible_internal_pages.py
-python /app/web/test_v296_visible_internal_pages.py /app
-
-# V299: preserve the last clean Editor before V297/V298 desktop DOM rebuilds.
-# V297 still updates Hub/AI/Share, but the Editor is restored immediately after
-# the V297 regression checks so the legacy player/cockpit stays intact.
-cp /app/web/editor_2027_component/index.html /tmp/gsf_editor_pre_v297.html
-
-# V297: rebuild the real desktop DOM for Hub / AI / Editor / Share using the
-# approved desk composition, while leaving mobile and the Home untouched.
-# V289 owns the Share root class, so normalize only during the structural patch
-# and restore it immediately afterward.
-python /app/web/fix_v297_share_anchor_compat.py pre
-python /app/web/fix_v297_desk_rebuild.py
-python /app/web/fix_v297_share_anchor_compat.py post
-
-# V297.1: keep the AI journey stepper inside the wide desk workspace so it
-# cannot consume the second root-grid cell and push the real AI controls into
-# the 180px sidebar column.
-python /app/web/fix_v297_1_ai_grid_hotfix.py
-python /app/web/test_v297_1_ai_grid_hotfix.py
-python /app/web/test_v297_desk_rebuild.py /app
-
-# V299: remove the Editor-only V297/V298 overlay stack and return to the clean
-# pre-V297 player/cockpit. The old controls, timeline and fullscreen behavior
-# stay exactly where the Editor component originally owns them.
-cp /tmp/gsf_editor_pre_v297.html /app/web/editor_2027_component/index.html
-python /app/web/fix_v299_editor_clean_restore.py
-
-# V300: rebuild only the Creator Hub visual structure. Remove the V297 Hub
-# sidebar/runtime, keep the real profile/projects/social/live/subscription
-# behavior, add the account overview, and let the global Game Bar own navigation.
+# V300: keep the real Creator Hub structure/profile/project/social behavior and
+# its mobile presentation. The legacy desktop portion is removed by V307.
 python /app/web/fix_v300_creator_hub_clean.py
 python /app/web/test_v300_creator_hub_clean.py /app
-
-# V301 is intentionally NOT applied. It was a desktop-only rebalance that
-# overwrote the approved Home composition during every container restart.
 
 # V302: replace the global Social Game Bar slot with Live on desktop + mobile.
 python /app/web/fix_v302_global_live_gamebar.py
 python /app/web/test_v302_global_live_gamebar.py /app
 
-# V306: restore and lock the approved Home skin after all Home-affecting runtime
-# patches. This is visual-only and changes no upload/navigation behavior.
+# V306: keep the approved shared/mobile Home palette. V307 removes historical
+# desktop-only geometry while preserving this visual source.
 python /app/web/fix_v306_home_visual_lock.py
 python /app/web/test_v306_home_visual_lock.py /app
 
-# V303: compact only the mobile Creator Hub. Remove dashboard/profile murals,
-# move subscription into Profile and let the four main folders fill the space.
+# V303: compact only the mobile Creator Hub. V307 promotes this mobile geometry
+# to the desktop visual source as well.
 python /app/web/fix_v303_mobile_hub_compact.py
 python /app/web/test_v303_mobile_hub_compact.py
 
@@ -118,6 +77,12 @@ python /app/web/test_v303_mobile_hub_compact.py
 python /app/web/fix_v304_project_draft_api.py
 python /app/web/fix_v304_project_draft_details.py
 python /app/web/test_v304_project_draft_details.py /app
+
+# V307: definitive visual reset. No historical desktop rebuild/rebalance is
+# invoked anymore. Remove any desktop CSS/runtime residue baked into older
+# versions and make the existing mobile rules the single visual source.
+python /app/web/fix_v307_mobile_visual_source.py /app
+python /app/web/test_v307_mobile_visual_source.py /app
 
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
@@ -134,7 +99,7 @@ client=str(os.environ.get("GSF_ADSENSE_CLIENT","") or "").strip()
 m=re.fullmatch(r"ca-(pub-\d{10,20})",client)
 if m:
     path.write_text(
-        f"google.com, {m.group(1)}, DIRECT, f08c47fec0942fa0\\n",
+        f"google.com, {m.group(1)}, DIRECT, f08c47fec0942fa0\n",
         encoding="utf-8",
     )
 PY
