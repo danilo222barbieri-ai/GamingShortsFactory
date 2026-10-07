@@ -10,13 +10,13 @@ _HOME_V154_COMPONENT = components.declare_component(
     path=str(_COMPONENT_DIR),
 )
 
+
 def render_home_v154(*, loaded=False, duration=15, engine="", height=900, key="gsf_home_v155"):
-    # V181 MOBILE FULL-VIEWPORT SHELL
-    # On phones the Home component must own the real viewport: no Streamlit
-    # spacer above it and no parent-page scroll below it.
+    # V308: one parent shell for every viewport. The component owns the same
+    # browser work area on phone, tablet and desktop; only its internal fluid
+    # CSS changes scale and spacing.
     st.html(r"""
-    <style id="gsf-mobile-full-viewport-v181">
-    @media (max-width:760px){
+    <style id="gsf-v308-viewport-shell">
       html,body,.stApp,
       [data-testid="stAppViewContainer"],
       [data-testid="stMain"]{
@@ -95,11 +95,7 @@ def render_home_v154(*, loaded=False, duration=15, engine="", height=900, key="g
         padding:0 !important;
         border:0 !important;
       }
-    }
 
-      /* V225 MOBILE APP-SURFACE STACKING
-         The Home iframe must stay fullscreen but must not cover persistent
-         app surfaces rendered later in the Streamlit parent. */
       [data-testid="stElementContainer"]:has(#gsf-creator-hub-live-v160),
       [data-testid="stElementContainer"]:has(#gsf-social-overlay-v159),
       [data-testid="stElementContainer"]:has(#gsf-editor-overlay-v220),
