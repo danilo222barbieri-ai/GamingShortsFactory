@@ -35,7 +35,12 @@ for marker in (
     if marker not in frontend:
         raise SystemExit("FAIL V109 live zoom-out marker missing: "+marker)
 
-if "gsf_editor_2027_v1086" not in embed:
+# V109 still owns the requirement that Editor assets are cache-versioned, but
+# V308 owns the actual release number. Do not pin this legacy test to a stale
+# literal such as gsf_editor_2027_v1086.
+if "from web.ui_release import GSF_UI_RELEASE" not in embed:
+    raise SystemExit("FAIL V109 centralized component cache release import missing")
+if 'f"gsf_editor_2027_v{GSF_UI_RELEASE}"' not in embed:
     raise SystemExit("FAIL V109 component cache-bust missing")
 if '"zoom": _clamp(state.get("zoom"), 0.8, 2.0, 1.0)' not in embed:
     raise SystemExit("FAIL V109 render kwargs still clamp zoom to >=1")
