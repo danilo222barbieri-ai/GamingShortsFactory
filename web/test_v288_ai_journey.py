@@ -24,10 +24,10 @@ def main():
     editor = read(sys.argv[3])
     app = read(sys.argv[4])
 
-    # AI page: engine choice is step 1; results become a real step 2 with an explicit fork.
+    # AI page: keep the real moment flow without the old five-step line-up.
     require("V288 AI marker", "V288 AI JOURNEY" in ai)
     require("AI search CTA copy", "TROVA I 3 MOMENTI MIGLIORI" in ai)
-    require("journey progress", "1 Motore" in ai and "2 Momento" in ai and "3 Editor" in ai and "4 Crea Short" in ai and "5 Pronto" in ai)
+    require("journey line-up removed", "1 Motore" not in ai and "2 Momento" not in ai and "3 Editor" not in ai and "4 Crea Short" not in ai and "5 Pronto" not in ai)
     require("selected moment action panel", 'id="momentNextActions"' in ai)
     require("editor action from selected moment", 'id="editSelectedMoment"' in ai and 'send("open_editor"' in ai)
     require("direct short action from selected moment", 'id="createSelectedMoment"' in ai and 'send("create_short"' in ai)
@@ -42,7 +42,7 @@ def main():
     require("Home routes selected moment to Editor", 'shellNav("editor"' in home and "video_url" in home)
     require("Home routes selected moment direct to Short", 'action==="create_short"' in home and 'event:"create_short"' in home)
 
-    # Editor: Done remains, but the journey now has a prominent and explicit final CTA.
+    # Editor: Done remains, with the explicit final CTA.
     require("V288 Editor marker", "V288 EDITOR TO SHORT" in editor)
     require("Editor Create Short CTA", 'id="createShortFromEditor"' in editor and "HAI FINITO?" in editor and "CREA IL TUO SHORT" in editor)
     require("Editor next action payload", "payload.nextAction='create_short'" in editor)
