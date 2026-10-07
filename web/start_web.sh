@@ -95,15 +95,17 @@ python /app/web/fix_v299_editor_clean_restore.py
 python /app/web/fix_v300_creator_hub_clean.py
 python /app/web/test_v300_creator_hub_clean.py /app
 
-# V301: rebalance only the desktop Home. Enlarge the uploader, widen the
-# central composition, move both handwritten murals outward/upward and remove
-# the redundant ambient mural. Mobile and Home behavior remain untouched.
-python /app/web/fix_v301_home_desk_rebalance.py
-python /app/web/test_v301_home_desk_rebalance.py /app
+# V301 is intentionally NOT applied. It was a desktop-only rebalance that
+# overwrote the approved Home composition during every container restart.
 
 # V302: replace the global Social Game Bar slot with Live on desktop + mobile.
 python /app/web/fix_v302_global_live_gamebar.py
 python /app/web/test_v302_global_live_gamebar.py /app
+
+# V306: restore and lock the approved Home skin after all Home-affecting runtime
+# patches. This is visual-only and changes no upload/navigation behavior.
+python /app/web/fix_v306_home_visual_lock.py
+python /app/web/test_v306_home_visual_lock.py /app
 
 # V303: compact only the mobile Creator Hub. Remove dashboard/profile murals,
 # move subscription into Profile and let the four main folders fill the space.
