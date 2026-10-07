@@ -7,6 +7,7 @@ import sys
 ROOT = Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path(__file__).resolve().parents[1]
 WEB = ROOT/'web'
 PATCH = WEB/'fix_v311_mobile_hub_clean_pass.py'
+V287 = WEB/'fix_v287_profile_overview.py'
 HUB = WEB/'creator_hub_v156_component'/'index.html'
 START = WEB/'start_web.sh'
 
@@ -19,13 +20,21 @@ def fail(msg):
 def ok(msg):
     print('[ OK ]',msg)
 
-for path,label in ((PATCH,'patch'),(HUB,'hub'),(START,'start_web')):
+for path,label in ((PATCH,'patch'),(V287,'V287 profile patch'),(HUB,'hub'),(START,'start_web')):
     if not path.is_file(): fail(label+' missing')
 
 spec=importlib.util.spec_from_file_location('v311',PATCH)
-mod=importlib.util.module_from_spec(spec)
-spec.loader.exec_module(mod)
+mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+spec287=importlib.util.spec_from_file_location('v287',V287)
+mod287=importlib.util.module_from_spec(spec287); spec287.loader.exec_module(mod287)
+
+# Production runs V287 before V311. Reproduce the relevant V287 DOM injection so
+# the contract checks the same Profile structure that V311 actually receives.
 source=HUB.read_text(encoding='utf-8')
+if 'id="profileOverviewShorts"' not in source:
+    pattern=re.compile(r'\s*<div class="profileMural profileOnlyMural" aria-hidden="true">Questo è il tuo spazio,<br>fallo tuo</div>\s*<button class="logoutProfile" id="logoutProfile" type="button">Disconnetti dal Creator Hub</button>')
+    source,count=pattern.subn('\n'+mod287.OVERVIEW_HTML,source,count=1)
+    if count!=1: fail('could not simulate V287 Profile overview injection')
 patched=mod.patch_hub_text(source)
 
 required=(
@@ -60,6 +69,8 @@ ok('dashboard matches approved three-card structure')
 profile=patched.split('<section class="view" data-view="profile">',1)[1].split('<section class="view" data-view="social">',1)[0]
 if 'data-profile-overview="shorts"' in profile or 'data-profile-overview="drafts"' in profile:
     fail('Profile still contains Shorts/Bozze overview cards')
+if profile.count('class="profileOverviewCard"') != 2:
+    fail('Profile must contain exactly two overview cards')
 if 'data-profile-overview="subscription"' not in profile or 'data-profile-overview="social"' not in profile:
     fail('Profile plan/social portals missing')
 ok('Profile contains only plan and social overview destinations')
@@ -104,6 +115,7 @@ ok('Hub patch is idempotent')
 # Synthetic shell mirrors the global bar generated before V311. It must become
 # Home / Hub / Progetti / Live, with Home deliberately routing to Hub dashboard.
 shell_sample='''
+<style>.gsf-page-gamebar-inner{grid-template-columns:repeat(5,minmax(0,1fr))}</style>
 <div class="gsf-page-gamebar">
 <button class="gsf-page-nav-item" data-target="home" data-active="home" type="button"><svg></svg><span>Home</span></button>
 <button class="gsf-page-nav-item" data-target="hub" data-section="dashboard" data-active="hub" type="button"><svg></svg><span>Hub</span></button>
@@ -132,6 +144,7 @@ for marker in (
     '<span>Progetti</span>',
     'data-target="hub" data-section="live" data-active="live"',
     "activeKey==='projects'",
+    'grid-template-columns:repeat(4,minmax(0,1fr))',
     '/creator-hub-v156/?v=3114',
 ):
     if marker not in shell_patched: fail('Game Bar marker missing: '+marker)
