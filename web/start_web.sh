@@ -101,6 +101,10 @@ python /app/web/test_v300_creator_hub_clean.py /app
 python /app/web/fix_v301_home_desk_rebalance.py
 python /app/web/test_v301_home_desk_rebalance.py /app
 
+# V302: replace the global Social Game Bar slot with Live on desktop + mobile.
+python /app/web/fix_v302_global_live_gamebar.py
+python /app/web/test_v302_global_live_gamebar.py /app
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
