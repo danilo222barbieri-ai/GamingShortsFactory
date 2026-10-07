@@ -110,6 +110,13 @@ python /app/web/test_v302_global_live_gamebar.py /app
 python /app/web/fix_v303_mobile_hub_compact.py
 python /app/web/test_v303_mobile_hub_compact.py
 
+# V304: keep the current Bozze layout, but make current project and saved drafts
+# openable. Detail actions are real: rename, delete, resume/open, plus save the
+# current project as a draft. Same interaction works on mobile and desktop.
+python /app/web/fix_v304_project_draft_api.py
+python /app/web/fix_v304_project_draft_details.py
+python /app/web/test_v304_project_draft_details.py /app
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
