@@ -95,6 +95,12 @@ python /app/web/fix_v299_editor_clean_restore.py
 python /app/web/fix_v300_creator_hub_clean.py
 python /app/web/test_v300_creator_hub_clean.py /app
 
+# V301: rebalance only the desktop Home. Enlarge the uploader, widen the
+# central composition, move both handwritten murals outward/upward and remove
+# the redundant ambient mural. Mobile and Home behavior remain untouched.
+python /app/web/fix_v301_home_desk_rebalance.py
+python /app/web/test_v301_home_desk_rebalance.py /app
+
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
 # before the upload server starts.
