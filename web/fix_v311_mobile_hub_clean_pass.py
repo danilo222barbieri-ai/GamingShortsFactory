@@ -13,8 +13,7 @@ CSS = r'''
   #hub .view[data-view="profile"] .profileOverviewGrid{margin-top:10px!important}
 
   /* BOZZE: remove the four statistic boxes, keep counter + drafts list/empty state. */
-  #hub .view[data-view="projects"] [data-project-pane="drafts"] #projectRows .stats,
-  #hub .view[data-view="projects"] [data-project-pane="drafts"] .stats{display:none!important}
+  #hub .view[data-view="projects"] #projectRows .stats{display:none!important}
 
   /* LIVE: no launcher strip above Twitch; Twitch + YouTube live sections stay visible. */
   #hub .view[data-view="live"] .liveRootFolders{display:none!important}
