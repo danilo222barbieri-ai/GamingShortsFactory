@@ -32,6 +32,23 @@ for label,patcher,sample in (
  if patcher(patched)!=patched: fail('V319 '+label+' patch is not idempotent')
  ok('V319 '+label+' patch idempotent')
 
+# Regression: V320 intentionally replaces V319's click handler. A Railway
+# process restart reruns V319 before V320, so V319 must recognize the later
+# handler as an already-migrated successor instead of aborting startup.
+v319_ai=mod.patch_ai_text(ai)
+v320_successor=v319_ai.replace(
+ 'create.addEventListener("click",v319StartAnalysis);',
+ '/* V320 MOBILE AI STABILITY */\ncreate.addEventListener("click",v320StartAnalysis);',
+ 1,
+)
+try:
+ restarted=mod.patch_ai_text(v320_successor)
+except Exception as exc:
+ fail('V319 restart after V320 successor crashes: '+repr(exc))
+if restarted!=v320_successor:
+ fail('V319 rewrites AI after V320 successor handoff')
+ok('V319 restart-safe after V320 click-handler handoff')
+
 checks=(
  (mod.patch_server_text(server),'if clean=="/ai/results":','server results route'),
  (mod.patch_server_text(server),'(?:mini|candidate|preview)','server preview discovery'),
