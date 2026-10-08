@@ -18,9 +18,6 @@ export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
 mkdir -p "$GSF_RUNTIME_ROOT"
 
 # V311_RESTART_SAFE
-# Historical runtime migrations rewrite files in-place. Once the authoritative
-# V311 Hub marker exists, never replay V285-V310 on a process restart: those old
-# migrations expect obsolete Shorts/Drafts shell routes removed by V302/V311.
 GSF_V311_READY="$GSF_RUNTIME_ROOT/.v311-runtime-ready"
 GSF_HUB_HTML="/app/web/creator_hub_v156_component/index.html"
 GSF_SHELL_APP="/app/GamingShortsFactory_V154_STRUCTURAL_HOME.py"
@@ -85,10 +82,12 @@ python /app/web/test_v319_ai_results_bridge.py /app
 python /app/web/test_v320_ai_mobile_stability.py /app
 python /app/web/test_v322_mobile_hub_live_fill.py /app
 
-# V323: final mobile Game Editor. Real tools stay inside the player/fullscreen;
-# timeline stays on the frame and Create Short / Save Draft are real actions below it.
+# V323/V324: mobile Game Editor. Real tools and FULL stay inside the player;
+# timeline stays on the frame; Create Short / Save Draft sit immediately below it.
 python /app/web/fix_v323_mobile_editor_player_actions.py /app
 python /app/web/test_v323_mobile_editor_player_actions.py /app
+python /app/web/fix_v324_editor_action_placement.py /app/web/editor_2027_component/index.html
+python /app/web/test_v324_editor_action_placement.py /app
 
 # Generate production app only after every final runtime surface has validated.
 python /app/web/apply_v293_render_memory_guard.py
