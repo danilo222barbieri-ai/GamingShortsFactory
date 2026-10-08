@@ -82,7 +82,15 @@ for marker in (
  'webkit-playsinline',
 ):
  if marker not in ai:fail('runtime AI missing V320 marker: '+marker)
-if 'const play=video.play()' in ai:fail('runtime AI still autoplays selected Short on iOS')
+# V308's retired fullscreen helper can still contain an autoplay token, but
+# V317 removes that click route. The iOS stability contract concerns the active
+# selected-Short page only, so scope the check to openSelectedShort().
+open_start=ai.find('function openSelectedShort(')
+open_end=ai.find('function closeSelectedShort(',open_start)
+if open_start<0 or open_end<0:fail('selected Short open/close function bounds missing')
+selected_open=ai[open_start:open_end]
+if 'video.play()' in selected_open:fail('active selected Short still autoplays on iOS')
+if 'webkit-playsinline' not in selected_open:fail('active selected Short missing iOS inline playback')
 ok('runtime AI has expanded results + state recovery + stable selected Short')
 
 zspec=importlib.util.spec_from_file_location('v320_ai_mobile_stability',V320);zmod=importlib.util.module_from_spec(zspec);zspec.loader.exec_module(zmod)
