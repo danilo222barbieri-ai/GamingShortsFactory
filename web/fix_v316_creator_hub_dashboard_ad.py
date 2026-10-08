@@ -91,6 +91,13 @@ def _apply_v320(hub: Path) -> None:
     before=ai.read_text(encoding='utf-8');after=mod.patch_text(before);ai.write_text(after,encoding='utf-8')
     print('V320 mobile AI stability applied from V316 changed=',before!=after,flush=True)
 
+def _apply_v321(hub: Path) -> None:
+    patch=hub.parents[1]/'fix_v321_live_mobile_balance.py'
+    if not patch.is_file():raise RuntimeError('V321 Live balance patch missing: '+str(patch))
+    mod=_load_patch(patch,'v321_live_mobile_balance')
+    before=hub.read_text(encoding='utf-8');after=mod.patch_text(before);hub.write_text(after,encoding='utf-8')
+    print('V321 mobile Live balance applied from V316 changed=',before!=after,flush=True)
+
 def main() -> None:
     hub=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app/web/creator_hub_v156_component/index.html')
     if not hub.is_file():raise SystemExit(f'V316 Hub missing: {hub}')
@@ -100,5 +107,6 @@ def main() -> None:
     _apply_v318(hub)
     _apply_v319(hub)
     _apply_v320(hub)
+    _apply_v321(hub)
 
 if __name__=='__main__':main()
