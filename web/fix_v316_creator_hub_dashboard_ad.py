@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import re
+import sys
+
+STYLE_ID = 'v316HubDashboardAd'
+AD_ID = 'hubDashboardAd'
+AD_HTML = '<div id="hubDashboardAd" class="hubDashboardAd" data-ad-slot="hub-dashboard-mobile" aria-label="Pubblicità"><span>Pubblicità</span></div>'
+
+STYLE = r'''<style id="v316HubDashboardAd">
+/* V316: fill the mobile Creator Hub dashboard gap with a compact ad slot. */
+#hub .hubDashboardAd{display:none}
+@media(max-width:767px){
+  #hub .view[data-view="dashboard"] .dashboard{
+    grid-template-rows:136px minmax(0,1fr) 66px!important;
+    gap:10px!important;
+  }
+  #hub .view[data-view="dashboard"] .hubDashboardAd{
+    display:flex!important;width:100%!important;height:66px!important;min-height:66px!important;
+    box-sizing:border-box!important;align-items:center!important;justify-content:center!important;
+    margin:0!important;padding:0 14px!important;border:1px solid rgba(143,181,216,.18)!important;
+    border-radius:20px!important;
+    background:linear-gradient(135deg,rgba(247,252,255,.96),rgba(239,248,255,.92) 52%,rgba(241,251,247,.93))!important;
+    box-shadow:0 10px 24px rgba(61,104,145,.055),inset 0 1px 0 rgba(255,255,255,.98)!important;
+    color:#8a9bb1!important;font-size:10px!important;font-weight:850!important;letter-spacing:.08em!important;
+    text-transform:uppercase!important;overflow:hidden!important;
+  }
+  #hub .view[data-view="dashboard"] .hubDashboardAd span{opacity:.82!important}
+}
+@media(max-width:767px) and (max-height:760px){
+  #hub .view[data-view="dashboard"] .dashboard{
+    grid-template-rows:126px minmax(0,1fr) 50px!important;
+    gap:8px!important;
+  }
+  #hub .view[data-view="dashboard"] .profileCard{height:126px!important;min-height:126px!important}
+  #hub .view[data-view="dashboard"] .hubDashboardAd{height:50px!important;min-height:50px!important;border-radius:17px!important;font-size:9px!important}
+}
+</style>'''
+
+
+def _remove_existing(text: str) -> str:
+    text = re.sub(r'<style id="' + re.escape(STYLE_ID) + r'">.*?</style>\n?', '', text, count=1, flags=re.DOTALL)
+    text = re.sub(r'^[ \t]*<div id="' + re.escape(AD_ID) + r'"[^>]*>.*?</div>\n?', '', text, count=1, flags=re.MULTILINE)
+    return text
+
+
+def _find_matching_div_end(text: str, start: int) -> int:
+    depth = 0
+    token = re.compile(r'<div\b[^>]*>|</div\s*>', re.IGNORECASE)
+    for match in token.finditer(text, start):
+        if match.group(0).lower().startswith('</div'):
+            depth -= 1
+            if depth == 0:
+                return match.end()
+        else:
+            depth += 1
+    raise RuntimeError('V316 dashboard folders closing div missing')
+
+
+def patch_text(text: str) -> str:
+    if 'V311 APPROVED CREATOR REFERENCE' not in text:
+        raise RuntimeError('V316 requires normalized V311 Creator Hub')
+    if 'data-view="dashboard"' not in text or 'data-folder="live"' not in text:
+        raise RuntimeError('V316 dashboard/live anchors missing')
+
+    out = _remove_existing(text)
+    if '</head>' not in out:
+        raise RuntimeError('V316 </head> anchor missing')
+    out = out.replace('</head>', STYLE + '\n</head>', 1)
+
+    dashboard = out.find('data-view="dashboard"')
+    folders = out.find('<div class="folders"', dashboard)
+    if folders < 0:
+        raise RuntimeError('V316 dashboard folders anchor missing')
+    folders_end = _find_matching_div_end(out, folders)
+    out = out[:folders_end] + '\n    ' + AD_HTML + out[folders_end:]
+    return out
+
+
+def main() -> None:
+    hub = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path('/app/web/creator_hub_v156_component/index.html')
+    if not hub.is_file():
+        raise SystemExit(f'V316 Hub missing: {hub}')
+    before = hub.read_text(encoding='utf-8')
+    after = patch_text(before)
+    hub.write_text(after, encoding='utf-8')
+    print('V316 Creator Hub dashboard ad applied changed=', before != after, flush=True)
+
+
+if __name__ == '__main__':
+    main()
