@@ -43,12 +43,17 @@ STYLE=r'''<style id="v320AiMobileStability">
 JS=r'''
  /* V320 MOBILE AI STABILITY */
  const V320_SELECTED_KEY="GSF_AI_SELECTED_SHORT_V320";
+ function v320AssertAiRoute(){
+   try{parent.postMessage({type:"GSF_SHELL_NAV",target:"ai"},location.origin)}catch(_e){}
+ }
  function v320RequestState(){
+   v320AssertAiRoute();
    try{send("ready")}catch(_e){}
  }
  function v320Delay(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
  async function v320StartAnalysis(){
    const root=document.getElementById("ai221");
+   v320AssertAiRoute();
    if(!state.loaded){
      if(root)root.classList.add("v320Recovering");
      if(status)status.textContent="Recupero il gameplay del progetto…";
@@ -94,7 +99,7 @@ def _clean(text:str)->str:
     return text
 
 def patch_text(text:str)->str:
-    if STYLE_ID in text and 'V320 MOBILE AI STABILITY' in text and 'create.addEventListener("click",v320StartAnalysis);' in text:
+    if STYLE_ID in text and 'V320 MOBILE AI STABILITY' in text and 'create.addEventListener("click",v320StartAnalysis);' in text and 'function v320AssertAiRoute()' in text:
         return text
     if 'v317AiCompactSelectedShort' not in text:
         raise RuntimeError('V320 requires V317 compact AI flow')
