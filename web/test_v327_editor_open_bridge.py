@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import subprocess
 import sys
 
 root=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app')
@@ -19,3 +20,7 @@ failed=[k for k,v in checks.items() if not v]
 for k,v in checks.items(): print(('PASS: ' if v else 'FAIL: ')+k)
 if failed: raise SystemExit('V327 editor open bridge contract failed: '+', '.join(failed))
 print('V327 EDITOR OPEN BRIDGE CONTRACT: PASS')
+
+v328=root/'web/test_v328_global_balance.py'
+if not v328.is_file(): raise SystemExit('V328 test missing')
+subprocess.run([sys.executable,str(v328),str(root)],check=True)
