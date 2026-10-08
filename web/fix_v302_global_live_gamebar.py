@@ -83,8 +83,10 @@ def patch_home() -> None:
     missing = [m for m in required if m not in text]
     if missing:
         raise RuntimeError('V302 Home Game Bar canonical routes missing: ' + ', '.join(missing))
-    if 'data-nav="shorts"' in text or 'data-nav="social"' in text:
-        raise RuntimeError('V302 Home Game Bar still contains legacy nav destinations')
+    nav_match = re.search(r'<nav class="bottomNav".*?</nav>', text, flags=re.DOTALL)
+    nav_markup = nav_match.group(0) if nav_match else ''
+    if not nav_markup or 'data-nav="shorts"' in nav_markup or 'data-nav="social"' in nav_markup:
+        raise RuntimeError('V302 visible Home Game Bar still contains legacy destinations')
 
     HOME.write_text(text, encoding='utf-8')
     print('V302 Home Game Bar canonical: Home / Hub dashboard / Projects / Live; changed=', text != before, flush=True)
