@@ -20,11 +20,9 @@ STYLE = r'''<style id="v314HubContextFill">
 #hub .hubLiveGuide{margin:0!important}
 
 @media(max-width:767px){
-  /* Projects gets a compact guide without changing either destination card. */
   #hub .view[data-view="projects"] .folderScroller{box-sizing:border-box!important}
   #hub .view[data-view="projects"] .hubContextGuide{font-size:11px!important;padding:7px 10px!important;border-radius:14px!important}
 
-  /* Live uses every available pixel between the top chrome and the Game Bar. */
   #hub .view[data-view="live"] .detail,
   #hub .view[data-view="live"] .detailCard{height:100%!important;min-height:0!important;overflow:hidden!important}
   #hub .view[data-view="live"] .folderScroller{
@@ -78,9 +76,9 @@ STYLE = r'''<style id="v314HubContextFill">
 
 
 def _clean(text: str) -> str:
-    text = re.sub(r'\s*<style id="' + re.escape(STYLE_ID) + r'">.*?</style>\s*', '\n', text, count=1, flags=re.DOTALL)
-    text = re.sub(r'\s*<div class="hubContextGuide hubProjectsGuide">.*?</div>\s*', '\n', text, count=1, flags=re.DOTALL)
-    text = re.sub(r'\s*<div class="hubContextGuide hubLiveGuide">.*?</div>\s*', '\n', text, count=1, flags=re.DOTALL)
+    text = re.sub(r'<style id="' + re.escape(STYLE_ID) + r'">.*?</style>\n?', '', text, count=1, flags=re.DOTALL)
+    text = re.sub(r'<div class="hubContextGuide hubProjectsGuide">.*?</div>\n\s*', '', text, count=1, flags=re.DOTALL)
+    text = re.sub(r'<div class="hubContextGuide hubLiveGuide">.*?</div>\n\s*', '', text, count=1, flags=re.DOTALL)
     return text
 
 
