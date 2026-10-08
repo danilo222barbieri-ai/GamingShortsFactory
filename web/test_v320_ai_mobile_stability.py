@@ -5,12 +5,14 @@ import sys
 
 ROOT=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path(__file__).resolve().parents[1]
 PATCH=ROOT/'web'/'fix_v320_ai_mobile_stability.py'
+V316=ROOT/'web'/'fix_v316_creator_hub_dashboard_ad.py'
 START=ROOT/'web'/'start_web.sh'
 
 def fail(msg): print('[FAIL]',msg); raise SystemExit(1)
 def ok(msg): print('[ OK ]',msg)
 
 if not PATCH.is_file(): fail('V320 mobile AI stability patch missing')
+if not V316.is_file(): fail('V316 final runtime pass missing')
 spec=importlib.util.spec_from_file_location('v320_ai_mobile_stability',PATCH)
 mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
 
@@ -56,14 +58,20 @@ if 'data-ad-slot' in patched: fail('V320 must not add an ad to the AI page')
 if mod.patch_text(patched)!=patched: fail('V320 patch is not idempotent')
 ok('V320 patch is idempotent')
 
+v316_source=V316.read_text(encoding='utf-8')
+for marker in ('fix_v320_ai_mobile_stability.py','_apply_v320(hub)','ai_v221_component'):
+ if marker not in v316_source: fail('V320 final runtime delegation missing: '+marker)
+ok('V320 is delegated from V316 final runtime pass')
+
 if START.is_file():
  start=START.read_text(encoding='utf-8')
- patch_marker='python /app/web/fix_v320_ai_mobile_stability.py /app/web/ai_v221_component/index.html'
+ v316_patch='python /app/web/fix_v316_creator_hub_dashboard_ad.py /app/web/creator_hub_v156_component/index.html'
+ v319_test='python /app/web/test_v319_ai_results_bridge.py /app'
  test_marker='python /app/web/test_v320_ai_mobile_stability.py /app'
- v319='python /app/web/test_v319_ai_results_bridge.py /app'
- if patch_marker not in start or test_marker not in start: fail('V320 startup registration missing')
- if start.index(patch_marker)<start.index(v319): fail('V320 must run after V319')
- if start.index(test_marker)<start.index(patch_marker): fail('V320 test must run after patch')
+ if v316_patch not in start: fail('V316 final runtime pass registration missing')
+ if test_marker not in start: fail('V320 startup test registration missing')
+ if start.index(test_marker)<start.index(v316_patch): fail('V320 test must run after delegated patch')
+ if v319_test in start and start.index(test_marker)<start.index(v319_test): fail('V320 final test must run after V319 result bridge test')
  ok('V320 startup order')
 
 print('\nV320 MOBILE AI STABILITY CONTRACT: PASS')
