@@ -131,6 +131,11 @@ python /app/web/test_v312_navigation_contract.py /app
 # preserving every social provider, link and hit area.
 python /app/web/fix_v313_mobile_profile_fit.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v313_mobile_profile_fit.py /app
+
+# V314: contextual guide text for Projects/Live and full-height mobile Live layout.
+# Twitch + YouTube stretch to the Game Bar instead of leaving dead white space.
+python /app/web/fix_v314_hub_context_fill.py /app/web/creator_hub_v156_component/index.html
+python /app/web/test_v314_hub_context_fill.py /app
 touch "$GSF_V311_READY"
 
 # V293 render-memory guard: generate the production app only after all runtime
