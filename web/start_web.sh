@@ -95,6 +95,10 @@ python /app/web/test_v325_mobile_editor_viewport_fit.py /app
 python /app/web/fix_v326_mobile_editor_home_speed.py /app
 python /app/web/test_v326_mobile_editor_home_speed.py /app
 
+# V327: lazy Editor must still open reliably from the canonical shell navigation event.
+python /app/web/fix_v327_editor_open_bridge.py /app
+python /app/web/test_v327_editor_open_bridge.py /app
+
 # Generate production app only after every final runtime surface has validated.
 python /app/web/apply_v293_render_memory_guard.py
 
