@@ -6,7 +6,9 @@ import sys
 ROOT=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path(__file__).resolve().parents[1]
 PATCH=ROOT/'web'/'fix_v316_creator_hub_dashboard_ad.py'
 V317=ROOT/'web'/'fix_v317_compact_ai_selected_short.py'
+V318=ROOT/'web'/'fix_v318_hub_fill_live_fit.py'
 AI=ROOT/'web'/'ai_v221_component'/'index.html'
+HUB=ROOT/'web'/'creator_hub_v156_component'/'index.html'
 START=ROOT/'web'/'start_web.sh'
 
 def fail(msg):print('[FAIL]',msg);raise SystemExit(1)
@@ -40,10 +42,40 @@ vspec=importlib.util.spec_from_file_location('v317_compact_ai_selected_short',V3
 if vmod.patch_text(ai)!=ai:fail('V317 patch is not idempotent')
 ok('V317 patch is idempotent')
 
+if not V318.is_file():fail('V318 Hub fill/Live fit patch missing')
+xspec=importlib.util.spec_from_file_location('v318_hub_fill_live_fit',V318);xmod=importlib.util.module_from_spec(xspec);xspec.loader.exec_module(xmod)
+live_sample='''<!doctype html><html><head></head><body><div id="hub"><section class="view" data-view="dashboard"><div class="dashboard"><div id="hubDashboardAd" class="hubDashboardAd"><span>Pubblicità</span></div></div></section><section class="view" data-view="live"><div class="detail"><div class="detailCard"><div class="folderScroller"><div class="hubContextGuide hubLiveGuide">Guida</div><div class="livePane active livePlatformCard livePlatformTwitch"><div class="livePlatformHead"><div class="livePlatformIcon"></div><div><h2 class="livePaneTitle">Twitch</h2><p class="livePlatformSubtitle">x</p></div></div><div class="liveMiniFolders"><button class="liveMiniFolder"><span></span><div><b>Le tue live</b><small>x</small></div><i>›</i></button></div></div><div class="livePane livePlatformCard livePlatformYoutube"><div class="livePlatformHead"><div class="livePlatformIcon"></div><div><h2 class="livePaneTitle">YouTube</h2><p class="livePlatformSubtitle">x</p></div></div><div class="liveMiniFolders"><button class="liveMiniFolder"><span></span><div><b>VOD</b><small>x</small></div><i>›</i></button></div></div></div></div></div></section></div></body></html>'''
+xpatched=xmod.patch_text(live_sample)
+xchecks={
+ 'V318 style':'id="v318HubFillLiveFit"',
+ 'larger dashboard ad row':'grid-template-rows:136px minmax(0,1fr) clamp(150px,23vh,220px)!important',
+ 'dashboard ad fills row':'min-height:150px!important',
+ 'Live owns viewport':'#hub .view[data-view="live"]{height:100%!important;min-height:0!important;overflow:hidden!important}',
+ 'Live two-platform grid':'grid-template-rows:34px repeat(2,minmax(0,1fr))!important',
+ 'Live keeps Game Bar clearance':'padding:2px 2px 94px!important',
+ 'Live compact mini rows':'grid-template-rows:repeat(3,minmax(0,1fr))!important',
+ 'short-screen fit':'grid-template-rows:30px repeat(2,minmax(0,1fr))!important',
+}
+for name,marker in xchecks.items():
+ if marker not in xpatched:fail(name+' missing')
+ ok(name)
+if xmod.patch_text(xpatched)!=xpatched:fail('V318 patch is not idempotent')
+ok('V318 patch is idempotent')
+if HUB.is_file():
+ hub=HUB.read_text(encoding='utf-8')
+ for marker in ('id="hubDashboardAd"','id="v318HubFillLiveFit"','livePlatformTwitch','livePlatformYoutube'):
+  if marker not in hub:fail('runtime Hub missing V318 marker: '+marker)
+ ok('runtime Hub has expanded ad + fitted Live layout')
+
+source=PATCH.read_text(encoding='utf-8')
+for marker in ('fix_v318_hub_fill_live_fit.py','_apply_v318(hub)'):
+ if marker not in source:fail('V318 final delegation missing: '+marker)
+ok('V318 is delegated from V316 final runtime pass')
+
 if START.is_file():
  start=START.read_text(encoding='utf-8');patch_marker='python /app/web/fix_v316_creator_hub_dashboard_ad.py /app/web/creator_hub_v156_component/index.html';test_marker='python /app/web/test_v316_creator_hub_dashboard_ad.py /app';v314='python /app/web/test_v314_hub_context_fill.py /app'
  if patch_marker not in start or test_marker not in start:fail('V316 startup registration missing')
  if start.index(patch_marker)<start.index(v314):fail('V316 must run after V314')
  if start.index(test_marker)<start.index(patch_marker):fail('V316 test must run after patch')
- ok('V316/V317 startup order')
-print('\nV316 DASHBOARD AD + V317 COMPACT AI CONTRACT: PASS')
+ ok('V316/V317/V318 startup order')
+print('\nV316 DASHBOARD AD + V317 COMPACT AI + V318 HUB/LIVE FIT CONTRACT: PASS')
