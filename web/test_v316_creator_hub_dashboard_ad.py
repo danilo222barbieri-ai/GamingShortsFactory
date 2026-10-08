@@ -7,6 +7,7 @@ ROOT=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path(__file__).resolve(
 PATCH=ROOT/'web'/'fix_v316_creator_hub_dashboard_ad.py'
 V317=ROOT/'web'/'fix_v317_compact_ai_selected_short.py'
 V318=ROOT/'web'/'fix_v318_hub_fill_live_fit.py'
+V320=ROOT/'web'/'fix_v320_ai_mobile_stability.py'
 AI=ROOT/'web'/'ai_v221_component'/'index.html'
 HUB=ROOT/'web'/'creator_hub_v156_component'/'index.html'
 START=ROOT/'web'/'start_web.sh'
@@ -39,8 +40,9 @@ ok('V317 compact AI and selected-short flow present')
 if 'openMomentPreview(index);' in ai:fail('old mobile fullscreen preview handler still active')
 ok('V317 replaces old mobile fullscreen preview')
 vspec=importlib.util.spec_from_file_location('v317_compact_ai_selected_short',V317);vmod=importlib.util.module_from_spec(vspec);vspec.loader.exec_module(vmod)
-if vmod.patch_text(ai)!=ai:fail('V317 patch is not idempotent')
-ok('V317 patch is idempotent')
+# Once later runtime passes are present V317 itself must no longer rewrite the page.
+if 'id="v320AiMobileStability"' not in ai and vmod.patch_text(ai)!=ai:fail('V317 patch is not idempotent before later passes')
+ok('V317 base contract remains present')
 
 if not V318.is_file():fail('V318 Hub fill/Live fit patch missing')
 xspec=importlib.util.spec_from_file_location('v318_hub_fill_live_fit',V318);xmod=importlib.util.module_from_spec(xspec);xspec.loader.exec_module(xmod)
@@ -67,15 +69,36 @@ if HUB.is_file():
   if marker not in hub:fail('runtime Hub missing V318 marker: '+marker)
  ok('runtime Hub has expanded ad + fitted Live layout')
 
+if not V320.is_file():fail('V320 mobile AI stability patch missing')
+ai=AI.read_text(encoding='utf-8')
+for marker in (
+ 'id="v320AiMobileStability"',
+ 'padding-bottom:96px!important',
+ 'flex:1 1 0!important',
+ 'function v320RequestState()',
+ 'async function v320StartAnalysis()',
+ 'create.addEventListener("click",v320StartAnalysis);',
+ 'GSF_AI_SELECTED_SHORT_V320',
+ 'webkit-playsinline',
+):
+ if marker not in ai:fail('runtime AI missing V320 marker: '+marker)
+if 'const play=video.play()' in ai:fail('runtime AI still autoplays selected Short on iOS')
+ok('runtime AI has expanded results + state recovery + stable selected Short')
+
+zspec=importlib.util.spec_from_file_location('v320_ai_mobile_stability',V320);zmod=importlib.util.module_from_spec(zspec);zspec.loader.exec_module(zmod)
+if zmod.patch_text(ai)!=ai:fail('V320 patch is not idempotent')
+ok('V320 patch is idempotent')
+
 source=PATCH.read_text(encoding='utf-8')
-for marker in ('fix_v318_hub_fill_live_fit.py','_apply_v318(hub)'):
- if marker not in source:fail('V318 final delegation missing: '+marker)
-ok('V318 is delegated from V316 final runtime pass')
+for marker in ('fix_v318_hub_fill_live_fit.py','_apply_v318(hub)','fix_v320_ai_mobile_stability.py','_apply_v320(hub)'):
+ if marker not in source:fail('final runtime delegation missing: '+marker)
+ok('V318 and V320 are delegated from V316 final runtime pass')
 
 if START.is_file():
- start=START.read_text(encoding='utf-8');patch_marker='python /app/web/fix_v316_creator_hub_dashboard_ad.py /app/web/creator_hub_v156_component/index.html';test_marker='python /app/web/test_v316_creator_hub_dashboard_ad.py /app';v314='python /app/web/test_v314_hub_context_fill.py /app'
+ start=START.read_text(encoding='utf-8');patch_marker='python /app/web/fix_v316_creator_hub_dashboard_ad.py /app/web/creator_hub_v156_component/index.html';test_marker='python /app/web/test_v316_creator_hub_dashboard_ad.py /app';v314='python /app/web/test_v314_hub_context_fill.py /app';v320='python /app/web/test_v320_ai_mobile_stability.py /app'
  if patch_marker not in start or test_marker not in start:fail('V316 startup registration missing')
  if start.index(patch_marker)<start.index(v314):fail('V316 must run after V314')
  if start.index(test_marker)<start.index(patch_marker):fail('V316 test must run after patch')
- ok('V316/V317/V318 startup order')
-print('\nV316 DASHBOARD AD + V317 COMPACT AI + V318 HUB/LIVE FIT CONTRACT: PASS')
+ if v320 not in start or start.index(v320)<start.index(test_marker):fail('V320 final startup gate missing or out of order')
+ ok('V316/V317/V318/V319/V320 startup order')
+print('\nV316 DASHBOARD AD + V317 COMPACT AI + V318 HUB/LIVE FIT + V320 AI STABILITY CONTRACT: PASS')
