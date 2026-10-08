@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 
 HOME = Path('/app/web/home_v154_component/index.html')
 APP = Path('/app/GamingShortsFactory_V154_STRUCTURAL_HOME.py')
@@ -21,6 +22,24 @@ def once(text, old, new, label):
     if text.count(old) != 1:
         raise RuntimeError(f'V302 {label}: expected one anchor, found {text.count(old)}')
     return text.replace(old, new, 1)
+
+
+def force_hub_dashboard(text: str) -> str:
+    """The Hub tab must always reopen the Creator Hub landing/dashboard."""
+    pattern = re.compile(r'<button\b(?=[^>]*\bdata-active="hub")[^>]*>', re.DOTALL)
+    match = pattern.search(text)
+    if not match:
+        return text
+    tag = match.group(0)
+    if re.search(r'\bdata-target="[^"]*"', tag):
+        tag = re.sub(r'\bdata-target="[^"]*"', 'data-target="hub"', tag, count=1)
+    else:
+        tag = tag[:-1] + ' data-target="hub">'
+    if re.search(r'\bdata-section="[^"]*"', tag):
+        tag = re.sub(r'\bdata-section="[^"]*"', 'data-section="dashboard"', tag, count=1)
+    else:
+        tag = tag[:-1] + ' data-section="dashboard">'
+    return text[:match.start()] + tag + text[match.end():]
 
 
 def patch_home():
@@ -45,8 +64,9 @@ def patch_app():
         "else if(target==='hub') active=(lastTarget==='hub'&&lastSection!=='drafts'&&lastSection!=='shorts'&&lastSection!=='social');",
         "else if(target==='hub') active=(lastTarget==='hub'&&lastSection!=='drafts'&&lastSection!=='shorts'&&lastSection!=='live');",
         'Hub active state')
+    text = force_hub_dashboard(text)
     APP.write_text(text, encoding='utf-8')
-    print('V302 global page Game Bar: Social -> Live', flush=True)
+    print('V302 global page Game Bar: Hub -> Creator Hub dashboard; Social -> Live', flush=True)
 
 
 if __name__ == '__main__':
