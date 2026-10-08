@@ -59,10 +59,13 @@ for name, marker in checks.items():
         fail(name + ' missing')
     ok(name)
 
-if patched.count('hubProjectsGuide') != 1:
+# Count the actual guide elements, not class-name occurrences in CSS selectors.
+if patched.count('class="hubContextGuide hubProjectsGuide"') != 1:
     fail('projects guide duplicated')
-if patched.count('hubLiveGuide') != 1:
+if patched.count('class="hubContextGuide hubLiveGuide"') != 1:
     fail('live guide duplicated')
+ok('projects/live guide elements appear exactly once')
+
 if mod.patch_text(patched) != patched:
     fail('V314 patch is not idempotent')
 ok('V314 patch is idempotent')
