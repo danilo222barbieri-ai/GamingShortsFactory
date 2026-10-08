@@ -77,9 +77,12 @@ STYLE=r'''<style id="v318HubFillLiveFit">
 def patch_text(text:str)->str:
     for marker in ('id="hubDashboardAd"','hubLiveGuide','livePlatformTwitch','livePlatformYoutube'):
         if marker not in text: raise RuntimeError('V318 missing Hub anchor: '+marker)
-    cleaned=re.sub(r'\s*<style id="'+re.escape(STYLE_ID)+r'">.*?</style>\s*','\n',text,flags=re.DOTALL)
+    style_marker=f'id="{STYLE_ID}"'
+    if text.count(style_marker)==1 and STYLE in text:
+        return text
+    cleaned=re.sub(r'<style id="'+re.escape(STYLE_ID)+r'">.*?</style>','',text,flags=re.DOTALL)
     if '</head>' not in cleaned: raise RuntimeError('V318 Hub </head> anchor missing')
-    return cleaned.replace('</head>','\n'+STYLE+'\n</head>',1)
+    return cleaned.replace('</head>',STYLE+'\n</head>',1)
 
 def main()->None:
     hub=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app/web/creator_hub_v156_component/index.html')
