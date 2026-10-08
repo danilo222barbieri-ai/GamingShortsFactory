@@ -5,11 +5,11 @@ import sys
 
 DEFAULT_HUB = Path('/app/web/creator_hub_v156_component/index.html')
 DEFAULT_APP = Path('/app/GamingShortsFactory_V154_STRUCTURAL_HOME.py')
-CACHE_KEY = '3114'
+CACHE_KEY = '3115'
 
-# V311.4 is the authoritative Creator Hub mobile source. It rewrites the served
-# Hub after the historical patches have run, so the user-facing DOM contains the
-# approved three-card dashboard and the shell contains one four-item Game Bar.
+# V311 stays the single authoritative Creator Hub source. This revision keeps the
+# existing Hub/Profile/Projects contracts and makes Live match the approved
+# mobile reference directly instead of layering another historical patch.
 STYLE = r'''
 <style id="v311HubForce">
 /* V311 MOBILE HUB CLEAN PASS */
@@ -87,14 +87,51 @@ html,body{overflow:hidden!important}
 #hub .projectHubCard small{display:block;margin-top:5px;font-size:11.5px;line-height:1.25;color:#7b8da4;font-weight:750}
 #hub .projectHubCard i{font-style:normal;font-size:28px;color:#8198b4}
 
-/* Live: Twitch and YouTube each own a direct section. */
-#hub .view[data-view="live"] .folderScroller{overflow-y:auto!important;overflow-x:hidden!important;padding-bottom:104px!important}
+/* V311 LIVE REFERENCE LAYOUT: no profile/launcher strip; Twitch then YouTube. */
+#hub .view[data-view="live"] .profileCard{display:none!important}
+#hub .view[data-view="live"] .detail{grid-template-rows:minmax(0,1fr)!important;gap:0!important}
+#hub .view[data-view="live"] .detailHead{display:none!important}
+#hub .view[data-view="live"] .detailCard{padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+#hub .view[data-view="live"] .folderScroller{overflow-y:auto!important;overflow-x:hidden!important;padding:2px 2px 104px!important}
+#hub .view[data-view="live"] .liveRootFolders{display:none!important}
 #hub .view[data-view="live"] .livePane[data-live-pane="twitch"],
 #hub .view[data-view="live"] .livePane[data-live-pane="youtube"]{display:block!important}
-#hub .view[data-view="live"] .livePane[data-live-pane="youtube"]{margin-top:16px!important;padding-top:14px!important;border-top:1px solid rgba(143,181,216,.22)!important}
-#hub .view[data-view="live"] .livePaneTitle{font-size:18px!important;margin:4px 4px 8px!important}
+#hub .view[data-view="live"] .livePlatformCard{
+  margin:0 0 14px!important;padding:16px!important;border:1px solid rgba(143,181,216,.18)!important;
+  border-radius:28px!important;background:rgba(255,255,255,.94)!important;
+  box-shadow:0 14px 34px rgba(61,104,145,.075),inset 0 1px 0 rgba(255,255,255,.99)!important;
+}
+#hub .view[data-view="live"] .livePlatformHead{display:grid!important;grid-template-columns:58px minmax(0,1fr)!important;gap:14px!important;align-items:center!important;margin-bottom:12px!important}
+#hub .view[data-view="live"] .livePlatformIcon{width:58px!important;height:58px!important;border-radius:19px!important;display:grid!important;place-items:center!important;font-size:24px!important;font-weight:950!important}
+#hub .view[data-view="live"] .livePlatformTwitch .livePlatformIcon{background:linear-gradient(145deg,#f0e8ff,#e9ddff)!important;color:#9146ff!important}
+#hub .view[data-view="live"] .livePlatformYoutube .livePlatformIcon{background:linear-gradient(145deg,#ffe8ee,#fff0f3)!important;color:#ff1744!important}
+#hub .view[data-view="live"] .livePaneTitle{margin:0!important;font-size:24px!important;line-height:1!important;font-weight:950!important;letter-spacing:-.025em!important;color:#0d2a66!important}
+#hub .view[data-view="live"] .livePlatformSubtitle{margin-top:5px!important;font-size:12px!important;line-height:1.28!important;font-weight:720!important;color:#7185a6!important}
 #hub .view[data-view="live"] .liveMiniFolders{display:grid!important;grid-template-columns:1fr!important;gap:8px!important}
-#hub .view[data-view="live"] .liveMiniFolder{min-height:66px!important;padding:10px 11px!important;border-radius:17px!important}
+#hub .view[data-view="live"] .liveMiniFolder{
+  min-height:72px!important;padding:10px 12px!important;border:1px solid rgba(143,181,216,.14)!important;
+  border-radius:20px!important;background:rgba(252,254,255,.98)!important;box-shadow:0 7px 18px rgba(61,104,145,.035)!important;
+  display:grid!important;grid-template-columns:48px minmax(0,1fr) auto!important;gap:12px!important;align-items:center!important;
+  color:#0d2a66!important;text-align:left!important;
+}
+#hub .view[data-view="live"] .liveMiniFolder>span{width:48px!important;height:48px!important;border-radius:16px!important;display:grid!important;place-items:center!important;font-size:19px!important;font-weight:900!important}
+#hub .view[data-view="live"] .livePlatformTwitch .liveMiniFolder>span{background:#f2eaff!important;color:#9146ff!important}
+#hub .view[data-view="live"] .livePlatformYoutube .liveMiniFolder>span{background:#ffeaf0!important;color:#ff1744!important}
+#hub .view[data-view="live"] .liveMiniFolder b{display:block!important;font-size:16px!important;line-height:1.05!important;font-weight:930!important}
+#hub .view[data-view="live"] .liveMiniFolder small{display:block!important;margin-top:4px!important;font-size:11px!important;line-height:1.2!important;font-weight:700!important;color:#7185a6!important}
+#hub .view[data-view="live"] .liveMiniFolder i{font-style:normal!important;font-size:26px!important;color:#7f98b6!important}
+#hub .view[data-view="live"] .liveMiniContent{display:none!important}
+@media(max-width:390px){
+  #hub .view[data-view="live"] .livePlatformCard{padding:13px!important;border-radius:24px!important}
+  #hub .view[data-view="live"] .livePlatformHead{grid-template-columns:52px minmax(0,1fr)!important;gap:11px!important}
+  #hub .view[data-view="live"] .livePlatformIcon{width:52px!important;height:52px!important;border-radius:17px!important;font-size:22px!important}
+  #hub .view[data-view="live"] .livePaneTitle{font-size:22px!important}
+  #hub .view[data-view="live"] .livePlatformSubtitle{font-size:11px!important}
+  #hub .view[data-view="live"] .liveMiniFolder{min-height:68px!important;grid-template-columns:44px minmax(0,1fr) auto!important;gap:10px!important;padding:9px 10px!important}
+  #hub .view[data-view="live"] .liveMiniFolder>span{width:44px!important;height:44px!important;border-radius:14px!important;font-size:17px!important}
+  #hub .view[data-view="live"] .liveMiniFolder b{font-size:15px!important}
+  #hub .view[data-view="live"] .liveMiniFolder small{font-size:10.5px!important}
+}
 /* END V311 MOBILE HUB CLEAN PASS */
 </style>
 '''
@@ -105,19 +142,29 @@ PROJECT_LANDING = '''      <div id="projectHubCards" aria-label="I miei progetti
       </div>
 '''
 
-YOUTUBE_NEW = '''<div class="livePane" data-live-pane="youtube">
-       <div class="livePaneTitle">YouTube</div>
+TWITCH_NEW = '''<div class="livePane active livePlatformCard livePlatformTwitch" data-live-pane="twitch">
+       <div class="livePlatformHead"><span class="livePlatformIcon">◧</span><div><div class="livePaneTitle">Twitch</div><div class="livePlatformSubtitle">Gestisci e riutilizza i contenuti delle tue live su Twitch.</div></div></div>
+       <div class="liveMiniFolders">
+        <button class="liveMiniFolder active" data-live-mini="sessions"><span>▣</span><div><b>Le tue live</b><small>Tutte le live trasmesse su Twitch.</small></div><i>›</i></button>
+        <button class="liveMiniFolder" data-live-mini="vod"><span>▶</span><div><b>VOD</b><small>Rivedi e gestisci i tuoi VOD.</small></div><i>›</i></button>
+        <button class="liveMiniFolder" data-live-mini="twitch-highlights"><span>✦</span><div><b>Highlights</b><small>I momenti migliori delle tue live.</small></div><i>›</i></button>
+       </div>
+       <div id="liveMiniContent" class="liveMiniContent"></div>
+      </div>'''
+
+YOUTUBE_NEW = '''<div class="livePane livePlatformCard livePlatformYoutube" data-live-pane="youtube">
+       <div class="livePlatformHead"><span class="livePlatformIcon">▶</span><div><div class="livePaneTitle">YouTube</div><div class="livePlatformSubtitle">Gestisci e riutilizza i contenuti delle tue live su YouTube.</div></div></div>
        <div class="liveMiniFolders youtubeLiveFolders">
-        <div class="liveMiniFolder"><span>▶</span><div><b>Le tue live</b><small>Dirette YouTube salvate nel Creator Hub</small></div><i>›</i></div>
-        <div class="liveMiniFolder"><span>▣</span><div><b>VOD</b><small>Replay completi delle live YouTube</small></div><i>›</i></div>
-        <div class="liveMiniFolder"><span>✦</span><div><b>Highlights</b><small>Short e momenti estratti da YouTube</small></div><i>›</i></div>
+        <div class="liveMiniFolder"><span>▣</span><div><b>Le tue live</b><small>Tutte le live trasmesse su YouTube.</small></div><i>›</i></div>
+        <div class="liveMiniFolder"><span>▶</span><div><b>VOD</b><small>Rivedi e gestisci i tuoi VOD.</small></div><i>›</i></div>
+        <div class="liveMiniFolder"><span>✦</span><div><b>Highlights</b><small>I momenti migliori delle tue live.</small></div><i>›</i></div>
        </div>
       </div>'''
 
 RUNTIME = r'''
 <script id="v311HubRuntime">
 (()=>{
-  document.documentElement.dataset.gsfHubVersion='3114';
+  document.documentElement.dataset.gsfHubVersion='3115';
   const $=(q)=>document.querySelector(q), $$=(q)=>[...document.querySelectorAll(q)];
   const showProjectLanding=()=>{
     const landing=$('#projectHubCards'); if(!landing)return;
@@ -194,6 +241,33 @@ def _remove_profile_card(text: str, name: str) -> str:
     return re.sub(r'^\s*<button class="profileOverviewCard"[^>]*data-profile-overview="'+re.escape(name)+r'".*?</button>\s*$','',text,count=1,flags=re.MULTILINE)
 
 
+def normalize_live_reference(text: str) -> str:
+    start=text.find('<section class="view" data-view="live">')
+    if start<0:return text
+    end=text.find('</section>',start)
+    if end<0:raise RuntimeError('V311: Live section end anchor missing')
+    end+=len('</section>')
+    live=text[start:end]
+
+    # The Live page never owns the creator profile card. If an older migration
+    # injected one, remove it only from this section.
+    live=re.sub(r'\s*<div class="profileCard"[^>]*>.*?(?=<div class="detail">)', '\n ', live, count=1, flags=re.DOTALL)
+    live=_remove_live_root(live)
+    live=re.sub(r'\s*<div class="livePane" data-live-pane="highlights">.*?</div></div>\s*','\n',live,count=1,flags=re.DOTALL)
+
+    if 'livePlatformTwitch' not in live:
+        twitch_pattern=r'<div class="livePane active" data-live-pane="twitch">.*?(?=\s*<div class="livePane" data-live-pane="youtube">)'
+        live,count=re.subn(twitch_pattern,TWITCH_NEW+'\n\n      ',live,count=1,flags=re.DOTALL)
+        if count!=1:raise RuntimeError('V311: Twitch Live pane anchor missing')
+
+    if 'livePlatformYoutube' not in live:
+        youtube_pattern=r'<div class="livePane" data-live-pane="youtube">.*?(?=\s*(?:<div class="livePane" data-live-pane="highlights">|</div></div>\s*</div>\s*</section>))'
+        live,count=re.subn(youtube_pattern,YOUTUBE_NEW+'\n',live,count=1,flags=re.DOTALL)
+        if count!=1:raise RuntimeError('V311: YouTube Live pane anchor missing')
+
+    return text[:start]+live+text[end:]
+
+
 def _normalize_structure(text: str) -> str:
     # Dashboard: exactly Profile, Projects, Live.
     text=re.sub(r'^\s*<div class="hubMural">.*?</div>\s*$','',text,count=1,flags=re.MULTILINE)
@@ -216,17 +290,13 @@ def _normalize_structure(text: str) -> str:
     # Bozze: no current-project / four-stat strip.
     text=re.sub(r'^[ \t]*\$\("#projectRows"\)\.innerHTML=.*?;\s*$','   $("#projectRows").innerHTML="";',text,count=1,flags=re.MULTILINE)
 
-    # Live: direct Twitch + YouTube sections.
-    text=_remove_live_root(text)
-    text=re.sub(r'^\s*<div class="livePane" data-live-pane="highlights">.*?</div></div>\s*$','',text,count=1,flags=re.MULTILINE)
-    if 'youtubeLiveFolders' not in text:
-        text,count=re.subn(r'^\s*<div class="livePane" data-live-pane="youtube">.*?</div></div>\s*$',YOUTUBE_NEW,text,count=1,flags=re.MULTILINE)
-        if count!=1:raise RuntimeError('V311: YouTube Live pane anchor missing')
+    # Live: one direct Twitch card followed by one direct YouTube card.
+    text=normalize_live_reference(text)
     return text
 
 
 def patch_hub_text(text: str) -> str:
-    if ('V311 APPROVED CREATOR REFERENCE' in text and 'id="v311HubForce"' in text and 'id="v311HubRuntime"' in text and "gsfHubVersion='3114'" in text and 'youtubeLiveFolders' in text and 'id="projectHubCards"' in text):
+    if ('V311 APPROVED CREATOR REFERENCE' in text and 'V311 LIVE REFERENCE LAYOUT' in text and 'id="v311HubForce"' in text and 'id="v311HubRuntime"' in text and "gsfHubVersion='3115'" in text and 'livePlatformTwitch' in text and 'livePlatformYoutube' in text and 'youtubeLiveFolders' in text and 'id="projectHubCards"' in text):
         return text
     text=_strip_old_v311(text)
     text=_normalize_structure(text)
