@@ -70,6 +70,17 @@ def _apply_v318(hub: Path) -> None:
     before=hub.read_text(encoding='utf-8');after=mod.patch_text(before);hub.write_text(after,encoding='utf-8')
     print('V318 Hub fill + Live viewport fit applied from V316 changed=',before!=after,flush=True)
 
+def _apply_v319(hub: Path) -> None:
+    patch=hub.parents[1]/'fix_v319_ai_results_bridge.py'
+    if not patch.is_file():raise RuntimeError('V319 AI results bridge missing: '+str(patch))
+    mod=_load_patch(patch,'v319_ai_results_bridge')
+    mod.ROOT=hub.parents[2]
+    mod.SERVER=mod.ROOT/'web'/'direct_upload_server.py'
+    mod.NGINX=mod.ROOT/'web'/'nginx.conf.template'
+    mod.AI=mod.ROOT/'web'/'ai_v221_component'/'index.html'
+    mod.HOME=mod.ROOT/'web'/'home_v154_component'/'index.html'
+    mod.main()
+
 def main() -> None:
     hub=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app/web/creator_hub_v156_component/index.html')
     if not hub.is_file():raise SystemExit(f'V316 Hub missing: {hub}')
@@ -77,5 +88,6 @@ def main() -> None:
     print('V316 Creator Hub dashboard ad applied changed=',before!=after,flush=True)
     _apply_v317(hub)
     _apply_v318(hub)
+    _apply_v319(hub)
 
 if __name__=='__main__':main()
