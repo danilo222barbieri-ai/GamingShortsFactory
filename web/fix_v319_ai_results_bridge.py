@@ -141,6 +141,7 @@ AI_JS = r'''
 
 CREATE_OLD = 'create.addEventListener("click",()=>{if(!state.loaded)return;guide("creating");status.textContent="L’IA sta cercando i momenti migliori…";send("create",{engine:state.engine,duration:state.duration})});'
 CREATE_NEW = 'create.addEventListener("click",v319StartAnalysis);'
+CREATE_SUCCESSOR = 'create.addEventListener("click",v320StartAnalysis);'
 
 HOME_OLD = 'value({event:"create_ai",duration,engine:nextEngine});'
 HOME_NEW = 'value({event:"create_ai",duration,engine:nextEngine,request_id:String(e.data.request_id||Date.now())}); /* V319 CREATE NONCE */'
@@ -170,7 +171,11 @@ def patch_nginx_text(text: str) -> str:
 
 
 def patch_ai_text(text: str) -> str:
-    if 'id="v319AiResultsBridgeStyle"' in text and 'function v319StartAnalysis()' in text and CREATE_NEW in text:
+    has_v319 = 'id="v319AiResultsBridgeStyle"' in text and 'function v319StartAnalysis()' in text
+    # V320 is the intentional successor of the V319 click binding. Runtime
+    # migrations are rerun on Railway process restarts, so seeing the later
+    # handler means V319 is already installed and must be treated as idempotent.
+    if has_v319 and (CREATE_NEW in text or CREATE_SUCCESSOR in text):
         return text
     if '</head>' not in text:
         raise RuntimeError('V319 AI </head> anchor missing')
