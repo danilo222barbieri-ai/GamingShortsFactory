@@ -31,7 +31,7 @@ checks={
  'timeline pinned to frame':'left:8px!important;right:8px!important;bottom:8px!important',
  'actions own second row':'#ng27 .cockpit>.v323EditorActions{grid-column:1!important;grid-row:2!important',
  'rails stay inside player':'#ng27 .cockpit>.rail:first-child{left:7px!important',
- 'right rail stays inside player':'#ng27 .cockpit>.rail:nth-of-type(2){right:7px!important',
+ 'right rail stays inside player':'#ng27 .cockpit>.rail:nth-of-type(3){right:7px!important',
  'short phone fit':'@media(max-width:390px) and (max-height:760px)',
 }
 for name,marker in checks.items():
