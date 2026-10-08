@@ -18,19 +18,16 @@ export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
 mkdir -p "$GSF_RUNTIME_ROOT"
 
 # V311_RESTART_SAFE
-# The runtime migrations below intentionally rewrite files inside the running
-# container. If Streamlit/Nginx is restarted in the same container, rerunning
-# the historical V285-V310 migrations against the already-normalized V311 DOM
-# can fail on anchors that V311 deliberately removed. Detect that state and
-# keep the canonical V311 pass as the only migration rerun on restart.
+# Historical runtime migrations rewrite files in-place. Once the authoritative
+# V311 Hub marker exists, never replay V285-V310 on a process restart: those old
+# migrations expect obsolete Shorts/Drafts shell routes removed by V302/V311.
 GSF_V311_READY="$GSF_RUNTIME_ROOT/.v311-runtime-ready"
 GSF_HUB_HTML="/app/web/creator_hub_v156_component/index.html"
 GSF_SHELL_APP="/app/GamingShortsFactory_V154_STRUCTURAL_HOME.py"
 GSF_HISTORY_READY=0
 if [ -f "$GSF_V311_READY" ]; then
   GSF_HISTORY_READY=1
-elif grep -q 'V311 APPROVED CREATOR REFERENCE' "$GSF_HUB_HTML" 2>/dev/null \
-  && grep -q '/creator-hub-v156/?v=3114' "$GSF_SHELL_APP" 2>/dev/null; then
+elif grep -q 'V311 APPROVED CREATOR REFERENCE' "$GSF_HUB_HTML" 2>/dev/null; then
   GSF_HISTORY_READY=1
 fi
 
@@ -121,6 +118,10 @@ fi
 python /app/web/fix_v311_mobile_hub_clean_pass.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v311_mobile_hub_clean_pass.py /app
 
+# Mark the container modern immediately after V311 validates. If any later final
+# pass fails, a Railway process restart must never replay obsolete V285-V310.
+touch "$GSF_V311_READY"
+
 # V312: final navigation source of truth. Reassert all four Game Bar destinations
 # after every historical/visual migration so no button can inherit Editor or a
 # previous Hub section from an older patch.
@@ -132,16 +133,15 @@ python /app/web/test_v312_navigation_contract.py /app
 python /app/web/fix_v313_mobile_profile_fit.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v313_mobile_profile_fit.py /app
 
-# V314: contextual guide text for Projects/Live and full-height mobile Live layout.
-# Twitch + YouTube stretch to the Game Bar instead of leaving dead white space.
+# V314 + V315: contextual guides/full-height Live plus the final mobile Home
+# lower-flow calibration (V315 is delegated by the V314 final runtime pass).
 python /app/web/fix_v314_hub_context_fill.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v314_hub_context_fill.py /app
 
-# V316: compact mobile ad slot below Live on the Creator Hub dashboard.
-# It consumes the unused dashboard gap without introducing page scrolling.
+# V316 + V317: compact dashboard ad slot and the compact AI/selected-short flow.
+# V317 is applied by the V316 final runtime pass and verified by the V316 contract.
 python /app/web/fix_v316_creator_hub_dashboard_ad.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v316_creator_hub_dashboard_ad.py /app
-touch "$GSF_V311_READY"
 
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
