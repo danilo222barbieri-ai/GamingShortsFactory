@@ -11,40 +11,54 @@ START=ROOT/'web'/'start_web.sh'
 def fail(msg): print('[FAIL]',msg); raise SystemExit(1)
 def ok(msg): print('[ OK ]',msg)
 
-# Regression: V295 leaves stageWrap at height:100% + flex centering, which is what
-# produced the large blank band above the player and detached timeline on iPhone.
 if not PATCH.is_file(): fail('V325 implementation missing')
 spec=importlib.util.spec_from_file_location('v325_mobile_editor_viewport_fit',PATCH)
 mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
+
 sample='''<!doctype html><html><head>
-<style>@media(max-width:760px){#ng27{height:100dvh!important}#ng27 .stageWrap{height:100%!important;display:flex!important;align-items:center!important;justify-content:center!important}#ng27 .topline{display:flex!important}}</style>
 <style id="v323MobileEditorPlayerActions"></style>
-</head><body><div id="ng27"><div class="shell"><div class="topline"></div><div class="cockpit"><div class="rail"></div><div class="stageWrap"><div class="stage r916" id="stage"></div><div class="timeline"></div></div><div class="rail"></div><div class="v323EditorActions" id="v323EditorActions"></div></div></div></div><script id="v324EditorActionPlacement">/* V324_EDITOR_ACTION_PLACEMENT */</script></body></html>'''
+</head><body><div id="ng27"><div class="shell"><div class="topline"></div><div class="cockpit">
+<div class="rail"><button data-panel="frame"></button><button data-panel="caption"></button><button data-panel="look"></button><button data-panel="audio"></button></div>
+<div class="stageWrap"><div class="stage r916" id="stage"><div class="captionPreview" id="captionPreview">CAPTION AUTO</div><video id="video"></video></div><div class="timeline"><div class="tlMeta"><span>IN</span><span>TAGLIO</span><span>OUT</span></div><div class="track"></div></div></div>
+<div class="v323EditorActions" id="v323EditorActions"></div>
+<div class="rail"><button id="playBtn"></button><button data-panel="vision"></button></div>
+</div></div></div>
+<script>function setFrameHeight(x){} function fitEditorViewport(){const pw=400;if(pw<=820){setFrameHeight(Math.max(720,Math.ceil(document.documentElement.scrollHeight||720)));return}}</script>
+<script id="v324EditorActionPlacement">/* V324_EDITOR_ACTION_PLACEMENT */</script></body></html>'''
+
 patched=mod.patch_text(sample)
 checks={
  'style marker':'id="v325MobileEditorViewportFit"',
- 'mobile root uses component height':'#ng27{height:100%!important;min-height:0!important;max-height:100%!important',
- 'duplicate inner heading removed':'#ng27 .topline{display:none!important',
- 'cockpit constrained to player width':'width:min(100%,340px)!important',
- 'stageWrap no longer fills viewport':'height:auto!important',
- 'stageWrap no flex centering':'display:block!important',
- 'timeline pinned to frame':'left:8px!important;right:8px!important;bottom:8px!important',
- 'actions own second row':'#ng27 .cockpit>.v323EditorActions{grid-column:1!important;grid-row:2!important',
- 'rails stay inside player':'#ng27 .cockpit>.rail:first-child{left:7px!important',
- 'right rail stays inside player':'#ng27 .cockpit>.rail:nth-of-type(3){right:7px!important',
- 'short phone fit':'@media(max-width:390px) and (max-height:760px)',
+ 'runtime layout marker':'id="v325MobileEditorReferenceLayout"',
+ 'legacy mobile iframe minimum removed':'Math.max(500,Math.min(710,Math.floor(ph-145)))',
+ 'compact player sizing':'width:min(calc(100% - 18px),292px,calc((100dvh - 150px)*.5625))!important',
+ 'player is first row':'#ng27 .stageWrap{grid-column:1!important;grid-row:1!important',
+ 'actions directly below player':'#ng27 .cockpit>.v323EditorActions{grid-column:1!important;grid-row:2!important',
+ 'timeline is dedicated third row':'#ng27 .cockpit>.timeline.v325DetachedTimeline{grid-column:1!important;grid-row:3!important',
+ 'timeline no longer absolute':'position:relative!important',
+ 'left controls moved into player':'stage.appendChild(leftRail)',
+ 'right controls moved into player':'stage.appendChild(rightRail)',
+ 'audio moved to right':'rightRail.insertBefore(audioBtn',
+ 'play dock inside player':'dock.appendChild(playBtn)',
+ 'timeline moved below actions':"actions.insertAdjacentElement('afterend',timeline)",
+ 'time chip':'id="v325TimeChip"',
+ 'ratio chip':'9:16',
+ 'default caption placeholder suppressed':'v325DefaultCaption',
+ 'short phone fit':'@media(max-width:390px) and (max-height:700px)',
 }
 for name,marker in checks.items():
  if marker not in patched: fail(name+' missing')
  ok(name)
+if 'Math.max(720,Math.ceil(document.documentElement.scrollHeight||720))' in patched:
+ fail('legacy 720px mobile iframe inflation still present')
 if mod.patch_text(patched)!=patched: fail('V325 patch is not idempotent')
 ok('V325 patch is idempotent')
 
 if EDITOR.is_file() and 'id="v325MobileEditorViewportFit"' in EDITOR.read_text(encoding='utf-8'):
  live=EDITOR.read_text(encoding='utf-8')
- for marker in ('#ng27 .stageWrap{','height:auto!important','display:block!important','#ng27 .cockpit>.v323EditorActions{'):
-  if marker not in live: fail('runtime editor missing V325 marker: '+marker)
- ok('runtime editor carries V325 viewport fit')
+ for marker in ('v325MobileEditorReferenceLayout','v325DetachedTimeline','v325PlaybackDock'):
+  if marker not in live: fail('runtime editor missing approved-reference marker: '+marker)
+ ok('runtime editor carries approved-reference layout')
 
 if START.is_file():
  start=START.read_text(encoding='utf-8')
@@ -58,4 +72,4 @@ if START.is_file():
  if render in start and start.index(test)>start.index(render): fail('V325 must validate before render-memory generation')
  ok('V325 startup order')
 
-print('\nV325 MOBILE EDITOR VIEWPORT FIT CONTRACT: PASS')
+print('\nV325 MOBILE EDITOR APPROVED REFERENCE CONTRACT: PASS')
