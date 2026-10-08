@@ -6,6 +6,8 @@ import sys
 ROOT=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path(__file__).resolve().parents[1]
 PATCH=ROOT/'web'/'fix_v320_ai_mobile_stability.py'
 V316=ROOT/'web'/'fix_v316_creator_hub_dashboard_ad.py'
+V321=ROOT/'web'/'fix_v321_live_mobile_balance.py'
+HUB=ROOT/'web'/'creator_hub_v156_component'/'index.html'
 START=ROOT/'web'/'start_web.sh'
 
 def fail(msg): print('[FAIL]',msg); raise SystemExit(1)
@@ -68,6 +70,32 @@ for marker in ('fix_v320_ai_mobile_stability.py','_apply_v320(hub)','ai_v221_com
  if marker not in v316_source: fail('V320 final runtime delegation missing: '+marker)
 ok('V320 is delegated from V316 final runtime pass')
 
+# V321 final mobile Live balance, delegated after V320/V318.
+if not V321.is_file(): fail('V321 mobile Live balance patch missing')
+vspec=importlib.util.spec_from_file_location('v321_live_mobile_balance',V321)
+vmod=importlib.util.module_from_spec(vspec);vspec.loader.exec_module(vmod)
+live_sample='''<html><head><style id="v318HubFillLiveFit"></style></head><body><div id="hub"><div class="view" data-view="live"><div class="hubLiveGuide"></div><div class="livePlatformCard livePlatformTwitch"><div class="liveMiniFolders"></div></div><div class="livePlatformCard livePlatformYoutube"><div class="liveMiniFolders"></div></div></div></div></body></html>'''
+live=vmod.patch_text(live_sample)
+for marker in (
+ 'id="v321LiveMobileBalance"',
+ 'grid-template-rows:30px auto auto!important',
+ 'height:266px!important',
+ 'grid-template-rows:repeat(3,65px)!important',
+ 'height:228px!important',
+ 'grid-template-rows:repeat(3,54px)!important',
+):
+ if marker not in live: fail('V321 Live balance marker missing: '+marker)
+if vmod.patch_text(live)!=live: fail('V321 Live balance patch is not idempotent')
+for marker in ('fix_v321_live_mobile_balance.py','_apply_v321(hub)'):
+ if marker not in v316_source: fail('V321 final runtime delegation missing: '+marker)
+if v316_source.index('_apply_v321(hub)') < v316_source.index('_apply_v320(hub)'):
+ fail('V321 must run after V320')
+if HUB.is_file():
+ hub=HUB.read_text(encoding='utf-8')
+ for marker in ('id="v321LiveMobileBalance"','livePlatformTwitch','livePlatformYoutube'):
+  if marker not in hub: fail('runtime Hub missing V321 marker: '+marker)
+ok('runtime Live uses balanced V321 provider/card geometry')
+
 if START.is_file():
  start=START.read_text(encoding='utf-8')
  v316_patch='python /app/web/fix_v316_creator_hub_dashboard_ad.py /app/web/creator_hub_v156_component/index.html'
@@ -75,8 +103,8 @@ if START.is_file():
  test_marker='python /app/web/test_v320_ai_mobile_stability.py /app'
  if v316_patch not in start: fail('V316 final runtime pass registration missing')
  if test_marker not in start: fail('V320 startup test registration missing')
- if start.index(test_marker)<start.index(v316_patch): fail('V320 test must run after delegated patch')
- if v319_test in start and start.index(test_marker)<start.index(v319_test): fail('V320 final test must run after V319 result bridge test')
- ok('V320 startup order')
+ if start.index(test_marker)<start.index(v316_patch): fail('V320/V321 test must run after delegated patch')
+ if v319_test in start and start.index(test_marker)<start.index(v319_test): fail('V320/V321 final test must run after V319 result bridge test')
+ ok('V320/V321 startup order')
 
-print('\nV320 MOBILE AI STABILITY CONTRACT: PASS')
+print('\nV320 AI STABILITY + V321 LIVE MOBILE BALANCE CONTRACT: PASS')
