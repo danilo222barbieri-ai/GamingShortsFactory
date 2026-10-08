@@ -64,7 +64,9 @@ def patch_text(text: str) -> str:
         if marker not in text:
             raise RuntimeError(f'V313 missing Creator Hub anchor: {marker}')
 
-    pattern = re.compile(r'<style id="' + re.escape(STYLE_ID) + r'">.*?</style>', re.DOTALL)
+    # Consume the newline we own along with the previous V313 block. Without
+    # this, every restart leaves one extra blank line and breaks idempotence.
+    pattern = re.compile(r'<style id="' + re.escape(STYLE_ID) + r'">.*?</style>\n?', re.DOTALL)
     cleaned = pattern.sub('', text)
     if '</head>' not in cleaned:
         raise RuntimeError('V313 Creator Hub </head> anchor missing')
