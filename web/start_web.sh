@@ -136,6 +136,11 @@ python /app/web/test_v313_mobile_profile_fit.py /app
 # Twitch + YouTube stretch to the Game Bar instead of leaving dead white space.
 python /app/web/fix_v314_hub_context_fill.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v314_hub_context_fill.py /app
+
+# V316: compact mobile ad slot below Live on the Creator Hub dashboard.
+# It consumes the unused dashboard gap without introducing page scrolling.
+python /app/web/fix_v316_creator_hub_dashboard_ad.py /app/web/creator_hub_v156_component/index.html
+python /app/web/test_v316_creator_hub_dashboard_ad.py /app
 touch "$GSF_V311_READY"
 
 # V293 render-memory guard: generate the production app only after all runtime
