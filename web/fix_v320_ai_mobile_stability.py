@@ -93,13 +93,65 @@ JS=r'''
  setInterval(v320RestoreSelected,350);
 '''
 
+
+def _selected_bounds(text:str):
+    start=text.find('function openSelectedShort(')
+    end=text.find('function closeSelectedShort(',start)
+    if start<0 or end<0 or end<=start:
+        raise RuntimeError('V320 selected Short function bounds missing')
+    return start,end
+
+
+def _selected_open(text:str)->str:
+    start,end=_selected_bounds(text)
+    return text[start:end]
+
+
+def _replace_selected(text:str,old:str,new:str,required:bool=True)->str:
+    start,end=_selected_bounds(text)
+    segment=text[start:end]
+    if old not in segment:
+        if required:
+            raise RuntimeError('V320 selected Short anchor missing: '+old[:80])
+        return text
+    segment=segment.replace(old,new,1)
+    return text[:start]+segment+text[end:]
+
+
+def _close_bounds(text:str):
+    start=text.find('function closeSelectedShort(')
+    if start<0:
+        raise RuntimeError('V320 selected Short close function missing')
+    end=text.find('function ',start+len('function closeSelectedShort('))
+    if end<0:
+        end=text.find('create.addEventListener',start)
+    if end<0:
+        end=len(text)
+    return start,end
+
+
 def _clean(text:str)->str:
     text=re.sub(r'<style id="'+re.escape(STYLE_ID)+r'">.*?</style>\n?','',text,count=1,flags=re.DOTALL)
     text=re.sub(r'\n?\s*/\* V320 MOBILE AI STABILITY \*/.*?setInterval\(v320RestoreSelected,350\);\n?','',text,count=1,flags=re.DOTALL)
+    # A previous V320 pass leaves its click binding after the removable JS block.
+    # Normalize it back to V319 before rebuilding V320 so restart repair is safe.
+    text=text.replace('create.addEventListener("click",v320StartAnalysis);','create.addEventListener("click",v319StartAnalysis);',1)
     return text
 
+
 def patch_text(text:str)->str:
-    if STYLE_ID in text and 'V320 MOBILE AI STABILITY' in text and 'create.addEventListener("click",v320StartAnalysis);' in text and 'function v320AssertAiRoute()' in text and '#ai221>.panel:has(.moments){' in text:
+    selected=_selected_open(text)
+    complete=(
+        STYLE_ID in text
+        and 'V320 MOBILE AI STABILITY' in text
+        and 'create.addEventListener("click",v320StartAnalysis);' in text
+        and 'function v320AssertAiRoute()' in text
+        and '#ai221>.panel:has(.moments){' in text
+        and 'video.play()' not in selected
+        and 'webkit-playsinline' in selected
+        and 'v320RememberSelected(i);' in selected
+    )
+    if complete:
         return text
     if 'v317AiCompactSelectedShort' not in text:
         raise RuntimeError('V320 requires V317 compact AI flow')
@@ -113,26 +165,45 @@ def patch_text(text:str)->str:
     out=out.replace('create.disabled=!!on||!state.loaded;','create.disabled=!!on;')
     out=out.replace('create.disabled=!state.loaded;','create.disabled=false;')
 
+    selected=_selected_open(out)
     open_anchor='page.classList.add("open");page.setAttribute("aria-hidden","false");'
-    if open_anchor not in out:
-        raise RuntimeError('V320 selected short open anchor missing')
-    out=out.replace(open_anchor,open_anchor+'v320RememberSelected(i);video.setAttribute("playsinline","");video.setAttribute("webkit-playsinline","");',1)
+    if 'v320RememberSelected(i);' not in selected:
+        out=_replace_selected(
+            out,
+            open_anchor,
+            open_anchor+'v320RememberSelected(i);video.setAttribute("playsinline","");video.setAttribute("webkit-playsinline","");'
+        )
+    else:
+        selected=_selected_open(out)
+        if 'webkit-playsinline' not in selected:
+            out=_replace_selected(out,'v320RememberSelected(i);','v320RememberSelected(i);video.setAttribute("playsinline","");video.setAttribute("webkit-playsinline","");')
 
+    # Critical: repair autoplay ONLY inside active openSelectedShort(). The retired
+    # V308 openMomentPreview() contains the same token earlier in the file.
     autoplay='const play=video.play();if(play&&play.catch)play.catch(()=>{})'
-    if autoplay not in out:
-        raise RuntimeError('V320 selected short autoplay anchor missing')
-    out=out.replace(autoplay,'try{video.currentTime=0}catch(_e){}',1)
+    selected=_selected_open(out)
+    if autoplay in selected:
+        out=_replace_selected(out,autoplay,'try{video.currentTime=0}catch(_e){}')
+    elif 'video.play()' in selected:
+        raise RuntimeError('V320 active selected Short has unexpected autoplay form')
+    elif 'try{video.currentTime=0}catch(_e){}' not in selected:
+        raise RuntimeError('V320 selected Short autoplay replacement missing')
 
+    close_start,close_end=_close_bounds(out)
+    close_segment=out[close_start:close_end]
     close_anchor='if(page){page.classList.remove("open");page.setAttribute("aria-hidden","true")}}'
-    if close_anchor not in out:
-        raise RuntimeError('V320 selected short close anchor missing')
-    out=out.replace(close_anchor,'if(page){page.classList.remove("open");page.setAttribute("aria-hidden","true")}v320ForgetSelected()}',1)
+    if 'v320ForgetSelected()' not in close_segment:
+        if close_anchor not in close_segment:
+            raise RuntimeError('V320 selected short close anchor missing')
+        close_segment=close_segment.replace(close_anchor,'if(page){page.classList.remove("open");page.setAttribute("aria-hidden","true")}v320ForgetSelected()}',1)
+        out=out[:close_start]+close_segment+out[close_end:]
 
     handler='create.addEventListener("click",v319StartAnalysis);'
     if handler not in out:
         raise RuntimeError('V320 V319 create handler anchor missing')
     out=out.replace(handler,JS+'\n create.addEventListener("click",v320StartAnalysis);',1)
     return out
+
 
 def main()->None:
     path=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app/web/ai_v221_component/index.html')
