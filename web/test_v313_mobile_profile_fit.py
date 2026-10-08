@@ -19,6 +19,15 @@ def ok(msg: str) -> None:
     print('[ OK ]', msg)
 
 
+def css_rule_has(style: str, selector: str, *declarations: str) -> bool:
+    """Check declarations inside a selector block without depending on property order."""
+    match = re.search(re.escape(selector) + r'\{([^}]*)\}', style, flags=re.DOTALL)
+    if not match:
+        return False
+    body = re.sub(r'\s+', '', match.group(1))
+    return all(re.sub(r'\s+', '', declaration) in body for declaration in declarations)
+
+
 if not PATCH.is_file():
     fail('V313 mobile profile fit patch missing')
 
@@ -45,19 +54,26 @@ if patched.count('id="v313MobileProfileFit"') != 1:
     fail('V313 style was not installed exactly once')
 ok('V313 style is installed exactly once')
 
-required_css = (
-    '@media(max-width:767px)',
-    '#hub .profileReferenceEdit{min-height:0!important;height:136px!important',
-    '#hub .profilePlanRef{min-height:0!important;height:124px!important',
-    '#hub .profileReferenceBrand{min-height:34px!important',
-    '#hub .profileRefAvatar{width:68px!important;height:68px!important',
-    '#hub .profileRefInputWrap{height:34px!important',
-    '#hub .profileRefSave{height:30px!important',
-    '#hub .profilePlanCta{height:28px!important',
+style_match = re.search(r'<style id="v313MobileProfileFit">(.*?)</style>', patched, flags=re.DOTALL)
+if not style_match:
+    fail('V313 style block missing')
+style = style_match.group(1)
+
+if '@media(max-width:767px)' not in style:
+    fail('mobile breakpoint missing')
+
+rule_checks = (
+    ('#hub .profileReferenceEdit', ('min-height:0!important', 'height:136px!important')),
+    ('#hub .profilePlanRef', ('min-height:0!important', 'height:124px!important')),
+    ('#hub .profileReferenceBrand', ('min-height:34px!important', 'height:34px!important')),
+    ('#hub .profileRefAvatar', ('width:68px!important', 'height:68px!important')),
+    ('#hub .profileRefInputWrap', ('height:34px!important',)),
+    ('#hub .profileRefSave', ('height:30px!important',)),
+    ('#hub .profilePlanCta', ('height:28px!important',)),
 )
-for marker in required_css:
-    if marker not in patched:
-        fail('missing compact mobile rule: ' + marker)
+for selector, declarations in rule_checks:
+    if not css_rule_has(style, selector, *declarations):
+        fail('missing compact mobile rule: ' + selector + ' -> ' + ', '.join(declarations))
 ok('Profile and subscription boxes are compact on mobile')
 
 for platform in platforms:
@@ -67,13 +83,9 @@ for platform in platforms:
         fail(f'social connection {platform} was removed or duplicated')
 ok('all five social connection rows are preserved')
 
-style_match = re.search(r'<style id="v313MobileProfileFit">(.*?)</style>', patched, flags=re.DOTALL)
-if not style_match:
-    fail('V313 style block missing')
-style = style_match.group(1)
 if re.search(r'profileSocial(?:Ref|Rows|RefRow)[^{]*\{[^}]*display\s*:\s*none', style, flags=re.I|re.S):
     fail('V313 hides social connection content')
-ok('V313 does not hide or shrink social rows')
+ok('V313 does not hide social rows')
 
 if mod.patch_text(patched) != patched:
     fail('V313 patch is not idempotent')
