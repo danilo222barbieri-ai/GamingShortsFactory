@@ -91,6 +91,10 @@ python /app/web/test_v324_editor_action_placement.py /app
 python /app/web/fix_v325_mobile_editor_viewport_fit.py /app/web/editor_2027_component/index.html
 python /app/web/test_v325_mobile_editor_viewport_fit.py /app
 
+# V326: parent-viewport mobile editor, Home-first boot and lazy hidden surfaces.
+python /app/web/fix_v326_mobile_editor_home_speed.py /app
+python /app/web/test_v326_mobile_editor_home_speed.py /app
+
 # Generate production app only after every final runtime surface has validated.
 python /app/web/apply_v293_render_memory_guard.py
 
