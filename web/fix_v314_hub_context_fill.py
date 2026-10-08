@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import importlib.util
 import re
 import sys
 
@@ -108,6 +109,22 @@ def patch_text(text: str) -> str:
     return out
 
 
+def _apply_v315_mobile_home_lower_flow() -> bool:
+    patch_path = Path(__file__).resolve().with_name('fix_v315_mobile_home_lower_flow.py')
+    if not patch_path.is_file():
+        raise RuntimeError('V315 mobile Home lower-flow patch missing')
+    spec = importlib.util.spec_from_file_location('v315_mobile_home_lower_flow', patch_path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    home = Path('/app/web/home_v154_component/index.html')
+    if not home.is_file():
+        raise RuntimeError(f'V315 Home missing: {home}')
+    before = home.read_text(encoding='utf-8')
+    after = mod.patch_text(before)
+    home.write_text(after, encoding='utf-8')
+    return before != after
+
+
 def main() -> None:
     hub = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path('/app/web/creator_hub_v156_component/index.html')
     if not hub.is_file():
@@ -115,7 +132,8 @@ def main() -> None:
     before = hub.read_text(encoding='utf-8')
     after = patch_text(before)
     hub.write_text(after, encoding='utf-8')
-    print('V314 Hub context + Live full-height applied changed=', before != after, flush=True)
+    home_changed = _apply_v315_mobile_home_lower_flow()
+    print('V314 Hub context + Live full-height applied changed=', before != after, 'V315 mobile Home changed=', home_changed, flush=True)
 
 
 if __name__ == '__main__':
