@@ -43,6 +43,8 @@ checks={
  'mobile nav reserve':'padding-bottom:96px!important',
  'results panel fills viewport':'flex:1 1 0!important',
  'state retry':'function v320RequestState()',
+ 'AI route repair':'function v320AssertAiRoute()',
+ 'AI route target':'target:"ai"',
  'click recovery':'async function v320StartAnalysis()',
  'recovered click handler':'create.addEventListener("click",v320StartAnalysis);',
  'cta stays actionable':'create.disabled=false;',
