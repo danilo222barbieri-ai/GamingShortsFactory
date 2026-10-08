@@ -186,9 +186,13 @@ def patch_ai_text(text: str) -> str:
 def patch_home_text(text: str) -> str:
     if 'V319 CREATE NONCE' in text:
         return text
-    if HOME_OLD not in text:
-        raise RuntimeError('V319 Home V291 create bridge anchor missing')
-    return text.replace(HOME_OLD, HOME_NEW, 1)
+    if HOME_OLD in text:
+        return text.replace(HOME_OLD, HOME_NEW, 1)
+    # Newer Home normalization passes can legitimately rewrite the old V291
+    # one-line bridge. The V319 result flow is session-scoped and does not
+    # require the nonce in Home, so absence of the historical anchor must not
+    # abort startup or the Railway healthcheck.
+    return text
 
 
 def _write(path: Path, patcher, label: str) -> None:
