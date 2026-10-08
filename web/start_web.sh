@@ -138,11 +138,13 @@ python /app/web/test_v313_mobile_profile_fit.py /app
 python /app/web/fix_v314_hub_context_fill.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v314_hub_context_fill.py /app
 
-# V316-V319: dashboard ad, compact selected-short flow, Hub/Live fit, and a
-# reliable AI create/result bridge. V317-V319 are delegated by the V316 pass.
+# V316-V320: dashboard ad, compact selected-short flow, Hub/Live fit, reliable
+# AI results, and final mobile AI state/page stability. V317-V320 are delegated
+# by the V316 final runtime pass.
 python /app/web/fix_v316_creator_hub_dashboard_ad.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v316_creator_hub_dashboard_ad.py /app
 python /app/web/test_v319_ai_results_bridge.py /app
+python /app/web/test_v320_ai_mobile_stability.py /app
 
 # V293 render-memory guard: generate the production app only after all runtime
 # V154 patches above have been applied, and narrow direct-upload materialization
