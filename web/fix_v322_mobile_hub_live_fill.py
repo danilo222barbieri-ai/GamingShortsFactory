@@ -233,9 +233,9 @@ def patch_text(text:str)->str:
     ):
         if marker not in text:
             raise RuntimeError('V322 missing runtime Hub/Live anchor: '+marker)
-    style_marker=f'id="{STYLE_ID}"'
-    if text.count(style_marker)==1 and STYLE in text:
-        return text
+    # Always remove/reinsert the final style. V316 rewrites its own CSS on every
+    # process start, so this guarantees V322 remains the last mobile authority
+    # after Railway restarts as well as on the first boot.
     out=re.sub(r'<style id="'+re.escape(STYLE_ID)+r'">.*?</style>\n?','',text,count=1,flags=re.DOTALL)
     if '</head>' not in out:
         raise RuntimeError('V322 Hub </head> anchor missing')
