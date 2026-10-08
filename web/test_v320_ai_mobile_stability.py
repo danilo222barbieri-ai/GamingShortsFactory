@@ -18,6 +18,9 @@ if not V316.is_file(): fail('V316 final runtime pass missing')
 spec=importlib.util.spec_from_file_location('v320_ai_mobile_stability',PATCH)
 mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
 
+# Regression shape: the retired V308 helper appears BEFORE the active V317
+# selected-Short page and contains the same autoplay token. V320 must edit the
+# active openSelectedShort() only, never the first global string occurrence.
 sample='''<html><head>
 <style id="v317AiCompactSelectedShort"></style>
 <style id="v319AiResultsBridgeStyle"></style>
@@ -31,6 +34,7 @@ function v319Fail(){}
 function v319StartAnalysis(){
    if(!state.loaded)return;
 }
+function openMomentPreview(){const video=document.createElement("video");const play=video.play();if(play&&play.catch)play.catch(()=>{})}
 function openSelectedShort(index){const i=index,page=document.getElementById("selectedShortPage"),video=document.createElement("video");page.classList.add("open");page.setAttribute("aria-hidden","false");const play=video.play();if(play&&play.catch)play.catch(()=>{})}
 function closeSelectedShort(){const page=document.getElementById("selectedShortPage"),video=null;if(video)try{video.pause()}catch(_e){};if(page){page.classList.remove("open");page.setAttribute("aria-hidden","true")}}
 function sync(){create.disabled=!state.loaded;}
@@ -60,17 +64,24 @@ for name,marker in checks.items():
  if marker not in patched: fail(name+' missing')
  ok(name)
 if '#ai221>.panel:nth-of-type(2)' in patched: fail('V320 must not rely on div nth-of-type for the results panel')
-if 'const play=video.play()' in patched: fail('selected short still autoplays and can trigger iOS fullscreen churn')
+open_start=patched.find('function openSelectedShort(')
+open_end=patched.find('function closeSelectedShort(',open_start)
+if open_start<0 or open_end<0: fail('selected Short function bounds missing')
+selected_open=patched[open_start:open_end]
+if 'video.play()' in selected_open: fail('selected short still autoplays when legacy V308 autoplay precedes it')
+legacy_start=patched.find('function openMomentPreview(')
+legacy_end=patched.find('function openSelectedShort(',legacy_start)
+if legacy_start<0 or legacy_end<0: fail('legacy preview function bounds missing')
+if 'video.play()' not in patched[legacy_start:legacy_end]: fail('V320 must not mutate retired V308 autoplay while repairing selected Short')
 if 'data-ad-slot' in patched: fail('V320 must not add an ad to the AI page')
 if mod.patch_text(patched)!=patched: fail('V320 patch is not idempotent')
-ok('V320 patch is idempotent')
+ok('V320 patch is idempotent and targets active selected Short')
 
 v316_source=V316.read_text(encoding='utf-8')
 for marker in ('fix_v320_ai_mobile_stability.py','_apply_v320(hub)','ai_v221_component'):
  if marker not in v316_source: fail('V320 final runtime delegation missing: '+marker)
 ok('V320 is delegated from V316 final runtime pass')
 
-# V321 final mobile Live balance, delegated after V320/V318.
 if not V321.is_file(): fail('V321 mobile Live balance patch missing')
 vspec=importlib.util.spec_from_file_location('v321_live_mobile_balance',V321)
 vmod=importlib.util.module_from_spec(vspec);vspec.loader.exec_module(vmod)
