@@ -5,7 +5,7 @@ import re
 import sys
 
 ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parents[1]
-PATCH = ROOT / 'web' / 'fix_v311_mobile_hub_clean_pass.py'
+PATCH = ROOT / 'web' / 'fix_v312_global_navigation.py'
 START = ROOT / 'web' / 'start_web.sh'
 
 
@@ -19,15 +19,15 @@ def ok(msg: str) -> None:
 
 
 if not PATCH.is_file():
-    fail('V311 canonical patch missing')
+    fail('V312 canonical navigation patch missing')
 
-spec = importlib.util.spec_from_file_location('v311_nav_contract', PATCH)
+spec = importlib.util.spec_from_file_location('v312_nav_contract', PATCH)
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
 # Reproduce the real regression: historical patches can leave canonical labels
-# attached to stale targets/sections. The final V311 pass must ignore inherited
-# route state and normalize every visible destination explicitly.
+# attached to stale targets/sections. V312 must ignore inherited route state and
+# normalize every visible destination explicitly.
 shell_sample = '''
 <style>.mobile-gamebar-inner{grid-template-columns:repeat(4,minmax(0,1fr))}</style>
 <div class="mobile-gamebar">
@@ -82,13 +82,37 @@ if mod.patch_shell_text(patched) != patched:
     fail('canonical navigation normalization is not idempotent')
 ok('navigation normalization is idempotent')
 
+home_sample = '''
+<script>
+if(nav==="home")shellNav("editor");
+if(nav==="hub")shellNav("editor",{section:"editor"});
+if(nav==="projects"){shellNav("editor",{section:"drafts"});}
+if(nav==="live")shellNav("hub",{section:"social"});
+</script>
+'''
+home_patched = mod.patch_home_text(home_sample)
+for marker in (
+    'if(nav==="home")shellNav("home");',
+    'if(nav==="hub")shellNav("hub",{section:"dashboard"});',
+    'if(nav==="projects")shellNav("hub",{section:"projects"});',
+    'if(nav==="live")shellNav("hub",{section:"live"});',
+):
+    if marker not in home_patched:
+        fail('Home canonical route missing: ' + marker)
+ok('Home routes are canonical')
+
 if START.is_file():
     start = START.read_text(encoding='utf-8')
-    marker = 'python /app/web/test_v312_navigation_contract.py /app'
-    if marker not in start:
-        fail('V312 navigation contract is not registered at startup')
-    if start.index(marker) < start.index('python /app/web/fix_v311_mobile_hub_clean_pass.py'):
-        fail('V312 navigation contract must run after final V311 normalization')
-    ok('startup validates navigation after V311')
+    patch_marker = 'python /app/web/fix_v312_global_navigation.py /app'
+    test_marker = 'python /app/web/test_v312_navigation_contract.py /app'
+    if patch_marker not in start or test_marker not in start:
+        fail('V312 navigation patch/test is not registered at startup')
+    if start.index(patch_marker) < start.index('python /app/web/fix_v311_mobile_hub_clean_pass.py'):
+        fail('V312 navigation patch must run after final V311 normalization')
+    if start.index(test_marker) < start.index(patch_marker):
+        fail('V312 contract must run after V312 navigation patch')
+    if start.index(test_marker) > start.index('python /app/web/apply_v293_render_memory_guard.py'):
+        fail('V312 contract must run before production app generation')
+    ok('startup applies and validates V312 after V311')
 
 print('\nV312 GLOBAL NAVIGATION CONTRACT: PASS')
