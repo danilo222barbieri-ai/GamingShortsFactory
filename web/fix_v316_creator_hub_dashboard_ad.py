@@ -81,6 +81,16 @@ def _apply_v319(hub: Path) -> None:
     mod.HOME=mod.ROOT/'web'/'home_v154_component'/'index.html'
     mod.main()
 
+def _apply_v320(hub: Path) -> None:
+    web_root=hub.parents[1]
+    patch=web_root/'fix_v320_ai_mobile_stability.py'
+    ai=web_root/'ai_v221_component'/'index.html'
+    if not patch.is_file():raise RuntimeError('V320 AI stability patch missing: '+str(patch))
+    if not ai.is_file():raise RuntimeError('V320 AI target missing: '+str(ai))
+    mod=_load_patch(patch,'v320_ai_mobile_stability')
+    before=ai.read_text(encoding='utf-8');after=mod.patch_text(before);ai.write_text(after,encoding='utf-8')
+    print('V320 mobile AI stability applied from V316 changed=',before!=after,flush=True)
+
 def main() -> None:
     hub=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app/web/creator_hub_v156_component/index.html')
     if not hub.is_file():raise SystemExit(f'V316 Hub missing: {hub}')
@@ -89,5 +99,6 @@ def main() -> None:
     _apply_v317(hub)
     _apply_v318(hub)
     _apply_v319(hub)
+    _apply_v320(hub)
 
 if __name__=='__main__':main()
