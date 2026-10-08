@@ -8,35 +8,20 @@ APP = Path('/app/GamingShortsFactory_V154_STRUCTURAL_HOME.py')
 LIVE_SVG = '<svg viewBox="0 0 32 32"><g transform="rotate(-8 16 16)"><circle cx="16" cy="14" r="3"/><path d="M16 17v10M11 27h10"/><path d="M9.5 8.5a8 8 0 0 0 0 11M22.5 8.5a8 8 0 0 1 0 11"/><path d="M6 5a13 13 0 0 0 0 18M26 5a13 13 0 0 1 0 18"/></g></svg>'
 
 
-def _set_attr(tag: str, name: str, value: str) -> str:
-    attr = f'{name}="{value}"'
-    if re.search(r'\b'+re.escape(name)+r'="[^"]*"', tag):
-        return re.sub(r'\b'+re.escape(name)+r'="[^"]*"', attr, tag, count=1)
-    return tag[:-1] + ' ' + attr + '>'
-
-
-def _drop_attr(tag: str, name: str) -> str:
-    return re.sub(r'\s+'+re.escape(name)+r'="[^"]*"', '', tag)
-
-
 def _normalise_button(button: str, *, target: str, section: str = '', active: str = '', label: str = '') -> str:
     open_end = button.find('>')
     if open_end < 0:
         return button
-    tag = button[:open_end+1]
     body = button[open_end+1:]
-    tag = _set_attr(tag, 'data-target', target)
+    attrs = ['class="gsf-page-nav-item"', f'data-target="{target}"']
     if section:
-        tag = _set_attr(tag, 'data-section', section)
-    else:
-        tag = _drop_attr(tag, 'data-section')
+        attrs.append(f'data-section="{section}"')
     if active:
-        tag = _set_attr(tag, 'data-active', active)
-    else:
-        tag = _drop_attr(tag, 'data-active')
+        attrs.append(f'data-active="{active}"')
+    attrs.append('type="button"')
     if label:
         body = re.sub(r'<span>[^<]*</span>', f'<span>{label}</span>', body, count=1)
-    return tag + body
+    return '<button ' + ' '.join(attrs) + '>' + body
 
 
 def _four_column_gamebar(text: str, selector: str) -> str:
@@ -60,11 +45,7 @@ def patch_home() -> None:
     def home_button(match: re.Match) -> str:
         button = match.group(0)
         nav = match.group('nav')
-        if nav == 'home':
-            return button
-        if nav == 'hub':
-            return button
-        if nav == 'projects':
+        if nav in ('home', 'hub', 'projects'):
             return button
         if nav in ('social', 'live'):
             button = re.sub(r'data-nav="(?:social|live)"', 'data-nav="live"', button, count=1)
@@ -151,7 +132,6 @@ def patch_app() -> None:
     if old_active in text:
         text = text.replace(old_active, new_active, 1)
     else:
-        # Accept an already-partially-normalized shell and force the hub fallback below.
         text = re.sub(
             r"\s*if\(activeKey==='drafts'\).*?else active=\(lastTarget===target\);",
             '\n'+new_active,
