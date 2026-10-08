@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import subprocess
 import sys
 
 MARK='V327_EDITOR_OPEN_BRIDGE'
@@ -48,5 +49,10 @@ def main():
     compile(after,str(shell),'exec')
     shell.write_text(after,encoding='utf-8')
     print('V327 editor open bridge applied changed=',before!=after,flush=True)
+    # V328 is intentionally chained here so production startup creates one
+    # final deploy gate instead of another independent migration slot.
+    v328=root/'web/fix_v328_global_balance.py'
+    if not v328.is_file(): raise SystemExit('V328 patch missing')
+    subprocess.run([sys.executable,str(v328),str(root)],check=True)
 
 if __name__=='__main__': main()
