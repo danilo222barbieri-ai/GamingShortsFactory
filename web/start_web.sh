@@ -32,127 +32,67 @@ elif grep -q 'V311 APPROVED CREATOR REFERENCE' "$GSF_HUB_HTML" 2>/dev/null; then
 fi
 
 if [ "$GSF_HISTORY_READY" -eq 0 ]; then
-  # V285: repair Creator Hub collection selectors before Nginx/Streamlit serve the page.
   python /app/web/fix_v285_creator_hub_clicks.py
   python /app/web/test_v285_creator_hub_clicks.py /app/web/creator_hub_v156_component/index.html
-
-  # V286: keep the Game Bar global and guarantee Creator Hub receives Hub/Shorts/Drafts routes.
   python /app/web/fix_v286_global_gamebar.py
   python /app/web/test_v286_global_gamebar.py /app/web/creator_hub_v156_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
-
-  # V287: turn Profile into a real account overview with live counts and direct links.
   python /app/web/fix_v287_profile_overview.py
   python /app/web/test_v287_profile_overview.py /app/web/creator_hub_v156_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
-
-  # V288: guided AI journey and explicit Game Editor -> Create Short handoff.
   python /app/web/fix_v288_ai_journey.py
   python /app/web/test_v288_ai_journey.py /app/web/ai_v221_component/index.html /app/web/home_v154_component/index.html /app/web/editor_2027_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
-
-  # V289: final playerless GSF publish/download page.
   python /app/web/fix_v289_share_final.py
   python /app/web/test_v289_share_final.py /app/web/share_v156_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
-
-  # V291: direct AI command bridge. The four visible engines now arm the real
-  # backend deterministically instead of racing a hidden Streamlit button.
   python /app/web/fix_v291_ai_engine_bridge.py
   python /app/web/test_v291_ai_engine_bridge.py /app/web/home_v154_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
-
-  # V293: keep the final Share state endpoint alive by defining Creator Hub
-  # provider state before Facebook/Twitch connection flags are read.
   python /app/web/fix_v293_share_state_resilience.py /app/web/direct_upload_server.py
   python /app/web/test_v293_share_state_resilience.py /app/web/direct_upload_server.py
-
-  # V295: keep its mobile/internal interaction patch only. The old V295 regression
-  # test required a paired desktop branch, which V307 intentionally removes, so it
-  # must not abort startup before the V307 final visual contract can run.
   python /app/web/fix_v295_internal_pages_responsive.py
-
-  # V300: keep the real Creator Hub structure/profile/project/social behavior and
-  # its mobile presentation. The legacy desktop portion is removed by V307.
   python /app/web/fix_v300_creator_hub_clean.py
   python /app/web/test_v300_creator_hub_clean.py /app
-
-  # V302: replace the global Social Game Bar slot with Live on desktop + mobile.
   python /app/web/fix_v302_global_live_gamebar.py
   python /app/web/test_v302_global_live_gamebar.py /app
-
-  # V306: restore the approved shared/mobile Home palette only. Its old regression
-  # test expected V294 desktop geometry to remain available, which conflicts with
-  # the V307 desktop purge. V307 is now the single final visual regression gate.
   python /app/web/fix_v306_home_visual_lock.py
-
-  # V303: compact only the mobile Creator Hub. V307 promotes this mobile geometry
-  # to the desktop visual source as well.
   python /app/web/fix_v303_mobile_hub_compact.py
   python /app/web/test_v303_mobile_hub_compact.py
-
-  # V304: keep the current Bozze layout, but make current project and saved drafts
-  # openable. Detail actions are real: rename, delete, resume/open, plus save the
-  # current project as a draft. Same interaction works on mobile and desktop.
   python /app/web/fix_v304_project_draft_api.py
   python /app/web/fix_v304_project_draft_details.py
   python /app/web/test_v304_project_draft_details.py /app
-
-  # V307: definitive visual reset. No historical desktop rebuild/rebalance is
-  # invoked anymore. Remove any desktop CSS/runtime residue baked into older
-  # versions and make the existing mobile rules the single visual source.
   python /app/web/fix_v307_mobile_visual_source.py /app
   python /app/web/test_v307_mobile_visual_source.py /app
-
-  # V308: mobile-only AI page cleanup. Hide the journey line-up on phones, keep
-  # scrolling inside the AI page, enlarge the three moment cards, and open each
-  # selected clip in a full-screen preview that can return to Editor/Create Short.
   python /app/web/fix_v308_mobile_ai_flow.py /app/web/ai_v221_component/index.html
   python /app/web/test_v308_mobile_ai_flow.py /app
-
-  # V310: clean the mobile Creator Hub profile, remove the current-project block
-  # from Bozze, and remove the placeholder bubble at the bottom of Live.
   python /app/web/fix_v310_creator_hub_mobile_cleanup.py /app/web/creator_hub_v156_component/index.html
   python /app/web/test_v310_creator_hub_mobile_cleanup.py /app
 else
   echo "V311 restart-safe: historical runtime migrations already applied"
 fi
 
-# V311: authoritative Creator Hub normalization. This pass and its contract are
-# idempotent and are intentionally rerun even after a process restart.
 python /app/web/fix_v311_mobile_hub_clean_pass.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v311_mobile_hub_clean_pass.py /app
-
-# Mark the container modern immediately after V311 validates. If any later final
-# pass fails, a Railway process restart must never replay obsolete V285-V310.
 touch "$GSF_V311_READY"
 
-# V312: final navigation source of truth. Reassert all four Game Bar destinations
-# after every historical/visual migration so no button can inherit Editor or a
-# previous Hub section from an older patch.
 python /app/web/fix_v312_global_navigation.py /app
 python /app/web/test_v312_navigation_contract.py /app
-
-# V313: mobile Profile viewport fit. Compact only Profile + Subscription while
-# preserving every social provider, link and hit area.
 python /app/web/fix_v313_mobile_profile_fit.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v313_mobile_profile_fit.py /app
-
-# V314 + V315: contextual guides/full-height Live plus the final mobile Home
-# lower-flow calibration (V315 is delegated by the V314 final runtime pass).
 python /app/web/fix_v314_hub_context_fill.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v314_hub_context_fill.py /app
 
-# V316-V322: dashboard ad, compact selected-short flow, Hub/Live fit, reliable
-# AI results/state stability, and final full-height mobile Hub/Live balance.
-# V317-V322 are delegated by the V316 final runtime pass.
+# V316-V322 aggregate: AI, Creator Hub and Live final passes.
 python /app/web/fix_v316_creator_hub_dashboard_ad.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v316_creator_hub_dashboard_ad.py /app
 python /app/web/test_v319_ai_results_bridge.py /app
 python /app/web/test_v320_ai_mobile_stability.py /app
 python /app/web/test_v322_mobile_hub_live_fill.py /app
 
-# V293 render-memory guard: generate the production app only after all runtime
-# V154 patches above have been applied, and narrow direct-upload materialization
-# before the upload server starts.
+# V323: final mobile Game Editor. Real tools stay inside the player/fullscreen;
+# timeline stays on the frame and Create Short / Save Draft are real actions below it.
+python /app/web/fix_v323_mobile_editor_player_actions.py /app
+python /app/web/test_v323_mobile_editor_player_actions.py /app
+
+# Generate production app only after every final runtime surface has validated.
 python /app/web/apply_v293_render_memory_guard.py
 
-# V105.7: publish ads.txt only when a real Google publisher id is configured.
 python - <<'PY'
 import os,re
 from pathlib import Path
@@ -161,10 +101,7 @@ path.unlink(missing_ok=True)
 client=str(os.environ.get("GSF_ADSENSE_CLIENT","") or "").strip()
 m=re.fullmatch(r"ca-(pub-\d{10,20})",client)
 if m:
-    path.write_text(
-        f"google.com, {m.group(1)}, DIRECT, f08c47fec0942fa0\n",
-        encoding="utf-8",
-    )
+    path.write_text(f"google.com, {m.group(1)}, DIRECT, f08c47fec0942fa0\n",encoding="utf-8")
 PY
 
 rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
