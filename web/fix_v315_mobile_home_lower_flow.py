@@ -9,16 +9,18 @@ STYLE=r'''<style id="v315MobileHomeLowerFlow">
 @media(max-width:760px){
   #home154{--gsf-home-lower-shift:clamp(14px,2.5vh,22px)!important}
 
-  /* Lower only the upload core + central handwritten line. Upper side murals stay where they are. */
+  /* Lower only the upload core. Upper side murals stay where they are. */
   #home154 .rings{
     top:var(--gsf-home-lower-shift)!important;
   }
+
+  /* Keep the central mural visually centered between uploader and action cards. */
   #home154 .muralAmbient,
   #home154[data-mural-state="uploading"] .muralAmbient,
   #home154[data-mural-state="ready"] .muralAmbient,
   #home154[data-mural-state^="focus-"] .muralAmbient{
     top:auto!important;
-    bottom:calc(1px - var(--gsf-home-lower-shift))!important;
+    bottom:calc(30px - var(--gsf-home-lower-shift))!important;
   }
 
   /* Follow the uploader downward with the three action cards and Game Bar. */

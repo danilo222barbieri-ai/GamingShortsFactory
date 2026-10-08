@@ -81,7 +81,7 @@ v315_mod = importlib.util.module_from_spec(v315_spec)
 v315_spec.loader.exec_module(v315_mod)
 home_sample = '''<html><head></head><body><div id="home154"><div class="stage"><div class="muralAmbient muralGuide">x</div><div class="rings"></div></div><div class="features"></div><nav class="bottomNav"></nav><footer class="siteFooter"></footer></div></body></html>'''
 home_patched = v315_mod.patch_text(home_sample)
-for marker in ('--gsf-home-lower-shift:clamp(14px,2.5vh,22px)!important', 'bottom:calc(1px - var(--gsf-home-lower-shift))!important', 'margin-bottom:12px!important'):
+for marker in ('--gsf-home-lower-shift:clamp(14px,2.5vh,22px)!important', 'bottom:calc(30px - var(--gsf-home-lower-shift))!important', 'margin-bottom:12px!important'):
     if marker not in home_patched:
         fail('V315 mobile Home contract missing: ' + marker)
 if v315_mod.patch_text(home_patched) != home_patched:
