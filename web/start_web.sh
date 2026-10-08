@@ -126,6 +126,11 @@ python /app/web/test_v311_mobile_hub_clean_pass.py /app
 # previous Hub section from an older patch.
 python /app/web/fix_v312_global_navigation.py /app
 python /app/web/test_v312_navigation_contract.py /app
+
+# V313: mobile Profile viewport fit. Compact only Profile + Subscription while
+# preserving every social provider, link and hit area.
+python /app/web/fix_v313_mobile_profile_fit.py /app/web/creator_hub_v156_component/index.html
+python /app/web/test_v313_mobile_profile_fit.py /app
 touch "$GSF_V311_READY"
 
 # V293 render-memory guard: generate the production app only after all runtime
