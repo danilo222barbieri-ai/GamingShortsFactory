@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import importlib.util
+import re
 import sys
 
 ROOT=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path(__file__).resolve().parents[1]
@@ -32,9 +33,6 @@ checks={
  'runtime layout marker':'id="v325MobileEditorReferenceLayout"',
  'legacy mobile iframe minimum removed':'Math.max(500,Math.min(710,Math.floor(ph-145)))',
  'compact player sizing':'width:min(calc(100% - 18px),292px,calc((100dvh - 150px)*.5625))!important',
- 'player is first row':'#ng27 .stageWrap{grid-column:1!important;grid-row:1!important',
- 'actions directly below player':'#ng27 .cockpit>.v323EditorActions{grid-column:1!important;grid-row:2!important',
- 'timeline is dedicated third row':'#ng27 .cockpit>.timeline.v325DetachedTimeline{grid-column:1!important;grid-row:3!important',
  'timeline no longer absolute':'position:relative!important',
  'left controls moved into player':'stage.appendChild(leftRail)',
  'right controls moved into player':'stage.appendChild(rightRail)',
@@ -49,6 +47,18 @@ checks={
 for name,marker in checks.items():
  if marker not in patched: fail(name+' missing')
  ok(name)
+
+# Layout checks are semantic: formatting/newlines in CSS must not make a valid
+# player -> actions -> timeline grid fail deployment.
+layout_checks={
+ 'player is first row':r'#ng27\s+\.stageWrap\s*\{[\s\S]*?grid-column\s*:\s*1\s*!important\s*;\s*grid-row\s*:\s*1\s*!important',
+ 'actions directly below player':r'#ng27\s+\.cockpit>\.v323EditorActions\s*\{[\s\S]*?grid-column\s*:\s*1\s*!important\s*;\s*grid-row\s*:\s*2\s*!important',
+ 'timeline is dedicated third row':r'#ng27\s+\.cockpit>\.timeline\.v325DetachedTimeline\s*\{[\s\S]*?grid-column\s*:\s*1\s*!important\s*;\s*grid-row\s*:\s*3\s*!important',
+}
+for name,pattern in layout_checks.items():
+ if not re.search(pattern,patched): fail(name+' missing')
+ ok(name)
+
 if 'Math.max(720,Math.ceil(document.documentElement.scrollHeight||720))' in patched:
  fail('legacy 720px mobile iframe inflation still present')
 if mod.patch_text(patched)!=patched: fail('V325 patch is not idempotent')
