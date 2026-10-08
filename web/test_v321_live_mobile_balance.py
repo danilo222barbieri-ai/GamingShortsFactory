@@ -5,6 +5,7 @@ import sys
 
 ROOT=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app')
 PATCH=ROOT/'web'/'fix_v321_live_mobile_balance.py'
+AGG=ROOT/'web'/'fix_v316_creator_hub_dashboard_ad.py'
 START=ROOT/'web'/'start_web.sh'
 
 def fail(msg): print('[FAIL]',msg); raise SystemExit(1)
@@ -37,15 +38,20 @@ if '@media(min-width:' in mod.STYLE.replace(' ',''):
     fail('V321 must not add desktop rules')
 ok('desktop is untouched')
 
+if not AGG.is_file(): fail('V316 final runtime aggregate missing')
+agg=AGG.read_text(encoding='utf-8')
+for marker in ('fix_v321_live_mobile_balance.py','_apply_v321(hub)'):
+    if marker not in agg: fail('V321 final runtime delegation missing: '+marker)
+if agg.index('_apply_v321(hub)') < agg.index('_apply_v320(hub)'):
+    fail('V321 must run after V320')
+ok('V321 is the final delegated runtime layout pass')
+
 if not START.is_file(): fail('start_web.sh missing')
 start=START.read_text(encoding='utf-8')
-patch_cmd='python /app/web/fix_v321_live_mobile_balance.py /app/web/creator_hub_v156_component/index.html'
-test_cmd='python /app/web/test_v321_live_mobile_balance.py /app'
-if patch_cmd not in start or test_cmd not in start: fail('V321 startup registration missing')
-if start.index(patch_cmd) < start.index('python /app/web/fix_v316_creator_hub_dashboard_ad.py'):
-    fail('V321 must run after V316-V320 aggregate')
-if start.index(test_cmd) > start.index('python /app/web/apply_v293_render_memory_guard.py'):
-    fail('V321 contract must run before render-memory generation')
-ok('V321 startup order')
+v316='python /app/web/fix_v316_creator_hub_dashboard_ad.py /app/web/creator_hub_v156_component/index.html'
+if v316 not in start: fail('V316 aggregate startup registration missing')
+if start.index(v316) > start.index('python /app/web/apply_v293_render_memory_guard.py'):
+    fail('V316/V321 aggregate must run before render-memory generation')
+ok('V321 executes before production app generation')
 
 print('\nV321 LIVE MOBILE BALANCE CONTRACT: PASS')
