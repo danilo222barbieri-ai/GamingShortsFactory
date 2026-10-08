@@ -14,16 +14,16 @@ STYLE=r'''<style id="v320AiMobileStability">
     padding-bottom:96px!important;
   }
   #ai221>.top{flex:0 0 auto!important}
-  #ai221>.panel:first-of-type{flex:0 0 auto!important}
-  #ai221>.panel:nth-of-type(2){
+  #ai221>.panel:not(:has(.moments)){flex:0 0 auto!important}
+  #ai221>.panel:has(.moments){
     flex:1 1 0!important;
     min-height:0!important;
     display:flex!important;
     flex-direction:column!important;
     overflow:hidden!important;
   }
-  #ai221>.panel:nth-of-type(2) .panelHead{flex:0 0 auto!important}
-  #ai221>.panel:nth-of-type(2) .moments{flex:1 1 auto!important;min-height:0!important}
+  #ai221>.panel:has(.moments) .panelHead{flex:0 0 auto!important}
+  #ai221>.panel:has(.moments) .moments{flex:1 1 auto!important;min-height:0!important}
   #ai221:not(.hasResults) .v317EmptyResults{flex:1 1 auto!important;min-height:150px!important}
   #ai221.hasResults .moments{
     display:grid!important;
@@ -99,7 +99,7 @@ def _clean(text:str)->str:
     return text
 
 def patch_text(text:str)->str:
-    if STYLE_ID in text and 'V320 MOBILE AI STABILITY' in text and 'create.addEventListener("click",v320StartAnalysis);' in text and 'function v320AssertAiRoute()' in text:
+    if STYLE_ID in text and 'V320 MOBILE AI STABILITY' in text and 'create.addEventListener("click",v320StartAnalysis);' in text and 'function v320AssertAiRoute()' in text and '#ai221>.panel:has(.moments){' in text:
         return text
     if 'v317AiCompactSelectedShort' not in text:
         raise RuntimeError('V320 requires V317 compact AI flow')
