@@ -41,7 +41,9 @@ patched=mod.patch_text(sample)
 checks={
  'style marker':'id="v320AiMobileStability"',
  'mobile nav reserve':'padding-bottom:96px!important',
+ 'results panel explicitly targeted':'#ai221>.panel:has(.moments){',
  'results panel fills viewport':'flex:1 1 0!important',
+ 'engine panel stays compact':'#ai221>.panel:not(:has(.moments)){flex:0 0 auto!important}',
  'state retry':'function v320RequestState()',
  'AI route repair':'function v320AssertAiRoute()',
  'AI route target':'target:"ai"',
@@ -55,6 +57,7 @@ checks={
 for name,marker in checks.items():
  if marker not in patched: fail(name+' missing')
  ok(name)
+if '#ai221>.panel:nth-of-type(2)' in patched: fail('V320 must not rely on div nth-of-type for the results panel')
 if 'const play=video.play()' in patched: fail('selected short still autoplays and can trigger iOS fullscreen churn')
 if 'data-ad-slot' in patched: fail('V320 must not add an ad to the AI page')
 if mod.patch_text(patched)!=patched: fail('V320 patch is not idempotent')
