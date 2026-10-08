@@ -120,6 +120,12 @@ fi
 # idempotent and are intentionally rerun even after a process restart.
 python /app/web/fix_v311_mobile_hub_clean_pass.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v311_mobile_hub_clean_pass.py /app
+
+# V312: final navigation source of truth. Reassert all four Game Bar destinations
+# after every historical/visual migration so no button can inherit Editor or a
+# previous Hub section from an older patch.
+python /app/web/fix_v312_global_navigation.py /app
+python /app/web/test_v312_navigation_contract.py /app
 touch "$GSF_V311_READY"
 
 # V293 render-memory guard: generate the production app only after all runtime
