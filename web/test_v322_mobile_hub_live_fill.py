@@ -44,6 +44,16 @@ ok('V322 preserves Hub/Live structure')
 if mod.patch_text(patched)!=patched: fail('V322 patch is not idempotent')
 ok('V322 patch idempotent')
 
+# Restart regression: V316 removes/reinserts its own style, so its CSS can move
+# after V322. The final V322 pass must move itself back to the end of <head>.
+late_v316=patched.replace('</head>','<style id="v316RestartRewrite">.x{height:1px}</style>\n</head>',1)
+reasserted=mod.patch_text(late_v316)
+pos322=reasserted.rfind('id="v322MobileHubLiveFill"')
+poslate=reasserted.rfind('id="v316RestartRewrite"')
+if pos322<0 or poslate<0 or pos322<poslate:
+ fail('V322 does not reassert final CSS order after restart')
+ok('V322 remains final CSS authority after restart')
+
 if not V316.is_file(): fail('V316 aggregate missing')
 source=V316.read_text(encoding='utf-8')
 for marker in ('fix_v322_mobile_hub_live_fill.py','_apply_v322(hub)'):
