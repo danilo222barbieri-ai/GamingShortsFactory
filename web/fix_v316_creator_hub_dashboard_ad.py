@@ -48,16 +48,27 @@ def patch_text(text: str) -> str:
     folders_end=_find_matching_div_end(out,folders)
     return out[:folders_end]+AD_HTML+out[folders_end:]
 
+def _load_patch(path:Path,name:str):
+    spec=importlib.util.spec_from_file_location(name,path)
+    mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
+    return mod
+
 def _apply_v317(hub: Path) -> None:
     web_root=hub.parents[1]
     patch=web_root/'fix_v317_compact_ai_selected_short.py'
     ai=web_root/'ai_v221_component'/'index.html'
     if not patch.is_file():raise RuntimeError('V317 patch missing: '+str(patch))
     if not ai.is_file():raise RuntimeError('V317 AI target missing: '+str(ai))
-    spec=importlib.util.spec_from_file_location('v317_compact_ai_selected_short',patch)
-    mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
+    mod=_load_patch(patch,'v317_compact_ai_selected_short')
     before=ai.read_text(encoding='utf-8');after=mod.patch_text(before);ai.write_text(after,encoding='utf-8')
     print('V317 compact AI + selected short page applied from V316 changed=',before!=after,flush=True)
+
+def _apply_v318(hub: Path) -> None:
+    patch=hub.parents[1]/'fix_v318_hub_fill_live_fit.py'
+    if not patch.is_file():raise RuntimeError('V318 Hub fit patch missing: '+str(patch))
+    mod=_load_patch(patch,'v318_hub_fill_live_fit')
+    before=hub.read_text(encoding='utf-8');after=mod.patch_text(before);hub.write_text(after,encoding='utf-8')
+    print('V318 Hub fill + Live viewport fit applied from V316 changed=',before!=after,flush=True)
 
 def main() -> None:
     hub=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app/web/creator_hub_v156_component/index.html')
@@ -65,5 +76,6 @@ def main() -> None:
     before=hub.read_text(encoding='utf-8');after=patch_text(before);hub.write_text(after,encoding='utf-8')
     print('V316 Creator Hub dashboard ad applied changed=',before!=after,flush=True)
     _apply_v317(hub)
+    _apply_v318(hub)
 
 if __name__=='__main__':main()
