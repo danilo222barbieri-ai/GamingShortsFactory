@@ -179,7 +179,7 @@ def _apply_project_reference():
         text = text.replace("</body>", PROJECT_SCRIPT + "\n</body>", 1)
         HUB.write_text(text, encoding="utf-8")
     shell = APP_SRC.read_text(encoding="utf-8")
-    target = "/creator-hub-v156/?v=3115&ui=projects-ref-1"
+    target = "/creator-hub-v156/?v=3115&ui=projects-ref-2"
     if target not in shell:
         shell, count = re.subn(r'/creator-hub-v156/\?v=[^"\'\s]+', target, shell)
         if count:
@@ -187,7 +187,52 @@ def _apply_project_reference():
             APP_SRC.write_text(shell, encoding="utf-8")
     print("V311 project pages reference applied", flush=True)
 
+
+def _fix_gamebar_hub_route():
+    if not APP_SRC.is_file():
+        return
+    shell = APP_SRC.read_text(encoding="utf-8")
+
+    def set_attr(button, name, value):
+        attr = f'{name}="{value}"'
+        if re.search(r'\b'+re.escape(name)+r'="[^"]*"', button):
+            return re.sub(r'\b'+re.escape(name)+r'="[^"]*"', attr, button, count=1)
+        return button.replace('>', ' '+attr+'>', 1)
+
+    def drop_attr(button, name):
+        return re.sub(r'\s+'+re.escape(name)+r'="[^"]*"', '', button, count=1)
+
+    button_pat = re.compile(r'<button\b[^>]*>.*?</button>', re.DOTALL)
+    buttons = list(button_pat.finditer(shell))
+    for match in reversed(buttons):
+        button = match.group(0)
+        updated = button
+        if 'data-active="home"' in button:
+            updated = set_attr(updated, 'data-target', 'home')
+            updated = set_attr(updated, 'data-active', 'home')
+            updated = drop_attr(updated, 'data-section')
+        elif 'data-active="hub"' in button or ('<span>Hub</span>' in button and 'data-target="hub"' in button):
+            updated = set_attr(updated, 'data-target', 'hub')
+            updated = set_attr(updated, 'data-section', 'dashboard')
+            updated = set_attr(updated, 'data-active', 'hub')
+        if updated != button:
+            shell = shell[:match.start()] + updated + shell[match.end():]
+
+    shell = re.sub(
+        r"else if\(target==='hub'\) active=\([^;]+;",
+        "else if(target==='hub') active=(lastTarget==='hub'&&(lastSection==='dashboard'||!lastSection));",
+        shell,
+        count=1,
+    )
+    target = "/creator-hub-v156/?v=3115&ui=projects-ref-2"
+    shell = re.sub(r'/creator-hub-v156/\?v=[^"\'\s]+', target, shell)
+    compile(shell, str(APP_SRC), "exec")
+    APP_SRC.write_text(shell, encoding="utf-8")
+    print("Game Bar routes normalized: Home -> home, Hub -> Creator Hub dashboard", flush=True)
+
+
 _apply_project_reference()
+_fix_gamebar_hub_route()
 
 # 1) Keep bucket materialization intentionally narrow on the 1 GB web service.
 upload_src = UPLOAD_SERVER.read_text(encoding="utf-8")
