@@ -149,6 +149,12 @@ python /app/web/test_v350_footer_mobile_center.py
 python -m py_compile /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
 grep -q 'GSF_V350_FOOTER_MOBILE_CENTER' /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
 
+# V351: deterministic branded glass footer; explicit social set + legal links.
+python /app/web/fix_v351_footer_brand_glass.py /app
+python /app/web/test_v351_footer_brand_glass.py
+python -m py_compile /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+grep -q 'GSF_V351_FOOTER_BRAND_GLASS' /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+
 python - <<'PY'
 import os,re
 from pathlib import Path
