@@ -12,6 +12,7 @@ BLOCK = r'''
 # GSF_V354_FOOTER_TRUE_CENTER_SAFE_SIDES
 # GSF_V355_FOOTER_BOTTOM_LOCK
 # GSF_V356_FOOTER_SIDE_INSET
+# GSF_V358_FOOTER_VERSION_LABEL
 import streamlit.components.v1 as _gsf_components_v351
 _gsf_components_v351.html(r"""
 <script id="gsf-v351-footer-brand-glass">
@@ -167,7 +168,7 @@ _gsf_components_v351.html(r"""
 
     const brand = D.createElement('div');
     brand.className = 'gsf-v351-brand gsf-v351-footer-shell';
-    brand.innerHTML = '<span>GSF</span>';
+    brand.innerHTML = '<span>GSF - V358</span>';
 
     const socials = D.createElement('div');
     socials.className = 'gsf-v351-socials';
@@ -201,6 +202,7 @@ _gsf_components_v351.html(r"""
     f.dataset.gsfV354 = '1';
     f.dataset.gsfV355 = '1';
     f.dataset.gsfV356 = '1';
+    f.dataset.gsfV358 = '1';
   }
 
   build();
@@ -211,7 +213,7 @@ _gsf_components_v351.html(r"""
   try {
     new MutationObserver(() => {
       const f = D.getElementById('gsf-global-footer');
-      if (!f || f.dataset.gsfV356 !== '1' || !f.querySelector('.gsf-v351-socials')) build();
+      if (!f || f.dataset.gsfV358 !== '1' || !f.querySelector('.gsf-v351-socials')) build();
     }).observe(D.documentElement,{childList:true,subtree:true});
   } catch(_e) {}
 })();
@@ -228,4 +230,4 @@ if MARK in text:
 if 'GSF_V350_FOOTER_MOBILE_CENTER' not in text:
     raise SystemExit('V351 requires V350 footer patch first')
 APP.write_text(text + '\n' + BLOCK + '\n', encoding='utf-8')
-print('V351/V356 inset true-centered bottom-locked footer applied', flush=True)
+print('V351/V358 footer version label applied', flush=True)
