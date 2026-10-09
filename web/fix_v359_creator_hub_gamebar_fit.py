@@ -7,6 +7,7 @@ MARK = 'V359_CREATOR_HUB_GAMEBAR_FIT'
 PATCH = r'''
 <!-- V359_CREATOR_HUB_GAMEBAR_FIT -->
 <!-- GSF_V361_HUB_REPAIR -->
+<!-- GSF_V363_PROFILE_FREEZE_GUARD -->
 <style id="v359CreatorHubGamebarFit">
 @media(max-width:767px){
   /* The parent Game Bar + footer are fixed. Keep internal pages scrollable and
@@ -130,19 +131,24 @@ PATCH = r'''
   const savedRe=/^\d+\s+(?:bozze|shorts)\s+salvat/i;
 
   function syncProjects(){
+    const projectActive=projectView.classList.contains('active');
     const landing=projectView.querySelector('#projectHubCards');
     const panes=qa('[data-project-pane]');
-    const direct=!!landing&&!isVisible(landing);
+    const direct=projectActive&&!!landing&&!isVisible(landing);
     projectView.classList.toggle('v359ProjectDirect',direct);
-    panes.forEach((pane)=>pane.classList.toggle('v359ProjectActivePane',direct&&isVisible(pane)));
-    qa('.v359ProjectHeroDuplicate').forEach((el)=>el.classList.remove('v359ProjectHeroDuplicate'));
-    if(!direct)return;
-    const active=panes.find((pane)=>pane.classList.contains('v359ProjectActivePane'));
-    if(!active)return;
+
+    let active=null;
+    panes.forEach((pane)=>{
+      const wanted=direct&&isVisible(pane);
+      pane.classList.toggle('v359ProjectActivePane',wanted);
+      if(wanted&&!active)active=pane;
+    });
+
     const title=String(projectView.querySelector('#projectsViewTitle')?.textContent||'').trim().toLowerCase();
-    qa('h1,h2,h3,.projectCollectionTitle,.projectHeroTitle,.projectSummaryTitle',active).forEach((el)=>{
+    qa('h1,h2,h3,.projectCollectionTitle,.projectHeroTitle,.projectSummaryTitle').forEach((el)=>{
       const copy=String(el.textContent||'').trim();
-      if((title&&copy.toLowerCase()===title)||savedRe.test(copy))el.classList.add('v359ProjectHeroDuplicate');
+      const wanted=!!(direct&&active&&active.contains(el)&&((title&&copy.toLowerCase()===title)||savedRe.test(copy)));
+      el.classList.toggle('v359ProjectHeroDuplicate',wanted);
     });
   }
 
@@ -175,7 +181,7 @@ def main() -> None:
     if not cleanup.is_file():
         raise RuntimeError('V362 project cleanup handoff missing')
     __import__('subprocess').run([sys.executable, str(cleanup), str(path)], check=True)
-    print('V359/V361 Creator Hub mobile repair + V362 cleanup applied changed=', before != after, flush=True)
+    print('V359/V361/V363 Creator Hub mobile repair + V362 cleanup applied changed=', before != after, flush=True)
 
 
 if __name__ == '__main__':
