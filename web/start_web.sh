@@ -91,6 +91,12 @@ python /app/web/fix_v325_mobile_editor_viewport_fit.py /app/web/editor_2027_comp
 python /app/web/test_v325_mobile_editor_viewport_fit.py /app
 python /app/web/fix_v326_mobile_editor_home_speed.py /app
 python /app/web/test_v326_mobile_editor_home_speed.py /app
+
+# V337: V327 delegates to V328 during restart. Make V328 accept the newer
+# canonical Short route from V331 before V327 can invoke it.
+python /app/web/fix_v337_restart_safe_v328.py /app
+python /app/web/test_v337_restart_safe_v328.py /app
+
 python /app/web/fix_v327_editor_open_bridge.py /app
 python /app/web/test_v327_editor_open_bridge.py /app
 python /app/web/fix_v328_global_balance.py /app

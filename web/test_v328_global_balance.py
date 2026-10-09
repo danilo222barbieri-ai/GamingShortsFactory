@@ -8,11 +8,13 @@ hub=(root/'web/creator_hub_v156_component/index.html').read_text(encoding='utf-8
 shell=(root/'GamingShortsFactory_V154_STRUCTURAL_HOME.py').read_text(encoding='utf-8')
 start=(root/'web/start_web.sh').read_text(encoding='utf-8')
 
+legacy_short='if(!opened)shellNav("short")' in home
+canonical_v331_short='if(action==="short"){shellNav("short")' in home
 checks={
     'home footer brand removed':'<span class="footerBrand">Gaming Shorts Factory</span>' not in home,
     'home footer compact marker':'v328HomeBalance' in home and 'height:28px!important' in home,
     'home logo follows text color':'#home154 .brandOnly:before' in home and 'background:currentColor' in home,
-    'home short has shell fallback':'if(!opened)shellNav("short")' in home,
+    'home short routing is preserved':legacy_short or canonical_v331_short,
     'live page compact mobile marker':'v328LiveCompact' in hub,
     'live cards are compact':'grid-template-rows:repeat(3,74px)!important' in hub,
     'global balance bridge installed':'V328_GLOBAL_BALANCE' in shell,
