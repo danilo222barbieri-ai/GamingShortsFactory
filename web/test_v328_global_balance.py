@@ -17,10 +17,11 @@ checks={
     'home short routing preserved':legacy_short or canonical_v331_short,
     'live compact marker preserved':'v328LiveCompact' in hub,
     'live cards remain compact':'grid-template-rows:repeat(3,74px)!important' in hub,
+    'legacy V327 editor parent bridge retired':'__GSF_V327_EDITOR_BRIDGE' not in shell,
     'legacy V328 parent bridge retired':'__GSF_V328_GLOBAL_BALANCE' not in shell,
     'legacy V328 global footer retired':'gsf-v328-global-footer' not in shell,
     'legacy V328 brand observer retired':'gsf-v328-brand-mark' not in shell,
-    'V327 editor bridge preserved':'V327_EDITOR_OPEN_BRIDGE' in shell,
+    'V343 owns Editor route':'GSF_GLOBAL_SHELL_V343' in shell and "target==='editor'" in shell,
     'V328 layout migration still runs':'python /app/web/fix_v328_global_balance.py /app' in start,
     'V328 verification runs after V343 retirement':start.find('python /app/web/test_v328_global_balance.py /app')>start.find('python /app/web/fix_v343_single_global_shell.py /app')>=0,
 }
