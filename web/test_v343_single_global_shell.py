@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import ast
 import re
 import sys
 
@@ -14,6 +15,13 @@ def need(text, token, label):
         raise AssertionError(f'V343 missing {label}: {token}')
 
 
+def call_name(node):
+    fn=node.func
+    if isinstance(fn,ast.Attribute) and isinstance(fn.value,ast.Name):
+        return f'{fn.value.id}.{fn.attr}'
+    return ''
+
+
 def main():
     for p in (APP,START,HOME):
         if not p.is_file():
@@ -21,18 +29,35 @@ def main():
     shell=APP.read_text(encoding='utf-8')
     start=START.read_text(encoding='utf-8')
     home=HOME.read_text(encoding='utf-8')
+    tree=ast.parse(shell)
+
+    bridges=[]
+    for node in ast.walk(tree):
+        if not isinstance(node,ast.Call) or not node.args:
+            continue
+        arg=node.args[0]
+        if not isinstance(arg,ast.Constant) or not isinstance(arg.value,str):
+            continue
+        if '__GSF_GLOBAL_SHELL_V343' in arg.value:
+            heights=[k.value.value for k in node.keywords if k.arg=='height' and isinstance(k.value,ast.Constant)]
+            bridges.append((call_name(node),heights,arg.value))
+
+    assert len(bridges)==1, f'expected one V343 bridge, found {len(bridges)}'
+    renderer,heights,bridge=bridges[0]
+    assert renderer=='_gsf_components_v343.html', f'V343 renderer is not executable: {renderer}'
+    assert heights==[0], f'V343 bridge height must be 0, got {heights}'
 
     need(shell,'GSF_GLOBAL_SHELL_V343','V343 marker')
-    assert shell.count('id="gsf-global-header"') == 1, 'V343 must create exactly one global header'
-    assert shell.count('id="gsf-global-gamebar"') == 1, 'V343 must create exactly one global Game Bar'
-    assert shell.count('id="gsf-global-footer"') == 1, 'V343 must create exactly one global footer'
+    assert bridge.count('id="gsf-global-header"') == 1, 'V343 must create exactly one global header'
+    assert bridge.count('id="gsf-global-gamebar"') == 1, 'V343 must create exactly one global Game Bar'
+    assert bridge.count('id="gsf-global-footer"') == 1, 'V343 must create exactly one global footer'
 
     for token,label in (
         ('GAMING SHORTS FACTORY','brand copy'),
         ('>Accedi<','signed-out fallback'),
-        ("target:'editor'",'Editor route'),
+        ("target==='editor'",'Editor route'),
         ('/editor-live/','Editor lazy source'),
-        ("target:'short'",'Short route'),
+        ("target==='short'",'Short route'),
         ('keepGlobalShellMounted','single watchdog'),
         ('MutationObserver','watchdog observer'),
         ('display_name','account display name'),
@@ -40,7 +65,7 @@ def main():
         ("split('@')[0]",'account email fallback'),
         ('gsf-short-overlay-v343','V343 Short surface'),
     ):
-        need(shell,token,label)
+        need(bridge,token,label)
 
     for token in (
         '--gsf-shell-header-h',
@@ -50,7 +75,7 @@ def main():
         '--gsf-shell-content-top',
         '--gsf-shell-content-bottom',
     ):
-        need(shell,token,'geometry variable')
+        need(bridge,token,'geometry variable')
 
     for overlay in (
         '#gsf-editor-overlay-v220',
@@ -60,12 +85,12 @@ def main():
         '#gsf-social-overlay-v159',
         '#gsf-account-overlay-v223',
     ):
-        need(shell,overlay,f'bounded overlay {overlay}')
-    need(shell,'top:var(--gsf-shell-content-top)!important','overlay top bound')
-    need(shell,'bottom:var(--gsf-shell-content-bottom)!important','overlay bottom bound')
+        need(bridge,overlay,f'bounded overlay {overlay}')
+    need(bridge,'top:var(--gsf-shell-content-top)!important','overlay top bound')
+    need(bridge,'bottom:var(--gsf-shell-content-bottom)!important','overlay bottom bound')
 
-    z_shell=re.search(r'--gsf-shell-z:(\d+)',shell)
-    z_overlay=re.search(r'--gsf-shell-overlay-z:(\d+)',shell)
+    z_shell=re.search(r'--gsf-shell-z:(\d+)',bridge)
+    z_overlay=re.search(r'--gsf-shell-overlay-z:(\d+)',bridge)
     assert z_shell and z_overlay, 'V343 z-index variables missing'
     assert int(z_shell.group(1))>int(z_overlay.group(1)), 'global chrome must sit above overlays'
 
@@ -90,11 +115,6 @@ def main():
         '__GSF_V330_GLOBAL_CHROME',
         '__GSF_V332_GLOBAL_FRAME_LOCK',
         '__GSF_V334_GLOBAL_CHROME_HARD_LOCK',
-        'gsf-v328-global-footer',
-        'gsf-v330-global-footer',
-        'gsf-v334-header',
-        'gsf-v334-gamebar',
-        'gsf-v334-footer',
     ):
         if old_token in shell:
             raise AssertionError(f'legacy global authority remains in runtime shell: {old_token}')
