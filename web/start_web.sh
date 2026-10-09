@@ -78,20 +78,17 @@ python /app/web/fix_v313_mobile_profile_fit.py /app/web/creator_hub_v156_compone
 python /app/web/test_v313_mobile_profile_fit.py /app
 python /app/web/fix_v314_hub_context_fill.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v314_hub_context_fill.py /app
-
 python /app/web/fix_v316_creator_hub_dashboard_ad.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v316_creator_hub_dashboard_ad.py /app
 python /app/web/test_v319_ai_results_bridge.py /app
 python /app/web/test_v320_ai_mobile_stability.py /app
 python /app/web/test_v322_mobile_hub_live_fill.py /app
-
 python /app/web/fix_v323_mobile_editor_player_actions.py /app
 python /app/web/test_v323_mobile_editor_player_actions.py /app
 python /app/web/fix_v324_editor_action_placement.py /app/web/editor_2027_component/index.html
 python /app/web/test_v324_editor_action_placement.py /app
 python /app/web/fix_v325_mobile_editor_viewport_fit.py /app/web/editor_2027_component/index.html
 python /app/web/test_v325_mobile_editor_viewport_fit.py /app
-
 python /app/web/fix_v326_mobile_editor_home_speed.py /app
 python /app/web/test_v326_mobile_editor_home_speed.py /app
 python /app/web/fix_v327_editor_open_bridge.py /app
@@ -104,12 +101,13 @@ python /app/web/fix_v330_global_chrome.py /app
 python /app/web/test_v330_global_chrome.py /app
 python /app/web/fix_v331_primary_actions_routing.py /app
 python /app/web/test_v331_primary_actions_routing.py /app
-
-# V332: header + Game Bar + footer keep the same fixed frame on every page.
 python /app/web/fix_v332_global_frame_lock.py /app
 python /app/web/test_v332_global_frame_lock.py /app
 
-# Generate production app only after every final runtime surface has validated.
+# V333: murals never eat taps; Editor and Crea Short have direct mobile touch handlers.
+python /app/web/fix_v333_home_cta_touch_fix.py /app
+python /app/web/test_v333_home_cta_touch_fix.py /app
+
 python /app/web/apply_v293_render_memory_guard.py
 
 python - <<'PY'
