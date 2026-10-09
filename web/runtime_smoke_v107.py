@@ -11,7 +11,10 @@ import urllib.request
 base=f"http://127.0.0.1:{int(os.environ.get('PORT','8080'))}"
 jar=http.cookiejar.CookieJar()
 opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
-UA="GSF-V107-Runtime-Smoke/1.0"
+# Root is intentionally mobile-gated. Exercise the canonical production path
+# instead of being classified as desktop and mistaking the desktop gate page
+# for a broken Streamlit root.
+UA="Mozilla/5.0 (iPhone; CPU iPhone OS 19_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1 GSF-V107-Runtime-Smoke/1.0"
 SESSION_COOKIE=""
 
 
