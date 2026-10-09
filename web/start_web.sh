@@ -110,6 +110,11 @@ python /app/web/test_v333_home_cta_touch_fix.py /app
 
 # V334: one parent-owned mobile header, Game Bar and footer across every page.
 python /app/web/fix_v334_global_chrome_hard_lock.py /app
+
+# V335: recover the Streamlit parent shell before validating/launching it.
+# This restores the parent-owned logo/Game Bar/footer and the canonical Editor/Short routes.
+python /app/web/fix_v335_runtime_shell_recovery.py /app
+python /app/web/test_v335_runtime_shell_recovery.py /app
 python /app/web/test_v334_global_chrome_hard_lock.py /app
 
 python /app/web/apply_v293_render_memory_guard.py
