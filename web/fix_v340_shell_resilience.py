@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import subprocess
 import sys
 
 MARK='V340_SHELL_RESILIENCE'
@@ -158,6 +159,16 @@ def main():
     HOME.write_text(home_after,encoding='utf-8')
     APP.write_text(app_after,encoding='utf-8')
     print('V340 shell resilience applied home_changed=',home_before!=home_after,'app_changed=',app_before!=app_after,flush=True)
+
+    # V341 owns the rigid global shell contract. Keep it chained here so it is
+    # always applied before V336 converts the V334 bridge into an executable
+    # Streamlit component, including restart-safe boots where V340 is already present.
+    v341=ROOT/'web/fix_v341_global_shell_contract.py'
+    t341=ROOT/'web/test_v341_global_shell_contract.py'
+    if not v341.is_file() or not t341.is_file():
+        raise SystemExit('V341 shell contract files missing')
+    subprocess.run([sys.executable,str(v341),str(ROOT)],check=True)
+    subprocess.run([sys.executable,str(t341),str(ROOT)],check=True)
 
 if __name__=='__main__':
     main()
