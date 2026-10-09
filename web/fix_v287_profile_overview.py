@@ -90,17 +90,22 @@ def patch_shell() -> None:
     text = APP.read_text(encoding='utf-8')
     before = text
 
-    # Same restart rule for the shell: a newer V311 cache key means this older
-    # migration already ran and must not turn a healthy restart into a crash.
-    if re.search(r'/creator-hub-v156/\?v=311\d*', text):
-        print('V287 Creator Hub cache bump skipped: newer V311 cache already active', flush=True)
+    # V287 is a historical one-way migration. Only v286 needs rewriting.
+    # Any numeric Creator Hub cache >=287 (or the canonical V343 shell) means
+    # this migration has already been superseded and must be restart-safe.
+    legacy = '/creator-hub-v156/?v=286'
+    if legacy in text:
+        text = text.replace(legacy, '/creator-hub-v156/?v=287')
+        APP.write_text(text, encoding='utf-8')
+        print('V287 Creator Hub cache bumped:', APP, 'changed=', text != before, flush=True)
         return
 
-    text = text.replace('/creator-hub-v156/?v=286', '/creator-hub-v156/?v=287')
-    if '/creator-hub-v156/?v=287' not in text:
-        raise RuntimeError('V287: Creator Hub iframe cache marker missing')
-    APP.write_text(text, encoding='utf-8')
-    print('V287 Creator Hub cache bumped:', APP, 'changed=', text != before, flush=True)
+    versions = [int(v) for v in re.findall(r'/creator-hub-v156/\?v=(\d+)', text)]
+    if any(v >= 287 for v in versions) or 'GSF_GLOBAL_SHELL_V343' in text:
+        print('V287 Creator Hub cache bump skipped: newer Creator Hub shell/cache already active', flush=True)
+        return
+
+    raise RuntimeError('V287: Creator Hub iframe cache marker missing')
 
 
 if __name__ == '__main__':
