@@ -45,22 +45,42 @@ def patch_shell() -> None:
         return
 
     text = APP.read_text(encoding="utf-8")
+
+    # Only upgrade genuinely old cache keys. Never downgrade a newer shell on
+    # container restart after V300/V302/V343 have already migrated the routes.
     patched = text.replace('/creator-hub-v156/?v=284', '/creator-hub-v156/?v=286')
     patched = patched.replace('/creator-hub-v156/?v=285', '/creator-hub-v156/?v=286')
 
     required = [
         'data-target="hub" data-section="dashboard"',
-        'data-target="hub" data-section="shorts"',
-        'data-target="hub" data-section="drafts"',
         "type:'GSF_HUB_FOCUS',section",
-        '/creator-hub-v156/?v=286',
+        '/creator-hub-v156/',
     ]
     missing = [marker for marker in required if marker not in patched]
+
+    legacy_routes = (
+        'data-target="hub" data-section="shorts"' in patched
+        and 'data-target="hub" data-section="drafts"' in patched
+    )
+    canonical_routes = (
+        'data-section="projects"' in patched
+        and 'data-section="live"' in patched
+    )
+    if not (legacy_routes or canonical_routes):
+        missing.append('legacy shorts/drafts or canonical projects/live route set')
+
     if missing:
         raise RuntimeError("V286: global Game Bar shell markers missing: " + ", ".join(missing))
 
     APP.write_text(patched, encoding="utf-8")
-    print("V286 global Game Bar shell verified and Creator Hub cache busted", flush=True)
+    route_mode = 'canonical' if canonical_routes else 'legacy'
+    print(
+        "V286 global Game Bar shell verified; route_mode=",
+        route_mode,
+        "changed=",
+        patched != text,
+        flush=True,
+    )
 
 
 if __name__ == "__main__":
