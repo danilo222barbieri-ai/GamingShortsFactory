@@ -59,7 +59,7 @@ if [ "$GSF_HISTORY_READY" -eq 0 ]; then
   python /app/web/fix_v308_mobile_ai_flow.py /app/web/ai_v221_component/index.html
   python /app/web/test_v308_mobile_ai_flow.py /app
   python /app/web/fix_v310_creator_hub_mobile_cleanup.py /app/web/creator_hub_v156_component/index.html
-  python /app/web/test_v310_mobile_cleanup.py /app
+  python /app/web/test_v310_creator_hub_mobile_cleanup.py /app
 else
   echo "V311 restart-safe: historical runtime migrations already applied"
 fi
