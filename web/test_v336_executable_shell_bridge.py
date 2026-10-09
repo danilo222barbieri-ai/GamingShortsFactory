@@ -40,7 +40,7 @@ for node in ast.walk(tree):
         script_calls[name]=qual
         if qual=='st.html': remaining_st_html.append(name)
         if qual=='_gsf_components_v336.html':
-            h=[k.value for k in node.keywords if k.arg=='height' and isinstance(k.value,ast.Constant)]
+            h=[k.value.value for k in node.keywords if k.arg=='height' and isinstance(k.value,ast.Constant)]
             component_height.append((name,h[0] if h else None))
 
 checks={
