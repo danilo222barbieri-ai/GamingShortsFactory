@@ -111,9 +111,13 @@ python /app/web/test_v333_home_cta_touch_fix.py /app
 # V334: one parent-owned mobile header, Game Bar and footer across every page.
 python /app/web/fix_v334_global_chrome_hard_lock.py /app
 
-# V335: recover the Streamlit parent shell before validating/launching it.
-# This restores the parent-owned logo/Game Bar/footer and the canonical Editor/Short routes.
+# V336: Streamlit 1.49 st.html does not execute JS. Move only the five
+# interactive parent-DOM bridges to executable zero-height components.
+python /app/web/fix_v336_executable_shell_bridge.py /app
+
+# V335: remove unsupported layout kwargs only from the remaining st.html calls.
 python /app/web/fix_v335_runtime_shell_recovery.py /app
+python /app/web/test_v336_executable_shell_bridge.py /app
 python /app/web/test_v335_runtime_shell_recovery.py /app
 python /app/web/test_v334_global_chrome_hard_lock.py /app
 
