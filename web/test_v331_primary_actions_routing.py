@@ -16,10 +16,11 @@ checks={
     'Editor overlay has a retrying direct opener':'v331OpenEditor' in shell and 'attempt<20' in shell,
     'Editor lazy frame gets loaded':'/editor-live/?v=331' in shell and "dataset.loaded='1'" in shell,
     'Short has a real always-open surface':'gsf-short-overlay-v331' in shell and 'Crea Short' in shell,
+    'Short CSS is injected into the parent document':"style.id='gsf-v331-primary-actions-style'" in shell and 'D.head.appendChild(style)' in shell,
     'Short route opens the surface':"target==='short'" in shell and 'v331OpenShort' in shell,
     'Short render uses stable Streamlit keys':'.st-key-gsf-major-create-short button' in shell and '.st-key-create_final_short_v54 button' in shell,
     'Short can jump to Editor':"target:'editor'" in shell,
-    'V331 is idempotent':'V331_PRIMARY_ACTIONS_ROUTING' in fix and 'if MARK in app_text' in fix,
+    'V331 is idempotent':'V331_PRIMARY_ACTIONS_ROUTING' in fix and 'if MARK not in app_text' in fix,
     'startup runs V331 after V330':start.find('fix_v331_primary_actions_routing.py')>start.find('fix_v330_global_chrome.py')>=0,
     'startup validates V331 before final app generation':start.find('test_v331_primary_actions_routing.py')<start.find('apply_v293_render_memory_guard.py'),
 }
