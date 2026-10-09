@@ -95,13 +95,21 @@ if START.is_file():
     start = START.read_text(encoding='utf-8')
     patch_marker = 'python /app/web/fix_v313_mobile_profile_fit.py /app/web/creator_hub_v156_component/index.html'
     test_marker = 'python /app/web/test_v313_mobile_profile_fit.py /app'
-    if patch_marker not in start or test_marker not in start:
-        fail('V313 patch/test missing from startup')
-    if start.index(patch_marker) < start.index('python /app/web/test_v312_navigation_contract.py /app'):
+    after_v312 = 'python /app/web/test_v312_navigation_contract.py /app'
+    production_generation = 'python /app/web/apply_v343_v293_compat.py'
+    for anchor, label in (
+        (patch_marker, 'V313 patch'),
+        (test_marker, 'V313 test'),
+        (after_v312, 'V312 navigation test'),
+        (production_generation, 'V343/V293 production generation'),
+    ):
+        if anchor not in start:
+            fail(label + ' anchor is not registered')
+    if start.index(patch_marker) < start.index(after_v312):
         fail('V313 must run after V312 navigation restoration')
     if start.index(test_marker) < start.index(patch_marker):
         fail('V313 test must run after its patch')
-    if start.index(test_marker) > start.index('python /app/web/apply_v293_render_memory_guard.py'):
+    if start.index(test_marker) > start.index(production_generation):
         fail('V313 must run before production app generation')
     ok('V313 startup order is correct')
 
