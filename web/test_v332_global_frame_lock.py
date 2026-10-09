@@ -18,7 +18,7 @@ checks={
   'Known internal pages drive chrome':'gsf-short-overlay-v331' in shell and 'gsf-editor-overlay-v220' in shell and 'gsf-ai-overlay-v221' in shell,
   'Global header is shown on internal pages':"brand.classList.toggle('show',internal)" in shell,
   'Global footer is shown on internal pages':"footer.classList.toggle('show',internal)" in shell,
-  'Global Game Bar is fixed above footer':"bottom:'calc(var(--gsf-v330-footer-h,30px) + env(safe-area-inset-bottom))'" in shell,
+  'Global Game Bar is fixed above footer':'bottom:calc(var(--gsf-v330-footer-h,30px) + env(safe-area-inset-bottom))' in shell,
   'Global Game Bar visibility is deterministic':'nav.style.visibility=internal' in shell,
   'V332 runs after V331':start.find('fix_v332_global_frame_lock.py')>start.find('fix_v331_primary_actions_routing.py')>=0,
   'V332 test runs before final app generation':start.find('test_v332_global_frame_lock.py')<start.find('apply_v293_render_memory_guard.py'),
