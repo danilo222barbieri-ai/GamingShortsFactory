@@ -66,7 +66,7 @@ with tempfile.TemporaryDirectory() as td:
         'opacity:1!important;pointer-events:auto!important',
         '.v326Ratio{margin-left:auto!important;margin-right:44px!important}',
         'width:44px!important;height:52px!important',
-        'height:44px!important;min-height:44px!important',
+        'min-height:44px!important;height:44px!important',
         '.track{height:36px!important}',
         'FRAME', 'CAPTION', 'LOOK', 'AUDIO', 'AI',
         'CREA SHORT', 'SALVA LA TUA BOZZA',
@@ -77,20 +77,17 @@ with tempfile.TemporaryDirectory() as td:
     for token in required:
         assert token in out, f'missing V361 Editor contract token: {token}'
 
-    # V360/V361 must reuse existing functional controls and handlers, not clone them.
     for panel in ('frame','caption','look','audio','vision'):
         assert out.count(f'data-panel="{panel}"') == 1, f'Editor duplicated {panel} control'
-    assert out.count('id="v323CreateShort"') == 1, 'Editor duplicated create-short action'
-    assert out.count('id="v323SaveDraft"') == 1, 'Editor duplicated save-draft action'
+    assert out.count('id="v323CreateShort"') == 1
+    assert out.count('id="v323SaveDraft"') == 1
     assert 'cloneNode(' not in out[out.index('V360_MOBILE_EDITOR_REFERENCE'):]
 
-    # The visible ratio/playback is V326 only; V325 legacy shells stay in DOM but hidden.
     assert out.count('class="v326Ratio"') == 1
     assert out.count('class="v325RatioChip"') == 1
     assert '.v325PlayerMeta{display:none!important}' in out
     assert '.v325PlaybackDock{display:none!important}' in out
 
-    # Restart-safety while fixture still exists.
     once = out
     subprocess.run([sys.executable, str(FIX), str(target)], check=True)
     assert target.read_text(encoding='utf-8') == once, 'V360/V361 patch must be restart-safe'
