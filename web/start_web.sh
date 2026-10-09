@@ -137,6 +137,12 @@ python /app/web/test_v343_v293_compat.py /app
 # V348: user-approved immediate cosmetic hotfix. Transparent brand mark + visible footer.
 python /app/web/fix_v348_logo_footer.py /app
 
+# V349: V343 owns footer/Game Bar geometry; V348 only keeps the footer visible.
+python /app/web/fix_v349_footer_contract.py /app
+python /app/web/test_v349_footer_contract.py
+python -m py_compile /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+grep -q 'GSF_V349_FOOTER_CONTRACT' /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+
 python - <<'PY'
 import os,re
 from pathlib import Path
