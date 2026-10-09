@@ -64,9 +64,6 @@ else
   echo "V311 restart-safe: historical runtime migrations already applied"
 fi
 
-# On a Railway container restart the working tree is already mutated by the final
-# runtime patches. V328 intentionally rewrites shell navigation/footer geometry,
-# so do not re-run the old V311 shell cache migration against a V328-finalized shell.
 if grep -q 'V328_GLOBAL_BALANCE' "$GSF_SHELL_APP" 2>/dev/null; then
   echo "V311 restart-safe: V328 shell already finalized"
 else
@@ -82,15 +79,12 @@ python /app/web/test_v313_mobile_profile_fit.py /app
 python /app/web/fix_v314_hub_context_fill.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v314_hub_context_fill.py /app
 
-# V316-V322 aggregate: AI, Creator Hub and Live final passes.
 python /app/web/fix_v316_creator_hub_dashboard_ad.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v316_creator_hub_dashboard_ad.py /app
 python /app/web/test_v319_ai_results_bridge.py /app
 python /app/web/test_v320_ai_mobile_stability.py /app
 python /app/web/test_v322_mobile_hub_live_fill.py /app
 
-# V323-V325: mobile Game Editor. Controls/FULL stay in the frame, timeline is
-# pinned to the frame, final actions sit below it, and legacy V295 centering is neutralized.
 python /app/web/fix_v323_mobile_editor_player_actions.py /app
 python /app/web/test_v323_mobile_editor_player_actions.py /app
 python /app/web/fix_v324_editor_action_placement.py /app/web/editor_2027_component/index.html
@@ -98,29 +92,22 @@ python /app/web/test_v324_editor_action_placement.py /app
 python /app/web/fix_v325_mobile_editor_viewport_fit.py /app/web/editor_2027_component/index.html
 python /app/web/test_v325_mobile_editor_viewport_fit.py /app
 
-# V326: parent-viewport mobile editor, Home-first boot and lazy hidden surfaces.
 python /app/web/fix_v326_mobile_editor_home_speed.py /app
 python /app/web/test_v326_mobile_editor_home_speed.py /app
-
-# V327: lazy Editor must still open reliably from the canonical shell navigation event.
 python /app/web/fix_v327_editor_open_bridge.py /app
 python /app/web/test_v327_editor_open_bridge.py /app
-
-# V328.1: stable global footer/nav, compact Live, GSF mark and reliable Create Short bridge.
 python /app/web/fix_v328_global_balance.py /app
 python /app/web/test_v328_global_balance.py /app
-
-# V329: allow the AI worker to sleep when idle without losing the first prescan request.
 python /app/web/fix_v329_worker_cost_guard.py /app
 python /app/web/test_v329_worker_cost_guard.py /app
-
-# V330: restore the same visible header/footer chrome on every page and fix the GSF mark.
 python /app/web/fix_v330_global_chrome.py /app
 python /app/web/test_v330_global_chrome.py /app
-
-# V331: primary Home actions are direct and deterministic; Short is always openable.
 python /app/web/fix_v331_primary_actions_routing.py /app
 python /app/web/test_v331_primary_actions_routing.py /app
+
+# V332: header + Game Bar + footer keep the same fixed frame on every page.
+python /app/web/fix_v332_global_frame_lock.py /app
+python /app/web/test_v332_global_frame_lock.py /app
 
 # Generate production app only after every final runtime surface has validated.
 python /app/web/apply_v293_render_memory_guard.py
