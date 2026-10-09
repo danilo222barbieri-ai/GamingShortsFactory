@@ -67,11 +67,18 @@ ok('V310 patch is idempotent')
 
 start = START.read_text(encoding='utf-8')
 needle = 'python /app/web/fix_v310_creator_hub_mobile_cleanup.py /app/web/creator_hub_v156_component/index.html'
-if needle not in start:
-    fail('V310 startup patch is not registered')
-if start.index(needle) < start.index('python /app/web/test_v308_mobile_ai_flow.py /app'):
+after_v308 = 'python /app/web/test_v308_mobile_ai_flow.py /app'
+production_generation = 'python /app/web/apply_v343_v293_compat.py'
+for anchor, label in (
+    (needle, 'V310 startup patch'),
+    (after_v308, 'V308 final mobile surface test'),
+    (production_generation, 'V343/V293 production generation'),
+):
+    if anchor not in start:
+        fail(label + ' anchor is not registered')
+if start.index(needle) < start.index(after_v308):
     fail('V310 must run after V308 final mobile surface patch')
-if start.index(needle) > start.index('python /app/web/apply_v293_render_memory_guard.py'):
+if start.index(needle) > start.index(production_generation):
     fail('V310 must run before production app generation')
 ok('startup order is correct')
 

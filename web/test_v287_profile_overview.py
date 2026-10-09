@@ -1,3 +1,4 @@
+import re
 import sys
 from pathlib import Path
 
@@ -5,6 +6,9 @@ hub = Path(sys.argv[1])
 app = Path(sys.argv[2])
 text = hub.read_text(encoding="utf-8")
 app_text = app.read_text(encoding="utf-8")
+
+cache_versions = [int(v) for v in re.findall(r'/creator-hub-v156/\?v=(\d+)', app_text)]
+cache_is_v287_or_newer = any(v >= 287 for v in cache_versions) or 'GSF_GLOBAL_SHELL_V343' in app_text
 
 checks = {
     "profile overview CSS marker": "V287 PROFILE OVERVIEW" in text,
@@ -19,7 +23,7 @@ checks = {
     "real social binding": 'profileOverviewSocial' in text and 'connectedCount+"/5"' in text,
     "subscription quick action": 'Gestisci il tuo abbonamento' in text,
     "social quick action": 'Account collegati' in text,
-    "Creator Hub iframe cache is V287": '/creator-hub-v156/?v=287' in app_text,
+    "Creator Hub iframe cache is V287 or newer": cache_is_v287_or_newer,
 }
 for name, ok in checks.items():
     print(("PASS" if ok else "FAIL") + ": " + name)
