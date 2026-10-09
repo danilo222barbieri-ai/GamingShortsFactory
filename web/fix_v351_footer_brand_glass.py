@@ -11,6 +11,7 @@ BLOCK = r'''
 # GSF_V353_FOOTER_BALANCE_HIRES
 # GSF_V354_FOOTER_TRUE_CENTER_SAFE_SIDES
 # GSF_V355_FOOTER_BOTTOM_LOCK
+# GSF_V356_FOOTER_SIDE_INSET
 import streamlit.components.v1 as _gsf_components_v351
 _gsf_components_v351.html(r"""
 <script id="gsf-v351-footer-brand-glass">
@@ -34,7 +35,7 @@ _gsf_components_v351.html(r"""
         z-index:9997!important;
         display:block!important;
         box-sizing:border-box!important;
-        padding:3px 14px!important;
+        padding:3px 24px!important;
         background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(245,251,255,.90))!important;
         border-top:1px solid rgba(139,185,218,.20)!important;
         box-shadow:0 -8px 24px rgba(66,112,154,.05),inset 0 1px 0 rgba(255,255,255,.98)!important;
@@ -44,7 +45,7 @@ _gsf_components_v351.html(r"""
       }
       #gsf-global-footer .gsf-v351-brand{
         position:absolute!important;
-        left:max(14px,env(safe-area-inset-left))!important;
+        left:max(24px,env(safe-area-inset-left))!important;
         top:50%!important;
         transform:translateY(-50%)!important;
         z-index:2!important;
@@ -97,7 +98,7 @@ _gsf_components_v351.html(r"""
       #gsf-global-footer .gsf-v351-twitch{background:#9146ff!important;color:#fff!important}
       #gsf-global-footer .gsf-v351-legal{
         position:absolute!important;
-        right:max(14px,env(safe-area-inset-right))!important;
+        right:max(24px,env(safe-area-inset-right))!important;
         top:50%!important;
         transform:translateY(-50%)!important;
         z-index:2!important;
@@ -122,18 +123,19 @@ _gsf_components_v351.html(r"""
         width:2px!important;height:2px!important;border-radius:50%!important;background:#b5c7d7!important;display:block!important;flex:0 0 auto!important;
       }
       @media (max-width:390px){
-        #gsf-global-footer{padding-left:12px!important;padding-right:12px!important}
-        #gsf-global-footer .gsf-v351-brand{left:max(12px,env(safe-area-inset-left))!important;font-size:8px!important;letter-spacing:.08em!important}
+        #gsf-global-footer{padding-left:20px!important;padding-right:20px!important}
+        #gsf-global-footer .gsf-v351-brand{left:max(20px,env(safe-area-inset-left))!important;font-size:8px!important;letter-spacing:.08em!important}
         #gsf-global-footer .gsf-v351-socials{gap:5px!important}
         #gsf-global-footer .gsf-v351-social{width:22px!important;height:22px!important;min-width:22px!important;min-height:22px!important}
         #gsf-global-footer .gsf-v351-social svg{width:14px!important;height:14px!important}
-        #gsf-global-footer .gsf-v351-legal{right:max(12px,env(safe-area-inset-right))!important;gap:3px!important}
+        #gsf-global-footer .gsf-v351-legal{right:max(20px,env(safe-area-inset-right))!important;gap:3px!important}
         #gsf-global-footer .gsf-v351-legal a{font-size:6.65px!important}
       }
       @media (max-width:350px){
-        #gsf-global-footer .gsf-v351-brand{font-size:7px!important}
+        #gsf-global-footer .gsf-v351-brand{left:max(16px,env(safe-area-inset-left))!important;font-size:7px!important}
         #gsf-global-footer .gsf-v351-social{width:20px!important;height:20px!important;min-width:20px!important;min-height:20px!important}
         #gsf-global-footer .gsf-v351-socials{gap:4px!important}
+        #gsf-global-footer .gsf-v351-legal{right:max(16px,env(safe-area-inset-right))!important}
         #gsf-global-footer .gsf-v351-legal a{font-size:6px!important}
       }
     `;
@@ -198,6 +200,7 @@ _gsf_components_v351.html(r"""
     f.dataset.gsfV353 = '1';
     f.dataset.gsfV354 = '1';
     f.dataset.gsfV355 = '1';
+    f.dataset.gsfV356 = '1';
   }
 
   build();
@@ -208,7 +211,7 @@ _gsf_components_v351.html(r"""
   try {
     new MutationObserver(() => {
       const f = D.getElementById('gsf-global-footer');
-      if (!f || f.dataset.gsfV355 !== '1' || !f.querySelector('.gsf-v351-socials')) build();
+      if (!f || f.dataset.gsfV356 !== '1' || !f.querySelector('.gsf-v351-socials')) build();
     }).observe(D.documentElement,{childList:true,subtree:true});
   } catch(_e) {}
 })();
@@ -225,4 +228,4 @@ if MARK in text:
 if 'GSF_V350_FOOTER_MOBILE_CENTER' not in text:
     raise SystemExit('V351 requires V350 footer patch first')
 APP.write_text(text + '\n' + BLOCK + '\n', encoding='utf-8')
-print('V351/V355 true-centered bottom-locked footer applied', flush=True)
+print('V351/V356 inset true-centered bottom-locked footer applied', flush=True)
