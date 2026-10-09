@@ -110,6 +110,10 @@ python /app/web/test_v327_editor_open_bridge.py /app
 python /app/web/fix_v328_global_balance.py /app
 python /app/web/test_v328_global_balance.py /app
 
+# V329: allow the AI worker to sleep when idle without losing the first prescan request.
+python /app/web/fix_v329_worker_cost_guard.py /app
+python /app/web/test_v329_worker_cost_guard.py /app
+
 # Generate production app only after every final runtime surface has validated.
 python /app/web/apply_v293_render_memory_guard.py
 
