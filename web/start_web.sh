@@ -125,7 +125,14 @@ python /app/web/test_v336_executable_shell_bridge.py /app
 python /app/web/test_v335_runtime_shell_recovery.py /app
 python /app/web/test_v343_single_global_shell.py /app
 
-python /app/web/apply_v293_render_memory_guard.py
+# V343/V293 compatibility: keep V293 render-memory protection but do not let
+# its legacy shell normalizers rewrite the V343 executable component string.
+python /app/web/apply_v343_v293_compat.py
+python /app/web/test_v343_single_global_shell.py /app
+python -m py_compile /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
+python -m py_compile /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+grep -q 'GSF_GLOBAL_SHELL_V343' /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+python /app/web/test_v343_v293_compat.py /app
 
 python - <<'PY'
 import os,re
