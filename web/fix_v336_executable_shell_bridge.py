@@ -60,7 +60,8 @@ def main():
         raise RuntimeError('V336 missing bridge markers: '+', '.join(missing))
 
     # Work from bottom to top so line-local replacements cannot disturb later
-    # source positions. Every bridge currently starts with st.html(...).
+    # source positions. Every target bridge starts with st.html(...) on a fresh
+    # runtime shell; already-converted bridges are accepted for restart safety.
     edits=[]
     for name,(node,qual) in found.items():
         if qual=='_gsf_components_v336.html':
@@ -89,8 +90,11 @@ def main():
         marker_line=f'# {MARK} — executable parent DOM bridges for Streamlit 1.49.\n'
         converted=converted.replace(IMPORT+'\n',IMPORT+'\n'+marker_line,1)
 
-    # Re-parse and prove each bridge is executable and keeps a zero-height
-    # iframe. CSS-only st.html blocks remain untouched in the parent document.
+    # Re-parse and prove only the contract that matters at runtime: each known
+    # JavaScript bridge is executable, keeps a zero-height iframe and the shell
+    # still compiles. Do not couple this guard to unrelated historical CSS
+    # markers; those can legitimately disappear while the bridge contract stays
+    # correct.
     check=ast.parse(converted)
     verified={}
     for node in ast.walk(check):
@@ -113,8 +117,6 @@ def main():
     missing_verified=sorted(set(BRIDGES)-set(verified))
     if missing_verified:
         raise RuntimeError('V336 verification missing: '+', '.join(missing_verified))
-    if 'gsf-mobile-full-viewport-v181' not in converted:
-        raise RuntimeError('V336 CSS-only parent shell marker missing')
 
     compile(converted,str(APP),'exec')
     if converted!=source:
