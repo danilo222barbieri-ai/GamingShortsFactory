@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import re
 import sys
 
 MARK='V331_PRIMARY_ACTIONS_ROUTING'
@@ -12,52 +11,6 @@ SHELL_BLOCK=r'''
 # V331_PRIMARY_ACTIONS_ROUTING — one canonical browser route for Editor + Crea Short.
 if GSF_WEB_MODE:
     st.html(r"""
-    <style id="gsf-v331-primary-actions-style">
-      #gsf-short-overlay-v331{
-        position:fixed;inset:0;z-index:2147483654;
-        display:flex;align-items:center;justify-content:center;
-        padding:44px 14px 118px;
-        background:
-          radial-gradient(circle at 12% 8%,rgba(111,209,255,.15),transparent 24%),
-          radial-gradient(circle at 88% 10%,rgba(106,229,185,.13),transparent 25%),
-          linear-gradient(180deg,#FEFFFF 0%,#F8FCFF 100%);
-        opacity:0;visibility:hidden;pointer-events:none;
-        transition:opacity .18s ease,visibility .18s ease;
-      }
-      #gsf-short-overlay-v331.is-open{opacity:1;visibility:visible;pointer-events:auto}
-      #gsf-short-overlay-v331 .v331ShortShell{
-        position:relative;width:min(680px,calc(100vw - 28px));height:100%;min-height:0;
-        display:grid;grid-template-rows:auto 1fr auto;gap:10px;
-        border:1px solid rgba(150,184,214,.24);border-radius:24px;
-        background:rgba(255,255,255,.86);box-shadow:0 22px 58px rgba(49,94,135,.12);
-        overflow:hidden;padding:14px;
-      }
-      #gsf-short-overlay-v331 .v331ShortHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-      #gsf-short-overlay-v331 .v331ShortHead h2{margin:0;color:#0D2A66;font:900 22px/1.05 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-      #gsf-short-overlay-v331 .v331ShortHead p{margin:4px 0 0;color:#7185A6;font:700 10px/1.25 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-      #gsf-short-overlay-v331 .v331ShortClose{width:32px;height:32px;flex:0 0 32px;border-radius:11px;border:1px solid rgba(150,184,214,.26);background:#fff;color:#6C81A1;font-size:20px;line-height:1}
-      #gsf-short-overlay-v331 .v331ShortStage{min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
-      #gsf-short-overlay-v331 .v331Preview{
-        position:relative;height:min(100%,470px);aspect-ratio:9/16;max-width:78%;
-        border-radius:20px;border:1px solid rgba(112,187,230,.30);overflow:hidden;
-        background:linear-gradient(155deg,#EFF8FF,#F7FFFC);box-shadow:0 16px 40px rgba(56,108,151,.10);
-        display:grid;place-items:center;color:#6F88A8;text-align:center;padding:18px;
-      }
-      #gsf-short-overlay-v331 .v331Preview video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
-      #gsf-short-overlay-v331 .v331PreviewText{font:800 11px/1.25 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.02em}
-      #gsf-short-overlay-v331 .v331Actions{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:7px}
-      #gsf-short-overlay-v331 .v331Actions button{min-height:44px;border-radius:14px;border:1px solid rgba(146,182,213,.26);background:#F7FBFF;color:#56718F;font:900 9px/1.1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:7px 8px}
-      #gsf-short-overlay-v331 .v331Actions .primary{background:#DDEFFF;color:#136FCF;border-color:rgba(92,157,218,.28)}
-      #gsf-short-overlay-v331 .v331Status{position:absolute;left:14px;right:14px;bottom:66px;text-align:center;color:#6E86A5;font:800 9px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;pointer-events:none}
-      @media(max-width:760px){
-        #gsf-short-overlay-v331{padding:34px 10px calc(112px + env(safe-area-inset-bottom))}
-        #gsf-short-overlay-v331 .v331ShortShell{width:100%;border-radius:21px;padding:11px;gap:8px}
-        #gsf-short-overlay-v331 .v331ShortHead h2{font-size:20px}
-        #gsf-short-overlay-v331 .v331Preview{height:min(100%,420px);max-width:74%}
-        #gsf-short-overlay-v331 .v331Actions{grid-template-columns:1fr 1fr 1fr;gap:5px}
-        #gsf-short-overlay-v331 .v331Actions button{min-height:42px;font-size:8px;padding:6px 4px}
-      }
-    </style>
     <div style="display:none!important"><script>
     ((P)=>{
       if(P.__GSF_V331_PRIMARY_ACTIONS_ROUTING)return;
@@ -65,6 +18,59 @@ if GSF_WEB_MODE:
       const D=P.document;
       const EDITOR_KEY='gsf_editor_overlay_open_v223';
       const SHORT_KEY='gsf_short_overlay_open_v331';
+
+      if(!D.getElementById('gsf-v331-primary-actions-style')){
+        const style=D.createElement('style');
+        style.id='gsf-v331-primary-actions-style';
+        style.textContent=`
+          #gsf-short-overlay-v331{
+            position:fixed;inset:0;z-index:2147483654;
+            display:flex;align-items:center;justify-content:center;
+            padding:44px 14px 118px;
+            background:
+              radial-gradient(circle at 12% 8%,rgba(111,209,255,.15),transparent 24%),
+              radial-gradient(circle at 88% 10%,rgba(106,229,185,.13),transparent 25%),
+              linear-gradient(180deg,#FEFFFF 0%,#F8FCFF 100%);
+            opacity:0;visibility:hidden;pointer-events:none;
+            transition:opacity .18s ease,visibility .18s ease;
+          }
+          #gsf-short-overlay-v331.is-open{opacity:1;visibility:visible;pointer-events:auto}
+          #gsf-short-overlay-v331 .v331ShortShell{
+            position:relative;width:min(680px,calc(100vw - 28px));height:100%;min-height:0;
+            display:grid;grid-template-rows:auto 1fr auto;gap:10px;
+            border:1px solid rgba(150,184,214,.24);border-radius:24px;
+            background:rgba(255,255,255,.86);box-shadow:0 22px 58px rgba(49,94,135,.12);
+            overflow:hidden;padding:14px;
+          }
+          #gsf-short-overlay-v331 .v331ShortHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+          #gsf-short-overlay-v331 .v331ShortHead h2{margin:0;color:#0D2A66;font:900 22px/1.05 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+          #gsf-short-overlay-v331 .v331ShortHead p{margin:4px 0 0;color:#7185A6;font:700 10px/1.25 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+          #gsf-short-overlay-v331 .v331ShortClose{width:32px;height:32px;flex:0 0 32px;border-radius:11px;border:1px solid rgba(150,184,214,.26);background:#fff;color:#6C81A1;font-size:20px;line-height:1}
+          #gsf-short-overlay-v331 .v331ShortStage{min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+          #gsf-short-overlay-v331 .v331Preview{
+            position:relative;height:min(100%,470px);aspect-ratio:9/16;max-width:78%;
+            border-radius:20px;border:1px solid rgba(112,187,230,.30);overflow:hidden;
+            background:linear-gradient(155deg,#EFF8FF,#F7FFFC);box-shadow:0 16px 40px rgba(56,108,151,.10);
+            display:grid;place-items:center;color:#6F88A8;text-align:center;padding:18px;
+          }
+          #gsf-short-overlay-v331 .v331Preview video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+          #gsf-short-overlay-v331 .v331PreviewText{font:800 11px/1.25 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.02em}
+          #gsf-short-overlay-v331 .v331PreviewText span{font-weight:700;font-size:9px;color:#7C91AC}
+          #gsf-short-overlay-v331 .v331Actions{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:7px}
+          #gsf-short-overlay-v331 .v331Actions button{min-height:44px;border-radius:14px;border:1px solid rgba(146,182,213,.26);background:#F7FBFF;color:#56718F;font:900 9px/1.1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:7px 8px}
+          #gsf-short-overlay-v331 .v331Actions .primary{background:#DDEFFF;color:#136FCF;border-color:rgba(92,157,218,.28)}
+          #gsf-short-overlay-v331 .v331Status{position:absolute;left:14px;right:14px;bottom:66px;text-align:center;color:#6E86A5;font:800 9px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;pointer-events:none}
+          @media(max-width:760px){
+            #gsf-short-overlay-v331{padding:34px 10px calc(112px + env(safe-area-inset-bottom))}
+            #gsf-short-overlay-v331 .v331ShortShell{width:100%;border-radius:21px;padding:11px;gap:8px}
+            #gsf-short-overlay-v331 .v331ShortHead h2{font-size:20px}
+            #gsf-short-overlay-v331 .v331Preview{height:min(100%,420px);max-width:74%}
+            #gsf-short-overlay-v331 .v331Actions{grid-template-columns:1fr 1fr 1fr;gap:5px}
+            #gsf-short-overlay-v331 .v331Actions button{min-height:42px;font-size:8px;padding:6px 4px}
+          }
+        `;
+        D.head.appendChild(style);
+      }
 
       const hideOverlay=(o)=>{
         if(!o)return;
@@ -133,13 +139,17 @@ if GSF_WEB_MODE:
         o.querySelector('.v331Draft').addEventListener('click',async()=>{
           setStatus('Salvataggio…');
           try{
-            const r=await fetch('/drafts/save-current',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'});
+            const r=await P.fetch('/drafts/save-current',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'});
             const j=await r.json().catch(()=>({}));
             setStatus(r.ok&&j&&j.ok?'Bozza salvata.':(j&&j.error)||'Nessuna modifica da salvare.');
           }catch(_e){setStatus('Salvataggio non riuscito. Riprova.')}
         });
         const v=o.querySelector('video');
-        if(v){v.src='/editor-media/current?v=331';v.addEventListener('loadedmetadata',()=>{v.hidden=false;o.querySelector('.v331PreviewText').style.display='none'},{once:true});v.addEventListener('error',()=>{v.hidden=true},{once:true})}
+        if(v){
+          v.src='/editor-media/current?v=331';
+          v.addEventListener('loadedmetadata',()=>{v.hidden=false;const t=o.querySelector('.v331PreviewText');if(t)t.style.display='none'},{once:true});
+          v.addEventListener('error',()=>{v.hidden=true},{once:true});
+        }
         return o;
       };
 
@@ -171,7 +181,6 @@ if GSF_WEB_MODE:
 
 
 def patch_home(text:str)->str:
-    # Crea Short must always open its page first. The actual render button lives inside that page.
     patterns=[
         'if(action==="short"){const opened=parentClick(["crea short","crea short finale","crea il tuo short"]);if(!opened)shellNav("short");value({event:"create_short",duration,engine});}',
         'if(action==="short"){parentClick(["crea short","crea short finale","crea il tuo short"]);value({event:"create_short",duration,engine});}',
@@ -185,7 +194,6 @@ def patch_home(text:str)->str:
     if not replaced and 'if(action==="short"){shellNav("short")' not in text:
         raise RuntimeError('V331 Home Short action anchor missing')
 
-    # Load the Editor frame in the same synchronous Home->parent action that opens the overlay.
     marker='/* GSF_V331_EDITOR_DIRECT_LOAD */'
     if marker not in text:
         anchor='const panel=doc.getElementById(ids[target]);\n       handled=show(panel);'
