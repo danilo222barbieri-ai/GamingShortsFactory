@@ -160,6 +160,11 @@ python /app/web/test_v351_footer_brand_glass.py
 python -m py_compile /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
 grep -q 'GSF_V351_FOOTER_BRAND_GLASS' /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
 
+# V362: keep the visible footer version aligned with the deployed UI release.
+python /app/web/fix_v362_footer_version.py /app
+python /app/web/test_v362_footer_version.py
+grep -q 'GSF_V362_VISIBLE_VERSION' /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+
 # V352: mobile Creator Hub internal pages — readable top copy + natural Live scrolling.
 python /app/web/fix_v352_creator_mobile_pages.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v352_creator_mobile_pages.py
@@ -171,10 +176,12 @@ python /app/web/fix_v357_creator_hub_hierarchy.py /app/web/creator_hub_v156_comp
 python /app/web/test_v357_creator_hub_hierarchy.py
 grep -q 'V357_CREATOR_HUB_HIERARCHY' /app/web/creator_hub_v156_component/index.html
 
-# V359: fill every mobile Creator Hub page to a 6px gap above the parent Game Bar.
+# V359/V362: mobile Hub repair, then remove duplicated Shorts/Drafts inner blocks.
 python /app/web/fix_v359_creator_hub_gamebar_fit.py /app/web/creator_hub_v156_component/index.html
 python /app/web/test_v359_creator_hub_gamebar_fit.py
+python /app/web/test_v362_project_pages_cleanup.py
 grep -q 'V359_CREATOR_HUB_GAMEBAR_FIT' /app/web/creator_hub_v156_component/index.html
+grep -q 'V362_PROJECT_PAGES_CLEANUP' /app/web/creator_hub_v156_component/index.html
 
 python - <<'PY'
 import os,re
