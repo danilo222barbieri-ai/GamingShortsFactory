@@ -118,6 +118,10 @@ python /app/web/test_v329_worker_cost_guard.py /app
 python /app/web/fix_v330_global_chrome.py /app
 python /app/web/test_v330_global_chrome.py /app
 
+# V331: primary Home actions are direct and deterministic; Short is always openable.
+python /app/web/fix_v331_primary_actions_routing.py /app
+python /app/web/test_v331_primary_actions_routing.py /app
+
 # Generate production app only after every final runtime surface has validated.
 python /app/web/apply_v293_render_memory_guard.py
 
