@@ -34,7 +34,7 @@ with tempfile.TemporaryDirectory() as td:
         '.profileReferenceBrand{display:none!important}',
         'padding:10px 3px 104px!important',
         'overflow-y:auto!important',
-        '.v359ProjectDirect .detailHead{display:flex!important}',
+        '.v359ProjectDirect .detailHead{display:flex!important;',
         '.v359ProjectActivePane #draftRows>.empty',
         'min-height:220px!important',
         'grid-template-rows:repeat(2,148px)!important',
