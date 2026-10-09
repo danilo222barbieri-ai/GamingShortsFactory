@@ -161,6 +161,11 @@ python /app/web/test_v352_creator_mobile_pages.py
 
 grep -q 'v352CreatorMobilePages' /app/web/creator_hub_v156_component/index.html
 
+# V357: folder-first mobile Creator Hub — one title, Live platform folders, Social detail folder.
+python /app/web/fix_v357_creator_hub_hierarchy.py /app/web/creator_hub_v156_component/index.html
+python /app/web/test_v357_creator_hub_hierarchy.py
+grep -q 'V357_CREATOR_HUB_HIERARCHY' /app/web/creator_hub_v156_component/index.html
+
 python - <<'PY'
 import os,re
 from pathlib import Path
