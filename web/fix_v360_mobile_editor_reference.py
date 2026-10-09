@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import sys
 
 MARK = 'V360_MOBILE_EDITOR_REFERENCE'
@@ -7,201 +8,169 @@ MARK = 'V360_MOBILE_EDITOR_REFERENCE'
 PATCH = r'''
 <!-- V360_MOBILE_EDITOR_REFERENCE -->
 <!-- GSF_V361_EDITOR_REPAIR -->
+<!-- GSF_V364_EDITOR_STABLE_NOSCROLL -->
 <style id="v360MobileEditorReference">
-#ng27.v326Mobile.v360Reference{
-  --v360-player-w:286px;
-  width:100%!important;height:100%!important;min-height:0!important;max-height:100%!important;
-  box-sizing:border-box!important;margin:0!important;padding:5px 6px 96px!important;overflow:hidden!important;
-  background:
-    radial-gradient(circle at 50% 8%,rgba(207,238,251,.96),transparent 34%),
-    radial-gradient(circle at 12% 54%,rgba(219,246,255,.72),transparent 32%),
-    linear-gradient(180deg,#FBFEFF 0%,#F2FAFE 100%)!important;
-}
-#ng27.v326Mobile.v360Reference .shell{
-  width:100%!important;height:100%!important;min-height:0!important;max-width:460px!important;
-  margin:0 auto!important;padding:0!important;overflow:hidden!important;background:transparent!important;
-  display:grid!important;grid-template-rows:auto minmax(0,1fr)!important;gap:6px!important;
-}
-#ng27.v326Mobile.v360Reference .v360EditorHeader{
-  width:100%!important;min-height:50px!important;padding:7px 64px 7px 10px!important;
-  border:1px solid rgba(151,187,216,.22)!important;border-radius:18px!important;
-  background:rgba(255,255,255,.84)!important;box-shadow:0 9px 24px rgba(69,113,151,.08),inset 0 1px 0 rgba(255,255,255,.98)!important;
-  -webkit-backdrop-filter:blur(16px)!important;backdrop-filter:blur(16px)!important;
-  display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:0!important;align-items:center!important;
-}
-#ng27.v326Mobile.v360Reference .v360EditorTitle{min-width:0!important}
-#ng27.v326Mobile.v360Reference .v360EditorTitle b{
-  display:block!important;color:#0D2D6D!important;font-size:20px!important;line-height:1!important;font-weight:950!important;letter-spacing:-.025em!important;
-}
-#ng27.v326Mobile.v360Reference .v360EditorTitle span{
-  display:block!important;margin-top:4px!important;color:#7184A4!important;font-size:9.8px!important;line-height:1.15!important;font-weight:750!important;
-  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
-}
-/* Parent shell already owns the close affordance. Keep fullscreen on the real
-   player control instead of creating a competing header button. */
-#ng27.v326Mobile.v360Reference .v360FullProxy{display:none!important}
+/* V364: compact approved mobile Editor. Geometry is CSS-owned and stable:
+   no resize observer, no mutation observer, no JS-written player width. */
+@media(max-width:760px){
+  html,body{
+    width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:0!important;
+    overflow:hidden!important;overscroll-behavior:none!important;
+  }
+  #ng27.v326Mobile{
+    width:100%!important;height:100%!important;min-height:0!important;max-height:100%!important;
+    box-sizing:border-box!important;margin:0!important;padding:4px 6px 88px!important;overflow:hidden!important;
+    background:radial-gradient(circle at 50% 8%,rgba(207,238,251,.96),transparent 34%),radial-gradient(circle at 12% 54%,rgba(219,246,255,.72),transparent 32%),linear-gradient(180deg,#FBFEFF 0%,#F2FAFE 100%)!important;
+  }
+  #ng27.v326Mobile .shell{
+    width:100%!important;height:100%!important;min-height:0!important;max-width:460px!important;
+    margin:0 auto!important;padding:0!important;overflow:hidden!important;background:transparent!important;display:block!important;
+  }
+  #ng27.v326Mobile .topline,#ng27.v326Mobile .gsfGuide,#ng27.v326Mobile .footNote{display:none!important}
+  #ng27.v326Mobile .cockpit,#ng27.v326Mobile.expanded .cockpit{
+    width:100%!important;max-width:460px!important;height:100%!important;min-height:0!important;margin:0 auto!important;padding:0 2px!important;
+    display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr) auto auto!important;
+    gap:4px!important;align-items:stretch!important;align-content:stretch!important;justify-items:stretch!important;overflow:hidden!important;
+  }
+  /* Compact default: the user can open FULL for precision work. */
+  #ng27.v326Mobile .stageWrap{
+    grid-column:1!important;grid-row:1!important;position:relative!important;
+    width:clamp(188px,52vw,200px)!important;max-width:calc(100% - 8px)!important;height:auto!important;min-height:0!important;
+    margin:0 auto!important;padding:0!important;align-self:start!important;justify-self:center!important;overflow:visible!important;transition:none!important;
+  }
+  #ng27.v326Mobile .stage.r916,#ng27.v326Mobile.expanded .stage.r916{
+    position:relative!important;width:100%!important;max-width:none!important;height:auto!important;aspect-ratio:9/16!important;margin:0!important;
+    border-radius:20px!important;border:1px solid rgba(126,207,240,.52)!important;overflow:hidden!important;
+    background:linear-gradient(180deg,#dff4fd,#f5fbff)!important;
+    box-shadow:0 10px 26px rgba(43,98,139,.14),0 0 0 3px rgba(255,255,255,.46)!important;transition:none!important;
+  }
+  #ng27.v326Mobile .stage video,#ng27.v326Mobile .stage #videoBg{transition:none!important}
 
-#ng27.v326Mobile.v360Reference .cockpit,#ng27.v326Mobile.v360Reference.expanded .cockpit{
-  width:100%!important;max-width:460px!important;height:100%!important;min-height:0!important;margin:0 auto!important;padding:0 2px!important;
-  display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr) auto auto!important;
-  gap:6px!important;align-items:stretch!important;align-content:stretch!important;justify-items:stretch!important;overflow:hidden!important;
-}
-/* PLAYER -> ACTIONS -> TIMELINE */
-#ng27.v326Mobile.v360Reference .stageWrap{
-  grid-row:1!important;width:var(--v360-player-w)!important;max-width:calc(100% - 8px)!important;min-height:0!important;
-  margin:0 auto!important;padding:0!important;align-self:start!important;justify-self:center!important;overflow:visible!important;
-}
-#ng27.v326Mobile.v360Reference .stage.r916,#ng27.v326Mobile.v360Reference.expanded .stage.r916{
-  position:relative!important;width:100%!important;max-width:none!important;height:auto!important;aspect-ratio:9/16!important;margin:0!important;
-  border-radius:22px!important;border:1px solid rgba(126,207,240,.52)!important;overflow:hidden!important;
-  box-shadow:0 12px 30px rgba(43,98,139,.15),0 0 0 4px rgba(255,255,255,.48)!important;
-}
+  /* V326 is the only visible control shell. */
+  #ng27.v326Mobile .v325PlayerMeta{display:none!important}
+  #ng27.v326Mobile .v325PlaybackDock{display:none!important}
+  #ng27.v326Mobile .v326LeftDock{left:7px!important}
+  #ng27.v326Mobile .v326RightDock{right:7px!important}
+  #ng27.v326Mobile .v326ToolDock{gap:5px!important;transition:none!important}
+  #ng27.v326Mobile .v326ToolDock .railBtn{
+    width:40px!important;height:48px!important;min-width:40px!important;min-height:48px!important;border-radius:14px!important;
+    border:1px solid rgba(255,255,255,.72)!important;background:linear-gradient(145deg,rgba(29,54,81,.68),rgba(49,76,105,.54))!important;color:#fff!important;
+    -webkit-backdrop-filter:blur(14px) saturate(1.10)!important;backdrop-filter:blur(14px) saturate(1.10)!important;
+    box-shadow:0 6px 16px rgba(10,27,44,.19),inset 0 1px 0 rgba(255,255,255,.25)!important;transition:none!important;
+  }
+  #ng27.v326Mobile .v326ToolDock .railBtn .ico{width:17px!important;height:17px!important;color:#fff!important}
+  #ng27.v326Mobile .v326ToolDock .railBtn span{font-size:6.1px!important;line-height:1!important;color:#fff!important;font-weight:950!important}
 
-/* V325 and V326 both contributed player meta/playback shells. V326 is the
-   canonical mobile layer now, so suppress only the older duplicate shells. */
-#ng27.v326Mobile.v360Reference .v325PlayerMeta{display:none!important}
-#ng27.v326Mobile.v360Reference .v325PlaybackDock{display:none!important}
+  #ng27.v326Mobile .v326Meta{top:7px!important;left:7px!important;right:7px!important}
+  #ng27.v326Mobile .v326Ratio{margin-left:auto!important;margin-right:40px!important}
+  #ng27.v326Mobile .v326Time,#ng27.v326Mobile .v326Ratio{height:26px!important;padding:0 7px!important;border-radius:11px!important;font-size:7.6px!important}
+  #ng27.v326Mobile #zoomEditorBtn{
+    display:flex!important;position:absolute!important;top:7px!important;right:7px!important;z-index:104!important;
+    width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;padding:0!important;border-radius:11px!important;
+    opacity:1!important;pointer-events:auto!important;overflow:visible!important;border:1px solid rgba(255,255,255,.68)!important;
+    background:rgba(24,48,74,.64)!important;color:#fff!important;-webkit-backdrop-filter:blur(12px)!important;backdrop-filter:blur(12px)!important;transition:none!important;
+  }
+  #ng27.v326Mobile #zoomEditorBtn .ico{width:16px!important;height:16px!important;margin:auto!important;color:#fff!important}
+  #ng27.v326Mobile #zoomEditorBtn span{display:none!important}
 
-#ng27.v326Mobile.v360Reference .v326LeftDock{left:8px!important}
-#ng27.v326Mobile.v360Reference .v326RightDock{right:8px!important}
-#ng27.v326Mobile.v360Reference .v326ToolDock{gap:6px!important}
-#ng27.v326Mobile.v360Reference .v326ToolDock .railBtn{
-  width:44px!important;height:52px!important;min-width:44px!important;min-height:52px!important;border-radius:15px!important;
-  border:1px solid rgba(255,255,255,.72)!important;
-  background:linear-gradient(145deg,rgba(29,54,81,.68),rgba(49,76,105,.54))!important;
-  -webkit-backdrop-filter:blur(15px) saturate(1.12)!important;backdrop-filter:blur(15px) saturate(1.12)!important;
-  box-shadow:0 7px 18px rgba(10,27,44,.20),inset 0 1px 0 rgba(255,255,255,.26)!important;
-}
-#ng27.v326Mobile.v360Reference .v326ToolDock .railBtn .ico{width:19px!important;height:19px!important}
-#ng27.v326Mobile.v360Reference .v326ToolDock .railBtn span{font-size:6.8px!important;font-weight:950!important}
-#ng27.v326Mobile.v360Reference .v326Meta{top:9px!important;left:9px!important;right:9px!important}
-#ng27.v326Mobile.v360Reference .v326Ratio{margin-left:auto!important;margin-right:44px!important}
-#ng27.v326Mobile.v360Reference .v326Time,#ng27.v326Mobile.v360Reference .v326Ratio{
-  height:29px!important;padding:0 9px!important;border-radius:12px!important;font-size:8.4px!important;
-}
+  #ng27.v326Mobile .v326PlaybackDock{bottom:14px!important;gap:8px!important;transition:none!important}
+  #ng27.v326Mobile #playBtn{
+    width:46px!important;height:46px!important;min-width:46px!important;min-height:46px!important;
+    background:linear-gradient(145deg,#57BCFC,#377CE8)!important;box-shadow:0 7px 19px rgba(17,50,94,.30),inset 0 1px 0 rgba(255,255,255,.40)!important;transition:none!important;
+  }
+  #ng27.v326Mobile .v326Skip{font-size:20px!important}
 
-/* Re-enable the existing fullscreen button inside the player. No cloned
-   control, no second handler. */
-#ng27.v326Mobile.v360Reference #zoomEditorBtn{
-  display:flex!important;position:absolute!important;top:9px!important;right:9px!important;z-index:104!important;
-  width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;
-  padding:0!important;border-radius:12px!important;opacity:1!important;pointer-events:auto!important;overflow:visible!important;
-  border:1px solid rgba(255,255,255,.68)!important;background:rgba(24,48,74,.64)!important;color:#fff!important;
-  -webkit-backdrop-filter:blur(13px)!important;backdrop-filter:blur(13px)!important;
-}
-#ng27.v326Mobile.v360Reference #zoomEditorBtn .ico{width:18px!important;height:18px!important;margin:auto!important;color:#fff!important}
-#ng27.v326Mobile.v360Reference #zoomEditorBtn span{display:none!important}
+  #ng27.v326Mobile .cockpit>.v323EditorActions{
+    grid-column:1!important;grid-row:2!important;width:100%!important;max-width:none!important;min-height:40px!important;margin:0!important;padding:0!important;
+    display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:5px!important;transition:none!important;
+  }
+  #ng27.v326Mobile .cockpit>.v323EditorActions .v323EditorAction{
+    height:40px!important;min-height:40px!important;padding:6px 8px!important;border-radius:14px!important;font-size:8.3px!important;line-height:1!important;font-weight:950!important;transition:none!important;
+  }
+  #ng27.v326Mobile .cockpit>.v323EditorActions .v323EditorAction.primary{background:linear-gradient(135deg,#55B8FA,#3E83EC)!important;color:#fff!important}
+  #ng27.v326Mobile .cockpit>.v323EditorActions .v323EditorAction.secondary{background:rgba(255,255,255,.92)!important;color:#123B7A!important}
 
-#ng27.v326Mobile.v360Reference .v326PlaybackDock{bottom:18px!important;gap:10px!important}
-#ng27.v326Mobile.v360Reference #playBtn{
-  width:52px!important;height:52px!important;min-width:52px!important;min-height:52px!important;
-  background:linear-gradient(145deg,#57BCFC,#377CE8)!important;box-shadow:0 8px 22px rgba(17,50,94,.32),inset 0 1px 0 rgba(255,255,255,.42)!important;
-}
-#ng27.v326Mobile.v360Reference .v326Skip{font-size:22px!important}
+  #ng27.v326Mobile .cockpit>.timeline{
+    grid-column:1!important;grid-row:3!important;width:100%!important;max-width:none!important;min-height:0!important;margin:0!important;padding:5px 7px 4px!important;
+    border-radius:14px!important;background:rgba(255,255,255,.76)!important;border:1px solid rgba(151,187,216,.24)!important;
+    box-shadow:0 6px 16px rgba(79,118,157,.06),inset 0 1px 0 rgba(255,255,255,.84)!important;transform:none!important;transition:none!important;
+  }
+  #ng27.v326Mobile .cockpit>.timeline .tlMeta{margin:0 1px 3px!important;font-size:6.8px!important}
+  #ng27.v326Mobile .cockpit>.timeline .track{height:28px!important}
+  #ng27.v326Mobile .cockpit>.timeline .trimRow{margin-top:2px!important;font-size:6.4px!important}
+  #ng27.v326Mobile .drawer{
+    z-index:180!important;max-height:min(52%,330px)!important;overflow-y:auto!important;overflow-x:hidden!important;
+    border-radius:17px!important;box-shadow:0 14px 34px rgba(36,75,112,.18)!important;
+  }
 
-#ng27.v326Mobile.v360Reference .cockpit>.v323EditorActions{
-  grid-row:2!important;width:100%!important;max-width:none!important;min-height:44px!important;margin:0!important;padding:0!important;
-  display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:6px!important;
-}
-#ng27.v326Mobile.v360Reference .cockpit>.v323EditorActions .v323EditorAction{
-  min-height:44px!important;height:44px!important;border-radius:15px!important;font-size:9px!important;line-height:1!important;font-weight:950!important;
-  box-shadow:0 7px 18px rgba(61,104,145,.08)!important;
-}
-#ng27.v326Mobile.v360Reference .cockpit>.v323EditorActions .v323EditorAction.primary{
-  background:linear-gradient(135deg,#55B8FA,#3E83EC)!important;color:#fff!important;
-}
-#ng27.v326Mobile.v360Reference .cockpit>.v323EditorActions .v323EditorAction.secondary{
-  background:rgba(255,255,255,.92)!important;color:#123B7A!important;
-}
-#ng27.v326Mobile.v360Reference .cockpit>.timeline{
-  grid-row:3!important;width:100%!important;max-width:none!important;min-height:0!important;margin:0!important;padding:7px 8px 6px!important;
-  border-radius:16px!important;background:rgba(255,255,255,.76)!important;border:1px solid rgba(151,187,216,.24)!important;
-  box-shadow:0 7px 18px rgba(79,118,157,.07),inset 0 1px 0 rgba(255,255,255,.84)!important;
-}
-#ng27.v326Mobile.v360Reference .cockpit>.timeline .tlMeta{margin:0 1px 5px!important;font-size:7.5px!important}
-#ng27.v326Mobile.v360Reference .cockpit>.timeline .track{height:36px!important}
-#ng27.v326Mobile.v360Reference .cockpit>.timeline .trimRow{margin-top:3px!important;font-size:7px!important}
-#ng27.v326Mobile.v360Reference .drawer{
-  z-index:180!important;max-height:min(48%,360px)!important;overflow-y:auto!important;overflow-x:hidden!important;
-  border-radius:18px!important;box-shadow:0 14px 34px rgba(36,75,112,.18)!important;
-}
-
-@media(max-width:390px){
-  #ng27.v326Mobile.v360Reference{padding:4px 5px 94px!important}
-  #ng27.v326Mobile.v360Reference .v360EditorHeader{min-height:48px!important;padding:6px 60px 6px 9px!important}
-  #ng27.v326Mobile.v360Reference .v360EditorTitle b{font-size:19px!important}
-  #ng27.v326Mobile.v360Reference .v360EditorTitle span{font-size:9px!important}
-  #ng27.v326Mobile.v360Reference .v326ToolDock .railBtn{width:42px!important;height:49px!important;min-width:42px!important;min-height:49px!important;border-radius:14px!important}
-  #ng27.v326Mobile.v360Reference .v326ToolDock .railBtn .ico{width:18px!important;height:18px!important}
-  #ng27.v326Mobile.v360Reference .v326ToolDock .railBtn span{font-size:6.5px!important}
-  #ng27.v326Mobile.v360Reference #playBtn{width:50px!important;height:50px!important;min-width:50px!important;min-height:50px!important}
-  #ng27.v326Mobile.v360Reference .cockpit>.v323EditorActions .v323EditorAction{height:42px!important;min-height:42px!important;font-size:8.5px!important}
-  #ng27.v326Mobile.v360Reference .cockpit>.timeline .track{height:32px!important}
+  /* FULL is intentionally larger; normal mode remains compact and no-scroll. */
+  #ng27.v326Mobile.gsfFullscreen,#ng27.v326Mobile:fullscreen,#ng27.v326Mobile:-webkit-full-screen{padding:8px!important}
+  #ng27.v326Mobile.gsfFullscreen .stageWrap,#ng27.v326Mobile:fullscreen .stageWrap,#ng27.v326Mobile:-webkit-full-screen .stageWrap{
+    width:min(78vw,360px,calc((100dvh - 126px)*9/16))!important;max-width:calc(100% - 16px)!important;
+  }
 }
 </style>
-<script id="v360MobileEditorReferenceRuntime">
-(()=>{
-  const root=document.getElementById('ng27');
-  if(!root)return;
-  const shell=root.querySelector('.shell');
-  const cockpit=root.querySelector('.cockpit');
-  const actions=root.querySelector('#v323EditorActions');
-  const timeline=root.querySelector('.timeline');
-  const stage=root.querySelector('#stage');
-  const fullBtn=root.querySelector('#zoomEditorBtn');
-  if(!shell||!cockpit||!actions||!timeline||!stage)return;
-
-  function isMobile(){
-    const P=window.parent;
-    const w=Number(P&&P.innerWidth)||Number(window.innerWidth)||9999;
-    return w<=760 || (!!navigator.maxTouchPoints && w<=1024);
-  }
-
-  function ensureHeader(){
-    let header=shell.querySelector('.v360EditorHeader');
-    if(header)return header;
-    header=document.createElement('div');
-    header.className='v360EditorHeader';
-    header.innerHTML='<div class="v360EditorTitle"><b>Game Editor</b><span>Il tuo gameplay resta nel progetto mentre modifichi.</span></div><button class="v360FullProxy" type="button" aria-label="Apri editor a schermo intero"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4M16 4h4v4M20 16v4h-4M4 16v4h4"/></svg><span>FULL</span></button>';
-    shell.insertBefore(header,cockpit);
-    const proxy=header.querySelector('.v360FullProxy');
-    if(proxy)proxy.addEventListener('click',()=>{if(fullBtn)fullBtn.click()});
-    return header;
-  }
-
-  function v360FitLayout(){
-    const mobile=isMobile();
-    root.classList.toggle('v360Reference',mobile);
-    if(!mobile)return;
-    const header=ensureHeader();
-    const shellH=Math.max(360,Math.floor(shell.getBoundingClientRect().height||root.getBoundingClientRect().height||560));
-    const shellW=Math.max(260,Math.floor(shell.getBoundingClientRect().width||root.getBoundingClientRect().width||360));
-    const headerH=Math.max(48,Math.ceil(header.getBoundingClientRect().height||50));
-    const actionsH=Math.max(42,Math.ceil(actions.getBoundingClientRect().height||44));
-    const timelineH=Math.max(68,Math.ceil(timeline.getBoundingClientRect().height||78));
-    const verticalGap=18;
-    const availableH=Math.max(250,shellH-headerH-actionsH-timelineH-verticalGap);
-    const maxByWidth=Math.max(210,Math.min(340,shellW-18));
-    const targetW=Math.max(210,Math.min(maxByWidth,Math.floor(availableH*9/16)));
-    root.style.setProperty('--v360-player-w',targetW+'px');
-  }
-
-  let raf=0;
-  function schedule(){
-    cancelAnimationFrame(raf);
-    raf=requestAnimationFrame(()=>requestAnimationFrame(v360FitLayout));
-  }
-
-  v360FitLayout();
-  setTimeout(schedule,80);
-  setTimeout(schedule,320);
-  setTimeout(schedule,900);
-  window.addEventListener('resize',schedule,{passive:true});
-  try{new ResizeObserver(schedule).observe(root);}catch(_e){}
-  try{new MutationObserver(schedule).observe(root,{attributes:true,attributeFilter:['class']});}catch(_e){}
-})();
-</script>
 '''
+
+FRAME_RE = re.compile(
+    r"function\s+setFrameHeight\(height\)\s*\{\s*const\s+h=Math\.max\(320,Number\(height\)\|\|720\);\s*sendMessage\(SET_FRAME_HEIGHT,\{height:h\}\);\s*\}",
+    re.S,
+)
+NEW_FRAME = '''let lastSentFrameHeight=0;
+ function setFrameHeight(height){
+   let h=Math.max(320,Math.round(Number(height)||720));
+   try{
+     const pw=Math.max(320,Number(window.parent.innerWidth||window.innerWidth||1920));
+     if(pw<=820){
+       const sh=Math.max(560,Number((window.screen&&window.screen.height)||0)||Number(window.parent.innerHeight||window.innerHeight||720));
+       const mobileCap=Math.max(520,Math.min(820,Math.floor(sh-110)));
+       h=Math.min(h,mobileCap);
+     }
+   }catch(e){}
+   if(Math.abs(h-lastSentFrameHeight)<3)return;
+   lastSentFrameHeight=h;
+   sendMessage(SET_FRAME_HEIGHT,{height:h});
+ }'''
+
+FIT_RE = re.compile(
+    r"function\s+fitEditorViewport\(\)\s*\{\s*try\{\s*const\s+pw=Math\.max\(320,Number\(window\.parent\.innerWidth\|\|window\.innerWidth\|\|1920\)\);\s*if\(pw<=820\)\{setFrameHeight\(Math\.max\(720,Math\.ceil\(document\.documentElement\.scrollHeight\|\|720\)\)\);return\}\s*const\s+ph=Math\.max\(600,Number\(window\.parent\.innerHeight\|\|window\.innerHeight\|\|900\)\);\s*setFrameHeight\(Math\.max\(600,Math\.min\(1080,Math\.floor\(ph\)\)\)\);\s*\}catch\(e\)\{setFrameHeight\(900\)\}\s*\}",
+    re.S,
+)
+NEW_FIT = '''function fitEditorViewport(){
+   try{
+     const pw=Math.max(320,Number(window.parent.innerWidth||window.innerWidth||1920));
+     const ph=Math.max(560,Number(window.parent.innerHeight||window.innerHeight||720));
+     if(pw<=820){setFrameHeight(ph);return}
+     setFrameHeight(Math.max(600,Math.min(1080,Math.floor(ph))));
+   }catch(e){setFrameHeight(720)}
+ }'''
+
+FALLBACK_RE = re.compile(
+    r"window\.setTimeout\(\(\)=>\{\s*if\(!hostVideoUrl\)\{(?P<body>.*?)\}\s*\},80\);",
+    re.S,
+)
+
+
+def _stabilize_frame_sizing(text: str) -> str:
+    text, n = FRAME_RE.subn(NEW_FRAME, text, count=1)
+    if n != 1:
+        raise RuntimeError('V364 frame-height anchor missing')
+    text, n = FIT_RE.subn(NEW_FIT, text, count=1)
+    if n != 1:
+        raise RuntimeError('V364 viewport-fit anchor missing')
+    return text
+
+
+def _stabilize_fallback_source(text: str) -> str:
+    match = FALLBACK_RE.search(text)
+    if not match:
+        raise RuntimeError('V364 editor fallback loader anchor missing')
+    body = match.group('body').replace(
+        "hostVideoUrl='/editor-media/current?ts='+Date.now();",
+        "hostVideoUrl='/editor-media/current';",
+    )
+    replacement = "window.setTimeout(()=>{\n   if(!hostVideoUrl){" + body + "}\n },900);"
+    return text[:match.start()] + replacement + text[match.end():]
 
 
 def patch_text(text: str) -> str:
@@ -222,6 +191,8 @@ def patch_text(text: str) -> str:
     for anchor in required:
         if anchor not in text:
             raise RuntimeError('V360 missing editor anchor: ' + anchor)
+    text = _stabilize_frame_sizing(text)
+    text = _stabilize_fallback_source(text)
     if '</body>' not in text:
         raise RuntimeError('V360 editor body anchor missing')
     return text.replace('</body>', PATCH + '\n</body>', 1)
@@ -234,7 +205,7 @@ def main() -> None:
     before = path.read_text(encoding='utf-8')
     after = patch_text(before)
     path.write_text(after, encoding='utf-8')
-    print('V360/V361 mobile editor reference applied changed=', before != after, flush=True)
+    print('V364 compact no-scroll Editor stabilization applied', 'changed=', before != after, flush=True)
 
 
 if __name__ == '__main__':
