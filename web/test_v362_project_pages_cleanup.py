@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import importlib.util
-import tempfile
 
 ROOT = Path(__file__).resolve().parent
 FIX = ROOT / 'fix_v362_project_pages_cleanup.py'
@@ -33,11 +32,20 @@ for token in (
     'hubProjectsGuide',
     '#shortRows',
     '#draftRows',
+    "view.classList.toggle('v362CollectionEmpty',removableEmpty)",
+    "el.classList.toggle('v362EmptyCollection',removableEmpty)",
+    "rows.classList.toggle('v362EmptyCollection',removableEmpty)",
 ):
-    assert token in patched, f'missing V362 contract token: {token}'
+    assert token in patched, f'missing V362.1 contract token: {token}'
+
+# Cleanup must not churn its own MutationObserver by removing and immediately
+# re-adding classes on every callback.
+direct_block = patched[patched.index('function clean(){'):patched.index('const scroller=q', patched.index('function clean(){'))]
+assert "qa('.v362RedundantProjectBlock').forEach((n)=>n.classList.remove('v362RedundantProjectBlock'));" not in direct_block
+assert "qa('.v362EmptyCollection').forEach((n)=>n.classList.remove('v362EmptyCollection'));" not in direct_block
 
 # The existing top page title remains; V362 removes only redundant content inside the scroller.
 assert 'id="projectsViewTitle"' in patched
 assert 'detailHead' in patched
 
-print('V362 PROJECT PAGES CLEANUP CONTRACT: PASS')
+print('V362.1 PROJECT PAGES CLEANUP CONTRACT: PASS')
