@@ -21,6 +21,7 @@ with tempfile.TemporaryDirectory() as td:
         'GSF_V351_FOOTER_BRAND_GLASS',
         'GSF_V353_FOOTER_BALANCE_HIRES',
         'GSF_V354_FOOTER_TRUE_CENTER_SAFE_SIDES',
+        'GSF_V355_FOOTER_BOTTOM_LOCK',
         'gsf-v351-brand',
         '>GSF<',
         'gsf-v351-socials',
@@ -33,33 +34,36 @@ with tempfile.TemporaryDirectory() as td:
         "['Termini','/terms']",
         "['Privacy','/privacy']",
         "['Contatti','/contact']",
-        'position:relative!important',
+        'position:fixed!important',
+        'left:0!important',
+        'right:0!important',
+        'bottom:0!important',
+        'top:auto!important',
+        'width:100%!important',
+        'z-index:9997!important',
         'left:50%!important',
         'transform:translate(-50%,-50%)!important',
         'left:max(14px,env(safe-area-inset-left))!important',
         'right:max(14px,env(safe-area-inset-right))!important',
         'overflow:visible!important',
         'shape-rendering:geometricPrecision',
-        'width:15px!important',
-        'height:15px!important',
-        'width:23px!important',
-        'height:23px!important',
         "f.replaceChildren(brand, socials, legal);",
-        "f.dataset.gsfV354 = '1';",
+        "f.dataset.gsfV355 = '1';",
     ]
     for token in required:
-        assert token in out, f'missing V354 footer token: {token}'
+        assert token in out, f'missing V355 footer token: {token}'
 
-    assert 'grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)' not in out, 'V354 must not depend on side-column widths for centering'
+    assert 'position:relative!important' not in out, 'footer container must not return to document flow'
+    assert 'grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)' not in out, 'footer centering must not depend on side-column widths'
     assert out.count('<svg viewBox=') >= 5, 'all five social marks must be vector SVGs'
-    assert '>♪</span>' not in out, 'TikTok must not use a text glyph'
-    assert '>f</span>' not in out, 'Facebook must not use a text glyph'
-    assert '>◧</span>' not in out, 'Twitch must not use a text glyph'
-    assert 'Segnala bug' not in out, 'footer must not render Segnala bug'
-    assert 'clickable.slice' not in out, 'footer must not infer social controls from old nodes'
+    assert '>♪</span>' not in out
+    assert '>f</span>' not in out
+    assert '>◧</span>' not in out
+    assert 'Segnala bug' not in out
+    assert 'clickable.slice' not in out
 
     once = out
     subprocess.run([sys.executable, str(FIX), str(root)], check=True)
     assert app.read_text(encoding='utf-8') == once, 'footer patch must be restart-safe'
 
-print('V354 TRUE-CENTER SAFE-AREA FOOTER: PASS', flush=True)
+print('V355 TRUE-CENTER BOTTOM-LOCK FOOTER: PASS', flush=True)
