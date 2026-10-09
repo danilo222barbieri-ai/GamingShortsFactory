@@ -24,8 +24,9 @@ with tempfile.TemporaryDirectory() as td:
         'GSF_V355_FOOTER_BOTTOM_LOCK',
         'GSF_V356_FOOTER_SIDE_INSET',
         'GSF_V358_FOOTER_VERSION_LABEL',
+        'GSF_V361_VISIBLE_VERSION',
         'gsf-v351-brand',
-        'GSF - V358',
+        'GSF - V361',
         'gsf-v351-socials',
         'gsf-v351-legal',
         'data-social="youtube"',
@@ -52,16 +53,17 @@ with tempfile.TemporaryDirectory() as td:
         'overflow:visible!important',
         'shape-rendering:geometricPrecision',
         "f.replaceChildren(brand, socials, legal);",
-        "f.dataset.gsfV358 = '1';",
+        "f.dataset.gsfV361 = '1';",
     ]
     for token in required:
-        assert token in out, f'missing V358 footer token: {token}'
+        assert token in out, f'missing V361 footer token: {token}'
 
-    assert 'left:max(12px,env(safe-area-inset-left))!important' not in out, 'mobile brand must stay inset from the edge'
-    assert 'right:max(12px,env(safe-area-inset-right))!important' not in out, 'mobile legal links must stay inset from the edge'
-    assert 'position:relative!important' not in out, 'footer container must stay fixed at bottom'
-    assert 'grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)' not in out, 'footer centering must not depend on side-column widths'
-    assert out.count('<svg viewBox=') >= 5, 'all five social marks must remain vector SVGs'
+    assert 'GSF - V358</span>' not in out, 'visible footer version must not remain stale'
+    assert 'left:max(12px,env(safe-area-inset-left))!important' not in out
+    assert 'right:max(12px,env(safe-area-inset-right))!important' not in out
+    assert 'position:relative!important' not in out
+    assert 'grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)' not in out
+    assert out.count('<svg viewBox=') >= 5
     assert '>♪</span>' not in out
     assert '>f</span>' not in out
     assert '>◧</span>' not in out
@@ -72,4 +74,4 @@ with tempfile.TemporaryDirectory() as td:
     subprocess.run([sys.executable, str(FIX), str(root)], check=True)
     assert app.read_text(encoding='utf-8') == once, 'footer patch must be restart-safe'
 
-print('V358 FOOTER VERSION LABEL: PASS', flush=True)
+print('V361 FOOTER VERSION LABEL: PASS', flush=True)
