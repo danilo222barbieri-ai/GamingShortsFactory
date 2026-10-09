@@ -6,20 +6,14 @@ import sys
 ROOT=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app')
 APP=ROOT/'GamingShortsFactory_V154_STRUCTURAL_HOME.py'
 MARK='V336_EXECUTABLE_SHELL_BRIDGE'
-IMPORT='import streamlit.components.v1 as _gsf_components_v336'
-
-# These five late mobile-shell patches are intentionally JavaScript bridges.
-# Streamlit 1.49 st.html sanitizes/does not execute JavaScript, while
-# streamlit.components.v1.html renders an executable same-origin iframe. The
-# bridge scripts already target window.parent, which is exactly the parent DOM
-# they need to control.
-BRIDGES={
-    'V328':'__GSF_V328_GLOBAL_BALANCE',
-    'V330':'__GSF_V330_GLOBAL_CHROME',
-    'V331':'__GSF_V331_PRIMARY_ACTIONS_ROUTING',
-    'V332':'__GSF_V332_GLOBAL_FRAME_LOCK',
-    'V334':'__GSF_V334_GLOBAL_CHROME_HARD_LOCK',
-}
+RETIRED=(
+    '__GSF_V327_EDITOR_BRIDGE',
+    '__GSF_V328_GLOBAL_BALANCE',
+    '__GSF_V330_GLOBAL_CHROME',
+    '__GSF_V331_PRIMARY_ACTIONS_ROUTING',
+    '__GSF_V332_GLOBAL_FRAME_LOCK',
+    '__GSF_V334_GLOBAL_CHROME_HARD_LOCK',
+)
 
 
 def call_name(node):
@@ -33,95 +27,49 @@ def main():
     if not APP.is_file():
         raise SystemExit('V336 shell app missing')
     source=APP.read_text(encoding='utf-8')
+    if any(marker in source for marker in RETIRED):
+        raise RuntimeError('V336 found retired parent bridge markers after V343 cleanup')
+
     tree=ast.parse(source)
-    lines=source.splitlines(keepends=True)
-    found={}
-
+    v343=[]
+    unsupported=[]
     for node in ast.walk(tree):
-        if not isinstance(node,ast.Call) or not node.args:
+        if not isinstance(node,ast.Call):
             continue
-        arg=node.args[0]
-        if not isinstance(arg,ast.Constant) or not isinstance(arg.value,str):
-            continue
-        body=arg.value
-        hits=[name for name,marker in BRIDGES.items() if marker in body]
-        if not hits:
-            continue
-        if len(hits)!=1:
-            raise RuntimeError('V336 bridge call has ambiguous markers: '+','.join(hits))
-        name=hits[0]
         qual=call_name(node)
-        if name in found:
-            raise RuntimeError(f'V336 duplicate bridge marker {name}')
-        found[name]=(node,qual)
-
-    missing=sorted(set(BRIDGES)-set(found))
-    if missing:
-        raise RuntimeError('V336 missing bridge markers: '+', '.join(missing))
-
-    # Work from bottom to top so line-local replacements cannot disturb later
-    # source positions. Every target bridge starts with st.html(...) on a fresh
-    # runtime shell; already-converted bridges are accepted for restart safety.
-    edits=[]
-    for name,(node,qual) in found.items():
-        if qual=='_gsf_components_v336.html':
-            continue
-        if qual!='st.html':
-            raise RuntimeError(f'V336 unexpected renderer for {name}: {qual or "unknown"}')
-        idx=node.lineno-1
-        line=lines[idx]
-        pos=line.find('st.html',node.col_offset)
-        if pos<0:
-            raise RuntimeError(f'V336 cannot locate st.html source for {name} at line {node.lineno}')
-        edits.append((idx,pos,name))
-
-    for idx,pos,name in sorted(edits,reverse=True):
-        line=lines[idx]
-        lines[idx]=line[:pos]+'_gsf_components_v336.html'+line[pos+len('st.html'):]
-
-    converted=''.join(lines)
-    if IMPORT not in converted:
-        anchor='import streamlit as st\n'
-        if anchor not in converted:
-            raise RuntimeError('V336 Streamlit import anchor missing')
-        converted=converted.replace(anchor,anchor+IMPORT+'\n',1)
-
-    if MARK not in converted:
-        marker_line=f'# {MARK} — executable parent DOM bridges for Streamlit 1.49.\n'
-        converted=converted.replace(IMPORT+'\n',IMPORT+'\n'+marker_line,1)
-
-    # Re-parse and prove only the contract that matters at runtime: each known
-    # JavaScript bridge is executable, keeps a zero-height iframe and the shell
-    # still compiles. Do not couple this guard to unrelated historical CSS
-    # markers; those can legitimately disappear while the bridge contract stays
-    # correct.
-    check=ast.parse(converted)
-    verified={}
-    for node in ast.walk(check):
-        if not isinstance(node,ast.Call) or not node.args:
+        if qual=='st.html' and any(k.arg=='height' for k in node.keywords):
+            unsupported.append(getattr(node,'lineno','?'))
+        if not node.args:
             continue
         arg=node.args[0]
         if not isinstance(arg,ast.Constant) or not isinstance(arg.value,str):
             continue
-        for name,marker in BRIDGES.items():
-            if marker not in arg.value:
-                continue
-            qual=call_name(node)
-            heights=[k.value.value for k in node.keywords if k.arg=='height' and isinstance(k.value,ast.Constant)]
-            if qual!='_gsf_components_v336.html':
-                raise RuntimeError(f'V336 bridge {name} is not executable: {qual}')
-            if heights!=[0]:
-                raise RuntimeError(f'V336 bridge {name} must retain height=0, got {heights}')
-            verified[name]=True
+        if '__GSF_GLOBAL_SHELL_V343' not in arg.value:
+            continue
+        heights=[k.value.value for k in node.keywords if k.arg=='height' and isinstance(k.value,ast.Constant)]
+        v343.append((qual,heights))
 
-    missing_verified=sorted(set(BRIDGES)-set(verified))
-    if missing_verified:
-        raise RuntimeError('V336 verification missing: '+', '.join(missing_verified))
+    if len(v343)!=1:
+        raise RuntimeError(f'V336 expected one V343 executable bridge, found {len(v343)}')
+    qual,heights=v343[0]
+    if qual!='_gsf_components_v343.html':
+        raise RuntimeError(f'V336 V343 bridge is not executable: {qual}')
+    if heights!=[0]:
+        raise RuntimeError(f'V336 V343 bridge must use height=0, got {heights}')
+    if unsupported:
+        raise RuntimeError('V336 unsupported st.html height keyword remains at lines '+','.join(map(str,unsupported)))
+    if 'import streamlit.components.v1 as _gsf_components_v343' not in source:
+        raise RuntimeError('V336 V343 executable components import missing')
 
-    compile(converted,str(APP),'exec')
-    if converted!=source:
-        APP.write_text(converted,encoding='utf-8')
-    print(f'{MARK} converted={len(edits)} verified={len(verified)}',flush=True)
+    if MARK not in source:
+        anchor='import streamlit.components.v1 as _gsf_components_v343\n'
+        if anchor not in source:
+            raise RuntimeError('V336 V343 import anchor missing')
+        source=source.replace(anchor,anchor+f'# {MARK} — V343 is executable; legacy parent bridges are retired.\n',1)
+
+    compile(source,str(APP),'exec')
+    APP.write_text(source,encoding='utf-8')
+    print(f'{MARK} V343 verified=1 retired={len(RETIRED)}',flush=True)
 
 if __name__=='__main__':
     main()
