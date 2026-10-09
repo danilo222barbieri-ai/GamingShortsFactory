@@ -19,6 +19,8 @@ with tempfile.TemporaryDirectory() as td:
 
     required = [
         'GSF_V351_FOOTER_BRAND_GLASS',
+        'GSF_V353_FOOTER_BALANCE_HIRES',
+        'GSF_V354_FOOTER_TRUE_CENTER_SAFE_SIDES',
         'gsf-v351-brand',
         '>GSF<',
         'gsf-v351-socials',
@@ -31,17 +33,24 @@ with tempfile.TemporaryDirectory() as td:
         "['Termini','/terms']",
         "['Privacy','/privacy']",
         "['Contatti','/contact']",
-        'grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)',
+        'position:relative!important',
+        'left:50%!important',
+        'transform:translate(-50%,-50%)!important',
+        'left:max(14px,env(safe-area-inset-left))!important',
+        'right:max(14px,env(safe-area-inset-right))!important',
+        'overflow:visible!important',
         'shape-rendering:geometricPrecision',
         'width:15px!important',
         'height:15px!important',
         'width:23px!important',
         'height:23px!important',
         "f.replaceChildren(brand, socials, legal);",
+        "f.dataset.gsfV354 = '1';",
     ]
     for token in required:
-        assert token in out, f'missing balanced hi-res footer token: {token}'
+        assert token in out, f'missing V354 footer token: {token}'
 
+    assert 'grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)' not in out, 'V354 must not depend on side-column widths for centering'
     assert out.count('<svg viewBox=') >= 5, 'all five social marks must be vector SVGs'
     assert '>♪</span>' not in out, 'TikTok must not use a text glyph'
     assert '>f</span>' not in out, 'Facebook must not use a text glyph'
@@ -53,4 +62,4 @@ with tempfile.TemporaryDirectory() as td:
     subprocess.run([sys.executable, str(FIX), str(root)], check=True)
     assert app.read_text(encoding='utf-8') == once, 'footer patch must be restart-safe'
 
-print('V353 BALANCED HI-RES FOOTER: PASS', flush=True)
+print('V354 TRUE-CENTER SAFE-AREA FOOTER: PASS', flush=True)
