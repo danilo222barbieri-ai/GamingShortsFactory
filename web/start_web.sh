@@ -155,6 +155,12 @@ python /app/web/test_v351_footer_brand_glass.py
 python -m py_compile /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
 grep -q 'GSF_V351_FOOTER_BRAND_GLASS' /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
 
+# V352: mobile Creator Hub internal pages — readable top copy + natural Live scrolling.
+python /app/web/fix_v352_creator_mobile_pages.py /app/web/creator_hub_v156_component/index.html
+python /app/web/test_v352_creator_mobile_pages.py
+
+grep -q 'v352CreatorMobilePages' /app/web/creator_hub_v156_component/index.html
+
 python - <<'PY'
 import os,re
 from pathlib import Path
