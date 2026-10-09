@@ -68,7 +68,17 @@ start = START.read_text(encoding='utf-8')
 needle = 'python /app/web/fix_v308_mobile_ai_flow.py /app/web/ai_v221_component/index.html'
 if needle not in start:
     fail('V308 startup patch is not registered')
-if start.index(needle) > start.index('python /app/web/apply_v293_render_memory_guard.py'):
+
+# The old runtime generated V293 directly. V343 now owns the final V293-safe
+# generation step, so accept either anchor and require V308 to run before it.
+generation_anchors = (
+    'python /app/web/apply_v343_v293_compat.py',
+    'python /app/web/apply_v293_render_memory_guard.py',
+)
+generation_anchor = next((item for item in generation_anchors if item in start), None)
+if generation_anchor is None:
+    fail('production app generation anchor is missing from startup')
+if start.index(needle) > start.index(generation_anchor):
     fail('V308 patch must run before production app generation')
 ok('startup order is correct')
 
