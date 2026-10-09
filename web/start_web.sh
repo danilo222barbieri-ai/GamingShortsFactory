@@ -143,6 +143,12 @@ python /app/web/test_v349_footer_contract.py
 python -m py_compile /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
 grep -q 'GSF_V349_FOOTER_CONTRACT' /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
 
+# V350: mobile footer — centered social icons, Termini/Privacy/Contatti, no bug action.
+python /app/web/fix_v350_footer_mobile_center.py /app
+python /app/web/test_v350_footer_mobile_center.py
+python -m py_compile /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+grep -q 'GSF_V350_FOOTER_MOBILE_CENTER' /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+
 python - <<'PY'
 import os,re
 from pathlib import Path
