@@ -64,8 +64,8 @@ else
   echo "V311 restart-safe: historical runtime migrations already applied"
 fi
 
-if grep -q 'V328_GLOBAL_BALANCE' "$GSF_SHELL_APP" 2>/dev/null; then
-  echo "V311 restart-safe: V328 shell already finalized"
+if grep -q 'GSF_GLOBAL_SHELL_V343' "$GSF_SHELL_APP" 2>/dev/null; then
+  echo "V311 restart-safe: V343 shell already finalized"
 else
   python /app/web/fix_v311_mobile_hub_clean_pass.py /app/web/creator_hub_v156_component/index.html
   python /app/web/test_v311_mobile_hub_clean_pass.py /app
@@ -99,38 +99,31 @@ python /app/web/test_v337_restart_safe_v328.py /app
 
 python /app/web/fix_v327_editor_open_bridge.py /app
 python /app/web/test_v327_editor_open_bridge.py /app
+# V328 remains only as a Home/Live layout migration. V343 removes its old
+# parent chrome block before Streamlit starts.
 python /app/web/fix_v328_global_balance.py /app
-python /app/web/test_v328_global_balance.py /app
 python /app/web/fix_v329_worker_cost_guard.py /app
 python /app/web/test_v329_worker_cost_guard.py /app
-python /app/web/fix_v330_global_chrome.py /app
-python /app/web/test_v330_global_chrome.py /app
 python /app/web/fix_v331_primary_actions_routing.py /app
 python /app/web/test_v331_primary_actions_routing.py /app
-python /app/web/fix_v332_global_frame_lock.py /app
-python /app/web/test_v332_global_frame_lock.py /app
 
-# V333: murals never eat taps; Editor and Crea Short have direct mobile touch handlers.
+# V333: murals never eat taps; Editor and Crea Short keep direct touch handlers.
 python /app/web/fix_v333_home_cta_touch_fix.py /app
 python /app/web/test_v333_home_cta_touch_fix.py /app
 
-# V334: one parent-owned mobile header, Game Bar and footer across every page.
-python /app/web/fix_v334_global_chrome_hard_lock.py /app
+# V343: the only parent-owned global header, Game Bar and footer.
+python /app/web/fix_v343_single_global_shell.py /app
+python /app/web/test_v343_single_global_shell.py /app
+python /app/web/test_v328_global_balance.py /app
 
-# V340: never hide the Home fallback before global chrome exists; create the
-# Editor surface on demand when the legacy V220 overlay is absent.
-python /app/web/fix_v340_shell_resilience.py /app
-
-# V336: Streamlit 1.49 st.html does not execute JS. Move only the five
-# interactive parent-DOM bridges to executable zero-height components.
+# V336: convert only remaining legacy executable bridges; V343 is executable itself.
 python /app/web/fix_v336_executable_shell_bridge.py /app
 
-# V335: remove unsupported layout kwargs only from the remaining st.html calls.
+# V335: remove unsupported layout kwargs only from remaining st.html calls.
 python /app/web/fix_v335_runtime_shell_recovery.py /app
 python /app/web/test_v336_executable_shell_bridge.py /app
 python /app/web/test_v335_runtime_shell_recovery.py /app
-python /app/web/test_v334_global_chrome_hard_lock.py /app
-python /app/web/test_v340_shell_resilience.py /app
+python /app/web/test_v343_single_global_shell.py /app
 
 python /app/web/apply_v293_render_memory_guard.py
 
