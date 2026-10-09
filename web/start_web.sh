@@ -59,7 +59,7 @@ if [ "$GSF_HISTORY_READY" -eq 0 ]; then
   python /app/web/fix_v308_mobile_ai_flow.py /app/web/ai_v221_component/index.html
   python /app/web/test_v308_mobile_ai_flow.py /app
   python /app/web/fix_v310_creator_hub_mobile_cleanup.py /app/web/creator_hub_v156_component/index.html
-  python /app/web/test_v310_creator_hub_mobile_cleanup.py /app
+  python /app/web/test_v310_mobile_cleanup.py /app
 else
   echo "V311 restart-safe: historical runtime migrations already applied"
 fi
@@ -117,6 +117,10 @@ python /app/web/test_v333_home_cta_touch_fix.py /app
 # V334: one parent-owned mobile header, Game Bar and footer across every page.
 python /app/web/fix_v334_global_chrome_hard_lock.py /app
 
+# V340: never hide the Home fallback before global chrome exists; create the
+# Editor surface on demand when the legacy V220 overlay is absent.
+python /app/web/fix_v340_shell_resilience.py /app
+
 # V336: Streamlit 1.49 st.html does not execute JS. Move only the five
 # interactive parent-DOM bridges to executable zero-height components.
 python /app/web/fix_v336_executable_shell_bridge.py /app
@@ -126,6 +130,7 @@ python /app/web/fix_v335_runtime_shell_recovery.py /app
 python /app/web/test_v336_executable_shell_bridge.py /app
 python /app/web/test_v335_runtime_shell_recovery.py /app
 python /app/web/test_v334_global_chrome_hard_lock.py /app
+python /app/web/test_v340_shell_resilience.py /app
 
 python /app/web/apply_v293_render_memory_guard.py
 
