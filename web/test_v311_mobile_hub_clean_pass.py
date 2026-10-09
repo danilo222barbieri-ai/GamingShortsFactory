@@ -173,9 +173,12 @@ ok('Shell patch is idempotent')
 
 start=START.read_text(encoding='utf-8')
 needle='python /app/web/fix_v311_mobile_hub_clean_pass.py /app/web/creator_hub_v156_component/index.html'
-if needle not in start: fail('V311 startup patch not registered')
-if start.index(needle)<start.index('python /app/web/test_v310_creator_hub_mobile_cleanup.py /app'): fail('V311 must run after V310')
-if start.index(needle)>start.index('python /app/web/apply_v293_render_memory_guard.py'): fail('V311 must run before production app generation')
+after_v310='python /app/web/test_v310_creator_hub_mobile_cleanup.py /app'
+production_generation='python /app/web/apply_v343_v293_compat.py'
+for anchor,label in ((needle,'V311 startup patch'),(after_v310,'V310 cleanup test'),(production_generation,'V343/V293 production generation')):
+    if anchor not in start: fail(label+' anchor is not registered')
+if start.index(needle)<start.index(after_v310): fail('V311 must run after V310')
+if start.index(needle)>start.index(production_generation): fail('V311 must run before production app generation')
 if 'V311_RESTART_SAFE' not in start or 'GSF_HISTORY_READY' not in start or 'touch "$GSF_V311_READY"' not in start: fail('startup restart-safe migration guard missing')
 ok('startup order and restart-safe guard correct')
 
