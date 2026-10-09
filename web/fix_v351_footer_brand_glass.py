@@ -10,6 +10,7 @@ BLOCK = r'''
 # GSF_V351_FOOTER_BRAND_GLASS
 # GSF_V353_FOOTER_BALANCE_HIRES
 # GSF_V354_FOOTER_TRUE_CENTER_SAFE_SIDES
+# GSF_V355_FOOTER_BOTTOM_LOCK
 import streamlit.components.v1 as _gsf_components_v351
 _gsf_components_v351.html(r"""
 <script id="gsf-v351-footer-brand-glass">
@@ -24,7 +25,13 @@ _gsf_components_v351.html(r"""
     s.id = 'gsf-v351-footer-style';
     s.textContent = `
       #gsf-global-footer{
-        position:relative!important;
+        position:fixed!important;
+        left:0!important;
+        right:0!important;
+        bottom:0!important;
+        top:auto!important;
+        width:100%!important;
+        z-index:9997!important;
         display:block!important;
         box-sizing:border-box!important;
         padding:3px 14px!important;
@@ -190,6 +197,7 @@ _gsf_components_v351.html(r"""
     f.dataset.gsfV351 = '1';
     f.dataset.gsfV353 = '1';
     f.dataset.gsfV354 = '1';
+    f.dataset.gsfV355 = '1';
   }
 
   build();
@@ -200,7 +208,7 @@ _gsf_components_v351.html(r"""
   try {
     new MutationObserver(() => {
       const f = D.getElementById('gsf-global-footer');
-      if (!f || f.dataset.gsfV354 !== '1' || !f.querySelector('.gsf-v351-socials')) build();
+      if (!f || f.dataset.gsfV355 !== '1' || !f.querySelector('.gsf-v351-socials')) build();
     }).observe(D.documentElement,{childList:true,subtree:true});
   } catch(_e) {}
 })();
@@ -217,4 +225,4 @@ if MARK in text:
 if 'GSF_V350_FOOTER_MOBILE_CENTER' not in text:
     raise SystemExit('V351 requires V350 footer patch first')
 APP.write_text(text + '\n' + BLOCK + '\n', encoding='utf-8')
-print('V351/V354 true-centered safe-area footer applied', flush=True)
+print('V351/V355 true-centered bottom-locked footer applied', flush=True)
