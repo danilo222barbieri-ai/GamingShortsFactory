@@ -64,8 +64,15 @@ else
   echo "V311 restart-safe: historical runtime migrations already applied"
 fi
 
-python /app/web/fix_v311_mobile_hub_clean_pass.py /app/web/creator_hub_v156_component/index.html
-python /app/web/test_v311_mobile_hub_clean_pass.py /app
+# On a Railway container restart the working tree is already mutated by the final
+# runtime patches. V328 intentionally rewrites shell navigation/footer geometry,
+# so do not re-run the old V311 shell cache migration against a V328-finalized shell.
+if grep -q 'V328_GLOBAL_BALANCE' "$GSF_SHELL_APP" 2>/dev/null; then
+  echo "V311 restart-safe: V328 shell already finalized"
+else
+  python /app/web/fix_v311_mobile_hub_clean_pass.py /app/web/creator_hub_v156_component/index.html
+  python /app/web/test_v311_mobile_hub_clean_pass.py /app
+fi
 touch "$GSF_V311_READY"
 
 python /app/web/fix_v312_global_navigation.py /app
@@ -98,6 +105,10 @@ python /app/web/test_v326_mobile_editor_home_speed.py /app
 # V327: lazy Editor must still open reliably from the canonical shell navigation event.
 python /app/web/fix_v327_editor_open_bridge.py /app
 python /app/web/test_v327_editor_open_bridge.py /app
+
+# V328: stable global footer/nav, compact Live, GSF mark and reliable Create Short bridge.
+python /app/web/fix_v328_global_balance.py /app
+python /app/web/test_v328_global_balance.py /app
 
 # Generate production app only after every final runtime surface has validated.
 python /app/web/apply_v293_render_memory_guard.py
