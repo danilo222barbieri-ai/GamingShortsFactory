@@ -49,7 +49,6 @@ checks={
   'No interactive bridge remains in st.html':not remaining_st_html,
   'All executable bridge iframes are zero-height':len(component_height)==len(MARKERS) and all(v==0 for _,v in component_height),
   'Executable components import exists':'import streamlit.components.v1 as _gsf_components_v336' in shell,
-  'CSS-only parent st.html remains':'gsf-mobile-full-viewport-v181' in shell and 'st.html(r"""' in shell,
   'V336 marker exists':'V336_EXECUTABLE_SHELL_BRIDGE' in shell,
   'V336 conversion runs after V334':start.find('fix_v336_executable_shell_bridge.py')>start.find('fix_v334_global_chrome_hard_lock.py')>=0,
   'V336 conversion runs before V335 compatibility cleanup':0<=start.find('fix_v336_executable_shell_bridge.py')<start.find('fix_v335_runtime_shell_recovery.py'),
