@@ -10,12 +10,12 @@ checks={
  'murals never capture taps':'#home154 .muralGuide,#home154 .muralGuide *,#home154 .muralAmbient,#home154 .muralAmbient *{pointer-events:none!important}' in home,
  'feature row above murals':'#home154 .features{position:relative!important;z-index:60!important' in home,
  'features accept touch':'#home154 .feature{pointer-events:auto!important;touch-action:manipulation!important' in home,
- 'direct editor opener':'GSF_V333_OPEN_EDITOR' in home and "/editor-live/?v=333" in home,
+ 'direct editor opener exists before V343 takeover':'GSF_V333_OPEN_EDITOR' in home and "/editor-live/?v=333" in home,
  'direct short opener':'GSF_V333_OPEN_SHORT' in home and "target:'short'" in home,
  'touchend binding':'touchend' in home,
  'click fallback binding':"addEventListener('click'" in home,
- 'startup runs V333 after V332':start.find('fix_v333_home_cta_touch_fix.py')>start.find('fix_v332_global_frame_lock.py')>=0,
- 'startup validates before final generation':start.find('test_v333_home_cta_touch_fix.py')<start.find('apply_v293_render_memory_guard.py'),
+ 'startup runs V333 after V331 and before V343':0<=start.find('fix_v331_primary_actions_routing.py')<start.find('fix_v333_home_cta_touch_fix.py')<start.find('fix_v343_single_global_shell.py'),
+ 'startup validates V333 before V343 takeover':0<=start.find('test_v333_home_cta_touch_fix.py')<start.find('fix_v343_single_global_shell.py'),
  'idempotent':'v333HomeCtaTouchFix' in fix,
 }
 failed=[k for k,v in checks.items() if not v]
