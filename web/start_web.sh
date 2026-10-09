@@ -108,6 +108,10 @@ python /app/web/test_v332_global_frame_lock.py /app
 python /app/web/fix_v333_home_cta_touch_fix.py /app
 python /app/web/test_v333_home_cta_touch_fix.py /app
 
+# V334: one parent-owned mobile header, Game Bar and footer across every page.
+python /app/web/fix_v334_global_chrome_hard_lock.py /app
+python /app/web/test_v334_global_chrome_hard_lock.py /app
+
 python /app/web/apply_v293_render_memory_guard.py
 
 python - <<'PY'
