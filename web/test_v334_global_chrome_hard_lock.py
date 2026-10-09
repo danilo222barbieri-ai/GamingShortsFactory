@@ -9,16 +9,22 @@ shell=(root/'GamingShortsFactory_V154_STRUCTURAL_HOME.py').read_text(encoding='u
 start=(root/'web/start_web.sh').read_text(encoding='utf-8')
 fix=(root/'web/fix_v334_global_chrome_hard_lock.py').read_text(encoding='utf-8')
 
-# Runtime regression guard: Streamlit's st.html() in the deployed version does
-# not accept layout keywords such as height. A single bad call aborts the parent
-# shell before global chrome and navigation listeners can be installed.
+# Runtime regression guard: only Streamlit's st.html() rejects layout keywords
+# such as height in the deployed version. streamlit.components.v1.html()
+# intentionally accepts height and is used by V336 for executable JS bridges.
 tree=ast.parse(shell)
 bad_html_height=[]
 for node in ast.walk(tree):
     if not isinstance(node,ast.Call):
         continue
     fn=node.func
-    if isinstance(fn,ast.Attribute) and fn.attr=='html' and any(k.arg=='height' for k in node.keywords):
+    is_streamlit_html=(
+        isinstance(fn,ast.Attribute)
+        and fn.attr=='html'
+        and isinstance(fn.value,ast.Name)
+        and fn.value.id=='st'
+    )
+    if is_streamlit_html and any(k.arg=='height' for k in node.keywords):
         bad_html_height.append(getattr(node,'lineno','?'))
 
 checks={
