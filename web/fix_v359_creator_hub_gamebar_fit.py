@@ -171,7 +171,11 @@ def main() -> None:
     before = path.read_text(encoding='utf-8')
     after = patch_text(before)
     path.write_text(after, encoding='utf-8')
-    print('V359/V361 Creator Hub mobile repair applied changed=', before != after, flush=True)
+    cleanup = Path(__file__).resolve().with_name('fix_v362_project_pages_cleanup.py')
+    if not cleanup.is_file():
+        raise RuntimeError('V362 project cleanup handoff missing')
+    __import__('subprocess').run([sys.executable, str(cleanup), str(path)], check=True)
+    print('V359/V361 Creator Hub mobile repair + V362 cleanup applied changed=', before != after, flush=True)
 
 
 if __name__ == '__main__':
