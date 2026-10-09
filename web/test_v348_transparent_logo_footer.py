@@ -44,9 +44,9 @@ v336_anchor = 'python /app/web/fix_v336_executable_shell_bridge.py /app'
 checks = {
     'exactly one V343 executable bridge remains': len(bridges) == 1,
     'V348 marker installed exactly once': bridge.count(marker) == 1,
-    'user logo is installed as transparent PNG data': (
+    'user logo is installed as transparent vector data': (
         'gsf-global-logo-v348' in bridge
-        and 'data:image/png;base64,' in bridge
+        and 'data:image/svg+xml;base64,' in bridge
         and 'background:transparent!important' in bridge
         and 'box-shadow:none!important' in bridge
     ),
