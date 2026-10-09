@@ -7,9 +7,9 @@ start=(root/'web/start_web.sh').read_text(encoding='utf-8')
 fix=(root/'web/fix_v333_home_cta_touch_fix.py').read_text(encoding='utf-8')
 checks={
  'V333 style present':'v333HomeCtaTouchFix' in home,
- 'murals never capture taps':'.muralGuide,.muralGuide *,.muralAmbient,.muralAmbient *{pointer-events:none!important}' in home,
- 'feature row above murals':'.features{position:relative!important;z-index:60!important' in home,
- 'features accept touch':'.feature{pointer-events:auto!important;touch-action:manipulation!important' in home,
+ 'murals never capture taps':'#home154 .muralGuide,#home154 .muralGuide *,#home154 .muralAmbient,#home154 .muralAmbient *{pointer-events:none!important}' in home,
+ 'feature row above murals':'#home154 .features{position:relative!important;z-index:60!important' in home,
+ 'features accept touch':'#home154 .feature{pointer-events:auto!important;touch-action:manipulation!important' in home,
  'direct editor opener':'GSF_V333_OPEN_EDITOR' in home and "/editor-live/?v=333" in home,
  'direct short opener':'GSF_V333_OPEN_SHORT' in home and "target:'short'" in home,
  'touchend binding':'touchend' in home,
