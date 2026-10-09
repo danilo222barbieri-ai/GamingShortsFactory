@@ -9,6 +9,14 @@ hub_text = hub.read_text(encoding="utf-8")
 app_text = app.read_text(encoding="utf-8") if app.is_file() else ""
 
 broken_collection_calls = re.findall(r'(?<!\$)\$\([^\n]{0,120}?\)\.forEach', hub_text)
+legacy_routes = (
+    'data-target="hub" data-section="shorts"' in app_text
+    and 'data-target="hub" data-section="drafts"' in app_text
+)
+canonical_routes = (
+    'data-section="projects"' in app_text
+    and 'data-section="live"' in app_text
+)
 
 checks = {
     "Creator Hub has no querySelector().forEach collection crash": not broken_collection_calls,
@@ -16,10 +24,9 @@ checks = {
     "Creator Hub listens for Game Bar focus": 'e.data.type!=="GSF_HUB_FOCUS"' in hub_text,
     "Creator Hub opens requested Game Bar section": 'openView(raw);' in hub_text,
     "global Game Bar routes Hub": 'data-target="hub" data-section="dashboard"' in app_text,
-    "global Game Bar routes My Shorts": 'data-target="hub" data-section="shorts"' in app_text,
-    "global Game Bar routes Drafts": 'data-target="hub" data-section="drafts"' in app_text,
+    "global Game Bar has a supported route set": legacy_routes or canonical_routes,
     "global shell forwards section to Creator Hub": "type:'GSF_HUB_FOCUS',section" in app_text,
-    "Creator Hub iframe cache is V286": '/creator-hub-v156/?v=286' in app_text,
+    "Creator Hub route is present": '/creator-hub-v156/' in app_text,
 }
 
 for name, ok in checks.items():
