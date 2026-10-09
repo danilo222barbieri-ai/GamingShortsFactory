@@ -13,7 +13,9 @@ FIXTURE = '''<!doctype html><html><head></head><body>
  <section class="view" data-view="dashboard"><div class="dashboard"></div></section>
  <section class="view" data-view="projects"><div class="detail"><div class="detailHead"><div class="detailHeadText"><h2 id="projectsViewTitle">Progetti</h2></div></div><div class="detailCard"><div class="folderScroller"><div class="hubProjectsGuide">Guida</div><div id="projectHubCards"></div><div class="projectSection" data-project-pane="drafts"><div class="projectSectionHead">BOZZE</div><div id="projectRows"></div><div id="draftRows"></div></div><div class="projectSection" data-project-pane="shorts"><div class="projectSectionHead">I MIEI SHORTS</div><div id="shortRows"></div></div></div></div></div></section>
  <section class="view" data-view="live"><div class="v357LiveRoot"></div><div class="v357LiveDetail"></div></section>
- <section class="view" data-view="profile"><div class="profileReferenceScroll"><div class="profileReferenceEdit"></div><div class="profilePlanRef"></div><div class="profileSocialRef"><div class="profileSocialRows"></div></div></div></section>
+ <section class="view" data-view="profile"><div class="profileReferenceScroll"><div class="profileReferenceBrand"></div><div class="profileReferenceEdit"></div><div class="profilePlanRef"></div><div class="profileSocialRef"><div class="profileSocialRows"></div></div></div></section>
+ <section class="view" data-view="social"><div class="detail"><div class="detailCard"><div class="folderScroller"></div></div></div></section>
+ <section class="view" data-view="subscription"><div class="detail"><div class="detailCard"><div class="folderScroller"></div></div></div></section>
 </div>
 <!-- V357_CREATOR_HUB_HIERARCHY -->
 </body></html>'''
@@ -34,21 +36,24 @@ with tempfile.TemporaryDirectory() as td:
         'grid-template-rows:auto minmax(0,1fr)!important',
         'padding:0 4px var(--v359-gamebar-gap)!important',
         '#hub .view[data-view="dashboard"] .dashboard{padding-bottom:var(--v359-gamebar-gap)!important}',
-        'grid-template-rows:repeat(2,minmax(180px,42%))!important',
-        'align-content:space-between!important',
+        'grid-template-rows:repeat(2,minmax(0,1fr))!important',
         '.v359ProjectHeroDuplicate{display:none!important}',
         'v359ProjectDirect',
         'v359ProjectActivePane',
         'v359ProjectHeroDuplicate',
         "\\d+\\s+(?:bozze|shorts)\\s+salvat",
-        "padding:8px 4px var(--v359-gamebar-gap)!important",
-        'grid-template-rows:minmax(0,1fr)!important',
+        'grid-template-rows:42px minmax(146px,1.25fr) minmax(126px,1fr) minmax(104px,.9fr)!important',
+        'padding:12px 2px var(--v359-gamebar-gap)!important',
+        'padding:14px 4px var(--v359-gamebar-gap)!important',
+        '#hub .view[data-view="social"] .folderScroller',
+        '#hub .view[data-view="subscription"] .folderScroller',
     ]
     for token in required:
         assert token in out, f'missing V359 contract token: {token}'
 
-    assert 'padding-bottom:96px!important' not in out[out.index('v359CreatorHubGamebarFit'):], 'V359 must not re-add the obsolete internal Game Bar reserve'
-    assert 'padding-bottom:104px!important' not in out[out.index('v359CreatorHubGamebarFit'):], 'V359 must not re-add the obsolete internal Game Bar reserve'
+    tail = out[out.index('v359CreatorHubGamebarFit'):]
+    assert 'padding-bottom:96px!important' not in tail, 'V359 must not re-add the obsolete internal Game Bar reserve'
+    assert 'padding-bottom:104px!important' not in tail, 'V359 must not re-add the obsolete internal Game Bar reserve'
     assert '@media(max-width:767px)' in out, 'V359 must stay mobile-only'
 
     once = out
