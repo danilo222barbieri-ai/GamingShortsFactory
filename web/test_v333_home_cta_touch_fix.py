@@ -10,7 +10,7 @@ checks={
  'murals never capture taps':'#home154 .muralGuide,#home154 .muralGuide *,#home154 .muralAmbient,#home154 .muralAmbient *{pointer-events:none!important}' in home,
  'feature row above murals':'#home154 .features{position:relative!important;z-index:60!important' in home,
  'features accept touch':'#home154 .feature{pointer-events:auto!important;touch-action:manipulation!important' in home,
- 'direct editor opener exists before V343 takeover':'GSF_V333_OPEN_EDITOR' in home and "/editor-live/?v=333" in home,
+ 'Editor opener hands off to canonical shell':'GSF_V333_OPEN_EDITOR' in home and "target:'editor'" in home,
  'direct short opener':'GSF_V333_OPEN_SHORT' in home and "target:'short'" in home,
  'touchend binding':'touchend' in home,
  'click fallback binding':"addEventListener('click'" in home,
