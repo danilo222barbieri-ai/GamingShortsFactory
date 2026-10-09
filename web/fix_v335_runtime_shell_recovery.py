@@ -8,11 +8,8 @@ ROOT=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app')
 APP=ROOT/'GamingShortsFactory_V154_STRUCTURAL_HOME.py'
 MARK='V335_RUNTIME_SHELL_RECOVERY'
 
-# Late mobile-shell patches V328/V330/V331/V332/V334 used the components.html
-# layout API shape on Streamlit's st.html. In the deployed Streamlit version
-# st.html does not accept height=, so the parent script aborts before chrome and
-# navigation listeners are installed. Repair only st.html(..., height=0) calls;
-# do not touch components.html calls where height is valid.
+# Repair only legacy st.html(..., height=0) calls. V343 already uses
+# streamlit.components.v1.html directly and must never be rewritten here.
 PATTERN=re.compile(
     r'(st\.html\(\s*[rRuUbBfF]*"""(?:(?!""").)*?""")\s*,\s*height\s*=\s*0\s*\)',
     re.DOTALL,
@@ -43,15 +40,23 @@ def main():
         raise RuntimeError('V335 unsupported st.html height keyword remains at lines '+','.join(map(str,after_bad)))
     if before_bad and count!=len(before_bad):
         raise RuntimeError(f'V335 repair mismatch: bad={len(before_bad)} repaired={count}')
-    # Ensure the repair did not remove the two runtime features the user needs.
-    required=['V331_PRIMARY_ACTIONS_ROUTING','V334_GLOBAL_CHROME_HARD_LOCK','GSF_SHELL_NAV','gsf-editor-overlay-v220','gsf-short-overlay-v331']
+    required=[
+        'GSF_GLOBAL_SHELL_V343',
+        'GSF_SHELL_NAV',
+        'gsf-editor-overlay-v220',
+        'gsf-short-overlay-v343',
+        'gsf-global-header',
+        'gsf-global-gamebar',
+        'gsf-global-footer',
+        '_gsf_components_v343.html',
+    ]
     missing=[x for x in required if x not in after]
     if missing:
-        raise RuntimeError('V335 shell integrity failed: '+', '.join(missing))
+        raise RuntimeError('V335 V343 shell integrity failed: '+', '.join(missing))
     compile(after,str(APP),'exec')
     if after!=before:
         APP.write_text(after,encoding='utf-8')
-    print(f'{MARK} repaired={count} previous_bad={len(before_bad)} remaining_bad={len(after_bad)}',flush=True)
+    print(f'{MARK} repaired={count} previous_bad={len(before_bad)} remaining_bad={len(after_bad)} v343=preserved',flush=True)
 
 if __name__=='__main__':
     main()
