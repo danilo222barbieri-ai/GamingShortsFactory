@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import ast
 import sys
 
 root=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app')
@@ -7,6 +8,18 @@ home=(root/'web/home_v154_component/index.html').read_text(encoding='utf-8')
 shell=(root/'GamingShortsFactory_V154_STRUCTURAL_HOME.py').read_text(encoding='utf-8')
 start=(root/'web/start_web.sh').read_text(encoding='utf-8')
 fix=(root/'web/fix_v334_global_chrome_hard_lock.py').read_text(encoding='utf-8')
+
+# Runtime regression guard: Streamlit's st.html() in the deployed version does
+# not accept layout keywords such as height. A single bad call aborts the parent
+# shell before global chrome and navigation listeners can be installed.
+tree=ast.parse(shell)
+bad_html_height=[]
+for node in ast.walk(tree):
+    if not isinstance(node,ast.Call):
+        continue
+    fn=node.func
+    if isinstance(fn,ast.Attribute) and fn.attr=='html' and any(k.arg=='height' for k in node.keywords):
+        bad_html_height.append(getattr(node,'lineno','?'))
 
 checks={
   'Home reserves but hides duplicate header':'V334_GLOBAL_CHROME_HOME_SLOT' in home and '#home154 .topbar,' in home and 'visibility:hidden!important' in home,
@@ -20,11 +33,13 @@ checks={
   'Old parent chrome is suppressed':'#gsf-v330-global-brand,#gsf-v330-global-footer,#gsf-page-nav-v249' in shell,
   'Internal content reserves chrome':'gsf-short-overlay-v331' in shell and 'bottom:calc(var(--gsf-v334-foot) + var(--gsf-v334-bar)' in shell,
   'Canonical nav messages remain':'GSF_SHELL_NAV' in shell and "section:p==='hub'?'dashboard':p" in shell,
+  'No unsupported st.html height keyword':not bad_html_height,
   'V334 patch is idempotent':'if MARK not in shell' in fix and 'V334_GLOBAL_CHROME_HOME_SLOT' in fix,
   'V334 runs after V333':start.find('fix_v334_global_chrome_hard_lock.py')>start.find('fix_v333_home_cta_touch_fix.py')>=0,
   'V334 validates before final app generation':start.find('test_v334_global_chrome_hard_lock.py')<start.find('apply_v293_render_memory_guard.py'),
 }
 failed=[k for k,v in checks.items() if not v]
 for k,v in checks.items(): print(('PASS: ' if v else 'FAIL: ')+k)
+if bad_html_height: print('Unsupported st.html height keyword at shell lines:',bad_html_height)
 if failed: raise SystemExit('V334 global chrome hard lock contract failed: '+', '.join(failed))
 print('V334 GLOBAL CHROME HARD LOCK CONTRACT: PASS')
