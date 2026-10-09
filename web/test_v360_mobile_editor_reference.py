@@ -43,42 +43,43 @@ with tempfile.TemporaryDirectory() as td:
         subprocess.run([sys.executable, str(FIX), str(target)], check=True)
     out = target.read_text(encoding='utf-8')
 
-required = [
-    'V360_MOBILE_EDITOR_REFERENCE',
-    'v360MobileEditorReference',
-    'v360EditorHeader',
-    'Game Editor',
-    'Il tuo gameplay resta nel progetto mentre modifichi.',
-    'v360FullProxy',
-    'fullBtn.click()',
-    '--v360-player-w:',
-    'grid-template-rows:auto minmax(0,1fr)!important',
-    'grid-template-rows:minmax(0,1fr) auto auto!important',
-    'PLAYER -> ACTIONS -> TIMELINE',
-    'v360FitLayout',
-    'Math.max(4,',
-    'requestAnimationFrame',
-    'FRAME', 'CAPTION', 'LOOK', 'AUDIO', 'AI',
-    'CREA SHORT', 'SALVA LA TUA BOZZA',
-    'IN 00:00.0', 'OUT 00:15.0',
-    'ZOOM', 'LUMINOSITA', 'CONTRASTO', 'VOLUME', 'VELOCITA',
-    'RESET', 'CHIUDI', 'SAFE ZONE', 'HOOK', 'SUBTITLES', 'GAME VISION',
-]
-for token in required:
-    assert token in out, f'missing V360 contract token: {token}'
+    required = [
+        'V360_MOBILE_EDITOR_REFERENCE',
+        'v360MobileEditorReference',
+        'v360EditorHeader',
+        'Game Editor',
+        'Il tuo gameplay resta nel progetto mentre modifichi.',
+        'v360FullProxy',
+        'fullBtn.click()',
+        '--v360-player-w:',
+        'grid-template-rows:auto minmax(0,1fr)!important',
+        'grid-template-rows:minmax(0,1fr) auto auto!important',
+        'PLAYER -> ACTIONS -> TIMELINE',
+        'v360FitLayout',
+        'Math.max(4,',
+        'requestAnimationFrame',
+        'FRAME', 'CAPTION', 'LOOK', 'AUDIO', 'AI',
+        'CREA SHORT', 'SALVA LA TUA BOZZA',
+        'IN 00:00.0', 'OUT 00:15.0',
+        'ZOOM', 'LUMINOSITA', 'CONTRASTO', 'VOLUME', 'VELOCITA',
+        'RESET', 'CHIUDI', 'SAFE ZONE', 'HOOK', 'SUBTITLES', 'GAME VISION',
+    ]
+    for token in required:
+        assert token in out, f'missing V360 contract token: {token}'
 
-# V360 must reuse the existing functional controls, not clone/replace them.
-for panel in ('frame','caption','look','audio','vision'):
-    assert out.count(f'data-panel="{panel}"') == 1, f'V360 duplicated {panel} control'
-assert out.count('id="v323CreateShort"') == 1, 'V360 duplicated create-short action'
-assert out.count('id="v323SaveDraft"') == 1, 'V360 duplicated save-draft action'
-assert 'cloneNode(' not in out[out.index('V360_MOBILE_EDITOR_REFERENCE'):], 'V360 must not clone real editor controls'
-assert 'display:none!important' not in out[out.index('V360_MOBILE_EDITOR_REFERENCE'):][out[out.index('V360_MOBILE_EDITOR_REFERENCE'):].find('[data-panel="frame"]'):out[out.index('V360_MOBILE_EDITOR_REFERENCE'):].find('[data-panel="frame"]')+90], 'FRAME must stay available'
+    # V360 must reuse the existing functional controls, not clone/replace them.
+    for panel in ('frame','caption','look','audio','vision'):
+        assert out.count(f'data-panel="{panel}"') == 1, f'V360 duplicated {panel} control'
+    assert out.count('id="v323CreateShort"') == 1, 'V360 duplicated create-short action'
+    assert out.count('id="v323SaveDraft"') == 1, 'V360 duplicated save-draft action'
+    assert 'cloneNode(' not in out[out.index('V360_MOBILE_EDITOR_REFERENCE'):], 'V360 must not clone real editor controls'
+    assert 'display:none!important' not in out[out.index('V360_MOBILE_EDITOR_REFERENCE'):][out[out.index('V360_MOBILE_EDITOR_REFERENCE'):].find('[data-panel="frame"]'):out[out.index('V360_MOBILE_EDITOR_REFERENCE'):].find('[data-panel="frame"]')+90], 'FRAME must stay available'
 
-once = out
-if FIX.exists():
-    subprocess.run([sys.executable, str(FIX), str(target)], check=True)
-    assert target.read_text(encoding='utf-8') == once, 'V360 patch must be restart-safe'
+    # The restart-safety check must run while the temporary fixture still exists.
+    once = out
+    if FIX.exists():
+        subprocess.run([sys.executable, str(FIX), str(target)], check=True)
+        assert target.read_text(encoding='utf-8') == once, 'V360 patch must be restart-safe'
 
 start = START.read_text(encoding='utf-8')
 assert 'fix_v360_mobile_editor_reference.py' in start, 'startup must apply V360'
