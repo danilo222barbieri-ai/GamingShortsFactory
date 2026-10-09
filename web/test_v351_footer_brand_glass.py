@@ -22,6 +22,7 @@ with tempfile.TemporaryDirectory() as td:
         'GSF_V353_FOOTER_BALANCE_HIRES',
         'GSF_V354_FOOTER_TRUE_CENTER_SAFE_SIDES',
         'GSF_V355_FOOTER_BOTTOM_LOCK',
+        'GSF_V356_FOOTER_SIDE_INSET',
         'gsf-v351-brand',
         '>GSF<',
         'gsf-v351-socials',
@@ -43,17 +44,21 @@ with tempfile.TemporaryDirectory() as td:
         'z-index:9997!important',
         'left:50%!important',
         'transform:translate(-50%,-50%)!important',
-        'left:max(14px,env(safe-area-inset-left))!important',
-        'right:max(14px,env(safe-area-inset-right))!important',
+        'left:max(24px,env(safe-area-inset-left))!important',
+        'right:max(24px,env(safe-area-inset-right))!important',
+        'left:max(20px,env(safe-area-inset-left))!important',
+        'right:max(20px,env(safe-area-inset-right))!important',
         'overflow:visible!important',
         'shape-rendering:geometricPrecision',
         "f.replaceChildren(brand, socials, legal);",
-        "f.dataset.gsfV355 = '1';",
+        "f.dataset.gsfV356 = '1';",
     ]
     for token in required:
-        assert token in out, f'missing V355 footer token: {token}'
+        assert token in out, f'missing V356 footer token: {token}'
 
-    assert 'position:relative!important' not in out, 'footer container must not return to document flow'
+    assert 'left:max(12px,env(safe-area-inset-left))!important' not in out, 'mobile brand must be pulled inward from the old edge inset'
+    assert 'right:max(12px,env(safe-area-inset-right))!important' not in out, 'mobile legal links must be pulled inward from the old edge inset'
+    assert 'position:relative!important' not in out, 'footer container must stay fixed at bottom'
     assert 'grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)' not in out, 'footer centering must not depend on side-column widths'
     assert out.count('<svg viewBox=') >= 5, 'all five social marks must be vector SVGs'
     assert '>♪</span>' not in out
@@ -66,4 +71,4 @@ with tempfile.TemporaryDirectory() as td:
     subprocess.run([sys.executable, str(FIX), str(root)], check=True)
     assert app.read_text(encoding='utf-8') == once, 'footer patch must be restart-safe'
 
-print('V355 TRUE-CENTER BOTTOM-LOCK FOOTER: PASS', flush=True)
+print('V356 TRUE-CENTER INSET BOTTOM-LOCK FOOTER: PASS', flush=True)
