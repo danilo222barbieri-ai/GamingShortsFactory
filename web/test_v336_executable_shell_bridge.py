@@ -19,6 +19,20 @@ RETIRED=(
   '__GSF_V334_GLOBAL_CHROME_HARD_LOCK',
 )
 
+V343_FIX='fix_v343_single_global_shell.py'
+V336_FIX='fix_v336_executable_shell_bridge.py'
+V335_FIX='fix_v335_runtime_shell_recovery.py'
+V336_TEST='test_v336_executable_shell_bridge.py'
+PRODUCTION_GENERATION='apply_v343_v293_compat.py'
+
+
+def pos(token):
+    value=start.find(token)
+    if value<0:
+        raise SystemExit(f'V336 startup anchor missing: {token}')
+    return value
+
+
 def call_name(node):
     fn=node.func
     if isinstance(fn,ast.Attribute) and isinstance(fn.value,ast.Name):
@@ -39,6 +53,12 @@ for node in ast.walk(tree):
         heights=[k.value.value for k in node.keywords if k.arg=='height' and isinstance(k.value,ast.Constant)]
         v343.append((call_name(node),heights[0] if heights else None))
 
+v343_fix=pos(V343_FIX)
+v336_fix=pos(V336_FIX)
+v335_fix=pos(V335_FIX)
+v336_test=pos(V336_TEST)
+production_generation=pos(PRODUCTION_GENERATION)
+
 checks={
   'Exactly one V343 executable bridge discovered':len(v343)==1,
   'V343 uses its own executable component':v343==[('_gsf_components_v343.html',0)],
@@ -46,10 +66,10 @@ checks={
   'V343 executable import exists':'import streamlit.components.v1 as _gsf_components_v343' in shell,
   'V336 compatibility marker exists':'V336_EXECUTABLE_SHELL_BRIDGE' in shell,
   'Retired bridge markers absent':all(x not in shell for x in RETIRED),
-  'V343 runs before V336':0<=start.find('fix_v343_single_global_shell.py')<start.find('fix_v336_executable_shell_bridge.py'),
-  'V336 runs before V335 cleanup':0<=start.find('fix_v336_executable_shell_bridge.py')<start.find('fix_v335_runtime_shell_recovery.py'),
-  'V336 test runs after V335 cleanup':start.find('test_v336_executable_shell_bridge.py')>start.find('fix_v335_runtime_shell_recovery.py')>=0,
-  'V336 test runs before final app generation':start.find('test_v336_executable_shell_bridge.py')<start.find('apply_v293_render_memory_guard.py'),
+  'V343 runs before V336':v343_fix<v336_fix,
+  'V336 runs before V335 cleanup':v336_fix<v335_fix,
+  'V336 test runs after V335 cleanup':v336_test>v335_fix,
+  'V336 test runs before current production generation':v336_test<production_generation,
 }
 failed=[k for k,v in checks.items() if not v]
 for k,v in checks.items(): print(('PASS: ' if v else 'FAIL: ')+k)
