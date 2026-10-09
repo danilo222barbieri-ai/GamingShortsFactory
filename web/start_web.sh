@@ -92,6 +92,11 @@ python /app/web/test_v325_mobile_editor_viewport_fit.py /app
 python /app/web/fix_v326_mobile_editor_home_speed.py /app
 python /app/web/test_v326_mobile_editor_home_speed.py /app
 
+# V360: approved mobile Game Editor composition; preserve real controls and fit inside global shell.
+python /app/web/fix_v360_mobile_editor_reference.py /app/web/editor_2027_component/index.html
+python /app/web/test_v360_mobile_editor_reference.py
+grep -q 'V360_MOBILE_EDITOR_REFERENCE' /app/web/editor_2027_component/index.html
+
 # V337: V327 delegates to V328 during restart. Make V328 accept the newer
 # canonical Short route from V331 before V327 can invoke it.
 python /app/web/fix_v337_restart_safe_v328.py /app
