@@ -134,6 +134,9 @@ python -m py_compile /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
 grep -q 'GSF_GLOBAL_SHELL_V343' /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
 python /app/web/test_v343_v293_compat.py /app
 
+# V348: user-approved immediate cosmetic hotfix. Transparent brand mark + visible footer.
+python /app/web/fix_v348_logo_footer.py /app
+
 python - <<'PY'
 import os,re
 from pathlib import Path
