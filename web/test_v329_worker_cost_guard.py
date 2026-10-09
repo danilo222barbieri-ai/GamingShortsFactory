@@ -5,6 +5,7 @@ import sys
 root=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app')
 direct=(root/'web/direct_upload_server.py').read_text(encoding='utf-8')
 bridge=(root/'web/gsf_bucket_bridge.py').read_text(encoding='utf-8')
+start=(root/'web/start_web.sh').read_text(encoding='utf-8')
 
 checks={
     'prescan has retry helper':'def _worker_request_with_retry(' in direct,
@@ -13,6 +14,8 @@ checks={
     'status has retry helper':'def _worker_status_request(' in bridge,
     'status retries cold boot':'for attempt in range(3)' in bridge and 'time.sleep(' in bridge,
     'status still falls back safely':'return {"reachable":False,"state":"unavailable"}' in bridge,
+    'startup applies cost guard':'python /app/web/fix_v329_worker_cost_guard.py /app' in start,
+    'startup verifies cost guard':'python /app/web/test_v329_worker_cost_guard.py /app' in start,
 }
 failed=[k for k,v in checks.items() if not v]
 for k,v in checks.items(): print(('PASS: ' if v else 'FAIL: ')+k)
