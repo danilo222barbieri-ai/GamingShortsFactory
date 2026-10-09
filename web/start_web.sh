@@ -114,6 +114,10 @@ python /app/web/test_v328_global_balance.py /app
 python /app/web/fix_v329_worker_cost_guard.py /app
 python /app/web/test_v329_worker_cost_guard.py /app
 
+# V330: restore the same visible header/footer chrome on every page and fix the GSF mark.
+python /app/web/fix_v330_global_chrome.py /app
+python /app/web/test_v330_global_chrome.py /app
+
 # Generate production app only after every final runtime surface has validated.
 python /app/web/apply_v293_render_memory_guard.py
 
