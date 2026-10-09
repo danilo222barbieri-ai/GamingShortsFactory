@@ -6,6 +6,7 @@ MARK = 'V362_PROJECT_PAGES_CLEANUP'
 
 PATCH = r'''
 <!-- V362_PROJECT_PAGES_CLEANUP -->
+<!-- V362_1_STABLE_OBSERVER -->
 <style id="v362ProjectPagesCleanup">
 @media(max-width:767px){
   /* Keep the real page title/subtitle at the top. Everything repeated inside
@@ -55,18 +56,24 @@ PATCH = r'''
   const visible=(el)=>!!el&&getComputedStyle(el).display!=='none';
   const emptyCopy=/^(?:nessun|nessuna|caricamento)\b/i;
 
+  function resetCleanup(){
+    view.classList.remove('v362ProjectClean','v362CollectionEmpty');
+    qa('.v362RedundantProjectBlock').forEach((n)=>n.classList.remove('v362RedundantProjectBlock'));
+    qa('.v362EmptyCollection').forEach((n)=>n.classList.remove('v362EmptyCollection'));
+  }
+
   function clean(){
     if(!mobile()){
-      view.classList.remove('v362ProjectClean','v362CollectionEmpty');
+      resetCleanup();
       return;
     }
     const title=String(q('#projectsViewTitle')?.textContent||'').trim().toLowerCase();
     const direct=title==='i miei shorts'||title==='bozze';
     view.classList.toggle('v362ProjectClean',direct);
-    view.classList.remove('v362CollectionEmpty');
-    qa('.v362RedundantProjectBlock').forEach((n)=>n.classList.remove('v362RedundantProjectBlock'));
-    qa('.v362EmptyCollection').forEach((n)=>n.classList.remove('v362EmptyCollection'));
-    if(!direct)return;
+    if(!direct){
+      resetCleanup();
+      return;
+    }
 
     const scroller=q('.folderScroller');
     if(scroller){
@@ -77,23 +84,25 @@ PATCH = r'''
 
     const panes=qa('[data-project-pane]');
     const active=panes.find(visible);
-    if(!active)return;
+    if(!active){
+      view.classList.remove('v362CollectionEmpty');
+      return;
+    }
     [...active.children].forEach((child)=>{
       if(!['projectRows','draftRows','shortRows'].includes(child.id)) child.classList.add('v362RedundantProjectBlock');
     });
 
     const rows=title==='i miei shorts'?q('#shortRows',active):q('#draftRows',active);
-    if(!rows)return;
+    if(!rows){
+      view.classList.remove('v362CollectionEmpty');
+      return;
+    }
     const hasRealRows=!!rows.querySelector('.row,.shortRow,.projectBox');
     const empties=qa('.empty',rows);
     const removableEmpty=!hasRealRows&&empties.length>0&&empties.every((el)=>emptyCopy.test(String(el.textContent||'').trim()));
-    if(removableEmpty){
-      empties.forEach((el)=>el.classList.add('v362EmptyCollection'));
-      rows.classList.add('v362EmptyCollection');
-      view.classList.add('v362CollectionEmpty');
-    }else{
-      rows.classList.remove('v362EmptyCollection');
-    }
+    empties.forEach((el)=>el.classList.toggle('v362EmptyCollection',removableEmpty));
+    rows.classList.toggle('v362EmptyCollection',removableEmpty);
+    view.classList.toggle('v362CollectionEmpty',removableEmpty);
   }
 
   clean();
@@ -121,7 +130,7 @@ def main() -> None:
     before = path.read_text(encoding='utf-8')
     after = patch_text(before)
     path.write_text(after, encoding='utf-8')
-    print('V362 project pages cleanup applied changed=', before != after, flush=True)
+    print('V362.1 project pages cleanup applied changed=', before != after, flush=True)
 
 
 if __name__ == '__main__':
