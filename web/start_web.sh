@@ -166,6 +166,11 @@ python /app/web/fix_v357_creator_hub_hierarchy.py /app/web/creator_hub_v156_comp
 python /app/web/test_v357_creator_hub_hierarchy.py
 grep -q 'V357_CREATOR_HUB_HIERARCHY' /app/web/creator_hub_v156_component/index.html
 
+# V359: fill every mobile Creator Hub page to a 6px gap above the parent Game Bar.
+python /app/web/fix_v359_creator_hub_gamebar_fit.py /app/web/creator_hub_v156_component/index.html
+python /app/web/test_v359_creator_hub_gamebar_fit.py
+grep -q 'V359_CREATOR_HUB_GAMEBAR_FIT' /app/web/creator_hub_v156_component/index.html
+
 python - <<'PY'
 import os,re
 from pathlib import Path
