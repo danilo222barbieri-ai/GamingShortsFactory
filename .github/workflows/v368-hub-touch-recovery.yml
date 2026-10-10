@@ -22,9 +22,10 @@ jobs:
       - name: Start production image
         run: docker run -d --name gsf-v368-run -p 8080:8080 -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v368
 
-      - name: Verify startup, Hub runtime and served JavaScript
+      - name: Verify startup, mobile Hub runtime and served JavaScript
         run: |
           set -eu
+          MOBILE_UA='Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.7 Mobile/15E148 Safari/604.1'
           ready=0
           for i in $(seq 1 120); do
             if ! docker inspect -f '{{.State.Running}}' gsf-v368-run 2>/dev/null | grep -q true; then
@@ -33,22 +34,22 @@ jobs:
               exit 1
             fi
 
-            curl -fsS "http://127.0.0.1:8080/creator-hub-v156/?v=3681&probe=${i}" -o /tmp/hub.html 2>/dev/null || true
+            curl -fsS -A "$MOBILE_UA" "http://127.0.0.1:8080/creator-hub-v156/?v=3681&probe=${i}" -o /tmp/hub.html 2>/dev/null || true
             if test -s /tmp/hub.html && grep -q 'V368_CREATOR_HUB_TOUCH_RECOVERY' /tmp/hub.html; then
-              echo "V368 served Hub runtime ready on probe ${i}"
+              echo "V368 mobile Hub runtime ready on probe ${i}"
               ready=1
               break
             fi
 
             if [ $((i % 10)) -eq 0 ]; then
-              echo "Waiting for patched Hub runtime; probe ${i}"
+              echo "Waiting for patched mobile Hub runtime; probe ${i}"
               docker logs --tail 60 gsf-v368-run || true
             fi
             sleep 2
           done
 
           if [ "$ready" -ne 1 ]; then
-            echo 'V368 marker never appeared in served Hub HTML'
+            echo 'V368 marker never appeared in served mobile Hub HTML'
             test -f /tmp/hub.html && tail -n 80 /tmp/hub.html || true
             docker logs --tail 220 gsf-v368-run || true
             exit 1
@@ -67,7 +68,7 @@ jobs:
           if not m:
               raise SystemExit('V368 served runtime script missing')
           Path('/tmp/v368.js').write_text(m.group(1), encoding='utf-8')
-          print('V368 served runtime extracted')
+          print('V368 served mobile runtime extracted')
           PY
           node --check /tmp/v368.js
 
@@ -91,7 +92,7 @@ jobs:
             tail -n 220 /tmp/gsf-v368.log
             exit 1
           fi
-          echo 'V368 production container: HEALTHY, Hub runtime served, JS syntax valid'
+          echo 'V368 production container: HEALTHY, mobile Hub runtime served, JS syntax valid'
 
       - name: Show logs on failure
         if: failure()
