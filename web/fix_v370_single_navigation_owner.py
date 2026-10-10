@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import base64
+import gzip
 import re
 import sys
 
 MARK = 'V370_SINGLE_NAVIGATION_OWNER'
+HEADER_STATE_OLD = "P.fetch('/creator-hub/state',{cache:'no-store',credentials:'same-origin'})"
+HEADER_STATE_NEW = "P.fetch('/creator-hub/state?scope=header',{cache:'no-store',credentials:'same-origin'})"
 
 HOME_NAV_RE = re.compile(
     r'function shellNav\(target,data=\{\}\)\{.*?\n\s*return handled;\n\s*\}',
@@ -17,6 +21,22 @@ HOME_NAV = r'''function shellNav(target,data={}){
       return true;
     }catch(_e){return false}
   }'''
+
+HOME_ACCOUNT_START = '''  async function syncAccountEntry(){
+    if(!accountEntry)return;
+'''
+HOME_ACCOUNT_START_NEW = '''  async function syncAccountEntry(){
+    if(!accountEntry)return;
+    try{if(window.parent&&window.parent.__GSF_GLOBAL_SHELL_V343)return}catch(_e){}
+'''
+HOME_ACCOUNT_FETCH_OLD = 'fetch("/creator-hub/state",{cache:"no-store",credentials:"same-origin"})'
+HOME_ACCOUNT_FETCH_NEW = 'fetch("/creator-hub/state?scope=header",{cache:"no-store",credentials:"same-origin"})'
+HOME_ACCOUNT_BOOT_OLD = '''  window.addEventListener("focus",syncAccountEntry);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncAccountEntry()});
+  syncAccountEntry();'''
+HOME_ACCOUNT_BOOT_NEW = '''  window.addEventListener("focus",syncAccountEntry);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncAccountEntry()});
+  setTimeout(syncAccountEntry,120);'''
 
 V158_AUTO_PRELOAD = """      sync();
       new MutationObserver(sync).observe(document.body,{childList:true,subtree:true});
@@ -50,22 +70,35 @@ V160_IFRAME_LAZY = '<iframe src="about:blank" data-src="/creator-hub-v156/?v=366
 
 
 def patch_home_text(text: str) -> str:
-    if MARK in text and 'function shellNav(target,data={})' in text:
-        return text
-    new, n = HOME_NAV_RE.subn(HOME_NAV, text, count=1)
-    if n != 1:
-        raise RuntimeError(f'V370 Home shellNav anchor count={n}')
-    return new
+    if MARK not in text:
+        new, n = HOME_NAV_RE.subn(HOME_NAV, text, count=1)
+        if n != 1:
+            raise RuntimeError(f'V370 Home shellNav anchor count={n}')
+        text = new
+
+    if HOME_ACCOUNT_START_NEW not in text:
+        if HOME_ACCOUNT_START not in text:
+            raise RuntimeError('V370 Home account sync anchor missing')
+        text = text.replace(HOME_ACCOUNT_START, HOME_ACCOUNT_START_NEW, 1)
+
+    if HOME_ACCOUNT_FETCH_OLD in text:
+        text = text.replace(HOME_ACCOUNT_FETCH_OLD, HOME_ACCOUNT_FETCH_NEW, 1)
+    elif HOME_ACCOUNT_FETCH_NEW not in text:
+        raise RuntimeError('V370 Home header-state endpoint anchor missing')
+
+    if HOME_ACCOUNT_BOOT_OLD in text:
+        text = text.replace(HOME_ACCOUNT_BOOT_OLD, HOME_ACCOUNT_BOOT_NEW, 1)
+    elif HOME_ACCOUNT_BOOT_NEW not in text:
+        raise RuntimeError('V370 Home account boot anchor missing')
+    return text
 
 
 def _patch_v158(text: str) -> str:
-    # Disable V158's automatic hidden Hub preload even if it initializes before V343.
     if V158_AUTO_PRELOAD in text:
         text = text.replace(V158_AUTO_PRELOAD, V158_NO_PRELOAD, 1)
     elif V158_NO_PRELOAD not in text:
         raise RuntimeError('V370 V158 preload anchor missing')
 
-    # Listener may be installed before V343; therefore check ownership per message.
     if V158_LISTENER_OLD in text:
         text = text.replace(V158_LISTENER_OLD, V158_LISTENER_NEW, 1)
     elif V158_LISTENER_NEW not in text:
@@ -79,7 +112,6 @@ def _patch_v160(text: str) -> str:
         if n != 1:
             raise RuntimeError(f'V370 V160 iframe anchor count={n}')
 
-    # Scope replacement to the V160 listener signature so V159/V220 keep their own internals.
     if V160_LISTENER_OLD in text:
         text = text.replace(V160_LISTENER_OLD, V160_LISTENER_NEW, 1)
     elif V160_LISTENER_NEW not in text:
@@ -87,10 +119,32 @@ def _patch_v160(text: str) -> str:
     return text
 
 
+def _patch_v343_runtime_endpoint(text: str) -> str:
+    if HEADER_STATE_OLD in text:
+        return text.replace(HEADER_STATE_OLD, HEADER_STATE_NEW, 1)
+    return text
+
+
 def patch_shell_text(text: str) -> str:
     text = _patch_v158(text)
     text = _patch_v160(text)
+    text = _patch_v343_runtime_endpoint(text)
     return text
+
+
+def patch_v343_source(text: str) -> str:
+    match = re.search(r"JS_GZIP_B64='([^']+)'", text)
+    if not match:
+        raise RuntimeError('V370 V343 compressed bridge anchor missing')
+    bridge = gzip.decompress(base64.b64decode(match.group(1))).decode('utf-8')
+    if HEADER_STATE_NEW in bridge:
+        return text
+    if HEADER_STATE_OLD not in bridge:
+        raise RuntimeError('V370 V343 header-state fetch anchor missing')
+    bridge = bridge.replace(HEADER_STATE_OLD, HEADER_STATE_NEW, 1)
+    encoded = base64.b64encode(gzip.compress(bridge.encode('utf-8'), mtime=0)).decode('ascii')
+    replacement = "JS_GZIP_B64='" + encoded + "'"
+    return text[:match.start()] + replacement + text[match.end():]
 
 
 def _write_if_changed(path: Path, patcher) -> bool:
@@ -106,11 +160,13 @@ def main() -> None:
     root = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path('/app')
     home = root/'web'/'home_v154_component'/'index.html'
     generator = root/'web'/'apply_v154_structural_home.py'
-    if not home.is_file() or not generator.is_file():
-        raise SystemExit('V370 required Home/generator files missing')
+    v343 = root/'web'/'fix_v343_single_global_shell.py'
+    if not home.is_file() or not generator.is_file() or not v343.is_file():
+        raise SystemExit('V370 required Home/generator/V343 files missing')
 
     home_changed = _write_if_changed(home, patch_home_text)
     generator_changed = _write_if_changed(generator, patch_shell_text)
+    v343_changed = _write_if_changed(v343, patch_v343_source)
 
     runtime_changed = []
     for name in ('GamingShortsFactory_V154_STRUCTURAL_HOME.py','GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py'):
@@ -118,14 +174,14 @@ def main() -> None:
         if not path.is_file():
             continue
         changed = _write_if_changed(path, patch_shell_text)
-        # Runtime Home source is external, so only shell blocks are patched here.
         compile(path.read_text(encoding='utf-8'), str(path), 'exec')
         runtime_changed.append((name, changed))
 
     print(
-        'V370 single navigation owner applied',
+        'V370.1 single navigation owner + lightweight header state applied',
         'home_changed=', home_changed,
         'generator_changed=', generator_changed,
+        'v343_changed=', v343_changed,
         'runtime_changed=', runtime_changed,
         flush=True,
     )
