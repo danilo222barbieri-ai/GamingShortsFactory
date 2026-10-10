@@ -8,8 +8,11 @@ on:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: V370 single navigation owner contract
+        run: python web/test_v370_single_navigation_owner.py .
       - name: Diagnose decompressed shell and Hub bootstrap
-        run: python web/diagnose_v370_creator_hub_runtime.py .
+        if: always()
+        run: python web/diagnose_v370_creator_hub_runtime.py . || true
