@@ -6,6 +6,7 @@ import sys
 ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parents[1]
 HUB = ROOT / 'web' / 'creator_hub_v156_component' / 'index.html'
 FIX = ROOT / 'web' / 'fix_v368_creator_hub_touch_recovery.py'
+STARTUP = ROOT / 'web' / 'fix_v362_project_pages_cleanup.py'
 
 
 def ok(cond: bool, label: str) -> None:
@@ -16,6 +17,7 @@ def ok(cond: bool, label: str) -> None:
 
 ok(HUB.is_file(), 'Creator Hub source exists')
 ok(FIX.is_file(), 'V368 touch recovery patch exists')
+ok(STARTUP.is_file(), 'Creator Hub startup patch exists')
 
 spec = importlib.util.spec_from_file_location('fix_v368_creator_hub_touch_recovery', FIX)
 mod = importlib.util.module_from_spec(spec)
@@ -42,6 +44,11 @@ ok("window.addEventListener('focus',v368RepairActiveView)" in patched, 'focus re
 ok("window.addEventListener('message',v368RepairFromFocusMessage)" in patched, 'shell focus message repairs active view')
 ok('V368_HUB_TAP' in patched, 'tap telemetry is emitted')
 ok('preventDefault()' not in patched[patched.index('V368_CREATOR_HUB_TOUCH_RECOVERY'):], 'V368 never globally cancels native taps')
+
+startup = STARTUP.read_text(encoding='utf-8')
+ok("fix_v368_creator_hub_touch_recovery.py" in startup, 'V368 patch is called from Hub startup')
+ok("test_v368_creator_hub_touch_recovery.py" in startup, 'V368 contract is enforced at startup')
+ok("subprocess.run([sys.executable, str(touch_fix), str(path)], check=True)" in startup, 'V368 patch runs against runtime Hub file')
 
 # Idempotence: a second pass must not duplicate the runtime.
 patched2 = mod.patch_text(patched)
