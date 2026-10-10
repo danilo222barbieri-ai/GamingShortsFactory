@@ -139,7 +139,18 @@ def main() -> None:
         raise RuntimeError('V365 Creator Hub bootstrap fix missing')
     subprocess.run([sys.executable, str(bootstrap_fix), str(path)], check=True)
 
-    print('V362.1 project pages cleanup + V365 Hub bootstrap applied changed=', before != after, flush=True)
+    # V366: after the bootstrap is valid, stabilize the real Profile state path.
+    # Patch both the Hub client and direct-upload API, then enforce the runtime contract.
+    web_root = Path(__file__).resolve().parent
+    app_root = web_root.parent
+    state_fix = web_root/'fix_v366_creator_hub_state_stability.py'
+    state_test = web_root/'test_v366_creator_hub_state_stability.py'
+    if not state_fix.is_file() or not state_test.is_file():
+        raise RuntimeError('V366 Creator Hub state stability files missing')
+    subprocess.run([sys.executable, str(state_fix), str(app_root)], check=True)
+    subprocess.run([sys.executable, str(state_test), str(app_root)], check=True)
+
+    print('V362.1 project pages cleanup + V365 bootstrap + V366 profile state stability applied changed=', before != after, flush=True)
 
 
 if __name__ == '__main__':
