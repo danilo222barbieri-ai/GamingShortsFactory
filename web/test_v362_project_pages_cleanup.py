@@ -26,26 +26,45 @@ fixture = '''<!doctype html><html><body>
 patched = mod.patch_text(fixture)
 for token in (
     'V362_PROJECT_PAGES_CLEANUP',
+    'V371_OBSERVER_STABILITY',
+    'function v362SetClass',
     'v362ProjectClean',
     'v362RedundantProjectBlock',
     'v362EmptyCollection',
     'hubProjectsGuide',
     '#shortRows',
     '#draftRows',
-    "view.classList.toggle('v362CollectionEmpty',removableEmpty)",
-    "el.classList.toggle('v362EmptyCollection',removableEmpty)",
-    "rows.classList.toggle('v362EmptyCollection',removableEmpty)",
+    "v362SetClass(view,'v362CollectionEmpty',removableEmpty)",
+    "v362SetClass(el,'v362EmptyCollection',removableEmpty)",
+    "v362SetClass(rows,'v362EmptyCollection',removableEmpty)",
 ):
-    assert token in patched, f'missing V362.1 contract token: {token}'
+    assert token in patched, f'missing V362/V371 contract token: {token}'
 
-# Cleanup must not churn its own MutationObserver by removing and immediately
-# re-adding classes on every callback.
-direct_block = patched[patched.index('function clean(){'):patched.index('const scroller=q', patched.index('function clean(){'))]
-assert "qa('.v362RedundantProjectBlock').forEach((n)=>n.classList.remove('v362RedundantProjectBlock'));" not in direct_block
-assert "qa('.v362EmptyCollection').forEach((n)=>n.classList.remove('v362EmptyCollection'));" not in direct_block
+# The callback observes class/style, so every class mutation it performs must
+# be conditional. Re-applying the patch must also be a true no-op.
+assert mod.patch_text(patched) == patched
+for forbidden in (
+    "view.classList.remove('v362ProjectClean','v362CollectionEmpty')",
+    "view.classList.toggle('v362ProjectClean',direct)",
+    "view.classList.remove('v362CollectionEmpty')",
+    "rows.classList.toggle('v362EmptyCollection',removableEmpty)",
+    "view.classList.toggle('v362CollectionEmpty',removableEmpty)",
+):
+    assert forbidden not in patched, f'unstable observer mutation remains: {forbidden}'
+
+# Upgrade an already-installed legacy V362 block instead of treating its marker
+# as proof that the runtime is safe.
+legacy = patched.replace("  const V371_OBSERVER_STABILITY=true;\n", "").replace(
+    "    v362SetClass(view,'v362ProjectClean',direct);",
+    "    view.classList.toggle('v362ProjectClean',direct);",
+)
+legacy = legacy.replace('V371_OBSERVER_STABILITY', 'V362_LEGACY_OBSERVER')
+upgraded = mod.patch_text(legacy)
+assert 'V371_OBSERVER_STABILITY' in upgraded
+assert "view.classList.toggle('v362ProjectClean',direct)" not in upgraded
 
 # The existing top page title remains; V362 removes only redundant content inside the scroller.
 assert 'id="projectsViewTitle"' in patched
 assert 'detailHead' in patched
 
-print('V362.1 PROJECT PAGES CLEANUP CONTRACT: PASS')
+print('V362.2/V371 PROJECT PAGES CLEANUP CONTRACT: PASS')
