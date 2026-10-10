@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import subprocess
 import sys
 
 MARK = 'V362_PROJECT_PAGES_CLEANUP'
@@ -130,7 +131,15 @@ def main() -> None:
     before = path.read_text(encoding='utf-8')
     after = patch_text(before)
     path.write_text(after, encoding='utf-8')
-    print('V362.1 project pages cleanup applied changed=', before != after, flush=True)
+
+    # V365: repair the base Hub bootstrap after every V359/V362 pass, before
+    # the V359 regression contract runs. This keeps restart behavior deterministic.
+    bootstrap_fix = Path(__file__).resolve().with_name('fix_v365_creator_hub_bootstrap.py')
+    if not bootstrap_fix.is_file():
+        raise RuntimeError('V365 Creator Hub bootstrap fix missing')
+    subprocess.run([sys.executable, str(bootstrap_fix), str(path)], check=True)
+
+    print('V362.1 project pages cleanup + V365 Hub bootstrap applied changed=', before != after, flush=True)
 
 
 if __name__ == '__main__':
