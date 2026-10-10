@@ -17,6 +17,14 @@ FIXTURE = '''<!doctype html><html><head></head><body>
  <section class="view" data-view="social"><div class="detail"><div class="detailCard"><div class="folderScroller"></div></div></div></section>
  <section class="view" data-view="subscription"><div class="detail"><div class="detailCard"><div class="folderScroller"></div></div></div></section>
 </div></div>
+<div class="socialDot"></div>
+<script>
+const $=q=>document.querySelector(q), $$=q=>[...document.querySelectorAll(q)];
+$$('.folder').forEach(b=>b.onclick=()=>openView(b.dataset.folder));
+$('.socialDot').forEach(b=>b.onclick=()=>openView('social'));
+window.addEventListener('message',e=>{if(e.data&&e.data.type==='GSF_HUB_FOCUS')openView(e.data.section||'dashboard')});
+openView('dashboard');loadState();
+</script>
 <!-- V357_CREATOR_HUB_HIERARCHY -->
 </body></html>'''
 
@@ -50,6 +58,12 @@ with tempfile.TemporaryDirectory() as td:
     ]
     for token in required:
         assert token in out, f'missing repaired V359/V361/V363 contract token: {token}'
+
+    # Regression: the Creator Hub bootstrap used querySelector (single node)
+    # and then called .forEach(), throwing before GSF_HUB_FOCUS/openView/loadState.
+    assert "$('.socialDot').forEach" not in out, 'Creator Hub bootstrap still throws before navigation/state initialization'
+    assert "$$('.socialDot').forEach" in out, 'Creator Hub social-dot binding must use querySelectorAll'
+    assert "GSF_HUB_FOCUS" in out and "openView('dashboard');loadState();" in out, 'Creator Hub bootstrap tail must remain intact'
 
     tail = out[out.index('v359CreatorHubGamebarFit'):]
     assert '--v359-gamebar-gap:6px' not in tail, 'the 6px-only reserve caused content to sit under the global shell'
