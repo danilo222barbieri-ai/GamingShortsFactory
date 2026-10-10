@@ -1,9 +1,10 @@
-name: V370 Hub runtime diagnostics
+name: V371 Hub runtime diagnostics
 
 on:
   push:
     branches:
       - debug-v370-hub-runtime
+      - debug-v371-hub-observer-loop
 
 jobs:
   diagnose:
@@ -13,54 +14,56 @@ jobs:
       - uses: actions/checkout@v4
       - name: Unit contracts in disposable copy
         run: |
-          cp -a . /tmp/gsf-v370-unit
-          cd /tmp/gsf-v370-unit
-          python -m py_compile web/fix_v370_single_navigation_owner.py web/test_v370_single_navigation_owner.py web/fix_v362_project_pages_cleanup.py web/fix_v366_creator_hub_state_stability.py web/test_v366_creator_hub_state_stability.py
+          cp -a . /tmp/gsf-v371-unit
+          cd /tmp/gsf-v371-unit
+          python -m py_compile web/fix_v370_single_navigation_owner.py web/test_v370_single_navigation_owner.py web/fix_v362_project_pages_cleanup.py web/test_v371_creator_hub_observer_stability.py web/fix_v366_creator_hub_state_stability.py web/test_v366_creator_hub_state_stability.py
+          python web/test_v371_creator_hub_observer_stability.py .
           python web/fix_v370_single_navigation_owner.py .
           python web/test_v370_single_navigation_owner.py .
       - name: Build production image from pristine checkout
         run: |
           git diff --exit-code
-          docker build --progress=plain -t gsf-v370 .
+          docker build --progress=plain -t gsf-v371 .
       - name: Start production image
         run: |
-          docker run -d --name gsf-v370-run -p 8080:8080 -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v370
+          docker run -d --name gsf-v371-run -p 8080:8080 -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v371
       - name: Verify startup and iPhone Hub runtime
         run: |
           set -eu
-          : >/tmp/v370-verify.log
+          : >/tmp/v371-verify.log
           reachable=0
           for i in $(seq 1 100); do
-            if ! docker inspect -f '{{.State.Running}}' gsf-v370-run 2>/dev/null | grep -q true; then
-              echo 'FAIL: container stopped during startup' >>/tmp/v370-verify.log
-              docker logs gsf-v370-run >>/tmp/v370-verify.log 2>&1 || true
+            if ! docker inspect -f '{{.State.Running}}' gsf-v371-run 2>/dev/null | grep -q true; then
+              echo 'FAIL: container stopped during startup' >>/tmp/v371-verify.log
+              docker logs gsf-v371-run >>/tmp/v371-verify.log 2>&1 || true
               exit 1
             fi
             if curl -fsS -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0.1 Mobile/15E148 Safari/604.1' http://127.0.0.1:8080/creator-hub-v156/ >/tmp/hub.html 2>/dev/null; then
-              echo 'PASS: iPhone Hub endpoint reachable' >>/tmp/v370-verify.log
+              echo 'PASS: iPhone Hub endpoint reachable' >>/tmp/v371-verify.log
               reachable=1
               break
             fi
             sleep 2
           done
           if [ "$reachable" -ne 1 ]; then
-            echo 'FAIL: iPhone Hub endpoint never became reachable' >>/tmp/v370-verify.log
+            echo 'FAIL: iPhone Hub endpoint never became reachable' >>/tmp/v371-verify.log
             exit 1
           fi
-          echo 'CHECK: startup contract marker' >>/tmp/v370-verify.log
-          docker logs gsf-v370-run 2>&1 | grep 'V370.1 SINGLE NAVIGATION OWNER + LIGHT HEADER STATE CONTRACT: PASS' >>/tmp/v370-verify.log
-          echo 'PASS: startup contract marker' >>/tmp/v370-verify.log
-          echo 'CHECK: V366 runtime contract' >>/tmp/v370-verify.log
-          docker exec gsf-v370-run python /app/web/test_v366_creator_hub_state_stability.py /app >>/tmp/v370-verify.log 2>&1
-          echo 'PASS: V366 runtime contract' >>/tmp/v370-verify.log
-          echo 'CHECK: V370 runtime contract' >>/tmp/v370-verify.log
-          docker exec gsf-v370-run python /app/web/test_v370_single_navigation_owner.py /app >>/tmp/v370-verify.log 2>&1
-          echo 'PASS: V370 runtime contract' >>/tmp/v370-verify.log
-          echo 'CHECK: final runtime structure' >>/tmp/v370-verify.log
-          docker exec -i gsf-v370-run python - <<'PY' >>/tmp/v370-verify.log 2>&1
+          echo 'CHECK: V371 observer stability contract' >>/tmp/v371-verify.log
+          docker exec gsf-v371-run python /app/web/test_v371_creator_hub_observer_stability.py /app >>/tmp/v371-verify.log 2>&1
+          echo 'PASS: V371 observer stability contract' >>/tmp/v371-verify.log
+          echo 'CHECK: V366 runtime contract' >>/tmp/v371-verify.log
+          docker exec gsf-v371-run python /app/web/test_v366_creator_hub_state_stability.py /app >>/tmp/v371-verify.log 2>&1
+          echo 'PASS: V366 runtime contract' >>/tmp/v371-verify.log
+          echo 'CHECK: V370 runtime contract' >>/tmp/v371-verify.log
+          docker exec gsf-v371-run python /app/web/test_v370_single_navigation_owner.py /app >>/tmp/v371-verify.log 2>&1
+          echo 'PASS: V370 runtime contract' >>/tmp/v371-verify.log
+          echo 'CHECK: final runtime structure' >>/tmp/v371-verify.log
+          docker exec -i gsf-v371-run python - <<'PY' >>/tmp/v371-verify.log 2>&1
           import ast
           from pathlib import Path
           home=Path('/app/web/home_v154_component/index.html').read_text(encoding='utf-8')
+          hub=Path('/app/web/creator_hub_v156_component/index.html').read_text(encoding='utf-8')
           app=Path('/app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py').read_text(encoding='utf-8')
           server=Path('/app/web/direct_upload_server.py').read_text(encoding='utf-8')
           start=home.index('function shellNav(target,data={}){')
@@ -70,6 +73,8 @@ jobs:
           assert 'V370_SINGLE_NAVIGATION_OWNER' in shell_nav
           assert '/creator-hub/state?scope=header' in home
           assert 'setTimeout(syncAccountEntry,120);' in home
+          assert 'V371_OBSERVER_STABILITY' in hub
+          assert 'function v362SetClass' in hub
           assert app.count('if(window.__GSF_GLOBAL_SHELL_V343)return;') >= 2
           values=[n.value for n in ast.walk(ast.parse(app)) if isinstance(n,ast.Constant) and isinstance(n.value,str)]
           shells=[v for v in values if '__GSF_GLOBAL_SHELL_V343' in v and '/creator-hub/state' in v]
@@ -79,21 +84,21 @@ jobs:
           state=server.split('if clean=="/creator-hub/state":',1)[1].split('if clean=="/account":',1)[0]
           assert 'if scope=="header":' in state
           assert state.index('if scope=="header":') < state.index('all_drafts=_draft_list(sid)')
-          print('V370.1 FINAL RUNTIME STRUCTURE: PASS')
+          print('V371 FINAL RUNTIME STRUCTURE: PASS')
           PY
-          echo 'PASS: final runtime structure' >>/tmp/v370-verify.log
-          cat /tmp/v370-verify.log
+          echo 'PASS: final runtime structure' >>/tmp/v371-verify.log
+          cat /tmp/v371-verify.log
       - name: Capture logs
         if: always()
         run: |
-          docker logs gsf-v370-run >/tmp/v370-docker.log 2>&1 || true
+          docker logs gsf-v371-run >/tmp/v371-docker.log 2>&1 || true
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v370-runtime-diagnostics
+          name: v371-runtime-diagnostics
           path: |
-            /tmp/v370-verify.log
-            /tmp/v370-docker.log
+            /tmp/v371-verify.log
+            /tmp/v371-docker.log
             /tmp/hub.html
           if-no-files-found: warn
