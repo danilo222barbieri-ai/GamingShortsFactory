@@ -48,8 +48,6 @@ for name,marker in checks.items():
  if marker not in patched: fail(name+' missing')
  ok(name)
 
-# Layout checks are semantic: formatting/newlines in CSS must not make a valid
-# player -> actions -> timeline grid fail deployment.
 layout_checks={
  'player is first row':r'#ng27\s+\.stageWrap\s*\{[\s\S]*?grid-column\s*:\s*1\s*!important\s*;\s*grid-row\s*:\s*1\s*!important',
  'actions directly below player':r'#ng27\s+\.cockpit>\.v323EditorActions\s*\{[\s\S]*?grid-column\s*:\s*1\s*!important\s*;\s*grid-row\s*:\s*2\s*!important',
@@ -76,10 +74,13 @@ if START.is_file():
  patch='python /app/web/fix_v325_mobile_editor_viewport_fit.py /app/web/editor_2027_component/index.html'
  test='python /app/web/test_v325_mobile_editor_viewport_fit.py /app'
  render='python /app/web/apply_v293_render_memory_guard.py'
+ guard="if grep -q 'V360_MOBILE_EDITOR_REFERENCE' /app/web/editor_2027_component/index.html 2>/dev/null; then"
+ skip='V325 restart-safe: newer V360 Editor reference already active'
  if patch not in start or test not in start: fail('V325 startup registration missing')
- if v324 in start and start.index(patch)<start.index(v324): fail('V325 must run after V324 validation')
+ if guard not in start or skip not in start: fail('V325 restart-safe V360 guard missing')
+ if v324 in start and start.index(guard)<start.index(v324): fail('V325 restart-safe guard must run after V324 validation')
  if start.index(test)<start.index(patch): fail('V325 test must run after V325 patch')
  if render in start and start.index(test)>start.index(render): fail('V325 must validate before render-memory generation')
- ok('V325 startup order')
+ ok('V325 startup order + V360 restart guard')
 
 print('\nV325 MOBILE EDITOR APPROVED REFERENCE CONTRACT: PASS')
