@@ -158,7 +158,17 @@ def main() -> None:
         raise RuntimeError('V367.1 touch recovery contract missing')
     subprocess.run([sys.executable, str(touch_test), str(app_root)], check=True)
 
-    print('V362.1 project pages cleanup + V365 bootstrap + V366 state + V367.1 touch recovery applied changed=', before != after, flush=True)
+    # V368: Hub-local recovery. Keep the parent shell simple; the Hub itself owns
+    # delegated Safari pointer/click handling and repairs the active view after
+    # bfcache/focus/shell messages. This is deliberately scoped to #hub only.
+    touch_fix = web_root/'fix_v368_creator_hub_touch_recovery.py'
+    touch_contract = web_root/'test_v368_creator_hub_touch_recovery.py'
+    if not touch_fix.is_file() or not touch_contract.is_file():
+        raise RuntimeError('V368 Creator Hub touch recovery files missing')
+    subprocess.run([sys.executable, str(touch_fix), str(path)], check=True)
+    subprocess.run([sys.executable, str(touch_contract), str(app_root)], check=True)
+
+    print('V362.1 project pages cleanup + V365 bootstrap + V366 state + V367.1 parent recovery + V368 Hub touch recovery applied changed=', before != after, flush=True)
 
 
 if __name__ == '__main__':
