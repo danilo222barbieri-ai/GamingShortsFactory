@@ -4,27 +4,41 @@ import sys
 
 MARK = 'V365_CREATOR_HUB_BOOTSTRAP_FIX'
 
-REPLACEMENTS = (
-    ('$("[data-view]").forEach', '$$("[data-view]").forEach'),
-    ('$("[data-project-pane]").forEach', '$$("[data-project-pane]").forEach'),
-    ('$(".socialDot").forEach', '$$(".socialDot").forEach'),
+REPLACEMENT_GROUPS = (
+    (
+        ('$("[data-view]").forEach', '$$("[data-view]").forEach'),
+        ("$('[data-view]').forEach", "$$('[data-view]').forEach"),
+    ),
+    (
+        ('$("[data-project-pane]").forEach', '$$("[data-project-pane]").forEach'),
+        ("$('[data-project-pane]').forEach", "$$('[data-project-pane]').forEach"),
+    ),
+    (
+        ('$(".socialDot").forEach', '$$(".socialDot").forEach'),
+        ("$('.socialDot').forEach", "$$('.socialDot').forEach"),
+    ),
 )
 
 
 def patch_text(text: str) -> str:
-    for bad, good in REPLACEMENTS:
-        bad_count = text.count(bad)
-        good_count = text.count(good)
-        if bad_count:
-            if bad_count != 1:
-                raise RuntimeError(f'V365 expected exactly one broken collection call: {bad} (found {bad_count})')
-            text = text.replace(bad, good, 1)
-        elif good_count == 0:
-            raise RuntimeError(f'V365 Creator Hub bootstrap anchor missing: {bad}')
+    for variants in REPLACEMENT_GROUPS:
+        found = False
+        for bad, good in variants:
+            bad_count = text.count(bad)
+            good_count = text.count(good)
+            if bad_count:
+                if bad_count != 1:
+                    raise RuntimeError(f'V365 expected exactly one broken collection call: {bad} (found {bad_count})')
+                text = text.replace(bad, good, 1)
+                found = True
+            elif good_count:
+                found = True
+        if not found:
+            raise RuntimeError('V365 Creator Hub bootstrap collection anchor missing')
 
     if 'GSF_HUB_FOCUS' not in text:
         raise RuntimeError('V365 Creator Hub focus bridge missing')
-    if 'openView("dashboard");loadState();' not in text:
+    if 'openView("dashboard");loadState();' not in text and "openView('dashboard');loadState();" not in text:
         raise RuntimeError('V365 Creator Hub bootstrap tail missing')
 
     if MARK not in text:
