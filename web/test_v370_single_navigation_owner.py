@@ -6,6 +6,7 @@ ROOT=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path(__file__).resolve(
 HOME=ROOT/'web'/'home_v154_component'/'index.html'
 APPLY=ROOT/'web'/'apply_v154_structural_home.py'
 V343=ROOT/'web'/'fix_v343_single_global_shell.py'
+FIX=ROOT/'web'/'fix_v370_single_navigation_owner.py'
 
 def ok(cond,label):
     if not cond:
@@ -43,6 +44,24 @@ ok(bool(v160),'V160 source block exists')
 v160=v160.group(1)
 ok("if(window.__GSF_GLOBAL_SHELL_V343)return;" in v160,'V160 legacy router stands down when V343 is active')
 ok('src="about:blank"' in v160 and 'data-loaded="0"' in v160,'V160 Hub iframe is lazy until canonical navigation opens it')
+
+# Regression: the production runtime may reorder/add iframe attributes before V370 runs.
+fix_spec=importlib.util.spec_from_file_location('v370fix',FIX)
+fix_mod=importlib.util.module_from_spec(fix_spec); assert fix_spec and fix_spec.loader; fix_spec.loader.exec_module(fix_mod)
+transformed_v160='''# GSF_GLOBAL_SHELL_V343\n<iframe class="gsf-hub-frame-v160" data-loaded="1" title="Creator Hub" data-src="/creator-hub-v156/" src="/creator-hub-v156/?v=3663&ui=profile-ref-2"></iframe>\n        if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;\n        const t=String(e.data.target||'');\n        if(t==='hub'||t==='profile'){\n'''
+patched_transformed=fix_mod._patch_v160(transformed_v160)
+ok('src="about:blank"' in patched_transformed and 'data-loaded="0"' in patched_transformed,'V370 handles transformed V160 iframe attribute order')
+ok("if(window.__GSF_GLOBAL_SHELL_V343)return;" in patched_transformed,'V370 mutes transformed V160 listener')
+
+# Regression: V343 may already have retired V160 completely in a generated runtime.
+canonical_only='# GSF_GLOBAL_SHELL_V343\nconst canonicalShell=true;\n'
+ok(fix_mod._patch_v160(canonical_only)==canonical_only,'V370 accepts runtime where V343 already retired V160')
+missing_owner_failed=False
+try:
+    fix_mod._patch_v160('const noCanonicalOwner=true;\n')
+except RuntimeError:
+    missing_owner_failed=True
+ok(missing_owner_failed,'V370 still rejects missing V160 when V343 is absent')
 
 spec=importlib.util.spec_from_file_location('v343',V343)
 mod=importlib.util.module_from_spec(spec); assert spec and spec.loader; spec.loader.exec_module(mod)
