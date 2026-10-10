@@ -1,0 +1,16 @@
+name: V368 Hub touch recovery
+
+on:
+  push:
+    branches:
+      - v368-hub-touch-recovery
+  workflow_dispatch:
+
+jobs:
+  hub-touch-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V368 touch recovery contract
+        run: python web/test_v368_creator_hub_touch_recovery.py .
