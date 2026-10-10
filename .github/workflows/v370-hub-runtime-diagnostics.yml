@@ -34,16 +34,17 @@ jobs:
             fi
             sleep 2
           done
-          grep -q 'V370_SINGLE_NAVIGATION_OWNER' /app-does-not-exist 2>/dev/null || true
           docker logs gsf-v370-run 2>&1 | grep -q 'V370 SINGLE NAVIGATION OWNER CONTRACT: PASS'
           docker exec gsf-v370-run python /app/web/test_v370_single_navigation_owner.py /app
-          docker exec gsf-v370-run python - <<'PY'
+          docker exec -i gsf-v370-run python - <<'PY'
           from pathlib import Path
           home=Path('/app/web/home_v154_component/index.html').read_text(encoding='utf-8')
           app=Path('/app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py').read_text(encoding='utf-8')
-          s=home[home.index('function shellNav(target,data={}){'):home.index('function parentClick',home.index('function shellNav(target,data={}){'))]
-          assert 'window.parent.document' not in s
-          assert 'V370_SINGLE_NAVIGATION_OWNER' in s
+          start=home.index('function shellNav(target,data={}){')
+          end=home.index('function parentClick',start)
+          shell_nav=home[start:end]
+          assert 'window.parent.document' not in shell_nav
+          assert 'V370_SINGLE_NAVIGATION_OWNER' in shell_nav
           assert app.count('if(window.__GSF_GLOBAL_SHELL_V343)return;') >= 2
           assert 'src="about:blank" data-src="/creator-hub-v156/?v=3663&ui=profile-ref-2" data-loaded="0" title="Creator Hub"' in app
           print('V370 FINAL RUNTIME STRUCTURE: PASS')
