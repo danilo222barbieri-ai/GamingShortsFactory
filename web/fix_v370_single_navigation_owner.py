@@ -122,8 +122,21 @@ def _patch_v160(text: str) -> str:
 
 
 def _patch_v343_runtime_endpoint(text: str) -> str:
+    # Generator/source form: the JS may exist directly in text.
+    if HEADER_STATE_NEW in text:
+        return text
     if HEADER_STATE_OLD in text:
         return text.replace(HEADER_STATE_OLD, HEADER_STATE_NEW, 1)
+
+    # Generated V154/V293 form: V343 is embedded via repr(bridge), so the
+    # JavaScript single quotes are escaped inside the Python string literal.
+    # Patch the serialized spelling without reserializing the whole app source.
+    escaped_old = HEADER_STATE_OLD.replace("'", "\\'")
+    escaped_new = HEADER_STATE_NEW.replace("'", "\\'")
+    if escaped_new in text:
+        return text
+    if escaped_old in text:
+        return text.replace(escaped_old, escaped_new, 1)
     return text
 
 
