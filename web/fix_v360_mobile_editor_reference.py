@@ -136,6 +136,10 @@ FIT_RE = re.compile(
     r"function\s+fitEditorViewport\(\)\s*\{\s*try\{\s*const\s+pw=Math\.max\(320,Number\(window\.parent\.innerWidth\|\|window\.innerWidth\|\|1920\)\);\s*if\(pw<=820\)\{setFrameHeight\(Math\.max\(720,Math\.ceil\(document\.documentElement\.scrollHeight\|\|720\)\)\);return\}\s*const\s+ph=Math\.max\(600,Number\(window\.parent\.innerHeight\|\|window\.innerHeight\|\|900\)\);\s*setFrameHeight\(Math\.max\(600,Math\.min\(1080,Math\.floor\(ph\)\)\)\);\s*\}catch\(e\)\{setFrameHeight\(900\)\}\s*\}",
     re.S,
 )
+FIT_RE_V325 = re.compile(
+    r"function\s+fitEditorViewport\(\)\s*\{\s*try\{\s*const\s+pw=Math\.max\(320,Number\(window\.parent\.innerWidth\|\|window\.innerWidth\|\|1920\)\);\s*if\(pw<=820\)\{const\s+ph=Math\.max\(560,Number\(window\.parent\.innerHeight\|\|window\.innerHeight\|\|760\)\);setFrameHeight\(Math\.max\(500,Math\.min\(710,Math\.floor\(ph-145\)\)\)\);return\}\s*const\s+ph=Math\.max\(600,Number\(window\.parent\.innerHeight\|\|window\.innerHeight\|\|900\)\);\s*setFrameHeight\(Math\.max\(600,Math\.min\(1080,Math\.floor\(ph\)\)\)\);\s*\}catch\(e\)\{setFrameHeight\(900\)\}\s*\}",
+    re.S,
+)
 NEW_FIT = '''function fitEditorViewport(){
    try{
      const pw=Math.max(320,Number(window.parent.innerWidth||window.innerWidth||1920));
@@ -156,6 +160,8 @@ def _stabilize_frame_sizing(text: str) -> str:
     if n != 1:
         raise RuntimeError('V364 frame-height anchor missing')
     text, n = FIT_RE.subn(NEW_FIT, text, count=1)
+    if n != 1:
+        text, n = FIT_RE_V325.subn(NEW_FIT, text, count=1)
     if n != 1:
         raise RuntimeError('V364 viewport-fit anchor missing')
     return text
