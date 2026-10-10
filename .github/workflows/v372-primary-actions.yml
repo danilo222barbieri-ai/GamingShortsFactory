@@ -11,6 +11,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Apply V372 primary action fix
+        run: python web/fix_v372_primary_actions_single_owner.py .
       - name: V372 primary action single-owner contract
         run: python web/test_v372_primary_actions_single_owner.py .
       - name: Inspect primary action routing
