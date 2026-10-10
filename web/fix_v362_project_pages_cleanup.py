@@ -187,7 +187,7 @@ def main() -> None:
     subprocess.run([sys.executable, str(touch_fix), str(path)], check=True)
     subprocess.run([sys.executable, str(touch_contract), str(app_root)], check=True)
 
-    # V370: remove the architectural race itself. Home emits navigation intent;
+    # V370: remove the Hub architectural race. Home emits navigation intent;
     # V158/V160 stand down whenever V343 is active; hidden Hub stays lazy.
     owner_fix = web_root/'fix_v370_single_navigation_owner.py'
     owner_contract = web_root/'test_v370_single_navigation_owner.py'
@@ -202,7 +202,18 @@ def main() -> None:
         raise RuntimeError('V371 observer stability contract missing')
     subprocess.run([sys.executable, str(observer_contract), str(app_root)], check=True)
 
-    print('V362.2/V371 project cleanup observer stabilization + V365/V366/V368/V370 applied changed=', before != after, flush=True)
+    # V372: Home's three primary tiles are navigation only. V343 chooses the
+    # destination; Editor/AI retain only their own bootstrap/state lifecycle and
+    # V251 no longer races the canonical shell. This must be applied to the
+    # generated V154/V293 runtime too, otherwise a restart can resurrect the bug.
+    primary_fix = web_root/'fix_v372_primary_actions_single_owner.py'
+    primary_contract = web_root/'test_v372_primary_actions_single_owner.py'
+    if not primary_fix.is_file() or not primary_contract.is_file():
+        raise RuntimeError('V372 primary action routing files missing')
+    subprocess.run([sys.executable, str(primary_fix), str(app_root)], check=True)
+    subprocess.run([sys.executable, str(primary_contract), str(app_root)], check=True)
+
+    print('V362.2/V371 project cleanup + V365/V366/V368/V370/V372 runtime stabilization applied changed=', before != after, flush=True)
 
 
 if __name__ == '__main__':
