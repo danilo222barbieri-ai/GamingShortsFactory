@@ -11,17 +11,21 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - name: Unit contracts
+      - name: Unit contracts in disposable copy
         run: |
-          python -m py_compile web/fix_v370_single_navigation_owner.py web/test_v370_single_navigation_owner.py web/fix_v362_project_pages_cleanup.py
+          cp -a . /tmp/gsf-v370-unit
+          cd /tmp/gsf-v370-unit
+          python -m py_compile web/fix_v370_single_navigation_owner.py web/test_v370_single_navigation_owner.py web/fix_v362_project_pages_cleanup.py web/fix_v366_creator_hub_state_stability.py web/test_v366_creator_hub_state_stability.py
           python web/fix_v370_single_navigation_owner.py .
           python web/test_v370_single_navigation_owner.py .
-      - name: Build production image
-        run: docker build --progress=plain -t gsf-v370 .
+      - name: Build production image from pristine checkout
+        run: |
+          git diff --exit-code
+          docker build --progress=plain -t gsf-v370 .
       - name: Start production image
         run: |
           docker run -d --name gsf-v370-run -p 8080:8080 -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v370
-      - name: Verify V370 startup and iPhone Hub
+      - name: Verify startup and iPhone Hub runtime
         run: |
           set -eu
           for i in $(seq 1 100); do
@@ -34,20 +38,28 @@ jobs:
             fi
             sleep 2
           done
-          docker logs gsf-v370-run 2>&1 | grep -q 'V370 SINGLE NAVIGATION OWNER CONTRACT: PASS'
+          docker logs gsf-v370-run 2>&1 | grep -q 'V370.1 SINGLE NAVIGATION OWNER + LIGHT HEADER STATE CONTRACT: PASS'
+          docker exec gsf-v370-run python /app/web/test_v366_creator_hub_state_stability.py /app
           docker exec gsf-v370-run python /app/web/test_v370_single_navigation_owner.py /app
           docker exec -i gsf-v370-run python - <<'PY'
           from pathlib import Path
           home=Path('/app/web/home_v154_component/index.html').read_text(encoding='utf-8')
           app=Path('/app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py').read_text(encoding='utf-8')
+          server=Path('/app/web/direct_upload_server.py').read_text(encoding='utf-8')
           start=home.index('function shellNav(target,data={}){')
           end=home.index('function parentClick',start)
           shell_nav=home[start:end]
           assert 'window.parent.document' not in shell_nav
           assert 'V370_SINGLE_NAVIGATION_OWNER' in shell_nav
+          assert '/creator-hub/state?scope=header' in home
+          assert 'setTimeout(syncAccountEntry,120);' in home
           assert app.count('if(window.__GSF_GLOBAL_SHELL_V343)return;') >= 2
+          assert "P.fetch('/creator-hub/state?scope=header'" in app
           assert 'src="about:blank" data-src="/creator-hub-v156/?v=3663&ui=profile-ref-2" data-loaded="0" title="Creator Hub"' in app
-          print('V370 FINAL RUNTIME STRUCTURE: PASS')
+          state=server.split('if clean=="/creator-hub/state":',1)[1].split('if clean=="/account":',1)[0]
+          assert 'if scope=="header":' in state
+          assert state.index('if scope=="header":') < state.index('all_drafts=_draft_list(sid)')
+          print('V370.1 FINAL RUNTIME STRUCTURE: PASS')
           PY
       - name: Show logs on failure
         if: failure()
