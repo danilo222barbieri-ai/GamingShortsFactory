@@ -6,11 +6,17 @@ import sys
 root = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path('/app')
 hub = root/'web'/'creator_hub_v156_component'/'index.html'
 server = root/'web'/'direct_upload_server.py'
+source_shell = root/'GamingShortsFactory_V154_STRUCTURAL_HOME.py'
+runtime_shell = root/'GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py'
 assert hub.is_file(), 'V366 Hub target missing'
 assert server.is_file(), 'V366 server target missing'
+assert source_shell.is_file(), 'V366 source shell missing'
+assert runtime_shell.is_file(), 'V366 runtime shell missing'
 
 h = hub.read_text(encoding='utf-8')
 s = server.read_text(encoding='utf-8')
+src = source_shell.read_text(encoding='utf-8')
+run = runtime_shell.read_text(encoding='utf-8')
 
 required_hub = (
     'V366_CREATOR_HUB_STATE_STABILITY',
@@ -50,5 +56,12 @@ assert state_block.count('_youtube_user_load(sid)') == 1
 assert state_block.count('_tiktok_user_load(sid)') == 1
 assert state_block.count('_instagram_user_load(sid)') == 1
 
+cache_target = '/creator-hub-v156/?v=3662&ui=profile-ref-2'
+assert cache_target in src, 'V366 source shell cache key not bumped'
+assert cache_target in run, 'V366 runtime shell cache key not bumped'
+assert '/creator-hub-v156/?v=3115&ui=profile-ref-2' not in run, 'stale V3115 Hub cache key remains in live runtime'
+
 py_compile.compile(str(server), doraise=True)
-print('V366 CREATOR HUB PROFILE STATE STABILITY: PASS', flush=True)
+py_compile.compile(str(source_shell), doraise=True)
+py_compile.compile(str(runtime_shell), doraise=True)
+print('V366 CREATOR HUB PROFILE STATE STABILITY + CACHE BUST: PASS', flush=True)
