@@ -1,0 +1,15 @@
+name: V369 Hub native input
+
+on:
+  push:
+    branches:
+      - v369-hub-native-input
+
+jobs:
+  native-input:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V369 Creator Hub native input regression
+        run: python web/test_v369_creator_hub_native_input.py .
