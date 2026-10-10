@@ -47,6 +47,8 @@ required_server = (
     'bool(instagram_state)',
     'GSF_HUB_CLIENT_ERROR',
     '"/creator-hub/avatar" if str(profile.get("avatar") or "").startswith("data:image/")',
+    'scope=str((parse_qs(path.query).get("scope") or [""])[0] or "")',
+    'if scope=="header":',
 )
 for token in required_server:
     assert token in s, 'V366 server contract missing: ' + token
@@ -56,6 +58,15 @@ state_block = s.split('if clean=="/creator-hub/state":',1)[1].split('if clean=="
 assert state_block.count('_youtube_user_load(sid)') == 1
 assert state_block.count('_tiktok_user_load(sid)') == 1
 assert state_block.count('_instagram_user_load(sid)') == 1
+
+# Header scope must return before any drafts/Shorts/social-provider work begins.
+header_pos = state_block.index('if scope=="header":')
+header_return = state_block.index('                return', header_pos)
+heavy_pos = state_block.index('            all_drafts=_draft_list(sid)')
+assert header_pos < header_return < heavy_pos, 'header scope must return before heavy Creator Hub state work'
+header_slice = state_block[header_pos:header_return]
+for forbidden in ('_draft_list(sid)','_short_list(sid)','_youtube_user_load(sid)','_tiktok_user_load(sid)','_instagram_user_load(sid)'):
+    assert forbidden not in header_slice, 'header scope must stay lightweight: ' + forbidden
 
 # Cache serialization belongs to V312/V343 and may not have run yet when V366
 # is invoked from V362. What V366 needs is a restart-safe V312 bump that can
@@ -72,4 +83,4 @@ assert v312._bump_hub_cache(bumped) == bumped, 'V312 Hub cache bump must be idem
 py_compile.compile(str(server), doraise=True)
 py_compile.compile(str(source_shell), doraise=True)
 py_compile.compile(str(runtime_shell), doraise=True)
-print('V366 CREATOR HUB PROFILE STATE STABILITY + V312 CACHE UPGRADE CONTRACT: PASS', flush=True)
+print('V366 CREATOR HUB PROFILE STATE STABILITY + LIGHT HEADER STATE + V312 CACHE UPGRADE CONTRACT: PASS', flush=True)
