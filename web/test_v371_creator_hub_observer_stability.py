@@ -5,8 +5,16 @@ import re
 import sys
 
 ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parents[1]
-HUB = ROOT / 'web' / 'creator_hub_v156_component' / 'index.html'
 FIX = ROOT / 'web' / 'fix_v362_project_pages_cleanup.py'
+FIX368 = ROOT / 'web' / 'fix_v368_creator_hub_touch_recovery.py'
+
+
+def load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def extract_v362_runtime(text: str) -> str:
@@ -35,27 +43,28 @@ def check_runtime(label: str, text: str) -> None:
 
 
 assert FIX.is_file(), 'V362 cleanup patch missing'
-spec = importlib.util.spec_from_file_location('v362_stability', FIX)
-mod = importlib.util.module_from_spec(spec)
-assert spec and spec.loader
-spec.loader.exec_module(mod)
+assert FIX368.is_file(), 'V368 touch recovery patch missing'
+mod = load_module('v362_stability', FIX)
+mod368 = load_module('v368_stability', FIX368)
 
 # Unit-level fixture represents the real point in the Docker patch chain where
 # V359 already exists and V362 is applied. Raw repository HTML is intentionally
-# earlier than that stage, so applying V362 directly to it would be an invalid test.
+# earlier than that stage, so applying V362 directly to it would be invalid.
 fixture = '''<!doctype html><html><body>
 <div id="hub">
   <section class="view active" data-view="projects" style="visibility:visible;pointer-events:auto">
-    <div class="detail"><div class="detailHead"><h2 id="projectsViewTitle">I miei Shorts</h2></div>
-      <div class="detailCard"><div class="folderScroller">
-        <div class="hubProjectsGuide">Guida</div>
-        <div class="projectSection" data-project-pane="shorts" style="display:block">
-          <div class="projectHero">Shorts</div><div id="shortRows"><div class="empty">Nessuno Short archiviato.</div></div>
-        </div>
-        <div class="projectSection" data-project-pane="drafts" style="display:none">
-          <div class="projectHero">Bozze</div><div id="draftRows"><div class="empty">Nessun progetto in lavorazione salvato.</div></div>
-        </div>
-      </div></div>
+    <div class="stage">
+      <div class="detail"><div class="detailHead"><h2 id="projectsViewTitle">I miei Shorts</h2></div>
+        <div class="detailCard"><div class="folderScroller">
+          <div class="hubProjectsGuide">Guida</div>
+          <div class="projectSection" data-project-pane="shorts" style="display:block">
+            <div class="projectHero">Shorts</div><div id="shortRows"><div class="empty">Nessuno Short archiviato.</div></div>
+          </div>
+          <div class="projectSection" data-project-pane="drafts" style="display:none">
+            <div class="projectHero">Bozze</div><div id="draftRows"><div class="empty">Nessun progetto in lavorazione salvato.</div></div>
+          </div>
+        </div></div>
+      </div>
     </div>
   </section>
 </div>
@@ -66,13 +75,13 @@ check_runtime('Patched V362 fixture', patched_fixture)
 check_runtime('V362 generator', mod.PATCH)
 assert mod.patch_text(patched_fixture) == patched_fixture, 'V371 upgrade must be idempotent'
 
-# The repository Hub may still be pre-V359; Docker upgrades it later. We only
-# use it here to preserve the independent V368 safety contract.
-hub = HUB.read_text(encoding='utf-8')
-assert 'V368_CREATOR_HUB_TOUCH_RECOVERY' in hub, 'V368 recovery unexpectedly missing'
-assert 'new MutationObserver(v368RepairActiveView)' in hub, 'V368 active-view repair unexpectedly missing'
-v368 = hub.split('V368_CREATOR_HUB_TOUCH_RECOVERY', 1)[1]
+# V368 is generated later in the real build. Validate that generator directly,
+# rather than assuming the pre-build repository HTML already contains it.
+v368 = mod368.RUNTIME
+assert 'V368_CREATOR_HUB_TOUCH_RECOVERY' in v368, 'V368 recovery generator unexpectedly missing'
+assert 'new MutationObserver(v368RepairActiveView)' in v368, 'V368 active-view repair unexpectedly missing'
 assert 'stopPropagation(' not in v368, 'V368 must not block native input'
 assert 'preventDefault(' not in v368, 'V368 must not cancel native input'
+assert "attributeFilter:['class']" in v368, 'V368 observer scope unexpectedly broadened'
 
 print('V371 CREATOR HUB OBSERVER STABILITY CONTRACT: PASS')
