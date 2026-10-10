@@ -158,9 +158,8 @@ def main() -> None:
         raise RuntimeError('V367.1 touch recovery contract missing')
     subprocess.run([sys.executable, str(touch_test), str(app_root)], check=True)
 
-    # V368: Hub-local recovery. Keep the parent shell simple; the Hub itself owns
-    # delegated Safari pointer/click handling and repairs the active view after
-    # bfcache/focus/shell messages. This is deliberately scoped to #hub only.
+    # V368: Hub-local recovery only. It may repair visibility/pointer state but
+    # must never become a second navigation owner.
     touch_fix = web_root/'fix_v368_creator_hub_touch_recovery.py'
     touch_contract = web_root/'test_v368_creator_hub_touch_recovery.py'
     if not touch_fix.is_file() or not touch_contract.is_file():
@@ -168,7 +167,16 @@ def main() -> None:
     subprocess.run([sys.executable, str(touch_fix), str(path)], check=True)
     subprocess.run([sys.executable, str(touch_contract), str(app_root)], check=True)
 
-    print('V362.1 project pages cleanup + V365 bootstrap + V366 state + V367.1 parent recovery + V368 Hub touch recovery applied changed=', before != after, flush=True)
+    # V370: remove the architectural race itself. Home emits navigation intent;
+    # V158/V160 stand down whenever V343 is active; hidden Hub stays lazy.
+    owner_fix = web_root/'fix_v370_single_navigation_owner.py'
+    owner_contract = web_root/'test_v370_single_navigation_owner.py'
+    if not owner_fix.is_file() or not owner_contract.is_file():
+        raise RuntimeError('V370 single navigation owner files missing')
+    subprocess.run([sys.executable, str(owner_fix), str(app_root)], check=True)
+    subprocess.run([sys.executable, str(owner_contract), str(app_root)], check=True)
+
+    print('V362.1 project pages cleanup + V365 bootstrap + V366 state + V367.1 parent recovery + V368 Hub touch recovery + V370 single navigation owner applied changed=', before != after, flush=True)
 
 
 if __name__ == '__main__':
