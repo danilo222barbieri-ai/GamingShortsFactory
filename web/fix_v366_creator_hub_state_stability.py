@@ -42,6 +42,22 @@ def _replace_once(text: str, old: str, new: str, label: str) -> str:
 
 
 def patch_hub(text: str) -> str:
+    # V366.1 restart safety: V359/V362 can delegate this repair more than once
+    # during one container boot. Once the complete contract marker exists, do
+    # not rewrite loadState again or duplicate the single-flight loader.
+    if MARK in text:
+        required = (
+            'let stateLoadPromise=null;',
+            'reportHubError("render",renderError)',
+            '.socialCard[data-platform],.profileSocialRefRow[data-platform]',
+            'if(!st||!btn)return',
+            'id="v366CreatorHubDiagnostics"',
+        )
+        missing = [token for token in required if token not in text]
+        if missing:
+            raise RuntimeError('V366 marked Hub is incomplete: ' + ', '.join(missing))
+        return text
+
     if 'V365_CREATOR_HUB_BOOTSTRAP_FIX' not in text:
         raise RuntimeError('V366 requires V365 Creator Hub bootstrap')
 
@@ -109,10 +125,9 @@ def patch_hub(text: str) -> str:
  async function deleteShort'''
     text = text[:match.start()] + new_loader + text[match.end():]
 
-    if MARK not in text:
-        if '</body>' not in text:
-            raise RuntimeError('V366 Hub body anchor missing')
-        text = text.replace('</body>', CLIENT_RUNTIME + '\n</body>', 1)
+    if '</body>' not in text:
+        raise RuntimeError('V366 Hub body anchor missing')
+    text = text.replace('</body>', CLIENT_RUNTIME + '\n</body>', 1)
     return text
 
 
