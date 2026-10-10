@@ -11,8 +11,16 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Apply V370 single navigation owner
+        run: python web/fix_v370_single_navigation_owner.py .
       - name: V370 single navigation owner contract
         run: python web/test_v370_single_navigation_owner.py .
+      - name: Legacy shell contracts
+        run: |
+          sudo mkdir -p /app
+          sudo cp -a . /app/gsf
+          cd /app/gsf
+          python web/test_v370_single_navigation_owner.py .
       - name: Diagnose decompressed shell and Hub bootstrap
         if: always()
         run: python web/diagnose_v370_creator_hub_runtime.py . || true
