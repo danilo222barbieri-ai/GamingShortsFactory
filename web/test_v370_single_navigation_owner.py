@@ -15,9 +15,10 @@ def ok(cond,label):
 home=HOME.read_text(encoding='utf-8')
 apply=APPLY.read_text(encoding='utf-8')
 
-m=re.search(r'function shellNav\(target,data=\{\}\)\{(.*?)\n  function parentClick',home,re.S)
-ok(bool(m),'Home shellNav exists')
-nav=m.group(1)
+start=home.find('function shellNav(target,data={}){')
+end=home.find('function parentClick',start)
+ok(start>=0 and end>start,'Home shellNav exists')
+nav=home[start:end]
 ok('window.parent.postMessage({type:"GSF_SHELL_NAV"' in nav,'Home delegates navigation to canonical shell')
 ok('window.parent.document' not in nav,'Home does not mutate parent overlays directly')
 ok('classList.add("is-open")' not in nav and 'style.pointerEvents' not in nav,'Home has no parallel overlay router')
