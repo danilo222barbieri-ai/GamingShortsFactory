@@ -1,0 +1,16 @@
+name: V367 single active surface
+
+on:
+  push:
+    branches:
+      - v367-single-active-surface
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V367 shell interaction contract
+        run: python web/test_v367_single_active_surface.py .
