@@ -63,6 +63,20 @@ RUNTIME = r'''
       hub.style.visibility='visible';
       const stage=hub.querySelector('.stage');
       if(stage)stage.style.pointerEvents='auto';
+
+      // Same-origin, Hub-only parent repair. Never touch any other surface.
+      const frame=window.frameElement;
+      if(frame){
+        frame.style.pointerEvents='auto';
+        frame.style.visibility='visible';
+        const overlay=frame.closest('#gsf-creator-hub-live-v160');
+        if(overlay&&overlay.classList.contains('is-open')){
+          overlay.style.pointerEvents='auto';
+          overlay.style.visibility='visible';
+          overlay.style.opacity='1';
+          overlay.setAttribute('aria-hidden','false');
+        }
+      }
     }catch(err){v368Telemetry('V368_REPAIR_ERROR',err&&err.message||err)}
   }
 
@@ -144,6 +158,7 @@ RUNTIME = r'''
       const result=v368HubAction(target);
       if(!result)return false;
       v368Telemetry('V368_HUB_TAP',source+':'+result[0]);
+      v368RepairActiveView();
       setTimeout(v368RepairActiveView,0);
       return true;
     }catch(err){
