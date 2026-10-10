@@ -1,0 +1,15 @@
+name: V370 Hub runtime diagnostics
+
+on:
+  push:
+    branches:
+      - debug-v370-hub-runtime
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Diagnose decompressed shell and Hub bootstrap
+        run: python web/diagnose_v370_creator_hub_runtime.py .
