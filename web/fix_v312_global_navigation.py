@@ -48,13 +48,13 @@ def _bump_hub_cache(text: str) -> str:
     # invalidate quoting; source-time replacement cannot.
     if HUB_CACHE_URL in text:
         return text
-    candidates = (
-        '/creator-hub-v156/?v=3115&ui=profile-ref-2',
-        '/creator-hub-v156/?v=3115',
-    )
-    for old in candidates:
-        if old in text:
-            return text.replace(old, HUB_CACHE_URL)
+
+    # Restart-safe migration: a previous successful/failed deploy can leave any
+    # numeric Hub cache revision in the generated source. Upgrade that exact Hub
+    # URL instead of recognizing only the original V3115 revision.
+    pattern = re.compile(r'/creator-hub-v156/\?v=\d+(?:&ui=profile-ref-2)?')
+    if pattern.search(text):
+        return pattern.sub(HUB_CACHE_URL, text)
     raise RuntimeError('V312: Creator Hub cache-key anchor missing')
 
 
@@ -93,7 +93,7 @@ def main() -> None:
 
     compile(app_after, str(app), 'exec')
     app.write_text(app_after, encoding='utf-8')
-    print('V312.2 shared-page navigation + safe Hub cache bump normalized; Home routes preserved from V302:',
+    print('V312.2 shared-page navigation + restart-safe Hub cache bump normalized; Home routes preserved from V302:',
           'shell_changed=', app_before != app_after,
           'hub_cache=', HUB_CACHE_KEY,
           flush=True)
