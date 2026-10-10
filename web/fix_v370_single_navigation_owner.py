@@ -60,8 +60,10 @@ V160_LISTENER_NEW = """        if(e.origin!==location.origin||!e.data||e.data.ty
         if(t==='hub'||t==='profile'){
 """
 
+# Runtime migrations can add/reorder iframe attributes before V370 runs. Match
+# the semantic V160 Hub frame rather than one exact serialized attribute order.
 V160_IFRAME_RE = re.compile(
-    r'<iframe\s+src="/creator-hub-v156/\?v=[^"]+"\s+data-src="/creator-hub-v156/[^"]*"\s+data-loaded="1"\s+title="Creator Hub"></iframe>'
+    r'<iframe\b(?=[^>]*\btitle="Creator Hub")(?=[^>]*\bdata-loaded="1")(?=[^>]*\b(?:src|data-src)="[^"]*/creator-hub-v156/[^"]*")[^>]*></iframe>'
 )
 V160_IFRAME_LAZY = '<iframe src="about:blank" data-src="/creator-hub-v156/?v=3663&ui=profile-ref-2" data-loaded="0" title="Creator Hub"></iframe>'
 
@@ -105,15 +107,17 @@ def _patch_v158(text: str) -> str:
 
 
 def _patch_v160(text: str) -> str:
+    canonical_v343 = 'GSF_GLOBAL_SHELL_V343' in text or '__GSF_GLOBAL_SHELL_V343' in text
+
     if V160_IFRAME_LAZY not in text:
         text, n = V160_IFRAME_RE.subn(V160_IFRAME_LAZY, text, count=1)
-        if n != 1:
-            raise RuntimeError(f'V370 V160 iframe anchor count={n}')
+        if n == 0 and not canonical_v343:
+            raise RuntimeError('V370 V160 iframe anchor count=0 without canonical V343 owner')
 
     if V160_LISTENER_OLD in text:
         text = text.replace(V160_LISTENER_OLD, V160_LISTENER_NEW, 1)
-    elif V160_LISTENER_NEW not in text:
-        raise RuntimeError('V370 V160 listener anchor missing')
+    elif V160_LISTENER_NEW not in text and not canonical_v343:
+        raise RuntimeError('V370 V160 listener anchor missing without canonical V343 owner')
     return text
 
 
