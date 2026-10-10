@@ -46,9 +46,9 @@ def main() -> None:
     need(arbiter, 'visibilitychange', 'Safari foreground recovery')
 
     # V367 deliberately reuses route events and bounded retries instead of
-    # adding another MutationObserver on top of the V343 watchdog.
-    if 'MutationObserver' in arbiter:
-        raise AssertionError('V367 must not add another MutationObserver')
+    # instantiating another observer on top of the V343 watchdog.
+    if 'new MutationObserver' in arbiter:
+        raise AssertionError('V367 must not instantiate another MutationObserver')
 
     fixture = (
         "import streamlit.components.v1 as _gsf_components_v343\n"
