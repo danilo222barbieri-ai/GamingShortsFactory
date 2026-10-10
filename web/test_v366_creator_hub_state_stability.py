@@ -56,12 +56,14 @@ assert state_block.count('_youtube_user_load(sid)') == 1
 assert state_block.count('_tiktok_user_load(sid)') == 1
 assert state_block.count('_instagram_user_load(sid)') == 1
 
-cache_target = '/creator-hub-v156/?v=3662&ui=profile-ref-2'
-assert cache_target in src, 'V366 source shell cache key not bumped'
-assert cache_target in run, 'V366 runtime shell cache key not bumped'
+# V312 owns the cache bump before V343 serialization. V366 only verifies that
+# both source and generated production runtime retained the fresh URL.
+cache_target = '/creator-hub-v156/?v=3663&ui=profile-ref-2'
+assert cache_target in src, 'V366 source shell did not retain V312 safe cache bump'
+assert cache_target in run, 'V366 runtime shell did not retain V312 safe cache bump'
 assert '/creator-hub-v156/?v=3115&ui=profile-ref-2' not in run, 'stale V3115 Hub cache key remains in live runtime'
 
 py_compile.compile(str(server), doraise=True)
 py_compile.compile(str(source_shell), doraise=True)
 py_compile.compile(str(runtime_shell), doraise=True)
-print('V366 CREATOR HUB PROFILE STATE STABILITY + CACHE BUST: PASS', flush=True)
+print('V366 CREATOR HUB PROFILE STATE STABILITY + V312 SAFE CACHE BUST: PASS', flush=True)

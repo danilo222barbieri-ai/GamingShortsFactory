@@ -39,6 +39,7 @@ if(activeKey==='home') active=lastTarget==='home';
 else if(activeKey==='projects') active=(lastTarget==='hub'&&lastSection==='projects');
 else if(activeKey==='live') active=(lastTarget==='hub'&&lastSection==='live');
 else if(target==='hub') active=(lastTarget==='hub'&&(lastSection==='dashboard'||!lastSection));
+const hubUrl="/creator-hub-v156/?v=3115&ui=profile-ref-2";
 </script>
 '''
 
@@ -66,6 +67,12 @@ for active, (target, section) in expected.items():
 if 'data-target="editor"' in patched or 'data-section="editor"' in patched or 'data-section="social"' in patched:
     fail('stale inherited route remains')
 ok('stale inherited routes are removed')
+
+if mod.HUB_CACHE_URL not in patched:
+    fail('Creator Hub cache key was not safely bumped before shell serialization')
+if '/creator-hub-v156/?v=3115&ui=profile-ref-2' in patched:
+    fail('stale V3115 Creator Hub cache key remains after V312')
+ok('Creator Hub cache key is refreshed before V343 serialization')
 
 if mod.patch_shell_text(patched) != patched:
     fail('shell normalization is not idempotent')
@@ -99,6 +106,8 @@ if START.is_file():
         fail('V312 must run after V311')
     if start.index(test_marker) < start.index(patch_marker):
         fail('V312 contract must run after V312 patch')
-    ok('startup order is correct')
+    if start.index(patch_marker) > start.index('python /app/web/fix_v343_single_global_shell.py'):
+        fail('V312 Hub cache bump must happen before V343 shell serialization')
+    ok('startup order is correct and cache bump precedes V343')
 
-print('\nV312.1 NAVIGATION RESTORE CONTRACT: PASS')
+print('\nV312.2 NAVIGATION + SAFE HUB CACHE CONTRACT: PASS')

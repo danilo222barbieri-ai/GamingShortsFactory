@@ -4,7 +4,6 @@ import re
 import sys
 
 MARK = 'V366_CREATOR_HUB_STATE_STABILITY'
-CACHE_TARGET = '/creator-hub-v156/?v=3662&ui=profile-ref-2'
 
 CLIENT_RUNTIME = r'''
 <!-- V366_CREATOR_HUB_STATE_STABILITY -->
@@ -132,15 +131,6 @@ def patch_hub(text: str) -> str:
     return text
 
 
-def patch_shell_cache(text: str) -> str:
-    if CACHE_TARGET in text:
-        return text
-    text, count = re.subn(r'/creator-hub-v156/\?v=[^"\'\s]+', CACHE_TARGET, text)
-    if count < 1:
-        raise RuntimeError('V366 Creator Hub cache-key anchor missing')
-    return text
-
-
 def _find_route_block(text: str, exact: str) -> tuple[int, int, str]:
     lines = text.splitlines(keepends=True)
     start = -1
@@ -224,18 +214,7 @@ def main() -> None:
     server_after = patch_server(server_before)
     hub.write_text(hub_after, encoding='utf-8')
     server.write_text(server_after, encoding='utf-8')
-
-    cache_changed = []
-    for shell in (root/'GamingShortsFactory_V154_STRUCTURAL_HOME.py', root/'GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py'):
-        if not shell.is_file():
-            continue
-        before = shell.read_text(encoding='utf-8')
-        after = patch_shell_cache(before)
-        compile(after, str(shell), 'exec')
-        shell.write_text(after, encoding='utf-8')
-        cache_changed.append((shell.name, before != after))
-
-    print('V366 Creator Hub state stability applied hub_changed=', hub_before != hub_after, 'server_changed=', server_before != server_after, 'cache=', cache_changed, flush=True)
+    print('V366 Creator Hub state stability applied hub_changed=', hub_before != hub_after, 'server_changed=', server_before != server_after, flush=True)
 
 
 if __name__ == '__main__':

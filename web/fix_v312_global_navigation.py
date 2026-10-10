@@ -4,6 +4,8 @@ import re
 import sys
 
 DEFAULT_ROOT = Path('/app')
+HUB_CACHE_KEY = '3663'
+HUB_CACHE_URL = f'/creator-hub-v156/?v={HUB_CACHE_KEY}&ui=profile-ref-2'
 
 
 def _button_pattern(active: str) -> re.Pattern:
@@ -40,6 +42,22 @@ def _normalize_button(text: str, active: str, target: str, section: str | None) 
     return pattern.sub(lambda _m: button, text, count=1)
 
 
+def _bump_hub_cache(text: str) -> str:
+    # Do this while V154 is still ordinary source, before V343 serializes the
+    # global shell into a large Python/JavaScript string. Late replacement can
+    # invalidate quoting; source-time replacement cannot.
+    if HUB_CACHE_URL in text:
+        return text
+    candidates = (
+        '/creator-hub-v156/?v=3115&ui=profile-ref-2',
+        '/creator-hub-v156/?v=3115',
+    )
+    for old in candidates:
+        if old in text:
+            return text.replace(old, HUB_CACHE_URL)
+    raise RuntimeError('V312: Creator Hub cache-key anchor missing')
+
+
 def patch_shell_text(text: str) -> str:
     # Final shared-page Game Bar source of truth. Do not preserve inherited route values.
     text = _normalize_button(text, 'home', 'home', None)
@@ -54,6 +72,7 @@ def patch_shell_text(text: str) -> str:
         text,
         count=1,
     )
+    text = _bump_hub_cache(text)
     return text
 
 
@@ -74,8 +93,9 @@ def main() -> None:
 
     compile(app_after, str(app), 'exec')
     app.write_text(app_after, encoding='utf-8')
-    print('V312.1 shared-page navigation normalized; Home routes preserved from V302:',
+    print('V312.2 shared-page navigation + safe Hub cache bump normalized; Home routes preserved from V302:',
           'shell_changed=', app_before != app_after,
+          'hub_cache=', HUB_CACHE_KEY,
           flush=True)
 
 
