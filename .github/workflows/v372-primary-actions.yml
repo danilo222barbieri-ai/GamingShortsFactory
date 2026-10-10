@@ -16,5 +16,38 @@ jobs:
       - name: V372 primary action single-owner contract
         run: python web/test_v372_primary_actions_single_owner.py .
       - name: Inspect primary action routing
-        if: always()
         run: python web/diagnose_v372_primary_actions.py .
+
+  production-image:
+    needs: diagnose
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build -t gsf-v372 .
+      - name: Start production container
+        run: |
+          docker run -d --name gsf-v372 -p 18080:8080 -e PORT=8080 gsf-v372
+          ok=0
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18080/_stcore/health >/dev/null 2>&1; then ok=1; break; fi
+            sleep 2
+          done
+          if [ "$ok" -ne 1 ]; then docker logs gsf-v372; exit 1; fi
+      - name: Verify generated production runtime
+        run: |
+          docker exec gsf-v372 python /app/web/test_v372_primary_actions_single_owner.py /app
+          docker exec gsf-v372 grep -q 'V372_PRIMARY_ACTIONS_SINGLE_OWNER' /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py
+          docker exec gsf-v372 grep -q 'V372_PRIMARY_ACTIONS_SINGLE_OWNER' /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+          curl -fsS http://127.0.0.1:18080/creator-hub-v156/ >/dev/null
+          curl -fsS http://127.0.0.1:18080/editor-live/ >/dev/null
+          curl -fsS http://127.0.0.1:18080/ai-v221/ >/dev/null
+      - name: Verify startup applied V372
+        run: |
+          docker logs gsf-v372 2>&1 | tee /tmp/gsf-v372.log
+          grep -q 'V372 primary actions single owner applied' /tmp/gsf-v372.log
+          grep -q 'V372 PRIMARY ACTION SINGLE OWNER CONTRACT: PASS' /tmp/gsf-v372.log
+      - name: Dump logs on failure
+        if: failure()
+        run: docker logs gsf-v372 2>&1 || true
