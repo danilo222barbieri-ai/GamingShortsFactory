@@ -20,6 +20,10 @@ FIXTURE = '''<!doctype html><html><head></head><body>
 <div class="socialDot"></div>
 <script>
 const $=q=>document.querySelector(q), $$=q=>[...document.querySelectorAll(q)];
+function openView(view){
+  $('[data-view]').forEach(v=>v.classList.toggle('active',v.dataset.view===view));
+  $('[data-project-pane]').forEach(p=>p.style.display='');
+}
 $$('.folder').forEach(b=>b.onclick=()=>openView(b.dataset.folder));
 $('.socialDot').forEach(b=>b.onclick=()=>openView('social'));
 window.addEventListener('message',e=>{if(e.data&&e.data.type==='GSF_HUB_FOCUS')openView(e.data.section||'dashboard')});
@@ -59,10 +63,23 @@ with tempfile.TemporaryDirectory() as td:
     for token in required:
         assert token in out, f'missing repaired V359/V361/V363 contract token: {token}'
 
-    # Regression: the Creator Hub bootstrap used querySelector (single node)
-    # and then called .forEach(), throwing before GSF_HUB_FOCUS/openView/loadState.
-    assert "$('.socialDot').forEach" not in out, 'Creator Hub bootstrap still throws before navigation/state initialization'
-    assert "$$('.socialDot').forEach" in out, 'Creator Hub social-dot binding must use querySelectorAll'
+    # Regression: the Creator Hub defines $ as querySelector and $$ as
+    # querySelectorAll. Three collection loops incorrectly used $, so openView
+    # and bootstrap threw TypeError before focus routing/state initialization.
+    bad_collection_calls = [
+        " $('[data-view]').forEach",
+        " $('[data-project-pane]').forEach",
+        "$('.socialDot').forEach",
+    ]
+    good_collection_calls = [
+        " $$('[data-view]').forEach",
+        " $$('[data-project-pane]').forEach",
+        "$$('.socialDot').forEach",
+    ]
+    for token in bad_collection_calls:
+        assert token not in out, f'Creator Hub still calls .forEach on querySelector result: {token}'
+    for token in good_collection_calls:
+        assert token in out, f'Creator Hub collection binding was not upgraded to querySelectorAll: {token}'
     assert "GSF_HUB_FOCUS" in out and "openView('dashboard');loadState();" in out, 'Creator Hub bootstrap tail must remain intact'
 
     tail = out[out.index('v359CreatorHubGamebarFit'):]
