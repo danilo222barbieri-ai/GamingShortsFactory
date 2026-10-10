@@ -9,8 +9,61 @@ on:
 jobs:
   hub-touch-recovery:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+
       - name: Run V368 touch recovery contract
         run: python web/test_v368_creator_hub_touch_recovery.py .
+
+      - name: Build production image
+        run: docker build --progress=plain -t gsf-v368 .
+
+      - name: Start production image
+        run: docker run -d --name gsf-v368-run -p 8080:8080 -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v368
+
+      - name: Verify startup, Hub runtime and served JavaScript
+        run: |
+          set -eu
+          for i in $(seq 1 90); do
+            if ! docker inspect -f '{{.State.Running}}' gsf-v368-run 2>/dev/null | grep -q true; then
+              docker logs gsf-v368-run || true
+              exit 1
+            fi
+            if curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1; then
+              break
+            fi
+            sleep 2
+          done
+
+          curl -fsS 'http://127.0.0.1:8080/creator-hub-v156/?v=3681' -o /tmp/hub.html
+          grep -q 'V368_CREATOR_HUB_TOUCH_RECOVERY' /tmp/hub.html
+          grep -q "document.addEventListener('pointerup',v368PointerUp,true)" /tmp/hub.html
+          grep -q "frame.closest('#gsf-creator-hub-live-v160')" /tmp/hub.html
+          grep -q "overlay.style.pointerEvents='auto'" /tmp/hub.html
+
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('/tmp/hub.html').read_text(encoding='utf-8')
+          m = re.search(r'<script id="v368CreatorHubTouchRecoveryRuntime">(.*?)</script>', html, re.S)
+          if not m:
+              raise SystemExit('V368 served runtime script missing')
+          Path('/tmp/v368.js').write_text(m.group(1), encoding='utf-8')
+          print('V368 served runtime extracted')
+          PY
+          node --check /tmp/v368.js
+
+          docker logs gsf-v368-run > /tmp/gsf-v368.log 2>&1 || true
+          grep -q 'V368 CREATOR HUB TOUCH RECOVERY CONTRACT: PASS' /tmp/gsf-v368.log
+          grep -q 'V368 Creator Hub touch recovery applied' /tmp/gsf-v368.log
+          if grep -q 'V367 single active surface applied' /tmp/gsf-v368.log; then
+            echo 'V367 global arbiter unexpectedly active'
+            cat /tmp/gsf-v368.log
+            exit 1
+          fi
+          echo 'V368 production container: HEALTHY, Hub runtime served, JS syntax valid'
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker logs gsf-v368-run || true
