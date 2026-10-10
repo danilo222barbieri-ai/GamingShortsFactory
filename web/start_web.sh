@@ -82,8 +82,12 @@ python /app/web/fix_v323_mobile_editor_player_actions.py /app
 python /app/web/test_v323_mobile_editor_player_actions.py /app
 python /app/web/fix_v324_editor_action_placement.py /app/web/editor_2027_component/index.html
 python /app/web/test_v324_editor_action_placement.py /app
-python /app/web/fix_v325_mobile_editor_viewport_fit.py /app/web/editor_2027_component/index.html
-python /app/web/test_v325_mobile_editor_viewport_fit.py /app
+if grep -q 'V360_MOBILE_EDITOR_REFERENCE' /app/web/editor_2027_component/index.html 2>/dev/null; then
+  echo "V325 restart-safe: newer V360 Editor reference already active"
+else
+  python /app/web/fix_v325_mobile_editor_viewport_fit.py /app/web/editor_2027_component/index.html
+  python /app/web/test_v325_mobile_editor_viewport_fit.py /app
+fi
 python /app/web/fix_v326_mobile_editor_home_speed.py /app
 python /app/web/test_v326_mobile_editor_home_speed.py /app
 
