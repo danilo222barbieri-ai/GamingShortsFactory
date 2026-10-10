@@ -60,15 +60,10 @@ if [ "$GSF_HISTORY_READY" -eq 0 ]; then
   python /app/web/test_v308_mobile_ai_flow.py /app
   python /app/web/fix_v310_creator_hub_mobile_cleanup.py /app/web/creator_hub_v156_component/index.html
   python /app/web/test_v310_creator_hub_mobile_cleanup.py /app
-else
-  echo "V311 restart-safe: historical runtime migrations already applied"
-fi
-
-if grep -q 'GSF_GLOBAL_SHELL_V343' "$GSF_SHELL_APP" 2>/dev/null; then
-  echo "V311 restart-safe: V343 shell already finalized"
-else
   python /app/web/fix_v311_mobile_hub_clean_pass.py /app/web/creator_hub_v156_component/index.html
   python /app/web/test_v311_mobile_hub_clean_pass.py /app
+else
+  echo "V311 restart-safe: historical runtime migrations already applied"
 fi
 touch "$GSF_V311_READY"
 
