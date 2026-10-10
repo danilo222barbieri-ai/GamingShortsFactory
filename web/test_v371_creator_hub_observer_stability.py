@@ -40,17 +40,38 @@ mod = importlib.util.module_from_spec(spec)
 assert spec and spec.loader
 spec.loader.exec_module(mod)
 
-hub = HUB.read_text(encoding='utf-8')
-patched_hub = mod.patch_text(hub)
-check_runtime('Patched Hub', patched_hub)
+# Unit-level fixture represents the real point in the Docker patch chain where
+# V359 already exists and V362 is applied. Raw repository HTML is intentionally
+# earlier than that stage, so applying V362 directly to it would be an invalid test.
+fixture = '''<!doctype html><html><body>
+<div id="hub">
+  <section class="view active" data-view="projects" style="visibility:visible;pointer-events:auto">
+    <div class="detail"><div class="detailHead"><h2 id="projectsViewTitle">I miei Shorts</h2></div>
+      <div class="detailCard"><div class="folderScroller">
+        <div class="hubProjectsGuide">Guida</div>
+        <div class="projectSection" data-project-pane="shorts" style="display:block">
+          <div class="projectHero">Shorts</div><div id="shortRows"><div class="empty">Nessuno Short archiviato.</div></div>
+        </div>
+        <div class="projectSection" data-project-pane="drafts" style="display:none">
+          <div class="projectHero">Bozze</div><div id="draftRows"><div class="empty">Nessun progetto in lavorazione salvato.</div></div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+</div>
+<!-- V359_CREATOR_HUB_GAMEBAR_FIT -->
+</body></html>'''
+patched_fixture = mod.patch_text(fixture)
+check_runtime('Patched V362 fixture', patched_fixture)
 check_runtime('V362 generator', mod.PATCH)
-assert mod.patch_text(patched_hub) == patched_hub, 'V371 upgrade must be idempotent'
+assert mod.patch_text(patched_fixture) == patched_fixture, 'V371 upgrade must be idempotent'
 
-# V368 remains Hub-local recovery. The fix removes the V362 self-trigger loop;
-# it must not bring back capture routers or event cancellation.
-assert 'V368_CREATOR_HUB_TOUCH_RECOVERY' in patched_hub, 'V368 recovery unexpectedly missing'
-assert 'new MutationObserver(v368RepairActiveView)' in patched_hub, 'V368 active-view repair unexpectedly missing'
-v368 = patched_hub.split('V368_CREATOR_HUB_TOUCH_RECOVERY', 1)[1]
+# The repository Hub may still be pre-V359; Docker upgrades it later. We only
+# use it here to preserve the independent V368 safety contract.
+hub = HUB.read_text(encoding='utf-8')
+assert 'V368_CREATOR_HUB_TOUCH_RECOVERY' in hub, 'V368 recovery unexpectedly missing'
+assert 'new MutationObserver(v368RepairActiveView)' in hub, 'V368 active-view repair unexpectedly missing'
+v368 = hub.split('V368_CREATOR_HUB_TOUCH_RECOVERY', 1)[1]
 assert 'stopPropagation(' not in v368, 'V368 must not block native input'
 assert 'preventDefault(' not in v368, 'V368 must not cancel native input'
 
