@@ -46,7 +46,7 @@ function setFrameHeight(height){
 function fitEditorViewport(){
   try{
     const pw=Math.max(320,Number(window.parent.innerWidth||window.innerWidth||1920));
-    if(pw<=820){setFrameHeight(Math.max(720,Math.ceil(document.documentElement.scrollHeight||720)));return}
+    if(pw<=820){const ph=Math.max(560,Number(window.parent.innerHeight||window.innerHeight||760));setFrameHeight(Math.max(500,Math.min(710,Math.floor(ph-145))));return}
     const ph=Math.max(600,Number(window.parent.innerHeight||window.innerHeight||900));
     setFrameHeight(Math.max(600,Math.min(1080,Math.floor(ph))));
   }catch(e){setFrameHeight(900)}
@@ -104,6 +104,10 @@ with tempfile.TemporaryDirectory() as td:
     for token in required:
         assert token in out, f'missing V364 Editor contract token: {token}'
 
+    # Startup-order regression: V325 has already replaced the mobile viewport branch
+    # before V364 runs. V364 must normalize that real runtime shape without failing.
+    assert 'Math.floor(ph-145)' not in out
+
     # Flicker regression: V360 must not create resize/mutation feedback loops.
     patch = out[out.index('V360_MOBILE_EDITOR_REFERENCE'):]
     assert 'ResizeObserver' not in patch
@@ -129,6 +133,7 @@ with tempfile.TemporaryDirectory() as td:
 start = START.read_text(encoding='utf-8')
 assert 'fix_v360_mobile_editor_reference.py' in start
 assert 'test_v360_mobile_editor_reference.py' in start
+assert start.index('fix_v325_mobile_editor_viewport_fit.py') < start.index('fix_v360_mobile_editor_reference.py')
 assert start.index('fix_v326_mobile_editor_home_speed.py') < start.index('fix_v360_mobile_editor_reference.py')
 
 print('V364 EDITOR COMPACT NO-SCROLL STABILITY: PASS', flush=True)
