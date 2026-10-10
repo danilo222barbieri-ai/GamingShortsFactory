@@ -150,16 +150,15 @@ def main() -> None:
     subprocess.run([sys.executable, str(state_fix), str(app_root)], check=True)
     subprocess.run([sys.executable, str(state_test), str(app_root)], check=True)
 
-    # V367: V343 remains the single global shell. Inject one deterministic
-    # interaction arbiter into that existing bridge in both V154 and final V293.
-    surface_fix = web_root/'fix_v367_single_active_surface.py'
-    surface_test = web_root/'test_v367_single_active_surface.py'
-    if not surface_fix.is_file() or not surface_test.is_file():
-        raise RuntimeError('V367 single active surface files missing')
-    subprocess.run([sys.executable, str(surface_fix), str(app_root)], check=True)
-    subprocess.run([sys.executable, str(surface_test), str(app_root)], check=True)
+    # V367.1 emergency recovery: do NOT run the V367 parent-document interaction
+    # arbiter. It could mark the wrong surface inert and freeze every tap on Safari.
+    # Keep V343 as the only global shell and preserve the validated V365/V366 path.
+    touch_test = web_root/'test_v367_1_touch_recovery.py'
+    if not touch_test.is_file():
+        raise RuntimeError('V367.1 touch recovery contract missing')
+    subprocess.run([sys.executable, str(touch_test), str(app_root)], check=True)
 
-    print('V362.1 project pages cleanup + V365 bootstrap + V366 state + V367 single active surface applied changed=', before != after, flush=True)
+    print('V362.1 project pages cleanup + V365 bootstrap + V366 state + V367.1 touch recovery applied changed=', before != after, flush=True)
 
 
 if __name__ == '__main__':
