@@ -29,8 +29,6 @@ RUNTIME = r'''
   window.__gsfV368TouchRecovery=1;
   const hub=document.getElementById('hub');
   if(!hub)return;
-  let lastPointerTarget=null;
-  let lastPointerAt=0;
 
   function v368Telemetry(stage,message){
     try{
@@ -64,7 +62,8 @@ RUNTIME = r'''
       const stage=hub.querySelector('.stage');
       if(stage)stage.style.pointerEvents='auto';
 
-      // Same-origin, Hub-only parent repair. Never touch any other surface.
+      // Same-origin, Hub-only parent repair. Never own navigation or input here:
+      // the base Hub handlers are the single action path.
       const frame=window.frameElement;
       if(frame){
         frame.style.pointerEvents='auto';
@@ -80,109 +79,6 @@ RUNTIME = r'''
     }catch(err){v368Telemetry('V368_REPAIR_ERROR',err&&err.message||err)}
   }
 
-  function v368HubAction(target){
-    if(!target||typeof target.closest!=='function')return null;
-    const inside=(el)=>!!el&&hub.contains(el);
-    let el=target.closest('.folder');
-    if(inside(el)){
-      openView(el.dataset.folder||'dashboard');
-      return ['folder:'+(el.dataset.folder||'dashboard'),el];
-    }
-    el=target.closest('[data-open-folder]');
-    if(inside(el)){
-      openView(el.dataset.openFolder||'dashboard');
-      return ['open-folder:'+(el.dataset.openFolder||'dashboard'),el];
-    }
-    el=target.closest('.backBtn');
-    if(inside(el)){
-      openView('dashboard');
-      return ['back',el];
-    }
-    el=target.closest('.closeTop');
-    if(inside(el)){
-      shell('home');
-      return ['close',el];
-    }
-    el=target.closest('.socialDot');
-    if(inside(el)){
-      openView('social');
-      return ['social:'+(el.dataset.social||''),el];
-    }
-    el=target.closest('[data-live-folder]');
-    if(inside(el)){
-      openLiveFolder(el.dataset.liveFolder||'');
-      return ['live-folder:'+(el.dataset.liveFolder||''),el];
-    }
-    el=target.closest('[data-live-mini]');
-    if(inside(el)){
-      openLiveMini(el.dataset.liveMini||'');
-      return ['live-mini:'+(el.dataset.liveMini||''),el];
-    }
-    el=target.closest('[data-resume]');
-    if(inside(el)){
-      resumeDraft(el.dataset.resume||'');
-      return ['resume',el];
-    }
-    el=target.closest('[data-short-download]');
-    if(inside(el)){
-      location.href='/shorts/file?id='+encodeURIComponent(el.dataset.shortDownload||'');
-      return ['short-download',el];
-    }
-    el=target.closest('[data-short-delete]');
-    if(inside(el)){
-      confirmDeleteShort(el.dataset.shortDelete||'');
-      return ['short-delete',el];
-    }
-    el=target.closest('[data-quick]');
-    if(inside(el)){
-      const q=el.dataset.quick||'';
-      if(q==='social')openView('profile');
-      else if(q)shell(q);
-      return ['quick:'+q,el];
-    }
-    el=target.closest('[data-connect]');
-    if(inside(el)){
-      connectSocial(el.dataset.connect||'');
-      return ['connect:'+(el.dataset.connect||''),el];
-    }
-    el=target.closest('#saveProfileBtn');
-    if(inside(el)){
-      saveProfile();
-      return ['save-profile',el];
-    }
-    return null;
-  }
-
-  function v368RunAction(target,source){
-    try{
-      const result=v368HubAction(target);
-      if(!result)return false;
-      v368Telemetry('V368_HUB_TAP',source+':'+result[0]);
-      v368RepairActiveView();
-      setTimeout(v368RepairActiveView,0);
-      return true;
-    }catch(err){
-      v368Telemetry('V368_ACTION_ERROR',String(err&&err.message||err));
-      return false;
-    }
-  }
-
-  function v368PointerUp(event){
-    if(!v368RunAction(event.target,'pointerup'))return;
-    lastPointerTarget=event.target;
-    lastPointerAt=Date.now();
-    event.stopPropagation();
-  }
-
-  function v368Click(event){
-    const recent=lastPointerTarget&&Date.now()-lastPointerAt<750;
-    if(recent&&(event.target===lastPointerTarget||(lastPointerTarget.contains&&lastPointerTarget.contains(event.target)))){
-      event.stopPropagation();
-      return;
-    }
-    if(v368RunAction(event.target,'click'))event.stopPropagation();
-  }
-
   function v368RepairFromFocusMessage(event){
     try{
       if(event.origin!==location.origin||!event.data||event.data.type!=='GSF_HUB_FOCUS')return;
@@ -190,8 +86,6 @@ RUNTIME = r'''
     }catch(_e){}
   }
 
-  document.addEventListener('pointerup',v368PointerUp,true);
-  document.addEventListener('click',v368Click,true);
   window.addEventListener('pageshow',v368RepairActiveView);
   window.addEventListener('focus',v368RepairActiveView);
   window.addEventListener('message',v368RepairFromFocusMessage);
