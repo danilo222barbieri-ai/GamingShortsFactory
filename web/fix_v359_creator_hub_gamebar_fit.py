@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import sys
 
 MARK = 'V359_CREATOR_HUB_GAMEBAR_FIT'
@@ -159,8 +160,26 @@ PATCH = r'''
 </script>
 '''
 
+COLLECTION_SELECTORS = ('[data-view]', '[data-project-pane]', '.socialDot')
+
+
+def _repair_collection_loops(text: str) -> str:
+    """Repair querySelector(...).forEach calls that freeze Creator Hub bootstrap."""
+    for selector in COLLECTION_SELECTORS:
+        pattern = re.compile(
+            r'(?<!\$)\$\((["\'])' + re.escape(selector) + r'\1\)\.forEach'
+        )
+        text = pattern.sub(
+            lambda match: '$$(' + match.group(1) + selector + match.group(1) + ').forEach',
+            text,
+        )
+    return text
+
 
 def patch_text(text: str) -> str:
+    # Run this before MARK/idempotence checks: production HTML may already carry
+    # V359/V363 while still containing the broken base Creator Hub selectors.
+    text = _repair_collection_loops(text)
     if MARK in text:
         return text
     if 'V357_CREATOR_HUB_HIERARCHY' not in text:
