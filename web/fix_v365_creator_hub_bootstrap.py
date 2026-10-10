@@ -1,40 +1,37 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import sys
 
 MARK = 'V365_CREATOR_HUB_BOOTSTRAP_FIX'
+COLLECTION_SELECTORS = ('[data-view]', '[data-project-pane]', '.socialDot')
 
-REPLACEMENT_GROUPS = (
-    (
-        ('$("[data-view]").forEach', '$$("[data-view]").forEach'),
-        ("$('[data-view]').forEach", "$$('[data-view]').forEach"),
-    ),
-    (
-        ('$("[data-project-pane]").forEach', '$$("[data-project-pane]").forEach'),
-        ("$('[data-project-pane]').forEach", "$$('[data-project-pane]').forEach"),
-    ),
-    (
-        ('$(".socialDot").forEach', '$$(".socialDot").forEach'),
-        ("$('.socialDot').forEach", "$$('.socialDot').forEach"),
-    ),
-)
+
+def broken_pattern(selector: str) -> re.Pattern[str]:
+    return re.compile(
+        r'(?<!\$)\$\((?P<q>["\'])' + re.escape(selector) + r'(?P=q)\)\.forEach'
+    )
+
+
+def healthy_pattern(selector: str) -> re.Pattern[str]:
+    return re.compile(
+        r'\$\$\((?P<q>["\'])' + re.escape(selector) + r'(?P=q)\)\.forEach'
+    )
 
 
 def patch_text(text: str) -> str:
-    for variants in REPLACEMENT_GROUPS:
-        found = False
-        for bad, good in variants:
-            bad_count = text.count(bad)
-            good_count = text.count(good)
-            if bad_count:
-                if bad_count != 1:
-                    raise RuntimeError(f'V365 expected exactly one broken collection call: {bad} (found {bad_count})')
-                text = text.replace(bad, good, 1)
-                found = True
-            elif good_count:
-                found = True
-        if not found:
-            raise RuntimeError('V365 Creator Hub bootstrap collection anchor missing')
+    for selector in COLLECTION_SELECTORS:
+        bad = broken_pattern(selector)
+        text, repaired = bad.subn(
+            lambda m: '$$(' + m.group('q') + selector + m.group('q') + ').forEach',
+            text,
+        )
+        if bad.search(text):
+            raise RuntimeError(f'V365 broken Creator Hub collection call remains: {selector}')
+        if not healthy_pattern(selector).search(text):
+            raise RuntimeError(f'V365 Creator Hub collection anchor missing after repair: {selector}')
+        if repaired:
+            print(f'V365 repaired {selector} collection calls={repaired}', flush=True)
 
     if 'GSF_HUB_FOCUS' not in text:
         raise RuntimeError('V365 Creator Hub focus bridge missing')
