@@ -8,19 +8,46 @@ on:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - name: Apply V370 single navigation owner
-        run: python web/fix_v370_single_navigation_owner.py .
-      - name: V370 single navigation owner contract
-        run: python web/test_v370_single_navigation_owner.py .
-      - name: Legacy shell contracts
+      - name: Unit contracts
         run: |
-          sudo mkdir -p /app
-          sudo cp -a . /app/gsf
-          cd /app/gsf
+          python -m py_compile web/fix_v370_single_navigation_owner.py web/test_v370_single_navigation_owner.py web/fix_v362_project_pages_cleanup.py
+          python web/fix_v370_single_navigation_owner.py .
           python web/test_v370_single_navigation_owner.py .
-      - name: Diagnose decompressed shell and Hub bootstrap
-        if: always()
-        run: python web/diagnose_v370_creator_hub_runtime.py . || true
+      - name: Build production image
+        run: docker build --progress=plain -t gsf-v370 .
+      - name: Start production image
+        run: |
+          docker run -d --name gsf-v370-run -p 8080:8080 -e PORT=8080 -e GSF_WEB_MODE=1 gsf-v370
+      - name: Verify V370 startup and iPhone Hub
+        run: |
+          set -eu
+          for i in $(seq 1 100); do
+            if ! docker inspect -f '{{.State.Running}}' gsf-v370-run 2>/dev/null | grep -q true; then
+              docker logs gsf-v370-run || true
+              exit 1
+            fi
+            if curl -fsS -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0.1 Mobile/15E148 Safari/604.1' http://127.0.0.1:8080/creator-hub-v156/ >/tmp/hub.html 2>/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          grep -q 'V370_SINGLE_NAVIGATION_OWNER' /app-does-not-exist 2>/dev/null || true
+          docker logs gsf-v370-run 2>&1 | grep -q 'V370 SINGLE NAVIGATION OWNER CONTRACT: PASS'
+          docker exec gsf-v370-run python /app/web/test_v370_single_navigation_owner.py /app
+          docker exec gsf-v370-run python - <<'PY'
+          from pathlib import Path
+          home=Path('/app/web/home_v154_component/index.html').read_text(encoding='utf-8')
+          app=Path('/app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py').read_text(encoding='utf-8')
+          s=home[home.index('function shellNav(target,data={}){'):home.index('function parentClick',home.index('function shellNav(target,data={}){'))]
+          assert 'window.parent.document' not in s
+          assert 'V370_SINGLE_NAVIGATION_OWNER' in s
+          assert app.count('if(window.__GSF_GLOBAL_SHELL_V343)return;') >= 2
+          assert 'src="about:blank" data-src="/creator-hub-v156/?v=3663&ui=profile-ref-2" data-loaded="0" title="Creator Hub"' in app
+          print('V370 FINAL RUNTIME STRUCTURE: PASS')
+          PY
+      - name: Show logs on failure
+        if: failure()
+        run: docker logs gsf-v370-run || true
