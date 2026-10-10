@@ -163,6 +163,16 @@ def patch_server(text: str) -> str:
         text = text.replace(old_avatar, new_avatar, 1)
 
     start, end, block = _find_route_block(text, 'if clean=="/creator-hub/state":')
+
+    # Header/Game Bar only needs identity. Do not load drafts, Shorts or social
+    # providers until the actual Creator Hub surface asks for the full state.
+    if 'if scope=="header":' not in block:
+        header_anchor = '            profile=_creator_account_load(sid) or {}\n'
+        if header_anchor not in block:
+            raise RuntimeError('V370 lightweight header-state anchor missing')
+        header_branch = '''            scope=str((parse_qs(path.query).get("scope") or [""])[0] or "")\n            if scope=="header":\n                profile=_creator_account_load(sid) or {}\n                account_id=_safe_id(profile.get("account_id","")) if isinstance(profile,dict) else ""\n                avatar=str(profile.get("avatar") or "") if isinstance(profile,dict) else ""\n                if avatar.startswith("data:image/"):\n                    avatar="/creator-hub/avatar"\n                _json(self,200,{\n                    "ok":True,\n                    "account":{\n                        "connected":bool(account_id),\n                        "id":account_id,\n                        "display_name":str(profile.get("display_name") or "Creator")[:120] if isinstance(profile,dict) else "Creator",\n                        "avatar":avatar[:1800],\n                        "plan":str(profile.get("plan") or "FREE")[:24] if isinstance(profile,dict) else "FREE",\n                        "creator_level":int(profile.get("creator_level") or 1) if isinstance(profile,dict) else 1,\n                    },\n                })\n                return\n'''
+        block = block.replace(header_anchor, header_branch + header_anchor, 1)
+
     if 'youtube_state=_youtube_user_load(sid)' not in block:
         social_anchor = '            all_shorts=_short_list(sid)\n'
         if social_anchor not in block:
@@ -176,8 +186,9 @@ def patch_server(text: str) -> str:
         block = block.replace('bool(_tiktok_user_load(sid))', 'bool(tiktok_state)')
         block = block.replace('bool(_instagram_user_load(sid))', 'bool(instagram_state)')
         block = block.replace('(_youtube_user_load(sid),_tiktok_user_load(sid),_instagram_user_load(sid),providers.get("facebook"),providers.get("twitch"))', '(youtube_state,tiktok_state,instagram_state,providers.get("facebook"),providers.get("twitch"))')
-        lines = text.splitlines(keepends=True)
-        text = ''.join(lines[:start]) + block + ''.join(lines[end:])
+
+    lines = text.splitlines(keepends=True)
+    text = ''.join(lines[:start]) + block + ''.join(lines[end:])
 
     if 'if clean=="/creator-hub/avatar":' not in text:
         avatar_route = '''        if clean=="/creator-hub/avatar":\n            sid=_social_sid(self)\n            if not sid:\n                _json(self,400,{"ok":False,"error":"Sessione browser non valida."})\n                return\n            profile=_creator_account_load(sid) or {}\n            avatar=str(profile.get("avatar") or "") if isinstance(profile,dict) else ""\n            if avatar.startswith("data:image/") and ";base64," in avatar:\n                try:\n                    head,data=avatar.split(",",1)\n                    mime=head.split(";",1)[0].split(":",1)[1]\n                    raw=base64.b64decode(data,validate=True)\n                    _send_bytes(self,200,raw,mime,"private, max-age=60")\n                except Exception:\n                    _json(self,404,{"ok":False,"error":"Avatar non disponibile"})\n            else:\n                _json(self,404,{"ok":False,"error":"Avatar non disponibile"})\n            return\n'''
