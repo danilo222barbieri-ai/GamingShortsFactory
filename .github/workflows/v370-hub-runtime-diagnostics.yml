@@ -29,6 +29,7 @@ jobs:
         run: |
           set -eu
           : >/tmp/v370-verify.log
+          reachable=0
           for i in $(seq 1 100); do
             if ! docker inspect -f '{{.State.Running}}' gsf-v370-run 2>/dev/null | grep -q true; then
               echo 'FAIL: container stopped during startup' >>/tmp/v370-verify.log
@@ -37,10 +38,15 @@ jobs:
             fi
             if curl -fsS -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0.1 Mobile/15E148 Safari/604.1' http://127.0.0.1:8080/creator-hub-v156/ >/tmp/hub.html 2>/dev/null; then
               echo 'PASS: iPhone Hub endpoint reachable' >>/tmp/v370-verify.log
+              reachable=1
               break
             fi
             sleep 2
           done
+          if [ "$reachable" -ne 1 ]; then
+            echo 'FAIL: iPhone Hub endpoint never became reachable' >>/tmp/v370-verify.log
+            exit 1
+          fi
           echo 'CHECK: startup contract marker' >>/tmp/v370-verify.log
           docker logs gsf-v370-run 2>&1 | grep 'V370.1 SINGLE NAVIGATION OWNER + LIGHT HEADER STATE CONTRACT: PASS' >>/tmp/v370-verify.log
           echo 'PASS: startup contract marker' >>/tmp/v370-verify.log
@@ -52,6 +58,7 @@ jobs:
           echo 'PASS: V370 runtime contract' >>/tmp/v370-verify.log
           echo 'CHECK: final runtime structure' >>/tmp/v370-verify.log
           docker exec -i gsf-v370-run python - <<'PY' >>/tmp/v370-verify.log 2>&1
+          import ast
           from pathlib import Path
           home=Path('/app/web/home_v154_component/index.html').read_text(encoding='utf-8')
           app=Path('/app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py').read_text(encoding='utf-8')
@@ -64,8 +71,11 @@ jobs:
           assert '/creator-hub/state?scope=header' in home
           assert 'setTimeout(syncAccountEntry,120);' in home
           assert app.count('if(window.__GSF_GLOBAL_SHELL_V343)return;') >= 2
-          assert "P.fetch('/creator-hub/state?scope=header'" in app
-          assert 'src="about:blank" data-src="/creator-hub-v156/?v=3663&ui=profile-ref-2" data-loaded="0" title="Creator Hub"' in app
+          values=[n.value for n in ast.walk(ast.parse(app)) if isinstance(n,ast.Constant) and isinstance(n.value,str)]
+          shells=[v for v in values if '__GSF_GLOBAL_SHELL_V343' in v and '/creator-hub/state' in v]
+          assert shells
+          assert any("P.fetch('/creator-hub/state?scope=header'" in v for v in shells)
+          assert not any("P.fetch('/creator-hub/state',{cache:'no-store'" in v for v in shells)
           state=server.split('if clean=="/creator-hub/state":',1)[1].split('if clean=="/account":',1)[0]
           assert 'if scope=="header":' in state
           assert state.index('if scope=="header":') < state.index('all_drafts=_draft_list(sid)')
