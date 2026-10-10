@@ -4,6 +4,7 @@ import subprocess
 import sys
 
 MARK = 'V362_PROJECT_PAGES_CLEANUP'
+STABLE_MARK = 'V371_OBSERVER_STABILITY'
 
 PATCH = r'''
 <!-- V362_PROJECT_PAGES_CLEANUP -->
@@ -48,6 +49,7 @@ PATCH = r'''
 </style>
 <script id="v362ProjectPagesCleanupRuntime">
 (()=>{
+  const V371_OBSERVER_STABILITY=true;
   const hub=document.getElementById('hub');
   const view=hub&&hub.querySelector('.view[data-view="projects"]');
   if(!view)return;
@@ -57,10 +59,20 @@ PATCH = r'''
   const visible=(el)=>!!el&&getComputedStyle(el).display!=='none';
   const emptyCopy=/^(?:nessun|nessuna|caricamento)\b/i;
 
+  // V371: this observer watches class/style. Every class write in its callback
+  // must therefore be idempotent or V368's startup style repair can kick off a
+  // class -> observer -> class feedback loop that pins Safari's main thread.
+  function v362SetClass(el,name,on){
+    if(!el)return;
+    const wanted=!!on;
+    if(el.classList.contains(name)!==wanted)el.classList.toggle(name,wanted);
+  }
+
   function resetCleanup(){
-    view.classList.remove('v362ProjectClean','v362CollectionEmpty');
-    qa('.v362RedundantProjectBlock').forEach((n)=>n.classList.remove('v362RedundantProjectBlock'));
-    qa('.v362EmptyCollection').forEach((n)=>n.classList.remove('v362EmptyCollection'));
+    v362SetClass(view,'v362ProjectClean',false);
+    v362SetClass(view,'v362CollectionEmpty',false);
+    qa('.v362RedundantProjectBlock').forEach((n)=>v362SetClass(n,'v362RedundantProjectBlock',false));
+    qa('.v362EmptyCollection').forEach((n)=>v362SetClass(n,'v362EmptyCollection',false));
   }
 
   function clean(){
@@ -70,7 +82,7 @@ PATCH = r'''
     }
     const title=String(q('#projectsViewTitle')?.textContent||'').trim().toLowerCase();
     const direct=title==='i miei shorts'||title==='bozze';
-    view.classList.toggle('v362ProjectClean',direct);
+    v362SetClass(view,'v362ProjectClean',direct);
     if(!direct){
       resetCleanup();
       return;
@@ -79,31 +91,31 @@ PATCH = r'''
     const scroller=q('.folderScroller');
     if(scroller){
       [...scroller.children].forEach((child)=>{
-        if(!child.matches('[data-project-pane]')) child.classList.add('v362RedundantProjectBlock');
+        if(!child.matches('[data-project-pane]'))v362SetClass(child,'v362RedundantProjectBlock',true);
       });
     }
 
     const panes=qa('[data-project-pane]');
     const active=panes.find(visible);
     if(!active){
-      view.classList.remove('v362CollectionEmpty');
+      v362SetClass(view,'v362CollectionEmpty',false);
       return;
     }
     [...active.children].forEach((child)=>{
-      if(!['projectRows','draftRows','shortRows'].includes(child.id)) child.classList.add('v362RedundantProjectBlock');
+      if(!['projectRows','draftRows','shortRows'].includes(child.id))v362SetClass(child,'v362RedundantProjectBlock',true);
     });
 
     const rows=title==='i miei shorts'?q('#shortRows',active):q('#draftRows',active);
     if(!rows){
-      view.classList.remove('v362CollectionEmpty');
+      v362SetClass(view,'v362CollectionEmpty',false);
       return;
     }
     const hasRealRows=!!rows.querySelector('.row,.shortRow,.projectBox');
     const empties=qa('.empty',rows);
     const removableEmpty=!hasRealRows&&empties.length>0&&empties.every((el)=>emptyCopy.test(String(el.textContent||'').trim()));
-    empties.forEach((el)=>el.classList.toggle('v362EmptyCollection',removableEmpty));
-    rows.classList.toggle('v362EmptyCollection',removableEmpty);
-    view.classList.toggle('v362CollectionEmpty',removableEmpty);
+    empties.forEach((el)=>v362SetClass(el,'v362EmptyCollection',removableEmpty));
+    v362SetClass(rows,'v362EmptyCollection',removableEmpty);
+    v362SetClass(view,'v362CollectionEmpty',removableEmpty);
   }
 
   clean();
@@ -116,7 +128,15 @@ PATCH = r'''
 
 def patch_text(text: str) -> str:
     if MARK in text:
-        return text
+        if STABLE_MARK in text:
+            return text
+        start = text.find('<!-- V362_PROJECT_PAGES_CLEANUP -->')
+        script_start = text.find('<script id="v362ProjectPagesCleanupRuntime">', start)
+        script_end = text.find('</script>', script_start)
+        if start < 0 or script_start < 0 or script_end < 0:
+            raise RuntimeError('V362 legacy cleanup block is malformed')
+        script_end += len('</script>')
+        return text[:start] + PATCH + text[script_end:]
     if 'V359_CREATOR_HUB_GAMEBAR_FIT' not in text:
         raise RuntimeError('V362 requires V359/V361 Creator Hub repair first')
     if '</body>' not in text:
@@ -176,7 +196,13 @@ def main() -> None:
     subprocess.run([sys.executable, str(owner_fix), str(app_root)], check=True)
     subprocess.run([sys.executable, str(owner_contract), str(app_root)], check=True)
 
-    print('V362.1 project pages cleanup + V365 bootstrap + V366 state + V367.1 parent recovery + V368 Hub touch recovery + V370 single navigation owner applied changed=', before != after, flush=True)
+    # V371: enforce the no-feedback observer contract after all Hub repair layers.
+    observer_contract = web_root/'test_v371_creator_hub_observer_stability.py'
+    if not observer_contract.is_file():
+        raise RuntimeError('V371 observer stability contract missing')
+    subprocess.run([sys.executable, str(observer_contract), str(app_root)], check=True)
+
+    print('V362.2/V371 project cleanup observer stabilization + V365/V366/V368/V370 applied changed=', before != after, flush=True)
 
 
 if __name__ == '__main__':
