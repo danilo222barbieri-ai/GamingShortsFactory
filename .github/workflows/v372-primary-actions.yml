@@ -1,0 +1,15 @@
+name: V372 primary actions diagnostics
+
+on:
+  push:
+    branches:
+      - v372-primary-actions
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect primary action routing
+        run: python web/diagnose_v372_primary_actions.py .
