@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -63,23 +64,18 @@ with tempfile.TemporaryDirectory() as td:
     for token in required:
         assert token in out, f'missing repaired V359/V361/V363 contract token: {token}'
 
-    # Regression: the Creator Hub defines $ as querySelector and $$ as
-    # querySelectorAll. Three collection loops incorrectly used $, so openView
-    # and bootstrap threw TypeError before focus routing/state initialization.
-    bad_collection_calls = [
-        " $('[data-view]').forEach",
-        " $('[data-project-pane]').forEach",
-        "$('.socialDot').forEach",
-    ]
-    good_collection_calls = [
-        " $$('[data-view]').forEach",
-        " $$('[data-project-pane]').forEach",
-        "$$('.socialDot').forEach",
-    ]
-    for token in bad_collection_calls:
-        assert token not in out, f'Creator Hub still calls .forEach on querySelector result: {token}'
-    for token in good_collection_calls:
-        assert token in out, f'Creator Hub collection binding was not upgraded to querySelectorAll: {token}'
+    # Regression: $ is querySelector and $$ is querySelectorAll. Match only a
+    # genuine single-$ collection call; a healthy $$ call must never be counted
+    # as broken just because it contains the substring "$(`` at its second char.
+    for selector in ('[data-view]', '[data-project-pane]', '.socialDot'):
+        broken = re.compile(
+            r'(?<!\$)\$\((?P<q>["\'])' + re.escape(selector) + r'(?P=q)\)\.forEach'
+        )
+        healthy = re.compile(
+            r'\$\$\((?P<q>["\'])' + re.escape(selector) + r'(?P=q)\)\.forEach'
+        )
+        assert not broken.search(out), f'Creator Hub still calls .forEach on querySelector result: {selector}'
+        assert healthy.search(out), f'Creator Hub collection binding was not upgraded to querySelectorAll: {selector}'
     assert "GSF_HUB_FOCUS" in out and "openView('dashboard');loadState();" in out, 'Creator Hub bootstrap tail must remain intact'
 
     tail = out[out.index('v359CreatorHubGamebarFit'):]
@@ -98,4 +94,4 @@ assert 'fix_v359_creator_hub_gamebar_fit.py' in start
 assert 'test_v359_creator_hub_gamebar_fit.py' in start
 assert start.index('fix_v357_creator_hub_hierarchy.py') < start.index('fix_v359_creator_hub_gamebar_fit.py')
 
-print('V363 PROFILE NAVIGATION FREEZE GUARD: PASS', flush=True)
+print('V365 CREATOR HUB BOOTSTRAP FREEZE REGRESSION: PASS', flush=True)
