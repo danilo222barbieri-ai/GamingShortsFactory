@@ -22,21 +22,18 @@ HOME_NAV = r'''function shellNav(target,data={}){
     }catch(_e){return false}
   }'''
 
-HOME_ACCOUNT_START = '''  async function syncAccountEntry(){
-    if(!accountEntry)return;
-'''
-HOME_ACCOUNT_START_NEW = '''  async function syncAccountEntry(){
-    if(!accountEntry)return;
-    try{if(window.parent&&window.parent.__GSF_GLOBAL_SHELL_V343)return}catch(_e){}
-'''
+HOME_ACCOUNT_RE = re.compile(
+    r'(async function syncAccountEntry\(\)\{\n\s*if\(!accountEntry\)return;\n)'
+)
+HOME_ACCOUNT_GUARD = '   try{if(window.parent&&window.parent.__GSF_GLOBAL_SHELL_V343)return}catch(_e){}\n'
 HOME_ACCOUNT_FETCH_OLD = 'fetch("/creator-hub/state",{cache:"no-store",credentials:"same-origin"})'
 HOME_ACCOUNT_FETCH_NEW = 'fetch("/creator-hub/state?scope=header",{cache:"no-store",credentials:"same-origin"})'
-HOME_ACCOUNT_BOOT_OLD = '''  window.addEventListener("focus",syncAccountEntry);
-  document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncAccountEntry()});
-  syncAccountEntry();'''
-HOME_ACCOUNT_BOOT_NEW = '''  window.addEventListener("focus",syncAccountEntry);
-  document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncAccountEntry()});
-  setTimeout(syncAccountEntry,120);'''
+HOME_ACCOUNT_BOOT_OLD = ''' window.addEventListener("focus",syncAccountEntry);
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncAccountEntry()});
+ syncAccountEntry();'''
+HOME_ACCOUNT_BOOT_NEW = ''' window.addEventListener("focus",syncAccountEntry);
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncAccountEntry()});
+ setTimeout(syncAccountEntry,120);'''
 
 V158_AUTO_PRELOAD = """      sync();
       new MutationObserver(sync).observe(document.body,{childList:true,subtree:true});
@@ -76,10 +73,11 @@ def patch_home_text(text: str) -> str:
             raise RuntimeError(f'V370 Home shellNav anchor count={n}')
         text = new
 
-    if HOME_ACCOUNT_START_NEW not in text:
-        if HOME_ACCOUNT_START not in text:
+    if 'window.parent.__GSF_GLOBAL_SHELL_V343' not in text:
+        match = HOME_ACCOUNT_RE.search(text)
+        if not match:
             raise RuntimeError('V370 Home account sync anchor missing')
-        text = text.replace(HOME_ACCOUNT_START, HOME_ACCOUNT_START_NEW, 1)
+        text = text[:match.end()] + HOME_ACCOUNT_GUARD + text[match.end():]
 
     if HOME_ACCOUNT_FETCH_OLD in text:
         text = text.replace(HOME_ACCOUNT_FETCH_OLD, HOME_ACCOUNT_FETCH_NEW, 1)
