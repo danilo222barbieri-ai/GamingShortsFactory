@@ -46,6 +46,7 @@ def _snippet(bridge, token, radius=900):
 
 
 def main():
+    print('V372 RED final-runtime gate active', flush=True)
     if not APP.is_file():
         raise SystemExit(f'V372 final runtime missing: {APP}')
     text = APP.read_text(encoding='utf-8')
