@@ -65,5 +65,15 @@ def main()->None:
     subprocess.run([sys.executable,str(v375),str(ai)],check=True)
     subprocess.run([sys.executable,str(t375),str(ai)],check=True)
 
+    # V376 is the final mobile Game Editor composition pass. It only touches
+    # the Editor component and the existing Editor overlay title card.
+    app=Path('/app')
+    v376=Path(__file__).resolve().with_name('fix_v376_mobile_editor_reference.py')
+    t376=Path(__file__).resolve().with_name('test_v376_mobile_editor_reference.py')
+    if not v376.is_file() or not t376.is_file():
+        raise RuntimeError('V376 mobile Editor continuation missing')
+    subprocess.run([sys.executable,str(v376),str(app)],check=True)
+    subprocess.run([sys.executable,str(t376),str(app)],check=True)
+
 if __name__=='__main__':
     main()
