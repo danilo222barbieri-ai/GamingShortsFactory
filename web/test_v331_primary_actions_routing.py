@@ -8,11 +8,15 @@ shell=(root/'GamingShortsFactory_V154_STRUCTURAL_HOME.py').read_text(encoding='u
 start=(root/'web/start_web.sh').read_text(encoding='utf-8')
 fix=(root/'web/fix_v331_primary_actions_routing.py').read_text(encoding='utf-8')
 
+legacy_editor=('GSF_V331_EDITOR_DIRECT_LOAD' in home and "'/editor-live/?v=331'" in home)
+canonical_editor=('GSF_SHELL_NAV' in home and 'target==="editor"' in home)
+
 checks={
     'V331 shell bridge present before V343 retirement':'V331_PRIMARY_ACTIONS_ROUTING' in shell,
     'Home Short always routes canonically':'if(action==="short"){shellNav("short")' in home,
     'Home does not depend on text-click to open Short':'if(action==="short"){parentClick(["crea short"' not in home,
-    'Editor frame is loaded by the canonical action':'GSF_V331_EDITOR_DIRECT_LOAD' in home and "'/editor-live/?v=331'" in home,
+    'Editor route is restart-safe':legacy_editor or canonical_editor,
+    'V331 fixer accepts canonical Editor owner':'GSF_SHELL_NAV' in fix and 'V331 Home editor panel anchor missing' in fix,
     'Editor overlay has a retrying direct opener':'v331OpenEditor' in shell and 'attempt<20' in shell,
     'Editor lazy frame gets loaded':'/editor-live/?v=331' in shell and "dataset.loaded='1'" in shell,
     'Short has a real always-open surface':'gsf-short-overlay-v331' in shell and 'Crea Short' in shell,
