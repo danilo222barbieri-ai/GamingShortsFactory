@@ -1,0 +1,15 @@
+name: V372 global surfaces
+
+on:
+  push:
+    branches:
+      - v372-global-surfaces
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: V372 global surface owner contract
+        run: python web/test_v372_global_surface_owner.py .
