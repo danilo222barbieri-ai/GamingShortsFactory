@@ -13,3 +13,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: V372 global surface owner contract
         run: python web/test_v372_global_surface_owner.py .
+      - name: Inspect canonical V343 routes
+        if: always()
+        run: |
+          python - <<'PY'
+          import base64,gzip,importlib.util,re
+          from pathlib import Path
+          p=Path('web/fix_v343_single_global_shell.py')
+          spec=importlib.util.spec_from_file_location('v343',p);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+          js=gzip.decompress(base64.b64decode(m.JS_GZIP_B64)).decode()
+          for name in ('closeCompeting','openEditor','ensureShortSurface','openShort','route'):
+              hit=re.search(r'(?:const\s+'+name+r'\s*=|function\s+'+name+r'\b).*?(?=\n\s*(?:const\s+\w+\s*=|function\s+\w+\b)|\Z)',js,re.S)
+              print('\n===',name,'===\n',hit.group(0)[:5000] if hit else 'NOT FOUND')
+          PY
