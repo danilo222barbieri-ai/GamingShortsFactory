@@ -13,6 +13,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: V372 global surface owner contract
         run: python web/test_v372_global_surface_owner.py .
+      - name: V372 navigation no-rerun contract
+        if: always()
+        run: python web/test_v372_navigation_no_rerun.py .
       - name: Inspect canonical V343 routes
         if: always()
         run: |
