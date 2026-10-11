@@ -11,7 +11,7 @@ if not TARGET.is_file():
 text = TARGET.read_text(encoding='utf-8')
 
 checks = {
-    'V308 mobile AI flow preserved': 'V308_MOBILE_AI_FLOW' in text,
+    'V308 mobile AI flow preserved': 'V308 MOBILE AI FLOW' in text,
     'V375 marker installed': MARK in text,
     'mobile-only breakpoint installed': '@media(max-width:920px)' in text,
     '30px header breathing room installed': 'body{padding-top:30px!important}' in text,
