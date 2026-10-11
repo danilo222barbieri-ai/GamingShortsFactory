@@ -11,6 +11,8 @@ mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
 fixture = '''<!doctype html><html><body>
+<!-- V357_CREATOR_HUB_HIERARCHY -->
+<!-- V373_CREATOR_HUB_HEADER_BREATH -->
 <div id="hub"><div class="stage">
 <section class="view" data-view="projects"><div class="detail"><div class="detailHead"><h2 id="projectsViewTitle">Bozze</h2></div></div></section>
 <section class="view" data-view="live">
