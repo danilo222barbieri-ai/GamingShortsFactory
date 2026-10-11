@@ -15,14 +15,23 @@ NAV = r'''function shellNav(target,data={}){
       return true;
     }catch(_e){return false}
   }'''
+SHORT_OLD = 'if(action==="short"){parentClick(["crea short","crea short finale","crea il tuo short"]);value({event:"create_short",duration,engine});}'
+SHORT_NEW = 'if(action==="short"){shellNav("short");value({event:"create_short",duration,engine});}'
 
 
 def patch_home(text: str) -> str:
-    if MARK in text and 'window.parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin);' in text:
-        return text
-    patched, count = NAV_RE.subn(NAV, text, count=1)
-    if count != 1:
-        raise RuntimeError(f'V372 Home shellNav anchor count={count}')
+    patched = text
+    if MARK not in patched or 'window.parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin);' not in patched:
+        patched, count = NAV_RE.subn(NAV, patched, count=1)
+        if count != 1:
+            raise RuntimeError(f'V372 Home shellNav anchor count={count}')
+
+    if SHORT_NEW not in patched:
+        count = patched.count(SHORT_OLD)
+        if count != 1:
+            raise RuntimeError(f'V372 Home Short legacy anchor count={count}')
+        patched = patched.replace(SHORT_OLD, SHORT_NEW, 1)
+
     return patched
 
 
