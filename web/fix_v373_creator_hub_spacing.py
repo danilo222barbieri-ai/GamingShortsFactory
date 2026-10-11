@@ -65,34 +65,14 @@ def main()->None:
     subprocess.run([sys.executable,str(v375),str(ai)],check=True)
     subprocess.run([sys.executable,str(t375),str(ai)],check=True)
 
-    # Existing Editor chain remains temporarily so the new V380 contract can
-    # prove RED before replacing it with one unified final pass.
+    # V380 is the single final mobile Game Editor pass. It replaces the old
+    # V376/V378/V379 visual chain while preserving the existing Editor logic.
     app=Path('/app')
-    v376=Path(__file__).resolve().with_name('fix_v376_mobile_editor_reference.py')
-    t376=Path(__file__).resolve().with_name('test_v376_mobile_editor_reference.py')
-    if not v376.is_file() or not t376.is_file():
-        raise RuntimeError('V376 mobile Editor continuation missing')
-    subprocess.run([sys.executable,str(v376),str(app)],check=True)
-    subprocess.run([sys.executable,str(t376),str(app)],check=True)
-
-    v378=Path(__file__).resolve().with_name('fix_v378_mobile_editor_stack.py')
-    t378=Path(__file__).resolve().with_name('test_v378_mobile_editor_stack.py')
-    if not v378.is_file() or not t378.is_file():
-        raise RuntimeError('V378 mobile Editor stack continuation missing')
-    subprocess.run([sys.executable,str(v378),str(app)],check=True)
-    subprocess.run([sys.executable,str(t378),str(app)],check=True)
-
-    v379=Path(__file__).resolve().with_name('fix_v379_mobile_editor_final_compose.py')
-    t379=Path(__file__).resolve().with_name('test_v379_mobile_editor_final_compose.py')
-    if not v379.is_file() or not t379.is_file():
-        raise RuntimeError('V379 mobile Editor final compose continuation missing')
-    subprocess.run([sys.executable,str(v379),str(app)],check=True)
-    subprocess.run([sys.executable,str(t379),str(app)],check=True)
-
-    # RED phase: this must fail until V380 replaces the layered Editor chain.
+    v380=Path(__file__).resolve().with_name('fix_v380_mobile_editor_unified.py')
     t380=Path(__file__).resolve().with_name('test_v380_mobile_editor_unified.py')
-    if not t380.is_file():
-        raise RuntimeError('V380 unified Editor contract missing')
+    if not v380.is_file() or not t380.is_file():
+        raise RuntimeError('V380 unified mobile Editor continuation missing')
+    subprocess.run([sys.executable,str(v380),str(app)],check=True)
     subprocess.run([sys.executable,str(t380),str(app)],check=True)
 
 if __name__=='__main__':
