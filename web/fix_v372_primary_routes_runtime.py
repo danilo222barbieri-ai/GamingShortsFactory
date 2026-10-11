@@ -5,7 +5,7 @@ import sys
 
 MARK = 'V372_PRIMARY_ROUTES_HOME_HANDOFF'
 NAV_RE = re.compile(
-    r'function shellNav\(target,data=\{\}\)\{.*?\n\s*return handled;\n\s*\}',
+    r'function shellNav\(target,data=\{\}\)\{.*?(?=\n\s*function parentClick\()',
     re.DOTALL,
 )
 NAV = r'''function shellNav(target,data={}){
