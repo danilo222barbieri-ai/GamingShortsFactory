@@ -17,7 +17,7 @@ gen=GEN.read_text(encoding='utf-8')
 
 # The three Home actions must all enter the same canonical parent router.
 ok('if(action==="ai"){shellNav("ai")' in home,'Crea con IA uses canonical shell')
-ok('if(action==="editor"){setEngine("manual");shellNav("editor")' in home,'Game Editor uses canonical shell')
+ok('if(action==="editor"){setEngine("manual",false);shellNav("editor")' in home,'Game Editor uses canonical shell without component rerun')
 ok('if(action==="short"){shellNav("short")' in home,'Crea Short uses canonical shell')
 
 # Legacy surface scripts may retain internal iframe messaging, but they must not
