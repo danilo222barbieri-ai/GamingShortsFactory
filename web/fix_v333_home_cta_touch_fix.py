@@ -20,25 +20,17 @@ SCRIPT=r'''
   if(window.__GSF_V333_CTA_TOUCH)return;
   window.__GSF_V333_CTA_TOUCH=true;
   const P=window.parent;
-  const D=P.document;
+
+  function GSF_V333_OPEN_AI(){
+    try{
+      P.postMessage({type:'GSF_SHELL_NAV',target:'ai'},P.location.origin);
+      return true;
+    }catch(_e){return false}
+  }
 
   function GSF_V333_OPEN_EDITOR(){
     try{
-      const o=D.getElementById('gsf-editor-overlay-v220');
-      if(!o)return false;
-      const f=o.querySelector('iframe.gsf-editor-frame,iframe[title="Game Editor"]');
-      if(f&&f.dataset.loaded!=='1'){
-        f.src='/editor-live/?v=333';
-        f.dataset.src='/editor-live/';
-        f.dataset.loaded='1';
-      }
-      ['gsf-social-overlay-v159','gsf-creator-hub-live-v160','gsf-ai-overlay-v221','gsf-account-overlay-v223','gsf-short-overlay-v331'].forEach(id=>{
-        const x=D.getElementById(id);if(!x)return;
-        x.classList.remove('is-open');x.style.opacity='0';x.style.visibility='hidden';x.style.pointerEvents='none';x.setAttribute('aria-hidden','true');
-      });
-      o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false');
-      try{P.sessionStorage.setItem('gsf_editor_overlay_open_v223','1')}catch(_e){}
-      try{P.postMessage({type:'GSF_SHELL_NAV',target:'editor'},P.location.origin)}catch(_e){}
+      P.postMessage({type:'GSF_SHELL_NAV',target:'editor'},P.location.origin);
       return true;
     }catch(_e){return false}
   }
@@ -50,24 +42,31 @@ SCRIPT=r'''
     }catch(_e){return false}
   }
 
+  function run(action){
+    if(action==='ai')return GSF_V333_OPEN_AI();
+    if(action==='editor')return GSF_V333_OPEN_EDITOR();
+    if(action==='short')return GSF_V333_OPEN_SHORT();
+    return false;
+  }
+
   function bind(el,action){
     if(!el||el.dataset.v333Bound==='1')return;
     el.dataset.v333Bound='1';
     let lastTouch=0;
-    const run=()=>action==='editor'?GSF_V333_OPEN_EDITOR():GSF_V333_OPEN_SHORT();
     el.addEventListener('touchend',e=>{
       lastTouch=Date.now();
-      e.preventDefault();e.stopPropagation();
-      run();
+      e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+      run(action);
     },{passive:false});
     el.addEventListener('click',e=>{
-      if(Date.now()-lastTouch<700){e.preventDefault();e.stopPropagation();return}
-      e.preventDefault();e.stopPropagation();
-      run();
+      if(Date.now()-lastTouch<700){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return}
+      e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+      run(action);
     },true);
   }
 
   const bindAll=()=>{
+    bind(document.querySelector('.feature[data-action="ai"]'),'ai');
     bind(document.querySelector('.feature[data-action="editor"]'),'editor');
     bind(document.querySelector('.feature[data-action="short"]'),'short');
   };
@@ -89,6 +88,6 @@ def main():
       if '</body>' not in text: raise RuntimeError('V333 body anchor missing')
       text=text.replace('</body>',SCRIPT+'\n</body>',1);changed=True
     HOME.write_text(text,encoding='utf-8')
-    print('V333 Home CTA touch fix applied changed=',changed,flush=True)
+    print('V333/V372 Home CTA canonical routing applied changed=',changed,flush=True)
 
 if __name__=='__main__': main()
