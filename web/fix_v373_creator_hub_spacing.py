@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import subprocess
 import sys
 
 MARK='V373_CREATOR_HUB_HEADER_BREATH'
@@ -43,6 +44,16 @@ def main()->None:
     after=patch_text(before)
     path.write_text(after,encoding='utf-8')
     print('V373 Creator Hub header breath + drafts cleanup applied changed=',before!=after,flush=True)
+
+    # V374 continues this same Creator Hub pass: +30px on collections/Live and
+    # strict Twitch/YouTube category isolation. Keeping the handoff here means
+    # production still uses the existing single Creator Hub startup path.
+    v374=Path(__file__).resolve().with_name('fix_v374_creator_hub_spacing_live.py')
+    t374=Path(__file__).resolve().with_name('test_v374_creator_hub_spacing_live.py')
+    if not v374.is_file() or not t374.is_file():
+        raise RuntimeError('V374 Creator Hub continuation missing')
+    subprocess.run([sys.executable,str(v374),str(path)],check=True)
+    subprocess.run([sys.executable,str(t374)],check=True)
 
 if __name__=='__main__':
     main()
