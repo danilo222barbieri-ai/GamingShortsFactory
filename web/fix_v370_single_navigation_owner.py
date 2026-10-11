@@ -3,6 +3,7 @@ from pathlib import Path
 import base64
 import gzip
 import re
+import subprocess
 import sys
 
 MARK = 'V370_SINGLE_NAVIGATION_OWNER'
@@ -171,6 +172,21 @@ def _write_if_changed(path: Path, patcher) -> bool:
     return False
 
 
+def _apply_v372(root: Path) -> None:
+    # V372 is the continuation of the same ownership rule: once V343 owns
+    # navigation, legacy Editor/AI/Account/route-guard scripts must stand down,
+    # and the three Home cards must not trigger a Streamlit rerun while routing.
+    web = root/'web'
+    fix = web/'fix_v372_global_surface_owner.py'
+    owner_test = web/'test_v372_global_surface_owner.py'
+    rerun_test = web/'test_v372_navigation_no_rerun.py'
+    if not fix.is_file() or not owner_test.is_file() or not rerun_test.is_file():
+        raise RuntimeError('V372 global surface owner files missing')
+    subprocess.run([sys.executable, str(fix), str(root)], check=True)
+    subprocess.run([sys.executable, str(owner_test), str(root)], check=True)
+    subprocess.run([sys.executable, str(rerun_test), str(root)], check=True)
+
+
 def main() -> None:
     root = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path('/app')
     home = root/'web'/'home_v154_component'/'index.html'
@@ -192,8 +208,10 @@ def main() -> None:
         compile(path.read_text(encoding='utf-8'), str(path), 'exec')
         runtime_changed.append((name, changed))
 
+    _apply_v372(root)
+
     print(
-        'V370.1 single navigation owner + lightweight header state applied',
+        'V370.1 single navigation owner + V372 global surfaces + lightweight header state applied',
         'home_changed=', home_changed,
         'generator_changed=', generator_changed,
         'v343_changed=', v343_changed,
