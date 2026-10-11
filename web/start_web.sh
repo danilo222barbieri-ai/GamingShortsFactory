@@ -182,6 +182,12 @@ python /app/web/test_v362_project_pages_cleanup.py
 grep -q 'V359_CREATOR_HUB_GAMEBAR_FIT' /app/web/creator_hub_v156_component/index.html
 grep -q 'V362_PROJECT_PAGES_CLEANUP' /app/web/creator_hub_v156_component/index.html
 
+# V373: add breathing room below the global header across Creator Hub mobile pages
+# and keep the Drafts route focused on drafts only.
+python /app/web/fix_v373_creator_hub_spacing.py /app/web/creator_hub_v156_component/index.html
+python /app/web/test_v373_creator_hub_spacing.py
+grep -q 'V373_CREATOR_HUB_HEADER_BREATH' /app/web/creator_hub_v156_component/index.html
+
 python - <<'PY'
 import os,re
 from pathlib import Path
