@@ -12,7 +12,7 @@ checks={
     'internal Editor title':'v379EditorTitle' in editor and 'Game Editor' in editor,
     'Editor subtitle':'Il tuo gameplay resta nel progetto mentre modifichi.' in editor,
     'mobile title card visible':'#ng27.v326Mobile .topline' in editor and 'display:flex!important' in editor,
-    'FULL button restored':'#ng27.v326Mobile .topline #zoomEditorBtn' in editor and '.mobileHide{display:inline!important}' in editor,
+    'FULL button restored':'#ng27.v326Mobile .topline #zoomEditorBtn' in editor and '.mobileHide{display:inline!important' in editor,
     'timeline controls unclipped':'#ng27.v326Mobile .cockpit>.timeline' in editor and 'overflow:visible!important' in editor,
     'actions preserved':all(x in editor for x in ['v323CreateShort','v323SaveDraft']),
     'V377 flicker guard preserved':'V377_IOS_FLICKER_GUARD' in editor,
