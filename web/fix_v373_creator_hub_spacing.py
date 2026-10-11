@@ -75,5 +75,14 @@ def main()->None:
     subprocess.run([sys.executable,str(v376),str(app)],check=True)
     subprocess.run([sys.executable,str(t376),str(app)],check=True)
 
+    # V378 fixes the spacing bug visible on mobile: V376's first grid row could
+    # absorb the whole iframe height and push actions/timeline behind the Game Bar.
+    v378=Path(__file__).resolve().with_name('fix_v378_mobile_editor_stack.py')
+    t378=Path(__file__).resolve().with_name('test_v378_mobile_editor_stack.py')
+    if not v378.is_file() or not t378.is_file():
+        raise RuntimeError('V378 mobile Editor stack continuation missing')
+    subprocess.run([sys.executable,str(v378),str(app)],check=True)
+    subprocess.run([sys.executable,str(t378),str(app)],check=True)
+
 if __name__=='__main__':
     main()
