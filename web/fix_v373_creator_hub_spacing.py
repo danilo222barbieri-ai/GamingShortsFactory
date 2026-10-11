@@ -84,5 +84,14 @@ def main()->None:
     subprocess.run([sys.executable,str(v378),str(app)],check=True)
     subprocess.run([sys.executable,str(t378),str(app)],check=True)
 
+    # V379 completes the approved mobile composition: internal Game Editor/FULL
+    # card, slightly smaller player, unclipped timeline, and no duplicate final CTA.
+    v379=Path(__file__).resolve().with_name('fix_v379_mobile_editor_final_compose.py')
+    t379=Path(__file__).resolve().with_name('test_v379_mobile_editor_final_compose.py')
+    if not v379.is_file() or not t379.is_file():
+        raise RuntimeError('V379 mobile Editor final compose continuation missing')
+    subprocess.run([sys.executable,str(v379),str(app)],check=True)
+    subprocess.run([sys.executable,str(t379),str(app)],check=True)
+
 if __name__=='__main__':
     main()
