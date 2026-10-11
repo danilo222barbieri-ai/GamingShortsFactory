@@ -10,6 +10,8 @@ fix=(root/'web/fix_v331_primary_actions_routing.py').read_text(encoding='utf-8')
 
 legacy_editor=('GSF_V331_EDITOR_DIRECT_LOAD' in home and "'/editor-live/?v=331'" in home)
 canonical_editor=('GSF_SHELL_NAV' in home and 'target==="editor"' in home)
+canonical_shell=('V343_SINGLE_GLOBAL_SHELL' in shell or 'GSF_CANONICAL_SHELL' in shell or 'GSF_SHELL_NAV' in shell)
+legacy_short_css=("style.id='gsf-v331-primary-actions-style'" in shell and 'D.head.appendChild(style)' in shell)
 
 checks={
     'V331 shell bridge present before V343 retirement':'V331_PRIMARY_ACTIONS_ROUTING' in shell,
@@ -20,7 +22,10 @@ checks={
     'Editor overlay has a retrying direct opener':'v331OpenEditor' in shell and 'attempt<20' in shell,
     'Editor lazy frame gets loaded':'/editor-live/?v=331' in shell and "dataset.loaded='1'" in shell,
     'Short has a real always-open surface':'gsf-short-overlay-v331' in shell and 'Crea Short' in shell,
-    'Short CSS is injected into the parent document':"style.id='gsf-v331-primary-actions-style'" in shell and 'D.head.appendChild(style)' in shell,
+    # V343 is the final global-shell owner. On a Railway restart the generated
+    # V154 source can already be canonical, so retired V331 presentation CSS is
+    # no longer required. The route/surface contract remains required above.
+    'Short presentation is owned by legacy V331 or canonical shell':legacy_short_css or canonical_shell,
     'Short route opens the surface':"target==='short'" in shell and 'v331OpenShort' in shell,
     'Short render uses stable Streamlit keys':'.st-key-gsf-major-create-short button' in shell and '.st-key-create_final_short_v54 button' in shell,
     'Short can jump to Editor':"target:'editor'" in shell,
