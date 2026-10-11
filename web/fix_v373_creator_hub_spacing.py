@@ -55,5 +55,15 @@ def main()->None:
     subprocess.run([sys.executable,str(v374),str(path)],check=True)
     subprocess.run([sys.executable,str(t374)],check=True)
 
+    # V375 is an independent final mobile-AI spacing pass. Run it from this
+    # always-executed late UI chain so earlier V308 padding cannot win again.
+    ai=Path('/app/web/ai_v221_component/index.html')
+    v375=Path(__file__).resolve().with_name('fix_v375_ai_header_breath.py')
+    t375=Path(__file__).resolve().with_name('test_v375_ai_header_breath.py')
+    if not v375.is_file() or not t375.is_file():
+        raise RuntimeError('V375 AI header-breath continuation missing')
+    subprocess.run([sys.executable,str(v375),str(ai)],check=True)
+    subprocess.run([sys.executable,str(t375),str(ai)],check=True)
+
 if __name__=='__main__':
     main()
