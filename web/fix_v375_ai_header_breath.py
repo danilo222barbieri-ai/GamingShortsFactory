@@ -18,7 +18,7 @@ PATCH = r'''
 def patch_text(text: str) -> str:
     if MARK in text:
         return text
-    if 'V308_MOBILE_AI_FLOW' not in text:
+    if 'V308 MOBILE AI FLOW' not in text:
         raise RuntimeError('V375 requires V308 mobile AI flow baseline')
     if 'Scegli il tuo Motore IA' not in text:
         raise RuntimeError('V375 AI title anchor missing')
