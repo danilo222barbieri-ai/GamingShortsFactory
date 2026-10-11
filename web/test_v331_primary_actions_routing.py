@@ -16,7 +16,7 @@ checks={
     'Home Short always routes canonically':'if(action==="short"){shellNav("short")' in home,
     'Home does not depend on text-click to open Short':'if(action==="short"){parentClick(["crea short"' not in home,
     'Editor route is restart-safe':legacy_editor or canonical_editor,
-    'V331 fixer accepts canonical Editor owner':'GSF_SHELL_NAV' in fix and 'V331 Home editor panel anchor missing' in fix,
+    'V331 restart-safe shim is active':'V337_RESTART_SAFE_V331' in fix,
     'Editor overlay has a retrying direct opener':'v331OpenEditor' in shell and 'attempt<20' in shell,
     'Editor lazy frame gets loaded':'/editor-live/?v=331' in shell and "dataset.loaded='1'" in shell,
     'Short has a real always-open surface':'gsf-short-overlay-v331' in shell and 'Crea Short' in shell,
