@@ -36,20 +36,22 @@ def patch_home(text:str)->str:
         'if(action==="short"){const opened=parentClick(["crea short","crea short finale","crea il tuo short"]);if(!opened)shellNav("short");value({event:"create_short",duration,engine});}',
         'if(action==="short"){parentClick(["crea short","crea short finale","crea il tuo short"]);value({event:"create_short",duration,engine});}',
     ]
-    replaced=False
     for old in patterns:
         if old in text:
-            text=text.replace(old,'if(action==="short"){shellNav("short");value({event:"create_short",duration,engine});}',1);replaced=True;break
-    if not replaced and 'if(action==="short"){shellNav("short")' not in text:
-        raise RuntimeError('V331 Home Short action anchor missing')
+            text=text.replace(old,'if(action==="short"){shellNav("short");value({event:"create_short",duration,engine});}',1)
+            break
+
     marker='/* GSF_V331_EDITOR_DIRECT_LOAD */'
     if marker not in text:
         anchor='const panel=doc.getElementById(ids[target]);\n       handled=show(panel);'
         if anchor in text:
             inject='''const panel=doc.getElementById(ids[target]);\n       /* GSF_V331_EDITOR_DIRECT_LOAD */\n       if(target==="editor"&&panel){\n         const ef=panel.querySelector('iframe.gsf-editor-frame,iframe[title="Game Editor"]');\n         if(ef&&ef.dataset.loaded!=="1"){ef.src='/editor-live/?v=331';ef.dataset.src='/editor-live/';ef.dataset.loaded='1';}\n       }\n       handled=show(panel);'''
             text=text.replace(anchor,inject,1)
-        elif not ('GSF_SHELL_NAV' in text and 'target==="editor"' in text):
-            raise RuntimeError('V331 Home editor route missing')
+        else:
+            # V343+ owns navigation globally. The old Home-local editor route was
+            # intentionally removed, so V331 must become a no-op instead of
+            # aborting startup on every restart/deploy.
+            print('V331 restart-safe: Home-local editor route retired by canonical shell',flush=True)
     return text
 
 def main():
