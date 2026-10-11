@@ -11,14 +11,16 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Apply V372
+      - name: Apply V370 canonical navigation
+        run: python web/fix_v370_single_navigation_owner.py .
+      - name: Apply V372 global surfaces
         run: python web/fix_v372_global_surface_owner.py .
+      - name: V370 single navigation owner regression
+        run: python web/test_v370_single_navigation_owner.py .
       - name: V372 global surface owner contract
         run: python web/test_v372_global_surface_owner.py .
       - name: V372 navigation no-rerun contract
         run: python web/test_v372_navigation_no_rerun.py .
-      - name: V370 single navigation owner regression
-        run: python web/test_v370_single_navigation_owner.py .
       - name: Inspect canonical V343 routes
         run: |
           python - <<'PY'
