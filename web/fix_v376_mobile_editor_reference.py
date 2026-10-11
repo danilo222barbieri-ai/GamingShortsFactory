@@ -116,6 +116,23 @@ EDITOR_PATCH=r'''
 
   /* Real tool drawers may scroll; the Editor page itself may not. */
   #ng27.v326Mobile .drawer{max-height:min(48%,300px)!important;overflow-y:auto!important;overflow-x:hidden!important}
+
+  /* V377_IOS_FLICKER_GUARD: keep live-video composition on stable layers. */
+  #ng27.v326Mobile .shell,
+  #ng27.v326Mobile .cockpit,
+  #ng27.v326Mobile .stageWrap,
+  #ng27.v326Mobile .stage,
+  #ng27.v326Mobile video,
+  #ng27.v326Mobile #videoBg,
+  #ng27.v326Mobile .v326ToolDock .railBtn,
+  #ng27.v326Mobile #zoomEditorBtn,
+  #ng27.v326Mobile .v326PlaybackDock,
+  #ng27.v326Mobile #playBtn{transition:none!important;animation:none!important}
+  #ng27.v326Mobile .v326ToolDock .railBtn,
+  #ng27.v326Mobile #zoomEditorBtn,
+  #ng27.v326Mobile .v326Time,
+  #ng27.v326Mobile .v326Ratio{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  #ng27.v326Mobile video,#ng27.v326Mobile #videoBg{-webkit-backface-visibility:hidden!important;backface-visibility:hidden!important}
 }
 </style>
 <script id="v376MobileEditorReferenceRuntime">
@@ -140,20 +157,21 @@ SHELL_PATCH=r'''
   #gsf-editor-overlay-v220 .gsf-editor-head{
     display:flex!important;visibility:visible!important;opacity:1!important;position:relative!important;align-items:center!important;
     flex:0 0 auto!important;min-height:62px!important;height:62px!important;margin:5px 12px 6px!important;padding:9px 82px 9px 14px!important;
-    border-radius:19px!important;background:rgba(255,255,255,.91)!important;border:1px solid rgba(174,204,225,.30)!important;
-    box-shadow:0 7px 20px rgba(65,110,151,.08)!important;-webkit-backdrop-filter:blur(16px)!important;backdrop-filter:blur(16px)!important;
-    color:#103A79!important;z-index:6!important;
+    border-radius:19px!important;background:rgba(255,255,255,.98)!important;border:1px solid rgba(174,204,225,.30)!important;
+    box-shadow:0 7px 20px rgba(65,110,151,.08)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+    color:#103A79!important;z-index:6!important;transition:none!important;animation:none!important;
   }
   #gsf-editor-overlay-v220 .gsf-editor-head>div{font-size:19px!important;line-height:1!important;font-weight:950!important;letter-spacing:-.02em!important}
   #gsf-editor-overlay-v220 .gsf-editor-head small{display:block!important;margin-top:5px!important;font-size:9.7px!important;line-height:1.1!important;font-weight:700!important;color:#6E81A5!important;letter-spacing:0!important}
   #gsf-editor-overlay-v220 .v326HeaderFull{
     display:flex!important;visibility:visible!important;opacity:1!important;align-items:center!important;justify-content:center!important;
     right:9px!important;top:11px!important;min-width:67px!important;width:67px!important;height:40px!important;border-radius:14px!important;padding:0 9px!important;
-    font-size:9px!important;background:rgba(255,255,255,.95)!important;color:#2A4D86!important;border:1px solid rgba(156,190,218,.30)!important;
-    box-shadow:0 6px 16px rgba(64,104,143,.09)!important;
+    font-size:9px!important;background:rgba(255,255,255,.98)!important;color:#2A4D86!important;border:1px solid rgba(156,190,218,.30)!important;
+    box-shadow:0 6px 16px rgba(64,104,143,.09)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;transition:none!important;
   }
   #gsf-editor-overlay-v220 iframe.gsf-editor-frame,#gsf-editor-overlay-v220 iframe[title="Game Editor"]{
     width:100%!important;min-height:0!important;border:0!important;background:transparent!important;
+    -webkit-backface-visibility:hidden!important;backface-visibility:hidden!important;transform:translate3d(0,0,0)!important;isolation:isolate!important;
   }
 }
 </style>
@@ -175,6 +193,20 @@ def patch_shell(text:str)->str:
     compile(out,'GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py','exec')
     return out
 
+def verify_flicker_guard(editor_text:str,shell_text:str)->None:
+    checks={
+        'compact player preserved':'--v376-player-w:clamp(196px,56vw,224px)' in editor_text,
+        'flicker guard marker':'V377_IOS_FLICKER_GUARD' in editor_text,
+        'layout transitions disabled':'#ng27.v326Mobile .stageWrap' in editor_text and 'transition:none!important;animation:none!important' in editor_text,
+        'control blur disabled':'-webkit-backdrop-filter:none!important;backdrop-filter:none!important' in editor_text,
+        'header blur disabled':'background:rgba(255,255,255,.98)!important' in shell_text and '-webkit-backdrop-filter:none!important;backdrop-filter:none!important' in shell_text,
+        'iframe isolated':'transform:translate3d(0,0,0)!important;isolation:isolate!important' in shell_text,
+        'actions preserved':all(x in editor_text for x in ['v323CreateShort','v323SaveDraft','data-panel="frame"','data-panel="caption"','data-panel="look"','data-panel="audio"','data-panel="vision"']),
+    }
+    failed=[name for name,ok in checks.items() if not ok]
+    if failed: raise AssertionError('V377 iOS flicker guard failed: '+'; '.join(failed))
+    print('V377 IOS FLICKER GUARD CONTRACT: PASS',flush=True)
+
 def main()->None:
     root=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app')
     editor=root/'web'/'editor_2027_component'/'index.html'
@@ -182,6 +214,7 @@ def main()->None:
     if not editor.is_file() or not shell.is_file(): raise SystemExit('V376 runtime files missing')
     eb=editor.read_text(encoding='utf-8'); ea=patch_editor(eb); editor.write_text(ea,encoding='utf-8')
     sb=shell.read_text(encoding='utf-8'); sa=patch_shell(sb); shell.write_text(sa,encoding='utf-8')
+    verify_flicker_guard(ea,sa)
     print('V376 mobile Editor reference applied editor_changed=',eb!=ea,'shell_changed=',sb!=sa,flush=True)
 
 if __name__=='__main__': main()
