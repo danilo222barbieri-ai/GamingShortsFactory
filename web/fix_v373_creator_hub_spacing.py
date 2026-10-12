@@ -45,35 +45,33 @@ def main()->None:
     path.write_text(after,encoding='utf-8')
     print('V373 Creator Hub header breath + drafts cleanup applied changed=',before!=after,flush=True)
 
-    # V374 continues this same Creator Hub pass: +30px on collections/Live and
-    # strict Twitch/YouTube category isolation. Keeping the handoff here means
-    # production still uses the existing single Creator Hub startup path.
     v374=Path(__file__).resolve().with_name('fix_v374_creator_hub_spacing_live.py')
     t374=Path(__file__).resolve().with_name('test_v374_creator_hub_spacing_live.py')
-    if not v374.is_file() or not t374.is_file():
-        raise RuntimeError('V374 Creator Hub continuation missing')
+    if not v374.is_file() or not t374.is_file(): raise RuntimeError('V374 Creator Hub continuation missing')
     subprocess.run([sys.executable,str(v374),str(path)],check=True)
     subprocess.run([sys.executable,str(t374)],check=True)
 
-    # V375 is an independent final mobile-AI spacing pass. Run it from this
-    # always-executed late UI chain so earlier V308 padding cannot win again.
     ai=Path('/app/web/ai_v221_component/index.html')
     v375=Path(__file__).resolve().with_name('fix_v375_ai_header_breath.py')
     t375=Path(__file__).resolve().with_name('test_v375_ai_header_breath.py')
-    if not v375.is_file() or not t375.is_file():
-        raise RuntimeError('V375 AI header-breath continuation missing')
+    if not v375.is_file() or not t375.is_file(): raise RuntimeError('V375 AI header-breath continuation missing')
     subprocess.run([sys.executable,str(v375),str(ai)],check=True)
     subprocess.run([sys.executable,str(t375),str(ai)],check=True)
 
-    # V380 is the single final mobile Game Editor pass. It replaces the old
-    # V376/V378/V379 visual chain while preserving the existing Editor logic.
     app=Path('/app')
     v380=Path(__file__).resolve().with_name('fix_v380_mobile_editor_unified.py')
     t380=Path(__file__).resolve().with_name('test_v380_mobile_editor_unified.py')
-    if not v380.is_file() or not t380.is_file():
-        raise RuntimeError('V380 unified mobile Editor continuation missing')
+    if not v380.is_file() or not t380.is_file(): raise RuntimeError('V380 unified mobile Editor continuation missing')
     subprocess.run([sys.executable,str(v380),str(app)],check=True)
     subprocess.run([sys.executable,str(t380),str(app)],check=True)
+
+    # V381 keeps V380 logic but makes the normal editor deliberately small;
+    # FULL uses the existing real fullscreen engine with controls at the sides.
+    v381=Path(__file__).resolve().with_name('fix_v381_mobile_editor_compact_full.py')
+    t381=Path(__file__).resolve().with_name('test_v381_mobile_editor_compact_full.py')
+    if not v381.is_file() or not t381.is_file(): raise RuntimeError('V381 compact/full Editor continuation missing')
+    subprocess.run([sys.executable,str(v381),str(app)],check=True)
+    subprocess.run([sys.executable,str(t381),str(app)],check=True)
 
 if __name__=='__main__':
     main()
