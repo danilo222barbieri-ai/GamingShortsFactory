@@ -18,5 +18,5 @@ def main()->None:
  before=path.read_text(encoding='utf-8');after=patch_text(before);path.write_text(after,encoding='utf-8');print('V373 Creator Hub header breath + drafts cleanup applied changed=',before!=after,flush=True)
  run('fix_v374_creator_hub_spacing_live.py','test_v374_creator_hub_spacing_live.py',path)
  ai=Path('/app/web/ai_v221_component/index.html');run('fix_v375_ai_header_breath.py','test_v375_ai_header_breath.py',ai)
- app=Path('/app');run('fix_v380_mobile_editor_unified.py','test_v380_mobile_editor_unified.py',app);run('fix_v381_mobile_editor_compact_full.py','test_v381_mobile_editor_compact_full.py',app);run('fix_v382_mobile_editor_true_full.py','test_v382_mobile_editor_true_full.py',app);run('fix_v383_mobile_editor_position.py','test_v383_mobile_editor_position.py',app)
+ app=Path('/app');run('fix_v380_mobile_editor_unified.py','test_v380_mobile_editor_unified.py',app);run('fix_v381_mobile_editor_compact_full.py','test_v381_mobile_editor_compact_full.py',app);run('fix_v382_mobile_editor_true_full.py','test_v382_mobile_editor_true_full.py',app);run('fix_v383_mobile_editor_position.py','test_v383_mobile_editor_position.py',app);run('fix_v384_mobile_editor_no_scroll.py','test_v384_mobile_editor_no_scroll.py',app)
 if __name__=='__main__':main()
