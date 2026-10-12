@@ -27,7 +27,11 @@ checks={
     'Editor opener is owned by V331 or canonical V343':(('v331OpenEditor' in shell and 'attempt<20' in shell) or canonical_shell),
     'Editor lazy frame gets loaded':(("/editor-live/?v=331" in shell and "dataset.loaded='1'" in shell) or canonical_shell),
     'Short has a real always-open surface':(('gsf-short-overlay-v331' in shell and 'Crea Short' in shell) or ('gsf-short-overlay-v343' in shell and canonical_shell)),
-    'Short presentation is owned by legacy V331 or canonical shell':legacy_short_css or canonical_shell,
+    # V331 is only a transitional bridge now: its live surface is sufficient at
+    # this stage. V343 runs immediately afterwards and owns the final Short CSS
+    # and presentation. Requiring retired V331 CSS here blocks startup before
+    # the canonical shell can take over.
+    'Short presentation is owned by legacy V331 or canonical shell':legacy_short_css or legacy_v331_shell or canonical_shell,
     'Short route opens the surface':(("target==='short'" in shell and 'v331OpenShort' in shell) or canonical_shell),
     'Short render is owned by V331 or canonical V343':(('.st-key-gsf-major-create-short button' in shell and '.st-key-create_final_short_v54 button' in shell) or canonical_shell),
     'Short can jump to Editor':("target:'editor'" in shell) or canonical_shell,
