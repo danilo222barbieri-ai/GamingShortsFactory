@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import ast
+import re
 import sys
 
 ROOT=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app')
@@ -80,7 +81,7 @@ SCRIPT=r'''
 
 
 def strip_stale_v343_bridges(text:str):
-    """Remove executable V343 shell copies so the canonical V343 pass rebuilds exactly one."""
+    """Remove executable V343 shell copies and their marker so V343 rebuilds exactly one."""
     tree=ast.parse(text)
     lines=text.splitlines(keepends=True)
     removals=[]
@@ -99,7 +100,9 @@ def strip_stale_v343_bridges(text:str):
             removals.append((node.lineno-1,node.end_lineno))
     for begin,end in sorted(removals,reverse=True):
         del lines[begin:end]
-    return ''.join(lines),len(removals)
+    clean=''.join(lines)
+    clean=re.sub(r'(?m)^# GSF_GLOBAL_SHELL_V343[^\n]*\n?','',clean)
+    return clean,len(removals)
 
 
 def main():
