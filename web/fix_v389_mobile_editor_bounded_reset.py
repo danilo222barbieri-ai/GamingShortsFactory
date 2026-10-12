@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import re,sys
+
+MARK='V389_MOBILE_EDITOR_BOUNDED_RESET'
+
+EDITOR_PATCH=r'''
+<!-- V389_MOBILE_EDITOR_BOUNDED_RESET -->
+<style id="v389MobileEditorBoundedReset">
+@media(max-width:760px){
+  html,body{width:100%!important;height:100%!important;margin:0!important;padding:0!important;overflow:hidden!important;background:transparent!important;overscroll-behavior:none!important}
+  #ng27,#ng27.v326Mobile{
+    --v389-player-w:min(70vw,272px,calc((100dvh - 112px) * 9 / 16));
+    --v389-player-h:calc(var(--v389-player-w) * 16 / 9);
+    width:100%!important;height:100%!important;min-height:0!important;max-height:100%!important;
+    margin:0!important;padding:0!important;overflow:hidden!important;
+    background:radial-gradient(circle at 50% 8%,rgba(205,239,252,.82),transparent 35%),linear-gradient(180deg,#fbfdff,#eef8fd)!important;
+  }
+  #ng27 .shell,#ng27.v326Mobile .shell{
+    width:100%!important;height:100%!important;min-height:0!important;max-width:430px!important;
+    margin:0 auto!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:center!important;
+    overflow:hidden!important;background:transparent!important;
+  }
+  #ng27 .topline,#ng27.v326Mobile .topline,#ng27 .gsfGuide,#ng27 .footNote{display:none!important}
+  #ng27 .cockpit,#ng27.expanded .cockpit,#ng27.v326Mobile .cockpit,#ng27.v326Mobile.expanded .cockpit{
+    position:relative!important;width:100%!important;height:100%!important;min-height:0!important;max-width:430px!important;
+    margin:0!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;
+  }
+  #ng27 .cockpit>.rail,#ng27.v326Mobile .cockpit>.rail{display:none!important}
+  /* V389_NO_EXTERNAL_TIMELINE_CTA */
+  #ng27 .cockpit>.timeline,#ng27.v326Mobile .cockpit>.timeline,
+  #ng27 .cockpit>.v323EditorActions,#ng27.v326Mobile .cockpit>.v323EditorActions{display:none!important}
+  #ng27 .stageWrap,#ng27.v326Mobile .stageWrap{
+    position:relative!important;width:var(--v389-player-w)!important;height:var(--v389-player-h)!important;min-width:0!important;min-height:0!important;
+    max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;display:block!important;overflow:visible!important;flex:0 0 auto!important;
+  }
+  #ng27 .stage.r916,#ng27.expanded .stage.r916,#ng27.v326Mobile .stage.r916,#ng27.v326Mobile.expanded .stage.r916{
+    position:relative!important;width:var(--v389-player-w)!important;height:var(--v389-player-h)!important;min-width:var(--v389-player-w)!important;min-height:var(--v389-player-h)!important;
+    max-width:none!important;max-height:none!important;aspect-ratio:9/16!important;margin:0!important;border-radius:23px!important;overflow:hidden!important;
+    border:1px solid rgba(78,193,235,.66)!important;background:linear-gradient(180deg,#dff5fd,#f8fcff)!important;
+    box-shadow:0 11px 27px rgba(45,104,148,.15),0 0 0 4px rgba(255,255,255,.62)!important;
+  }
+  #ng27 .stage video,#ng27.v326Mobile .stage video{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;background:#dff4fb!important}
+  #ng27 .shade,#ng27 .scanlines,#ng27 .corn,#ng27 .visionBadge{display:none!important}
+
+  /* V389_REQUIRED_EDITOR_CONTROLS */
+  #ng27 .v389ToolDock{position:absolute!important;top:50%!important;z-index:160!important;display:flex!important;flex-direction:column!important;gap:7px!important;transform:translateY(-50%)!important;pointer-events:none!important}
+  #ng27 .v389LeftDock{left:7px!important} #ng27 .v389RightDock{right:7px!important}
+  #ng27 .v389ToolDock .railBtn{pointer-events:auto!important;display:flex!important;width:42px!important;height:49px!important;min-width:42px!important;min-height:49px!important;margin:0!important;padding:2px!important;border-radius:14px!important;border:1px solid rgba(255,255,255,.80)!important;background:linear-gradient(145deg,rgba(31,57,85,.84),rgba(66,91,116,.76))!important;color:#fff!important;box-shadow:0 6px 16px rgba(13,34,53,.20)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  #ng27 .v389ToolDock .railBtn .ico{width:18px!important;height:18px!important;color:#fff!important}
+  #ng27 .v389ToolDock .railBtn span{font-size:5.8px!important;line-height:1!important;font-weight:950!important;color:#fff!important}
+  #ng27 .v389ToolDock .railBtn.active{background:linear-gradient(145deg,rgba(63,166,235,.94),rgba(55,111,208,.88))!important}
+  #ng27 button[data-panel="cover"],#ng27 button[data-panel="hud"],#ng27 #doneBtn{display:none!important}
+
+  #ng27 .v389UndoRedo{position:absolute!important;left:9px!important;top:9px!important;z-index:165!important;display:flex!important;gap:5px!important}
+  #ng27 .v389UndoRedo #undoBtn,#ng27 .v389UndoRedo #redoBtn{display:grid!important;place-items:center!important;width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;margin:0!important;padding:0!important;border-radius:10px!important;border:1px solid rgba(255,255,255,.72)!important;background:rgba(29,53,78,.82)!important;color:#fff!important;box-shadow:0 4px 12px rgba(10,29,46,.17)!important}
+  #ng27 .v389UndoRedo .ico{width:15px!important;height:15px!important} #ng27 .v389UndoRedo span{display:none!important}
+
+  #ng27 .v389TrimDock{position:absolute!important;left:50%!important;top:47px!important;z-index:164!important;display:flex!important;gap:6px!important;transform:translateX(-50%)!important}
+  #ng27 .v389TrimBtn{height:27px!important;min-width:60px!important;padding:0 7px!important;border-radius:10px!important;border:1px solid rgba(255,255,255,.70)!important;background:rgba(29,53,78,.80)!important;color:#fff!important;font-size:6.5px!important;font-weight:950!important;letter-spacing:.01em!important;box-shadow:0 4px 10px rgba(10,29,46,.14)!important}
+
+  #ng27 #zoomEditorBtn{display:grid!important;place-items:center!important;position:absolute!important;right:9px!important;top:9px!important;z-index:166!important;width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;margin:0!important;padding:0!important;border-radius:11px!important;border:1px solid rgba(255,255,255,.72)!important;background:rgba(29,53,78,.82)!important;color:#fff!important;box-shadow:0 4px 12px rgba(10,29,46,.17)!important}
+  #ng27 #zoomEditorBtn .ico{width:17px!important;height:17px!important;color:#fff!important;margin:auto!important} #ng27 #zoomEditorBtn span{display:none!important}
+
+  #ng27 .v389PlaybackDock{position:absolute!important;left:50%!important;bottom:31px!important;z-index:166!important;transform:translateX(-50%)!important;display:flex!important;align-items:center!important;justify-content:center!important}
+  #ng27 .v389PlaybackDock #playBtn{display:grid!important;place-items:center!important;width:52px!important;height:52px!important;min-width:52px!important;min-height:52px!important;margin:0!important;padding:0!important;border-radius:50%!important;border:1px solid rgba(255,255,255,.84)!important;background:linear-gradient(145deg,#54c5fb,#2c82eb)!important;color:#fff!important;box-shadow:0 8px 21px rgba(30,105,199,.30)!important}
+  #ng27 .v389PlaybackDock #playBtn .ico{width:25px!important;height:25px!important;color:#fff!important} #ng27 .v389PlaybackDock #playBtn span{display:none!important}
+
+  #ng27 .v389PlayerProgress{position:absolute!important;left:13px!important;right:13px!important;bottom:8px!important;z-index:165!important;display:grid!important;grid-template-columns:auto 1fr auto!important;grid-template-rows:auto auto!important;gap:3px 6px!important;color:#fff!important;font-size:6px!important;font-weight:900!important;text-shadow:0 2px 5px rgba(0,0,0,.34)!important}
+  #ng27 .v389ProgressTrack{grid-column:1/4!important;height:4px!important;border-radius:99px!important;background:rgba(255,255,255,.56)!important;position:relative!important;overflow:visible!important}
+  #ng27 .v389ProgressFill{position:absolute!important;inset:0 auto 0 0!important;width:0;border-radius:99px!important;background:#35a9ff!important}
+  #ng27 .v389ProgressKnob{position:absolute!important;top:50%!important;left:0;width:9px!important;height:9px!important;border-radius:50%!important;background:#fff!important;transform:translate(-50%,-50%)!important;box-shadow:0 2px 6px rgba(0,0,0,.20)!important}
+  #ng27 .v389ProgressEnd{grid-column:3!important;text-align:right!important}
+
+  #ng27,#ng27 .shell,#ng27 .cockpit,#ng27 .stageWrap,#ng27 .stage,#ng27 video,#ng27 #videoBg,#ng27 .railBtn,#ng27 #playBtn{transition:none!important;animation:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  #ng27 video,#ng27 #videoBg{-webkit-backface-visibility:hidden!important;backface-visibility:hidden!important;transform:translateZ(0)!important}
+
+  /* V389_FULLSCREEN_WORKSPACE */
+  #ng27.gsfFullscreen,#ng27.gsfFullscreenFallback,#ng27:fullscreen,#ng27:-webkit-full-screen,
+  #ng27.gsfFullscreen .shell,#ng27.gsfFullscreenFallback .shell,#ng27:fullscreen .shell,#ng27:-webkit-full-screen .shell,
+  #ng27.gsfFullscreen .cockpit,#ng27.gsfFullscreenFallback .cockpit,#ng27:fullscreen .cockpit,#ng27:-webkit-full-screen .cockpit,
+  #ng27.gsfFullscreen .stageWrap,#ng27.gsfFullscreenFallback .stageWrap,#ng27:fullscreen .stageWrap,#ng27:-webkit-full-screen .stageWrap,
+  #ng27.gsfFullscreen .stage.r916,#ng27.gsfFullscreenFallback .stage.r916,#ng27:fullscreen .stage.r916,#ng27:-webkit-full-screen .stage.r916{
+    position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;min-width:100vw!important;min-height:100dvh!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:#07131d!important;z-index:2147483647!important;overflow:hidden!important;box-shadow:none!important;
+  }
+  #ng27.gsfFullscreen .stage.r916 video,#ng27.gsfFullscreenFallback .stage.r916 video,#ng27:fullscreen .stage.r916 video,#ng27:-webkit-full-screen .stage.r916 video{width:100vw!important;height:100dvh!important;object-fit:cover!important}
+  #ng27.gsfFullscreen .v389ToolDock,#ng27.gsfFullscreenFallback .v389ToolDock,#ng27:fullscreen .v389ToolDock,#ng27:-webkit-full-screen .v389ToolDock{position:fixed!important;top:50%!important;transform:translateY(-50%)!important;z-index:2147483647!important}
+  #ng27.gsfFullscreen .v389LeftDock,#ng27.gsfFullscreenFallback .v389LeftDock,#ng27:fullscreen .v389LeftDock,#ng27:-webkit-full-screen .v389LeftDock{left:max(10px,env(safe-area-inset-left))!important}
+  #ng27.gsfFullscreen .v389RightDock,#ng27.gsfFullscreenFallback .v389RightDock,#ng27:fullscreen .v389RightDock,#ng27:-webkit-full-screen .v389RightDock{right:max(10px,env(safe-area-inset-right))!important}
+  #ng27.gsfFullscreen .v389UndoRedo,#ng27.gsfFullscreenFallback .v389UndoRedo,#ng27:fullscreen .v389UndoRedo,#ng27:-webkit-full-screen .v389UndoRedo{position:fixed!important;left:max(10px,env(safe-area-inset-left))!important;top:max(10px,env(safe-area-inset-top))!important;z-index:2147483647!important}
+  #ng27.gsfFullscreen .v389TrimDock,#ng27.gsfFullscreenFallback .v389TrimDock,#ng27:fullscreen .v389TrimDock,#ng27:-webkit-full-screen .v389TrimDock{position:fixed!important;top:max(12px,env(safe-area-inset-top))!important;z-index:2147483647!important}
+  #ng27.gsfFullscreen #zoomEditorBtn,#ng27.gsfFullscreenFallback #zoomEditorBtn,#ng27:fullscreen #zoomEditorBtn,#ng27:-webkit-full-screen #zoomEditorBtn{position:fixed!important;right:max(10px,env(safe-area-inset-right))!important;top:max(10px,env(safe-area-inset-top))!important;z-index:2147483647!important}
+  #ng27.gsfFullscreen .v389PlaybackDock,#ng27.gsfFullscreenFallback .v389PlaybackDock,#ng27:fullscreen .v389PlaybackDock,#ng27:-webkit-full-screen .v389PlaybackDock{position:fixed!important;bottom:max(28px,env(safe-area-inset-bottom))!important;z-index:2147483647!important}
+  #ng27.gsfFullscreen .v389PlayerProgress,#ng27.gsfFullscreenFallback .v389PlayerProgress,#ng27:fullscreen .v389PlayerProgress,#ng27:-webkit-full-screen .v389PlayerProgress{position:fixed!important;left:72px!important;right:72px!important;bottom:max(8px,env(safe-area-inset-bottom))!important;z-index:2147483647!important}
+}
+</style>
+<script id="v389MobileEditorBoundedRuntime">
+(()=>{
+  const root=document.getElementById('ng27');if(!root)return;
+  const stage=root.querySelector('#stage'),video=root.querySelector('#video');if(!stage||!video)return;
+  /* V389_MOBILE_RESIZE_GUARD */
+  root.classList.add('v389Mobile');
+  root.classList.remove('expanded');
+  root.querySelectorAll('.v326ToolDock,.v326PlaybackDock,.v326Meta,.v380PlayerProgress,.v387ThumbStrip,.v388ThumbStrip').forEach(x=>x.remove());
+
+  const qPanel=name=>root.querySelector('[data-panel="'+name+'"]');
+  const ensure=(cls)=>{let el=stage.querySelector('.'+cls);if(!el){el=document.createElement('div');el.className=cls;stage.appendChild(el)}return el};
+  const left=ensure('v389ToolDock v389LeftDock'),right=ensure('v389ToolDock v389RightDock');
+  ['frame','caption','look'].forEach(n=>{const b=qPanel(n);if(b)left.appendChild(b)});
+  ['audio','vision'].forEach(n=>{const b=qPanel(n);if(b){right.appendChild(b);if(n==='vision'){const s=b.querySelector('span');if(s)s.textContent='AI'}}});
+
+  const undo=root.querySelector('#undoBtn'),redo=root.querySelector('#redoBtn');
+  const ur=ensure('v389UndoRedo');if(undo)ur.appendChild(undo);if(redo)ur.appendChild(redo);
+
+  const inRange=root.querySelector('#inRange'),outRange=root.querySelector('#outRange');
+  const trim=ensure('v389TrimDock');
+  let inBtn=stage.querySelector('#v389InBtn'),outBtn=stage.querySelector('#v389OutBtn');
+  if(!inBtn){inBtn=document.createElement('button');inBtn.type='button';inBtn.id='v389InBtn';inBtn.className='v389TrimBtn';trim.appendChild(inBtn)}
+  if(!outBtn){outBtn=document.createElement('button');outBtn.type='button';outBtn.id='v389OutBtn';outBtn.className='v389TrimBtn';trim.appendChild(outBtn)}
+  const fmt1=v=>{const n=Math.max(0,Number(v)||0),m=Math.floor(n/60),s=(n-m*60).toFixed(1).padStart(4,'0');return String(m).padStart(2,'0')+':'+s};
+  const syncTrim=()=>{if(inRange)inBtn.textContent='IN '+fmt1(inRange.value);if(outRange)outBtn.textContent='OUT '+fmt1(outRange.value)};
+  const fire=el=>{if(!el)return;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}))};
+  inBtn.onclick=()=>{if(!inRange)return;const t=Math.max(0,Math.min(Number(video.currentTime)||0,(Number(outRange&&outRange.value)||15)-.5));inRange.value=String(t);fire(inRange);syncTrim()};
+  outBtn.onclick=()=>{if(!outRange)return;const t=Math.max((Number(inRange&&inRange.value)||0)+.5,Math.min(Number(video.duration)||15,Number(video.currentTime)||0));outRange.value=String(t);fire(outRange);syncTrim()};
+  if(inRange){inRange.addEventListener('input',syncTrim,{passive:true});inRange.addEventListener('change',syncTrim,{passive:true})}
+  if(outRange){outRange.addEventListener('input',syncTrim,{passive:true});outRange.addEventListener('change',syncTrim,{passive:true})}
+  syncTrim();
+
+  const play=root.querySelector('#playBtn'),playDock=ensure('v389PlaybackDock');if(play)playDock.appendChild(play);
+  const full=root.querySelector('#zoomEditorBtn');if(full)stage.appendChild(full);
+
+  let progress=stage.querySelector('.v389PlayerProgress');
+  if(!progress){progress=document.createElement('div');progress.className='v389PlayerProgress';progress.innerHTML='<div class="v389ProgressTrack"><div class="v389ProgressFill"></div><div class="v389ProgressKnob"></div></div><span class="v389ProgressNow">00:00</span><span class="v389ProgressEnd">00:15</span>';stage.appendChild(progress)}
+  const pTrack=progress.querySelector('.v389ProgressTrack'),pFill=progress.querySelector('.v389ProgressFill'),pKnob=progress.querySelector('.v389ProgressKnob'),pNow=progress.querySelector('.v389ProgressNow'),pEnd=progress.querySelector('.v389ProgressEnd');
+  const fmt=v=>{const s=Math.max(0,Math.round(Number(v)||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+  const syncProgress=()=>{const d=Math.max(.01,Number(video.duration)||15),c=Math.max(0,Math.min(d,Number(video.currentTime)||0)),pct=c/d*100;pFill.style.width=pct+'%';pKnob.style.left=pct+'%';pNow.textContent=fmt(c);pEnd.textContent=fmt(d)};
+  pTrack.onclick=e=>{const r=pTrack.getBoundingClientRect();if(!r.width)return;video.currentTime=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*(Number(video.duration)||15);syncProgress()};
+  video.addEventListener('timeupdate',syncProgress,{passive:true});video.addEventListener('loadedmetadata',()=>{syncProgress();syncTrim()},{passive:true});syncProgress();
+
+  /* V389_FULLSCREEN_PARENT_CLEAN */
+  const saved=new Map();
+  const selectors=['#gsf-global-header','.gsf-global-header','#gsf-game-bar','.gsf-game-bar','.gsf-shell-gamebar','[data-gsf-gamebar]','.gsf-editor-head'];
+  const docs=()=>{const out=[];for(const w of [window.parent,window.top]){try{if(w&&w.document&&!out.includes(w.document))out.push(w.document)}catch(_e){}}return out};
+  const isFull=()=>root.classList.contains('gsfFullscreen')||root.classList.contains('gsfFullscreenFallback')||document.fullscreenElement===root||document.webkitFullscreenElement===root;
+  const cleanParent=()=>{const fullNow=isFull();for(const d of docs())for(const sel of selectors)d.querySelectorAll(sel).forEach(el=>{if(fullNow){if(!saved.has(el))saved.set(el,el.style.display);el.style.setProperty('display','none','important')}else if(saved.has(el)){el.style.display=saved.get(el)||'';saved.delete(el)}});try{const f=window.frameElement;if(f){if(fullNow){f.style.setProperty('position','fixed','important');f.style.setProperty('inset','0','important');f.style.setProperty('width','100vw','important');f.style.setProperty('height','100dvh','important');f.style.setProperty('max-width','none','important');f.style.setProperty('max-height','none','important');f.style.setProperty('z-index','2147483647','important')}else{for(const k of ['position','inset','width','height','max-width','max-height','z-index'])f.style.removeProperty(k)}}}catch(_e){}};
+  try{new MutationObserver(cleanParent).observe(root,{attributes:true,attributeFilter:['class']})}catch(_e){}
+  document.addEventListener('fullscreenchange',cleanParent);document.addEventListener('webkitfullscreenchange',cleanParent);cleanParent();
+})();
+</script>
+'''
+
+SHELL_PATCH=r'''
+<style id="v389EditorParentBounded">
+@media(max-width:760px){
+  #gsf-editor-overlay-v220.is-open{overflow:hidden!important}
+  #gsf-editor-overlay-v220 iframe.gsf-editor-frame,#gsf-editor-overlay-v220 iframe[title="Game Editor"]{display:block!important;flex:1 1 auto!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;border:0!important;background:transparent!important;transform:translateZ(0)!important;transition:none!important;animation:none!important}
+}
+</style>
+<script id="V389_HIDE_OUTER_EDITOR_CTA">
+(()=>{const host=document.getElementById('gsf-editor-overlay-v220');if(!host)return;const clean=()=>host.querySelectorAll('button,a,[role="button"],div').forEach(el=>{const t=String(el.textContent||'').replace(/\s+/g,' ').trim().toUpperCase();if(t.length<90&&t.includes('HAI FINITO')&&t.includes('CREA IL TUO SHORT')){const x=el.closest('button,a,[role="button"]')||el;x.style.setProperty('display','none','important')}});clean();try{new MutationObserver(clean).observe(host,{childList:true,subtree:true})}catch(_e){}})();
+</script>
+'''
+
+OLD_EDITOR_MARKERS=[
+ 'V380_MOBILE_EDITOR_UNIFIED','V381_MOBILE_EDITOR_COMPACT_FULL','V382_MOBILE_EDITOR_TRUE_FULL',
+ 'V383_MOBILE_EDITOR_POSITION','V384_MOBILE_EDITOR_NO_SCROLL','V385_MOBILE_EDITOR_LOWER',
+ 'V386_MOBILE_EDITOR_REFERENCE_LOCK','V387_MOBILE_EDITOR_PLAYER_VISIBILITY',
+ 'V387_MOBILE_EDITOR_DEMO_LOCK','V388_MOBILE_EDITOR_REFERENCE_FINAL','V389_MOBILE_EDITOR_BOUNDED_RESET'
+]
+
+def clean_editor(t:str)->str:
+    # Old mobile geometry patches are appended immediately before </body>. Remove whole blocks, not individual declarations.
+    for marker in OLD_EDITOR_MARKERS:
+        t=re.sub(r'\s*<!-- '+re.escape(marker)+r' -->.*?(?=\s*<!-- V38[0-9]_|\s*</body>)','\n',t,flags=re.S)
+    # V326 used three first-paint geometry passes. One deterministic pass removes the iOS flash source.
+    t=t.replace('layout();requestAnimationFrame(layout);setTimeout(layout,80);','layout();')
+    # Do not let the Streamlit iframe continuously resize itself on mobile orientation/browser-chrome changes.
+    old='window.addEventListener("resize",()=>{clearTimeout(fitEditorViewport.t);fitEditorViewport.t=setTimeout(fitEditorViewport,80)});'
+    new='window.addEventListener("resize",()=>{let m=false;try{m=(Number(window.parent.innerWidth)||window.innerWidth)<=760}catch(_e){m=window.innerWidth<=760}if(m)return;clearTimeout(fitEditorViewport.t);fitEditorViewport.t=setTimeout(fitEditorViewport,80)});'
+    t=t.replace(old,new)
+    return t
+
+def clean_shell(t:str)->str:
+    style_ids=['v380EditorParentUnified','v386EditorParentReference','v387EditorParentReference','v387EditorIframeFill','v388ParentIframeFill','v389EditorParentBounded']
+    script_ids=['V380_HIDE_DUPLICATE_FINAL_CTA','V386_HIDE_DUPLICATE_FINAL_CTA','V387_HIDE_DUPLICATE_FINAL_CTA','V388_HIDE_OUTER_SHORT_CTA','V389_HIDE_OUTER_EDITOR_CTA']
+    for sid in style_ids:t=re.sub(r'\s*<style id="'+re.escape(sid)+r'">.*?</style>\s*','\n',t,flags=re.S)
+    for sid in script_ids:t=re.sub(r'\s*<script id="'+re.escape(sid)+r'">.*?</script>\s*','\n',t,flags=re.S)
+    return t
+
+def main():
+    root=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app')
+    editor=root/'web'/'editor_2027_component'/'index.html'
+    shell=root/'GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py'
+    if not editor.is_file() or not shell.is_file():raise SystemExit('V389 runtime files missing')
+    e=clean_editor(editor.read_text(encoding='utf-8'))
+    if '</body>' not in e or 'id="stage"' not in e or 'id="playBtn"' not in e:raise RuntimeError('V389 Editor anchors missing')
+    editor.write_text(e.replace('</body>',EDITOR_PATCH+'\n</body>',1),encoding='utf-8')
+    s=clean_shell(shell.read_text(encoding='utf-8'))
+    anchor='<style id="gsf-v220-editor-shell">'
+    if anchor not in s:raise RuntimeError('V389 parent Editor shell anchor missing')
+    s=s.replace(anchor,SHELL_PATCH+'\n'+anchor,1)
+    compile(s,str(shell),'exec');shell.write_text(s,encoding='utf-8')
+    print('V389 bounded mobile Editor reset applied',flush=True)
+
+if __name__=='__main__':main()
