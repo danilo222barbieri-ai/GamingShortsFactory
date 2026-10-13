@@ -40,11 +40,22 @@ def request(path, method="GET", data=None, headers=None, attempts=1, timeout=8):
     raise RuntimeError(f"{method} {path}: {last}")
 
 
+status,headers,body=request("/healthz",attempts=30,timeout=4)
+health=json.loads(body.decode("utf-8"))
+if status!=200 or not health.get("ok") or not health.get("companion") or not health.get("streamlit"):
+    raise SystemExit("V107 runtime smoke FAIL: composite health")
+print("V107 composite health smoke: PASS",flush=True)
+
 status,headers,body=request("/",attempts=30,timeout=4)
 if status!=200 or b"streamlit" not in body.lower():
     raise SystemExit("V107 runtime smoke FAIL: root")
 if not SESSION_COOKIE:
     raise SystemExit("V107 runtime smoke FAIL: session cookie")
+
+status,headers,body=request("/editor-media/current",attempts=3,timeout=4)
+if status!=204 or body:
+    raise SystemExit("V107 runtime smoke FAIL: empty editor media state")
+print("V107 empty editor media smoke: PASS",flush=True)
 
 status,headers,body=request("/manifest.webmanifest",attempts=5)
 manifest=json.loads(body.decode("utf-8"))
