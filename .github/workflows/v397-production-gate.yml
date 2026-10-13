@@ -1,0 +1,78 @@
+name: V397 Production Gate
+
+on:
+  push:
+    branches:
+      - main
+      - v397-structural-hardening
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: v397-production-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  production-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: V397 source contract
+        run: |
+          python web/test_v397_production_hardening.py .
+          python -m py_compile web/direct_upload_server.py web/runtime_smoke_v107.py
+
+      - name: Build production image
+        run: docker build --progress=plain -t gsf-v397:${{ github.sha }} .
+
+      - name: Start production image
+        run: |
+          docker run -d --name gsf-v397 \
+            -e PORT=8080 \
+            -e GSF_WEB_MODE=1 \
+            -e GSF_LOW_MEMORY_WEB=1 \
+            -p 18080:8080 \
+            gsf-v397:${{ github.sha }}
+
+      - name: Wait for composite health
+        run: |
+          set -eu
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /tmp/v397-health.json -w '%{http_code}' http://127.0.0.1:18080/healthz || true)
+            if [ "$code" = "200" ]; then
+              python - <<'PY'
+          import json
+          p=json.load(open('/tmp/v397-health.json',encoding='utf-8'))
+          assert p.get('ok') is True, p
+          assert p.get('companion') is True, p
+          assert p.get('streamlit') is True, p
+          print('V397 composite health: PASS',p)
+          PY
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'V397 composite health did not become ready'
+          cat /tmp/v397-health.json 2>/dev/null || true
+          exit 1
+
+      - name: Blocking runtime smoke
+        run: docker exec gsf-v397 python /app/web/runtime_smoke_v107.py
+
+      - name: Confirm global and bounded UI contracts after startup
+        run: |
+          docker exec gsf-v397 python /app/web/test_v343_single_global_shell.py /app
+          docker exec gsf-v397 python /app/web/test_v389_mobile_editor_bounded_reset.py /app
+          docker exec gsf-v397 python /app/web/test_v391_mobile_editor_top_actions.py /app
+          docker exec gsf-v397 python /app/web/test_v393_mobile_editor_clean_transport.py /app
+          docker exec gsf-v397 python /app/web/test_v394_mobile_editor_footer_restore.py /app
+          docker exec gsf-v397 python /app/web/test_v395_mobile_editor_atomic_skin.py /app
+          docker exec gsf-v397 python /app/web/test_v396_mobile_share_publish_surface.py /app
+
+      - name: Container logs on failure
+        if: failure()
+        run: docker logs gsf-v397 || true
