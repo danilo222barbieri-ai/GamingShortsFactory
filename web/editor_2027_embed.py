@@ -2,18 +2,46 @@ import base64
 import hashlib
 import mimetypes
 import os
+import tempfile
 from pathlib import Path
 from urllib.parse import quote
 
 import streamlit as st
 import streamlit.components.v1 as components
 
+from ai_hidpi_v400 import adaptive_quality_profile, inject_hidpi_runtime
 from game_vision_v108 import window_event_map, vision_zones_for_genre
 
 
-_COMPONENT_DIR = Path(__file__).resolve().parent / "editor_2027_component"
-# One stable component name/path for every clip. Dynamic per-video component
-# folders caused intermittent asset 404s behind Railway/Streamlit.
+_SOURCE_COMPONENT_DIR = Path(__file__).resolve().parent / "editor_2027_component"
+
+
+def _prepare_v400_component_dir():
+    """Serve the approved editor with an additive V400 Retina layer.
+
+    The checked-in 100 KB editor remains untouched. We derive a tiny cached
+    runtime copy in /tmp so V400 can add DPR-aware vector rendering without
+    risking regressions in the existing markup, controls or mobile cockpit.
+    """
+    try:
+        source = _SOURCE_COMPONENT_DIR / "index.html"
+        raw = source.read_text(encoding="utf-8")
+        patched = inject_hidpi_runtime(raw)
+        digest = hashlib.sha1(patched.encode("utf-8")).hexdigest()[:12]
+        runtime_dir = Path(tempfile.gettempdir()) / f"gsf_editor_2027_v400_{digest}"
+        runtime_dir.mkdir(parents=True, exist_ok=True)
+        target = runtime_dir / "index.html"
+        if not target.exists() or target.read_text(encoding="utf-8") != patched:
+            target.write_text(patched, encoding="utf-8")
+        return runtime_dir
+    except Exception:
+        return _SOURCE_COMPONENT_DIR
+
+
+_COMPONENT_DIR = _prepare_v400_component_dir()
+# Keep the historical stable Streamlit component identity. V400 is an additive
+# runtime layer, not a new component registration: changing this name breaks
+# the editor asset/session contract and the production build guard.
 _EDITOR_2027_COMPONENT = components.declare_component(
     "gsf_editor_2027_v1086",
     path=str(_COMPONENT_DIR),
@@ -63,6 +91,7 @@ def editor_2027_initial_state(duration=15.0, saved=None):
         "inPoint": 0.0,
         "outPoint": duration,
         "aiMode": "Auto Gaming",
+        "qualityMode": "Adaptive AI",
         "visionEnabled": False,
     }
     if isinstance(saved, dict):
@@ -77,6 +106,8 @@ def editor_2027_initial_state(duration=15.0, saved=None):
         state["hudMode"] = "Smart Safe"
     if str(state.get("captionMode") or "Auto") not in {"Auto", "Fixed", "Off"}:
         state["captionMode"] = "Auto"
+    if str(state.get("qualityMode") or "Adaptive AI") not in {"Fast HQ", "Max Quality", "Adaptive AI"}:
+        state["qualityMode"] = "Adaptive AI"
     state["captionOn"] = state["captionMode"] != "Off"
     state["inPoint"] = _clamp(state.get("inPoint"), 0.0, 59.5, 0.0)
     state["outPoint"] = max(
@@ -125,12 +156,22 @@ def _editor_video_url(video_path):
     raw = base64.b64encode(p.read_bytes()).decode("ascii")
     return f"data:{mime};base64,{raw}"
 
+
 def _editor_component_for(video_path):
     # Frontend assets are served from the repository's static component
     # directory. The actual clip URL/state arrives through Streamlit's render
     # message, so changing clips no longer registers a brand-new component.
     video_url = _editor_video_url(Path(video_path))
     return _EDITOR_2027_COMPONENT, video_url
+
+
+def _brain_metric(row, *names):
+    if not isinstance(row, dict):
+        return 0.0
+    for name in names:
+        if name in row:
+            return _clamp(row.get(name), 0.0, 1.0, 0.0)
+    return 0.0
 
 
 def render_editor_2027_embed(
@@ -184,6 +225,20 @@ def render_editor_2027_embed(
                 _brain_hint["genre"]=str(_brain.get("genre") or _genre)
     except Exception:
         _brain_hint={}
+
+    # V400: the editor and renderer now speak the same bounded quality language.
+    # Browser DPR is measured by the injected frontend layer; Python only sends
+    # scene intelligence and the selected mode, avoiding device-specific render
+    # work on the server.
+    _v400_profile = adaptive_quality_profile({
+        "quality_mode": str(state.get("qualityMode") or "Adaptive AI"),
+        "motion": _brain_metric(_brain_hint, "motion", "motion_score"),
+        "detail": _brain_metric(_brain_hint, "detail", "detail_score"),
+        "action_peak": _brain_metric(_brain_hint, "action_peak", "score", "confidence"),
+    })
+    _v400_profile["dpr_source"] = "browser"
+    _v400_profile["component_build"] = "v400-ai-hidpi"
+
     value = component(
         video_url=video_url,
         initial_state=state,
@@ -192,6 +247,7 @@ def render_editor_2027_embed(
         vision_profile=_genre,
         vision_zones=vision_zones_for_genre(_genre),
         brain_context=_brain_hint,
+        v400_profile=_v400_profile,
         height=int(height),
         key=str(key),
         default=None,

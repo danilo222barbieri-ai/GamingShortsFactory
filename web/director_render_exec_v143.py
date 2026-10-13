@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
 
+from ai_hidpi_v400 import adaptive_quality_profile
 from cinematic_render_v125 import probe_media
-from quality_supreme_v399 import encoder_args, quality_profile
+from quality_supreme_v399 import encoder_args
 from web.render_gate_v293 import render_slot as _gsf_render_slot_v293
 
 
@@ -22,7 +24,9 @@ def _run(cmd,timeout=180):
 
 
 def _signals(meta, *, motion=0.0, detail=0.0, action_peak=0.0):
+    mode=str(os.environ.get("GSF_QUALITY_MODE") or "Adaptive AI")
     return {
+        "quality_mode": mode,
         "motion": motion,
         "detail": detail,
         "action_peak": action_peak,
@@ -32,7 +36,7 @@ def _signals(meta, *, motion=0.0, detail=0.0, action_peak=0.0):
 
 
 def _tail(has_audio=True, signals=None):
-    return encoder_args(quality_profile(signals), has_audio=has_audio)
+    return encoder_args(adaptive_quality_profile(signals), has_audio=has_audio)
 
 
 def _speed_window(src,out,start,end,speed):
