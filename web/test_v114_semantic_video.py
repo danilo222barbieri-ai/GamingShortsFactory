@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(0,"/app/web")
-from semantic_video_v114 import normalize_semantic_events, merge_semantic_events, choose_processing_mode, choose_input_method, semantic_model_candidates, is_quota_error
+from semantic_video_v114 import normalize_semantic_events, merge_semantic_events, choose_processing_mode, choose_input_method, semantic_model_candidates, is_quota_error, is_retryable_provider_error
 
 if choose_processing_mode(45.0)!="static":
     raise SystemExit("V119 short video must use static processing")
@@ -161,3 +161,17 @@ for marker in (
     if marker not in semantic:
         raise SystemExit("V123 fallback runtime marker missing: "+marker)
 print("V123 Gemini quota fallback runtime contract: PASS")
+
+for message in (
+    "503 UNAVAILABLE model high demand",
+    "Gemini Generate Content video response empty",
+    "Expecting value: line 1 column 1 (char 0)",
+    "ReadTimeout timed out",
+):
+    if not is_retryable_provider_error(message):
+        raise SystemExit("V398 retryable provider error not recognized: "+message)
+if is_retryable_provider_error("400 INVALID_ARGUMENT malformed request"):
+    raise SystemExit("V398 permanent provider error must not retry on another model")
+if 'http_options=types.HttpOptions(timeout=' not in semantic:
+    raise SystemExit("V398 Generate Content request timeout is not enforced")
+print("V398 semantic provider resilience policy: PASS")
