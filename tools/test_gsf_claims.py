@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import sys
 import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from tools.gsf_claims import Claim, find_conflicts, normalize_paths, patterns_overlap, validate_claim_dict
 
