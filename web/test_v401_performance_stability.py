@@ -12,6 +12,7 @@ from job_state_v401 import (
     recover_persisted_state,
 )
 from fix_v401_frontend_memory import patch_runtime_source, stream_uploaded_file
+from fix_v401_worker_state import patch_worker_source
 
 
 def need(ok, msg):
@@ -81,12 +82,19 @@ need(patch_runtime_source(patched) == patched,
      "runtime memory patch is idempotent across service restarts")
 
 worker = Path("web/ai_worker_server.py").read_text(encoding="utf-8")
-need("from job_state_v401 import" in worker,
-     "AI worker is wired to the V401 persistent job-state module")
-need("existing.get(\"state\") in ACTIVE_JOB_STATES" in worker,
+patched_worker = patch_worker_source(worker)
+need("from job_state_v401 import" in patched_worker,
+     "V401 worker build patch wires the persistent job-state module")
+need("existing.get(\"state\") in ACTIVE_JOB_STATES" in patched_worker,
      "duplicate suppression uses the shared active-state contract including semantic")
-need("_set_job_state" in worker and "_get_job_state" in worker,
+need("_set_job_state" in patched_worker and "_get_job_state" in patched_worker,
      "worker centralizes job-state writes and recovery-aware reads")
+need(patch_worker_source(patched_worker) == patched_worker,
+     "worker-state patch is idempotent across image rebuilds")
+
+worker_docker = Path("web/Dockerfile.worker").read_text(encoding="utf-8")
+need("fix_v401_worker_state.py" in worker_docker,
+     "worker image applies V401 state persistence before syntax verification")
 
 compat = Path("web/apply_v343_v293_compat.py").read_text(encoding="utf-8")
 need("fix_v401_frontend_memory" in compat and "patch_runtime_file" in compat,
