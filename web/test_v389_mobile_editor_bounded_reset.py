@@ -12,17 +12,32 @@ legacy=[
  'V386_MOBILE_EDITOR_REFERENCE_LOCK','V387_MOBILE_EDITOR_PLAYER_VISIBILITY',
  'V387_MOBILE_EDITOR_DEMO_LOCK','V388_MOBILE_EDITOR_REFERENCE_FINAL'
 ]
+legacy_ids=[
+ 'id="v323MobileEditorPlayerActions"','id="v324EditorActionPlacement"',
+ 'id="v325MobileEditorViewportFit"','id="v325MobileEditorReferenceLayout"',
+ 'id="v326MobileEditorExact"','id="v326MobileEditorRuntime"',
+ 'id="v360MobileEditorReference"','id="v376MobileEditorReference"',
+ 'id="v376MobileEditorReferenceRuntime"','id="v378MobileEditorStack"',
+ 'id="v379MobileEditorFinalCompose"','id="v379MobileEditorFinalComposeRuntime"'
+]
 app_tail=p[p.find("app=Path('/app')"):]
 checks={
  'marker':'V389_MOBILE_EDITOR_BOUNDED_RESET' in e,
- 'legacy geometry removed':all(x not in e for x in legacy),
- 'explicit 9x16 size':'--v389-player-w:min(70vw,272px,calc((100dvh - 112px) * 9 / 16))' in e and '--v389-player-h:calc(var(--v389-player-w) * 16 / 9)' in e,
+ 'legacy 380-388 geometry removed':all(x not in e for x in legacy),
+ 'legacy mobile owners stripped':all(x not in e for x in legacy_ids) and 'V323 MOBILE EDITOR PLAYER ACTIONS' not in e and 'v323PlaceFullscreen' not in e,
+ 'legacy seek chevrons removed':'v326Skip' not in e,
+ 'explicit 9x16 size':'--v389-player-w:min(70vw,272px,calc((100dvh - 150px) * 9 / 16))' in e and '--v389-player-h:calc(var(--v389-player-w) * 16 / 9)' in e,
  'no external timeline cta':'V389_NO_EXTERNAL_TIMELINE_CTA' in e and '.cockpit>.timeline' in e and '.cockpit>.v323EditorActions' in e,
+ 'single top control bar':all(x in e for x in ['v389TopBar','v389UndoRedo','v389TrimDock','v389TopMode','v389RatioBtn']),
+ 'ratio fixed 9x16':'v389RatioBtn' in e and '>9:16<' in e and "stage.classList.add('r916')" in e,
  'required tools':'V389_REQUIRED_EDITOR_CONTROLS' in e and all(x in e for x in ['data-panel="frame"','data-panel="caption"','data-panel="look"','data-panel="audio"','data-panel="vision"']),
- 'undo redo':'v389UndoRedo' in e and "#undoBtn" in e and "#redoBtn" in e,
+ 'tool visibility forced':'visibility:visible!important' in e and 'opacity:1!important' in e and 'pointer-events:auto!important' in e,
+ 'undo redo':"#undoBtn" in e and "#redoBtn" in e,
  'in out':'v389InBtn' in e and 'v389OutBtn' in e and "#inRange" in e and "#outRange" in e,
  'play pause':'#playBtn' in e and 'v389PlaybackDock' in e,
  'progress':'v389PlayerProgress' in e and 'v389ProgressFill' in e,
+ 'safe areas':all(x in e for x in ['env(safe-area-inset-top)','env(safe-area-inset-right)','env(safe-area-inset-bottom)','env(safe-area-inset-left)']),
+ 'outer close untouched':'V389_OUTER_CLOSE_UNTOUCHED' in e,
  'full':'V389_FULLSCREEN_WORKSPACE' in e and 'object-fit:cover!important' in e,
  'full parent clean':'V389_FULLSCREEN_PARENT_CLEAN' in e and '#gsf-game-bar' in e and '.gsf-editor-head' in e,
  'single first paint':'layout();requestAnimationFrame(layout);setTimeout(layout,80);' not in e,
