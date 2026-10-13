@@ -1,0 +1,48 @@
+name: V401 Performance Stability TDD
+
+on:
+  push:
+    branches:
+      - v401-performance-stability
+  pull_request:
+    paths:
+      - 'web/job_state_v401.py'
+      - 'web/fix_v401_frontend_memory.py'
+      - 'web/fix_v401_worker_state.py'
+      - 'web/ai_worker_server.py'
+      - 'web/Dockerfile.worker'
+      - 'web/apply_v343_v293_compat.py'
+      - 'web/test_v401_performance_stability.py'
+      - '.github/workflows/v401-performance-stability-tdd.yml'
+
+jobs:
+  v401-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: V401 contract
+        env:
+          PYTHONPATH: web
+        run: python web/test_v401_performance_stability.py
+      - name: V400 regression
+        env:
+          PYTHONPATH: web
+        run: python web/test_v400_ai_hidpi.py
+      - name: V399 regression
+        env:
+          PYTHONPATH: web
+        run: python web/test_v399_quality_supreme.py
+      - name: Syntax guard
+        run: |
+          python -m py_compile \
+            web/job_state_v401.py \
+            web/fix_v401_frontend_memory.py \
+            web/fix_v401_worker_state.py \
+            web/ai_worker_server.py \
+            web/apply_v343_v293_compat.py
+      - name: Build V401 worker image
+        run: docker build --progress=plain -f web/Dockerfile.worker -t gsf-worker-v401:${{ github.sha }} .

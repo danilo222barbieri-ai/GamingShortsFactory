@@ -22,3 +22,9 @@ text=text.replace(gamebar_anchor,gamebar_replacement,1)
 compile(text,str(SRC),'exec')
 ns={'__name__':'__main__','__file__':str(SRC)}
 exec(compile(text,str(SRC),'exec'),ns,ns)
+
+# V401: remove full-buffer fallback upload duplication after V293 materializes
+# the final Streamlit runtime. The patch is intentionally idempotent because
+# this compatibility bootstrap runs on every service restart.
+from fix_v401_frontend_memory import patch_runtime_file
+patch_runtime_file(Path('/app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py'))
