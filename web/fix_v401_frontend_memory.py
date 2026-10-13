@@ -92,6 +92,14 @@ def _replace_write_block(text, handle_name, path_name):
     )
 
 
+def _has_unbounded_target_write(source):
+    target_writes = (
+        r'(?m)^[ \t]*_mf\.write\(\s*video\.getvalue\(\)\s*\)',
+        r'(?m)^[ \t]*ef\.write\(\s*video\.getvalue\(\)\s*\)',
+    )
+    return any(re.search(pattern, source) for pattern in target_writes)
+
+
 def patch_runtime_source(text):
     source = str(text)
     if MARKER not in source:
@@ -103,8 +111,8 @@ def patch_runtime_source(text):
     source = _replace_write_block(source, "_mf", "_main_probe_path")
     source = _replace_write_block(source, "ef", "editor_input")
 
-    if "video.getvalue()" in source:
-        raise RuntimeError("V401 found an unbounded video.getvalue() fallback copy")
+    if _has_unbounded_target_write(source):
+        raise RuntimeError("V401 found an unbounded target fallback video copy")
     return source
 
 
