@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
-from ai_hidpi_v400 import adaptive_quality_profile, hidpi_profile, quality_modes
+from ai_hidpi_v400 import (
+    adaptive_quality_profile,
+    hidpi_profile,
+    inject_hidpi_runtime,
+    quality_modes,
+)
 
 
 def need(ok, msg):
@@ -62,16 +67,26 @@ fast = adaptive_quality_profile({"quality_mode": "Fast HQ", "motion": 1.0, "deta
 need(int(fast["crf"]) == 14 and fast["preset"] == "medium",
      "Fast HQ is deterministic and stays on the proven medium baseline")
 
-component = Path("web/editor_2027_component/index.html").read_text(encoding="utf-8")
-need("window.devicePixelRatio" in component,
+base_component = Path("web/editor_2027_component/index.html").read_text(encoding="utf-8")
+patched_component = inject_hidpi_runtime(base_component)
+need("window.devicePixelRatio" in patched_component,
      "Game Editor measures browser devicePixelRatio")
-need("data-v400-hidpi" in component,
+need("data-v400-hidpi" in patched_component,
      "Game Editor exposes a V400 Hi-DPI runtime marker")
-need("shape-rendering:geometricPrecision" in component,
+need("shape-rendering:geometricPrecision" in patched_component,
      "SVG controls request geometric precision on Hi-DPI displays")
+need(len(patched_component) > len(base_component),
+     "Hi-DPI layer is additive and does not replace the approved editor UI")
 
 embed = Path("web/editor_2027_embed.py").read_text(encoding="utf-8")
 need("ai_hidpi_v400" in embed and "v400_profile" in embed,
      "Editor bridge carries the V400 AI/Hi-DPI profile without replacing the approved UI")
+need("inject_hidpi_runtime" in embed,
+     "Editor bridge serves the additive V400 Hi-DPI runtime")
+
+director = Path("web/director_render_exec_v143.py").read_text(encoding="utf-8")
+privacy = Path("web/privacy_cleanup_v149.py").read_text(encoding="utf-8")
+need("adaptive_quality_profile" in director and "adaptive_quality_profile" in privacy,
+     "post-master re-encoders share the V400 AI quality policy")
 
 print("V400 AI + Hi-DPI contract: PASS")
