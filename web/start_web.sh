@@ -197,6 +197,12 @@ python /app/web/fix_v373_creator_hub_spacing.py /app/web/creator_hub_v156_compon
 python /app/web/test_v373_creator_hub_spacing.py
 grep -q 'V373_CREATOR_HUB_HEADER_BREATH' /app/web/creator_hub_v156_component/index.html
 
+# V397: persistent AI assistant inside Game Editor. The migration is idempotent,
+# scoped to the Editor player, and its contract also guards render/final quality.
+python /app/web/fix_v397_ai_monument.py /app/web/editor_2027_component/index.html
+python /app/web/test_v397_ai_monument.py
+grep -q '__GSF_AI_MONUMENT_V397' /app/web/editor_2027_component/index.html
+
 python - <<'PY'
 import os,re
 from pathlib import Path
