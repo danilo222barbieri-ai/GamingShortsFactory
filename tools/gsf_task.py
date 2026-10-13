@@ -157,6 +157,27 @@ def _create_product_worktree(repo: Path, claim: Claim) -> Path:
     return path
 
 
+def task_status_payload(claim: Claim) -> dict[str, Any]:
+    evidence = dict(claim.evidence or {})
+    tests = evidence.get("tests")
+    if not isinstance(tests, dict):
+        tests = {}
+    return {
+        "claim_id": claim.id,
+        "branch": claim.branch,
+        "scope": claim.scope,
+        "state": claim.state,
+        "paths": list(claim.paths),
+        "commit": evidence.get("commit"),
+        "pr": evidence.get("pr"),
+        "tests": tests,
+        "gate": evidence.get("gate"),
+        "railway": evidence.get("railway"),
+        "terminal_status": evidence.get("terminal_status"),
+        "updated_at": evidence.get("updated_at") or claim.created_at,
+    }
+
+
 def start_task(scope: str, paths: list[str], owner: str | None = None) -> Claim:
     repo = _repo_root()
     requested_paths = normalize_paths(paths)
@@ -261,14 +282,14 @@ def main() -> int:
     try:
         if args.command == "start":
             claim = start_task(args.scope, args.paths, args.owner)
-            print(json.dumps(claim.to_dict(), indent=2, sort_keys=True))
+            print(json.dumps(task_status_payload(claim), indent=2, sort_keys=True))
         elif args.command == "finish":
             finish_task(args.claim, args.state, json.loads(args.evidence_json))
             print(args.state)
         else:
             claim = get_task(args.claim)
             if args.json:
-                print(json.dumps(claim.to_dict(), indent=2, sort_keys=True))
+                print(json.dumps(task_status_payload(claim), indent=2, sort_keys=True))
             else:
                 print(f"{claim.id} {claim.state} {claim.branch}")
         return 0
