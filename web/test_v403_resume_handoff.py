@@ -22,7 +22,7 @@ def test_creator_hub_resume_is_single_flight_and_last_valid_safe():
     assert patch_hub_text(patched)==patched
 
 
-def test_editor_handoff_comes_from_authoritative_selected_candidate():
+def test_editor_handoff_comes_from_authoritative_selected_candidate_and_restores_route():
     fixture='''import streamlit as st\nGSF_WEB_MODE=True\n'''
     flow_patched=patch_flow_app(fixture)
     patched=patch_app_text(flow_patched)
@@ -32,6 +32,8 @@ def test_editor_handoff_comes_from_authoritative_selected_candidate():
     assert 'end_seconds' in patched
     assert 'candidate_id' in patched
     assert 'gsf_editor_2027_v1086' in patched
+    assert "await flow('route',{route:'editor'})" in patched
+    assert "else if(route==='editor')await openEditor()" in patched
     assert patch_app_text(patched)==patched
 
 
