@@ -8,11 +8,11 @@ EDITOR_PATCH=r'''
 <!-- V394_MOBILE_EDITOR_FOOTER_RESTORE -->
 <style id="v394MobileEditorFooterGap">
 @media(max-width:760px){
-  /* Keep the V393 composition; only add breathing room before the global Game Bar. */
+  /* Keep the Editor composition, with an unmistakable gap above the global Game Bar. */
   #ng27 .v391EditorActions{margin-top:6px!important}
   #ng27 .v393ChangeShort{
     height:27px!important;min-height:27px!important;
-    margin:5px auto 9px!important;
+    margin:5px auto 14px!important;
   }
 }
 </style>
@@ -21,7 +21,7 @@ EDITOR_PATCH=r'''
 SHELL_PATCH=r'''
 <style id="v394EditorFooterRestore">
 @media(max-width:760px){
-  html.v394EditorActive #gsf-global-footer {
+  html.v394EditorActive #gsf-global-footer{
     display:block!important;
     visibility:visible!important;
     opacity:1!important;
@@ -34,12 +34,7 @@ SHELL_PATCH=r'''
   const P=window.parent,D=P.document;if(!D||P.__GSF_V394_EDITOR_FOOTER_RESTORE)return;
   P.__GSF_V394_EDITOR_FOOTER_RESTORE=true;
   const host=()=>D.getElementById('gsf-editor-overlay-v220');
-  const retireMask=()=>{
-    const mask=D.querySelector('#v393EditorBottomMask');
-    if(mask)mask.remove();
-  };
   const sync=()=>{
-    retireMask();
     const h=host();
     const active=!!(P.innerWidth<=760&&h&&h.classList.contains('is-open')&&h.getAttribute('aria-hidden')!=='true');
     D.documentElement.classList.toggle('v394EditorActive',active);
@@ -62,7 +57,7 @@ def patch_editor(text:str)->str:
 
 def patch_shell(text:str)->str:
     if 'id="v394EditorFooterRestore"' in text:return text
-    for anchor in ('v393EditorBottomMask','gsf-global-footer','<style id="gsf-v220-editor-shell">'):
+    for anchor in ('gsf-global-footer','gsf-editor-overlay-v220','<style id="gsf-v220-editor-shell">'):
         if anchor not in text:raise RuntimeError('V394 shell anchor missing: '+anchor)
     anchor='<style id="gsf-v220-editor-shell">'
     return text.replace(anchor,SHELL_PATCH+'\n'+anchor,1)
@@ -74,6 +69,6 @@ def main()->None:
     if not editor.is_file() or not shell.is_file():raise SystemExit('V394 runtime files missing')
     eb=editor.read_text(encoding='utf-8');ea=patch_editor(eb);editor.write_text(ea,encoding='utf-8')
     sb=shell.read_text(encoding='utf-8');sa=patch_shell(sb);compile(sa,str(shell),'exec');shell.write_text(sa,encoding='utf-8')
-    print('V394 mobile Editor footer restored + Change Short gap applied editor_changed=',eb!=ea,'shell_changed=',sb!=sa,flush=True)
+    print('V394 mobile Editor footer visibility + Change Short gap applied editor_changed=',eb!=ea,'shell_changed=',sb!=sa,flush=True)
 
 if __name__=='__main__':main()
