@@ -1,26 +1,28 @@
 # Gaming Shorts Factory — Project Status
 
 > **CANONICAL SOURCE OF TRUTH FOR ALL TECHNICAL CHATS / AGENTS.**
-> Read this file before changing code. Refresh it after completing work. Do not rely on an old chat message when this file or live GitHub/Railway evidence says otherwise.
+> Read this file before changing code. Refresh live GitHub/Railway evidence before changing production claims.
 
 ## Snapshot
 
-- **Last verified:** 2026-10-13 23:41 Europe/Rome
 - **Repository:** `danilo222barbieri-ai/GamingShortsFactory`
 - **Production branch:** `main`
 - **Current product baseline:** **V402 — Game Brain / Auto Highlights 2.0**
-- **Current `main` HEAD:** always query GitHub live; do not cache it in this file because documentation-only commits can advance `main` without changing production.
+- **Current `main` HEAD:** always query GitHub live; documentation/coordination commits may advance `main` without changing production.
 - **Last fully tested runtime source commit:** `001802a00a9b33694b1c01729dd8054132c2e672`
 - **Last runtime promotion commit:** `abd4f83c512366d0a24792fa022c88363b260750` — `deploy: promote tested 001802a00a9b [skip ci]`
 
-## Production state
+## Production state — last freshly verified 2026-10-13
 
 ### Frontend
 
 - Railway service: `gaming-shorts-factory-v79`
-- Environment: `production`
-- Latest verified deployment: `d4897ce8-f071-4557-9c36-e376c5c1e032`
-- Status: **SUCCESS**
+- Service ID: `89ae81ec-54d7-4f22-98f4-c88d6361a6a2`
+- Environment: `production` (`5cb868d5-9936-4ff0-be2d-ef42be7fe0ec`)
+- Verified deployment: `d4897ce8-f071-4557-9c36-e376c5c1e032`
+- Status: **SUCCESS / online**
+- Replicas: 1 running / 0 crashed
+- Warnings/criticals: 0 / 0
 - Deployed runtime promotion commit: `abd4f83c512366d0a24792fa022c88363b260750`
 - Healthcheck: `/healthz`
 - Railway deploy trigger: only changes to `.railway/frontend-deploy.txt`
@@ -28,135 +30,169 @@
 ### AI worker
 
 - Railway service: `gsf-ai-worker`
+- Service ID: `8cd8b98c-43b7-4c3f-bf9a-9c0968286ada`
 - Environment: `production`
-- Current deployment: `cdec6ace-2151-4d23-aa8a-2d597d2589b2`
-- State: **SLEEPING** (expected when idle; Railway sleep mode is enabled)
+- Verified deployment: `cdec6ace-2151-4d23-aa8a-2d597d2589b2`
+- State: **SLEEPING** — expected healthy idle state because Railway sleep mode is enabled
+- Warnings/criticals: 0 / 0
 - Current worker baseline: V402 / commit `1192e00b32c975d0296ffef718fd8baab50785ef`
-- Healthcheck: `/health`
+- Healthcheck: `/health` when awake
 - Railway deploy trigger: only changes to `.railway/worker-deploy.txt`
-- The latest promotion did not redeploy the worker because no worker runtime files changed.
 
 ## Production Gate
 
-Workflow: `.github/workflows/v397-production-gate.yml`
+Workflow: `.github/workflows/v397-production-gate.yml`  
+Workflow name: **GSF Production Gate**
 
-The workflow name is now **GSF Production Gate** and is version-independent even though the historical filename still contains `v397`.
+The runtime gate currently verifies V397/V398/V399/V400/V401/V402 contracts, current Python syntax guards, worker + frontend image builds, composite `/healthz`, blocking runtime smoke, and V343/V389/V391/V393/V394/V395/V396 UI regressions.
 
-Before a runtime change can reach Railway, the gate currently verifies:
+Only after the current runtime-changing `main` commit passes may GitHub update the applicable Railway marker. Stale tested commits are refused when a newer `main` exists.
 
-- V397 structural production hardening
-- V398 semantic resilience
-- V399 quality contract
-- V400 AI + Hi-DPI contract
-- V401 performance/stability contract
-- V402 Game Brain / Auto Highlights contract
-- Python syntax guards for current critical modules
-- Worker Docker image build
-- Frontend production Docker image build
-- Composite `/healthz`
-- Blocking runtime smoke test
-- V343 global shell contract
-- V389/V391/V393/V394/V395/V396 UI regression contracts
+## New orchestration system — implementation branch
 
-Only after the gate passes on the current runtime-changing `main` commit does GitHub update the appropriate Railway deployment marker. A stale tested commit is not promoted if a newer `main` commit already exists.
+Branch: `chat/parallel-rollback-one-command`
 
-## Deployment model
+**Integration state:** implementation verified on the isolated branch; not yet merged to `main`, so do not describe these additions as production-live until the PR/main gate and Railway verification complete.
+
+### Parallel chat isolation
+
+Implemented on the branch:
+
+- `tools/gsf_claims.py` — conservative ownership conflict engine.
+- `tools/gsf_task.py` — atomic global claim acquisition, unique branch/worktree bootstrap, finish/handoff and machine-readable status.
+- `.gsf/claims/index.json` — global live ownership registry.
+- `.gsf/claims/README.md` — claim lifecycle/rules.
+- Claim states: `active`, `handoff`, `completed`, `abandoned`; only `active`/`handoff` block overlap.
+- Atomic coordination uses optimistic `main` updates with retry/re-read after non-fast-forward races.
+- Product work remains isolated on `chat/<task>-<suffix>` branches/worktrees.
+
+Commands after integration:
+
+`python tools/gsf_task.py start --scope "<scope>" --paths <path> [<path> ...]`
+
+`python tools/gsf_task.py status --claim <claim-id> --json`
+
+`python tools/gsf_task.py finish --claim <claim-id> --state completed --evidence-json '<json>'`
+
+### Guarded rollback
+
+Implemented policy/state on the branch:
+
+- `tools/gsf_rollback_policy.py`
+- `.gsf/state/known-good.json`
+- `.gsf/incidents/index.json`
+- `docs/runbooks/gsf-automatic-rollback.md`
+
+Hard rollback eligibility only: current new deployment `FAILED`, `CRASHED`, OOM, or sustained frontend health failure. Worker `SLEEPING` with sleep enabled is healthy. Isolated 5xx/provider/network failures are notify-only.
+
+Initial known-good records were seeded from fresh Railway evidence:
+
+- frontend → `d4897ce8-f071-4557-9c36-e376c5c1e032`
+- worker → `cdec6ace-2151-4d23-aa8a-2d597d2589b2`
+
+Automatic action invariant: maximum **one** rollback attempt per failing deployment; recovery failure escalates and never recursively rolls back.
+
+Privileged Railway rollback is intentionally kept out of repository secrets and will be wired into the authenticated **GSF Guardian** only after this branch is integrated to `main`.
+
+### One-command workflow
+
+Implemented on the branch:
+
+- `docs/runbooks/gsf-one-command-workflow.md`
+- `.gsf/state/task-status.schema.json`
+- `AGENTS.md` makes the workflow the default for coding requests.
+
+State machine:
+
+`INTAKE -> CLAIMED -> IMPLEMENTING -> TESTED -> INTEGRATING -> GATE -> DEPLOYING -> VERIFYING -> LIVE|BLOCKED|ROLLED_BACK -> HANDOFF`
+
+Terminal evidence labels: `LIVE`, `BLOCKED`, `ROLLED_BACK`, `HANDOFF_REQUIRED`.
+
+Safe-close boundary: only after **GitHub handoff** — when the commit/PR/push exists on GitHub and CI/Railway/automation owns the next step. Before GitHub handoff there is no guarantee a normal chat continues after the app/session closes.
+
+### Branch verification evidence
+
+Latest orchestration CI for the implementation branch is **SUCCESS** after the final rollback anti-loop extension. Earlier full run #23 verified **31 tests PASS** plus `V397 production hardening structural contract: PASS`; the final run also passed after adding explicit end-to-end anti-loop scenarios.
+
+No intentional production failure/rollback test was performed.
+
+## Deployment model after integration
 
 ```text
-User request
+User coding request
    ↓
-ChatGPT / Codex change on dedicated branch
+Read status + acquire global claim
    ↓
-Tests / PR
+Dedicated chat branch/worktree
    ↓
-Merge to main
+Implementation + relevant tests
+   ↓
+PR / integration to main
    ↓
 GSF Production Gate
    ├── FAIL → no Railway marker → production unchanged
-   └── PASS → update only required Railway marker(s)
+   └── PASS → required Railway marker(s)
                     ↓
               Railway deploy
                     ↓
-              healthcheck
+            verify service health
+              ├── healthy → LIVE / known-good
+              └── hard failure → one guarded rollback attempt
+                                      ↓
+                              verify recovery / escalate
                     ↓
-                  LIVE
+          update project memory + complete claim
 ```
 
 ## Current user-facing verification priorities
 
-These are **re-verification priorities**, not claims that the feature is currently broken:
+These are re-verification priorities, not claims that a feature is currently broken:
 
-1. `Crea con IA` — full end-to-end path from Home to generated candidate/result.
-2. `Game Editor` — open, load media, controls, mobile/desktop behavior, return/navigation.
-3. `Crea Short` — complete path through final short generation and share/download.
-4. Global Game Bar / Creator Hub navigation — verify no route inherits stale page state.
-5. Mobile and desktop shell consistency after any UI change.
+1. `Crea con IA` — full path from Home to generated candidate/result.
+2. `Game Editor` — open/load media/controls/mobile+desktop/return navigation.
+3. `Crea Short` — final generation through share/download.
+4. Global Game Bar / Creator Hub navigation — no stale inherited route state.
+5. Mobile/desktop shell consistency after UI changes.
 
-Do not mark one of these as fixed or broken from historical chat context alone. Reproduce against the current deployed build first.
+Always reproduce against the current deployed build before marking one fixed/broken.
 
 ## Active work
 
-| Owner / chat | Branch | Scope / files | Started | State |
-|---|---|---|---|---|
-| — | — | No active work registered | — | idle |
+Live ownership after integration is read from `.gsf/claims/index.json`. Until this branch is merged, the current orchestration implementation itself is:
 
-### Rules for active work
+| Owner / chat | Branch | Scope | State |
+|---|---|---|---|
+| current implementation session | `chat/parallel-rollback-one-command` | parallel claims + rollback guard + one-command orchestration | branch tests green; awaiting PR/integration |
 
-- One branch/worktree per independent chat or agent.
-- A chat must not take ownership of files already listed by another active row without an explicit handoff.
-- Keep scope narrow: UI, Editor, worker/AI, deployment/CI, etc.
-- If two tasks must touch the same file, serialize them or merge one first.
-- Never use `main` as a shared scratch branch.
+## Mandatory coding protocol after integration
 
-## Mandatory startup protocol for every coding chat / agent
+1. Read `AGENTS.md` and this file.
+2. Refresh `main` and live claims.
+3. Acquire a narrow claim before product edits.
+4. Work only on the dedicated returned branch/worktree (or equivalent connector-created isolated branch).
+5. Run relevant tests.
+6. Integrate only with clear ownership and current `main`.
+7. Let Production Gate/Railway own runtime deployment.
+8. Record fresh evidence at handoff/completion.
 
-1. Read `AGENTS.md`.
-2. Read this `PROJECT_STATUS.md` completely.
-3. Refresh `main` and inspect the latest commits before assuming a version/state.
-4. Check the Active work table for overlap.
-5. Inspect the relevant code/tests before modifying anything.
-6. Work on a dedicated branch/worktree for parallel work.
-7. Run the relevant tests plus the project production gate/regressions required by the touched area.
-8. Update this file at handoff/completion with factual evidence only.
-
-## Mandatory completion / handoff protocol
-
-At the end of a task, record:
-
-- branch used
-- scope/files changed
-- commit or PR
-- tests actually run and their result
-- whether the change is merged to `main`
-- Production Gate result if applicable
-- Railway deployment ID/status if applicable
-- anything still broken, unverified, or intentionally deferred
-
-**Never write `SUCCESS`, `LIVE`, `fixed`, or `done` here without fresh evidence.**
-
-## Status update safety
-
-- Fetch the latest `PROJECT_STATUS.md` before editing it so another chat's row is not overwritten.
-- Preserve other chats' active rows and handoff notes.
-- Do not put secrets, API keys, tokens, passwords, personal data, or Railway secret values in this file.
-- Documentation-only status updates should use a commit message containing `[skip ci]` when appropriate so they do not waste Production Gate capacity.
-- Documentation-only commits may advance GitHub `main` while Railway correctly remains on the last tested runtime promotion. This is expected.
+**Never write `SUCCESS`, `LIVE`, `fixed`, or `done` without fresh evidence.**
 
 ## Automation
 
 - **GSF Guardian:** enabled, hourly condition watch.
-- It checks latest GitHub `main` / Production Gate and Railway frontend/worker health.
-- It should notify only on meaningful failures or promotion/deployment mismatches.
+- Current production Guardian monitoring remains active.
+- Guarded rollback action is intentionally pending until the rollback policy/state files are merged to `main`.
 
 ## Recent verified milestones
 
 - **V402:** Game Brain / Auto Highlights 2.0 merged to `main`.
 - **2026-10-13:** Production Gate made permanent/version-independent in behavior.
 - **2026-10-13:** Railway frontend moved to composite `/healthz`.
-- **2026-10-13:** Railway frontend and worker changed to marker-based deploy triggers so ordinary untested pushes do not deploy automatically.
-- **2026-10-13:** First marker-based frontend promotion completed with Railway deployment `d4897ce8-f071-4557-9c36-e376c5c1e032` = `SUCCESS`.
-- **2026-10-13:** `PROJECT_STATUS.md` + `AGENTS.md` introduced as the shared cross-chat handoff protocol.
+- **2026-10-13:** Railway frontend/worker changed to marker-based deploy triggers.
+- **2026-10-13:** First marker-based frontend promotion `d4897ce8-f071-4557-9c36-e376c5c1e032` verified `SUCCESS`.
+- **2026-10-13:** `PROJECT_STATUS.md` + `AGENTS.md` introduced as shared cross-chat project memory/protocol.
+- **2026-10-13:** parallel-claim, rollback-policy and one-command implementation reached green branch verification; integration pending.
 
 ---
 
-When this file disagrees with a chat summary, **verify GitHub/Railway and update this file**. Do not silently choose the more convenient version of events.
+When this file disagrees with chat memory, verify GitHub/Railway and update this file. Never silently choose the more convenient version of events.
