@@ -19,6 +19,7 @@ EDITOR_PATCH=r'''
 '''
 
 SHELL_PATCH=r'''
+<!-- V394_MOBILE_EDITOR_FOOTER_RESTORE -->
 <style id="v394EditorFooterRestore">
 @media(max-width:760px){
   html.v394EditorActive #gsf-global-footer{
