@@ -1,0 +1,25 @@
+name: V399 Quality Supreme TDD
+
+on:
+  push:
+    branches:
+      - v399-quality-supreme
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  quality-supreme:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: V399 adaptive quality contract
+        run: |
+          PYTHONPATH=web python web/test_v399_quality_supreme.py
+      - name: V399 render module syntax
+        run: |
+          python -m py_compile \
+            web/quality_supreme_v399.py \
+            web/director_render_exec_v143.py \
+            web/privacy_cleanup_v149.py

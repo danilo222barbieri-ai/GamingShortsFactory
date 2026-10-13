@@ -12,6 +12,7 @@ from pathlib import Path
 from PIL import Image
 from cinematic_render_v125 import probe_media
 from ocr_privacy_v146 import classify_sensitive
+from quality_supreme_v399 import encoder_args, quality_profile
 from web.render_gate_v293 import render_slot as _gsf_render_slot_v293
 
 
@@ -166,12 +167,12 @@ def cleanup_video(input_path,output_path,report=None):
         }
     meta=probe_media(src)
     cmd=["/usr/bin/ffmpeg","-hide_banner","-loglevel","error","-y","-i",str(src),"-vf",",".join(filters)]
-    cmd+=["-c:v","libx264","-preset","fast","-crf","15","-pix_fmt","yuv420p","-profile:v","high","-level","4.2","-threads","2"]
-    if meta["has_audio"]:
-        cmd+=["-c:a","copy"]
-    else:
-        cmd+=["-an"]
-    cmd+=["-movflags","+faststart",str(out)]
+    q=quality_profile({
+        "source_width":int(meta.get("width") or 0),
+        "source_height":int(meta.get("height") or 0),
+    })
+    cmd+=encoder_args(q,has_audio=bool(meta.get("has_audio")),audio_mode="copy")
+    cmd+=[str(out)]
     _run(cmd,timeout=480)
     return {
         "ok":True,"engine":"v149-privacy-cleanup","applied":True,
