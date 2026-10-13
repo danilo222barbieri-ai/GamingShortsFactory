@@ -33,16 +33,19 @@ ok('/creator-hub/state?scope=header' in account,'Home fallback uses lightweight 
 ok('fetch("/creator-hub/state",' not in account,'Home no longer requests heavy Creator Hub state')
 ok('setTimeout(syncAccountEntry,120);' in account,'Home delays first account sync so V343 can mount first')
 
+owner_guard="if(window['__GSF_GLOBAL_'+'SHELL_V343'])return;"
 v158=re.search(r"_shell_v158 = r'''(.*?)'''\ns = s\.rstrip\(\) \+",apply,re.S)
 ok(bool(v158),'V158 source block exists')
 v158=v158.group(1)
-ok("if(window.__GSF_GLOBAL_SHELL_V343)return;" in v158,'V158 legacy router stands down when V343 is active')
+ok(owner_guard in v158,'V158 legacy router stands down when V343 is active')
+ok('__GSF_GLOBAL_SHELL_V343' not in v158,'V158 fallback does not impersonate canonical V343 bridge marker')
 ok('new MutationObserver(sync)' not in v158,'V158 no longer preloads/rewrites hidden Hub portal')
 
 v160=re.search(r"_hub_surface_v160 = r'''(.*?)'''\ns = s\.rstrip\(\) \+",apply,re.S)
 ok(bool(v160),'V160 source block exists')
 v160=v160.group(1)
-ok("if(window.__GSF_GLOBAL_SHELL_V343)return;" in v160,'V160 legacy router stands down when V343 is active')
+ok(owner_guard in v160,'V160 legacy router stands down when V343 is active')
+ok('__GSF_GLOBAL_SHELL_V343' not in v160,'V160 fallback does not impersonate canonical V343 bridge marker')
 ok('src="about:blank"' in v160 and 'data-loaded="0"' in v160,'V160 Hub iframe is lazy until canonical navigation opens it')
 
 fix_spec=importlib.util.spec_from_file_location('v370fix',FIX)
@@ -52,7 +55,8 @@ fix_mod=importlib.util.module_from_spec(fix_spec); assert fix_spec and fix_spec.
 transformed_v160='''# GSF_GLOBAL_SHELL_V343\n<iframe class="gsf-hub-frame-v160" data-loaded="1" title="Creator Hub" data-src="/creator-hub-v156/" src="/creator-hub-v156/?v=3663&ui=profile-ref-2"></iframe>\n        if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;\n        const t=String(e.data.target||'');\n        if(t==='hub'||t==='profile'){\n'''
 patched_transformed=fix_mod._patch_v160(transformed_v160)
 ok('src="about:blank"' in patched_transformed and 'data-loaded="0"' in patched_transformed,'V370 handles transformed V160 iframe attribute order')
-ok("if(window.__GSF_GLOBAL_SHELL_V343)return;" in patched_transformed,'V370 mutes transformed V160 listener')
+ok(owner_guard in patched_transformed,'V370 mutes transformed V160 listener')
+ok(patched_transformed.count('__GSF_GLOBAL_SHELL_V343')==0,'V370 transformed legacy listener keeps canonical V343 literal unique')
 
 # Regression: V343 may already have retired V158/V160 completely in a generated runtime.
 canonical_only='# GSF_GLOBAL_SHELL_V343\nconst canonicalShell=true;\n'
@@ -100,4 +104,4 @@ for runtime_name in ('GamingShortsFactory_V154_STRUCTURAL_HOME.py','GamingShorts
         ok(any(fix_mod.HEADER_STATE_NEW in v for v in shells),f'{runtime_name} executes lightweight V343 header fetch')
         ok(not any(fix_mod.HEADER_STATE_OLD in v for v in shells),f'{runtime_name} does not execute heavy V343 header fetch')
 
-print('V370.1 SINGLE NAVIGATION OWNER + LIGHT HEADER STATE CONTRACT: PASS',flush=True)
+print('V370.2 SINGLE NAVIGATION OWNER + UNIQUE V343 MARKER CONTRACT: PASS',flush=True)
