@@ -4,15 +4,17 @@ import csv
 import io
 import json
 import math
+import os
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 
 from PIL import Image
+from ai_hidpi_v400 import adaptive_quality_profile
 from cinematic_render_v125 import probe_media
 from ocr_privacy_v146 import classify_sensitive
-from quality_supreme_v399 import encoder_args, quality_profile
+from quality_supreme_v399 import encoder_args
 from web.render_gate_v293 import render_slot as _gsf_render_slot_v293
 
 
@@ -167,7 +169,8 @@ def cleanup_video(input_path,output_path,report=None):
         }
     meta=probe_media(src)
     cmd=["/usr/bin/ffmpeg","-hide_banner","-loglevel","error","-y","-i",str(src),"-vf",",".join(filters)]
-    q=quality_profile({
+    q=adaptive_quality_profile({
+        "quality_mode":str(os.environ.get("GSF_QUALITY_MODE") or "Adaptive AI"),
         "source_width":int(meta.get("width") or 0),
         "source_height":int(meta.get("height") or 0),
     })
