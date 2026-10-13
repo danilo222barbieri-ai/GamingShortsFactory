@@ -28,13 +28,5 @@ jobs:
       - name: Run orchestration tests
         run: |
           set -e
-          for test in \
-            tools/test_gsf_claims.py \
-            tools/test_gsf_coordination_gate.py \
-            tools/test_gsf_rollback_policy.py \
-            tools/test_gsf_one_command_contract.py; do
-            if [ -f "$test" ]; then
-              python "$test"
-            fi
-          done
+          python -m unittest discover -s tools -p 'test_gsf_*.py'
           python web/test_v397_production_hardening.py .
