@@ -47,7 +47,7 @@ if [ "$GSF_HISTORY_READY" -eq 0 ]; then
   python /app/web/fix_v300_creator_hub_clean.py
   python /app/web/test_v300_creator_hub_clean.py /app
   python /app/web/fix_v302_global_live_gamebar.py
-  python /app/web/test_v302_global_gamebar.py /app
+  python /app/web/test_v302_global_live_gamebar.py /app
   python /app/web/fix_v306_home_visual_lock.py
   python /app/web/fix_v303_mobile_hub_compact.py
   python /app/web/test_v303_mobile_hub_compact.py
