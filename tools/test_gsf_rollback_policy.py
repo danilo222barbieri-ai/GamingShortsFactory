@@ -107,6 +107,31 @@ class RollbackPolicyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_incident_index(bad_incident)
 
+    def test_end_to_end_failed_release_allows_exactly_one_rollback(self):
+        current = snapshot("FAILED", deployment="B")
+        first = should_rollback(current, incidents(), known_good("A"))
+        self.assertEqual(first.action, "rollback")
+        self.assertEqual(first.target_deployment_id, "A")
+
+        key = incident_key("svc", "B")
+        after_attempt = incidents({
+            key: {
+                "attempt_count": 1,
+                "status": "rollback_attempted",
+                "target_deployment_id": "A",
+            }
+        })
+        second = should_rollback(current, after_attempt, known_good("A"))
+        self.assertNotEqual(second.action, "rollback")
+        self.assertIn(second.action, {"notify", "none"})
+
+    def test_end_to_end_failed_recovery_escalates_without_recursive_rollback(self):
+        recovery = snapshot("FAILED", deployment="C")
+        recovery["recovery_failed"] = True
+        decision = should_rollback(recovery, incidents(), known_good("A"))
+        self.assertEqual(decision.action, "escalate")
+        self.assertIsNone(decision.target_deployment_id)
+
 
 if __name__ == "__main__":
     unittest.main()
