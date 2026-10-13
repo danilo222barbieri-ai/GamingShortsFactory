@@ -24,16 +24,13 @@ from app_flow_v403 import (  # noqa: E402
     resolve_route,
     transition,
 )
-try:
-    from apply_v403_flow import (  # noqa: E402
-        patch_ai_text,
-        patch_app_text,
-        patch_nginx_text,
-        patch_server_text,
-        patch_share_text,
-    )
-except ModuleNotFoundError:
-    patch_ai_text = patch_app_text = patch_nginx_text = patch_server_text = patch_share_text = None
+from apply_v403_flow import (  # noqa: E402
+    patch_ai_text,
+    patch_app_text,
+    patch_nginx_text,
+    patch_server_text,
+    patch_share_text,
+)
 
 
 def _candidate(idx: int, start: float, end: float, event: str = "KILL") -> dict:
@@ -123,8 +120,7 @@ def test_candidate_selection_persists_across_route_and_resume() -> None:
 def test_create_short_without_selection_fails_safe() -> None:
     s = _base_snapshot()
     assert resolve_route(s, ROUTE_CREATE_SHORT) == ROUTE_MOTORI
-    candidates = [_candidate(0, 10, 40)]
-    s = transition(s, "analysis_completed", {"job_id": "a1", "candidates": candidates})
+    s = transition(s, "analysis_completed", {"job_id": "a1", "candidates": [_candidate(0, 10, 40)]})
     assert resolve_route(s, ROUTE_CREATE_SHORT) == ROUTE_MOMENTS
 
 
@@ -171,7 +167,6 @@ def test_editor_identity_locked() -> None:
 
 
 def test_runtime_patch_exists_and_is_idempotent() -> None:
-    assert patch_ai_text is not None, "apply_v403_flow missing"
     raw_ai = (ROOT / "ai_v221_component" / "index.html").read_text(encoding="utf-8")
     raw_share = (ROOT / "share_v156_component" / "index.html").read_text(encoding="utf-8")
     raw_server = (ROOT / "direct_upload_server.py").read_text(encoding="utf-8")
@@ -184,17 +179,22 @@ def test_runtime_patch_exists_and_is_idempotent() -> None:
     assert patch_share_text(share) == share
     assert patch_server_text(server) == server
     assert patch_nginx_text(nginx) == nginx
+    compile(server, "direct_upload_server_v403.py", "exec")
 
 
-def test_motori_runtime_does_not_own_final_candidate_cards() -> None:
+def test_motori_runtime_retires_embedded_results_visually() -> None:
     raw = (ROOT / "ai_v221_component" / "index.html").read_text(encoding="utf-8")
     html = patch_ai_text(raw)
     lowered = html.lower()
-    assert 'class="moments"' not in lowered
-    assert 'class="moment"' not in lowered
-    assert "le tue 3 migliori giocate" not in lowered
-    assert "gsf_v403_analysis_complete" in lowered
-    assert "/project/flow" in lowered
+    # Historical result nodes stay in source because V319/V320 boot gates need
+    # them; V403 is the final runtime owner and makes them non-visible.
+    assert 'id="v403motorionly"' in lowered
+    assert '#ai221>.panel:has(.moments)' in lowered
+    assert 'display:none!important' in lowered
+    assert 'v403_app_stability_flow motori bridge' in lowered
+    assert '/project/flow' in lowered
+    assert 'gsf_v403_open_moments' in lowered
+    assert lowered.index('v403_app_stability_flow motori bridge') < lowered.rindex('send("ready")')
 
 
 def test_dedicated_moments_surface_contract() -> None:
@@ -216,24 +216,24 @@ def test_dedicated_moments_surface_contract() -> None:
 def test_server_and_nginx_expose_authoritative_flow_and_moments_route() -> None:
     server = patch_server_text((ROOT / "direct_upload_server.py").read_text(encoding="utf-8"))
     nginx = patch_nginx_text((ROOT / "nginx.conf.template").read_text(encoding="utf-8"))
-    for token in ('if clean=="/project/flow":', 'transition(', 'reconcile_snapshot(', 'V403_PROJECT_FLOW'):
+    for token in ('if clean=="/project/flow":', '_v403_transition(', 'project_flow_v403.json', 'V403_APP_STABILITY_FLOW'):
         assert token in server, token
     for token in ('location = /project/flow', 'location /moments-v403/', 'moments_v403_component'):
         assert token in nginx, token
 
 
 def test_parent_runtime_bridge_reconciles_without_starting_jobs() -> None:
-    assert patch_app_text is not None
-    fixture = '''import streamlit as st\nimport streamlit.components.v1 as components\n# V403_APP_ANCHOR\n'''
+    fixture = '''import streamlit as st\nGSF_WEB_MODE=True\n# V403_APP_ANCHOR\n'''
     patched = patch_app_text(fixture)
     lowered = patched.lower()
-    for token in ("visibilitychange", "pageshow", "/project/flow", "gsf_v403_open_moments", "gsf_v403_open_editor", "gsf_v403_open_short"):
+    for token in ("visibilitychange", "addEventListener('focus'", "/project/flow", "gsf_v403_open_moments", "gsf_v403_open_editor", "gsf_v403_open_short"):
         assert token in lowered, token
     assert "analysis_started" not in lowered
     assert "render_started" not in lowered
+    assert "start_seconds" in lowered and "end_seconds" in lowered
 
 
-def test_unified_create_short_runtime_has_two_states() -> None:
+def test_unified_create_short_runtime_has_two_states_and_mobile_override() -> None:
     raw = (ROOT / "share_v156_component" / "index.html").read_text(encoding="utf-8")
     html = patch_share_text(raw)
     lowered = html.lower()
@@ -245,6 +245,7 @@ def test_unified_create_short_runtime_has_two_states() -> None:
         "scegli un altro momento",
         "download",
         "/project/flow",
+        "v396mobilepublishsurface",
     ):
         assert token in lowered, token
 
