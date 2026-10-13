@@ -120,27 +120,21 @@ SHELL_PATCH=r'''
   #gsf-editor-overlay-v220.is-open [class*="close" i],
   #gsf-editor-overlay-v220.is-open [id*="close" i],
   .v393EditorChromeGone{display:none!important}
-  #v393EditorBottomMask{
-    position:fixed!important;left:0!important;right:0!important;bottom:0!important;display:none;
-    background:linear-gradient(180deg,#f4fbff 0%,#eef8fd 100%)!important;z-index:2147482500!important;pointer-events:none!important;
-  }
 }
 </style>
 <script id="v393EditorParentCleanup">
 (()=>{
   const P=window.parent,D=P.document;if(!D||P.__GSF_V393_EDITOR_PARENT_CLEANUP)return;P.__GSF_V393_EDITOR_PARENT_CLEANUP=true;
   const host=()=>D.getElementById('gsf-editor-overlay-v220');
-  let mask=D.getElementById('v393EditorBottomMask');
-  if(!mask){mask=D.createElement('div');mask.id='v393EditorBottomMask';mask.setAttribute('aria-hidden','true');D.body.appendChild(mask)}
   const closeSelector='button,a,[role="button"],[onclick],[class*="close" i],[id*="close" i]';
   const sync=()=>{
     const h=host(),mobile=P.innerWidth<=760,active=!!(h&&h.classList.contains('is-open')&&h.getAttribute('aria-hidden')!=='true');
     D.documentElement.classList.toggle('v393EditorActive',active&&mobile);
     D.querySelectorAll('.v393EditorChromeGone').forEach(el=>el.classList.remove('v393EditorChromeGone'));
-    if(!active||!mobile){mask.style.display='none';return}
+    if(!active||!mobile)return;
     const hr=h.getBoundingClientRect(),vw=P.innerWidth;
     D.querySelectorAll(closeSelector).forEach(el=>{
-      if(el.closest('#gsf-global-header,#gsf-global-gamebar'))return;
+      if(el.closest('#gsf-global-header,#gsf-global-gamebar,#gsf-global-footer'))return;
       let r;try{r=el.getBoundingClientRect()}catch(_e){return}
       if(!r||r.width<10||r.height<10||r.width>90||r.height>90)return;
       const vals=[el.textContent,el.getAttribute('aria-label'),el.getAttribute('title'),el.id,el.className].map(v=>String(v||'').trim().toLowerCase());
@@ -148,11 +142,6 @@ SHELL_PATCH=r'''
       const nearEditorTop=r.right>=Math.min(vw,hr.right)-92&&r.top>=hr.top-12&&r.top<=hr.top+108;
       if(semantic&&nearEditorTop)el.classList.add('v393EditorChromeGone');
     });
-    const gamebar=D.getElementById('gsf-global-gamebar');
-    if(gamebar){
-      const gr=gamebar.getBoundingClientRect(),top=Math.max(0,Math.ceil(gr.bottom+1));
-      mask.style.top=top+'px';mask.style.display=top<P.innerHeight?'block':'none';
-    }else mask.style.display='none';
   };
   const schedule=()=>{P.requestAnimationFrame(sync);[80,220,520,1100].forEach(ms=>P.setTimeout(sync,ms))};
   const h=host();if(h){try{new MutationObserver(schedule).observe(h,{attributes:true,attributeFilter:['class','aria-hidden'],childList:true,subtree:true})}catch(_e){}}
