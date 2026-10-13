@@ -126,17 +126,24 @@ def inject_hidpi_runtime(html: str) -> str:
 </style>
 <script data-v400-hidpi="true">
 (function(){
-  const root=document.getElementById('ng27');
-  if(!root)return;
-  function syncV400HiDpi(){
-    const raw=Number(window.devicePixelRatio||1);
-    const dpr=Math.max(1,Math.min(3,Number.isFinite(raw)?raw:1));
-    root.dataset.v400Hidpi='true';
-    root.dataset.pixelRatio=dpr.toFixed(2);
-    root.style.setProperty('--gsf-dpr',String(dpr));
+  function bootV400HiDpi(){
+    const root=document.getElementById('ng27');
+    if(!root)return;
+    function syncV400HiDpi(){
+      const raw=Number(window.devicePixelRatio||1);
+      const dpr=Math.max(1,Math.min(3,Number.isFinite(raw)?raw:1));
+      root.dataset.v400Hidpi='true';
+      root.dataset.pixelRatio=dpr.toFixed(2);
+      root.style.setProperty('--gsf-dpr',String(dpr));
+    }
+    syncV400HiDpi();
+    window.addEventListener('resize',syncV400HiDpi,{passive:true});
   }
-  syncV400HiDpi();
-  window.addEventListener('resize',syncV400HiDpi,{passive:true});
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',bootV400HiDpi,{once:true});
+  }else{
+    bootV400HiDpi();
+  }
 })();
 </script>
 '''
