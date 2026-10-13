@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -48,6 +49,16 @@ class TaskStatusTests(unittest.TestCase):
         self.assertIsNone(payload["gate"])
         self.assertIsNone(payload["railway"])
         self.assertEqual(payload["tests"], {})
+
+    def test_documented_python_cli_invocation_can_start(self):
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "tools/gsf_task.py"), "--help"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("GSF parallel task coordinator", result.stdout)
 
 
 if __name__ == "__main__":
