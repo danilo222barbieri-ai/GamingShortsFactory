@@ -24,6 +24,16 @@ from app_flow_v403 import (  # noqa: E402
     resolve_route,
     transition,
 )
+try:
+    from apply_v403_flow import (  # noqa: E402
+        patch_ai_text,
+        patch_app_text,
+        patch_nginx_text,
+        patch_server_text,
+        patch_share_text,
+    )
+except ModuleNotFoundError:
+    patch_ai_text = patch_app_text = patch_nginx_text = patch_server_text = patch_share_text = None
 
 
 def _candidate(idx: int, start: float, end: float, event: str = "KILL") -> dict:
@@ -35,6 +45,7 @@ def _candidate(idx: int, start: float, end: float, event: str = "KILL") -> dict:
         "event": event,
         "confidence": 0.8 + idx * 0.03,
         "fusion_reason": f"{event} · High Action",
+        "preview_ref": f"/media/sid/media/candidate_{idx+1}.mp4",
     }
 
 
@@ -159,12 +170,31 @@ def test_editor_identity_locked() -> None:
     assert "gsf_editor_2027_v1086" in editor_embed
 
 
-def test_motori_does_not_own_final_candidate_cards() -> None:
-    html = (ROOT / "ai_v221_component" / "index.html").read_text(encoding="utf-8")
+def test_runtime_patch_exists_and_is_idempotent() -> None:
+    assert patch_ai_text is not None, "apply_v403_flow missing"
+    raw_ai = (ROOT / "ai_v221_component" / "index.html").read_text(encoding="utf-8")
+    raw_share = (ROOT / "share_v156_component" / "index.html").read_text(encoding="utf-8")
+    raw_server = (ROOT / "direct_upload_server.py").read_text(encoding="utf-8")
+    raw_nginx = (ROOT / "nginx.conf.template").read_text(encoding="utf-8")
+    ai = patch_ai_text(raw_ai)
+    share = patch_share_text(raw_share)
+    server = patch_server_text(raw_server)
+    nginx = patch_nginx_text(raw_nginx)
+    assert patch_ai_text(ai) == ai
+    assert patch_share_text(share) == share
+    assert patch_server_text(server) == server
+    assert patch_nginx_text(nginx) == nginx
+
+
+def test_motori_runtime_does_not_own_final_candidate_cards() -> None:
+    raw = (ROOT / "ai_v221_component" / "index.html").read_text(encoding="utf-8")
+    html = patch_ai_text(raw)
     lowered = html.lower()
     assert 'class="moments"' not in lowered
     assert 'class="moment"' not in lowered
-    assert "i tuoi 3 momenti" not in lowered
+    assert "le tue 3 migliori giocate" not in lowered
+    assert "gsf_v403_analysis_complete" in lowered
+    assert "/project/flow" in lowered
 
 
 def test_dedicated_moments_surface_contract() -> None:
@@ -178,12 +208,34 @@ def test_dedicated_moments_surface_contract() -> None:
         "fullscreen",
         "overflow-y:auto",
         "fusion_reason",
+        "/project/flow",
     ):
         assert token in lowered, token
 
 
-def test_unified_create_short_surface_has_two_states() -> None:
-    html = (ROOT / "share_v156_component" / "index.html").read_text(encoding="utf-8")
+def test_server_and_nginx_expose_authoritative_flow_and_moments_route() -> None:
+    server = patch_server_text((ROOT / "direct_upload_server.py").read_text(encoding="utf-8"))
+    nginx = patch_nginx_text((ROOT / "nginx.conf.template").read_text(encoding="utf-8"))
+    for token in ('if clean=="/project/flow":', 'transition(', 'reconcile_snapshot(', 'V403_PROJECT_FLOW'):
+        assert token in server, token
+    for token in ('location = /project/flow', 'location /moments-v403/', 'moments_v403_component'):
+        assert token in nginx, token
+
+
+def test_parent_runtime_bridge_reconciles_without_starting_jobs() -> None:
+    assert patch_app_text is not None
+    fixture = '''import streamlit as st\nimport streamlit.components.v1 as components\n# V403_APP_ANCHOR\n'''
+    patched = patch_app_text(fixture)
+    lowered = patched.lower()
+    for token in ("visibilitychange", "pageshow", "/project/flow", "gsf_v403_open_moments", "gsf_v403_open_editor", "gsf_v403_open_short"):
+        assert token in lowered, token
+    assert "analysis_started" not in lowered
+    assert "render_started" not in lowered
+
+
+def test_unified_create_short_runtime_has_two_states() -> None:
+    raw = (ROOT / "share_v156_component" / "index.html").read_text(encoding="utf-8")
+    html = patch_share_text(raw)
     lowered = html.lower()
     for token in (
         "data-v403-state=\"pre-render\"",
@@ -192,6 +244,7 @@ def test_unified_create_short_surface_has_two_states() -> None:
         "salva bozza",
         "scegli un altro momento",
         "download",
+        "/project/flow",
     ):
         assert token in lowered, token
 
