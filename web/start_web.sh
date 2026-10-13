@@ -47,7 +47,7 @@ if [ "$GSF_HISTORY_READY" -eq 0 ]; then
   python /app/web/fix_v300_creator_hub_clean.py
   python /app/web/test_v300_creator_hub_clean.py /app
   python /app/web/fix_v302_global_live_gamebar.py
-  python /app/web/test_v302_global_live_gamebar.py /app
+  python /app/web/test_v302_global_gamebar.py /app
   python /app/web/fix_v306_home_visual_lock.py
   python /app/web/fix_v303_mobile_hub_compact.py
   python /app/web/test_v303_mobile_hub_compact.py
@@ -78,18 +78,27 @@ python /app/web/test_v316_creator_hub_dashboard_ad.py /app
 python /app/web/test_v319_ai_results_bridge.py /app
 python /app/web/test_v320_ai_mobile_stability.py /app
 python /app/web/test_v322_mobile_hub_live_fill.py /app
-python /app/web/fix_v323_mobile_editor_player_actions.py /app
-python /app/web/test_v323_mobile_editor_player_actions.py /app
-python /app/web/fix_v324_editor_action_placement.py /app/web/editor_2027_component/index.html
-python /app/web/test_v324_editor_action_placement.py /app
-if grep -q 'V360_MOBILE_EDITOR_REFERENCE' /app/web/editor_2027_component/index.html 2>/dev/null; then
-  echo "V325 restart-safe: newer V360 Editor reference already active"
+
+# Restart safety: once the modern V389+ Editor has been materialized in this
+# container, never run the old V323-V326 geometry migrations over it again.
+# Fresh deployments do not have these markers, so the historical migrations
+# still run once in their original order before V360/V389 are applied.
+if grep -Eq 'V389_MOBILE_EDITOR_BOUNDED_RESET|V393_MOBILE_EDITOR_CLEAN_TRANSPORT|V394_MOBILE_EDITOR_FOOTER_RESTORE' /app/web/editor_2027_component/index.html 2>/dev/null; then
+  echo "V323-V326 restart-safe: modern mobile Editor already active"
 else
-  python /app/web/fix_v325_mobile_editor_viewport_fit.py /app/web/editor_2027_component/index.html
-  python /app/web/test_v325_mobile_editor_viewport_fit.py /app
+  python /app/web/fix_v323_mobile_editor_player_actions.py /app
+  python /app/web/test_v323_mobile_editor_player_actions.py /app
+  python /app/web/fix_v324_editor_action_placement.py /app/web/editor_2027_component/index.html
+  python /app/web/test_v324_editor_action_placement.py /app
+  if grep -q 'V360_MOBILE_EDITOR_REFERENCE' /app/web/editor_2027_component/index.html 2>/dev/null; then
+    echo "V325 restart-safe: newer V360 Editor reference already active"
+  else
+    python /app/web/fix_v325_mobile_editor_viewport_fit.py /app/web/editor_2027_component/index.html
+    python /app/web/test_v325_mobile_editor_viewport_fit.py /app
+  fi
+  python /app/web/fix_v326_mobile_editor_home_speed.py /app
+  python /app/web/test_v326_mobile_editor_home_speed.py /app
 fi
-python /app/web/fix_v326_mobile_editor_home_speed.py /app
-python /app/web/test_v326_mobile_editor_home_speed.py /app
 
 # V360: approved mobile Game Editor composition; preserve real controls and fit inside global shell.
 python /app/web/fix_v360_mobile_editor_reference.py /app/web/editor_2027_component/index.html
