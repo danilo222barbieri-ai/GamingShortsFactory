@@ -11,7 +11,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from tools.gsf_claims import Claim, find_conflicts, normalize_paths, validate_claim_dict
+try:
+    from tools.gsf_claims import Claim, find_conflicts, normalize_paths, validate_claim_dict
+except ModuleNotFoundError:
+    # `python tools/gsf_task.py ...` puts tools/ on sys.path rather than the
+    # repository root. Fall back to the sibling module for the documented CLI.
+    from gsf_claims import Claim, find_conflicts, normalize_paths, validate_claim_dict
 
 INDEX_PATH = Path(".gsf/claims/index.json")
 CLAIM_DIR = Path(".gsf/claims")
