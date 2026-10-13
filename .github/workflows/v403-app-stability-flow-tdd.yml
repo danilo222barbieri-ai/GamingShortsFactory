@@ -16,5 +16,54 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: V403 behavioral contract
+      - name: V403 durable flow contract
         run: PYTHONPATH=web python web/test_v403_app_stability_flow.py
+      - name: V403 profile recovery
+        run: PYTHONPATH=web python web/test_v403_profile_recovery.py
+      - name: V403 resume and Editor handoff
+        run: PYTHONPATH=web python web/test_v403_resume_handoff.py
+      - name: V402 Game Brain regression
+        run: PYTHONPATH=web python web/test_v402_game_brain_auto_highlights.py
+      - name: V401 stability regression
+        run: PYTHONPATH=web python web/test_v401_performance_stability.py
+      - name: V400 quality and HiDPI regression
+        run: PYTHONPATH=web python web/test_v400_ai_hidpi.py
+      - name: Compile V403 runtime modules
+        run: >-
+          python -m py_compile
+          web/app_flow_v403.py
+          web/apply_v403_flow.py
+          web/apply_v403_flow_core.py
+          web/fix_v403_profile_recovery.py
+          web/fix_v403_resume_handoff.py
+          web/fix_v403_surface_collisions.py
+          web/project_state_v157.py
+      - name: Boot script owns one V403 migrator
+        run: |
+          test "$(grep -c '^python /app/web/apply_v403_flow.py /app$' web/start_web.sh)" = "1"
+          grep -q 'PYTHONPATH=/app/web python /app/web/test_v403_app_stability_flow.py' web/start_web.sh
+
+  production-image:
+    runs-on: ubuntu-latest
+    needs: v403-contract
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build canonical frontend image
+        run: docker build --progress=plain -t gsf-v403:${{ github.sha }} .
+      - name: Execute V403 final migration inside production image
+        run: |
+          docker run --rm --entrypoint /bin/sh gsf-v403:${{ github.sha }} -c '
+            set -eu
+            python /app/web/apply_v403_flow.py /app
+            PYTHONPATH=/app/web python /app/web/test_v403_app_stability_flow.py
+            PYTHONPATH=/app/web python /app/web/test_v403_profile_recovery.py
+            PYTHONPATH=/app/web python /app/web/test_v403_resume_handoff.py
+            python -m py_compile /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py /app/web/direct_upload_server.py
+            grep -q "V403_APP_STABILITY_FLOW" /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+            grep -q "V403_PROFILE_RECOVERY" /app/web/creator_hub_v156_component/index.html
+            grep -q "V403_PROFILE_RESUME" /app/web/creator_hub_v156_component/index.html
+            grep -q "V403_EDITOR_HANDOFF" /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+            grep -q "V403_MOTORI_RESULTS_RETIRED" /app/web/ai_v221_component/index.html
+            grep -q "V403_SHARE_V396_OVERRIDE" /app/web/share_v156_component/index.html
+            grep -q "gsf_editor_2027_v1086" /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+          '
