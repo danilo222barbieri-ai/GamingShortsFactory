@@ -27,7 +27,22 @@ jobs:
           python -m py_compile web/direct_upload_server.py web/runtime_smoke_v107.py
 
       - name: Build production image
-        run: docker build --progress=plain -t gsf-v397:${{ github.sha }} .
+        run: |
+          set -o pipefail
+          if docker build --progress=plain -t gsf-v397:${{ github.sha }} . 2>&1 | tee /tmp/v397-build.log; then
+            exit 0
+          fi
+          if grep -Eq '429 Too Many Requests|Data limit exceeded' /tmp/v397-build.log \
+             && grep -q 'public.ecr.aws/docker/library/python' /tmp/v397-build.log; then
+            echo 'V397: ECR Python mirror rate-limited; retrying the same official Python base via Docker Hub'
+            cp Dockerfile /tmp/Dockerfile.v397
+            sed -i '1s#^FROM public.ecr.aws/docker/library/python:3.12-slim$#FROM python:3.12-slim#' /tmp/Dockerfile.v397
+            test "$(head -n 1 /tmp/Dockerfile.v397)" = 'FROM python:3.12-slim'
+            docker build --progress=plain -f /tmp/Dockerfile.v397 -t gsf-v397:${{ github.sha }} .
+          else
+            echo 'V397: production image failed for a non-ECR-rate-limit reason; refusing fallback'
+            exit 1
+          fi
 
       - name: Start production image
         run: |
