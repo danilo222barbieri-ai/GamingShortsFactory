@@ -11,13 +11,29 @@ on:
 jobs:
   v402-contract:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: V402 RED/GREEN contract
+      - name: V402 fusion contract
         env:
           PYTHONPATH: web
         run: python web/test_v402_game_brain_auto_highlights.py
+      - name: V400 quality and Editor regression
+        env:
+          PYTHONPATH: web
+        run: python web/test_v400_ai_hidpi.py
+      - name: V401 performance and stability regression
+        env:
+          PYTHONPATH: web
+        run: python web/test_v401_performance_stability.py
+      - name: V402 syntax guard
+        run: |
+          python -m py_compile \
+            web/highlight_fusion_v402.py \
+            web/auto_highlights/engine_v129.py \
+            web/game_brain_v112.py
+      - name: Build V402 worker image
+        run: docker build --progress=plain -f web/Dockerfile.worker -t gsf-worker-v402:${{ github.sha }} .
