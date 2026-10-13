@@ -94,14 +94,16 @@ def patch_home_text(text: str) -> str:
 
 
 def _patch_v158(text: str) -> str:
+    canonical_v343 = 'GSF_GLOBAL_SHELL_V343' in text or '__GSF_GLOBAL_SHELL_V343' in text
+
     if V158_AUTO_PRELOAD in text:
         text = text.replace(V158_AUTO_PRELOAD, V158_NO_PRELOAD, 1)
-    elif V158_NO_PRELOAD not in text:
+    elif V158_NO_PRELOAD not in text and not canonical_v343:
         raise RuntimeError('V370 V158 preload anchor missing')
 
     if V158_LISTENER_OLD in text:
         text = text.replace(V158_LISTENER_OLD, V158_LISTENER_NEW, 1)
-    elif V158_LISTENER_NEW not in text:
+    elif V158_LISTENER_NEW not in text and not canonical_v343:
         raise RuntimeError('V370 V158 listener anchor missing')
     return text
 
@@ -172,7 +174,7 @@ def _write_if_changed(path: Path, patcher) -> bool:
 
 
 def main() -> None:
-    root = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path('/app')
+    root = Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app')
     home = root/'web'/'home_v154_component'/'index.html'
     generator = root/'web'/'apply_v154_structural_home.py'
     v343 = root/'web'/'fix_v343_single_global_shell.py'
@@ -202,5 +204,5 @@ def main() -> None:
     )
 
 
-if __name__ == '__main__':
+if __name__=='__main__':
     main()
