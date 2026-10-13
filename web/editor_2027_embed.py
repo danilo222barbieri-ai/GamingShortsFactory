@@ -39,10 +39,11 @@ def _prepare_v400_component_dir():
 
 
 _COMPONENT_DIR = _prepare_v400_component_dir()
-# One stable component name/path for every clip. Dynamic per-video component
-# folders caused intermittent asset 404s behind Railway/Streamlit.
+# Keep the historical stable Streamlit component identity. V400 is an additive
+# runtime layer, not a new component registration: changing this name breaks
+# the editor asset/session contract and the production build guard.
 _EDITOR_2027_COMPONENT = components.declare_component(
-    "gsf_editor_2027_v400",
+    "gsf_editor_2027_v1086",
     path=str(_COMPONENT_DIR),
 )
 
