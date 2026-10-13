@@ -48,20 +48,25 @@ AI_BLOCK = r'''
 SHARE_BLOCK = r'''
 <style id="v403ShareV396Override">
 /* V403_SHARE_V396_OVERRIDE */
+#share[data-v403-state="pre-render"] #v403CreateShortPre{visibility:visible}
+#share[data-v403-state="ready"] #v403CreateShortPre{visibility:hidden}
 @media(max-width:760px){
   #share.v403PreRender.v396MobileMode>#v396MobilePublishSurface,
-  #share.v403PreRender>#v396MobilePublishSurface{
+  #share.v403PreRender>#v396MobilePublishSurface,
+  #share[data-v403-state="pre-render"]>#v396MobilePublishSurface{
     display:none!important;
     visibility:hidden!important;
     pointer-events:none!important;
   }
   #share.v403PreRender.v396MobileMode>#v403CreateShortPre,
-  #share.v403PreRender>#v403CreateShortPre{
+  #share.v403PreRender>#v403CreateShortPre,
+  #share[data-v403-state="pre-render"]>#v403CreateShortPre{
     display:grid!important;
     visibility:visible!important;
     pointer-events:auto!important;
   }
-  #share.v403Ready.v396MobileMode>#v396MobilePublishSurface{
+  #share.v403Ready.v396MobileMode>#v396MobilePublishSurface,
+  #share[data-v403-state="ready"].v396MobileMode>#v396MobilePublishSurface{
     display:grid!important;
     visibility:visible!important;
     pointer-events:auto!important;
