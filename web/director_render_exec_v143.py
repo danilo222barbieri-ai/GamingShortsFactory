@@ -21,7 +21,9 @@ def _run(cmd,timeout=180):
 
 
 def _tail(has_audio=True):
-    out=["-c:v","libx264","-preset","fast","-crf","14","-pix_fmt","yuv420p","-profile:v","high","-level","4.2","-threads","2"]
+    # V397: AI post-processing keeps the same quality floor as the canonical
+    # final render. Fewer adaptive passes are cheaper than lowering quality.
+    out=["-c:v","libx264","-preset","medium","-crf","14","-pix_fmt","yuv420p","-profile:v","high","-level","4.2","-threads","2"]
     if has_audio: out+=["-c:a","aac","-b:a","192k","-ar","48000","-ac","2"]
     out+=["-movflags","+faststart"]
     return out
@@ -88,35 +90,62 @@ def _smart_finish(src,out):
     return True
 
 
-def execute_director_operations(input_path,output_path,operations,recipe_start=0.0):
-    """Execute V139 operations not already handled by V125/V126/base renderer."""
+def execute_director_operations(input_path,output_path,operations,recipe_start=0.0,render_policy=None):
+    """Execute Director operations with an adaptive quality-first re-encode budget."""
     src=Path(input_path); out=Path(output_path); out.parent.mkdir(parents=True,exist_ok=True)
     work_a=out.with_name(out.stem+".a.tmp.mp4"); work_b=out.with_name(out.stem+".b.tmp.mp4")
     current=src; applied=[]; recipe_start=float(recipe_start or 0.0)
     ops=[dict(x) for x in (operations or []) if isinstance(x,dict)]
+    policy=dict(render_policy or {})
     try:
-        for row in [x for x in ops if x.get("op")=="pattern_interrupt"][:2]:
+        max_ai_reencodes=int(policy.get("max_ai_reencodes") or max(1,len(ops)))
+    except Exception:
+        max_ai_reencodes=max(1,len(ops))
+    max_ai_reencodes=max(0,min(4,max_ai_reencodes))
+
+    # Choose the most valuable operations first, but execute selected rows in
+    # the proven temporal order below. Under pressure a cold open wins because
+    # it affects the first seconds/retention; then one interrupt, then ending.
+    cold=next((x for x in ops if x.get("op")=="cold_open"),None)
+    cover=next((x for x in ops if x.get("op")=="cover"),None)
+    patterns=[x for x in ops if x.get("op")=="pattern_interrupt"][:2]
+    ending=next((x for x in ops if x.get("op")=="smart_ending"),None)
+    priority=[]
+    if cold: priority.append(cold)
+    priority.extend(patterns)
+    if ending: priority.append(ending)
+    allowed_ids={id(x) for x in priority[:max_ai_reencodes]}
+
+    try:
+        for row in patterns:
+            if id(row) not in allowed_ids:
+                continue
             local=max(0.0,_f(row.get("start"))-recipe_start)
             dur=max(.35,_f(row.get("duration"),1.5))
             target=work_a if current!=work_a else work_b
             if _speed_window(current,target,local,local+dur,1.28):
                 current=target; applied.append("pattern_interrupt")
-        cold=next((x for x in ops if x.get("op")=="cold_open"),None)
-        cover=next((x for x in ops if x.get("op")=="cover"),None)
-        if cold:
+        if cold and id(cold) in allowed_ids:
             peak=max(0.0,_f((cover or {}).get("time"),0)-recipe_start)
             if peak<=0:
                 peak=float(probe_media(current).get("duration") or 0)*.62
             target=work_a if current!=work_a else work_b
             if _prepend_cold_open(current,target,_f(cold.get("duration"),.7),peak):
                 current=target; applied.append("cold_open")
-        if any(x.get("op")=="smart_ending" for x in ops):
+        if ending and id(ending) in allowed_ids:
             target=work_a if current!=work_a else work_b
             if _smart_finish(current,target):
                 current=target; applied.append("smart_ending")
         if current.resolve()!=out.resolve():
             shutil.copyfile(current,out)
-        return {"ok":True,"engine":"v143-render-execution","applied":applied,"count":len(applied)}
+        return {
+            "ok":True,
+            "engine":"v397-render-execution",
+            "applied":applied,
+            "count":len(applied),
+            "max_ai_reencodes":max_ai_reencodes,
+            "quality_floor":str(policy.get("quality_floor") or "canonical"),
+        }
     finally:
         for p in (work_a,work_b):
             try:p.unlink(missing_ok=True)
