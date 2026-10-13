@@ -112,6 +112,26 @@ _S3_LOCK=threading.Lock()
 def _bucket_enabled():
     return bool(S3_BUCKET and S3_ACCESS_KEY and S3_SECRET_KEY and S3_ENDPOINT)
 
+def _composite_health(timeout=1.5):
+    streamlit_ready=False
+    try:
+        req=urllib.request.Request(
+            "http://127.0.0.1:8501/_stcore/health",
+            headers={"User-Agent":"GSF-V397-Health/1.0"},
+        )
+        with urllib.request.urlopen(req,timeout=max(0.1,float(timeout))) as response:
+            streamlit_ready=int(getattr(response,"status",0) or 0)==200
+    except Exception:
+        streamlit_ready=False
+    return {
+        "ok":bool(streamlit_ready),
+        "companion":True,
+        "streamlit":streamlit_ready,
+        "bucket":_bucket_enabled(),
+        "worker":bool(WORKER_URL),
+    }
+
+
 def _upload_concurrency_for_user_agent(user_agent):
     ua=str(user_agent or "").lower()
     mobile_markers=("iphone","ipad","ipod","android"," mobile","mobile/")
@@ -990,8 +1010,10 @@ def _editor_media_current(handler,sid):
         print("GSF_EDITOR_MEDIA_REDIRECT",sid,media_url,flush=True)
         _redirect(handler,media_url+"?v="+urllib.parse.quote(stamp,safe=""))
     except Exception as exc:
-        print("GSF_EDITOR_MEDIA_MISSING",sid,repr(str(exc)),flush=True)
-        _json(handler,404,{"ok":False,"error":"editor media unavailable"})
+        print("GSF_EDITOR_MEDIA_NOT_READY",sid,flush=True)
+        handler.send_response(204)
+        handler.send_header("Cache-Control","no-store")
+        handler.end_headers()
 
 
 def _tiktok_user_key(sid):
@@ -3399,6 +3421,16 @@ def _guardian_restore_source_from_marker(sid):
         print("GSF_GUARDIAN_SOURCE_RESTORE_WARN",sid,repr(str(exc))[:220],flush=True)
     return ""
 
+def _creator_social_snapshot(sid,providers=None):
+    providers=dict(providers or {})
+    return {
+        "youtube":bool(_youtube_user_load(sid)),
+        "tiktok":bool(_tiktok_user_load(sid)),
+        "instagram":bool(_instagram_user_load(sid)),
+        "facebook":bool(providers.get("facebook")),
+        "twitch":bool(providers.get("twitch")),
+    }
+
 def _guardian_tick(sid,force=False):
     sid=_safe_id(sid)
     if not sid:
@@ -3485,6 +3517,10 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path=urlparse(self.path)
         clean=path.path.rstrip("/")
+        if clean=="/healthz":
+            health=_composite_health()
+            _json(self,200 if health.get("ok") else 503,health)
+            return
         if clean in ("","/health"):
             _json(self,200,{
                 "ok":True,
@@ -3711,13 +3747,7 @@ class Handler(BaseHTTPRequestHandler):
                 "ready":ready,
                 "final_bytes":final_bytes,
                 "video_url":"/share/final" if ready else "",
-                "social":{
-                    "youtube":bool(_youtube_user_load(sid)),
-                    "tiktok":bool(_tiktok_user_load(sid)),
-                    "instagram":bool(_instagram_user_load(sid)),
-                    "facebook":bool(providers.get("facebook")),
-                    "twitch":bool(providers.get("twitch")),
-                },
+                "social":social_snapshot,
             })
             return
         if clean=="/share/final":
@@ -3764,6 +3794,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             profile=_creator_account_load(sid) or {}
             providers=dict(profile.get("providers") or {}) if isinstance(profile,dict) else {}
+            social_snapshot=_creator_social_snapshot(sid,providers)
             limits=_storage_limits_for_sid(sid)
             all_drafts=_draft_list(sid)
             all_shorts=_short_list(sid)
@@ -3814,7 +3845,7 @@ class Handler(BaseHTTPRequestHandler):
                     "shorts_created":len(all_shorts),
                     "shorts_published":sum(1 for row in all_shorts if (row or {}).get("published")),
                     "drafts":len(all_drafts),
-                    "social":sum(1 for x in (_youtube_user_load(sid),_tiktok_user_load(sid),_instagram_user_load(sid),providers.get("facebook"),providers.get("twitch")) if x),
+                    "social":sum(1 for connected in social_snapshot.values() if connected),
                 },
                 "limits":limits,
                 "usage":{"drafts":len(all_drafts),"shorts":len(all_shorts)},
