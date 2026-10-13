@@ -1,13 +1,13 @@
 {
   "services": {
     "89ae81ec-54d7-4f22-98f4-c88d6361a6a2": {
-      "deployment_id": "d4897ce8-f071-4557-9c36-e376c5c1e032",
+      "deployment_id": "eb0d89ed-9cc1-4719-8682-032cbad307de",
       "environment_id": "5cb868d5-9936-4ff0-be2d-ef42be7fe0ec",
       "health_endpoint": "/healthz",
-      "promotion_commit": "abd4f83c512366d0a24792fa022c88363b260750",
+      "promotion_commit": "c3206dc4fceb60c285bbd2057af45bb7acff2e89",
       "service_id": "89ae81ec-54d7-4f22-98f4-c88d6361a6a2",
       "state": "verified",
-      "verified_at": "2026-10-13T22:04:30Z"
+      "verified_at": "2026-10-13T22:33:12Z"
     },
     "8cd8b98c-43b7-4c3f-bf9a-9c0968286ada": {
       "deployment_id": "cdec6ace-2151-4d23-aa8a-2d597d2589b2",
