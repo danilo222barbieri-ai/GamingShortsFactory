@@ -83,6 +83,11 @@ def patch_worker_source(text):
             raise RuntimeError("V401 worker helper anchor missing")
         source=source.replace(anchor,"\n\n"+HELPERS+anchor,1)
 
+    old_queue='''            with JOBS_LOCK:\n                existing=JOBS.get(job_id)\n                if existing and existing.get("state") in ("downloading","scanning","queued"):\n                    _json(self,202,{"ok":True,"queued":True,"job_id":job_id,"existing":True})\n                    return\n                JOBS[job_id]={"state":"queued","analysis_key":analysis_key}\n'''
+    new_queue='''            with JOBS_LOCK:\n                existing=JOBS.get(job_id)\n                if existing and existing.get("state") in ACTIVE_JOB_STATES:\n                    _json(self,202,{"ok":True,"queued":True,"job_id":job_id,"existing":True})\n                    return\n            _set_job_state(job_id,{"state":"queued","analysis_key":analysis_key})\n'''
+    if old_queue in source:
+        source=source.replace(old_queue,new_queue,1)
+
     source=_replace_job_assignments(source)
 
     old_status='''            with JOBS_LOCK:\n                state=dict(JOBS.get(job_id,{}) or {})\n            if not state and _bucket_enabled() and analysis_key:\n                try:\n                    if _object_exists(analysis_key):\n                        state={"state":"done","cached":True,"analysis_key":analysis_key}\n                except Exception:\n                    pass\n'''
