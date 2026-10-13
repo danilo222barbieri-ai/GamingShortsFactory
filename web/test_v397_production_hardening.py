@@ -8,6 +8,8 @@ companion=(root/'web'/'direct_upload_server.py').read_text(encoding='utf-8')
 start=(root/'web'/'start_web.sh').read_text(encoding='utf-8')
 continuation=(root/'web'/'fix_v373_creator_hub_spacing.py').read_text(encoding='utf-8')
 smoke=(root/'web'/'runtime_smoke_v107.py').read_text(encoding='utf-8')
+gate_path=root/'.github'/'workflows'/'v397-production-gate.yml'
+gate=gate_path.read_text(encoding='utf-8') if gate_path.is_file() else ''
 
 
 def require(text, token, label):
@@ -42,6 +44,16 @@ require(companion,'def _creator_social_snapshot','Creator Hub social snapshot he
 require(companion,'social_snapshot=_creator_social_snapshot(sid,providers)','Creator Hub snapshot single acquisition')
 require(companion,'"social":social_snapshot','Creator Hub snapshot response reuse')
 require(companion,'sum(1 for connected in social_snapshot.values() if connected)','Creator Hub snapshot stats reuse')
+
+# Blocking current production gate: source contract + real image + live container smoke.
+require(gate,'main','production gate targets main')
+require(gate,'v397-structural-hardening','production gate targets hardening branch')
+require(gate,'python web/test_v397_production_hardening.py .','production gate source contract')
+require(gate,'docker build','production gate builds production image')
+require(gate,'/healthz','production gate waits on composite health')
+require(gate,'docker exec','production gate enters built container')
+require(gate,'/app/web/runtime_smoke_v107.py','production gate runs runtime smoke synchronously')
+require(gate,'docker logs','production gate preserves failure evidence')
 
 # Existing production ownership must stay intact in Phase 1.
 require(start,'test_v343_single_global_shell.py','V343 global shell contract retained')
