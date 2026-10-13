@@ -22,6 +22,7 @@ replacement=r'''                        _v143_final_source=_v126_final_source
                                     str(_v143_tmp),
                                     _v143_ops,
                                     recipe_start=float(_v143_recipe.get("start") or 0.0),
+                                    render_policy=dict(_v143_recipe.get("ai_render_policy") or {}),
                                 )
                                 if (
                                     isinstance(_v143_result,dict)
