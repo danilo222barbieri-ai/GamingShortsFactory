@@ -49,7 +49,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build canonical frontend image
-        run: docker build --progress=plain -t gsf-v403:${{ github.sha }} .
+        run: |
+          set -eu
+          IMAGE="gsf-v403:${{ github.sha }}"
+          if docker build --progress=plain -t "$IMAGE" .; then
+            exit 0
+          fi
+          echo "Primary public ECR base unavailable; retrying CI build with the same official Python tag from Docker Hub."
+          sed 's#^FROM public.ecr.aws/docker/library/python:3.12-slim#FROM python:3.12-slim#' Dockerfile > /tmp/Dockerfile.v403
+          docker build --progress=plain -f /tmp/Dockerfile.v403 -t "$IMAGE" .
       - name: Execute V403 final migration inside production image
         run: |
           docker run --rm --entrypoint /bin/sh gsf-v403:${{ github.sha }} -c '
