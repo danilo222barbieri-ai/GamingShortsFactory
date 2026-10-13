@@ -1,13 +1,15 @@
-"""V129: turn an existing worker scan into post-live highlights.
+"""V129/V402: turn an existing worker scan into post-live highlights.
 
-This reuses the production Game Brain; no eager video rendering and no second
-ranking algorithm.
+V402 enriches existing scan evidence, then delegates final ranking/diversity to
+the production Game Brain. There is still no eager video rendering and no
+second competing ranking algorithm.
 """
 from __future__ import annotations
 
 from typing import Any
 
 from game_brain_v112 import rerank_moments
+from highlight_fusion_v402 import fuse_highlight_evidence
 from .models import HighlightCandidate, LiveJobStatus, LiveScanJob
 
 
@@ -20,7 +22,7 @@ def _num(value,default=0.0):
 
 def _event_pool(events,target_duration):
     duration=max(5.0,float(target_duration or 30))
-    lead=min(8.0,max(2.0,duration*.30))
+    default_lead=min(8.0,max(2.0,duration*.30))
     rows=[]
     for event in events or []:
         if not isinstance(event,dict):
@@ -35,12 +37,63 @@ def _event_pool(events,target_duration):
             _num(event.get("semantic_score"),0.0),
             .70*_num(event.get("semantic_confidence"),0.0)
             +.30*_num(event.get("semantic_excitement"),0.0),
+            _num(event.get("fusion_score"),0.0),
         )
         if score<=0:
             continue
+        lead=_num(event.get("lead_seconds"),default_lead)
+        if lead<=0 or lead>duration:
+            lead=default_lead
         rows.append((min(.999,max(.05,score)),max(0.0,t-lead)))
     rows.sort(reverse=True)
     return rows[:40]
+
+
+def _fusion_fallback(events,exc):
+    reason=(type(exc).__name__+": "+str(exc)).replace("\n"," ").replace("\r"," ")[:180]
+    return list(events or []),{
+        "engine":"highlight-fusion-v402",
+        "version":"v402",
+        "fallback":True,
+        "reason":reason,
+        "raw_event_count":len(events or []),
+        "fused_count":len(events or []),
+        "deduped_count":0,
+        "invalid_event_count":0,
+        "ignored_visual_count":0,
+        "ignored_audio_count":0,
+        "signal_family_counts":{},
+    }
+
+
+def _nearest_fused_event(events,target_time):
+    best=None
+    for event in events or []:
+        if not isinstance(event,dict) or str(event.get("kind") or "").upper()=="SILENCE":
+            continue
+        t=_num(event.get("peak_time"),_num(event.get("time"),-9999.0))
+        dist=abs(t-_num(target_time,t))
+        if best is None or dist<best[0]:
+            best=(dist,event)
+    return best[1] if best else {}
+
+
+def _attach_fusion_to_selected(brain,events,clip_duration):
+    if not isinstance(brain,dict):
+        return brain
+    selected=list(brain.get("selected") or [])
+    duration=max(5.0,float(clip_duration or 30))
+    for row in selected:
+        if not isinstance(row,dict):
+            continue
+        target=_num(row.get("event_time"),_num(row.get("start"),0.0)+duration*.5)
+        event=_nearest_fused_event(events,target)
+        row["fusion_reason"]=str(event.get("fusion_reason") or "")
+        row["fusion_signals"]=list(event.get("fusion_signals") or [])
+        row["fusion_score"]=round(_num(event.get("fusion_score"),0.0),6)
+        row["fusion_confidence"]=round(_num(event.get("fusion_confidence"),0.0),6)
+    brain["selected"]=selected
+    return brain
 
 
 def analysis_to_candidates(
@@ -53,13 +106,29 @@ def analysis_to_candidates(
 ):
     payload=dict(analysis or {})
     scan=dict(payload.get("scan") or payload)
-    events=list(scan.get("event_map_v108") or [])
+    raw_events=list(scan.get("event_map_v108") or [])
     diagnostics=(
         scan.get("diagnostics")
         or scan.get("candidate_diagnostics")
         or scan.get("rank_diagnostics")
         or {}
     )
+    visual_observations=scan.get("visual_observations") or payload.get("visual_observations") or []
+    audio_observations=scan.get("audio_observations") or payload.get("audio_observations") or []
+    try:
+        events,fusion_meta=fuse_highlight_evidence(
+            raw_events,
+            diagnostics=diagnostics,
+            visual_observations=visual_observations,
+            audio_observations=audio_observations,
+            target_duration=target_duration,
+            genre=genre,
+        )
+        if not isinstance(events,list) or not isinstance(fusion_meta,dict):
+            raise TypeError("invalid fusion result")
+    except Exception as exc:
+        events,fusion_meta=_fusion_fallback(raw_events,exc)
+
     pool=_event_pool(events,target_duration)
     if not pool:
         return [],{
@@ -67,6 +136,9 @@ def analysis_to_candidates(
             "selected":[],
             "selected_count":0,
             "reason":"no-events",
+            "fusion":fusion_meta,
+            "event_count":len(raw_events),
+            "pool_size":0,
         }
 
     chosen,brain=rerank_moments(
@@ -78,6 +150,7 @@ def analysis_to_candidates(
         genre=str(genre or "Auto"),
         events=events,
     )
+    brain=_attach_fusion_to_selected(brain,events,target_duration)
     meta_rows=list((brain or {}).get("selected") or [])
     candidates=[]
     for index,chosen_row in enumerate(chosen):
@@ -100,7 +173,8 @@ def analysis_to_candidates(
     return candidates,{
         "engine":"auto-highlights-v129",
         "game_brain":brain,
-        "event_count":len(events),
+        "fusion":fusion_meta,
+        "event_count":len(raw_events),
         "pool_size":len(pool),
         "selected_count":len(candidates),
     }
