@@ -88,10 +88,27 @@ class RollbackPolicyTests(unittest.TestCase):
         self.assertEqual(decision.action, "notify")
         self.assertIsNone(decision.target_deployment_id)
 
+    def test_corrupt_known_good_fails_closed(self):
+        corrupt = {
+            "version": 1,
+            "services": {"svc": {"service_id": "svc", "deployment_id": "A"}},
+        }
+        decision = should_rollback(snapshot("FAILED"), incidents(), corrupt)
+        self.assertEqual(decision.action, "notify")
+        self.assertIsNone(decision.target_deployment_id)
+        self.assertIn("invalid", decision.reason.lower())
+
     def test_duplicate_incident_never_redeploys_twice(self):
         key = incident_key("svc", "B")
         index = incidents({key: {"attempt_count": 1, "status": "rollback_attempted"}})
         self.assertNotEqual(should_rollback(snapshot("FAILED"), index, known_good()).action, "rollback")
+
+    def test_corrupt_incident_index_fails_closed(self):
+        corrupt = {"version": 1, "incidents": {"svc:B": {"attempt_count": "bad"}}}
+        decision = should_rollback(snapshot("FAILED"), corrupt, known_good())
+        self.assertEqual(decision.action, "notify")
+        self.assertIsNone(decision.target_deployment_id)
+        self.assertIn("invalid", decision.reason.lower())
 
     def test_failed_recovery_escalates(self):
         current = snapshot("FAILED")
