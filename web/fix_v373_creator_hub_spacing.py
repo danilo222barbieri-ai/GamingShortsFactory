@@ -18,5 +18,11 @@ def main()->None:
  before=path.read_text(encoding='utf-8');after=patch_text(before);path.write_text(after,encoding='utf-8');print('V373 Creator Hub header breath + drafts cleanup applied changed=',before!=after,flush=True)
  run('fix_v374_creator_hub_spacing_live.py','test_v374_creator_hub_spacing_live.py',path)
  ai=Path('/app/web/ai_v221_component/index.html');run('fix_v375_ai_header_breath.py','test_v375_ai_header_breath.py',ai)
- app=Path('/app');run('fix_v389_mobile_editor_bounded_reset.py','test_v389_mobile_editor_bounded_reset.py',app)
+ app=Path('/app');here=Path(__file__).resolve().parent
+ fix389=here/'fix_v389_mobile_editor_bounded_reset.py';clean390=here/'fix_v390_mobile_editor_owner_cleanup.py';test389=here/'test_v389_mobile_editor_bounded_reset.py'
+ for f in (fix389,clean390,test389):
+  if not f.is_file():raise RuntimeError(f.name+' continuation missing')
+ subprocess.run([sys.executable,str(fix389),str(app)],check=True)
+ subprocess.run([sys.executable,str(clean390),str(app)],check=True)
+ subprocess.run([sys.executable,str(test389),str(app)],check=True)
 if __name__=='__main__':main()
