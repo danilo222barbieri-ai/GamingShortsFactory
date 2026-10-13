@@ -1,0 +1,23 @@
+name: V402 Game Brain Auto Highlights TDD
+
+on:
+  push:
+    branches:
+      - v402-game-brain-auto-highlights-2
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  v402-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: V402 RED/GREEN contract
+        env:
+          PYTHONPATH: web
+        run: python web/test_v402_game_brain_auto_highlights.py
