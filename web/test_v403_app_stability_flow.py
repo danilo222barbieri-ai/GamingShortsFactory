@@ -147,10 +147,12 @@ def test_dedicated_moments_surface_contract():
 def test_server_nginx_authoritative_flow_contract():
     server=patch_server_text((ROOT/"direct_upload_server.py").read_text(encoding="utf-8"))
     nginx=patch_nginx_text((ROOT/"nginx.conf.template").read_text(encoding="utf-8"))
-    for token in ('if clean=="/project/flow":','_v403_transition(','project_flow_v403.json','V403_PROJECT_FLOW'):
+    for token in ('if clean=="/project/flow":','_v403_transition(','_v403_reconcile_snapshot(','project_flow_v403.json','V403_PROJECT_FLOW'):
         assert token in server,token
     for token in ('location = /project/flow','location /moments-v403/','moments_v403_component'):
         assert token in nginx,token
+    block=nginx.split('location /moments-v403/',1)[1].split('location = /project/flow',1)[0]
+    assert 'gsf_mobile_client' not in block
 
 
 def test_parent_reconciliation_never_starts_jobs():
@@ -162,9 +164,11 @@ def test_parent_reconciliation_never_starts_jobs():
 
 def test_create_short_has_pre_render_ready_and_mobile_v396_override():
     html=runtime_share().lower()
-    for token in ('data-v403-state="pre-render"','data-v403-state="ready"','crea short','salva bozza','scegli un altro momento','download','/project/flow','v396mobilepublishsurface','v403_share_v396_override'):
+    for token in ("pre-render","setattribute('data-v403-state','pre-render')",'data-v403-state="ready"','crea short','modifica nel game editor','salva bozza','scegli un altro momento','download','/project/flow','v396mobilepublishsurface','v403_share_v396_override'):
         assert token in html,token
     assert '#share.v403prerender.v396mobilemode>#v396mobilepublishsurface' in html
+    refresh=html.split('async function refresh()',1)[1].split('function poll()',1)[0]
+    assert 'render_started' not in refresh
 
 
 def test_snapshot_is_metadata_only_and_bounded():
