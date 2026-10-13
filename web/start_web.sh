@@ -197,6 +197,16 @@ python /app/web/fix_v373_creator_hub_spacing.py /app/web/creator_hub_v156_compon
 python /app/web/test_v373_creator_hub_spacing.py
 grep -q 'V373_CREATOR_HUB_HEADER_BREATH' /app/web/creator_hub_v156_component/index.html
 
+# V403: apply the durable state/flow redesign only after every historical
+# runtime compatibility gate has completed, then verify the post-migration app.
+python /app/web/apply_v403_flow.py /app
+PYTHONPATH=/app/web python /app/web/test_v403_app_stability_flow.py
+python -m py_compile /app/web/app_flow_v403.py /app/web/apply_v403_flow.py /app/web/project_state_v157.py /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py /app/web/direct_upload_server.py
+grep -q 'V403_APP_STABILITY_FLOW' /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+grep -q 'v403MotoriOnly' /app/web/ai_v221_component/index.html
+grep -q 'v403UnifiedCreateShortRuntime' /app/web/share_v156_component/index.html
+grep -q 'location /moments-v403/' /app/web/nginx.conf.template
+
 python - <<'PY'
 import os,re
 from pathlib import Path
