@@ -7,6 +7,7 @@ nginx=(root/'web'/'nginx.conf.template').read_text(encoding='utf-8')
 companion=(root/'web'/'direct_upload_server.py').read_text(encoding='utf-8')
 start=(root/'web'/'start_web.sh').read_text(encoding='utf-8')
 continuation=(root/'web'/'fix_v373_creator_hub_spacing.py').read_text(encoding='utf-8')
+smoke=(root/'web'/'runtime_smoke_v107.py').read_text(encoding='utf-8')
 
 
 def require(text, token, label):
@@ -22,6 +23,13 @@ def forbid(text, token, label):
 require(nginx,'location = /healthz','composite nginx health route')
 require(companion,'def _composite_health','composite companion health helper')
 require(companion,'"/healthz"','companion health route')
+require(companion,'127.0.0.1:8501/_stcore/health','Streamlit health probe')
+require(companion,'"companion":True','companion health signal')
+require(companion,'"streamlit":streamlit_ready','Streamlit health signal')
+require(companion,'503','unhealthy composite status')
+require(smoke,'request("/healthz"','runtime smoke composite health request')
+require(smoke,'health.get("companion")','runtime smoke companion assertion')
+require(smoke,'health.get("streamlit")','runtime smoke Streamlit assertion')
 forbid(start,'python /app/web/runtime_smoke_v107.py &','runtime smoke must not be detached')
 require(companion,'GSF_EDITOR_MEDIA_NOT_READY','expected empty Editor media state')
 require(companion,'def _creator_social_snapshot','Creator Hub social snapshot helper')
