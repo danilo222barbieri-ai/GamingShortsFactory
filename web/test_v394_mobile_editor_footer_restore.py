@@ -19,7 +19,6 @@ def must(text,token,label):
     if token not in text: raise AssertionError(label+': '+token)
 
 for token,label in [
-    ('V394_MOBILE_EDITOR_FOOTER_RESTORE','V394 marker'),
     ('v394EditorFooterRestore','parent footer restore style'),
     ('#gsf-global-footer','global footer target'),
     ('#v393EditorBottomMask','old V393 mask target'),
@@ -28,6 +27,7 @@ for token,label in [
 ]: must(s,token,label)
 
 for token,label in [
+    ('V394_MOBILE_EDITOR_FOOTER_RESTORE','V394 marker'),
     ('v394MobileEditorFooterGap','Editor spacing style'),
     ('#ng27 .v393ChangeShort','Change Short target'),
     ('margin:5px auto 9px!important','Change Short bottom breathing room'),
