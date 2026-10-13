@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 
 from cinematic_render_v125 import probe_media
+from quality_supreme_v399 import encoder_args, quality_profile
 from web.render_gate_v293 import render_slot as _gsf_render_slot_v293
 
 
@@ -20,11 +21,18 @@ def _run(cmd,timeout=180):
         raise RuntimeError((p.stderr or p.stdout or "ffmpeg failed")[-1200:])
 
 
-def _tail(has_audio=True):
-    out=["-c:v","libx264","-preset","fast","-crf","14","-pix_fmt","yuv420p","-profile:v","high","-level","4.2","-threads","2"]
-    if has_audio: out+=["-c:a","aac","-b:a","192k","-ar","48000","-ac","2"]
-    out+=["-movflags","+faststart"]
-    return out
+def _signals(meta, *, motion=0.0, detail=0.0, action_peak=0.0):
+    return {
+        "motion": motion,
+        "detail": detail,
+        "action_peak": action_peak,
+        "source_width": int(meta.get("width") or 0),
+        "source_height": int(meta.get("height") or 0),
+    }
+
+
+def _tail(has_audio=True, signals=None):
+    return encoder_args(quality_profile(signals), has_audio=has_audio)
 
 
 def _speed_window(src,out,start,end,speed):
@@ -49,7 +57,7 @@ def _speed_window(src,out,start,end,speed):
         chunks.append("".join(ins)+f"concat=n={len(parts)}:v=1:a=0[vout]")
     cmd=["/usr/bin/ffmpeg","-hide_banner","-loglevel","error","-y","-i",str(src),"-filter_complex",";".join(chunks),"-map","[vout]"]
     if has_audio: cmd+=["-map","[aout]"]
-    cmd+=_tail(has_audio)+[str(out)]
+    cmd+=_tail(has_audio,_signals(meta,motion=.96,detail=.82,action_peak=.90))+[str(out)]
     _run(cmd)
     return True
 
@@ -70,7 +78,7 @@ def _prepend_cold_open(src,out,duration,peak):
                "[0:v]setpts=PTS-STARTPTS[mv];[cv][mv]concat=n=2:v=1:a=0[vout]")
     cmd=["/usr/bin/ffmpeg","-hide_banner","-loglevel","error","-y","-i",str(src),"-filter_complex",graph,"-map","[vout]"]
     if has_audio: cmd+=["-map","[aout]"]
-    cmd+=_tail(has_audio)+[str(out)]
+    cmd+=_tail(has_audio,_signals(meta,motion=.80,detail=.75,action_peak=.95))+[str(out)]
     _run(cmd)
     return True
 
@@ -83,7 +91,7 @@ def _smart_finish(src,out):
     vf=f"fade=t=out:st={start:.4f}:d={fade:.4f}"
     cmd=["/usr/bin/ffmpeg","-hide_banner","-loglevel","error","-y","-i",str(src),"-vf",vf]
     if has_audio: cmd+=["-af",f"afade=t=out:st={start:.4f}:d={fade:.4f}"]
-    cmd+=_tail(has_audio)+[str(out)]
+    cmd+=_tail(has_audio,_signals(meta,motion=.35,detail=.60,action_peak=.40))+[str(out)]
     _run(cmd)
     return True
 
