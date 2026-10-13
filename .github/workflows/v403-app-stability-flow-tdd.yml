@@ -1,0 +1,20 @@
+name: V403 App Stability Flow TDD
+
+on:
+  push:
+    branches:
+      - v403-app-stability-flow-redesign
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  v403-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: V403 behavioral contract
+        run: PYTHONPATH=web python web/test_v403_app_stability_flow.py
