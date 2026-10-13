@@ -27,22 +27,37 @@ def strip_tag(text:str,tag:str,sid:str)->str:
          r'["\'])[^>]*>.*?</'+tag+r'>\s*')
     return re.sub(pat,'\n',text,flags=re.S|re.I)
 
+def _strip_v323_inline(text:str)->str:
+    done=re.compile(r'root\.querySelector\(\s*["\']#doneBtn["\']\s*\)\.onclick')
+    # Normal form: marker survives until this cleanup pass.
+    marked=re.search(r'/\*\s*V323 MOBILE EDITOR PLAYER ACTIONS\s*\*/',text,re.I)
+    if marked:
+        end=done.search(text,marked.start())
+        if not end:raise RuntimeError('V390 V323 done-handler boundary missing')
+        text=text[:marked.start()]+text[end.start():]
+
+    # Later editor migrations can partially rewrite/remove the marker/start of the
+    # block while leaving v323PlaceFullscreen (and its resize handler) alive.
+    # Remove the entire remaining V323 semantic span up to the original Done handler.
+    if 'v323PlaceFullscreen' in text:
+        needles=(
+            'const v323CreateShort','const v323SaveDraft','const v323FullscreenHome',
+            'const v323FullscreenNext','function v323PlaceFullscreen','v323PlaceFullscreen'
+        )
+        positions=[text.find(n) for n in needles if text.find(n)>=0]
+        if not positions:raise RuntimeError('V390 cannot locate residual V323 runtime start')
+        start=min(positions)
+        start=text.rfind('\n',0,start)+1
+        end=done.search(text,start)
+        if not end:raise RuntimeError('V390 residual V323 done-handler boundary missing')
+        text=text[:start]+text[end.start():]
+    return text
+
 def clean(text:str)->str:
     for sid in STYLE_IDS:text=strip_tag(text,'style',sid)
     for sid in SCRIPT_IDS:text=strip_tag(text,'script',sid)
     text=re.sub(r'\s*<div\b(?=[^>]*\bid\s*=\s*["\']v323EditorActions["\'])[^>]*>.*?</div>\s*','\n',text,count=1,flags=re.S|re.I)
-    # V323 is injected directly into the base Editor script, so it has no script id.
-    # Remove it by its stable marker and the original Done-handler boundary instead
-    # of depending on its resize line, which later migrations can rewrite.
-    text=re.sub(
-        r'\s*/\*\s*V323 MOBILE EDITOR PLAYER ACTIONS\s*\*/.*?(?=\s*root\.querySelector\(["\']#doneBtn["\']\)\.onclick)',
-        '\n',text,count=1,flags=re.S|re.I)
-    # Recovery for a previously partially-cleaned V323 block where the marker was
-    # removed but the function survived.
-    if 'v323PlaceFullscreen' in text:
-        text=re.sub(
-            r'\s*const\s+v323CreateShort\s*=.*?(?=\s*root\.querySelector\(["\']#doneBtn["\']\)\.onclick)',
-            '\n',text,count=1,flags=re.S|re.I)
+    text=_strip_v323_inline(text)
     return text
 
 def main()->None:
