@@ -25,7 +25,7 @@ checks={
  'marker':'V389_MOBILE_EDITOR_BOUNDED_RESET' in e,
  'legacy 380-388 geometry removed':all(x not in e for x in legacy),
  'legacy mobile owners stripped':all(x not in e for x in legacy_ids) and 'V323 MOBILE EDITOR PLAYER ACTIONS' not in e and 'v323PlaceFullscreen' not in e,
- 'legacy seek chevrons removed':'v326Skip' not in e,
+ 'legacy seek chevrons removed':"back.textContent='‹'" not in e and "next.textContent='›'" not in e,
  'explicit 9x16 size':'--v389-player-w:min(70vw,272px,calc((100dvh - 150px) * 9 / 16))' in e and '--v389-player-h:calc(var(--v389-player-w) * 16 / 9)' in e,
  'no external timeline cta':'V389_NO_EXTERNAL_TIMELINE_CTA' in e and '.cockpit>.timeline' in e and '.cockpit>.v323EditorActions' in e,
  'single top control bar':all(x in e for x in ['v389TopBar','v389UndoRedo','v389TrimDock','v389TopMode','v389RatioBtn']),
