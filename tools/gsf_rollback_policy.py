@@ -112,9 +112,13 @@ def should_rollback(
     if state == "healthy_sleeping":
         return RollbackDecision("none", "worker sleeping by configuration", service_id, deployment_id)
 
-    records = incident_index.get("incidents", {}) if isinstance(incident_index, dict) else {}
-    existing = records.get(incident_key(service_id, deployment_id), {}) if isinstance(records, dict) else {}
-    if isinstance(existing, dict) and int(existing.get("attempt_count", 0) or 0) >= 1:
+    try:
+        valid_incidents = validate_incident_index(incident_index)
+    except (TypeError, ValueError):
+        return RollbackDecision("notify", "invalid incident state; refusing automatic rollback", service_id, deployment_id)
+
+    existing = valid_incidents["incidents"].get(incident_key(service_id, deployment_id), {})
+    if int(existing.get("attempt_count", 0) or 0) >= 1:
         return RollbackDecision("notify", "automatic rollback already attempted", service_id, deployment_id)
 
     if state == "ambiguous":
@@ -122,8 +126,12 @@ def should_rollback(
     if state != "hard_failure":
         return RollbackDecision("none", "service is not in a hard failure state", service_id, deployment_id)
 
-    services = known_good.get("services", {}) if isinstance(known_good, dict) else {}
-    target = services.get(service_id) if isinstance(services, dict) else None
+    try:
+        valid_known_good = validate_known_good(known_good)
+    except (TypeError, ValueError):
+        return RollbackDecision("notify", "invalid known-good state; refusing automatic rollback", service_id, deployment_id)
+
+    target = valid_known_good["services"].get(service_id)
     target_id = str(target.get("deployment_id")) if isinstance(target, dict) and target.get("deployment_id") else None
     if not target_id:
         return RollbackDecision("notify", "no verified known-good rollback target", service_id, deployment_id)
