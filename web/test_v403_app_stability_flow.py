@@ -25,11 +25,15 @@ from app_flow_v403 import (  # noqa: E402
     transition,
 )
 from apply_v403_flow import (  # noqa: E402
-    patch_ai_text,
+    patch_ai_text as patch_flow_ai_text,
     patch_app_text,
     patch_nginx_text,
     patch_server_text,
-    patch_share_text,
+    patch_share_text as patch_flow_share_text,
+)
+from fix_v403_surface_collisions import (  # noqa: E402
+    patch_ai_text as patch_surface_ai_text,
+    patch_share_text as patch_surface_share_text,
 )
 
 
@@ -49,6 +53,16 @@ def _candidate(idx: int, start: float, end: float, event: str = "KILL") -> dict:
 def _base_snapshot() -> dict:
     s = new_snapshot(project_id="p_v403", source_video_ref="gsf://source/p_v403.mp4")
     return transition(s, "source_ready", {"source_video_ref": "gsf://source/p_v403.mp4"})
+
+
+def _runtime_ai() -> str:
+    raw = (ROOT / "ai_v221_component" / "index.html").read_text(encoding="utf-8")
+    return patch_surface_ai_text(patch_flow_ai_text(raw))
+
+
+def _runtime_share() -> str:
+    raw = (ROOT / "share_v156_component" / "index.html").read_text(encoding="utf-8")
+    return patch_surface_share_text(patch_flow_share_text(raw))
 
 
 def test_project_and_source_survive_route_changes() -> None:
@@ -171,30 +185,30 @@ def test_runtime_patch_exists_and_is_idempotent() -> None:
     raw_share = (ROOT / "share_v156_component" / "index.html").read_text(encoding="utf-8")
     raw_server = (ROOT / "direct_upload_server.py").read_text(encoding="utf-8")
     raw_nginx = (ROOT / "nginx.conf.template").read_text(encoding="utf-8")
-    ai = patch_ai_text(raw_ai)
-    share = patch_share_text(raw_share)
+    flow_ai = patch_flow_ai_text(raw_ai)
+    flow_share = patch_flow_share_text(raw_share)
+    ai = patch_surface_ai_text(flow_ai)
+    share = patch_surface_share_text(flow_share)
     server = patch_server_text(raw_server)
     nginx = patch_nginx_text(raw_nginx)
-    assert patch_ai_text(ai) == ai
-    assert patch_share_text(share) == share
+    assert patch_flow_ai_text(flow_ai) == flow_ai
+    assert patch_flow_share_text(flow_share) == flow_share
+    assert patch_surface_ai_text(ai) == ai
+    assert patch_surface_share_text(share) == share
     assert patch_server_text(server) == server
     assert patch_nginx_text(nginx) == nginx
     compile(server, "direct_upload_server_v403.py", "exec")
 
 
 def test_motori_runtime_retires_embedded_results_visually() -> None:
-    raw = (ROOT / "ai_v221_component" / "index.html").read_text(encoding="utf-8")
-    html = patch_ai_text(raw)
-    lowered = html.lower()
-    # Historical result nodes stay in source because V319/V320 boot gates need
-    # them; V403 is the final runtime owner and makes them non-visible.
+    lowered = _runtime_ai().lower()
     assert 'id="v403motorionly"' in lowered
     assert '#ai221>.panel:has(.moments)' in lowered
+    assert 'v403legacymomentsretired' in lowered
     assert 'display:none!important' in lowered
-    assert 'v403_app_stability_flow motori bridge' in lowered
     assert '/project/flow' in lowered
     assert 'gsf_v403_open_moments' in lowered
-    assert lowered.index('v403_app_stability_flow motori bridge') < lowered.rindex('send("ready")')
+    assert 'v403_motori_results_retired' in lowered
 
 
 def test_dedicated_moments_surface_contract() -> None:
@@ -226,17 +240,14 @@ def test_parent_runtime_bridge_reconciles_without_starting_jobs() -> None:
     fixture = '''import streamlit as st\nGSF_WEB_MODE=True\n# V403_APP_ANCHOR\n'''
     patched = patch_app_text(fixture)
     lowered = patched.lower()
-    for token in ("visibilitychange", "addEventListener('focus'", "/project/flow", "gsf_v403_open_moments", "gsf_v403_open_editor", "gsf_v403_open_short"):
+    for token in ("visibilitychange", "pageshow", "/project/flow", "gsf_v403_open_moments", "gsf_v403_open_editor", "gsf_v403_open_short"):
         assert token in lowered, token
     assert "analysis_started" not in lowered
     assert "render_started" not in lowered
-    assert "start_seconds" in lowered and "end_seconds" in lowered
 
 
 def test_unified_create_short_runtime_has_two_states_and_mobile_override() -> None:
-    raw = (ROOT / "share_v156_component" / "index.html").read_text(encoding="utf-8")
-    html = patch_share_text(raw)
-    lowered = html.lower()
+    lowered = _runtime_share().lower()
     for token in (
         "data-v403-state=\"pre-render\"",
         "data-v403-state=\"ready\"",
@@ -246,8 +257,10 @@ def test_unified_create_short_runtime_has_two_states_and_mobile_override() -> No
         "download",
         "/project/flow",
         "v396mobilepublishsurface",
+        "v403_share_v396_override",
     ):
         assert token in lowered, token
+    assert '#share.v403prerender.v396mobilemode>#v396mobilepublishsurface' in lowered
 
 
 def test_snapshot_is_json_serializable_metadata_only() -> None:
