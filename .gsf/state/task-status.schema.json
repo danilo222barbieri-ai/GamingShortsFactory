@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GSF Task Status",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "claim_id",
+    "branch",
+    "scope",
+    "state",
+    "paths",
+    "commit",
+    "pr",
+    "tests",
+    "gate",
+    "railway",
+    "terminal_status",
+    "updated_at"
+  ],
+  "properties": {
+    "claim_id": {"type": "string"},
+    "branch": {"type": "string"},
+    "scope": {"type": "string"},
+    "state": {"enum": ["active", "handoff", "completed", "abandoned"]},
+    "paths": {"type": "array", "items": {"type": "string"}},
+    "commit": {"type": ["string", "null"]},
+    "pr": {"type": ["integer", "string", "null"]},
+    "tests": {"type": "object"},
+    "gate": {},
+    "railway": {},
+    "terminal_status": {"enum": ["LIVE", "BLOCKED", "ROLLED_BACK", "HANDOFF_REQUIRED", null]},
+    "updated_at": {"type": "string"}
+  }
+}

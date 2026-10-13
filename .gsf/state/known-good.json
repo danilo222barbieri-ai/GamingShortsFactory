@@ -1,0 +1,23 @@
+{
+  "services": {
+    "89ae81ec-54d7-4f22-98f4-c88d6361a6a2": {
+      "deployment_id": "d4897ce8-f071-4557-9c36-e376c5c1e032",
+      "environment_id": "5cb868d5-9936-4ff0-be2d-ef42be7fe0ec",
+      "health_endpoint": "/healthz",
+      "promotion_commit": "abd4f83c512366d0a24792fa022c88363b260750",
+      "service_id": "89ae81ec-54d7-4f22-98f4-c88d6361a6a2",
+      "state": "verified",
+      "verified_at": "2026-10-13T22:04:30Z"
+    },
+    "8cd8b98c-43b7-4c3f-bf9a-9c0968286ada": {
+      "deployment_id": "cdec6ace-2151-4d23-aa8a-2d597d2589b2",
+      "environment_id": "5cb868d5-9936-4ff0-be2d-ef42be7fe0ec",
+      "health_endpoint": "/health",
+      "promotion_commit": "1192e00b32c975d0296ffef718fd8baab50785ef",
+      "service_id": "8cd8b98c-43b7-4c3f-bf9a-9c0968286ada",
+      "state": "verified",
+      "verified_at": "2026-10-13T22:04:30Z"
+    }
+  },
+  "version": 1
+}
