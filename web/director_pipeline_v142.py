@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ai_monument_v397 import build_render_policy
 from creator_learning_v138 import choose_ab, learn, load_profile, save_profile
 from director_orchestrator_v136 import build_director_evidence
 from long_form_director_v141 import build_long_form, compile_long_form_operations
@@ -220,7 +221,16 @@ def apply_pipeline_to_recipe(recipe,pipeline):
         out["ai_duplicate_guard"]=bool(_d(p.get("content_memory")).get("duplicate"))
     if p.get("content_memory_record"):
         out["ai_content_memory_record"]=_d(p.get("content_memory_record"))
-    out["ai_render_operations"]=_l(render.get("operations"))
+    _ops=_l(render.get("operations"))
+    out["ai_render_operations"]=_ops
+    # V397: every worker gets an explicit quality-first AI budget. A caller may
+    # provide live pressure in the recipe; otherwise the safe normal policy is
+    # used and execution remains backward compatible.
+    try:
+        _load=float(out.get("worker_load_ratio") or out.get("ai_worker_load_ratio") or 0.0)
+    except Exception:
+        _load=0.0
+    out["ai_render_policy"]=build_render_policy(_load,_ops)
     out["ai_ab_strategy"]=_d(p.get("ab")).get("winner")
     out["ai_creator_style"]=_d(p.get("creator_profile"))
     vision=_d(p.get("vision"))
