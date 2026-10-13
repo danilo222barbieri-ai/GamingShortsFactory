@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 
 
-ENGINE_VERSION="v124-quality-control"
+ENGINE_VERSION="v397-quality-control"
 
 
 def _num(value,default=0.0):
@@ -43,6 +43,42 @@ def _parse_rate(value):
         return float(raw)
     except Exception:
         return 0.0
+
+
+def evaluate_media_facts(facts):
+    """Pure canonical-quality evaluation used by final QC and AI remediation."""
+    facts=dict(facts or {})
+    issues=[]
+    warnings=[]
+    width=int(_num(facts.get("width"),0))
+    height=int(_num(facts.get("height"),0))
+    fps=_num(facts.get("fps"),0.0)
+    vcodec=str(facts.get("video_codec") or "").lower()
+    pix=str(facts.get("pixel_format") or "").lower()
+    profile=str(facts.get("profile") or "").lower()
+    has_audio=bool(facts.get("has_audio"))
+    acodec=str(facts.get("audio_codec") or "").lower()
+    audio_rate=int(_num(facts.get("audio_rate"),0))
+    audio_channels=int(_num(facts.get("audio_channels"),0))
+
+    if width and height and (width!=1080 or height!=1920):
+        issues.append("canonical_frame_mismatch")
+    if fps and fps<59.0:
+        warnings.append("gaming_fps_below_target")
+    if vcodec and vcodec!="h264":
+        warnings.append("video_codec_noncanonical")
+    if pix and pix!="yuv420p":
+        warnings.append("pixel_format_noncanonical")
+    if profile and profile not in {"high","high 10","high 4:2:2","high 4:4:4 predictive"}:
+        warnings.append("video_profile_noncanonical")
+    if has_audio:
+        if acodec and acodec!="aac":
+            warnings.append("audio_codec_noncanonical")
+        if audio_rate and audio_rate!=48000:
+            warnings.append("audio_rate_noncanonical")
+        if audio_channels and audio_channels!=2:
+            warnings.append("audio_channels_noncanonical")
+    return {"issues":issues,"warnings":warnings}
 
 
 def _black_detect(path,duration):
@@ -141,7 +177,11 @@ def inspect_final_video(path):
         "duration":round(duration,3),
         "fps":round(fps,3),
         "video_codec":vcodec,
+        "profile":str(video.get("profile") or ""),
+        "pixel_format":str(video.get("pix_fmt") or ""),
         "audio_codec":acodec,
+        "audio_rate":int(_num(audio.get("sample_rate"),0)) if audio else 0,
+        "audio_channels":int(_num(audio.get("channels"),0)) if audio else 0,
         "has_audio":bool(audio),
         "is_vertical":bool(height>width),
     }
@@ -165,6 +205,10 @@ def inspect_final_video(path):
     if not audio:
         warnings.append("audio_missing")
 
+    canonical=evaluate_media_facts(facts)
+    issues.extend(canonical["issues"])
+    warnings.extend(canonical["warnings"])
+
     black=_black_detect(source,duration)
     facts.update(black)
     if black.get("black_ratio",0.0)>.14:
@@ -181,8 +225,8 @@ def inspect_final_video(path):
     if mean_db is not None and mean_db<-42:
         warnings.append("audio_very_low")
 
-    # Explainable score, intentionally conservative. Warnings reduce score but
-    # never block publishing unless the file is genuinely broken.
+    issues=list(dict.fromkeys(issues))
+    warnings=list(dict.fromkeys(warnings))
     score=100
     score-=35*len(issues)
     score-=7*len(warnings)
