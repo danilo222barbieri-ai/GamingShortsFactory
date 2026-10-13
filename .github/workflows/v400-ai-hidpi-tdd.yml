@@ -17,9 +17,14 @@ jobs:
       - name: V400 AI + Hi-DPI contract
         run: |
           PYTHONPATH=web python web/test_v400_ai_hidpi.py
-      - name: V400 Python syntax
+      - name: V399 regression contract
+        run: |
+          PYTHONPATH=web python web/test_v399_quality_supreme.py
+      - name: Render/editor Python syntax
         run: |
           python -m py_compile \
             web/ai_hidpi_v400.py \
             web/editor_2027_embed.py \
-            web/quality_supreme_v399.py
+            web/quality_supreme_v399.py \
+            web/director_render_exec_v143.py \
+            web/privacy_cleanup_v149.py
