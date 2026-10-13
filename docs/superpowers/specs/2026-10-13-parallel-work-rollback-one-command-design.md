@@ -10,32 +10,32 @@ Make Gaming Shorts Factory safe and easy to operate even when many independent C
 
 Success means:
 
-- each technical chat/agent gets an isolated branch/worktree;
-- concurrent tasks can see which areas/files are already claimed;
+- each technical chat/agent gets an isolated branch/worktree for product code;
+- all chats immediately see which areas/files are already claimed;
 - overlapping work is blocked or explicitly handed off instead of silently colliding;
 - runtime changes still pass the existing GSF Production Gate before Railway promotion;
 - a newly deployed unhealthy release can be automatically rolled back to the last known-good deployment;
-- the user can issue a single natural-language request and the system carries the change through branch creation, testing, merge/promotion, deploy verification, rollback if needed, and status handoff;
-- `PROJECT_STATUS.md` remains the human-readable canonical project memory, without becoming a high-conflict lock file for every active task.
+- the user can issue a single natural-language request and the system carries the change through branch creation, testing, integration, deploy verification, rollback if needed, and status handoff;
+- `PROJECT_STATUS.md` remains the human-readable canonical project memory without becoming the live locking primitive.
 
 ## 2. Non-goals
 
 This change does not:
 
-- allow normal ChatGPT chats to communicate directly with each other;
-- bypass review/testing or deploy directly from feature branches to production;
-- make `main` a shared scratch branch;
+- make normal ChatGPT chats communicate directly with each other;
+- bypass review/testing or deploy feature branches directly to production;
+- use `main` as a product-code scratch branch;
 - automatically roll back on every transient upstream/provider error;
 - treat an idle Railway worker in `SLEEPING` state as unhealthy;
-- introduce a full blue/green platform or new external orchestrator unless later needed.
+- introduce a full blue/green platform or a new external orchestrator unless later needed.
 
 ## 3. Existing production baseline
 
-The current repository already has:
+The repository already has:
 
 - `AGENTS.md` with mandatory project rules;
 - `PROJECT_STATUS.md` as the cross-chat source of truth;
-- a permanent-behavior workflow currently stored as `.github/workflows/v397-production-gate.yml` and named `GSF Production Gate`;
+- `.github/workflows/v397-production-gate.yml`, whose workflow name is `GSF Production Gate`;
 - marker-based Railway deploy triggers:
   - `.railway/frontend-deploy.txt`
   - `.railway/worker-deploy.txt`
@@ -54,13 +54,12 @@ User request
 Task bootstrap
    ├─ read AGENTS.md + PROJECT_STATUS.md
    ├─ refresh main
-   ├─ derive task slug + ownership scope
-   ├─ check claims
-   └─ create chat/<task>-<unique> branch
+   ├─ atomically acquire ownership claim in .gsf/
+   └─ create chat/<task>-<unique> branch/worktree
           ↓
-     isolated work
+     isolated product work
           ↓
-     tests on branch
+       branch tests
           ↓
      PR / integration
           ↓
@@ -68,13 +67,13 @@ Task bootstrap
           ↓
  GSF Production Gate
    ├─ FAIL → no marker → production unchanged
-   └─ PASS → marker commit
+   └─ PASS → Railway marker
                    ↓
                Railway
                    ↓
             health verification
-               ├─ healthy → LIVE + handoff
-               └─ unhealthy → automatic rollback guard
+               ├─ healthy → known-good + handoff
+               └─ unhealthy → rollback guard
                                   ↓
                        previous known-good build
                                   ↓
@@ -95,15 +94,20 @@ Examples:
 - `chat/home-desktop-91bd`
 - `chat/ai-highlights-3c12`
 
-The unique suffix prevents branch collisions when two users/chats choose similar task names.
+The suffix prevents branch-name collisions.
 
-### 5.2 Claims directory
+### 5.2 Global claim registry
 
-Active ownership is stored outside `PROJECT_STATUS.md` under:
+Product code never uses `main` as a shared scratch branch. Coordination metadata is the explicit exception.
 
-`.gsf/claims/<claim-id>.json`
+Active ownership is globally visible on `main` under `.gsf/` and is ignored by runtime CI/deploy triggers.
 
-Each claim contains only non-secret coordination data:
+Use:
+
+- `.gsf/claims/index.json` — atomic active-claim registry;
+- `.gsf/claims/<claim-id>.json` — detailed per-task claim/history.
+
+Example claim:
 
 ```json
 {
@@ -117,24 +121,35 @@ Each claim contains only non-secret coordination data:
 }
 ```
 
-Claims are deliberately separate files so two chats can register independent work without repeatedly rewriting the same status document.
+No secrets or personal data are stored in claims.
 
-### 5.3 Conflict rule
+### 5.3 Atomic claim acquisition
 
-Before editing, a task compares its intended paths/scope with active claims.
+Claim creation must be fail-closed and race-safe.
 
-If there is no overlap, it proceeds.
+Algorithm:
 
-If there is overlap, it must do one of:
+1. fetch latest `main` and `.gsf/claims/index.json` including its blob/version SHA;
+2. compare requested scope/path patterns with all active claims;
+3. if overlap exists, stop with the conflicting claim(s);
+4. if clear, append the new claim and update the index using optimistic concurrency / current-file SHA;
+5. if the update loses a race because another chat updated the index first, re-read the latest index and repeat conflict detection;
+6. only after the claim is acquired may product-code editing begin.
+
+This prevents the classic race where two chats both check “free” and then both start editing the same files.
+
+### 5.4 Conflict rule
+
+If ownership overlaps, a task must do one of:
 
 1. narrow its scope to non-overlapping files;
 2. wait for the current owner to finish;
-3. use an explicit handoff recorded in the claim/status;
+3. use an explicit handoff recorded in the claim;
 4. serialize the work by merging/rebasing the first task before the second continues.
 
-Automatic merge is forbidden when active ownership overlap remains unresolved.
+Automatic integration is forbidden while conflicting active ownership remains unresolved.
 
-### 5.4 Claim lifecycle
+### 5.5 Claim lifecycle
 
 States:
 
@@ -143,13 +158,11 @@ States:
 - `completed`
 - `abandoned`
 
-A task creates a claim during bootstrap and marks/removes it only after the task has a factual handoff state.
-
-Stale claims must not be silently deleted. A stale-claim cleanup must verify branch/PR activity before changing state.
+Stale claims are never silently deleted. Cleanup must verify branch/PR activity and preserve an audit trail.
 
 ## 6. PROJECT_STATUS.md role
 
-`PROJECT_STATUS.md` remains the human-readable canonical project memory, but it is not the primary live lock table.
+`PROJECT_STATUS.md` remains the human-readable canonical project memory, but not the atomic lock table.
 
 It records:
 
@@ -160,13 +173,24 @@ It records:
 - high-level active work summary;
 - completed handoffs and unresolved issues.
 
-Detailed active ownership lives under `.gsf/claims/`.
+Detailed live ownership is read from `.gsf/claims/index.json`.
 
-At task completion, the agent updates `PROJECT_STATUS.md` with factual evidence and either completes or removes its claim.
+At task completion/handoff, the agent updates `PROJECT_STATUS.md` using the latest version and then releases/completes its claim.
 
-## 7. Task bootstrap command
+## 7. Coordination-only main commits
 
-A repository helper will implement deterministic setup for one-command work.
+Direct `main` writes are allowed only for non-runtime coordination metadata such as:
+
+- `.gsf/claims/**`
+- `.gsf/state/**`
+- `.gsf/incidents/**`
+- factual `PROJECT_STATUS.md` handoff updates when required.
+
+These paths must be explicitly excluded from GSF Production Gate triggers and Railway runtime promotion logic.
+
+This exception does not permit product source, tests, dependencies, Dockerfiles, or runtime configuration to be edited directly on `main` by parallel chats.
+
+## 8. Task bootstrap helper
 
 Proposed entry point:
 
@@ -174,19 +198,17 @@ Proposed entry point:
 
 Responsibilities:
 
-1. confirm repo cleanliness or isolate using a new worktree;
-2. refresh `main`;
-3. read `AGENTS.md` and `PROJECT_STATUS.md`;
-4. load active claims;
-5. detect ownership conflicts;
-6. generate a unique branch name;
-7. create branch/worktree;
-8. create the claim file;
-9. print the exact working context for the agent.
+1. refresh `main`;
+2. read `AGENTS.md` and `PROJECT_STATUS.md`;
+3. load global active claims;
+4. derive unique task/branch identity;
+5. atomically acquire a claim;
+6. create dedicated branch/worktree from current `main`;
+7. print exact working context for the agent.
 
-The helper must fail closed if ownership cannot be determined safely.
+If ownership cannot be acquired safely, it exits non-zero and does not create an editable work context.
 
-## 8. Task completion command
+## 9. Task completion helper
 
 Proposed entry point:
 
@@ -194,188 +216,189 @@ Proposed entry point:
 
 Responsibilities:
 
-1. verify tests actually passed;
-2. record commit/PR identifiers;
-3. update `PROJECT_STATUS.md` using the latest copy;
-4. mark claim `completed` or `handoff`;
-5. never claim LIVE/SUCCESS unless fresh evidence exists.
+1. verify required test evidence is present;
+2. record commit/PR/integration identifiers;
+3. fetch latest `PROJECT_STATUS.md` and preserve concurrent handoffs;
+4. update factual status;
+5. mark the claim `completed` or `handoff` atomically;
+6. never claim LIVE/SUCCESS without fresh evidence.
 
-## 9. One-command pipeline behavior
+## 10. One-command pipeline behavior
 
-The user-facing intent is:
+User intent can be as simple as:
 
 > “Sistema il Game Editor mobile.”
 
-The technical pipeline becomes:
+The technical pipeline is:
 
 1. classify task scope;
-2. bootstrap isolated branch/worktree and claim;
-3. inspect relevant code and tests;
-4. implement using the repository development/test discipline;
-5. run branch-level tests;
-6. create/update PR or integrate using the approved repository path;
-7. merge to `main` only when overlap is clear and required checks pass;
-8. let `GSF Production Gate` verify runtime-impacting `main` changes;
-9. if gate passes, marker-based Railway promotion occurs;
-10. observe Railway deployment and health;
-11. if healthy, record LIVE evidence;
-12. if deployment/runtime is unhealthy, invoke rollback policy;
-13. verify rollback recovery;
-14. update `PROJECT_STATUS.md` and release/complete the claim.
+2. atomically claim ownership;
+3. create isolated branch/worktree;
+4. inspect relevant code/tests;
+5. implement using repository development discipline;
+6. run branch-level tests;
+7. create/update PR or approved integration path;
+8. merge to `main` only when ownership and checks are clear;
+9. let `GSF Production Gate` verify runtime-impacting `main` changes;
+10. if gate passes, marker-based Railway promotion occurs;
+11. observe Railway deployment and health;
+12. if healthy, record the deployment as known-good;
+13. if clearly unhealthy, invoke rollback policy;
+14. verify rollback recovery;
+15. update `PROJECT_STATUS.md` and release/complete the claim.
 
-A normal ChatGPT session does not have to remain open after the GitHub-side work has been handed off to CI/Railway/monitoring.
+A normal ChatGPT session does not need to stay open once work has been handed off to GitHub CI/Railway/monitoring. Before that handoff, closing a normal chat is not treated as guaranteed background execution.
 
-## 10. Automatic rollback policy
+## 11. Automatic rollback policy
 
-### 10.1 Rollback triggers
+### 11.1 Rollback triggers
 
-Automatic rollback is allowed for clear deployment/runtime failure signals associated with the newly promoted release:
+Automatic rollback is allowed only for clear failure signals associated with the newly promoted release:
 
 - Railway deployment status `FAILED`;
 - Railway deployment status `CRASHED`;
 - OOM-killed deployment;
-- frontend fails `/healthz` after deployment and does not recover within the defined verification window;
-- a newly live deployment transitions into a clear service failure shortly after promotion.
+- frontend `/healthz` remains unhealthy beyond the verification window;
+- a newly live deployment enters a clear service failure shortly after promotion.
 
-The worker state `SLEEPING` is explicitly healthy when sleep mode is enabled.
+Worker `SLEEPING` is explicitly healthy when sleep mode is enabled.
 
-### 10.2 No automatic rollback for ambiguous/transient signals
+### 11.2 Notify-only conditions
 
-The first implementation must not auto-rollback solely because of:
+Do not auto-rollback solely because of:
 
 - isolated HTTP 5xx responses;
 - Gemini/provider/API transient errors;
-- temporary external network failure;
-- a single user request error when service health is otherwise good.
+- temporary external-network failure;
+- a single failed user request while service health remains good.
 
-Those conditions notify the Guardian but require evidence before rollback policy expands.
+These produce Guardian notification/diagnosis, not automatic rollback.
 
-### 10.3 Known-good target
+### 11.3 Known-good state
 
-Before each promotion, store enough metadata to identify the currently active known-good deployment per service.
+Store machine-readable verified deployment state under `.gsf/state/known-good.json`.
 
-For each service track:
+Per service track:
 
 - Railway service ID;
 - environment ID;
-- current known-good deployment ID;
+- known-good deployment ID;
 - source/promotion commit;
-- verification timestamp.
+- verification timestamp;
+- health endpoint/state.
 
-A new deployment is promoted to `known-good` only after successful Railway status and health verification.
+A new deployment becomes known-good only after Railway reports a healthy settled state and the applicable health verification passes.
 
-### 10.4 Rollback action
+### 11.4 Rollback action
 
-If the new release meets a rollback trigger:
+If a new release meets a rollback trigger:
 
-1. identify the immediately previous known-good deployment for that service;
-2. execute Railway rollback/redeployment to that known-good build;
-3. verify deployment status;
-4. verify health (`/healthz` frontend, `/health` worker when awake/applicable);
-5. record the incident and restored deployment;
-6. notify the user with failing deployment, restored deployment, and likely cause when available.
+1. identify the immediately previous verified known-good deployment for that service;
+2. redeploy/rollback that exact Railway deployment build;
+3. verify resulting deployment state;
+4. verify health (`/healthz` frontend; worker `/health` when awake/applicable);
+5. record an incident;
+6. update known-good/current state only after recovery is proven;
+7. notify the user with failing deployment, restored deployment, and diagnosis when available.
 
-### 10.5 Loop protection
+### 11.5 Loop protection
 
-Rollback automation must include:
+Rollback automation must have:
 
 - at most one automatic rollback attempt per failing deployment ID;
-- no rollback of a rollback without explicit new evidence/user action;
-- stop-and-notify if the known-good recovery also fails;
-- persistent incident marker/state so hourly Guardian runs do not repeat the same rollback endlessly.
+- no automatic rollback-of-a-rollback loop;
+- stop-and-notify if known-good recovery also fails;
+- persistent incident state so later Guardian runs do not repeat the same action.
 
-## 11. Rollback controller placement
+## 12. Rollback controller placement
 
-Recommended first implementation: keep detection/orchestration in the existing GSF Guardian/ChatGPT automation layer because it already has authenticated GitHub and Railway access and can inspect live deployment objects without storing a new Railway secret in the repository.
+Preferred first implementation: privileged rollback remains in the existing authenticated ChatGPT/Guardian connector layer rather than placing a Railway production credential inside the GitHub repository.
 
-Repository code should provide machine-readable state/metadata and clear policy, while privileged Railway rollback remains outside GitHub Actions unless a later requirement justifies introducing a dedicated Railway token/secret.
+Repository state/policy remains machine-readable under `.gsf/`; Railway actions use the already connected Railway capability when the monitoring run has action access.
 
-This minimizes secret sprawl and reduces the chance that a compromised CI workflow gains unnecessary production rollback credentials.
+If scheduled Guardian execution is ever unable to perform privileged Railway actions, the fallback architecture is a dedicated minimal Railway rollback controller with a separately provisioned scoped credential. That fallback is not introduced unless actually necessary.
 
-## 12. Production Gate changes
+This avoids secret sprawl in the first implementation.
 
-The existing gate remains the only runtime promotion path.
+## 13. Production Gate changes
 
-Required changes are limited to making the pipeline aware of the coordination system where useful, for example:
+The current gate remains the only runtime promotion path.
 
-- optionally validate claim metadata format when claim files change;
-- ensure task/coordination documentation itself does not trigger Railway runtime promotion;
-- preserve existing stale-main protection before marker promotion;
-- do not auto-merge conflicting feature branches.
+Required changes:
 
-The gate must continue to fail closed.
+- ignore coordination-only `.gsf/**` changes;
+- ignore design/status-only paths that are explicitly non-runtime;
+- preserve stale-main protection before marker promotion;
+- validate coordination schema in a separate lightweight check where useful, without causing Railway deployment;
+- never auto-integrate conflicting feature branches.
 
-## 13. Merge policy
+The runtime gate must continue to fail closed.
 
-Preferred policy:
+## 14. Merge policy
 
-- feature work happens on dedicated branches;
-- PRs/checks are used for integration;
-- runtime-changing merges to `main` trigger Production Gate;
-- marker commits remain the only Railway trigger;
-- documentation/coordination-only commits should not create unnecessary Railway deploys.
+- Product work happens on dedicated branches/worktrees.
+- PRs/checks are preferred for integration.
+- Runtime-changing `main` merges trigger GSF Production Gate.
+- Marker commits remain the only Railway runtime trigger.
+- Coordination-only commits never trigger Railway.
+- If GitHub plan/repository permissions prevent server-side branch protection, repository tooling and `AGENTS.md` enforce the workflow behaviorally.
 
-If GitHub plan/repository permissions prevent enforcing branch protection server-side, the repository tooling and agent rules still enforce the same workflow behaviorally.
+## 15. Observability and incident record
 
-## 14. Observability and incident record
-
-Add a machine-readable coordination directory such as:
-
-`.gsf/`
-
-with subdirectories:
+Use:
 
 - `.gsf/claims/`
 - `.gsf/incidents/`
 - `.gsf/state/`
 
-No secrets are stored there.
-
-Rollback incidents should record:
+Rollback incidents record:
 
 - failing deployment ID;
 - trigger/reason;
 - previous known-good deployment ID;
+- rollback attempt count;
 - rollback result;
 - timestamps;
-- verification result.
+- final verification result.
 
-These files support cross-chat continuity and prevent repeated rollback loops.
+No secrets are stored in these files.
 
-## 15. Safety invariants
-
-The implementation must preserve all of the following:
+## 16. Safety invariants
 
 1. Untested runtime code does not deploy to Railway.
 2. A failing Production Gate does not update Railway markers.
-3. One chat does not silently overwrite another chat's active ownership.
-4. `main` is not used as a shared scratch branch.
-5. A rollback target must be a previously verified known-good deployment.
-6. `SLEEPING` worker is not treated as a failure by itself.
-7. Automatic rollback executes at most once for the same failing deployment.
-8. If rollback recovery fails, automation stops and notifies instead of looping.
-9. No Railway/GitHub secrets are committed to the repository.
-10. LIVE/SUCCESS claims always require fresh evidence.
+3. Claim acquisition is atomic before product editing begins.
+4. One chat cannot silently acquire overlapping ownership after another chat has claimed it.
+5. Product code is never written directly to shared `main` by parallel tasks.
+6. Coordination metadata may update `main` but never triggers runtime deployment.
+7. A rollback target must be a previously verified known-good deployment.
+8. `SLEEPING` worker is not a failure by itself.
+9. Automatic rollback executes at most once for the same failing deployment.
+10. If rollback recovery fails, automation stops and notifies instead of looping.
+11. No Railway/GitHub secrets are committed to the repository.
+12. LIVE/SUCCESS claims require fresh evidence.
 
-## 16. Testing strategy
+## 17. Testing strategy
 
 ### Coordination tests
 
 - branch-name uniqueness;
-- claim creation and schema validation;
-- conflict detection for exact and pattern-overlapping paths;
+- claim schema validation;
+- atomic claim acquisition;
+- simulated concurrent claim race: one wins, loser re-reads and detects conflict;
+- exact-path and glob-pattern overlap detection;
 - non-overlapping claims allowed concurrently;
-- stale/handoff/completed claim handling;
-- status update preserves other tasks' data.
+- handoff/completed/abandoned handling;
+- status update preserves other tasks' handoffs.
 
 ### Pipeline tests
 
 - runtime merge with passing gate writes correct marker;
 - failing gate writes no marker;
-- documentation/claim-only commit produces no Railway runtime marker;
-- stale main commit cannot promote after a newer main exists.
+- `.gsf/**`/documentation-only commit causes no runtime gate/deploy;
+- stale tested `main` cannot promote after a newer runtime commit exists.
 
-### Rollback policy tests
+### Rollback-policy tests
 
 Use deterministic fake deployment snapshots/state tests for:
 
@@ -383,49 +406,55 @@ Use deterministic fake deployment snapshots/state tests for:
 - FAILED → rollback eligible;
 - CRASHED → rollback eligible;
 - OOM → rollback eligible;
+- frontend sustained unhealthy → rollback eligible;
 - worker SLEEPING → healthy/no rollback;
 - ambiguous 5xx → notify-only/no rollback;
-- repeated Guardian check for same failing deployment → no second rollback;
-- rollback target failure → stop and escalate.
+- repeated check for same failing deployment → no second rollback;
+- recovery deployment failure → stop and escalate.
 
-A live destructive rollback test is not required against healthy production. Production verification should use non-destructive status inspection plus the next naturally failing deployment if/when one occurs, or an explicitly approved controlled test environment later.
+A destructive rollback test is not run against healthy production. Live rollback verification waits for a real eligible failure or an explicitly approved controlled test environment.
 
-## 17. Delivery phases
+## 18. Delivery phases
 
 ### Phase A — parallel task isolation
 
-- `.gsf/claims/` schema and helpers;
-- branch/worktree bootstrap/finish tooling;
-- AGENTS/PROJECT_STATUS integration;
-- conflict tests.
+- `.gsf/claims/index.json` and claim schema;
+- atomic claim helper;
+- branch/worktree bootstrap and finish tooling;
+- `AGENTS.md` / `PROJECT_STATUS.md` integration;
+- conflict/race tests;
+- Production Gate ignores coordination-only commits.
 
 ### Phase B — rollback state and policy
 
-- known-good state model;
-- incident model;
+- `.gsf/state/known-good.json`;
+- incident schema;
 - rollback decision tests;
-- Guardian instructions updated to perform one guarded rollback for hard failures.
+- Guardian updated for one guarded rollback on hard failures;
+- recovery verification and duplicate-attempt suppression.
 
 ### Phase C — one-command orchestration
 
-- compose bootstrap → implementation handoff → tests → integration → gate → deploy verification → rollback/handoff into one documented workflow;
-- keep privileged deployment actions behind existing authenticated connectors/automation.
+- compose bootstrap → isolated work → tests → integration → gate → deploy verification → rollback/handoff into one documented agent workflow;
+- keep privileged production actions behind existing authenticated connectors/automation.
 
-## 18. Acceptance criteria
+## 19. Acceptance criteria
 
 The system is accepted when:
 
-- two non-overlapping chat tasks can run concurrently on distinct branches with distinct claims;
-- an overlapping task is blocked with a clear ownership conflict;
-- a completed task leaves a factual handoff in project status without overwriting another task;
-- a runtime change cannot trigger Railway before Production Gate passes;
-- the known-good Railway deployment is identifiable at all times;
-- hard failure policy can choose exactly one previous known-good rollback target and suppress duplicate rollback attempts;
+- two non-overlapping chat tasks can concurrently hold distinct claims and branches;
+- two overlapping tasks racing for ownership cannot both win;
+- an overlapping task receives a clear conflict/handoff path;
+- a completed task leaves factual status without overwriting another task's handoff;
+- coordination-only commits do not trigger Railway;
+- runtime code cannot trigger Railway before Production Gate passes;
+- the known-good Railway deployment is identifiable per service;
+- hard-failure policy selects exactly one previous known-good target and suppresses duplicate rollback attempts;
 - worker sleep does not trigger an incident;
-- the user can give a single task request and the documented automation path has a deterministic next step from start through production verification.
+- one natural-language task has a deterministic automation path from start through production verification.
 
-## 19. Recommended implementation choice
+## 20. Recommended implementation
 
-Use repository-native branch/claim tooling plus the existing Production Gate and marker deploys, while keeping privileged Railway rollback in the existing Guardian/connector layer.
+Use repository-native atomic claim metadata + isolated feature branches, preserve the existing Production Gate/marker deployment model, and keep privileged Railway rollback in the existing authenticated Guardian/connector layer unless a dedicated controller proves necessary.
 
-This delivers the safety and convenience goals with the smallest new operational surface, avoids adding production secrets to CI, and builds directly on infrastructure that is already proven live.
+This gives the requested multi-chat safety, automatic recovery, and one-command experience with the smallest additional production surface.
