@@ -27,8 +27,8 @@ def build_render_policy(load_ratio: float = 0.0, ai_operations=None) -> dict:
     """Return a quality-first render policy for AI-directed Shorts.
 
     Worker pressure is allowed to reduce optional creative re-encodes, never the
-    canonical delivery target. This keeps the expensive part adaptive without
-    silently turning a 1080x1920/60 Short into a lower-quality export.
+    canonical delivery target. The budget is a ceiling, not the current number
+    of effects, so a light recipe does not accidentally weaken later decisions.
     """
     load = _ratio(load_ratio)
     op_count = len([x for x in (ai_operations or []) if isinstance(x, dict)])
@@ -41,8 +41,6 @@ def build_render_policy(load_ratio: float = 0.0, ai_operations=None) -> dict:
     else:
         max_reencodes = 3
         pressure = "normal"
-    if op_count:
-        max_reencodes = min(max_reencodes, max(1, op_count))
     return {
         "engine": "v397-ai-render-policy",
         "target": dict(CANONICAL_TARGET),
@@ -51,6 +49,7 @@ def build_render_policy(load_ratio: float = 0.0, ai_operations=None) -> dict:
         "preset": "medium",
         "single_pass_preferred": True,
         "max_ai_reencodes": int(max_reencodes),
+        "planned_ai_operations": int(op_count),
         "worker_pressure": pressure,
         "load_ratio": round(load, 3),
         "drop_quality_to_save_time": False,
