@@ -54,9 +54,16 @@ patched_transformed=fix_mod._patch_v160(transformed_v160)
 ok('src="about:blank"' in patched_transformed and 'data-loaded="0"' in patched_transformed,'V370 handles transformed V160 iframe attribute order')
 ok("if(window.__GSF_GLOBAL_SHELL_V343)return;" in patched_transformed,'V370 mutes transformed V160 listener')
 
-# Regression: V343 may already have retired V160 completely in a generated runtime.
+# Regression: V343 may already have retired V158/V160 completely in a generated runtime.
 canonical_only='# GSF_GLOBAL_SHELL_V343\nconst canonicalShell=true;\n'
+ok(fix_mod._patch_v158(canonical_only)==canonical_only,'V370 accepts runtime where V343 already retired V158')
 ok(fix_mod._patch_v160(canonical_only)==canonical_only,'V370 accepts runtime where V343 already retired V160')
+missing_v158_owner_failed=False
+try:
+    fix_mod._patch_v158('const noCanonicalOwner=true;\n')
+except RuntimeError:
+    missing_v158_owner_failed=True
+ok(missing_v158_owner_failed,'V370 still rejects missing V158 when V343 is absent')
 missing_owner_failed=False
 try:
     fix_mod._patch_v160('const noCanonicalOwner=true;\n')
