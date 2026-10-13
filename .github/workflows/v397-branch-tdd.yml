@@ -13,5 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: V397 structural contract
         run: python web/test_v397_production_hardening.py .
+      - name: V397 AI monument + quality contract
+        run: python web/test_v397_ai_monument.py
       - name: Compile hardened Python surfaces
-        run: python -m py_compile web/direct_upload_server.py web/runtime_smoke_v107.py
+        run: python -m py_compile web/direct_upload_server.py web/runtime_smoke_v107.py web/ai_monument_v397.py
