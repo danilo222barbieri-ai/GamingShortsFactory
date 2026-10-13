@@ -73,6 +73,36 @@ jobs:
           docker exec gsf-v397 python /app/web/test_v395_mobile_editor_atomic_skin.py /app
           docker exec gsf-v397 python /app/web/test_v396_mobile_share_publish_surface.py /app
 
+      - name: Capture structural diagnostics
+        if: failure()
+        run: |
+          set +e
+          mkdir -p /tmp/v397-diagnostics
+          docker ps -a > /tmp/v397-diagnostics/docker-ps.txt 2>&1
+          docker inspect gsf-v397 > /tmp/v397-diagnostics/docker-inspect.json 2>&1
+          docker top gsf-v397 > /tmp/v397-diagnostics/docker-top.txt 2>&1
+          docker logs --timestamps gsf-v397 > /tmp/v397-diagnostics/docker.log 2>&1
+          cp /tmp/v397-health.json /tmp/v397-diagnostics/last-health.json 2>/dev/null || true
+          if [ "$(docker inspect -f '{{.State.Running}}' gsf-v397 2>/dev/null)" = "true" ]; then
+            docker exec gsf-v397 sh -lc 'cat /proc/net/tcp; echo ---TCP6---; cat /proc/net/tcp6' > /tmp/v397-diagnostics/container-tcp.txt 2>&1 || true
+            docker exec gsf-v397 python -c 'import requests; urls=("http://127.0.0.1:8501/","http://127.0.0.1:8502/healthz","http://127.0.0.1:8080/healthz"); [(lambda u: print(u, requests.get(u, timeout=2).status_code, requests.get(u, timeout=2).text[:1000]))(u) for u in urls]' > /tmp/v397-diagnostics/internal-health.txt 2>&1 || true
+            docker cp gsf-v397:/tmp/gsf-runtime /tmp/v397-diagnostics/runtime >/dev/null 2>&1 || true
+          fi
+          find /tmp/v397-diagnostics -maxdepth 3 -type f -print -exec sh -c 'echo "--- $1 ---"; tail -n 120 "$1"' _ {} \; || true
+
+      - name: Upload structural diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v397-structural-diagnostics
+          path: /tmp/v397-diagnostics
+          if-no-files-found: warn
+          retention-days: 3
+
       - name: Container logs on failure
         if: failure()
         run: docker logs gsf-v397 || true
+
+      - name: Cleanup structural container
+        if: always()
+        run: docker rm -f gsf-v397 || true
