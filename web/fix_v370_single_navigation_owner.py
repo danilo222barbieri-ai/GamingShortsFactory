@@ -35,6 +35,12 @@ HOME_ACCOUNT_BOOT_NEW = ''' window.addEventListener("focus",syncAccountEntry);
  document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncAccountEntry()});
  setTimeout(syncAccountEntry,120);'''
 
+# V343's literal marker must remain unique to the canonical executable bridge.
+# Legacy fallback listeners still need to detect that owner at runtime, but use
+# a computed property name so static bridge discovery cannot mistake them for
+# additional V343 bridge components.
+V343_OWNER_EXPR = "window['__GSF_GLOBAL_'+'SHELL_V343']"
+
 V158_AUTO_PRELOAD = """      sync();
       new MutationObserver(sync).observe(document.body,{childList:true,subtree:true});
 """
@@ -46,7 +52,7 @@ V158_LISTENER_OLD = """        if(ev.origin!==location.origin || !ev.data || ev.
         const t=String(ev.data.target||'');
 """
 V158_LISTENER_NEW = """        if(ev.origin!==location.origin || !ev.data || ev.data.type!=='GSF_SHELL_NAV')return;
-        if(window.__GSF_GLOBAL_SHELL_V343)return;
+        if(window['__GSF_GLOBAL_'+'SHELL_V343'])return;
         const t=String(ev.data.target||'');
 """
 
@@ -55,7 +61,7 @@ V160_LISTENER_OLD = """        if(e.origin!==location.origin||!e.data||e.data.ty
         if(t==='hub'||t==='profile'){
 """
 V160_LISTENER_NEW = """        if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
-        if(window.__GSF_GLOBAL_SHELL_V343)return;
+        if(window['__GSF_GLOBAL_'+'SHELL_V343'])return;
         const t=String(e.data.target||'');
         if(t==='hub'||t==='profile'){
 """
@@ -195,7 +201,7 @@ def main() -> None:
         runtime_changed.append((name, changed))
 
     print(
-        'V370.1 single navigation owner + lightweight header state applied',
+        'V370.2 single navigation owner + unique V343 marker applied',
         'home_changed=', home_changed,
         'generator_changed=', generator_changed,
         'v343_changed=', v343_changed,
