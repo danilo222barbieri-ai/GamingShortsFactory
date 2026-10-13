@@ -40,6 +40,12 @@ def patch_app_text(text:str)->str:
       const clickRender='''
     out,n=pattern.subn(replacement,text,count=1)
     if n!=1:raise RuntimeError('V403 Editor handoff anchor missing')
+    # Durable route restoration must reopen Editor too, not only Moments/Short.
+    old="else if(route==='create_short')open('gsf-short-overlay-v403','/share-v156/?v=403','Crea Short');P.postMessage"
+    new="else if(route==='create_short')open('gsf-short-overlay-v403','/share-v156/?v=403','Crea Short');else if(route==='editor')await openEditor();P.postMessage"
+    if old not in out:
+        raise RuntimeError('V403 reconcile route anchor missing')
+    out=out.replace(old,new,1)
     compile(out,str(APP),'exec')
     return out
 
