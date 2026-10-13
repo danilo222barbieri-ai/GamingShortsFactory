@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+:root{--ink:#102d62;--muted:#7084a0;--blue:#55aff5;--line:rgba(130,174,211,.28);--glass:rgba(255,255,255,.88);--green:#56cf9d}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;color:var(--ink);font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button{font:inherit}.page{height:100%;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:18px max(12px,env(safe-area-inset-right)) calc(26px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));background:radial-gradient(circle at 8% 4%,rgba(102,199,255,.20),transparent 27%),radial-gradient(circle at 92% 8%,rgba(103,230,191,.14),transparent 28%),linear-gradient(180deg,#fdffff,#f5fbff)}
+.header{max-width:1160px;margin:0 auto 14px;display:flex;align-items:flex-end;justify-content:space-between;gap:14px}.eyebrow{font-size:11px;font-weight:900;color:#4f97d4;text-transform:uppercase;letter-spacing:.12em}.header h1{margin:4px 0 4px;font-size:clamp(26px,4vw,43px);line-height:.96;letter-spacing:-.045em}.header p{margin:0;color:var(--muted);font-size:13px;font-weight:650}.counter{padding:9px 12px;border-radius:14px;border:1px solid var(--line);background:var(--glass);font-size:11px;font-weight:900;white-space:nowrap}
+.grid{max-width:1160px;margin:0 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.candidate{border:1px solid var(--line);border-radius:24px;background:var(--glass);padding:11px;box-shadow:0 14px 34px rgba(53,99,140,.075);text-align:left;cursor:pointer;transition:.2s ease;min-width:0}.candidate:hover{transform:translateY(-2px)}.candidate.selected{border-color:#59b5f8;box-shadow:0 0 0 3px rgba(83,177,245,.18),0 16px 36px rgba(53,99,140,.10)}
+.preview{position:relative;aspect-ratio:9/16;border-radius:18px;overflow:hidden;background:linear-gradient(145deg,#e8f5ff,#edf8f3);display:grid;place-items:center}.preview video,.preview img{width:100%;height:100%;object-fit:cover;display:block}.placeholder{padding:20px;text-align:center;color:#8194aa;font-size:11px;font-weight:800}.rank{position:absolute;left:8px;top:8px;width:30px;height:30px;border-radius:10px;background:rgba(255,255,255,.92);display:grid;place-items:center;font-weight:950;color:#2d80c8}.expand{position:absolute;right:8px;top:8px;border:0;width:30px;height:30px;border-radius:10px;background:rgba(14,38,65,.74);color:white;cursor:pointer}.meta{padding:9px 4px 2px}.metaTop{display:flex;align-items:center;justify-content:space-between;gap:8px}.event{font-size:13px;font-weight:950}.time{font-size:10px;color:#7790aa;font-weight:800}.reason{margin:6px 0 0;color:#647c96;font-size:10.5px;line-height:1.35;min-height:28px}.confidence{margin-top:8px;display:flex;align-items:center;gap:7px;font-size:9px;color:#71869d;font-weight:800}.bar{height:5px;flex:1;border-radius:99px;background:#e6f1f8;overflow:hidden}.bar span{display:block;height:100%;background:linear-gradient(90deg,#67c9f6,#58d4a5);border-radius:inherit}.subToggle{margin-top:8px;display:flex;align-items:center;gap:7px;font-size:9.5px;color:#6b8198;font-weight:800}.subToggle input{accent-color:#54adf2}
+.actions{max-width:1160px;margin:14px auto 0;display:flex;justify-content:center;gap:9px;position:sticky;bottom:8px;padding:10px;border:1px solid var(--line);border-radius:20px;background:rgba(250,253,255,.9);backdrop-filter:blur(16px);box-shadow:0 12px 30px rgba(58,102,140,.08)}.actions button{border:0;border-radius:14px;padding:12px 16px;font-size:11px;font-weight:950;cursor:pointer}.primary{background:linear-gradient(135deg,#70cff7,#4da8f3);color:#fff}.editor{background:#eef7ff;color:#2d7fbd}.secondary{background:#f5f7fa;color:#6d7f91}.actions button:disabled{opacity:.42;cursor:not-allowed}
+.emptyState{max-width:760px;margin:50px auto;padding:28px;border:1px solid var(--line);border-radius:26px;background:var(--glass);text-align:center}.emptyState h2{margin:0 0 7px}.emptyState p{margin:0;color:var(--muted)}
+.fullscreen{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(6,18,34,.88);backdrop-filter:blur(12px)}.fullscreen.open{display:flex}.fullscreen video{max-height:88vh;max-width:min(92vw,520px);aspect-ratio:9/16;width:auto;border-radius:22px;background:#000}.fullClose{position:absolute;right:max(18px,env(safe-area-inset-right));top:max(18px,env(safe-area-inset-top));width:42px;height:42px;border:0;border-radius:50%;background:#fff;color:#17365f;font-size:24px;cursor:pointer}
+@media(max-width:820px){.page{padding-top:12px}.header{align-items:flex-start}.grid{grid-template-columns:1fr;gap:10px}.candidate{display:grid;grid-template-columns:minmax(110px,34%) 1fr;gap:10px;padding:9px}.preview{max-height:270px}.meta{padding:5px 4px}.actions{flex-direction:column;bottom:6px}.actions button{width:100%}.reason{min-height:0}.counter{font-size:9.5px}}
+@media(max-width:430px){.header h1{font-size:26px}.header p{font-size:11px}.counter{display:none}.candidate{grid-template-columns:118px 1fr;border-radius:19px}.preview{border-radius:14px}.actions{border-radius:17px;padding:8px}}
+</style>
+</head>
+<body>
+<main class="page" id="momentsPage">
+ <header class="header"><div><div class="eyebrow">Game Brain · scelta finale</div><h1>I tuoi 3 momenti</h1><p>Scegli quello che vuoi trasformare in Short. La scelta resta salvata anche se cambi pagina.</p></div><div class="counter" id="counter">0 momenti disponibili</div></header>
+ <section class="grid" id="candidateGrid"></section>
+ <section class="emptyState" id="emptyState"><h2>Sto recuperando i tuoi momenti</h2><p>Se l’analisi è appena finita, compariranno qui senza doverla rilanciare.</p></section>
+ <nav class="actions" id="actions" hidden>
+  <button class="primary" id="createShort">CREA SHORT</button>
+  <button class="editor" id="openEditor">MODIFICA NEL GAME EDITOR</button>
+  <button class="secondary" id="chooseAgain">SCEGLI UN ALTRO MOMENTO</button>
+ </nav>
+</main>
+<div class="fullscreen" id="fullscreen" aria-hidden="true"><button class="fullClose" id="fullClose" aria-label="Torna ai momenti">×</button><video id="fullVideo" controls playsinline preload="metadata"></video></div>
+<script>
+(()=>{
+ const grid=document.getElementById('candidateGrid'),empty=document.getElementById('emptyState'),actions=document.getElementById('actions'),counter=document.getElementById('counter');
+ const full=document.getElementById('fullscreen'),fullVideo=document.getElementById('fullVideo');
+ let flow=null,candidates=[],selectedId='';
+ const safeRows=rows=>(Array.isArray(rows)?rows:[]).filter(Boolean).slice(0,3);
+ const post=(type,extra={})=>parent.postMessage({type,...extra},location.origin);
+ const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+ const fmt=t=>{const n=Number(t||0),m=Math.floor(n/60),s=Math.floor(n%60);return `${m}:${String(s).padStart(2,'0')}`};
+ function normalize(row,i){
+  const start=Number(row.start_seconds??row.start??0)||0,end=Number(row.end_seconds??row.end??start)||start;
+  return {...row,id:String(row.id||row.candidate_id||`m${i}`),rank:Number(row.rank||i+1),start_seconds:start,end_seconds:end,event:String(row.event||row.title||`Momento ${i+1}`),confidence:Math.max(0,Math.min(1,Number(row.confidence||0))),fusion_reason:String(row.fusion_reason||row.reason||'Momento selezionato dal Game Brain'),video:String(row.preview_ref||row.video||'')};
+ }
+ function render(){
+  candidates=safeRows((flow&&flow.candidates)||candidates).map(normalize);
+  selectedId=String((flow&&flow.selected_candidate_id)||selectedId||'');
+  grid.innerHTML='';
+  candidates.forEach((row,i)=>{
+   const card=document.createElement('article');card.className='candidate'+(row.id===selectedId?' selected':'');card.dataset.candidateId=row.id;card.setAttribute('data-candidate-id',row.id);
+   const pct=Math.round(row.confidence*100);
+   card.innerHTML=`<div class="preview">${row.video?`<video playsinline preload="metadata" src="${esc(row.video)}"></video>`:`<div class="placeholder">Anteprima non ancora materializzata</div>`}<span class="rank">${esc(row.rank)}</span><button class="expand" type="button" aria-label="Apri fullscreen">⛶</button></div><div class="meta"><div class="metaTop"><span class="event">${esc(row.event)}</span><span class="time">${fmt(row.start_seconds)} · ${Math.max(1,Math.round(row.end_seconds-row.start_seconds))}s</span></div><p class="reason" data-field="fusion_reason">${esc(row.fusion_reason)}</p><div class="confidence"><span>Confidenza ${pct}%</span><div class="bar"><span style="width:${pct}%"></span></div></div><label class="subToggle"><input type="checkbox" ${row.subtitles_available?'':'disabled'}> Sottotitoli anteprima</label></div>`;
+   card.addEventListener('click',e=>{if(e.target.closest('.expand')||e.target.closest('input'))return;select(row.id)});
+   const expand=card.querySelector('.expand');expand.addEventListener('click',e=>{e.stopPropagation();openFullscreen(row)});
+   const vid=card.querySelector('video');if(vid)vid.addEventListener('click',e=>{e.stopPropagation();openFullscreen(row)});
+   grid.appendChild(card);
+  });
+  empty.hidden=candidates.length>0;actions.hidden=candidates.length===0;counter.textContent=`${candidates.length} moment${candidates.length===1?'o':'i'} disponibil${candidates.length===1?'e':'i'}`;
+  document.getElementById('createShort').disabled=!selectedId;document.getElementById('openEditor').disabled=!selectedId;
+ }
+ async function api(event,payload={}){
+  try{const r=await fetch('/project/flow',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({event,payload})});if(r.ok){const d=await r.json();if(d&&d.snapshot){flow=d.snapshot;render();return d.snapshot}}}catch(_e){}
+  return null;
+ }
+ async function refresh(){
+  try{const r=await fetch('/project/flow?_='+Date.now(),{credentials:'same-origin',cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.snapshot){flow=d.snapshot;render();return}}}catch(_e){}
+  try{const r=await fetch('/ai/results?_='+Date.now(),{credentials:'same-origin',cache:'no-store'});if(r.ok){const d=await r.json();candidates=safeRows(d.previews);render()}}catch(_e){}
+ }
+ async function select(id){selectedId=String(id||'');render();await api('candidate_selected',{candidate_id:selectedId});post('GSF_V403_CANDIDATE_SELECTED',{candidate_id:selectedId})}
+ function openFullscreen(row){if(!row.video)return;fullVideo.src=row.video;full.classList.add('open');full.setAttribute('aria-hidden','false');post('GSF_V403_FULLSCREEN',{open:true,candidate_id:row.id})}
+ function closeFullscreen(){try{fullVideo.pause()}catch(_e){}fullVideo.removeAttribute('src');fullVideo.load();full.classList.remove('open');full.setAttribute('aria-hidden','true');post('GSF_V403_FULLSCREEN',{open:false,candidate_id:selectedId})}
+ document.getElementById('fullClose').addEventListener('click',closeFullscreen);full.addEventListener('click',e=>{if(e.target===full)closeFullscreen()});
+ document.getElementById('createShort').addEventListener('click',async()=>{if(!selectedId)return;await api('candidate_selected',{candidate_id:selectedId});post('GSF_V403_OPEN_SHORT',{candidate_id:selectedId})});
+ document.getElementById('openEditor').addEventListener('click',async()=>{if(!selectedId)return;await api('candidate_selected',{candidate_id:selectedId});post('GSF_V403_OPEN_EDITOR',{candidate_id:selectedId})});
+ document.getElementById('chooseAgain').addEventListener('click',()=>{document.querySelector('.candidate.selected')?.scrollIntoView({behavior:'smooth',block:'center'})});
+ window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data)return;if(e.data.type==='GSF_V403_FLOW_STATE'&&e.data.snapshot){flow=e.data.snapshot;render()}});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+ refresh();post('GSF_V403_MOMENTS_READY');
+})();
+</script>
+</body>
+</html>
