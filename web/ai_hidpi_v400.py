@@ -34,7 +34,7 @@ def hidpi_profile(
 
     Browser DPR is intentionally capped: the UI stays vector-first and we do
     not multiply video decode/render workload merely because a phone reports a
-    very high density.  The profile is metadata for the editor; CSS pixels and
+    very high density. The profile is metadata for the editor; CSS pixels and
     the 1080x1920 export master remain unchanged.
     """
     dpr = max(1.0, min(3.0, _finite(device_pixel_ratio, 1.0)))
@@ -55,8 +55,8 @@ def hidpi_profile(
 def adaptive_quality_profile(metadata: Any = None) -> Dict[str, Any]:
     """Resolve V400's approved Fast HQ / Max Quality / Adaptive AI modes.
 
-    V400 extends, rather than replaces, V399 Quality Supreme.  All modes keep
-    libx264 medium, H.264 High, yuv420p and the 1080x1920 master.  The AI mode
+    V400 extends, rather than replaces, V399 Quality Supreme. All modes keep
+    libx264 medium, H.264 High, yuv420p and the 1080x1920 master. The AI mode
     can spend CRF/AQ only inside the V399 compatibility envelope, while source
     awareness prevents fake detail on low-resolution uploads.
     """
@@ -64,7 +64,6 @@ def adaptive_quality_profile(metadata: Any = None) -> Dict[str, Any]:
     requested = str(data.get("quality_mode") or "Adaptive AI")
     mode = requested if requested in _QUALITY_MODES else "Adaptive AI"
 
-    # Start from the already-proven V399 scene-aware policy.
     profile = quality_profile(data)
     low_source = bool(profile.get("source_low_resolution"))
 
@@ -74,8 +73,6 @@ def adaptive_quality_profile(metadata: Any = None) -> Dict[str, Any]:
         profile["sharpen"] = False
         ai_directed = False
     elif mode == "Max Quality":
-        # Keep preset=medium so fidelity rises without changing the proven
-        # throughput class.  Low-resolution sources still avoid fake detail.
         profile["crf"] = 13 if low_source else 12
         profile["aq_strength"] = 1.10 if low_source else 1.18
         profile["sharpen"] = bool(profile.get("sharpen")) and not low_source
@@ -93,3 +90,56 @@ def adaptive_quality_profile(metadata: Any = None) -> Dict[str, Any]:
     profile["hidpi_ui"] = True
     profile["vector_ui"] = True
     return profile
+
+
+def inject_hidpi_runtime(html: str) -> str:
+    """Add the V400 Retina layer without rewriting the approved editor HTML.
+
+    The source component remains the visual truth. At runtime we append a tiny
+    density-aware CSS/JS layer: SVG remains vector, type rendering is tuned for
+    dense screens, and browser DPR is exposed as a bounded CSS variable and
+    dataset marker. Video pixels are not upscaled by DPR, avoiding extra decode
+    cost on phones and tablets.
+    """
+    source = str(html or "")
+    if "data-v400-hidpi" in source:
+        return source
+
+    patch = r'''
+<style data-v400-hidpi="true">
+#ng27{
+  --gsf-dpr:1;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+}
+#ng27 .ico{
+  shape-rendering:geometricPrecision;
+  text-rendering:geometricPrecision;
+}
+#ng27 video{
+  image-rendering:auto;
+}
+@media (min-resolution:1.5dppx){
+  #ng27 .ico{shape-rendering:geometricPrecision}
+}
+</style>
+<script data-v400-hidpi="true">
+(function(){
+  const root=document.getElementById('ng27');
+  if(!root)return;
+  function syncV400HiDpi(){
+    const raw=Number(window.devicePixelRatio||1);
+    const dpr=Math.max(1,Math.min(3,Number.isFinite(raw)?raw:1));
+    root.dataset.v400Hidpi='true';
+    root.dataset.pixelRatio=dpr.toFixed(2);
+    root.style.setProperty('--gsf-dpr',String(dpr));
+  }
+  syncV400HiDpi();
+  window.addEventListener('resize',syncV400HiDpi,{passive:true});
+})();
+</script>
+'''
+    if "</head>" in source:
+        return source.replace("</head>", patch + "\n</head>", 1)
+    return patch + source
