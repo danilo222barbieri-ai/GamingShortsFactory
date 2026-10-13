@@ -226,3 +226,44 @@ def save_project(session_state,session_root):
             except Exception: pass
             _bucket_put(_index_key(account_id),idx)
     return project
+
+
+# V403 durable application-flow snapshot. The existing V158 document remains
+# the storage envelope so older drafts/projects stay compatible.
+V403_FLOW_KEY="gsf_v403_snapshot"
+
+def restore_flow_v403(session_state,session_root):
+    from app_flow_v403 import new_snapshot
+    restore_project(session_state,session_root)
+    current=session_state.get(V403_FLOW_KEY)
+    if isinstance(current,dict) and int(current.get("schema_version",0) or 0)==403:
+        return current
+    pid=_safe_id(session_state.get("gsf_active_project_id",""))
+    source_ref=""
+    for key in ("gsf_source_video_ref","source_video_ref","gsf_current_video_ref","uploaded_video_ref"):
+        value=session_state.get(key)
+        if isinstance(value,str) and value:
+            source_ref=value
+            break
+    snap=new_snapshot(project_id=pid,source_video_ref=source_ref)
+    session_state[V403_FLOW_KEY]=snap
+    return snap
+
+def save_flow_v403(session_state,session_root,snapshot):
+    from app_flow_v403 import reconcile_snapshot
+    current=session_state.get(V403_FLOW_KEY)
+    if isinstance(current,dict):
+        snapshot=reconcile_snapshot(current,snapshot)
+    if not isinstance(snapshot,dict):
+        raise TypeError("V403 snapshot must be a dict")
+    # _safe rejects opaque objects/bytes and the outer project envelope enforces
+    # the existing MAX_VALUE/MAX_TOTAL bounds.
+    session_state[V403_FLOW_KEY]=_safe(snapshot)
+    save_project(session_state,session_root)
+    return session_state[V403_FLOW_KEY]
+
+def reconcile_flow_v403(session_state,session_root,authoritative_snapshot):
+    from app_flow_v403 import reconcile_snapshot
+    local=restore_flow_v403(session_state,session_root)
+    merged=reconcile_snapshot(local,authoritative_snapshot)
+    return save_flow_v403(session_state,session_root,merged)
