@@ -12,8 +12,8 @@ block=s[start:end]
 checks=[
     ('share/state loads creator profile', '_creator_account_load(sid)' in block),
     ('share/state defines providers map', 'providers=dict(profile.get("providers") or {})' in block),
-    ('facebook state reads defined providers', '"facebook":bool(providers.get("facebook"))' in block),
-    ('twitch state reads defined providers', '"twitch":bool(providers.get("twitch"))' in block),
+    ('share/state builds social snapshot once', 'social_snapshot=_creator_social_snapshot(sid,providers)' in block),
+    ('share/state reuses social snapshot', '"social":social_snapshot' in block),
 ]
 for label,ok in checks:
     print(('PASS: ' if ok else 'FAIL: ')+label)
