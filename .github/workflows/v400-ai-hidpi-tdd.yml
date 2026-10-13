@@ -1,0 +1,25 @@
+name: V400 AI Hi-DPI TDD
+
+on:
+  push:
+    branches:
+      - v400-ai-hidpi
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  v400-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: V400 AI + Hi-DPI contract
+        run: |
+          PYTHONPATH=web python web/test_v400_ai_hidpi.py
+      - name: V400 Python syntax
+        run: |
+          python -m py_compile \
+            web/ai_hidpi_v400.py \
+            web/editor_2027_embed.py \
+            web/quality_supreme_v399.py
