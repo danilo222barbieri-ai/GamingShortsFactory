@@ -2,6 +2,14 @@
 
 These rules apply to every coding agent, Codex task, and technical chat working in this repository.
 
+## One-command default for coding requests
+
+Every **coding request** automatically enters the GSF **one-command** workflow in `docs/runbooks/gsf-one-command-workflow.md` unless the user explicitly asks for analysis/design only.
+
+The agent owns the technical transitions from intake through claim, isolated implementation, tests, integration, Production Gate, Railway verification, guarded rollback when eligible, and factual handoff. Do not make the user manually prompt each intermediate technical step when intent and safety are already clear.
+
+A normal chat must never promise background continuation before the documented GitHub handoff boundary has actually been reached.
+
 ## Before touching product code
 
 1. Read `PROJECT_STATUS.md` completely.
@@ -16,6 +24,8 @@ These rules apply to every coding agent, Codex task, and technical chat working 
 7. Inspect relevant source and tests before editing.
 
 If the claim command reports `BLOCKED`, do not edit overlapping files. Narrow the task, use an explicit handoff, or serialize the work.
+
+When no local Git CLI/worktree is available, an authenticated GitHub connector/API may perform the equivalent claim + dedicated-branch protocol. It must preserve the same fail-closed conflict semantics and may not bypass ownership just because the local helper cannot run.
 
 ## Ownership and parallel work
 
@@ -36,6 +46,12 @@ Use:
 
 Use `handoff` when another agent must continue the same ownership, and `abandoned` when work is intentionally stopped. Preserve factual evidence: commit/PR, tests, gate result and Railway state when applicable.
 
+Machine-readable progress is available with:
+
+`python tools/gsf_task.py status --claim <claim-id> --json`
+
+The status payload must never invent test/gate/Railway success that has not been recorded as evidence.
+
 ## Production safety
 
 - Runtime changes must pass **GSF Production Gate** before Railway promotion.
@@ -44,6 +60,7 @@ Use `handoff` when another agent must continue the same ownership, and `abandone
 - Do not call a change `LIVE`, `SUCCESS`, `fixed`, or `done` until fresh evidence confirms it.
 - Frontend health is verified with `/healthz`; worker health with `/health` when awake. A sleeping worker is not a failure when Railway sleep mode is enabled.
 - A failed Production Gate means production remains on the previous known-good deployment.
+- Hard post-deploy failures follow `docs/runbooks/gsf-automatic-rollback.md`; ambiguous 5xx/provider/network failures are notify-only.
 
 ## Testing
 
