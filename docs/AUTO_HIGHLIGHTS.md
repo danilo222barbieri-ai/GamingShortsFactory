@@ -51,3 +51,9 @@ Worker endpoint: authenticated `POST /auto-highlights` with an existing `analysi
 Provider event detection remains an adapter concern. Twitch EventSub credentials/scopes and YouTube live-stream read scopes are required before automatic provider triggers can be enabled for an account.
 
 - V129 Creator Hub now lists stored highlight sets for the signed-in creator, showing provider, candidate count, duration and top confidence without rendering the VOD.
+
+## V402 signal fusion
+
+V402 adds a lightweight evidence-fusion pass before final Game Brain ranking. Existing local gameplay events, semantic evidence and scan diagnostics can be corroborated by visual, reaction/audio and HUD signals when those observations are available. Missing optional signal families remain neutral, and fusion failures fall back to the original V129 event path.
+
+Game Brain remains the final ranking, diversity and AI Director authority. The architecture is still scan-first and metadata-first: V402 does not eagerly render highlight clips, duplicate full VODs, or add a second competing ranker.
