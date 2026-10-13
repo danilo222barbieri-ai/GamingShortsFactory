@@ -8,6 +8,7 @@ from urllib.parse import quote
 import streamlit as st
 import streamlit.components.v1 as components
 
+from ai_monument_v397 import enhance_editor_kwargs
 from game_vision_v108 import window_event_map, vision_zones_for_genre
 
 
@@ -260,7 +261,7 @@ def editor_2027_render_kwargs(state, session_state=None):
     hud_safe = hud_mode != "Off"
     smart_reframe = bool(state.get("visionEnabled", False) or hud_safe)
 
-    return {
+    kwargs = {
         "fmt": fmt,
         "zoom": _clamp(state.get("zoom"), 0.8, 2.0, 1.0),
         "x_pos": _clamp(state.get("panX"), -25.0, 25.0, 0.0) * 4.0,
@@ -287,3 +288,4 @@ def editor_2027_render_kwargs(state, session_state=None):
         "filter_intensity": int(round(_clamp(state.get("intensity"), 0, 100, 64))),
         "hook_text": "",
     }
+    return enhance_editor_kwargs(kwargs, state)
