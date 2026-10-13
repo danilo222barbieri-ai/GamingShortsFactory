@@ -83,6 +83,20 @@ def is_quota_error(value):
     return any(marker in text for marker in markers)
 
 
+def is_retryable_provider_error(value):
+    text=str(value or "").lower()
+    if is_quota_error(text):
+        return True
+    markers=(
+        "503","service unavailable","unavailable","high demand",
+        "500 internal","internal server error","502 bad gateway","504 gateway timeout",
+        "timeout","timed out","readtimeout","deadline exceeded",
+        "connection reset","connection error","temporarily unavailable",
+        "response empty","expecting value: line 1 column 1",
+    )
+    return any(marker in text for marker in markers)
+
+
 def _probe_duration_seconds(path):
     try:
         proc=subprocess.run(
@@ -204,11 +218,14 @@ def _generate_content_semantic(
                 types.Part(text=prompt),
             ]
         )
-    config=None
+    config=types.GenerateContentConfig(
+        http_options=types.HttpOptions(timeout=int(max(1.0,float(semantic_timeout))*1000)),
+    )
     if structured:
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
             response_json_schema=_schema(max_events),
+            http_options=types.HttpOptions(timeout=int(max(1.0,float(semantic_timeout))*1000)),
         )
     response=client.models.generate_content(
         model=model,
@@ -387,6 +404,13 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
     semantic_timeout=max(
         60.0,float(os.environ.get("GSF_SEMANTIC_TIMEOUT_SECONDS","420") or 420)
     )
+    static_timeout=max(
+        20.0,
+        min(
+            semantic_timeout,
+            float(os.environ.get("GSF_SEMANTIC_STATIC_TIMEOUT_SECONDS","90") or 90),
+        ),
+    )
     model_attempts=[]
     selected_model=primary_model
     selected_mode=base_processing_mode
@@ -451,7 +475,7 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
                     if attempt_mode=="static":
                         payload=_generate_content_semantic(
                             client,candidate_model,source,uploaded,prompt_json,max_events,
-                            semantic_timeout,structured=True,duration_seconds=duration_seconds,
+                            static_timeout,structured=True,duration_seconds=duration_seconds,
                         )
                     else:
                         candidate_video=dict(video_content or {})
@@ -477,7 +501,7 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
                     try:
                         payload=_generate_content_semantic(
                             client,candidate_model,source,uploaded,prompt_json,max_events,
-                            semantic_timeout,structured=True,duration_seconds=duration_seconds,
+                            static_timeout,structured=True,duration_seconds=duration_seconds,
                         )
                     except Exception as structured_exc:
                         structured_message=str(structured_exc).lower()
@@ -489,7 +513,7 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
                             raise
                         payload=_generate_content_semantic(
                             client,candidate_model,source,uploaded,prompt_json,max_events,
-                            semantic_timeout,structured=False,duration_seconds=duration_seconds,
+                            static_timeout,structured=False,duration_seconds=duration_seconds,
                         )
 
                 selected_model=candidate_model
@@ -504,13 +528,17 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
             except Exception as exc:
                 last_exc=exc
                 quota=is_quota_error(exc)
+                retryable=is_retryable_provider_error(exc)
+                selected_model=candidate_model
+                selected_mode=attempt_mode
+                selected_generate=attempt_generate
                 model_attempts.append({
                     "model":candidate_model,
-                    "status":"quota" if quota else "error",
+                    "status":"quota" if quota else ("retryable" if retryable else "error"),
                     "fallback":bool(index>0),
                     "reason":str(exc)[:120],
                 })
-                if quota and index+1<len(models):
+                if retryable and index+1<len(models):
                     continue
                 raise
 
