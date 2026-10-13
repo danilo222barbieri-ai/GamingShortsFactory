@@ -1,134 +1,274 @@
-name: V397 Production Gate
+name: GSF Production Gate
 
 on:
   push:
     branches:
       - main
       - v397-structural-hardening
+    paths-ignore:
+      - '.railway/frontend-deploy.txt'
+      - '.railway/worker-deploy.txt'
   pull_request:
     branches:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 concurrency:
-  group: v397-production-gate-${{ github.ref }}
+  group: gsf-production-gate-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   production-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: V397 source contract
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: V397 structural production contract
         run: |
           python web/test_v397_production_hardening.py .
           python -m py_compile web/direct_upload_server.py web/runtime_smoke_v107.py
 
-      - name: Build production image
+      - name: V398 semantic resilience contract
+        env:
+          PYTHONPATH: web
+        run: |
+          python - <<'PY'
+          from semantic_video_v114 import is_retryable_provider_error
+          retryable = (
+              "503 UNAVAILABLE model high demand",
+              "Gemini Generate Content video response empty",
+              "Expecting value: line 1 column 1 (char 0)",
+              "ReadTimeout timed out",
+          )
+          for message in retryable:
+              assert is_retryable_provider_error(message), message
+          assert not is_retryable_provider_error("400 INVALID_ARGUMENT malformed request")
+          print("V398 transient-provider classifier: PASS")
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          semantic=Path("web/semantic_video_v114.py").read_text(encoding="utf-8")
+          assert 'http_options=types.HttpOptions(timeout=' in semantic
+          print("V398 static Generate Content timeout: PASS")
+          PY
+
+      - name: V399 quality contract
+        env:
+          PYTHONPATH: web
+        run: python web/test_v399_quality_supreme.py
+
+      - name: V400 AI + Hi-DPI contract
+        env:
+          PYTHONPATH: web
+        run: python web/test_v400_ai_hidpi.py
+
+      - name: V401 performance and stability contract
+        env:
+          PYTHONPATH: web
+        run: python web/test_v401_performance_stability.py
+
+      - name: V402 Game Brain / Auto Highlights contract
+        env:
+          PYTHONPATH: web
+        run: python web/test_v402_game_brain_auto_highlights.py
+
+      - name: Current Python syntax guard
+        run: |
+          python -m py_compile \
+            web/quality_supreme_v399.py \
+            web/director_render_exec_v143.py \
+            web/privacy_cleanup_v149.py \
+            web/ai_hidpi_v400.py \
+            web/editor_2027_embed.py \
+            web/job_state_v401.py \
+            web/fix_v401_frontend_memory.py \
+            web/fix_v401_worker_state.py \
+            web/ai_worker_server.py \
+            web/apply_v343_v293_compat.py \
+            web/highlight_fusion_v402.py \
+            web/auto_highlights/engine_v129.py \
+            web/game_brain_v112.py
+
+      - name: Build worker image
+        run: docker build --progress=plain -f web/Dockerfile.worker -t gsf-worker-gate:${{ github.sha }} .
+
+      - name: Build production frontend image
         run: |
           set -o pipefail
-          if docker build --progress=plain -t gsf-v397:${{ github.sha }} . 2>&1 | tee /tmp/v397-build.log; then
+          if docker build --progress=plain -t gsf-production-gate:${{ github.sha }} . 2>&1 | tee /tmp/gsf-production-build.log; then
             exit 0
           fi
-          if grep -Eq '429 Too Many Requests|Data limit exceeded' /tmp/v397-build.log \
-             && grep -q 'public.ecr.aws/docker/library/python' /tmp/v397-build.log; then
-            echo 'V397: ECR Python mirror rate-limited; retrying the same official Python base via Docker Hub'
-            cp Dockerfile /tmp/Dockerfile.v397
-            sed -i '1s#^FROM public.ecr.aws/docker/library/python:3.12-slim$#FROM python:3.12-slim#' /tmp/Dockerfile.v397
-            test "$(head -n 1 /tmp/Dockerfile.v397)" = 'FROM python:3.12-slim'
-            docker build --progress=plain -f /tmp/Dockerfile.v397 -t gsf-v397:${{ github.sha }} .
+          if grep -Eq '429 Too Many Requests|Data limit exceeded' /tmp/gsf-production-build.log \
+             && grep -q 'public.ecr.aws/docker/library/python' /tmp/gsf-production-build.log; then
+            echo 'Production Gate: ECR Python mirror rate-limited; retrying the same official Python base via Docker Hub'
+            cp Dockerfile /tmp/Dockerfile.production-gate
+            sed -i '1s#^FROM public.ecr.aws/docker/library/python:3.12-slim$#FROM python:3.12-slim#' /tmp/Dockerfile.production-gate
+            test "$(head -n 1 /tmp/Dockerfile.production-gate)" = 'FROM python:3.12-slim'
+            docker build --progress=plain -f /tmp/Dockerfile.production-gate -t gsf-production-gate:${{ github.sha }} .
           else
-            echo 'V397: production image failed for a non-ECR-rate-limit reason; refusing fallback'
+            echo 'Production Gate: frontend image failed for a non-ECR-rate-limit reason; refusing fallback'
             exit 1
           fi
 
-      - name: Start production image
+      - name: Start production frontend image
         run: |
-          docker run -d --name gsf-v397 \
+          docker run -d --name gsf-production-gate \
             -e PORT=8080 \
             -e GSF_WEB_MODE=1 \
             -e GSF_LOW_MEMORY_WEB=1 \
             -p 18080:8080 \
-            gsf-v397:${{ github.sha }}
+            gsf-production-gate:${{ github.sha }}
 
       - name: Wait for composite health
         run: |
           set -eu
           for i in $(seq 1 120); do
-            code=$(curl -sS -o /tmp/v397-health.json -w '%{http_code}' http://127.0.0.1:18080/healthz || true)
+            code=$(curl -sS -o /tmp/gsf-production-health.json -w '%{http_code}' http://127.0.0.1:18080/healthz || true)
             if [ "$code" = "200" ]; then
               python - <<'PY'
           import json
-          p=json.load(open('/tmp/v397-health.json',encoding='utf-8'))
+          p=json.load(open('/tmp/gsf-production-health.json',encoding='utf-8'))
           assert p.get('ok') is True, p
           assert p.get('companion') is True, p
           assert p.get('streamlit') is True, p
-          print('V397 composite health: PASS',p)
+          print('GSF composite health: PASS',p)
           PY
               exit 0
             fi
             sleep 2
           done
-          echo 'V397 composite health did not become ready'
-          cat /tmp/v397-health.json 2>/dev/null || true
+          echo 'GSF composite health did not become ready'
+          cat /tmp/gsf-production-health.json 2>/dev/null || true
           exit 1
 
       - name: Blocking runtime smoke
-        run: docker exec gsf-v397 python /app/web/runtime_smoke_v107.py
+        run: docker exec gsf-production-gate python /app/web/runtime_smoke_v107.py
 
       - name: UI contract V343 global shell
-        run: docker exec gsf-v397 python /app/web/test_v343_single_global_shell.py /app
+        run: docker exec gsf-production-gate python /app/web/test_v343_single_global_shell.py /app
 
       - name: UI contract V389 bounded reset
-        run: docker exec gsf-v397 python /app/web/test_v389_mobile_editor_bounded_reset.py /app
+        run: docker exec gsf-production-gate python /app/web/test_v389_mobile_editor_bounded_reset.py /app
 
       - name: UI contract V391 top actions
-        run: docker exec gsf-v397 python /app/web/test_v391_mobile_editor_top_actions.py /app
+        run: docker exec gsf-production-gate python /app/web/test_v391_mobile_editor_top_actions.py /app
 
       - name: UI contract V393 clean transport
-        run: docker exec gsf-v397 python /app/web/test_v393_mobile_editor_clean_transport.py /app
+        run: docker exec gsf-production-gate python /app/web/test_v393_mobile_editor_clean_transport.py /app
 
       - name: UI contract V394 footer restore
-        run: docker exec gsf-v397 python /app/web/test_v394_mobile_editor_footer_restore.py /app
+        run: docker exec gsf-production-gate python /app/web/test_v394_mobile_editor_footer_restore.py /app
 
       - name: UI contract V395 atomic skin
-        run: docker exec gsf-v397 python /app/web/test_v395_mobile_editor_atomic_skin.py /app
+        run: docker exec gsf-production-gate python /app/web/test_v395_mobile_editor_atomic_skin.py /app
 
       - name: UI contract V396 share publish surface
-        run: docker exec gsf-v397 python /app/web/test_v396_mobile_share_publish_surface.py /app
+        run: docker exec gsf-production-gate python /app/web/test_v396_mobile_share_publish_surface.py /app
+
+      - name: Promote tested commit to Railway
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          TESTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          remote_sha=$(git ls-remote origin refs/heads/main | awk '{print $1}')
+          if [ "$remote_sha" != "$TESTED_SHA" ]; then
+            echo "A newer main commit exists ($remote_sha); refusing to promote stale $TESTED_SHA."
+            exit 0
+          fi
+
+          before="$BEFORE_SHA"
+          if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
+            before="${TESTED_SHA}^"
+          fi
+
+          git diff --name-only "$before" "$TESTED_SHA" > /tmp/gsf-changed-files.txt
+          echo 'Files covered by this promotion:'
+          cat /tmp/gsf-changed-files.txt
+
+          frontend=0
+          worker=0
+          while IFS= read -r path; do
+            case "$path" in
+              Dockerfile|app.py|requirements-web.txt|constraints-web.txt|.streamlit/*|src_payload/*|web/*|.github/workflows/v397-production-gate.yml)
+                frontend=1
+                ;;
+            esac
+            case "$path" in
+              src_payload/*|web/Dockerfile.worker|web/requirements-worker.txt|web/ai_worker_server.py|web/ffmpeg_lowmem.py|web/gsf_bucket_bridge.py|web/semantic_video_v114.py|web/test_v114_semantic_video.py|web/ai_director_v124.py|web/quality_control_v124.py|web/guardian_intelligence_v124.py|web/test_v124_ai_core.py|web/job_state_v401.py|web/fix_v401_worker_state.py|web/highlight_fusion_v402.py|web/auto_highlights/*|web/game_brain_v112.py|web/quality_supreme_v399.py|web/director_render_exec_v143.py|web/privacy_cleanup_v149.py|web/apply_v7*.py|web/apply_v8*.py|web/apply_v9*.py)
+                worker=1
+                ;;
+            esac
+          done < /tmp/gsf-changed-files.txt
+
+          if [ "$frontend" -eq 0 ] && [ "$worker" -eq 0 ]; then
+            echo 'No Railway runtime files changed; no deployment marker needed.'
+            exit 0
+          fi
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          mkdir -p .railway
+
+          if [ "$frontend" -eq 1 ]; then
+            printf '%s\n' "$TESTED_SHA" > .railway/frontend-deploy.txt
+            git add .railway/frontend-deploy.txt
+          fi
+          if [ "$worker" -eq 1 ]; then
+            printf '%s\n' "$TESTED_SHA" > .railway/worker-deploy.txt
+            git add .railway/worker-deploy.txt
+          fi
+
+          if git diff --cached --quiet; then
+            echo 'Deployment marker already points at this tested commit.'
+            exit 0
+          fi
+
+          git commit -m "deploy: promote tested ${TESTED_SHA::12} [skip ci]"
+          git push origin HEAD:main
 
       - name: Capture structural diagnostics
         if: failure()
         run: |
           set +e
-          mkdir -p /tmp/v397-diagnostics
-          docker ps -a > /tmp/v397-diagnostics/docker-ps.txt 2>&1
-          docker inspect gsf-v397 > /tmp/v397-diagnostics/docker-inspect.json 2>&1
-          docker top gsf-v397 > /tmp/v397-diagnostics/docker-top.txt 2>&1
-          docker logs --timestamps gsf-v397 > /tmp/v397-diagnostics/docker.log 2>&1
-          cp /tmp/v397-health.json /tmp/v397-diagnostics/last-health.json 2>/dev/null || true
-          if [ "$(docker inspect -f '{{.State.Running}}' gsf-v397 2>/dev/null)" = "true" ]; then
-            docker exec gsf-v397 sh -lc 'cat /proc/net/tcp; echo ---TCP6---; cat /proc/net/tcp6' > /tmp/v397-diagnostics/container-tcp.txt 2>&1 || true
-            docker exec gsf-v397 python -c 'import requests; urls=("http://127.0.0.1:8501/","http://127.0.0.1:8502/healthz","http://127.0.0.1:8080/healthz"); [(lambda u: print(u, requests.get(u, timeout=2).status_code, requests.get(u, timeout=2).text[:1000]))(u) for u in urls]' > /tmp/v397-diagnostics/internal-health.txt 2>&1 || true
-            docker cp gsf-v397:/tmp/gsf-runtime /tmp/v397-diagnostics/runtime >/dev/null 2>&1 || true
+          mkdir -p /tmp/gsf-production-diagnostics
+          docker ps -a > /tmp/gsf-production-diagnostics/docker-ps.txt 2>&1
+          docker inspect gsf-production-gate > /tmp/gsf-production-diagnostics/docker-inspect.json 2>&1
+          docker top gsf-production-gate > /tmp/gsf-production-diagnostics/docker-top.txt 2>&1
+          docker logs --timestamps gsf-production-gate > /tmp/gsf-production-diagnostics/docker.log 2>&1
+          cp /tmp/gsf-production-health.json /tmp/gsf-production-diagnostics/last-health.json 2>/dev/null || true
+          if [ "$(docker inspect -f '{{.State.Running}}' gsf-production-gate 2>/dev/null)" = "true" ]; then
+            docker exec gsf-production-gate sh -lc 'cat /proc/net/tcp; echo ---TCP6---; cat /proc/net/tcp6' > /tmp/gsf-production-diagnostics/container-tcp.txt 2>&1 || true
+            docker exec gsf-production-gate python -c 'import requests; urls=("http://127.0.0.1:8501/","http://127.0.0.1:8502/healthz","http://127.0.0.1:8080/healthz"); [(lambda u: print(u, requests.get(u, timeout=2).status_code, requests.get(u, timeout=2).text[:1000]))(u) for u in urls]' > /tmp/gsf-production-diagnostics/internal-health.txt 2>&1 || true
+            docker cp gsf-production-gate:/tmp/gsf-runtime /tmp/gsf-production-diagnostics/runtime >/dev/null 2>&1 || true
           fi
-          find /tmp/v397-diagnostics -maxdepth 3 -type f -print -exec sh -c 'echo "--- $1 ---"; tail -n 120 "$1"' _ {} \; || true
+          find /tmp/gsf-production-diagnostics -maxdepth 3 -type f -print -exec sh -c 'echo "--- $1 ---"; tail -n 120 "$1"' _ {} \; || true
 
       - name: Upload structural diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: v397-structural-diagnostics
-          path: /tmp/v397-diagnostics
+          name: gsf-production-gate-diagnostics
+          path: /tmp/gsf-production-diagnostics
           if-no-files-found: warn
           retention-days: 3
 
       - name: Container logs on failure
         if: failure()
-        run: docker logs gsf-v397 || true
+        run: docker logs gsf-production-gate || true
 
       - name: Cleanup structural container
         if: always()
-        run: docker rm -f gsf-v397 || true
+        run: docker rm -f gsf-production-gate || true
