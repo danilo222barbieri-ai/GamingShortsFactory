@@ -106,9 +106,12 @@ with tempfile.TemporaryDirectory(prefix="gsf_v401_test_") as tmp:
          "fallback upload never requests a read larger than the V401 memory bound")
 
 source = Path("app.py").read_text(encoding="utf-8")
-patched = patch_runtime_source(source)
-need("video.getvalue()" not in patched,
-     "V401 removes full-buffer video.getvalue copies from fallback disk materialization")
+source_with_unrelated_getvalue = source + "\n\ndef _v401_unrelated_getvalue(video):\n    return video.getvalue()\n"
+patched = patch_runtime_source(source_with_unrelated_getvalue)
+need("_mf.write(video.getvalue())" not in patched and "ef.write(video.getvalue())" not in patched,
+     "V401 removes full-buffer video.getvalue copies from the two fallback disk-write targets")
+need("return video.getvalue()" in patched,
+     "V401 allows unrelated video.getvalue usage outside fallback disk materialization")
 need("GSF_V401_STREAM_UPLOAD_HELPER" in patched,
      "runtime patch installs the V401 bounded streaming helper")
 need(patch_runtime_source(patched) == patched,
