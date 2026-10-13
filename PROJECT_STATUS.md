@@ -8,22 +8,24 @@
 - **Repository:** `danilo222barbieri-ai/GamingShortsFactory`
 - **Production branch:** `main`
 - **Current product baseline:** **V402 — Game Brain / Auto Highlights 2.0**
-- **Current `main` HEAD:** always query GitHub live; documentation/coordination commits may advance `main` without changing production.
-- **Last fully tested runtime source commit:** `001802a00a9b33694b1c01729dd8054132c2e672`
-- **Last runtime promotion commit:** `abd4f83c512366d0a24792fa022c88363b260750` — `deploy: promote tested 001802a00a9b [skip ci]`
+- **Cross-chat orchestration:** **LIVE**
+- **Last fully tested main source commit:** `f9a4624bbfe0aeb8a4fb749ba7e9026c69962c2d`
+- **Last runtime promotion commit:** `c3206dc4fceb60c285bbd2057af45bb7acff2e89` — `deploy: promote tested f9a4624bbfe0 [skip ci]`
+- **Current `main` HEAD:** always query GitHub live; coordination/status-only commits may advance `main` without changing production.
 
-## Production state — last freshly verified 2026-10-13
+## Production state — verified 2026-10-13 22:33 UTC
 
 ### Frontend
 
 - Railway service: `gaming-shorts-factory-v79`
 - Service ID: `89ae81ec-54d7-4f22-98f4-c88d6361a6a2`
 - Environment: `production` (`5cb868d5-9936-4ff0-be2d-ef42be7fe0ec`)
-- Verified deployment: `d4897ce8-f071-4557-9c36-e376c5c1e032`
-- Status: **SUCCESS / online**
-- Replicas: 1 running / 0 crashed
-- Warnings/criticals: 0 / 0
-- Deployed runtime promotion commit: `abd4f83c512366d0a24792fa022c88363b260750`
+- Verified deployment: `eb0d89ed-9cc1-4719-8682-032cbad307de`
+- Status: **SUCCESS / Online**
+- Replicas: **1 running / 0 crashed**
+- Warnings/criticals: **0 / 0**
+- Recent failures: **0**
+- Promotion commit: `c3206dc4fceb60c285bbd2057af45bb7acff2e89`
 - Healthcheck: `/healthz`
 - Railway deploy trigger: only changes to `.railway/frontend-deploy.txt`
 
@@ -31,11 +33,11 @@
 
 - Railway service: `gsf-ai-worker`
 - Service ID: `8cd8b98c-43b7-4c3f-bf9a-9c0968286ada`
-- Environment: `production`
 - Verified deployment: `cdec6ace-2151-4d23-aa8a-2d597d2589b2`
 - State: **SLEEPING** — expected healthy idle state because Railway sleep mode is enabled
-- Warnings/criticals: 0 / 0
-- Current worker baseline: V402 / commit `1192e00b32c975d0296ffef718fd8baab50785ef`
+- Warnings/criticals: **0 / 0**
+- Recent failures: **0**
+- Worker baseline commit: `1192e00b32c975d0296ffef718fd8baab50785ef`
 - Healthcheck: `/health` when awake
 - Railway deploy trigger: only changes to `.railway/worker-deploy.txt`
 
@@ -44,29 +46,36 @@
 Workflow: `.github/workflows/v397-production-gate.yml`  
 Workflow name: **GSF Production Gate**
 
-The runtime gate currently verifies V397/V398/V399/V400/V401/V402 contracts, current Python syntax guards, worker + frontend image builds, composite `/healthz`, blocking runtime smoke, and V343/V389/V391/V393/V394/V395/V396 UI regressions.
+Latest integration verification:
 
-Only after the current runtime-changing `main` commit passes may GitHub update the applicable Railway marker. Stale tested commits are refused when a newer `main` exists.
+- PR `#110` merged by squash into `main` as `f9a4624bbfe0aeb8a4fb749ba7e9026c69962c2d`.
+- PR head Production Gate `#50`: **SUCCESS**.
+- Main Production Gate `#51`: **SUCCESS**.
+- Gate promotion created `c3206dc4fceb60c285bbd2057af45bb7acff2e89`.
+- Railway frontend deployment `eb0d89ed-9cc1-4719-8682-032cbad307de`: **SUCCESS / Online**.
+- Worker deploy for this promotion: **SKIPPED as expected** because no worker runtime files changed.
 
-## New orchestration system — implementation branch
+The gate continues to verify V397/V398/V399/V400/V401/V402 contracts, Python syntax guards, worker/frontend image builds, composite `/healthz`, blocking runtime smoke, and V343/V389/V391/V393/V394/V395/V396 UI regressions before runtime promotion.
 
-Branch: `chat/parallel-rollback-one-command`
+## Parallel chat isolation — LIVE
 
-**Integration state:** implementation verified on the isolated branch; not yet merged to `main`, so do not describe these additions as production-live until the PR/main gate and Railway verification complete.
-
-### Parallel chat isolation
-
-Implemented on the branch:
+Files:
 
 - `tools/gsf_claims.py` — conservative ownership conflict engine.
-- `tools/gsf_task.py` — atomic global claim acquisition, unique branch/worktree bootstrap, finish/handoff and machine-readable status.
-- `.gsf/claims/index.json` — global live ownership registry.
-- `.gsf/claims/README.md` — claim lifecycle/rules.
-- Claim states: `active`, `handoff`, `completed`, `abandoned`; only `active`/`handoff` block overlap.
-- Atomic coordination uses optimistic `main` updates with retry/re-read after non-fast-forward races.
-- Product work remains isolated on `chat/<task>-<suffix>` branches/worktrees.
+- `tools/gsf_task.py` — atomic global claim acquisition, unique branch/worktree bootstrap, handoff/finish and machine-readable status.
+- `.gsf/claims/index.json` — live global ownership registry shared by all technical chats.
+- `.gsf/claims/README.md` — lifecycle and safety rules.
 
-Commands after integration:
+Claim states:
+
+- `active` — blocks overlap
+- `handoff` — blocks overlap while ownership transfers
+- `completed` — historical, does not block
+- `abandoned` — historical, does not block
+
+Atomic acquisition uses latest `origin/main`, conflict detection, optimistic push and retry/re-read after races. Two chats racing for overlapping paths cannot both win.
+
+Commands when a Git worktree is available:
 
 `python tools/gsf_task.py start --scope "<scope>" --paths <path> [<path> ...]`
 
@@ -74,75 +83,88 @@ Commands after integration:
 
 `python tools/gsf_task.py finish --claim <claim-id> --state completed --evidence-json '<json>'`
 
-### Guarded rollback
+When a local worktree is unavailable, an authenticated GitHub connector may perform the equivalent claim + dedicated-branch protocol, but it must preserve the same fail-closed ownership semantics.
 
-Implemented policy/state on the branch:
+## Guarded automatic rollback — LIVE
+
+Policy/state:
 
 - `tools/gsf_rollback_policy.py`
 - `.gsf/state/known-good.json`
 - `.gsf/incidents/index.json`
 - `docs/runbooks/gsf-automatic-rollback.md`
 
-Hard rollback eligibility only: current new deployment `FAILED`, `CRASHED`, OOM, or sustained frontend health failure. Worker `SLEEPING` with sleep enabled is healthy. Isolated 5xx/provider/network failures are notify-only.
+Current verified known-good targets:
 
-Initial known-good records were seeded from fresh Railway evidence:
-
-- frontend → `d4897ce8-f071-4557-9c36-e376c5c1e032`
+- frontend → `eb0d89ed-9cc1-4719-8682-032cbad307de`
 - worker → `cdec6ace-2151-4d23-aa8a-2d597d2589b2`
 
-Automatic action invariant: maximum **one** rollback attempt per failing deployment; recovery failure escalates and never recursively rolls back.
+GSF Guardian is enabled as an **hourly condition watch** and now applies the guarded rollback policy.
 
-Privileged Railway rollback is intentionally kept out of repository secrets and will be wired into the authenticated **GSF Guardian** only after this branch is integrated to `main`.
+Automatic rollback eligibility is deliberately narrow:
 
-### One-command workflow
+- current new deployment `FAILED`
+- current new deployment `CRASHED`
+- current new deployment OOM-killed
+- sustained frontend `/healthz` failure tied to the new deployment
 
-Implemented on the branch:
+Not automatic rollback triggers:
 
+- isolated HTTP 5xx
+- Gemini/provider/API transient errors
+- temporary network error
+- one failed user request while service health remains good
+- worker `SLEEPING` when sleep mode is enabled
+
+Safety invariant: maximum **one automatic rollback attempt per failing deployment ID**. The target must be an exact previously verified known-good deployment. Invalid/missing state fails closed. Failed recovery escalates and never recursively rolls back.
+
+The scheduled Guardian runs hourly; Railway `/healthz` remains the immediate protection during the initial deploy rollout.
+
+## One-command workflow — LIVE
+
+Files:
+
+- `AGENTS.md`
 - `docs/runbooks/gsf-one-command-workflow.md`
 - `.gsf/state/task-status.schema.json`
-- `AGENTS.md` makes the workflow the default for coding requests.
 
-State machine:
+Every coding request automatically enters this workflow unless the user explicitly asks for analysis/design only:
 
 `INTAKE -> CLAIMED -> IMPLEMENTING -> TESTED -> INTEGRATING -> GATE -> DEPLOYING -> VERIFYING -> LIVE|BLOCKED|ROLLED_BACK -> HANDOFF`
 
-Terminal evidence labels: `LIVE`, `BLOCKED`, `ROLLED_BACK`, `HANDOFF_REQUIRED`.
+Evidence-backed terminal labels are exactly:
 
-Safe-close boundary: only after **GitHub handoff** — when the commit/PR/push exists on GitHub and CI/Railway/automation owns the next step. Before GitHub handoff there is no guarantee a normal chat continues after the app/session closes.
+- `LIVE`
+- `BLOCKED`
+- `ROLLED_BACK`
+- `HANDOFF_REQUIRED`
 
-### Branch verification evidence
+### Safe-close boundary
 
-Latest orchestration CI for the implementation branch is **SUCCESS** after the final rollback anti-loop extension. Earlier full run #23 verified **31 tests PASS** plus `V397 production hardening structural contract: PASS`; the final run also passed after adding explicit end-to-end anti-loop scenarios.
+A normal ChatGPT conversation is not treated as guaranteed background execution before **GitHub handoff**.
 
-No intentional production failure/rollback test was performed.
+Once the relevant commit/PR/push exists on GitHub and GitHub CI/Railway/automation owns the next deterministic step, the user may close the app without stopping GitHub Actions or Railway. The GSF Guardian then continues on its scheduled cadence.
 
-## Deployment model after integration
+## Verification evidence
 
-```text
-User coding request
-   ↓
-Read status + acquire global claim
-   ↓
-Dedicated chat branch/worktree
-   ↓
-Implementation + relevant tests
-   ↓
-PR / integration to main
-   ↓
-GSF Production Gate
-   ├── FAIL → no Railway marker → production unchanged
-   └── PASS → required Railway marker(s)
-                    ↓
-              Railway deploy
-                    ↓
-            verify service health
-              ├── healthy → LIVE / known-good
-              └── hard failure → one guarded rollback attempt
-                                      ↓
-                              verify recovery / escalate
-                    ↓
-          update project memory + complete claim
-```
+Final isolated-branch orchestration CI after safety fixes:
+
+- **36/36 tests PASS**
+- `V397 production hardening structural contract: PASS`
+- real CLI invocation `python tools/gsf_task.py --help` verified
+- corrupt known-good state fails closed
+- corrupt incident state fails closed
+- rollback anti-loop scenarios verified
+
+PR integration checks on final head:
+
+- V398: **PASS**
+- V399: **PASS**
+- V400: **PASS**
+- V402: **PASS**
+- GSF Production Gate #50: **PASS**
+
+No intentional destructive production rollback test was performed. Rollback execution will only occur for a naturally eligible hard failure or an explicitly approved controlled failure test.
 
 ## Current user-facing verification priorities
 
@@ -158,40 +180,33 @@ Always reproduce against the current deployed build before marking one fixed/bro
 
 ## Active work
 
-Live ownership after integration is read from `.gsf/claims/index.json`. Until this branch is merged, the current orchestration implementation itself is:
+Live ownership is read from `.gsf/claims/index.json`.
 
-| Owner / chat | Branch | Scope | State |
-|---|---|---|---|
-| current implementation session | `chat/parallel-rollback-one-command` | parallel claims + rollback guard + one-command orchestration | branch tests green; awaiting PR/integration |
+Current registry after orchestration integration: **no active claims registered**.
 
-## Mandatory coding protocol after integration
+## Mandatory coding protocol
 
 1. Read `AGENTS.md` and this file.
-2. Refresh `main` and live claims.
+2. Refresh `main` and `.gsf/claims/index.json`.
 3. Acquire a narrow claim before product edits.
-4. Work only on the dedicated returned branch/worktree (or equivalent connector-created isolated branch).
+4. Work only on the dedicated branch/worktree or equivalent isolated connector branch.
 5. Run relevant tests.
-6. Integrate only with clear ownership and current `main`.
-7. Let Production Gate/Railway own runtime deployment.
-8. Record fresh evidence at handoff/completion.
+6. Reconcile current `main` before integration.
+7. Let Production Gate and Railway own runtime promotion.
+8. Verify Railway health or guarded rollback outcome.
+9. Update factual project memory and release/complete the claim.
 
 **Never write `SUCCESS`, `LIVE`, `fixed`, or `done` without fresh evidence.**
 
-## Automation
-
-- **GSF Guardian:** enabled, hourly condition watch.
-- Current production Guardian monitoring remains active.
-- Guarded rollback action is intentionally pending until the rollback policy/state files are merged to `main`.
-
 ## Recent verified milestones
 
-- **V402:** Game Brain / Auto Highlights 2.0 merged to `main`.
-- **2026-10-13:** Production Gate made permanent/version-independent in behavior.
-- **2026-10-13:** Railway frontend moved to composite `/healthz`.
-- **2026-10-13:** Railway frontend/worker changed to marker-based deploy triggers.
-- **2026-10-13:** First marker-based frontend promotion `d4897ce8-f071-4557-9c36-e376c5c1e032` verified `SUCCESS`.
-- **2026-10-13:** `PROJECT_STATUS.md` + `AGENTS.md` introduced as shared cross-chat project memory/protocol.
-- **2026-10-13:** parallel-claim, rollback-policy and one-command implementation reached green branch verification; integration pending.
+- **V402:** Game Brain / Auto Highlights 2.0 remains the current product baseline.
+- **2026-10-13:** Production Gate made version-independent in behavior and marker-gated.
+- **2026-10-13:** Railway frontend moved to composite `/healthz` and marker-only deploy trigger.
+- **2026-10-13:** `PROJECT_STATUS.md` + `AGENTS.md` established as shared cross-chat memory/protocol.
+- **2026-10-13:** PR #110 integrated atomic multi-chat claims, guarded rollback policy and one-command workflow.
+- **2026-10-13:** Main Production Gate #51 PASS; frontend deployment `eb0d89ed-9cc1-4719-8682-032cbad307de` verified SUCCESS/Online.
+- **2026-10-13:** GSF Guardian updated to guarded automatic rollback policy.
 
 ---
 
