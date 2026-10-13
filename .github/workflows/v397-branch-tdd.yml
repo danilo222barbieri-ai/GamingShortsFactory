@@ -13,3 +13,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: V397 structural contract
         run: python web/test_v397_production_hardening.py .
+      - name: Compile hardened Python surfaces
+        run: python -m py_compile web/direct_upload_server.py web/runtime_smoke_v107.py
