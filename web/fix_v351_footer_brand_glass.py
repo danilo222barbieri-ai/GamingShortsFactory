@@ -14,6 +14,7 @@ BLOCK = r'''
 # GSF_V356_FOOTER_SIDE_INSET
 # GSF_V358_FOOTER_VERSION_LABEL
 # GSF_V361_VISIBLE_VERSION
+# GSF_V395_FOOTER_STACK_CONTRACT
 import streamlit.components.v1 as _gsf_components_v351
 _gsf_components_v351.html(r"""
 <script id="gsf-v351-footer-brand-glass">
@@ -34,7 +35,7 @@ _gsf_components_v351.html(r"""
         bottom:0!important;
         top:auto!important;
         width:100%!important;
-        z-index:9997!important;
+        z-index:var(--gsf-shell-z,2147483600)!important;
         display:block!important;
         box-sizing:border-box!important;
         padding:3px 24px!important;

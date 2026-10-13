@@ -25,6 +25,7 @@ with tempfile.TemporaryDirectory() as td:
         'GSF_V356_FOOTER_SIDE_INSET',
         'GSF_V358_FOOTER_VERSION_LABEL',
         'GSF_V361_VISIBLE_VERSION',
+        'GSF_V395_FOOTER_STACK_CONTRACT',
         'gsf-v351-brand',
         'GSF - V361',
         'gsf-v351-socials',
@@ -43,7 +44,7 @@ with tempfile.TemporaryDirectory() as td:
         'bottom:0!important',
         'top:auto!important',
         'width:100%!important',
-        'z-index:9997!important',
+        'z-index:var(--gsf-shell-z,2147483600)!important',
         'left:50%!important',
         'transform:translate(-50%,-50%)!important',
         'left:max(24px,env(safe-area-inset-left))!important',
@@ -58,6 +59,7 @@ with tempfile.TemporaryDirectory() as td:
     for token in required:
         assert token in out, f'missing V361 footer token: {token}'
 
+    assert 'z-index:9997!important' not in out, 'footer must not be layered below global overlays'
     assert 'GSF - V358</span>' not in out, 'visible footer version must not remain stale'
     assert 'left:max(12px,env(safe-area-inset-left))!important' not in out
     assert 'right:max(12px,env(safe-area-inset-right))!important' not in out
@@ -74,4 +76,4 @@ with tempfile.TemporaryDirectory() as td:
     subprocess.run([sys.executable, str(FIX), str(root)], check=True)
     assert app.read_text(encoding='utf-8') == once, 'footer patch must be restart-safe'
 
-print('V361 FOOTER VERSION LABEL: PASS', flush=True)
+print('V395 FOOTER STACK + V361 BRAND CONTRACT: PASS', flush=True)
