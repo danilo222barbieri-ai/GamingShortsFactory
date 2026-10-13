@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import sys
 
 MARK='V391_MOBILE_EDITOR_TOP_ACTIONS'
@@ -50,13 +51,15 @@ RUNTIME=r'''
  if(v391CreateShort)v391CreateShort.onclick=()=>v391FinalAction('create_short');
 '''
 
+DONE_HANDLER_RE=re.compile(r'root\.querySelector\(\s*["\']#doneBtn["\']\s*\)\.onclick\s*=\s*\(\)\s*=>\s*\{')
+
 def patch_text(text:str)->str:
     if MARK in text:return text
     for anchor in ('V389_MOBILE_EDITOR_BOUNDED_RESET','id="ng27"','class="stageWrap"','id="doneBtn"','</body>'):
         if anchor not in text:raise RuntimeError('V391 Editor anchor missing: '+anchor)
-    done_anchor=" root.querySelector('#doneBtn').onclick=()=>{"
-    if done_anchor not in text:raise RuntimeError('V391 Done-handler anchor missing')
-    text=text.replace(done_anchor,RUNTIME+'\n'+done_anchor,1)
+    done=DONE_HANDLER_RE.search(text)
+    if not done:raise RuntimeError('V391 Done-handler semantic anchor missing')
+    text=text[:done.start()]+RUNTIME+'\n '+text[done.start():]
     return text.replace('</body>',STYLE+'\n</body>',1)
 
 def main()->None:

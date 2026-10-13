@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import importlib.util
 import sys
 
 root=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path('/app')
 e=(root/'web'/'editor_2027_component'/'index.html').read_text(encoding='utf-8')
 p=(root/'web'/'fix_v373_creator_hub_spacing.py').read_text(encoding='utf-8')
+fix=root/'web'/'fix_v391_mobile_editor_top_actions.py'
+spec=importlib.util.spec_from_file_location('v391fix',fix);mod=importlib.util.module_from_spec(spec);assert spec and spec.loader;spec.loader.exec_module(mod)
+fixture='''<html><body><div id="ng27"><div class="stageWrap"></div><button id="doneBtn"></button></div><!-- V389_MOBILE_EDITOR_BOUNDED_RESET --><script>root.querySelector(  "#doneBtn"  ).onclick = () => { done(); };</script></body></html>'''
+fixture_patched=mod.patch_text(fixture)
 checks={
  'marker':'V391_MOBILE_EDITOR_TOP_ACTIONS' in e,
  'reader raised':'#ng27 .shell{align-items:center!important;justify-content:flex-start!important;padding-top:18px!important}' in e,
@@ -16,6 +21,7 @@ checks={
  'real editor state':'commit();' in e and 'const payload=cloneState();' in e and 'sendStateToPython(payload);' in e and 'persistLocalState();' in e,
  'timeline stays hidden':'V389_NO_EXTERNAL_TIMELINE_CTA' in e and '.cockpit>.timeline' in e,
  'full hides project actions':'gsfFullscreen .v391EditorActions' in e and 'gsfFullscreenFallback .v391EditorActions' in e,
+ 'semantic Done anchor accepts runtime formatting':'V391_EDITOR_ACTION_RUNTIME' in fixture_patched and 'root.querySelector(  "#doneBtn"  ).onclick = () => {' in fixture_patched,
  'pipeline runs V391':"fix_v391_mobile_editor_top_actions.py" in p and "test_v391_mobile_editor_top_actions.py" in p,
 }
 failed=[k for k,v in checks.items() if not v]
