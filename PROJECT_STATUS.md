@@ -9,9 +9,9 @@
 - **Repository:** `danilo222barbieri-ai/GamingShortsFactory`
 - **Production branch:** `main`
 - **Current product baseline:** **V402 — Game Brain / Auto Highlights 2.0**
-- **Current `main` HEAD:** `abd4f83c512366d0a24792fa022c88363b260750`
-- **Last fully tested source commit:** `001802a00a9b33694b1c01729dd8054132c2e672`
-- **Promotion commit:** `abd4f83c512366d0a24792fa022c88363b260750` — `deploy: promote tested 001802a00a9b [skip ci]`
+- **Current `main` HEAD:** always query GitHub live; do not cache it in this file because documentation-only commits can advance `main` without changing production.
+- **Last fully tested runtime source commit:** `001802a00a9b33694b1c01729dd8054132c2e672`
+- **Last runtime promotion commit:** `abd4f83c512366d0a24792fa022c88363b260750` — `deploy: promote tested 001802a00a9b [skip ci]`
 
 ## Production state
 
@@ -21,7 +21,7 @@
 - Environment: `production`
 - Latest verified deployment: `d4897ce8-f071-4557-9c36-e376c5c1e032`
 - Status: **SUCCESS**
-- Deployed commit: `abd4f83c512366d0a24792fa022c88363b260750`
+- Deployed runtime promotion commit: `abd4f83c512366d0a24792fa022c88363b260750`
 - Healthcheck: `/healthz`
 - Railway deploy trigger: only changes to `.railway/frontend-deploy.txt`
 
@@ -58,7 +58,7 @@ Before a runtime change can reach Railway, the gate currently verifies:
 - V343 global shell contract
 - V389/V391/V393/V394/V395/V396 UI regression contracts
 
-Only after the gate passes on the current `main` commit does GitHub update the appropriate Railway deployment marker. A stale tested commit is not promoted if a newer `main` commit already exists.
+Only after the gate passes on the current runtime-changing `main` commit does GitHub update the appropriate Railway deployment marker. A stale tested commit is not promoted if a newer `main` commit already exists.
 
 ## Deployment model
 
@@ -140,6 +140,7 @@ At the end of a task, record:
 - Preserve other chats' active rows and handoff notes.
 - Do not put secrets, API keys, tokens, passwords, personal data, or Railway secret values in this file.
 - Documentation-only status updates should use a commit message containing `[skip ci]` when appropriate so they do not waste Production Gate capacity.
+- Documentation-only commits may advance GitHub `main` while Railway correctly remains on the last tested runtime promotion. This is expected.
 
 ## Automation
 
@@ -154,6 +155,7 @@ At the end of a task, record:
 - **2026-10-13:** Railway frontend moved to composite `/healthz`.
 - **2026-10-13:** Railway frontend and worker changed to marker-based deploy triggers so ordinary untested pushes do not deploy automatically.
 - **2026-10-13:** First marker-based frontend promotion completed with Railway deployment `d4897ce8-f071-4557-9c36-e376c5c1e032` = `SUCCESS`.
+- **2026-10-13:** `PROJECT_STATUS.md` + `AGENTS.md` introduced as the shared cross-chat handoff protocol.
 
 ---
 
