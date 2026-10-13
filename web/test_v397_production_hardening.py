@@ -19,7 +19,7 @@ def forbid(text, token, label):
     if token in text:
         raise AssertionError(f'{label}: forbidden {token}')
 
-# V397 production hardening contract.
+# V397 composite production health.
 require(nginx,'location = /healthz','composite nginx health route')
 require(companion,'def _composite_health','composite companion health helper')
 require(companion,'"/healthz"','companion health route')
@@ -31,8 +31,17 @@ require(smoke,'request("/healthz"','runtime smoke composite health request')
 require(smoke,'health.get("companion")','runtime smoke companion assertion')
 require(smoke,'health.get("streamlit")','runtime smoke Streamlit assertion')
 forbid(start,'python /app/web/runtime_smoke_v107.py &','runtime smoke must not be detached')
-require(companion,'GSF_EDITOR_MEDIA_NOT_READY','expected empty Editor media state')
+
+# Empty Editor media is an expected valid-session state, not an operational 404.
+require(companion,'GSF_EDITOR_MEDIA_NOT_READY','expected empty Editor media marker')
+require(companion,'handler.send_response(204)','expected empty Editor media HTTP 204')
+require(smoke,'editor-media/current','runtime smoke empty Editor media coverage')
+
+# Creator Hub social state is loaded once and reused in the response and count.
 require(companion,'def _creator_social_snapshot','Creator Hub social snapshot helper')
+require(companion,'social_snapshot=_creator_social_snapshot(sid,providers)','Creator Hub snapshot single acquisition')
+require(companion,'"social":social_snapshot','Creator Hub snapshot response reuse')
+require(companion,'sum(1 for connected in social_snapshot.values() if connected)','Creator Hub snapshot stats reuse')
 
 # Existing production ownership must stay intact in Phase 1.
 require(start,'test_v343_single_global_shell.py','V343 global shell contract retained')
