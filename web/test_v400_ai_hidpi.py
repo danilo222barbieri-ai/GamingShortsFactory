@@ -75,6 +75,8 @@ need("data-v400-hidpi" in patched_component,
      "Game Editor exposes a V400 Hi-DPI runtime marker")
 need("shape-rendering:geometricPrecision" in patched_component,
      "SVG controls request geometric precision on Hi-DPI displays")
+need("DOMContentLoaded" in patched_component,
+     "Hi-DPI runtime waits for the editor root when injected in the document head")
 need(len(patched_component) > len(base_component),
      "Hi-DPI layer is additive and does not replace the approved editor UI")
 
