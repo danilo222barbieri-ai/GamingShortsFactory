@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import io
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from job_state_v401 import (
@@ -11,7 +12,7 @@ from job_state_v401 import (
     persist_job_state,
     recover_persisted_state,
 )
-from fix_v401_frontend_memory import patch_runtime_source, stream_uploaded_file
+from fix_v401_frontend_memory import MAX_STREAM_CHUNK, patch_runtime_source, stream_uploaded_file
 from fix_v401_worker_state import patch_worker_source
 
 
@@ -32,6 +33,17 @@ class FakeS3:
     def get_object(self, Bucket, Key):
         raw = self.objects[(Bucket, Key)]
         return {"Body": io.BytesIO(raw)}
+
+
+class TrackingBytesIO(io.BytesIO):
+    def __init__(self, raw):
+        super().__init__(raw)
+        self.max_requested = 0
+
+    def read(self, size=-1):
+        if size is not None and size >= 0:
+            self.max_requested = max(self.max_requested, int(size))
+        return super().read(size)
 
 
 need("semantic" in ACTIVE_JOB_STATES,
@@ -61,8 +73,27 @@ done = recover_persisted_state(enrich_job_state({"state": "done", "analysis_key"
 need(done["state"] == "done" and float(done["progress"]) == 1.0,
      "terminal completed jobs remain completed after restart")
 
+for concurrent_jobs in (1, 2, 4, 6):
+    stress_store = FakeS3()
+
+    def round_trip(index):
+        job_id = f"stress-{concurrent_jobs}-{index}"
+        state = enrich_job_state({
+            "state": "queued" if index % 2 == 0 else "semantic",
+            "analysis_key": f"analysis/stress/{concurrent_jobs}/{index}.json",
+        }, now=300.0 + index)
+        persist_job_state(stress_store, "bucket", job_id, state)
+        return job_id, load_job_state(stress_store, "bucket", job_id)
+
+    with ThreadPoolExecutor(max_workers=concurrent_jobs) as pool:
+        rows = list(pool.map(round_trip, range(concurrent_jobs)))
+    need(len(rows) == concurrent_jobs and len(stress_store.objects) == concurrent_jobs,
+         f"persistent job-state stress matrix preserves {concurrent_jobs} concurrent jobs")
+    need(all(row[1]["analysis_key"].endswith(f"/{index}.json") for index, row in enumerate(rows)),
+         f"persistent job-state stress matrix avoids collisions at {concurrent_jobs} jobs")
+
 payload = b"0123456789" * 1024
-uploaded = io.BytesIO(payload)
+uploaded = TrackingBytesIO(payload)
 uploaded.seek(17)
 with tempfile.TemporaryDirectory(prefix="gsf_v401_test_") as tmp:
     target = Path(tmp) / "video.mp4"
@@ -71,6 +102,8 @@ with tempfile.TemporaryDirectory(prefix="gsf_v401_test_") as tmp:
          "fallback upload is streamed completely to disk in bounded chunks")
     need(uploaded.tell() == 17,
          "streaming fallback restores the original UploadedFile cursor")
+    need(uploaded.max_requested <= MAX_STREAM_CHUNK,
+         "fallback upload never requests a read larger than the V401 memory bound")
 
 source = Path("app.py").read_text(encoding="utf-8")
 patched = patch_runtime_source(source)
