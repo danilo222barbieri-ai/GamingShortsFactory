@@ -20,7 +20,7 @@ on:
 jobs:
   security-contract:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -34,6 +34,8 @@ jobs:
         run: python -m py_compile web/direct_upload_server.py web/fix_v410_security_hardening.py web/test_v410_security_hardening.py
       - name: V410 security contract
         run: python web/test_v410_security_hardening.py .
+      - name: Verify production dependency lock resolves
+        run: python -m pip install --disable-pip-version-check --dry-run -r requirements-web.txt -c constraints-web.txt
       - name: Dependency audit with pip-audit
         uses: pypa/gh-action-pip-audit@v1.1.0
         with:
