@@ -4,6 +4,8 @@
   "scope": "Simplify Creator Hub project and Shorts pages",
   "paths": [
     "web/creator_hub_v156_component/index.html",
+    "web/fix_v374_creator_hub_spacing_live.py",
+    "web/fix_v403_creator_hub_simplified.py",
     "web/test_v403_creator_hub_simplified.py"
   ],
   "owner": "chat/creator-hub-simplify-8cf0cf",
