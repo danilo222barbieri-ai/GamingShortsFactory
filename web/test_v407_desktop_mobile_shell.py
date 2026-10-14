@@ -80,7 +80,8 @@ class V407ProductionPathTests(unittest.TestCase):
         self.assertIn("v407_active=v407_path.is_file()", self.legacy_v267_gate)
         self.assertIn('"V407 mobile canvas"', self.legacy_v267_gate)
         self.assertIn('"V407 giant ad rails"', self.legacy_v267_gate)
-        self.assertIn("if not v407_active:", self.legacy_v267_gate)
+        self.assertIn("if v407_active:", self.legacy_v267_gate)
+        self.assertIn("else:", self.legacy_v267_gate)
         self.assertIn('checks["Premium card motion"]', self.legacy_v267_gate)
         self.assertIn('checks["Reduced motion protected"]', self.legacy_v267_gate)
 
