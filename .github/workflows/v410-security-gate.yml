@@ -8,6 +8,7 @@ on:
       - 'web/fix_v410_security_hardening.py'
       - 'web/fix_v410_1_edge_identity.py'
       - 'web/test_v410_security_hardening.py'
+      - 'web/test_v105_dependency_lock.py'
       - 'web/start_secure.sh'
       - 'web/direct_upload_server.py'
       - 'web/nginx.conf.template'
@@ -38,7 +39,7 @@ jobs:
           python web/fix_v410_security_hardening.py .
           python web/fix_v410_1_edge_identity.py .
       - name: Compile protected server
-        run: python -m py_compile web/direct_upload_server.py web/fix_v410_security_hardening.py web/fix_v410_1_edge_identity.py web/test_v410_security_hardening.py web/content_memory_v145.py web/editor_2027_embed.py
+        run: python -m py_compile web/direct_upload_server.py web/fix_v410_security_hardening.py web/fix_v410_1_edge_identity.py web/test_v410_security_hardening.py web/test_v105_dependency_lock.py web/content_memory_v145.py web/editor_2027_embed.py
       - name: V410 security contract
         run: python web/test_v410_security_hardening.py .
       - name: Verify production dependency lock resolves
