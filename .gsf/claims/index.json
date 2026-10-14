@@ -117,6 +117,20 @@
       "owner": "chat/desktop-mobile-shell-v407-7e31ca",
       "created_at": "2026-10-14T06:11:00+00:00",
       "state": "active"
+    },
+    {
+      "id": "project-state-v408-3f4b21",
+      "branch": "chat/project-state-v408-3f4b21",
+      "scope": "Add a durable unified ProjectState reducer and serialization layer without touching locked app.py",
+      "paths": [
+        "gsf_project_state.py",
+        "tests/test_gsf_project_state.py",
+        "docs/architecture/gsf-project-state.md",
+        ".github/workflows/v408-project-state.yml"
+      ],
+      "owner": "chat/project-state-v408-3f4b21",
+      "created_at": "2026-10-14T06:39:00+00:00",
+      "state": "active"
     }
   ]
 }
