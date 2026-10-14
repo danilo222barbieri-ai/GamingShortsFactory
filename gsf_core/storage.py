@@ -123,6 +123,13 @@ class S3Storage:
             client = boto3.client("s3", region_name=region_name, endpoint_url=endpoint_url)
         self.client = client
 
+    @staticmethod
+    def _project_token(project_id: str) -> str:
+        token = re.sub(r"[^A-Za-z0-9_-]", "_", project_id)
+        if not token:
+            raise ValueError("project_id is required")
+        return token
+
     def create_presigned_upload(
         self,
         *,
@@ -137,9 +144,7 @@ class S3Storage:
             raise ValueError("max_bytes must be positive")
         if expires_in < 1:
             raise ValueError("expires_in must be positive")
-        project_token = re.sub(r"[^A-Za-z0-9_-]", "_", project_id)
-        if not project_token:
-            raise ValueError("project_id is required")
+        project_token = self._project_token(project_id)
         ext = _safe_extension(filename)
         object_name = f"{uuid.uuid4().hex}{ext}"
         relative = f"projects/{project_token}/{kind.value}/{object_name}"
@@ -180,12 +185,18 @@ class S3Storage:
             max_bytes=max_bytes,
         )
 
-    def confirm_upload(self, asset: AssetRef, *, max_bytes: int) -> AssetRef:
+    def confirm_upload(self, asset: AssetRef, *, project_id: str, max_bytes: int) -> AssetRef:
         """Verify a browser-direct upload before it enters the processing graph."""
         if asset.backend != self.backend_name:
             raise ValueError(f"asset backend is {asset.backend!r}, expected s3")
         if max_bytes < 1:
             raise ValueError("max_bytes must be positive")
+        project_token = self._project_token(project_id)
+        expected_prefix = f"projects/{project_token}/"
+        if self.prefix:
+            expected_prefix = f"{self.prefix}/{expected_prefix}"
+        if not asset.key.startswith(expected_prefix):
+            raise ValueError("asset does not belong to this project namespace")
         head = self.client.head_object(Bucket=self.bucket, Key=asset.key)
         size = int(head.get("ContentLength", 0))
         if size < 1:
