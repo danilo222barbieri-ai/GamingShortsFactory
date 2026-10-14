@@ -293,7 +293,16 @@
       ],
       "owner": "chat/production-queue-20261014",
       "created_at": "2026-10-14T10:05:00+00:00",
-      "state": "active"
+      "state": "completed",
+      "evidence": {
+        "pr": 123,
+        "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+        "tests": "52 local pytest tests passed; PR Production Gate 38630205476 passed; main Production Gate 38631006544 passed",
+        "promotion_commit": "e2f1de18e634d4308b1255b2a2e83396107522cd",
+        "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS /healthz 200",
+        "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SUCCESS",
+        "runtime": "Creator Hub stable sid and csrf_token verified live; missing CSRF 403; authorized missing draft 404"
+      }
     }
   ]
 }

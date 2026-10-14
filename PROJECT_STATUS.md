@@ -7,25 +7,22 @@
 
 - **Repository:** `danilo222barbieri-ai/GamingShortsFactory`
 - **Production branch:** `main`
-- **Current product baseline:** **V402 — Game Brain / Auto Highlights 2.0**
+- **Current product baseline:** **V411 — consolidated V403–V410 production queue**
 - **Cross-chat orchestration:** **LIVE**
-- **Last fully tested main source commit:** `f9a4624bbfe0aeb8a4fb749ba7e9026c69962c2d`
-- **Last runtime promotion commit:** `c3206dc4fceb60c285bbd2057af45bb7acff2e89` — `deploy: promote tested f9a4624bbfe0 [skip ci]`
+- **Last fully tested main source commit:** `e89541f42cca0412465bf9629bbf0c0f13f5ee4f`
+- **Last runtime promotion commit:** `e2f1de18e634d4308b1255b2a2e83396107522cd` — `deploy: promote tested e89541f42cca [skip ci]`
 - **Current `main` HEAD:** always query GitHub live; coordination/status-only commits may advance `main` without changing production.
 
-## Production state — verified 2026-10-13 22:33 UTC
+## Production state — verified 2026-10-14 20:32 UTC
 
 ### Frontend
 
 - Railway service: `gaming-shorts-factory-v79`
 - Service ID: `89ae81ec-54d7-4f22-98f4-c88d6361a6a2`
 - Environment: `production` (`5cb868d5-9936-4ff0-be2d-ef42be7fe0ec`)
-- Verified deployment: `eb0d89ed-9cc1-4719-8682-032cbad307de`
+- Verified deployment: `c348c7d9-c6f4-48e3-b469-1ad9638c49f9`
 - Status: **SUCCESS / Online**
-- Replicas: **1 running / 0 crashed**
-- Warnings/criticals: **0 / 0**
-- Recent failures: **0**
-- Promotion commit: `c3206dc4fceb60c285bbd2057af45bb7acff2e89`
+- Promotion commit: `e2f1de18e634d4308b1255b2a2e83396107522cd`
 - Healthcheck: `/healthz`
 - Railway deploy trigger: only changes to `.railway/frontend-deploy.txt`
 
@@ -33,11 +30,9 @@
 
 - Railway service: `gsf-ai-worker`
 - Service ID: `8cd8b98c-43b7-4c3f-bf9a-9c0968286ada`
-- Verified deployment: `cdec6ace-2151-4d23-aa8a-2d597d2589b2`
-- State: **SLEEPING** — expected healthy idle state because Railway sleep mode is enabled
-- Warnings/criticals: **0 / 0**
-- Recent failures: **0**
-- Worker baseline commit: `1192e00b32c975d0296ffef718fd8baab50785ef`
+- Verified deployment: `ba536c6a-9544-42d6-9482-4ff0ba0d50d4`
+- State: **SUCCESS** — the service may return to expected `SLEEPING` after idle because sleep mode is enabled
+- Worker baseline commit: `e89541f42cca0412465bf9629bbf0c0f13f5ee4f`
 - Healthcheck: `/health` when awake
 - Railway deploy trigger: only changes to `.railway/worker-deploy.txt`
 
@@ -48,12 +43,14 @@ Workflow name: **GSF Production Gate**
 
 Latest integration verification:
 
-- PR `#110` merged by squash into `main` as `f9a4624bbfe0aeb8a4fb749ba7e9026c69962c2d`.
-- PR head Production Gate `#50`: **SUCCESS**.
-- Main Production Gate `#51`: **SUCCESS**.
-- Gate promotion created `c3206dc4fceb60c285bbd2057af45bb7acff2e89`.
-- Railway frontend deployment `eb0d89ed-9cc1-4719-8682-032cbad307de`: **SUCCESS / Online**.
-- Worker deploy for this promotion: **SKIPPED as expected** because no worker runtime files changed.
+- PR `#123` merged by squash into `main` as `e89541f42cca0412465bf9629bbf0c0f13f5ee4f`.
+- PR head Production Gate run `38630205476`: **SUCCESS**.
+- Main Production Gate run `38631006544`: **SUCCESS**.
+- Gate promotion created `e2f1de18e634d4308b1255b2a2e83396107522cd` and updated both Railway markers to tested SHA `e89541f42cca0412465bf9629bbf0c0f13f5ee4f`.
+- Railway frontend deployment `c348c7d9-c6f4-48e3-b469-1ad9638c49f9`: **SUCCESS / Online**.
+- Railway worker deployment `ba536c6a-9544-42d6-9482-4ff0ba0d50d4`: **SUCCESS**.
+- Live `/healthz`: **200 / ok**, with companion, Streamlit and worker checks true.
+- Live Creator Hub security contract: stable `gsf_sid`, stable `csrf_token`, missing-CSRF POST `403`, authorized missing draft `404`.
 
 The gate continues to verify V397/V398/V399/V400/V401/V402 contracts, Python syntax guards, worker/frontend image builds, composite `/healthz`, blocking runtime smoke, and V343/V389/V391/V393/V394/V395/V396 UI regressions before runtime promotion.
 
@@ -96,8 +93,8 @@ Policy/state:
 
 Current verified known-good targets:
 
-- frontend → `eb0d89ed-9cc1-4719-8682-032cbad307de`
-- worker → `cdec6ace-2151-4d23-aa8a-2d597d2589b2`
+- frontend → `c348c7d9-c6f4-48e3-b469-1ad9638c49f9`
+- worker → `ba536c6a-9544-42d6-9482-4ff0ba0d50d4`
 
 GSF Guardian is enabled as an **hourly condition watch** and now applies the guarded rollback policy.
 
