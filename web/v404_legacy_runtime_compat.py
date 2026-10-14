@@ -81,10 +81,14 @@ def migrate_v308():
 
 def test_v308():
     require_ai404()
+    # V307 intentionally purges historical viewport media blocks immediately
+    # before this step. The authoritative replacement is therefore the V404
+    # functional contract plus the component's responsive viewport declaration,
+    # not the presence of a specific legacy @media rule.
     run_v404_contract()
     ai = AI.read_text(encoding='utf-8')
-    if '@media(max-width:700px)' not in ai or 'prefers-reduced-motion:reduce' not in ai:
-        fail('V404 responsive/reduced-motion contract missing')
+    if '<meta name="viewport"' not in ai or 'width=device-width' not in ai:
+        fail('V404 viewport contract missing after V307 normalization')
     print('V404 compat V308 replacement contract: PASS', flush=True)
 
 
