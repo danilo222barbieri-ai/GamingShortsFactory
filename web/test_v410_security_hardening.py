@@ -26,7 +26,7 @@ for token in (
     "limit_req_zone",
     "limit_conn_zone",
     "$gsf_client_key",
-    "$http_x_forwarded_for",
+    "$http_x_real_ip",
     "X-Content-Type-Options",
     "Strict-Transport-Security",
     "Referrer-Policy",
