@@ -5,356 +5,291 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>
 :root{
- --ink:#0D2A66;--soft:#7185A6;--blue:#54A9F3;--blueSoft:#D9EDFF;
- --mint:#C9F2DA;--mintInk:#078F61;--yellow:#FFE39A;--yellowInk:#D68000;
- --line:rgba(143,181,216,.25);--glass:rgba(255,255,255,.86);
+  --ink:#102d5e;--muted:#7185a3;--line:rgba(111,151,190,.18);
+  --blue:#55aaf2;--blue2:#7ccff8;--sky:#eaf6ff;--mint:#e8f8ef;
+  --violet:#f0ebff;--warm:#fff4d8;--card:rgba(255,255,255,.88);
+  --shadow:0 18px 46px rgba(56,96,135,.09);--softShadow:0 10px 28px rgba(56,96,135,.07);
 }
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;color:var(--ink);font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-button{font:inherit}
-#ai221{width:100%;height:100%;overflow:auto;padding:16px 18px 14px;background:
- radial-gradient(circle at 8% 6%,rgba(126,214,255,.22),transparent 25%),
- radial-gradient(circle at 92% 7%,rgba(127,236,197,.19),transparent 26%),
- linear-gradient(180deg,#FCFEFF 0%,#F8FCFF 60%,#F4FAFF 100%)}
-.top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:0 2px 11px}
-.title{display:flex;align-items:center;gap:12px}
-.titleIcon{width:48px;height:48px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(145deg,#E6F6FF,#D9F0FF);color:#2E8FE3;box-shadow:inset 0 0 0 1px #fff,0 10px 26px rgba(78,154,214,.13)}
-.titleIcon svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-h1{margin:0;font-size:clamp(23px,2.1vw,33px);line-height:1;font-weight:900;letter-spacing:-.035em}
-.subtitle{margin:6px 0 0;font-size:11px;font-weight:650;color:var(--soft)}
-.duration{display:flex;align-items:center;gap:6px;padding:5px;border-radius:16px;background:rgba(255,255,255,.83);border:1px solid var(--line);box-shadow:0 8px 22px rgba(65,105,145,.06)}
-.duration button{border:0;border-radius:11px;padding:8px 12px;background:transparent;color:#7288A6;font-size:9px;font-weight:900;cursor:pointer}
-.duration button.active{background:#DCEFFF;color:#267FCB;box-shadow:0 4px 12px rgba(60,145,214,.12)}
-
-.guide{position:absolute;pointer-events:none;color:#637DA8;font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive;font-weight:600;line-height:1.05;text-align:center;z-index:3}
-.guide.left{left:18px;top:86px;width:160px;font-size:14px;transform:rotate(-4deg)}
-.guide.right{right:28px;top:82px;width:170px;font-size:13px;transform:rotate(4deg)}
-.guide span{display:block;transition:opacity .44s ease,filter .44s ease,transform .44s ease}
-.guide span.out{opacity:0;filter:blur(7px);transform:translateY(-8px) scale(.93)}
-@keyframes writeIn{0%{opacity:0;filter:blur(8px);transform:translateY(9px) scale(.92)}70%{opacity:1;filter:blur(.5px);transform:translateY(-2px) scale(1.02)}100%{opacity:1;filter:none;transform:none}}
-.guide span.in{animation:writeIn 1.08s cubic-bezier(.18,.72,.2,1) 1}
-
-.panel{position:relative;border:1px solid var(--line);border-radius:25px;background:rgba(255,255,255,.78);backdrop-filter:blur(17px);-webkit-backdrop-filter:blur(17px);box-shadow:0 16px 40px rgba(61,104,145,.08),inset 0 1px 0 rgba(255,255,255,.95);padding:13px}
-.panel+.panel{margin-top:10px}
-.panelHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-.panelTitle{font-size:14px;font-weight:900}
-.panelHint{font-size:8px;color:#7C91AA;font-weight:750}
-.engines{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
-.engine{position:relative;min-height:190px;padding:12px;border:1px solid rgba(143,181,216,.23);border-radius:20px;background:rgba(255,255,255,.91);box-shadow:0 9px 25px rgba(65,105,145,.065),inset 0 1px 0 #fff;display:flex;flex-direction:column;cursor:pointer;transition:.22s ease;text-align:left}
-.engine:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(65,105,145,.11),inset 0 1px 0 #fff}
-.engine.selected{border-color:#70C7F5;box-shadow:0 0 0 3px rgba(104,203,249,.17),0 14px 32px rgba(65,105,145,.11),inset 0 1px 0 #fff}
-.engineTop{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.engineIcon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:20px;font-weight:900}
-.engine[data-engine="auto"] .engineIcon{background:#DDEEFF;color:#337ED2}
-.engine[data-engine="best"] .engineIcon{background:#CFF3DD;color:#088E63}
-.engine[data-engine="action"] .engineIcon{background:#FFE5A3;color:#D68000}
-.engine[data-engine="reaction"] .engineIcon{background:#E8DFFF;color:#7C64D8}
-.check{width:24px;height:24px;border-radius:9px;display:grid;place-items:center;background:#E6F5FF;color:#378FD7;font-size:11px;opacity:0;transform:scale(.85);transition:.18s}
-.engine.selected .check{opacity:1;transform:scale(1)}
-.engine h3{margin:10px 0 4px;font-size:14px;font-weight:900;letter-spacing:-.02em}
-.engine p{margin:0;color:var(--soft);font-size:9px;line-height:1.38}
-.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:9px}
-.tag{font-size:7px;font-weight:800;color:#6984A2;padding:4px 6px;border-radius:999px;background:#EDF6FF}
-.selectBtn{margin-top:auto;border:0;border-radius:12px;padding:9px;background:#EFF8FF;color:#397CB8;font-size:8.5px;font-weight:900;cursor:pointer}
-.engine.selected .selectBtn{background:linear-gradient(135deg,#76CFF8,#4EA9F4);color:white}
-.actionRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
-.status{font-size:9px;color:#7288A6;font-weight:750}
-.create{border:0;border-radius:15px;padding:11px 18px;background:linear-gradient(135deg,#77D3FB,#4EA7F3);color:#fff;font-size:10px;font-weight:900;cursor:pointer;box-shadow:0 9px 22px rgba(69,157,223,.20)}
-.create:disabled{opacity:.42;cursor:not-allowed}
-
-.moments{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
-.moment{min-height:106px;border:1px solid rgba(143,181,216,.23);border-radius:18px;background:rgba(255,255,255,.9);padding:7px;cursor:pointer;position:relative;overflow:hidden;text-align:left}
-.thumb{height:72px;border-radius:13px;background:linear-gradient(145deg,#E8F5FF,#EEF8F5);overflow:hidden;position:relative}
-.thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.rank{position:absolute;top:6px;left:6px;width:24px;height:24px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.91);color:#327FC7;font-size:10px;font-weight:900;box-shadow:0 4px 10px rgba(40,90,135,.12)}
-.play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(15,40,68,.76);color:#fff;font-size:11px}
-.moment b{display:block;font-size:9px;margin:6px 2px 0}
-.empty{display:grid;place-items:center;height:72px;color:#8BA0B6;font-size:8px;font-weight:800;text-align:center;padding:8px}
-.footerNote{font-size:8px;color:#8396AC;font-weight:700}
-
-@media(max-width:900px){
- #ai221{padding:12px 10px 11px}
- .engines{grid-template-columns:repeat(2,minmax(0,1fr))}
- .engine{min-height:155px}
- .guide{display:none}
+html,body{margin:0;width:100%;min-height:100%;background:transparent;color:var(--ink);font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:3px solid rgba(84,169,243,.28);outline-offset:3px}
+#ai404{width:100%;min-height:100vh;padding:clamp(16px,2vw,28px);background:
+  radial-gradient(circle at 8% 5%,rgba(124,207,248,.18),transparent 27%),
+  radial-gradient(circle at 91% 4%,rgba(121,230,188,.13),transparent 27%),
+  linear-gradient(180deg,#feffff 0%,#f8fbfe 100%)}
+.shell{width:min(980px,100%);margin:0 auto}
+.view{display:none;animation:enter .32s cubic-bezier(.2,.8,.2,1)}
+.view.is-active{display:block}
+@keyframes enter{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;margin-bottom:9px;color:#4a91cc;font-size:11px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+.eyebrow:before{content:"";width:8px;height:8px;border-radius:50%;background:linear-gradient(145deg,#7dd6f9,#55a7ef);box-shadow:0 0 0 6px rgba(88,174,240,.09)}
+h1{margin:0;font-size:clamp(29px,4vw,48px);line-height:.98;letter-spacing:-.045em;font-weight:900}
+.lead{max-width:520px;margin:12px 0 0;color:var(--muted);font-size:clamp(13px,1.5vw,16px);line-height:1.45;font-weight:620}
+.intro{padding:clamp(10px,2vw,18px) 2px clamp(18px,2.5vw,28px)}
+.engine-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.engine-card{position:relative;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;min-height:118px;padding:17px 18px;border:1px solid var(--line);border-radius:25px;background:var(--card);box-shadow:var(--softShadow);text-align:left;cursor:pointer;transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease,background .22s ease}
+.engine-card:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(56,96,135,.10)}
+.engine-card.is-selected{border-color:rgba(73,166,232,.55);background:rgba(250,254,255,.96);box-shadow:0 0 0 4px rgba(83,173,238,.10),0 17px 36px rgba(56,96,135,.10)}
+.engine-card--auto.is-selected{background:linear-gradient(145deg,rgba(239,249,255,.98),rgba(255,255,255,.98))}
+.engine-icon{width:55px;height:55px;border-radius:18px;display:grid;place-items:center;font-size:21px;font-weight:900}
+.engine-card[data-engine="auto"] .engine-icon{background:var(--sky);color:#3889d1}
+.engine-card[data-engine="action"] .engine-icon{background:var(--warm);color:#c98500}
+.engine-card[data-engine="reaction"] .engine-icon{background:var(--violet);color:#735bd1}
+.engine-card[data-engine="best"] .engine-icon{background:var(--mint);color:#14916a}
+.engine-copy strong{display:block;font-size:14px;font-weight:950;letter-spacing:.03em}
+.engine-copy span{display:block;margin-top:5px;color:var(--muted);font-size:11px;line-height:1.35;font-weight:650}
+.engine-check{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#e8f5ff;color:#408fd1;font-size:12px;font-weight:950;opacity:0;transform:scale(.75);transition:.18s ease}
+.engine-card.is-selected .engine-check{opacity:1;transform:scale(1)}
+.controls{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;padding:13px 14px;border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.68)}
+.duration-wrap{display:flex;align-items:center;gap:9px}
+.duration-label{font-size:10px;color:var(--muted);font-weight:850;text-transform:uppercase;letter-spacing:.08em}
+.duration{display:flex;gap:5px;padding:4px;border-radius:14px;background:#edf4fa}
+.duration button{border:0;border-radius:10px;background:transparent;padding:8px 13px;color:#7389a5;font-size:10px;font-weight:900;cursor:pointer;transition:.18s ease}
+.duration button.active{background:white;color:#2d82c9;box-shadow:0 4px 12px rgba(56,96,135,.09)}
+.status{min-height:17px;color:var(--muted);font-size:10px;font-weight:700;text-align:right}
+.primary-cta{width:100%;margin-top:12px;border:0;border-radius:19px;padding:16px 20px;background:linear-gradient(135deg,var(--blue2),var(--blue));color:white;font-size:12px;font-weight:950;letter-spacing:.055em;cursor:pointer;box-shadow:0 12px 28px rgba(69,157,223,.22);transition:transform .18s ease,filter .18s ease}
+.primary-cta:hover:not(:disabled){filter:saturate(1.06);transform:translateY(-1px)}
+.primary-cta:active:not(:disabled){transform:scale(.992)}
+.primary-cta:disabled{opacity:.42;cursor:not-allowed;box-shadow:none}
+.results-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:clamp(8px,2vw,16px) 2px 21px}
+.text-action{border:0;background:transparent;padding:8px 2px;color:#4d8dc5;font-size:11px;font-weight:850;cursor:pointer;white-space:nowrap}
+.moments-grid{display:grid;grid-template-columns:1.45fr 1fr 1fr;gap:12px;align-items:stretch}
+.moment-card{position:relative;min-width:0;border:1px solid var(--line);border-radius:24px;background:var(--card);padding:10px;box-shadow:var(--softShadow);cursor:pointer;text-align:left;transition:.22s ease;overflow:hidden}
+.moment-card:hover{transform:translateY(-2px)}
+.moment-card.is-selected{border-color:rgba(76,167,232,.54);box-shadow:0 0 0 4px rgba(83,173,238,.09),0 17px 36px rgba(56,96,135,.10)}
+.moment-card--hero{min-height:306px}
+.moment-visual{position:relative;min-height:176px;border-radius:18px;overflow:hidden;background:
+  radial-gradient(circle at 25% 25%,rgba(113,211,250,.42),transparent 29%),
+  linear-gradient(145deg,#dff2ff,#eff8f5)}
+.moment-card--hero .moment-visual{min-height:222px}
+.moment-visual img{display:block;width:100%;height:100%;position:absolute;inset:0;object-fit:cover}
+.play-dot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:42px;height:42px;border-radius:50%;display:grid;place-items:center;padding-left:2px;background:rgba(15,39,67,.72);color:white;font-size:13px;backdrop-filter:blur(7px)}
+.rank{position:absolute;left:10px;top:10px;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:7px 9px;background:rgba(255,255,255,.91);box-shadow:0 5px 14px rgba(42,75,110,.10);font-size:9px;font-weight:950}
+.best{color:#3187cc}
+.score{position:absolute;right:10px;top:10px;border-radius:999px;padding:7px 9px;background:rgba(16,44,78,.76);color:white;font-size:9px;font-weight:900;backdrop-filter:blur(7px)}
+.moment-body{padding:11px 4px 4px}
+.moment-title{font-size:12px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.moment-meta{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-top:7px;color:#8294aa;font-size:9px;font-weight:750}
+.empty-state{grid-column:1/-1;display:grid;place-items:center;min-height:250px;border:1px dashed rgba(111,151,190,.26);border-radius:24px;background:rgba(255,255,255,.56);color:#8a9db3;font-size:11px;font-weight:750;text-align:center;padding:25px}
+.action-dock{display:grid;grid-template-columns:1.35fr 1fr auto;gap:9px;margin-top:14px;padding:9px;border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.82);box-shadow:var(--shadow);backdrop-filter:blur(15px);position:sticky;bottom:10px;z-index:4}
+.action-dock button{border:0;border-radius:14px;padding:13px 15px;font-size:10px;font-weight:950;cursor:pointer;transition:.18s ease}
+.action-dock button:disabled{opacity:.38;cursor:not-allowed}
+.create-short{background:linear-gradient(135deg,var(--blue2),var(--blue));color:white;box-shadow:0 7px 18px rgba(69,157,223,.18)}
+.edit{background:#edf6fd;color:#327ebd}
+.save{background:transparent;color:#6d809a;padding-inline:18px!important}
+@media(max-width:700px){
+  #ai404{padding:12px 10px 92px;min-height:100dvh}
+  .intro{padding-top:7px}
+  h1{font-size:30px}
+  .lead{font-size:12px;margin-top:9px}
+  .engine-grid{grid-template-columns:1fr;gap:8px}
+  .engine-card{min-height:86px;padding:12px 13px;border-radius:20px;gap:11px}
+  .engine-icon{width:45px;height:45px;border-radius:15px;font-size:18px}
+  .engine-copy strong{font-size:12px}.engine-copy span{font-size:9.5px;margin-top:3px}
+  .controls{align-items:flex-start;flex-direction:column;margin-top:10px;padding:10px;border-radius:18px}
+  .duration-wrap{width:100%;justify-content:space-between}.status{text-align:left;font-size:9px}
+  .primary-cta{margin-top:8px;padding:14px}
+  .results-head{align-items:flex-start;padding-bottom:14px}.results-head h1{font-size:28px}.results-head .lead{max-width:230px}
+  .moments-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .moment-card--hero{grid-column:1/-1;min-height:270px}.moment-card--hero .moment-visual{min-height:203px}
+  .moment-card:not(.moment-card--hero) .moment-visual{min-height:115px}
+  .moment-card{border-radius:19px;padding:7px}.moment-visual{border-radius:14px}.moment-title{font-size:10px}
+  .action-dock{position:fixed;left:9px;right:9px;bottom:max(9px,env(safe-area-inset-bottom));grid-template-columns:1fr 1fr auto;margin:0;border-radius:19px;padding:7px}
+  .action-dock button{padding:12px 9px;font-size:9px}.save{padding-inline:10px!important}
 }
-@media(max-width:520px){
- #ai221{padding:9px 7px 10px}
- .top{margin-bottom:8px}
- .titleIcon{width:40px;height:40px;border-radius:14px}
- h1{font-size:20px}
- .subtitle{font-size:9.5px;max-width:230px}
- .duration button{padding:7px 9px;font-size:9px}
- .panel{padding:9px;border-radius:20px}
- .panelHead{margin-bottom:7px}
- .panelTitle{font-size:12px}
- .panelHint{display:none}
- .engines{gap:6px}
- .engine{min-height:137px;padding:9px;border-radius:16px}
- .engineIcon{width:34px;height:34px;border-radius:11px;font-size:16px}
- .engine h3{font-size:11px;margin-top:7px}
- .engine p{font-size:8.5px}
- .tags{display:none}
- .selectBtn{padding:7px;font-size:8.5px}
- .actionRow{align-items:stretch;flex-direction:column}
- .create{width:100%}
- .moments{gap:6px}
- .moment{padding:5px;border-radius:15px;min-height:90px}
- .thumb{height:60px}
- .moment b{font-size:8.5px}
-}
-
-/* V267 GLOBAL DESKTOP POLISH — AI surface, desktop only. */
-@media (min-width:761px){
-  #ai221{
-    overflow:hidden!important;
-    padding:clamp(12px,1.55vh,16px) clamp(16px,1.6vw,22px) clamp(11px,1.4vh,14px)!important;
-    background:
-      radial-gradient(circle at 9% 7%,rgba(126,214,255,.16),transparent 24%),
-      radial-gradient(circle at 91% 8%,rgba(127,236,197,.14),transparent 25%),
-      linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important;
-  }
-  #ai221 .top{
-    margin:0 2px clamp(8px,1.2vh,11px)!important;
-  }
-  #ai221 .panel{
-    border-color:rgba(143,181,216,.22)!important;
-    border-radius:24px!important;
-    box-shadow:
-      0 12px 30px rgba(61,104,145,.075),
-      inset 0 1px 0 rgba(255,255,255,.97)!important;
-    transition:box-shadow .28s ease,border-color .28s ease!important;
-  }
-  #ai221 .panel+.panel{
-    margin-top:clamp(8px,1.15vh,10px)!important;
-  }
-  #ai221 .engines{
-    gap:clamp(8px,.8vw,11px)!important;
-  }
-  #ai221 .engine{
-    min-height:clamp(150px,22.5vh,176px)!important;
-    border-color:rgba(143,181,216,.21)!important;
-    border-radius:20px!important;
-    box-shadow:0 7px 20px rgba(65,105,145,.055),inset 0 1px 0 #fff!important;
-    transition:
-      transform .28s cubic-bezier(.2,.8,.2,1),
-      box-shadow .28s cubic-bezier(.2,.8,.2,1),
-      border-color .24s ease!important;
-  }
-  #ai221 .engine:hover,
-  #ai221 .engine:focus-within{
-    transform:translateY(-3px) scale(1.006)!important;
-    border-color:rgba(105,172,220,.35)!important;
-    box-shadow:0 14px 30px rgba(65,105,145,.10),inset 0 1px 0 #fff!important;
-  }
-  #ai221 .engineIcon{
-    border-radius:50%!important;
-    transition:transform .26s cubic-bezier(.2,.8,.2,1)!important;
-  }
-  #ai221 .engine:hover .engineIcon,
-  #ai221 .engine:focus-within .engineIcon{
-    transform:scale(1.045)!important;
-  }
-  #ai221 .selectBtn,
-  #ai221 .create,
-  #ai221 .duration button{
-    transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s ease,background .2s ease!important;
-  }
-  #ai221 .selectBtn:active,
-  #ai221 .create:active,
-  #ai221 .duration button:active{
-    transform:scale(.98)!important;
-  }
-  #ai221 .moments{
-    gap:clamp(8px,.8vw,11px)!important;
-  }
-  #ai221 .moment{
-    transition:transform .24s cubic-bezier(.2,.8,.2,1),box-shadow .24s ease,border-color .24s ease!important;
-  }
-  #ai221 .moment:hover,
-  #ai221 .moment:focus-visible{
-    transform:translateY(-2px)!important;
-    border-color:rgba(109,174,220,.34)!important;
-    box-shadow:0 10px 22px rgba(65,105,145,.08)!important;
-  }
-  #ai221 .titleIcon svg{
-    stroke-width:1.9!important;
-  }
-}
-@media (min-width:761px) and (max-height:720px){
-  #ai221 .engine{min-height:142px!important;padding:10px!important}
-  #ai221 .panel{padding:11px!important}
-  #ai221 .moment{min-height:94px!important}
-  #ai221 .thumb{height:62px!important}
-}
-@media (prefers-reduced-motion:reduce) and (min-width:761px){
-  #ai221 .panel,#ai221 .engine,#ai221 .engineIcon,#ai221 .selectBtn,#ai221 .create,
-  #ai221 .duration button,#ai221 .moment{transition:none!important}
-}
-/* END V267 GLOBAL DESKTOP POLISH */
-
-
-/* V268 DESKTOP AESTHETIC CALIBRATION — typography scale only. */
-@media (min-width:761px){
-  #ai221 h1{font-size:clamp(24.5px,2.18vw,34px)!important}
-  #ai221 .subtitle{font-size:12px!important}
-  #ai221 .duration button{font-size:9.6px!important}
-  #ai221 .panelTitle{font-size:15px!important}
-  #ai221 .panelHint{font-size:8.6px!important}
-  #ai221 .engine h3{font-size:15px!important}
-  #ai221 .engine p{font-size:9.7px!important}
-  #ai221 .tag{font-size:7.6px!important}
-  #ai221 .selectBtn{font-size:9px!important}
-  #ai221 .status{font-size:9.7px!important}
-  #ai221 .create{font-size:10.8px!important}
-  #ai221 .moment b{font-size:9.7px!important}
-  #ai221 .empty,#ai221 .footerNote{font-size:8.6px!important}
-}
-/* END V268 DESKTOP AESTHETIC CALIBRATION */
-
-
-/* V268.1 DESKTOP MASTER -> MOBILE PARITY — AI. */
-@media (max-width:760px){
-  #ai221{overflow:hidden!important;background:radial-gradient(circle at 9% 7%,rgba(126,214,255,.16),transparent 24%),radial-gradient(circle at 91% 8%,rgba(127,236,197,.14),transparent 25%),linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important}
-  #ai221 .panel{border-color:rgba(143,181,216,.22)!important;border-radius:24px!important;box-shadow:0 12px 30px rgba(61,104,145,.075),inset 0 1px 0 rgba(255,255,255,.97)!important}
-  #ai221 .engine{border-color:rgba(143,181,216,.21)!important;border-radius:20px!important;box-shadow:0 7px 20px rgba(65,105,145,.055),inset 0 1px 0 #fff!important;transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s cubic-bezier(.2,.8,.2,1),border-color .24s ease!important}
-  #ai221 .engineIcon{border-radius:50%!important;transition:transform .26s cubic-bezier(.2,.8,.2,1)!important}
-  #ai221 .selectBtn,#ai221 .create,#ai221 .duration button{transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s ease,background .2s ease!important}
-  #ai221 .moment{transition:transform .24s cubic-bezier(.2,.8,.2,1),box-shadow .24s ease,border-color .24s ease!important}
-  #ai221 .titleIcon svg{stroke-width:1.9!important}
-  #ai221 h1{font-size:21.5px!important} #ai221 .subtitle{font-size:10.3px!important}
-  #ai221 .duration button{font-size:9.6px!important} #ai221 .panelTitle{font-size:12.8px!important}
-  #ai221 .engine h3{font-size:11.8px!important} #ai221 .engine p{font-size:9px!important}
-  #ai221 .selectBtn{font-size:9px!important} #ai221 .status{font-size:9.4px!important}
-  #ai221 .create{font-size:10px!important} #ai221 .moment b{font-size:9.1px!important}
-  #ai221 .selectBtn:active,#ai221 .create:active,#ai221 .duration button:active{transform:scale(.98)!important}
-}
-/* END V268.1 DESKTOP MASTER -> MOBILE PARITY */
-
-
-
-/* V281 GLOBAL TYPE SCALE AI — readability pass, same font family. */
-@media(min-width:761px){
-  #ai221 h1{font-size:clamp(29px,2.5vw,39px)!important}
-  #ai221 .subtitle{font-size:14px!important}
-  #ai221 .duration button{font-size:11.5px!important}
-  #ai221 .panelTitle{font-size:18px!important}
-  #ai221 .panelHint{font-size:11px!important}
-  #ai221 .engine h3{font-size:18px!important}
-  #ai221 .engine p{font-size:12px!important;line-height:1.34!important}
-  #ai221 .tag{font-size:10px!important}
-  #ai221 .selectBtn{font-size:11.5px!important}
-  #ai221 .status{font-size:11.5px!important}
-  #ai221 .create{font-size:13px!important}
-  #ai221 .moment b{font-size:11.5px!important}
-  #ai221 .empty,#ai221 .footerNote{font-size:10.5px!important}
-}
-@media(max-width:760px){
-  #ai221 h1{font-size:23px!important}
-  #ai221 .subtitle{font-size:11.5px!important}
-  #ai221 .duration button{font-size:10.5px!important}
-  #ai221 .panelTitle{font-size:14px!important}
-  #ai221 .panelHint{font-size:9.5px!important}
-  #ai221 .engine h3{font-size:13.5px!important}
-  #ai221 .engine p{font-size:10.2px!important}
-  #ai221 .tag{font-size:8.5px!important}
-  #ai221 .selectBtn{font-size:10px!important}
-  #ai221 .status{font-size:10.2px!important}
-  #ai221 .create{font-size:11px!important}
-  #ai221 .moment b{font-size:10px!important}
-}
-/* END V281 GLOBAL TYPE SCALE AI */
-
+@media(max-width:390px){.engine-copy span{max-width:220px}.results-head{gap:10px}.text-action{font-size:9px}.action-dock{grid-template-columns:1.2fr .9fr auto}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
-<main id="ai221">
- <div class="top">
-  <div class="title">
-   <div class="titleIcon"><svg viewBox="0 0 24 24"><path d="M12 2l1.4 4.2L17.5 7.6l-4.1 1.4L12 13.2 10.6 9 6.5 7.6l4.1-1.4L12 2Z"/><path d="m18 14 .8 2.4 2.4.8-2.4.8L18 20.4l-.8-2.4-2.4-.8 2.4-.8L18 14Z"/></svg></div>
-   <div><h1>Scegli il tuo Motore IA</h1><p class="subtitle">Quattro modi diversi di leggere il gameplay. Il cervello è lo stesso, cambia ciò che cerchiamo.</p></div>
-  </div>
-  <div class="duration"><button data-duration="15" class="active">15s</button><button data-duration="30">30s</button></div>
- </div>
+<main id="ai404">
+  <div class="shell">
+    <section class="view is-active" data-view="engines" aria-labelledby="engine-title">
+      <header class="intro">
+        <span class="eyebrow">Crea con IA</span>
+        <h1 id="engine-title">Che cosa vuoi trovare?</h1>
+        <p class="lead">Scegli il tipo di momento. Al resto pensiamo noi.</p>
+      </header>
 
- <div class="guide left"><span id="guideLeft">Che tipo di<br>momento cerchiamo?</span></div>
- <div class="guide right"><span id="guideRight">Scegline uno<br>e lascia lavorare l’IA</span></div>
+      <div class="engine-grid" role="group" aria-label="Motore IA">
+        <button class="engine-card engine-card--auto is-selected" type="button" data-engine="auto" aria-pressed="true">
+          <span class="engine-icon">✦</span><span class="engine-copy"><strong>AUTO</strong><span>Analizza tutto e sceglie da solo i momenti più forti.</span></span><span class="engine-check">✓</span>
+        </button>
+        <button class="engine-card" type="button" data-engine="action" aria-pressed="false">
+          <span class="engine-icon">⚡</span><span class="engine-copy"><strong>AZIONE</strong><span>Clutch, fight, flick e picchi di gameplay.</span></span><span class="engine-check">✓</span>
+        </button>
+        <button class="engine-card" type="button" data-engine="reaction" aria-pressed="false">
+          <span class="engine-icon">◉</span><span class="engine-copy"><strong>REAZIONI</strong><span>Urla, risate, fail e momenti di sorpresa.</span></span><span class="engine-check">✓</span>
+        </button>
+        <button class="engine-card" type="button" data-engine="best" aria-pressed="false">
+          <span class="engine-icon">◇</span><span class="engine-copy"><strong>STORIA</strong><span>Cerca un momento forte con un inizio e una chiusura chiari.</span></span><span class="engine-check">✓</span>
+        </button>
+      </div>
 
- <section class="panel">
-  <div class="panelHead"><div class="panelTitle">I tuoi 4 motori</div><div class="panelHint">Scegli il carattere dello Short</div></div>
-  <div class="engines">
-   <article class="engine selected" data-engine="auto"><div class="engineTop"><div class="engineIcon">✦</div><div class="check">✓</div></div><h3>Automatico</h3><p>Lascia decidere alla nostra IA quali momenti meritano davvero.</p><div class="tags"><span class="tag">equilibrato</span><span class="tag">smart</span><span class="tag">veloce</span></div><button class="selectBtn">Selezionato</button></article>
-   <article class="engine" data-engine="best"><div class="engineTop"><div class="engineIcon">⌁</div><div class="check">✓</div></div><h3>Momento migliore</h3><p>Cerca il picco più forte: clutch, vittorie e giocate che restano.</p><div class="tags"><span class="tag">clutch</span><span class="tag">picchi</span><span class="tag">wow</span></div><button class="selectBtn">Seleziona</button></article>
-   <article class="engine" data-engine="action"><div class="engineTop"><div class="engineIcon">⚡</div><div class="check">✓</div></div><h3>Più azione</h3><p>Predilige ritmo, impatti, esplosioni e gameplay ad alta intensità.</p><div class="tags"><span class="tag">ritmo</span><span class="tag">impatto</span><span class="tag">azione</span></div><button class="selectBtn">Seleziona</button></article>
-   <article class="engine" data-engine="reaction"><div class="engineTop"><div class="engineIcon">◎</div><div class="check">✓</div></div><h3>Reazioni</h3><p>Segue voce, emozioni, errori epici e momenti spontanei.</p><div class="tags"><span class="tag">voce</span><span class="tag">reaction</span><span class="tag">fun</span></div><button class="selectBtn">Seleziona</button></article>
-  </div>
-  <div class="actionRow"><div class="status" id="aiStatus">Pronto. Carica un gameplay per iniziare.</div><button class="create" id="createAi" disabled>Crea con IA</button></div>
- </section>
+      <div class="controls">
+        <div class="duration-wrap"><span class="duration-label">Durata</span><div class="duration" aria-label="Durata short"><button type="button" data-duration="15" class="active">15s</button><button type="button" data-duration="30">30s</button></div></div>
+        <div id="aiStatus" class="status" aria-live="polite">Prima carica un gameplay dalla Home</div>
+      </div>
+      <button id="createAi" class="primary-cta" type="button" disabled>TROVA I MOMENTI</button>
+    </section>
 
- <section class="panel">
-  <div class="panelHead"><div class="panelTitle">Le tue 3 migliori giocate</div><div class="panelHint">Quando l’IA le trova, compaiono qui</div></div>
-  <div class="moments">
-   <button class="moment" data-index="0"><div class="thumb"><div class="empty">Il primo momento<br>apparirà qui</div><span class="rank">1</span></div><b>Momento 1</b></button>
-   <button class="moment" data-index="1"><div class="thumb"><div class="empty">Il secondo momento<br>apparirà qui</div><span class="rank">2</span></div><b>Momento 2</b></button>
-   <button class="moment" data-index="2"><div class="thumb"><div class="empty">Il terzo momento<br>apparirà qui</div><span class="rank">3</span></div><b>Momento 3</b></button>
+    <section class="view" data-view="moments" aria-labelledby="moments-title">
+      <header class="results-head">
+        <div><span class="eyebrow">Crea con IA</span><h1 id="moments-title">I tuoi momenti migliori</h1><p class="lead">Tocca quello che vuoi usare.</p></div>
+        <button id="changeSearch" class="text-action" type="button">Cambia ricerca</button>
+      </header>
+      <div id="previews" class="moments-grid" aria-live="polite"></div>
+      <div class="action-dock" aria-label="Azioni sul momento selezionato">
+        <button id="createShort" class="create-short" type="button">CREA SHORT</button>
+        <button id="editMoment" class="edit" type="button">MODIFICA</button>
+        <button id="saveMoment" class="save" type="button">Salva</button>
+      </div>
+    </section>
   </div>
- </section>
 </main>
 <script>
 (()=>{
- let state={loaded:false,duration:15,engine:"auto",previews:[]},seq=0;
- const send=(action,data={})=>parent.postMessage({type:"GSF_AI_UI",action,...data},location.origin);
- const gl=document.getElementById("guideLeft"),gr=document.getElementById("guideRight"),status=document.getElementById("aiStatus"),create=document.getElementById("createAi");
- const copy={
-  auto:["Lascia fare<br>all’IA","Equilibrio tra azione,<br>voce e momenti forti"],
-  best:["Cerchiamo il<br>picco più forte","Quella giocata che<br>ti fa dire: eccola"],
-  action:["Alziamo il<br>ritmo","Impatti, velocità<br>e pressione"],
-  reaction:["Ascoltiamo anche<br>te","Voce, risate,<br>errori e reazioni"],
-  creating:["Sta leggendo<br>il gameplay","Aspetta un attimo:<br>i momenti stanno arrivando"]
- };
- const morph=(el,html,s)=>{if(!el||el.innerHTML===html)return;el.classList.remove("in");el.classList.add("out");setTimeout(()=>{if(s!==seq)return;el.innerHTML=html;el.classList.remove("out");void el.offsetWidth;el.classList.add("in");setTimeout(()=>el.classList.remove("in"),1120)},440)};
- const guide=(key)=>{const c=copy[key]||copy.auto,s=++seq;morph(gl,c[0],s);morph(gr,c[1],s)};
- function selectEngine(name,emit=true){
-  state.engine=name||"auto";
-  document.querySelectorAll(".engine").forEach(card=>{const yes=card.dataset.engine===state.engine;card.classList.toggle("selected",yes);card.querySelector(".selectBtn").textContent=yes?"Selezionato":"Seleziona"});
-  guide(state.engine);
-  if(emit)send("engine",{engine:state.engine});
- }
- function selectDuration(n,emit=true){
-  state.duration=Number(n)===30?30:15;
-  document.querySelectorAll("[data-duration]").forEach(b=>b.classList.toggle("active",Number(b.dataset.duration)===state.duration));
-  if(emit)send("duration",{duration:state.duration});
- }
- function renderMoments(){
-  const rows=Array.isArray(state.previews)?state.previews.slice(0,3):[];
-  document.querySelectorAll(".moment").forEach((card,i)=>{
-   const d=rows[i]||{},thumb=card.querySelector(".thumb");
-   thumb.querySelectorAll("img,.play").forEach(x=>x.remove());
-   const empty=thumb.querySelector(".empty");
-   if(d.cover){
-    if(empty)empty.style.display="none";
-    const img=document.createElement("img");img.src=d.cover;img.alt="Anteprima momento "+(i+1);thumb.prepend(img);
-    const p=document.createElement("span");p.className="play";p.textContent="▶";thumb.appendChild(p);
-    card.disabled=false;
-   }else{
-    if(empty)empty.style.display="grid";
-    card.disabled=!d.video;
-   }
-   card.dataset.video=d.video||"";
+  const DEFAULT_STATE={loaded:false,duration:15,engine:"auto",previews:[],selectedMoment:0,processing:false};
+  let state={...DEFAULT_STATE};
+  let currentView="engines";
+  const send=(action,data={})=>parent.postMessage({type:"GSF_AI_UI",action,...data},location.origin);
+  const $=id=>document.getElementById(id);
+
+  function showView(name){
+    currentView=name;
+    document.querySelectorAll("[data-view]").forEach(view=>view.classList.toggle("is-active",view.dataset.view===name));
+  }
+
+  function selectEngine(engine,emit=true){
+    state.engine=engine||"auto";
+    document.querySelectorAll("[data-engine]").forEach(card=>{
+      const active=card.dataset.engine===state.engine;
+      card.classList.toggle("is-selected",active);
+      card.setAttribute("aria-pressed",String(active));
+      card.disabled=Boolean(state.processing);
+    });
+    if(emit)send("engine",{engine:state.engine});
+  }
+
+  function selectDuration(value,emit=true){
+    state.duration=Number(value)===30?30:15;
+    document.querySelectorAll("[data-duration]").forEach(btn=>{
+      btn.classList.toggle("active",Number(btn.dataset.duration)===state.duration);
+      btn.disabled=Boolean(state.processing);
+    });
+    if(emit)send("duration",{duration:state.duration});
+  }
+
+  function scoreOf(item){
+    const n=Number(item?.score ?? item?.score_virality ?? item?.score_final ?? 0);
+    if(!Number.isFinite(n)||n<=0)return null;
+    return Math.round(n<=1?n*100:n);
+  }
+
+  function titleOf(item,index){
+    return String(item?.label || item?.why || item?.title || (index===0?"Il momento più forte":"Momento selezionato"));
+  }
+
+  function timeOf(item){
+    const start=Number(item?.start_time ?? item?.start ?? 0);
+    const end=Number(item?.end_time ?? item?.end ?? 0);
+    if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start)return "Pronto per l'anteprima";
+    const fmt=s=>{const m=Math.floor(s/60);const sec=Math.max(0,Math.floor(s%60));return `${m}:${String(sec).padStart(2,"0")}`};
+    return `${fmt(start)} – ${fmt(end)}`;
+  }
+
+  function selectedPayload(){
+    const rows=Array.isArray(state.previews)?state.previews.slice(0,3):[];
+    const index=Math.max(0,Math.min(Number(state.selectedMoment)||0,Math.max(rows.length-1,0)));
+    const item=rows[index]||{};
+    return {index,candidate_id:item.candidate_id||"",video:item.video||"",start_time:item.start_time,end_time:item.end_time};
+  }
+
+  function selectMoment(index){
+    state.selectedMoment=index;
+    document.querySelectorAll(".moment-card").forEach(card=>{
+      const active=Number(card.dataset.index)===index;
+      card.classList.toggle("is-selected",active);
+      card.setAttribute("aria-pressed",String(active));
+    });
+  }
+
+  function renderMoments(){
+    const host=$("previews");
+    const rows=Array.isArray(state.previews)?state.previews.slice(0,3):[];
+    host.innerHTML="";
+    if(!rows.length){
+      host.innerHTML='<div class="empty-state">Sto preparando i tuoi momenti migliori.</div>';
+      return;
+    }
+    if(Number(state.selectedMoment)>=rows.length)state.selectedMoment=0;
+    rows.forEach((item,index)=>{
+      const card=document.createElement("button");
+      card.type="button";
+      card.className=`moment-card${index===0?" moment-card--hero":""}${Number(state.selectedMoment)===index?" is-selected":""}`;
+      card.dataset.index=String(index);
+      card.setAttribute("aria-pressed",String(Number(state.selectedMoment)===index));
+      const cover=item?.cover||item?.thumbnail||"";
+      const score=scoreOf(item);
+      card.innerHTML=`
+        <div class="moment-visual">
+          ${cover?`<img src="${cover}" alt="Anteprima momento ${index+1}">`:""}
+          <span class="rank ${index===0?"best":""}">${index===0?"#1 · MIGLIORE":"#"+(index+1)}</span>
+          ${score!==null?`<span class="score">${score}%</span>`:""}
+          <span class="play-dot">▶</span>
+        </div>
+        <div class="moment-body"><div class="moment-title">${titleOf(item,index)}</div><div class="moment-meta"><span>${timeOf(item)}</span><span>${Number(state.selectedMoment)===index?"Selezionato":"Tocca per scegliere"}</span></div></div>`;
+      card.addEventListener("click",()=>{selectMoment(index);renderMoments()});
+      host.appendChild(card);
+    });
+  }
+
+  function render(){
+    selectEngine(state.engine||"auto",false);
+    selectDuration(state.duration,false);
+    const create=$("createAi");
+    create.disabled=!state.loaded||Boolean(state.processing);
+    create.textContent=state.processing?"STO CERCANDO…":"TROVA I MOMENTI";
+    $("aiStatus").textContent=!state.loaded?"Prima carica un gameplay dalla Home":state.processing?"L’IA sta cercando i momenti migliori…":"Gameplay pronto";
+    renderMoments();
+    const noSelection=!Array.isArray(state.previews)||!state.previews.length;
+    [$("createShort"),$("editMoment"),$("saveMoment")].forEach(btn=>btn.disabled=noSelection||Boolean(state.processing));
+  }
+
+  document.querySelectorAll("[data-engine]").forEach(card=>card.addEventListener("click",()=>selectEngine(card.dataset.engine,true)));
+  document.querySelectorAll("[data-duration]").forEach(btn=>btn.addEventListener("click",()=>selectDuration(btn.dataset.duration,true)));
+
+  $("createAi").addEventListener("click",()=>{
+    if(!state.loaded||state.processing)return;
+    state.processing=true;render();
+    send("create",{engine:state.engine,duration:state.duration});
   });
- }
- function sync(){
-  selectDuration(state.duration,false);selectEngine(state.engine||"auto",false);renderMoments();
-  create.disabled=!state.loaded;
-  status.textContent=state.loaded?"Gameplay pronto · scegli il motore e crea":"Prima carica un gameplay dalla Home";
- }
- document.querySelectorAll(".engine").forEach(card=>card.addEventListener("click",()=>selectEngine(card.dataset.engine,true)));
- document.querySelectorAll("[data-duration]").forEach(b=>b.addEventListener("click",()=>selectDuration(b.dataset.duration,true)));
- document.querySelectorAll(".moment").forEach(card=>card.addEventListener("click",()=>send("preview",{index:Number(card.dataset.index)||0})));
- create.addEventListener("click",()=>{if(!state.loaded)return;guide("creating");status.textContent="L’IA sta cercando i momenti migliori…";send("create",{engine:state.engine,duration:state.duration})});
- window.addEventListener("message",e=>{if(e.origin!==location.origin||!e.data||e.data.type!=="GSF_AI_STATE")return;state={...state,...e.data.state};sync()});
- send("ready");
- sync();
+
+  $("changeSearch").addEventListener("click",()=>{
+    showView("engines");
+    state.processing=false;
+    send("change_engine");
+    render();
+  });
+
+  $("editMoment").addEventListener("click",()=>send("preview",{...selectedPayload(),intent:"edit"}));
+  $("createShort").addEventListener("click",()=>send("create_short",selectedPayload()));
+  $("saveMoment").addEventListener("click",()=>send("save",selectedPayload()));
+
+  window.addEventListener("message",event=>{
+    if(event.origin!==location.origin||!event.data||event.data.type!=="GSF_AI_STATE")return;
+    const previousCount=Array.isArray(state.previews)?state.previews.length:0;
+    state={...state,...event.data.state};
+    if(!Number.isInteger(Number(state.selectedMoment)))state.selectedMoment=0;
+    if(Array.isArray(state.previews)&&state.previews.length>0&&previousCount===0)showView("moments");
+    if(!state.processing&&currentView==="engines"&&state.previews?.length&&previousCount===0)showView("moments");
+    render();
+  });
+
+  send("ready");
+  showView("engines");
+  render();
 })();
 </script>
 </body>
