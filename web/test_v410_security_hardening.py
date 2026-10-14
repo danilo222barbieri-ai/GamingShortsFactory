@@ -75,7 +75,7 @@ assert "_security_encrypt_json(payload)" in server, "social token bucket writes 
 # GET must be non-destructive; deletion moves to POST and validates a CSRF token.
 get_delete = 'if clean=="/drafts/delete":\n            _json(self,405'
 assert get_delete in server, "GET /drafts/delete still performs a destructive action"
-post = server[server.index("def do_POST\"):]
+post = server[server.index("def do_POST"):]
 assert 'if path=="/drafts/delete":' in post, "POST delete handler missing"
 assert "_security_csrf_valid(self,sid)" in post, "draft deletion does not validate CSRF"
 assert "gsfDeleteDraft" in server and 'method:"POST"' in server, "draft UI does not use protected POST deletion"
