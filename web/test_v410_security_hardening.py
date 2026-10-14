@@ -8,17 +8,24 @@ nginx = (web / "nginx.conf.template").read_text(encoding="utf-8")
 server = (web / "direct_upload_server.py").read_text(encoding="utf-8")
 secure_start = (web / "start_secure.sh").read_text(encoding="utf-8")
 requirements = (root / "requirements-web.txt").read_text(encoding="utf-8")
+edge_patch_path = web / "fix_v410_1_edge_identity.py"
 
 # Runtime hardening must be applied and re-verified before the normal app boot.
 assert "fix_v410_security_hardening.py" in secure_start, "V410 hardening patch is not applied at runtime"
+assert "fix_v410_1_edge_identity.py" in secure_start, "V410 trusted edge identity patch is not applied at runtime"
 assert "test_v410_security_hardening.py" in secure_start, "V410 security contract is not verified at runtime"
-assert "start_web.sh" in secure_start, "secure entrypoint must hand off to the normal GSF boot"
+assert "start_web.sh" in secure_start, "secure entrypoint must preserve the normal GSF boot sequence"
+assert edge_patch_path.is_file(), "trusted Railway client-IP patch is missing"
+edge_patch = edge_patch_path.read_text(encoding="utf-8")
+assert "X-Real-IP" in edge_patch and "GSF_EDGE_IDENTITY_V410" in edge_patch, "edge identity patch must use Railway's client-IP header"
 
 # Nginx edge protections.
 for token in (
     "GSF_SECURITY_V410",
+    "GSF_EDGE_IDENTITY_V410",
     "limit_req_zone",
     "limit_conn_zone",
+    "gsf_client_identity_v410",
     "X-Content-Type-Options",
     "Strict-Transport-Security",
     "Referrer-Policy",
@@ -26,6 +33,7 @@ for token in (
     "Content-Security-Policy",
 ):
     assert token in nginx, f"missing nginx security control: {token}"
+assert "$http_x_real_ip" in nginx, "rate limiting must key on Railway's documented client IP"
 assert "location = /drafts/delete" in nginx
 assert "limit_except POST" in nginx, "draft deletion must not be reachable with GET"
 assert "location /direct-upload/" in nginx and "zone=gsf_upload_v410" in nginx, "upload endpoints need rate limiting"
@@ -62,7 +70,7 @@ workflow = root / ".github" / "workflows" / "v410-security-gate.yml"
 if (root / ".github").exists():
     assert workflow.is_file(), "V410 security CI workflow missing"
     wf = workflow.read_text(encoding="utf-8")
-    for token in ("pip-audit", "bandit", "test_v410_security_hardening.py"):
+    for token in ("pip-audit", "bandit", "test_v410_security_hardening.py", "fix_v410_1_edge_identity.py"):
         assert token in wf, f"security CI missing {token}"
 
 print("V410 security hardening contract: PASS")
