@@ -21,6 +21,21 @@ PATCH_SCRIPT=/tmp/gsf-runtime-patches-build.sh
 MARKER=/app/.gsf-ui-materialized
 
 mkdir -p "$GSF_RUNTIME_ROOT"
+
+# V269 already materializes the UI and then bakes the fast startup over
+# start_web.sh. Docker later invokes this helper once more as a final guard.
+# Treat that second invocation as an idempotent verification instead of trying
+# to extract the historical migration block from the already-baked fast file.
+if [ -f "$MARKER" ] && grep -q 'V404 fast startup' /app/web/start_web.sh; then
+  grep -q 'V373_CREATOR_HUB_HEADER_BREATH' /app/web/creator_hub_v156_component/index.html
+  grep -q 'id="ai404"' /app/web/ai_v221_component/index.html
+  grep -q 'GSF_GLOBAL_SHELL_V343' /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py
+  test -f "$GSF_RUNTIME_ROOT/.v311-runtime-ready"
+  rm -f "$PATCH_SCRIPT"
+  echo "V404 build-time UI materialization: already materialized; verification PASS"
+  exit 0
+fi
+
 rm -f "$MARKER" "$PATCH_SCRIPT"
 
 python - <<'PY'
