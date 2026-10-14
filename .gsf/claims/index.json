@@ -90,7 +90,8 @@
       "paths": [
         "web/publish_short_v405_component/index.html",
         "web/test_v405_publish_short_simple.py",
-        "scripts/apply_v405_publish_short.py"
+        "scripts/apply_v405_publish_short.py",
+        ".github/workflows/v405-publish-short-simple.yml"
       ],
       "owner": "chat/publish-short-v405-7d91c4",
       "created_at": "2026-10-14T06:34:00+00:00",
