@@ -48,7 +48,9 @@ missing = [token for token in required if token not in snippet]
 if missing:
     raise SystemExit('V404 materializer: incomplete migration block: ' + ', '.join(missing))
 
-out_path.write_text('#!/bin/sh\nset -eu\n' + snippet, encoding='utf-8')
+# -x is intentional: if a build-time migration fails, the Production Gate
+# artifact records the exact command immediately before the failure.
+out_path.write_text('#!/bin/sh\nset -eux\n' + snippet, encoding='utf-8')
 print('V404 materializer: extracted runtime patch chain', len(snippet), 'bytes')
 PY
 
