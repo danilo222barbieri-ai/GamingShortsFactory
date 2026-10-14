@@ -10,11 +10,17 @@
         "web/fix_v374_creator_hub_spacing_live.py",
         "web/fix_v403_creator_hub_simplified.py",
         "web/test_v403_creator_hub_simplified.py",
-        ".github/workflows/v403-creator-hub-simplified.yml"
+        ".github/workflows/v403-creator-hub-simplified.yml",
+        "web/test_v267_global_desktop_polish.py",
+        "web/test_v268_desktop_aesthetic_calibration.py",
+        "web/test_v268_1_desktop_to_mobile_parity.py"
       ],
       "owner": "chat/creator-hub-simplify-8cf0cf",
       "created_at": "2026-10-14T06:05:47+00:00",
-      "state": "active"
+      "state": "active",
+      "evidence": {
+        "handoff": "User explicitly authorized transfer of V267 compatibility test from V407 on 2026-10-14; V268/V268.1 compatibility needed for same V404 replacement."
+      }
     },
     {
       "id": "crea-con-ia-simple-3a72f1",
@@ -111,7 +117,6 @@
         "web/gsf_desktop_shell_v407.py",
         "web/install_adsense_bridge.py",
         "web/test_v407_desktop_mobile_shell.py",
-        "web/test_v267_global_desktop_polish.py",
         ".github/workflows/v407-desktop-shell.yml",
         "docs/architecture/gsf-desktop-mobile-shell.md"
       ],
