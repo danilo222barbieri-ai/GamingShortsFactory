@@ -38,7 +38,7 @@ PATCH = r'''
  const download=button('Scarica','download',()=>root.querySelector('#v396Download')?.click());
  root.insertBefore(actions,note);
  const hide=()=>{sheet.classList.remove('open');sheet.setAttribute('aria-hidden','true');publish.setAttribute('aria-expanded','false');publish.focus()};close.onclick=hide;sheet.onclick=e=>{if(e.target===sheet)hide()};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sheet.classList.contains('open'))hide()});
- async function sync(){try{const r=await fetch('/share/state',{cache:'no-store',credentials:'same-origin'});const state=await r.json();const ready=r.ok&&state.ok&&state.ready;publish.disabled=!ready;download.disabled=!ready;if(ready&&!video.getAttribute('src')){video.src='/share/final';video.hidden=false}if(!ready){video.removeAttribute('src');video.hidden=true;title.textContent='Preparo il tuo Short'}else title.textContent='Il tuo Short è pronto'}catch(e){publish.disabled=true;download.disabled=true}}
+ async function sync(){try{const r=await fetch('/share/state',{cache:'no-store',credentials:'same-origin'});const state=await r.json();const ready=r.ok&&state.ok&&state.ready;publish.disabled=!ready;download.disabled=!ready;if(ready&&video.dataset.revision!==String(state.revision||'')){video.dataset.revision=String(state.revision||'');video.src='/share/final?revision='+encodeURIComponent(video.dataset.revision);video.hidden=false}if(!ready){delete video.dataset.revision;video.removeAttribute('src');video.hidden=true;title.textContent='Preparo il tuo Short'}else title.textContent='Il tuo Short è pronto'}catch(e){publish.disabled=true;download.disabled=true}}
  sync();setInterval(sync,2500);
 })();
 </script>

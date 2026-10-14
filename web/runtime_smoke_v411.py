@@ -18,6 +18,8 @@ def request(path, method='GET', headers=None):
 
 status,headers,body=request('/healthz')
 assert status==200 and json.loads(body)['ok'] is True
+status,headers,body=request('/',headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0 Safari/537.36'})
+assert status==200 and b'Streamlit' in body and b'GSF Mobile Only Gate' not in body
 for path,marker in [('/creator-hub-v156/','V403_CREATOR_HUB_SIMPLIFIED'),('/ai-v221/','id="ai404"'),('/editor-live/','V395_MOBILE_EDITOR_ATOMIC_SKIN'),('/share-v156/','V405_PUBLISH_SHORT_LIVE')]:
     status,headers,body=request(path)
     assert status==200 and marker in body.decode('utf-8'), (path,status)

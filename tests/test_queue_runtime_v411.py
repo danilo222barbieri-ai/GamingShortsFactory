@@ -5,6 +5,27 @@ from web.fix_v411_queue_runtime import patch_app_source, patch_csrf_hub, patch_c
 from gsf_project_state import PROJECT_SESSION_KEY
 
 
+def test_real_render_file_updates_project_without_raw_bytes(tmp_path, monkeypatch):
+    monkeypatch.setenv('GSF_RUNTIME_ROOT',str(tmp_path))
+    media=tmp_path/'sessions'/'browser'/'media'
+    media.mkdir(parents=True)
+    source=media/'source.mp4'
+    final=media/'gaming_short_finale_share.mp4'
+    final.write_bytes(b'x'*2048)
+    session={'gsf_source_path':str(source),'publication_ready':True,'publication_final_signature':'render1'}
+    assert sync_project(session).final_ref==str(final)
+    assert len(str(session[PROJECT_SESSION_KEY]))<3000
+
+
+def test_desktop_access_keeps_media_authorization():
+    from web.fix_v411_queue_runtime import patch_desktop_access
+    config='error_page 424 = /__gsf_mobile_gate;\nif ($gsf_mobile_client = 0) {\n return 424;\n}\nif ($gsf_media_sid = "") { return 403; }\n'
+    changed=patch_desktop_access(config)
+    assert 'return 424' not in changed
+    assert 'return 403' in changed
+    assert patch_desktop_access(changed)==changed
+
+
 def test_project_switch_does_not_keep_previous_identity():
     session={'gsf_active_project_id':'one','gsf_source_path':'/one.mp4'}
     assert sync_project(session).project_id=='one'

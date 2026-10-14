@@ -97,7 +97,7 @@ def build_alive_notification_css() -> str:
 <style id="gsf-alive-notification-style">
 .gsf-alive-notification {
   position:fixed; left:50%; bottom:84px; transform:translateX(-50%) rotate(-1deg);
-  z-index:10020; pointer-events:none; width:max-content; max-width:min(88vw, 520px);
+  z-index:2147483640; pointer-events:none; width:max-content; max-width:min(88vw, 520px);
   display:flex; align-items:center; gap:.52rem; padding:.58rem .82rem;
   border-radius:16px; border:1px solid rgba(24,87,130,.10);
   background:rgba(255,255,255,.84); color:#294761;
@@ -148,3 +148,4 @@ def render_alive_notification(
     st_module.markdown(build_alive_notification_css(), unsafe_allow_html=True)
     st_module.markdown(build_alive_notification_markup(note), unsafe_allow_html=True)
     return note
+
