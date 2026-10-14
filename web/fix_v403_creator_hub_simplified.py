@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import sys
 
 MARK='V403_CREATOR_HUB_SIMPLIFIED'
@@ -208,7 +209,7 @@ PATCH=r'''
 def patch_text(text:str)->str:
     if MARK in text:
         return text
-    if '<main id="hub">' not in text:
+    if not re.search(r'<main\b[^>]*\bid=["\']hub["\'][^>]*>', text, flags=re.I):
         raise RuntimeError('V403 requires Creator Hub component baseline')
     if 'data-folder="projects"' not in text or 'data-folder="subscription"' not in text:
         raise RuntimeError('V403 requires modular Creator Hub folders')
