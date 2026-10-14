@@ -1,0 +1,42 @@
+name: v403-game-editor
+
+on:
+  push:
+    branches:
+      - chat/game-editor-v403-021
+    paths:
+      - gsf_editor_v403.py
+      - tests/test_game_editor_v403.py
+      - scripts/apply_v403_game_editor.py
+      - app.py
+      - .github/workflows/v403-game-editor.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - gsf_editor_v403.py
+      - tests/test_game_editor_v403.py
+      - scripts/apply_v403_game_editor.py
+      - app.py
+
+jobs:
+  test-editor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile editor support module
+        if: hashFiles('gsf_editor_v403.py') != ''
+        run: python -m py_compile gsf_editor_v403.py
+      - name: Run Game Editor V403 tests
+        run: python -m unittest -v tests.test_game_editor_v403
+      - name: Validate deterministic app patch
+        if: hashFiles('scripts/apply_v403_game_editor.py') != ''
+        run: |
+          cp app.py /tmp/app.py.before
+          python scripts/apply_v403_game_editor.py --check
+          cmp /tmp/app.py.before app.py
