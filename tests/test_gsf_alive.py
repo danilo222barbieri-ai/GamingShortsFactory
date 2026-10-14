@@ -9,6 +9,7 @@ from gsf_alive import (
     SystemHealth,
     alive_motion_profile,
     build_alive_css,
+    build_alive_status_css,
     reduce_alive,
     suggest_next_action,
     sync_alive_from_session,
@@ -100,6 +101,11 @@ class AliveCoreTests(unittest.TestCase):
         self.assertIn("--gsf-alive-duration", css)
         self.assertIn("@media (prefers-reduced-motion: reduce)", css)
         self.assertIn("[data-gsf-alive-orb]", css)
+
+    def test_status_is_overlay_and_does_not_reflow_the_app(self):
+        css = build_alive_status_css()
+        self.assertIn("position:fixed", css)
+        self.assertIn("pointer-events:none", css)
 
     def test_session_bridge_observes_existing_app_state_without_overwriting_it(self):
         session = {
