@@ -9,10 +9,14 @@ server = (web / "direct_upload_server.py").read_text(encoding="utf-8")
 secure_start = (web / "start_secure.sh").read_text(encoding="utf-8")
 requirements = (root / "requirements-web.txt").read_text(encoding="utf-8")
 
-# Runtime hardening must be applied and re-verified before the normal app boot.
+# Runtime hardening must be injected after historical runtime migrations and
+# immediately before Nginx / companion servers start.
 assert "fix_v410_security_hardening.py" in secure_start, "V410 hardening patch is not applied at runtime"
 assert "test_v410_security_hardening.py" in secure_start, "V410 security contract is not verified at runtime"
-assert "start_web.sh" in secure_start, "secure entrypoint must hand off to the normal GSF boot"
+assert "start_web.sh" in secure_start, "secure entrypoint must derive from the normal GSF boot"
+assert "rm -f /etc/nginx/sites-enabled/default" in secure_start, "secure boot final-stage anchor missing"
+assert "gsf-start-v410.sh" in secure_start, "secure boot must execute the generated final-stage script"
+assert "exec sh /tmp/gsf-start-v410.sh" in secure_start, "secure boot must hand off to the protected script"
 
 # Nginx edge protections.
 for token in (
