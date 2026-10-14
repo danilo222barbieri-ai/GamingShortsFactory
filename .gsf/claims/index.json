@@ -106,11 +106,12 @@
     {
       "id": "desktop-mobile-shell-v407-7e31ca",
       "branch": "chat/desktop-mobile-shell-v407-7e31ca",
-      "scope": "Restore desktop as a mobile-first center shell with giant lateral advertising rails, preserving the mobile UI as the single source of truth",
+      "scope": "Restore desktop as a mobile-first center shell with giant lateral advertising rails, preserving the mobile UI as the single source of truth and retiring incompatible V267 desktop-only assertions",
       "paths": [
         "web/gsf_desktop_shell_v407.py",
         "web/install_adsense_bridge.py",
         "web/test_v407_desktop_mobile_shell.py",
+        "web/test_v267_global_desktop_polish.py",
         ".github/workflows/v407-desktop-shell.yml",
         "docs/architecture/gsf-desktop-mobile-shell.md"
       ],
@@ -130,6 +131,20 @@
       ],
       "owner": "chat/project-state-v408-3f4b21",
       "created_at": "2026-10-14T06:39:00+00:00",
+      "state": "active"
+    },
+    {
+      "id": "alive-notifications-v409-4d7c2e",
+      "branch": "chat/alive-notifications-v409-4d7c2e",
+      "scope": "Restore global one-shot Alive notifications as a non-overlapping sidecar extension of Alive Core",
+      "paths": [
+        "gsf_alive_notifications.py",
+        "tests/test_gsf_alive_notifications.py",
+        "docs/architecture/gsf-alive-notifications.md",
+        ".github/workflows/v409-alive-notifications.yml"
+      ],
+      "owner": "chat/alive-notifications-v409-4d7c2e",
+      "created_at": "2026-10-14T06:45:00+00:00",
       "state": "active"
     }
   ]
