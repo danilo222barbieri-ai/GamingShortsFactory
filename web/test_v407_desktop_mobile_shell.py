@@ -16,6 +16,7 @@ from gsf_desktop_shell_v407 import DesktopShellConfig, build_desktop_shell_html
 
 INSTALLER = WEB / "install_adsense_bridge.py"
 DOCKERFILE = ROOT / "Dockerfile"
+LEGACY_V267_GATE = WEB / "test_v267_global_desktop_polish.py"
 
 
 class V407ProductionPathTests(unittest.TestCase):
@@ -24,6 +25,7 @@ class V407ProductionPathTests(unittest.TestCase):
         self.html = build_desktop_shell_html(self.cfg)
         self.installer = INSTALLER.read_text(encoding="utf-8")
         self.dockerfile = DOCKERFILE.read_text(encoding="utf-8")
+        self.legacy_v267_gate = LEGACY_V267_GATE.read_text(encoding="utf-8")
 
     def test_desktop_is_one_phone_canvas_not_a_second_app(self):
         self.assertEqual(self.cfg.center_width_px, 480)
@@ -72,6 +74,15 @@ class V407ProductionPathTests(unittest.TestCase):
         self.assertIn('createPreviewRail("gsf-desktop-ad-left"', self.installer)
         self.assertIn('createPreviewRail("gsf-desktop-ad-right"', self.installer)
         self.assertIn("removeDesktopRails", self.installer)
+
+    def test_legacy_v267_gate_hands_desktop_ownership_to_v407(self):
+        self.assertIn('v407_path=root/"gsf_desktop_shell_v407.py"', self.legacy_v267_gate)
+        self.assertIn("v407_active=v407_path.is_file()", self.legacy_v267_gate)
+        self.assertIn('"V407 mobile canvas"', self.legacy_v267_gate)
+        self.assertIn('"V407 giant ad rails"', self.legacy_v267_gate)
+        self.assertIn("if not v407_active:", self.legacy_v267_gate)
+        self.assertIn('checks["Premium card motion"]', self.legacy_v267_gate)
+        self.assertIn('checks["Reduced motion protected"]', self.legacy_v267_gate)
 
     def test_docker_build_already_installs_the_browser_bridge(self):
         self.assertIn("python /app/web/install_adsense_bridge.py", self.dockerfile)
