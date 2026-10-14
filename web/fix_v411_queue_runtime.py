@@ -68,6 +68,16 @@ def patch_desktop_access(source):
     return result
 
 
+def patch_session_cookie_bridge(source):
+    if '# V411_STABLE_SESSION_COOKIE' in source:
+        return source
+    anchor = 'map $http_sec_ch_ua_mobile $gsf_ch_mobile {'
+    if anchor not in source:
+        raise RuntimeError('Nginx session map anchor missing')
+    bridge = '''# V411_STABLE_SESSION_COOKIE\n# Keep one browser session id across sequential requests. When no cookie exists,\n# use the request id for this response; once Set-Cookie is received the browser\n# sends that same id back and all protected companion routes reuse it.\n\n'''
+    return source.replace(anchor, bridge + anchor, 1)
+
+
 def patch_share_revision(source):
     if '# V411_SHARE_REVISION' in source:
         return source
@@ -76,7 +86,6 @@ def patch_share_revision(source):
     block=source[start:end]
     block=block.replace('final_bytes=int(stable.stat().st_size) if ready else 0', 'final_bytes=int(stable.stat().st_size) if ready else 0\n            # V411_SHARE_REVISION\n            revision=str(stable.stat().st_mtime_ns) if ready else ""',1)
     block=block.replace('final_bytes=int(head.get("ContentLength") or 0)', 'revision=str(head.get("ETag") or head.get("LastModified") or "")\n                        final_bytes=int(head.get("ContentLength") or 0)',1)
-    # Both bucket lookup paths carry an immutable object revision.
     second='                        final_bytes=int(head.get("ContentLength") or 0)'
     pos=block.rfind(second)
     block=block[:pos]+block[pos:].replace(second,'                        revision=str(head.get("ETag") or head.get("LastModified") or "")\n'+second,1)
@@ -95,7 +104,8 @@ def main():
     compile(source, str(server), 'exec')
     server.write_text(source, encoding='utf-8')
     nginx = root / 'web/nginx.conf.template'
-    nginx.write_text(patch_location_headers(patch_desktop_access(nginx.read_text(encoding='utf-8'))), encoding='utf-8')
+    nginx_source = patch_session_cookie_bridge(nginx.read_text(encoding='utf-8'))
+    nginx.write_text(patch_location_headers(patch_desktop_access(nginx_source)), encoding='utf-8')
     hub = root / 'web/creator_hub_v156_component/index.html'
     hub.write_text(patch_csrf_hub(hub.read_text(encoding='utf-8')), encoding='utf-8')
     print('V411 consolidated image integration: PASS', flush=True)
@@ -103,4 +113,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
