@@ -17,7 +17,6 @@ export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
 export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
 export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
 
-STARTUP=/app/web/start_web.sh
 PATCH_SCRIPT=/tmp/gsf-runtime-patches-build.sh
 MARKER=/app/.gsf-ui-materialized
 
@@ -56,12 +55,14 @@ PY
 chmod +x "$PATCH_SCRIPT"
 "$PATCH_SCRIPT"
 
-# The marker is written only after every migration/test above completed.
+# Written only after every migration/test above completed successfully.
 touch "$MARKER"
+rm -f "$PATCH_SCRIPT"
 
-# Runtime state must start empty in the deployed container. Only the patched
-# application files are baked into the image layer.
-rm -rf "$GSF_RUNTIME_ROOT" "$PATCH_SCRIPT"
-mkdir -p "$GSF_RUNTIME_ROOT"
+# Deliberately preserve the readiness files created under GSF_RUNTIME_ROOT.
+# They become part of the immutable Docker image layer, so start_web.sh sees
+# the already-materialized state immediately after every fresh Railway boot.
+test -d "$GSF_RUNTIME_ROOT"
+find "$GSF_RUNTIME_ROOT" -maxdepth 1 -type f -name '.v*-runtime-ready' -print | sort || true
 
 echo "V404 build-time UI materialization: PASS"
