@@ -354,8 +354,10 @@ def build_alive_status_css() -> str:
     return """
 <style id="gsf-alive-status-style">
 .gsf-alive-status {
+  position:fixed; left:50%; bottom:78px; transform:translateX(-50%); z-index:9999;
+  pointer-events:none;
   display:flex; align-items:center; justify-content:center; gap:.5rem;
-  width:fit-content; max-width:min(92vw, 560px); margin:.35rem auto .55rem;
+  width:max-content; max-width:min(92vw, 560px); margin:0;
   padding:.52rem .78rem; border-radius:999px;
   background:rgba(255,255,255,.72); border:1px solid rgba(24,87,130,.10);
   box-shadow:0 8px 24px rgba(16,40,61,.06); backdrop-filter:blur(14px);
