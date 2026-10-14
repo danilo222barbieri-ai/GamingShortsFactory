@@ -25,8 +25,12 @@ for path,marker in [('/creator-hub-v156/','V403_CREATOR_HUB_SIMPLIFIED'),('/ai-v
     assert status==200 and marker in body.decode('utf-8'), (path,status)
     assert headers.get('X-Content-Type-Options')=='nosniff', (path,'missing security headers')
 status,headers,body=request('/creator-hub/state')
-identity=json.loads(body)
-assert status==200 and identity.get('csrf_token')
+try:
+    identity=json.loads(body)
+except Exception:
+    identity={}
+assert status==200, ('creator hub state status',status,body[:500],COOKIE)
+assert identity.get('csrf_token'), ('creator hub csrf token missing',identity,COOKIE)
 status,_,_=request('/drafts/delete?id=v411-nonexistent')
 assert status in (403,405)
 status,_,_=request('/drafts/delete?id=v411-nonexistent',method='POST')
@@ -34,4 +38,3 @@ assert status==403, ('missing CSRF accepted',status)
 status,_,_=request('/drafts/delete?id=v411-nonexistent',method='POST',headers={'X-GSF-CSRF':identity['csrf_token']})
 assert status==404, ('authorized non-existing draft must fail safely',status)
 print('V411 essential UI/security runtime smoke: PASS')
-
