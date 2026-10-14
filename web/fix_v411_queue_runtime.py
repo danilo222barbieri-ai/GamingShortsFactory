@@ -18,6 +18,33 @@ def patch_app_source(source):
     return result
 
 
+def patch_streamlit_shell_bridge(source):
+    """Keep the V343 shell byte-for-byte while using Streamlit's supported iframe API."""
+    legacy_import = 'import streamlit.components.v1 as _gsf_components_v343\n'
+    legacy_call = '_gsf_components_v343.html(_V343_GLOBAL_SHELL_JS, height=0, scrolling=False)'
+    modern_call = 'st.iframe(_V343_GLOBAL_SHELL_JS, height=0, scrolling=False)'
+
+    if modern_call in source:
+        if legacy_import in source or legacy_call in source:
+            raise RuntimeError('V412 partial Streamlit shell bridge cleanup detected')
+        return source
+
+    import_count = source.count(legacy_import)
+    call_count = source.count(legacy_call)
+    if import_count != 1 or call_count != 1:
+        raise RuntimeError(
+            f'V412 expected exactly one V343 shell bridge; imports={import_count} calls={call_count}'
+        )
+
+    result = source.replace(legacy_import, '', 1).replace(legacy_call, modern_call, 1)
+    if '_gsf_components_v343' in result:
+        raise RuntimeError('V412 deprecated V343 component alias remains')
+    if result.count(modern_call) != 1:
+        raise RuntimeError('V412 supported V343 iframe bridge count mismatch')
+    ast.parse(result)
+    return result
+
+
 def patch_csrf_server(source):
     if 'GSF_SECURITY_V410' not in source:
         raise RuntimeError('V410 must be applied before the Hub security bridge')
@@ -118,7 +145,7 @@ def patch_share_revision(source):
 def main():
     root = Path(sys.argv[1] if len(sys.argv) > 1 else '/app')
     target = root / 'GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py'
-    source = patch_app_source(target.read_text(encoding='utf-8'))
+    source = patch_streamlit_shell_bridge(patch_app_source(target.read_text(encoding='utf-8')))
     compile(source, str(target), 'exec')
     target.write_text(source, encoding='utf-8')
     server = root / 'web/direct_upload_server.py'
@@ -130,7 +157,7 @@ def main():
     nginx.write_text(patch_location_headers(patch_desktop_access(nginx_source)), encoding='utf-8')
     hub = root / 'web/creator_hub_v156_component/index.html'
     hub.write_text(patch_csrf_hub(hub.read_text(encoding='utf-8')), encoding='utf-8')
-    print('V411 consolidated image integration: PASS', flush=True)
+    print('V411 consolidated image integration + V412 invisible shell cleanup: PASS', flush=True)
 
 
 if __name__ == '__main__':
