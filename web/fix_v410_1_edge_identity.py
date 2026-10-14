@@ -1,8 +1,40 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import sys
 
 MARKER = "GSF_SECURITY_V410_EDGE_ID"
+
+SECURITY_HEADERS = (
+    'add_header X-Content-Type-Options "nosniff" always;',
+    'add_header X-Frame-Options "SAMEORIGIN" always;',
+    'add_header Referrer-Policy "strict-origin-when-cross-origin" always;',
+    'add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;',
+    'add_header Strict-Transport-Security "max-age=15552000" always;',
+    'add_header Content-Security-Policy "default-src \'self\' data: blob: https:; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' https:; style-src \'self\' \'unsafe-inline\' https:; img-src \'self\' data: blob: https:; media-src \'self\' blob: https:; connect-src \'self\' https: wss:; frame-src \'self\' https:; object-src \'none\'; base-uri \'self\'; form-action \'self\' https:; frame-ancestors \'self\';" always;',
+)
+
+
+def _propagate_location_security_headers(text: str) -> str:
+    """Preserve hardening where a local add_header shadows server inheritance."""
+    pattern = re.compile(r"(?ms)^    location[^\n]*\{\n.*?^    \}\n")
+
+    def patch_block(match):
+        block = match.group(0)
+        if "add_header " not in block:
+            return block
+        missing = []
+        for directive in SECURITY_HEADERS:
+            header = directive.split()[1]
+            if f"add_header {header} " not in block:
+                missing.append("        " + directive)
+        if not missing:
+            return block
+        closing = "    }\n"
+        body = block[:-len(closing)].rstrip("\n")
+        return body + "\n\n" + "\n".join(missing) + "\n" + closing
+
+    return pattern.sub(patch_block, text)
 
 
 def patch(path: Path) -> bool:
@@ -45,6 +77,11 @@ limit_conn_zone $gsf_client_key zone=gsf_conn_v410:10m;
         1,
     )
 
+    # A location-level add_header disables inheritance from the server block.
+    # Copy the complete hardening set into every such route so cache/cookie
+    # headers cannot silently remove browser security headers at runtime.
+    text = _propagate_location_security_headers(text)
+
     path.write_text(text, encoding="utf-8")
     return True
 
@@ -60,4 +97,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
