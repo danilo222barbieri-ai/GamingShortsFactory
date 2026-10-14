@@ -13,6 +13,7 @@ text=source.read_text(encoding='utf-8')
 needle='rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf\n'
 hook=(
     'python /app/web/fix_v410_security_hardening.py /app\n'
+    'python /app/web/fix_v410_1_edge_identity.py /app\n'
     'python /app/web/test_v410_security_hardening.py /app\n'
 )
 if needle not in text:
