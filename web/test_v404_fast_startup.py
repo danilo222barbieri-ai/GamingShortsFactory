@@ -25,8 +25,12 @@ assert "exec python -m streamlit run" in fast
 # Build-time materialization derives the existing legacy chain rather than
 # maintaining a second copy, but current rewritten surfaces may route obsolete
 # historical steps through an explicit compatibility layer.
-assert "# V311_RESTART_SAFE" in legacy
-assert "fix_v373_creator_hub_spacing.py" in legacy
+# Inside the final image, the V269 build hook has intentionally replaced
+# start_web.sh with the fast startup, so legacy-only markers belong to the
+# source/pre-bake contract rather than the baked-image contract.
+if root != Path("/app"):
+    assert "# V311_RESTART_SAFE" in legacy
+    assert "fix_v373_creator_hub_spacing.py" in legacy
 assert "source.find(start_token)" in materializer
 assert "source.find(end_token" in materializer
 assert 'id=\"ai404\"' in materializer
