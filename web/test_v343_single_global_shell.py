@@ -103,10 +103,17 @@ def main():
         if old in start:
             raise AssertionError(f'legacy chrome authority still active in startup: {old}')
 
-    need(start,'fix_v343_single_global_shell.py','V343 startup apply')
-    need(start,'test_v343_single_global_shell.py','V343 startup test')
-    if 'fix_v341_global_shell_contract.py' in start:
-        raise AssertionError('V341 must not run directly from startup')
+    # In repository/source mode V343 must still be part of the historical
+    # materialization chain. In the final V404 image that chain has already
+    # run at build time and start_web.sh is intentionally the fast launcher.
+    if 'V404 fast startup' in start:
+        need(start,'/app/.gsf-ui-materialized','V404 materialized-image guard')
+        need(shell,'GSF_GLOBAL_SHELL_V343','baked V343 shell')
+    else:
+        need(start,'fix_v343_single_global_shell.py','V343 startup apply')
+        need(start,'test_v343_single_global_shell.py','V343 startup test')
+        if 'fix_v341_global_shell_contract.py' in start:
+            raise AssertionError('V341 must not run directly from startup')
 
     for old_token in (
         '__GSF_V327_EDITOR_BRIDGE',
