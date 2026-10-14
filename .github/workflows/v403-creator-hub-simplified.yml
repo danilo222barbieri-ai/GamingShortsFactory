@@ -1,0 +1,24 @@
+name: V403 Creator Hub Simplified
+
+on:
+  push:
+    branches:
+      - chat/creator-hub-simplify-8cf0cf
+  pull_request:
+    paths:
+      - 'web/fix_v374_creator_hub_spacing_live.py'
+      - 'web/fix_v403_creator_hub_simplified.py'
+      - 'web/test_v403_creator_hub_simplified.py'
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile Creator Hub patches
+        run: python -m py_compile web/fix_v374_creator_hub_spacing_live.py web/fix_v403_creator_hub_simplified.py web/test_v403_creator_hub_simplified.py
+      - name: Preserve V374 contract
+        run: python web/test_v374_creator_hub_spacing_live.py
+      - name: Run V403 simplified Creator Hub contract
+        run: python web/test_v403_creator_hub_simplified.py
