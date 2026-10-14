@@ -12,10 +12,18 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/111/merge
+          fetch-depth: 0
+
+      - name: Record tested merge commit
+        run: |
+          mkdir -p /tmp/gsf-gate-resource-diagnostics
+          git rev-parse HEAD | tee /tmp/gsf-gate-resource-diagnostics/tested-commit.txt
+          git show -s --format='%H %P %s' HEAD | tee /tmp/gsf-gate-resource-diagnostics/tested-commit-detail.txt
 
       - name: Baseline runner resources
         run: |
-          mkdir -p /tmp/gsf-gate-resource-diagnostics
           df -h | tee /tmp/gsf-gate-resource-diagnostics/df-before.txt
           docker system df | tee /tmp/gsf-gate-resource-diagnostics/docker-df-before.txt
 
