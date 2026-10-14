@@ -146,6 +146,28 @@
       "owner": "chat/alive-notifications-v409-4d7c2e",
       "created_at": "2026-10-14T06:45:00+00:00",
       "state": "active"
+    },
+    {
+      "id": "security-hardening-v410-6f31c2",
+      "branch": "chat/security-hardening-v410-6f31c2",
+      "scope": "Harden GSF upload, session, social-token and edge security without changing user-facing flows",
+      "paths": [
+        "web/fix_v410_security_hardening.py",
+        "web/fix_v410_1_edge_identity.py",
+        "web/test_v410_security_hardening.py",
+        "web/start_secure.sh",
+        "web/direct_upload_server.py",
+        "web/nginx.conf.template",
+        "web/content_memory_v145.py",
+        "web/editor_2027_embed.py",
+        "requirements-web.txt",
+        "constraints-web.txt",
+        ".github/dependabot.yml",
+        ".github/workflows/v410-security-gate.yml"
+      ],
+      "owner": "chat/security-hardening-v410-6f31c2",
+      "created_at": "2026-10-14T07:28:25+00:00",
+      "state": "active"
     }
   ]
 }
