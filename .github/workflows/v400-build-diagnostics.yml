@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - v400-ai-hidpi
+      - chat/creator-hub-simplify-8cf0cf
   workflow_dispatch:
 
 jobs:
