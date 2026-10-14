@@ -1,0 +1,20 @@
+name: V412 Invisible Runtime Cleanup
+
+on:
+  push:
+    branches:
+      - chat/invisible-runtime-cleanup-20261014
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  v412:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify invisible Streamlit shell bridge cleanup
+        run: python web/test_v412_invisible_runtime_cleanup.py .
