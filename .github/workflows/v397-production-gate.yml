@@ -249,6 +249,7 @@ jobs:
         run: |
           set +e
           mkdir -p /tmp/gsf-production-diagnostics
+          cp /tmp/gsf-production-build.log /tmp/gsf-production-diagnostics/frontend-build.log 2>/dev/null || true
           docker ps -a > /tmp/gsf-production-diagnostics/docker-ps.txt 2>&1
           docker inspect gsf-production-gate > /tmp/gsf-production-diagnostics/docker-inspect.json 2>&1
           docker top gsf-production-gate > /tmp/gsf-production-diagnostics/docker-top.txt 2>&1
