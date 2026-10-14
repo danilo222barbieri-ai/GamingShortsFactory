@@ -10,13 +10,14 @@ req=Path("/app/requirements-web.txt").read_text(encoding="utf-8")
 constraints_path=Path("/app/constraints-web.txt")
 
 expected_direct={
-    "streamlit":"1.49.1",
+    "streamlit":"1.65.0",
     "faster-whisper":"1.2.1",
     "numpy":"2.5.3",
     "google-api-python-client":"2.200.0",
     "google-auth-oauthlib":"1.4.1",
     "google-auth-httplib2":"0.4.2",
     "boto3":"1.43.104",
+    "cryptography":"50.0.1",
 }
 for name,version in expected_direct.items():
     need(f"{name}=={version}" in req,f"{name} pinned to tested version")
@@ -26,11 +27,14 @@ need(constraints_path.is_file(),"full web constraints file exists")
 constraints=constraints_path.read_text(encoding="utf-8")
 for line in [
     "botocore==1.43.104",
+    "cryptography==50.0.1",
     "ctranslate2==4.8.2",
     "onnxruntime==1.30.0",
     "pandas==2.3.3",
+    "pillow==12.3.0",
     "pyarrow==25.0.1",
     "requests==2.34.2",
+    "streamlit==1.65.0",
     "tokenizers==0.23.2",
 ]:
     need(line in constraints,f"constraint locks {line}")
