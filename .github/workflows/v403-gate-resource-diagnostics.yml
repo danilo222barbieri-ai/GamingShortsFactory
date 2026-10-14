@@ -1,0 +1,53 @@
+name: V403 Gate Resource Diagnostics
+
+on:
+  push:
+    branches:
+      - chat/creator-hub-simplify-8cf0cf
+  workflow_dispatch:
+
+jobs:
+  gate-resource-diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Baseline runner resources
+        run: |
+          mkdir -p /tmp/gsf-gate-resource-diagnostics
+          df -h | tee /tmp/gsf-gate-resource-diagnostics/df-before.txt
+          docker system df | tee /tmp/gsf-gate-resource-diagnostics/docker-df-before.txt
+
+      - name: Build worker image first, exactly like Production Gate
+        run: docker build --progress=plain -f web/Dockerfile.worker -t gsf-worker-gate:${{ github.sha }} . 2>&1 | tee /tmp/gsf-gate-resource-diagnostics/worker-build.log
+
+      - name: Resources after worker image
+        if: always()
+        run: |
+          df -h | tee /tmp/gsf-gate-resource-diagnostics/df-after-worker.txt
+          docker system df | tee /tmp/gsf-gate-resource-diagnostics/docker-df-after-worker.txt
+          docker images --format '{{.Repository}}:{{.Tag}} {{.Size}}' | sort | tee /tmp/gsf-gate-resource-diagnostics/images-after-worker.txt
+
+      - name: Build frontend after worker image
+        id: frontend
+        shell: bash
+        run: |
+          set -o pipefail
+          docker build --progress=plain -t gsf-production-gate:${{ github.sha }} . 2>&1 | tee /tmp/gsf-gate-resource-diagnostics/frontend-build.log
+
+      - name: Resources after frontend attempt
+        if: always()
+        run: |
+          df -h | tee /tmp/gsf-gate-resource-diagnostics/df-after-frontend.txt
+          docker system df | tee /tmp/gsf-gate-resource-diagnostics/docker-df-after-frontend.txt
+          docker images --format '{{.Repository}}:{{.Tag}} {{.Size}}' | sort | tee /tmp/gsf-gate-resource-diagnostics/images-after-frontend.txt
+
+      - name: Upload resource diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v403-gate-resource-diagnostics
+          path: /tmp/gsf-gate-resource-diagnostics
+          if-no-files-found: error
+          retention-days: 3
