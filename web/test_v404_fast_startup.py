@@ -55,10 +55,14 @@ assert "mod._apply_v317(HUB)" not in compat
 assert "mod._apply_v320(HUB)" not in compat
 
 # The already-existing Docker build test is the hook that preserves legacy,
-# materializes the UI, and swaps only the image copy to the fast startup.
+# materializes the UI, and swaps only the image copy to the fast startup. In
+# the baked image the hook itself has already executed once, so validate its
+# source-level copy operation only before bake; the baked result is verified
+# below through the marker and start_web.sh contents.
 assert "start_web_legacy.sh" in build_hook
 assert "materialize_runtime_patches.sh" in build_hook
-assert "shutil.copyfile(fast_start, legacy_start)" in build_hook
+if root != Path("/app"):
+    assert "shutil.copyfile(fast_start, legacy_start)" in build_hook
 
 # When executed inside the production image after the V269 build hook, the
 # immutable completion marker and final UI artifacts must exist.
