@@ -15,6 +15,7 @@ assert "fix_v312_global_navigation.py" not in fast
 assert "fix_v343_single_global_shell.py" not in fast
 assert "test_v373_creator_hub_spacing.py" not in fast
 assert "start_web_legacy.sh" in fast
+assert "exec /bin/sh /app/web/start_web_legacy.sh" in fast
 assert "/app/.gsf-ui-materialized" in fast
 assert "direct_upload_server.py &" in fast
 assert "contact_server.py &" in fast
