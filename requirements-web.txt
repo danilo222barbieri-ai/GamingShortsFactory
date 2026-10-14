@@ -6,3 +6,4 @@ google-auth-oauthlib==1.4.1
 google-auth-httplib2==0.4.2
 boto3==1.43.104
 pywebpush==2.5.0
+cryptography==50.0.1
