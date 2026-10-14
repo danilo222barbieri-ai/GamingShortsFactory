@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import sys
 
 root = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
@@ -18,6 +19,14 @@ if dockerfile.is_file():
     assert 'CMD ["/app/web/start_web_fast.sh"]' in docker
 
 # Nginx edge protections.
+security_headers = (
+    "X-Content-Type-Options",
+    "X-Frame-Options",
+    "Referrer-Policy",
+    "Permissions-Policy",
+    "Strict-Transport-Security",
+    "Content-Security-Policy",
+)
 for token in (
     "GSF_SECURITY_V410",
     "GSF_SECURITY_V410_EDGE_ID",
@@ -25,11 +34,7 @@ for token in (
     "limit_conn_zone",
     "$gsf_client_key",
     "$http_x_real_ip",
-    "X-Content-Type-Options",
-    "Strict-Transport-Security",
-    "Referrer-Policy",
-    "Permissions-Policy",
-    "Content-Security-Policy",
+    *security_headers,
 ):
     assert token in nginx, f"missing nginx security control: {token}"
 assert "location = /drafts/delete" in nginx
@@ -38,6 +43,18 @@ assert "location /direct-upload/" in nginx and "zone=gsf_upload_v410" in nginx, 
 assert "zone=gsf_upload_v410:10m rate=20r/s" in nginx, "upload abuse guard must not throttle normal parallel upload"
 assert "burst=80 nodelay" in nginx, "parallel upload burst allowance missing"
 assert 'payment=(self)' in nginx, "same-origin payment capability must remain available"
+
+# Nginx does not inherit server-level add_header directives into a location that
+# declares any add_header of its own. Every such location must therefore carry
+# the full browser-hardening set locally as well.
+location_blocks = re.findall(r"(?ms)^    location[^\n]*\{\n.*?^    \}\n", nginx)
+assert location_blocks, "nginx location parsing found no blocks"
+for block in location_blocks:
+    if "add_header " not in block:
+        continue
+    first_line = block.splitlines()[0].strip()
+    for header in security_headers:
+        assert f"add_header {header} " in block, f"{first_line} shadows security header {header}"
 
 # Application protections: same-session CSRF, active media validation, encrypted social tokens.
 for token in (
@@ -58,7 +75,7 @@ assert "_security_encrypt_json(payload)" in server, "social token bucket writes 
 # GET must be non-destructive; deletion moves to POST and validates a CSRF token.
 get_delete = 'if clean=="/drafts/delete":\n            _json(self,405'
 assert get_delete in server, "GET /drafts/delete still performs a destructive action"
-post = server[server.index("def do_POST"):]
+post = server[server.index("def do_POST\"):]
 assert 'if path=="/drafts/delete":' in post, "POST delete handler missing"
 assert "_security_csrf_valid(self,sid)" in post, "draft deletion does not validate CSRF"
 assert "gsfDeleteDraft" in server and 'method:"POST"' in server, "draft UI does not use protected POST deletion"
