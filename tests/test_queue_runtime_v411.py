@@ -26,6 +26,19 @@ def test_desktop_access_keeps_media_authorization():
     assert patch_desktop_access(changed)==changed
 
 
+def test_signature_reset_does_not_resurrect_previous_source_render(tmp_path,monkeypatch):
+    monkeypatch.setenv('GSF_RUNTIME_ROOT',str(tmp_path))
+    media=tmp_path/'sessions'/'browser'/'media';media.mkdir(parents=True)
+    final=media/'gaming_short_finale_share.mp4';final.write_bytes(b'x'*2048)
+    session={'gsf_source_path':str(media/'one.mp4'),'publication_ready':True,'publication_final_signature':'old'}
+    assert sync_project(session).final_ref
+    session.update(gsf_source_path=str(media/'two.mp4'),publication_final_signature='')
+    assert sync_project(session).final_ref is None
+    assert sync_project(session).final_ref is None
+    final.write_bytes(b'y'*3072)
+    assert sync_project(session).final_ref==str(final)
+
+
 def test_project_switch_does_not_keep_previous_identity():
     session={'gsf_active_project_id':'one','gsf_source_path':'/one.mp4'}
     assert sync_project(session).project_id=='one'

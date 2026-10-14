@@ -21,30 +21,37 @@ def sync_project(session):
     project_id = project_id or session.setdefault('_gsf_queue_project_id', uuid.uuid4().hex)
     state = load_project_session(session, project_id=project_id)
     previous_final = state.final_ref
+    previous_source = state.source_ref
     if state.project_id != project_id:
         state = new_project(project_id)
     source = first_ref(session, ('gsf_source_path', 'gsf_editor_source_path', 'video_path', 'input_video'))
     final = first_ref(session, ('gsf_final_short_path', 'final_short_path', 'short_path', 'output_video'))
     revision = str(session.get('publication_final_signature') or '')
-    if source and session.get('publication_ready'):
+    file_revision = ''
+    candidate = final
+    if source:
         try:
             sessions = (Path(os.environ.get('GSF_RUNTIME_ROOT','/tmp/gsf-runtime'))/'sessions').resolve()
             sid = Path(source).resolve().relative_to(sessions).parts[0]
             stable = sessions/sid/'media'/'gaming_short_finale_share.mp4'
             stat = stable.stat()
+            candidate = str(stable)
+            file_revision = str(stat.st_mtime_ns)+':'+str(stat.st_size)
             started = float(session.get('gsf_v107_render_started_at') or 0)
-            if stat.st_size > 1024 and stat.st_mtime >= started-1:
+            if session.get('publication_ready') and stat.st_size > 1024 and stat.st_mtime >= started-1:
                 final = str(stable)
-                revision += ':'+str(stat.st_mtime_ns)+':'+str(stat.st_size)
+                revision += ':'+file_revision
         except (OSError, ValueError, IndexError):
             pass
     if source and source != state.source_ref:
-        if final and final == previous_final:
-            session['gsf_queue_invalid_final_ref'] = final
+        if previous_source and (candidate or previous_final):
+            session['gsf_queue_invalid_final_ref'] = candidate or previous_final
+            session['gsf_queue_invalid_file_revision'] = file_revision
         state = reduce_project(state, ProjectEvent(ProjectEventType.SOURCE_ATTACHED, {'source_ref': source}))
         emit_alive(session, AliveEventType.UPLOAD_COMPLETED)
     changed_revision = revision and revision != session.get('gsf_queue_final_revision')
-    if final and (final != session.get('gsf_queue_invalid_final_ref') or changed_revision) and state.source_ref and (final != state.final_ref or changed_revision):
+    stale = final == session.get('gsf_queue_invalid_final_ref') and file_revision == session.get('gsf_queue_invalid_file_revision', '')
+    if final and not stale and state.source_ref and (final != state.final_ref or changed_revision):
         session.pop('gsf_queue_invalid_final_ref', None)
         state = reduce_project(state, ProjectEvent(ProjectEventType.RENDER_COMPLETED, {'final_ref': final}))
         emit_alive(session, AliveEventType.RENDER_COMPLETED)
