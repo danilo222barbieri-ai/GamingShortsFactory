@@ -7,6 +7,9 @@ files={
  "share":(root/"share_v156_component/index.html").read_text(encoding="utf-8"),
  "hub":(root/"creator_hub_v156_component/index.html").read_text(encoding="utf-8"),
 }
+v407_path=root/"gsf_desktop_shell_v407.py"
+v407_active=v407_path.is_file()
+v407=v407_path.read_text(encoding="utf-8") if v407_active else ""
 
 def v267_block(content):
     start=content.rfind("/* V267 GLOBAL DESKTOP POLISH")
@@ -31,9 +34,19 @@ checks={
  "Share desktop no page scroll":"#share{\n    overflow:hidden!important;" in blocks["share"],
  "Hub desktop no page scroll":"#hub{\n    overflow:hidden!important;" in blocks["hub"],
  "Editor desktop no page scroll":"#ng27{\n    overflow:hidden!important;" in blocks["editor"],
- "Premium card motion":"cubic-bezier(.2,.8,.2,1)" in blocks["home"] and "cubic-bezier(.2,.8,.2,1)" in blocks["ai"] and "cubic-bezier(.2,.8,.2,1)" in blocks["share"],
- "Reduced motion protected":all("prefers-reduced-motion:reduce" in v for v in blocks.values()),
 }
+
+# V407 deliberately replaces the old wide desktop composition with one centered
+# mobile canvas plus lateral ad rails. Once that shell is present, V267 no longer
+# owns card animation or reduced-motion rules for the superseded desktop layout;
+# it still guards every V267 rule above that remains relevant to the components.
+if v407_active:
+    checks["V407 mobile canvas"]="center_width_px: int = 480" in v407 and "desktop_breakpoint_px: int = 1100" in v407
+    checks["V407 giant ad rails"]="rail_min_px: int = 220" in v407 and "rail_max_px: int = 460" in v407
+else:
+    checks["Premium card motion"]="cubic-bezier(.2,.8,.2,1)" in blocks["home"] and "cubic-bezier(.2,.8,.2,1)" in blocks["ai"] and "cubic-bezier(.2,.8,.2,1)" in blocks["share"]
+    checks["Reduced motion protected"]=all("prefers-reduced-motion:reduce" in v for v in blocks.values())
+
 for name,v in checks.items(): print(("PASS" if v else "FAIL")+": "+name)
 bad=[k for k,v in checks.items() if not v]
 if bad: raise SystemExit("V267 global desktop polish failed: "+", ".join(bad))
