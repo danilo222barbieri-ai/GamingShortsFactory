@@ -20,7 +20,7 @@ limit_conn_zone $binary_remote_addr zone=gsf_conn_v410:10m;
     new = """# GSF_SECURITY_V410 — edge hardening, abuse control and browser policy
 # GSF_SECURITY_V410_EDGE_ID — Railway publishes the remote client as X-Real-IP.
 map $http_x_real_ip $gsf_client_key {
-    ~^[0-9A-Fa-f:.]{2,45}$ $http_x_real_ip;
+    "~^[0-9A-Fa-f:.]{2,45}$" $http_x_real_ip;
     default $binary_remote_addr;
 }
 limit_req_zone $gsf_client_key zone=gsf_api_v410:10m rate=20r/s;
