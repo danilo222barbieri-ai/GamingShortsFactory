@@ -12,6 +12,7 @@ requirements = (root / "requirements-web.txt").read_text(encoding="utf-8")
 # Runtime hardening must be injected after historical runtime migrations and
 # immediately before Nginx / companion servers start.
 assert "fix_v410_security_hardening.py" in secure_start, "V410 hardening patch is not applied at runtime"
+assert "fix_v410_1_edge_identity.py" in secure_start, "V410.1 edge identity patch is not applied at runtime"
 assert "test_v410_security_hardening.py" in secure_start, "V410 security contract is not verified at runtime"
 assert "start_web.sh" in secure_start, "secure entrypoint must derive from the normal GSF boot"
 assert "rm -f /etc/nginx/sites-enabled/default" in secure_start, "secure boot final-stage anchor missing"
@@ -21,8 +22,11 @@ assert "exec sh /tmp/gsf-start-v410.sh" in secure_start, "secure boot must hand 
 # Nginx edge protections.
 for token in (
     "GSF_SECURITY_V410",
+    "GSF_SECURITY_V410_EDGE_ID",
     "limit_req_zone",
     "limit_conn_zone",
+    "$gsf_client_key",
+    "$http_x_forwarded_for",
     "X-Content-Type-Options",
     "Strict-Transport-Security",
     "Referrer-Policy",
@@ -33,6 +37,9 @@ for token in (
 assert "location = /drafts/delete" in nginx
 assert "limit_except POST" in nginx, "draft deletion must not be reachable with GET"
 assert "location /direct-upload/" in nginx and "zone=gsf_upload_v410" in nginx, "upload endpoints need rate limiting"
+assert "zone=gsf_upload_v410:10m rate=20r/s" in nginx, "upload abuse guard must not throttle normal parallel upload"
+assert "burst=80 nodelay" in nginx, "parallel upload burst allowance missing"
+assert 'payment=(self)' in nginx, "same-origin payment capability must remain available"
 
 # Application protections: same-session CSRF, active media validation, encrypted social tokens.
 for token in (
@@ -66,7 +73,7 @@ workflow = root / ".github" / "workflows" / "v410-security-gate.yml"
 if (root / ".github").exists():
     assert workflow.is_file(), "V410 security CI workflow missing"
     wf = workflow.read_text(encoding="utf-8")
-    for token in ("pip-audit", "bandit", "test_v410_security_hardening.py"):
+    for token in ("pip-audit", "bandit", "test_v410_security_hardening.py", "fix_v410_1_edge_identity.py"):
         assert token in wf, f"security CI missing {token}"
 
 print("V410 security hardening contract: PASS")
