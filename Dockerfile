@@ -120,9 +120,12 @@ RUN python /app/web/test_v268_desktop_aesthetic_calibration.py
 RUN python /app/web/test_v268_1_desktop_to_mobile_parity.py
 RUN python /app/web/test_v269_creator_hub_recovery.py
 RUN python /app/web/test_v162_1_home_lift.py
+RUN chmod +x /app/web/start_web.sh /app/web/materialize_runtime_patches.sh /app/web/start_web_fast.sh && \
+    /app/web/materialize_runtime_patches.sh && \
+    python /app/web/test_v404_fast_startup.py /app
 RUN python -m compileall -q /app/web
 COPY .streamlit /app/.streamlit
 RUN PORT=8080 envsubst '${PORT}' < /app/web/nginx.conf.template > /tmp/gsf-nginx-test.conf && cp /tmp/gsf-nginx-test.conf /etc/nginx/conf.d/default.conf && nginx -t
-RUN chmod +x /app/web/start_web.sh && mkdir -p /tmp/gsf-runtime
+RUN chmod +x /app/web/start_web.sh /app/web/start_web_fast.sh /app/web/materialize_runtime_patches.sh && mkdir -p /tmp/gsf-runtime
 EXPOSE 8080
-CMD ["/app/web/start_web.sh"]
+CMD ["/app/web/start_web_fast.sh"]
