@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "web" / "ai_v221_component" / "index.html"
@@ -33,10 +32,15 @@ for action in ("CREA SHORT", "MODIFICA", "Salva"):
 for action in ('send("engine"', 'send("duration"', 'send("create"', 'send("preview"'):
     require(action in src, f"protocollo esistente mantenuto: {action}")
 
-# Results are selected in-place; there must be no second engine dashboard below them.
+# Result actions use the already-supported preview bridge so older hosts do not expose dead buttons.
+require('intent:"create_short"' in src and 'send("preview"' in src, "Crea Short usa il bridge preview compatibile")
+require('intent:"edit"' in src and 'send("preview"' in src, "Modifica usa il bridge preview compatibile")
+
+# Results are selected in-place and receiving them must release the local searching state.
 require("function showView" in src, "navigazione interna a due viste")
 require("state.selectedMoment" in src, "selezione momento persistente")
 require("state.previews" in src, "risultati reali ricevuti dal parent")
+require("hasPreviews" in src and "state.processing=false" in src, "risultati sbloccano lo stato di ricerca")
 
 # Keep the component self-contained and syntax-shaped enough to catch accidental truncation.
 require(src.count("<script>") == src.count("</script>") == 1, "script unico e chiuso")
