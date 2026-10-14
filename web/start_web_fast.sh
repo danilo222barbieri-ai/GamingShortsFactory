@@ -20,11 +20,14 @@ export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
 mkdir -p "$GSF_RUNTIME_ROOT"
 
 # V404: production images must already contain the fully materialized UI.
-# Fallback preserves backward compatibility for an older image or a local
-# environment that has not run the build-time materializer yet.
+# A preserved legacy startup remains available as a safe fallback.
 if [ ! -f /app/.gsf-ui-materialized ]; then
   echo "V404 fast-start marker missing; falling back to legacy safe startup" >&2
-  exec /app/web/start_web.sh
+  if [ -f /app/web/start_web_legacy.sh ]; then
+    exec /bin/sh /app/web/start_web_legacy.sh
+  fi
+  echo "V404 fatal: neither materialized marker nor legacy startup is available" >&2
+  exit 78
 fi
 
 # Fail closed if the build marker exists but a critical materialized artifact
