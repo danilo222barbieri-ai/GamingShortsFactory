@@ -10,6 +10,8 @@ on:
       - 'web/start_secure.sh'
       - 'web/direct_upload_server.py'
       - 'web/nginx.conf.template'
+      - 'web/content_memory_v145.py'
+      - 'web/editor_2027_embed.py'
       - 'requirements-web.txt'
       - 'constraints-web.txt'
       - '.github/workflows/v410-security-gate.yml'
@@ -31,7 +33,7 @@ jobs:
       - name: Verify patch idempotence
         run: python web/fix_v410_security_hardening.py .
       - name: Compile protected server
-        run: python -m py_compile web/direct_upload_server.py web/fix_v410_security_hardening.py web/test_v410_security_hardening.py
+        run: python -m py_compile web/direct_upload_server.py web/fix_v410_security_hardening.py web/test_v410_security_hardening.py web/content_memory_v145.py web/editor_2027_embed.py
       - name: V410 security contract
         run: python web/test_v410_security_hardening.py .
       - name: Verify production dependency lock resolves
