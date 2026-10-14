@@ -54,6 +54,24 @@
       "owner": "chat/alive-core-v405-b6f2a1",
       "created_at": "2026-10-14T06:20:00+00:00",
       "state": "active"
+    },
+    {
+      "id": "core-infra-v406-c81426",
+      "branch": "chat/core-infra-v406-c81426",
+      "scope": "Build GSF infrastructure core for asset references, persistent job lifecycle, storage adapters, cache/proxy metadata, telemetry and cost accounting",
+      "paths": [
+        "gsf_core/__init__.py",
+        "gsf_core/assets.py",
+        "gsf_core/jobs.py",
+        "gsf_core/storage.py",
+        "gsf_core/cache.py",
+        "gsf_core/telemetry.py",
+        "tests/test_gsf_core_infra.py",
+        "docs/architecture/gsf-core-infrastructure.md"
+      ],
+      "owner": "chat/core-infra-v406-c81426",
+      "created_at": "2026-10-14T06:32:00+00:00",
+      "state": "active"
     }
   ]
 }
