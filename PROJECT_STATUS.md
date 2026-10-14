@@ -166,6 +166,15 @@ PR integration checks on final head:
 
 No intentional destructive production rollback test was performed. Rollback execution will only occur for a naturally eligible hard failure or an explicitly approved controlled failure test.
 
+### Game Editor V403 support handoff — 2026-10-14
+
+- Support engine merged via PR `#112` as `f88217ed1aa9c762483962397e81219f90bc5127`.
+- Added non-destructive editor state normalization, Undo/Redo history, Smart Timeline marker normalization and deterministic Game Director suggestions.
+- V403 TDD workflow demonstrated intentional RED before implementation, then GREEN after implementation.
+- CI also applied `scripts/apply_v403_game_editor.py` to a disposable copy of the then-current `app.py` and successfully Python-compiled the fully patched app.
+- **Runtime UI is not yet integrated into `app.py`.** The active `alive-core-v405-b6f2a1` claim currently owns `app.py`; forcing an overlap would violate the repository isolation protocol.
+- The deterministic V403 app patch is staged on `main` and can be applied after that `app.py` claim is completed/released, then must pass the Production Gate and Railway verification before any LIVE claim.
+
 ## Current user-facing verification priorities
 
 These are re-verification priorities, not claims that a feature is currently broken:
@@ -180,9 +189,7 @@ Always reproduce against the current deployed build before marking one fixed/bro
 
 ## Active work
 
-Live ownership is read from `.gsf/claims/index.json`.
-
-Current registry after orchestration integration: **no active claims registered**.
+Live ownership is read from `.gsf/claims/index.json` and is authoritative. As of the Game Editor V403 handoff, multiple isolated claims are active; notably `alive-core-v405-b6f2a1` owns `app.py`. Never infer that a completed CI run releases a claim: only the registry state does.
 
 ## Mandatory coding protocol
 
@@ -207,6 +214,7 @@ Current registry after orchestration integration: **no active claims registered*
 - **2026-10-13:** PR #110 integrated atomic multi-chat claims, guarded rollback policy and one-command workflow.
 - **2026-10-13:** Main Production Gate #51 PASS; frontend deployment `eb0d89ed-9cc1-4719-8682-032cbad307de` verified SUCCESS/Online.
 - **2026-10-13:** GSF Guardian updated to guarded automatic rollback policy.
+- **2026-10-14:** Game Editor V403 support engine and deterministic integration patch merged via PR #112; runtime UI integration intentionally deferred while `app.py` remains under an active non-overlapping owner claim.
 
 ---
 

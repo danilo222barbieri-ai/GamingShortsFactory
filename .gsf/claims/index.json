@@ -9,7 +9,8 @@
         "web/creator_hub_v156_component/index.html",
         "web/fix_v374_creator_hub_spacing_live.py",
         "web/fix_v403_creator_hub_simplified.py",
-        "web/test_v403_creator_hub_simplified.py"
+        "web/test_v403_creator_hub_simplified.py",
+        ".github/workflows/v403-creator-hub-simplified.yml"
       ],
       "owner": "chat/creator-hub-simplify-8cf0cf",
       "created_at": "2026-10-14T06:05:47+00:00",
@@ -21,16 +22,23 @@
       "scope": "Simplify Crea con IA engine and top moments flow",
       "paths": [
         "web/ai_v221_component/index.html",
-        "web/test_v404_crea_con_ia_simple.py"
+        "web/test_v404_crea_con_ia_simple.py",
+        ".github/workflows/v404-crea-con-ia-simple.yml"
       ],
       "owner": "chat/crea-con-ia-simple-3a72f1",
       "created_at": "2026-10-14T06:08:00+00:00",
-      "state": "active"
+      "state": "completed",
+      "evidence": {
+        "pr": 113,
+        "merge_sha": "c7a898aafd2d8909ff2433d838c6540f5b619226",
+        "tests": "V404 regression test RED before the bridge/state fix and GREEN on final head; V398/V399/V400/V402 checks GREEN",
+        "runtime": "Merged to main; main component content verified. Production deployment is tracked separately by the GSF Production Gate."
+      }
     },
     {
       "id": "game-editor-v403-021",
       "branch": "chat/game-editor-v403-021",
-      "scope": "Build Game Editor V403 support engine, tests and deterministic integration patch without touching locked app.py until its active claim is released",
+      "scope": "Build GSF Game Editor V403 support engine, tests and deterministic integration patch without touching locked app.py until its active claim is released",
       "paths": [
         "gsf_editor_v403.py",
         "tests/test_game_editor_v403.py",
@@ -39,7 +47,13 @@
       ],
       "owner": "chat/game-editor-v403-021",
       "created_at": "2026-10-14T06:14:00+00:00",
-      "state": "active"
+      "state": "completed",
+      "evidence": {
+        "pr": 112,
+        "merge_sha": "f88217ed1aa9c762483962397e81219f90bc5127",
+        "tests": "v403-game-editor RED then GREEN; integration patch applied to disposable app.py and py_compile passed",
+        "runtime": "No app.py runtime change in this claim; visual integration remains serialized behind active app.py ownership"
+      }
     },
     {
       "id": "alive-core-v405-b6f2a1",
@@ -49,6 +63,8 @@
         "app.py",
         "gsf_alive.py",
         "tests/test_gsf_alive.py",
+        "scripts/apply_v405_alive.py",
+        ".github/workflows/v405-alive-core.yml",
         "docs/architecture/gsf-alive.md"
       ],
       "owner": "chat/alive-core-v405-b6f2a1",
@@ -71,6 +87,35 @@
       ],
       "owner": "chat/core-infra-v406-c81426",
       "created_at": "2026-10-14T06:32:00+00:00",
+      "state": "active"
+    },
+    {
+      "id": "publish-short-v405-7d91c4",
+      "branch": "chat/publish-short-v405-7d91c4",
+      "scope": "Rebuild Crea Short final publication experience as a minimal video-first page with publish/download/edit/save actions and deterministic app integration",
+      "paths": [
+        "web/publish_short_v405_component/index.html",
+        "web/test_v405_publish_short_simple.py",
+        "scripts/apply_v405_publish_short.py",
+        ".github/workflows/v405-publish-short-simple.yml"
+      ],
+      "owner": "chat/publish-short-v405-7d91c4",
+      "created_at": "2026-10-14T06:34:00+00:00",
+      "state": "active"
+    },
+    {
+      "id": "desktop-mobile-shell-v407-7e31ca",
+      "branch": "chat/desktop-mobile-shell-v407-7e31ca",
+      "scope": "Restore desktop as a mobile-first center shell with giant lateral advertising rails, preserving the mobile UI as the single source of truth",
+      "paths": [
+        "web/gsf_desktop_shell_v407.py",
+        "web/install_adsense_bridge.py",
+        "web/test_v407_desktop_mobile_shell.py",
+        ".github/workflows/v407-desktop-shell.yml",
+        "docs/architecture/gsf-desktop-mobile-shell.md"
+      ],
+      "owner": "chat/desktop-mobile-shell-v407-7e31ca",
+      "created_at": "2026-10-14T06:11:00+00:00",
       "state": "active"
     }
   ]
