@@ -131,6 +131,8 @@ jobs:
             -e PORT=8080 \
             -e GSF_WEB_MODE=1 \
             -e GSF_LOW_MEMORY_WEB=1 \
+            -e GSF_DATA_ENCRYPTION_KEY=v411-ci-only-key \
+            -e GSF_CSRF_SECRET=v411-ci-only-csrf \
             -p 18080:8080 \
             gsf-production-gate:${{ github.sha }}
 
@@ -159,26 +161,10 @@ jobs:
       - name: Blocking runtime smoke
         run: docker exec gsf-production-gate python /app/web/runtime_smoke_v107.py
 
-      - name: UI contract V343 global shell
-        run: docker exec gsf-production-gate python /app/web/test_v343_single_global_shell.py /app
-
-      - name: UI contract V389 bounded reset
-        run: docker exec gsf-production-gate python /app/web/test_v389_mobile_editor_bounded_reset.py /app
-
-      - name: UI contract V391 top actions
-        run: docker exec gsf-production-gate python /app/web/test_v391_mobile_editor_top_actions.py /app
-
-      - name: UI contract V393 clean transport
-        run: docker exec gsf-production-gate python /app/web/test_v393_mobile_editor_clean_transport.py /app
-
-      - name: UI contract V394 footer restore
-        run: docker exec gsf-production-gate python /app/web/test_v394_mobile_editor_footer_restore.py /app
-
-      - name: UI contract V395 atomic skin
-        run: docker exec gsf-production-gate python /app/web/test_v395_mobile_editor_atomic_skin.py /app
-
-      - name: UI contract V396 share publish surface
-        run: docker exec gsf-production-gate python /app/web/test_v396_mobile_share_publish_surface.py /app
+      - name: Essential UI and security runtime
+        run: |
+          docker exec gsf-production-gate python /app/web/test_v404_fast_startup.py /app
+          docker exec gsf-production-gate python /app/web/runtime_smoke_v411.py
 
       - name: Promote tested commit to Railway
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

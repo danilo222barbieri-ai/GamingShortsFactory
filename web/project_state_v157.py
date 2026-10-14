@@ -197,7 +197,7 @@ def save_project(session_state,session_root):
     payload={}; total=0
     for k,v in list(session_state.items()):
         k=str(k)
-        if k.startswith("_") or any(x in k.lower() for x in SKIP_PARTS): continue
+        if (k.startswith("_") and k != "_gsf_project_state_v1") or any(x in k.lower() for x in SKIP_PARTS): continue
         try:
             sv=_safe(v); raw=json.dumps(sv,ensure_ascii=False,separators=(",",":"))
         except Exception:
