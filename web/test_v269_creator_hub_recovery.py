@@ -1,4 +1,5 @@
 from pathlib import Path
+import shutil
 import subprocess
 
 app_root = Path("/app")
@@ -27,11 +28,20 @@ if bad:
 print("V269 Creator Hub recovery: PASS")
 
 # V404 production build hook. Dockerfile already executes this test late in the
-# image build, so use that established gate to materialize the restart-safe UI
-# chain once at build time instead of replaying it on every Railway boot.
+# image build. Preserve the historical startup as a fallback, materialize the
+# runtime migration chain once, then replace only the image copy of start_web
+# with the minimal startup path. The repository source remains unchanged.
 materializer = root / "materialize_runtime_patches.sh"
-if app_root.is_dir() and materializer.is_file():
+legacy_start = root / "start_web.sh"
+legacy_backup = root / "start_web_legacy.sh"
+fast_start = root / "start_web_fast.sh"
+if app_root.is_dir() and materializer.is_file() and fast_start.is_file():
+    shutil.copyfile(legacy_start, legacy_backup)
     subprocess.run(["/bin/sh", str(materializer)], check=True)
     if not (app_root / ".gsf-ui-materialized").is_file():
         raise SystemExit("V404 materialization marker missing after build hook")
-    print("V404 build hook: PASS")
+    shutil.copyfile(fast_start, legacy_start)
+    baked = legacy_start.read_text(encoding="utf-8")
+    if "V404 fast startup" not in baked or "fix_v312_global_navigation.py" in baked:
+        raise SystemExit("V404 fast startup was not baked correctly")
+    print("V404 build hook + fast startup bake: PASS")
