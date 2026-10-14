@@ -27,7 +27,13 @@
       ],
       "owner": "chat/crea-con-ia-simple-3a72f1",
       "created_at": "2026-10-14T06:08:00+00:00",
-      "state": "active"
+      "state": "completed",
+      "evidence": {
+        "pr": 113,
+        "merge_sha": "c7a898aafd2d8909ff2433d838c6540f5b619226",
+        "tests": "V404 regression test RED before the bridge/state fix and GREEN on final head; V398/V399/V400/V402 checks GREEN",
+        "runtime": "Merged to main; main component content verified. Production deployment is tracked separately by the GSF Production Gate."
+      }
     },
     {
       "id": "game-editor-v403-021",
