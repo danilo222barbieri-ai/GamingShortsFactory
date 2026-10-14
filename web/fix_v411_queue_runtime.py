@@ -24,11 +24,19 @@ def patch_csrf_server(source):
     start = source.index('if clean=="/creator-hub/state":')
     end = source.index('if clean=="/account":', start)
     block = source[start:end]
-    if '"csrf_token":_security_csrf_token(sid)' in block:
-        return source
-    if '"ok":True,' not in block:
+    # V366 prepends a lightweight scope=header response. The full state JSON is
+    # the final 200 response in this route and is the response the Hub uses for
+    # protected mutations.
+    response_start = block.rfind('_json(self,200,{')
+    if response_start < 0:
         raise RuntimeError('Creator Hub state response anchor missing')
-    block = block.replace('"ok":True,', '"ok":True,\n                "csrf_token":_security_csrf_token(sid),', 1)
+    response = block[response_start:]
+    if '"csrf_token":_security_csrf_token(sid)' in response:
+        return source
+    if '"ok":True,' not in response:
+        raise RuntimeError('Creator Hub state response anchor missing')
+    response = response.replace('"ok":True,', '"ok":True,\n                "csrf_token":_security_csrf_token(sid),', 1)
+    block = block[:response_start] + response
     return source[:start] + block + source[end:]
 
 
@@ -46,6 +54,20 @@ def patch_csrf_hub(source):
     if old not in source:
         raise RuntimeError('V403 draft delete integration anchor missing')
     return source.replace(old, new, 1)
+
+
+def patch_draft_delete_semantics(source):
+    start = source.index('def _draft_delete(sid,draft_id):')
+    end = source.index('def _short_index_path(sid):', start)
+    block = source[start:end]
+    guard = '    if not _draft_load(sid,draft_id):\n        return False\n'
+    if guard in block:
+        return source
+    anchor = '    if not sid or not draft_id:\n        return False\n'
+    if anchor not in block:
+        raise RuntimeError('Draft delete validation anchor missing')
+    block = block.replace(anchor, anchor + guard, 1)
+    return source[:start] + block + source[end:]
 
 
 def patch_location_headers(source):
@@ -100,7 +122,7 @@ def main():
     compile(source, str(target), 'exec')
     target.write_text(source, encoding='utf-8')
     server = root / 'web/direct_upload_server.py'
-    source = patch_share_revision(patch_csrf_server(server.read_text(encoding='utf-8')))
+    source = patch_share_revision(patch_csrf_server(patch_draft_delete_semantics(server.read_text(encoding='utf-8'))))
     compile(source, str(server), 'exec')
     server.write_text(source, encoding='utf-8')
     nginx = root / 'web/nginx.conf.template'

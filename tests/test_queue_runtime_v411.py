@@ -1,7 +1,7 @@
 from pathlib import Path
 import importlib.util
 from web.queue_runtime_v411 import sync_project
-from web.fix_v411_queue_runtime import patch_app_source, patch_csrf_hub, patch_csrf_server
+from web.fix_v411_queue_runtime import patch_app_source, patch_csrf_hub, patch_csrf_server, patch_draft_delete_semantics
 from gsf_project_state import PROJECT_SESSION_KEY
 
 
@@ -82,6 +82,49 @@ def test_csrf_bridge_only_changes_own_session_response():
     assert "method:'POST'" in changed and "'X-GSF-CSRF':identity.csrf_token" in changed
     assert 'if(!response.ok||!result.ok)throw' in changed
     assert patch_csrf_hub(changed)==changed
+
+
+def test_csrf_bridge_targets_full_state_after_v366_header_response():
+    source='''GSF_SECURITY_V410
+if clean=="/creator-hub/state":
+    sid=_social_sid(self)
+    scope=str((parse_qs(path.query).get("scope") or [""])[0] or "")
+    if scope=="header":
+        _json(self,200,{
+            "ok":True,
+            "account":{"connected":False},
+        })
+        return
+    profile=_creator_account_load(sid) or {}
+    _json(self,200,{
+        "ok":True,
+        "account":{"connected":False},
+        "project":{},
+    })
+    return
+if clean=="/account":
+    pass
+'''
+    changed=patch_csrf_server(source)
+    full_response=changed[changed.rfind('_json(self,200,{'):changed.index('if clean=="/account":')]
+    assert '"csrf_token":_security_csrf_token(sid)' in full_response
+    assert patch_csrf_server(changed)==changed
+
+
+def test_draft_delete_reports_missing_resource():
+    source='''def _draft_delete(sid,draft_id):
+    sid=_safe_id(sid); draft_id=_safe_id(draft_id)
+    if not sid or not draft_id:
+        return False
+    root=_draft_dir(sid)
+    return True
+
+def _short_index_path(sid):
+    pass
+'''
+    changed=patch_draft_delete_semantics(source)
+    assert 'if not _draft_load(sid,draft_id):' in changed
+    assert patch_draft_delete_semantics(changed)==changed
 
 
 def test_project_state_survives_durable_save_restore(tmp_path,monkeypatch):
