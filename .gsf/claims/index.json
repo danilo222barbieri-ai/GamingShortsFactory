@@ -72,6 +72,19 @@
       "owner": "chat/core-infra-v406-c81426",
       "created_at": "2026-10-14T06:32:00+00:00",
       "state": "active"
+    },
+    {
+      "id": "publish-short-v405-7d91c4",
+      "branch": "chat/publish-short-v405-7d91c4",
+      "scope": "Rebuild Crea Short final publication experience as a minimal video-first page with publish/download/edit/save actions and deterministic app integration",
+      "paths": [
+        "web/publish_short_v405_component/index.html",
+        "web/test_v405_publish_short_simple.py",
+        "scripts/apply_v405_publish_short.py"
+      ],
+      "owner": "chat/publish-short-v405-7d91c4",
+      "created_at": "2026-10-14T06:34:00+00:00",
+      "state": "active"
     }
   ]
 }
