@@ -30,13 +30,15 @@ jobs:
         with:
           python-version: '3.11'
       - name: Compile editor support module
-        if: hashFiles('gsf_editor_v403.py') != ''
         run: python -m py_compile gsf_editor_v403.py
       - name: Run Game Editor V403 tests
         run: python -m unittest -v tests.test_game_editor_v403
-      - name: Validate deterministic app patch
-        if: hashFiles('scripts/apply_v403_game_editor.py') != ''
+      - name: Validate deterministic app integration
         run: |
-          cp app.py /tmp/app.py.before
           python scripts/apply_v403_game_editor.py --check
-          cmp /tmp/app.py.before app.py
+          python scripts/apply_v403_game_editor.py
+          python -m py_compile app.py gsf_editor_v403.py
+          grep -q 'GSF GAME EDITOR V403' app.py
+          grep -q 'gsf-v403-timeline' app.py
+          grep -q 'safeZones' app.py
+          grep -q 'editor_v403_active_tool' app.py
