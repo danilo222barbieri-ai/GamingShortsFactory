@@ -18,10 +18,10 @@ limit_req_zone $binary_remote_addr zone=gsf_upload_v410:10m rate=5r/s;
 limit_conn_zone $binary_remote_addr zone=gsf_conn_v410:10m;
 """
     new = """# GSF_SECURITY_V410 — edge hardening, abuse control and browser policy
-# GSF_SECURITY_V410_EDGE_ID — Railway proxy-aware client identity.
-map $http_x_forwarded_for $gsf_client_key {
+# GSF_SECURITY_V410_EDGE_ID — Railway publishes the remote client as X-Real-IP.
+map $http_x_real_ip $gsf_client_key {
     \"\"      $binary_remote_addr;
-    default $http_x_forwarded_for;
+    default $http_x_real_ip;
 }
 limit_req_zone $gsf_client_key zone=gsf_api_v410:10m rate=20r/s;
 limit_req_zone $gsf_client_key zone=gsf_upload_v410:10m rate=20r/s;
