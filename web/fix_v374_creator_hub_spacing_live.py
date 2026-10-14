@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import subprocess
 import sys
 
 MARK='V374_CREATOR_HUB_SPACING_LIVE_ISOLATION'
@@ -82,6 +83,15 @@ def main()->None:
     after=patch_text(before)
     path.write_text(after,encoding='utf-8')
     print('V374 Creator Hub spacing + Live platform isolation applied changed=',before!=after,flush=True)
+
+    # V403 keeps the same single Creator Hub build chain and only simplifies
+    # the presentation/actions; it does not introduce a parallel navigation path.
+    v403=Path(__file__).resolve().with_name('fix_v403_creator_hub_simplified.py')
+    t403=Path(__file__).resolve().with_name('test_v403_creator_hub_simplified.py')
+    if not v403.is_file() or not t403.is_file():
+        raise RuntimeError('V403 simplified Creator Hub continuation missing')
+    subprocess.run([sys.executable,str(v403),str(path)],check=True)
+    subprocess.run([sys.executable,str(t403)],check=True)
 
 if __name__=='__main__':
     main()
