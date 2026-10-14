@@ -40,7 +40,13 @@
       ],
       "owner": "chat/game-editor-v403-021",
       "created_at": "2026-10-14T06:14:00+00:00",
-      "state": "active"
+      "state": "completed",
+      "evidence": {
+        "pr": 112,
+        "merge_sha": "f88217ed1aa9c762483962397e81219f90bc5127",
+        "tests": "v403-game-editor RED then GREEN; integration patch applied to disposable app.py and py_compile passed",
+        "runtime": "No app.py runtime change in this claim; visual integration remains serialized behind active app.py ownership"
+      }
     },
     {
       "id": "alive-core-v405-b6f2a1",
