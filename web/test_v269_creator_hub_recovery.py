@@ -1,6 +1,8 @@
 from pathlib import Path
+import subprocess
 
-root=Path("/app")/"web"
+app_root = Path("/app")
+root = app_root / "web"
 hub=(root/"creator_hub_v156_component/index.html").read_text(encoding="utf-8")
 ng=(root/"nginx.conf.template").read_text(encoding="utf-8")
 
@@ -23,3 +25,13 @@ bad=[name for name,ok in checks.items() if not ok]
 if bad:
     raise SystemExit("V269 Creator Hub recovery failed: "+", ".join(bad))
 print("V269 Creator Hub recovery: PASS")
+
+# V404 production build hook. Dockerfile already executes this test late in the
+# image build, so use that established gate to materialize the restart-safe UI
+# chain once at build time instead of replaying it on every Railway boot.
+materializer = root / "materialize_runtime_patches.sh"
+if app_root.is_dir() and materializer.is_file():
+    subprocess.run(["/bin/sh", str(materializer)], check=True)
+    if not (app_root / ".gsf-ui-materialized").is_file():
+        raise SystemExit("V404 materialization marker missing after build hook")
+    print("V404 build hook: PASS")
