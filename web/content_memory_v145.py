@@ -30,7 +30,8 @@ def candidate_fingerprint(source_fingerprint,short_pkg):
 
 def series_key(source_fingerprint,game="",event=""):
     raw="|".join((str(source_fingerprint or ""),str(game or "").lower(),str(event or "").lower()))
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
+    # Compatibility key only, never used for authentication or signatures.
+    return hashlib.sha1(raw.encode("utf-8"),usedforsecurity=False).hexdigest()[:20]
 
 
 def memory_record(source_fingerprint,short_pkg,metadata=None):
