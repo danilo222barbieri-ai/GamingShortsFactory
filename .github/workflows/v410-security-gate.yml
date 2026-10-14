@@ -7,9 +7,9 @@ on:
     paths:
       - 'web/fix_v410_security_hardening.py'
       - 'web/test_v410_security_hardening.py'
+      - 'web/start_secure.sh'
       - 'web/direct_upload_server.py'
       - 'web/nginx.conf.template'
-      - 'web/start_web.sh'
       - 'requirements-web.txt'
       - 'constraints-web.txt'
       - '.github/workflows/v410-security-gate.yml'
@@ -20,17 +20,25 @@ on:
 jobs:
   security-contract:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Apply V410 hardening
+        run: python web/fix_v410_security_hardening.py .
+      - name: Verify patch idempotence
+        run: python web/fix_v410_security_hardening.py .
+      - name: Compile protected server
+        run: python -m py_compile web/direct_upload_server.py web/fix_v410_security_hardening.py web/test_v410_security_hardening.py
       - name: V410 security contract
         run: python web/test_v410_security_hardening.py .
-      - name: Install security scanners
-        run: python -m pip install --disable-pip-version-check pip-audit bandit
-      - name: Dependency audit
-        run: pip-audit -r requirements-web.txt -c constraints-web.txt
+      - name: Dependency audit with pip-audit
+        uses: pypa/gh-action-pip-audit@v1.1.0
+        with:
+          inputs: requirements-web.txt
+      - name: Install Bandit
+        run: python -m pip install --disable-pip-version-check bandit
       - name: Source security scan
-        run: bandit -q -r web -x web/test_*,tests -lll
+        run: bandit -q -r web -x 'web/test_*,tests' -lll
