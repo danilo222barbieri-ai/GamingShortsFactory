@@ -14,6 +14,7 @@ from pathlib import Path
 from urllib.parse import quote
 import streamlit.components.v1 as components
 from faster_whisper import WhisperModel
+from gsf_alive import render_alive, sync_alive_from_session
 
 
 
@@ -336,6 +337,15 @@ st.set_page_config(
     page_title="Gaming Shorts Factory",
     page_icon="🎮",
     layout="wide"
+)
+
+
+# GSF Alive Core V405
+_gsf_alive_state = sync_alive_from_session(st.session_state)
+render_alive(
+    st,
+    _gsf_alive_state,
+    show_status=_gsf_alive_state.mode.value in {"working", "celebrate", "error"},
 )
 st.markdown("""
 <style>
