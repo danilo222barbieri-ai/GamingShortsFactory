@@ -32,7 +32,7 @@
     {
       "id": "game-editor-v403-021",
       "branch": "chat/game-editor-v403-021",
-      "scope": "Build Game Editor V403 support engine, tests and deterministic integration patch without touching locked app.py until its active claim is released",
+      "scope": "Build GSF Game Editor V403 support engine, tests and deterministic integration patch without touching locked app.py until its active claim is released",
       "paths": [
         "gsf_editor_v403.py",
         "tests/test_game_editor_v403.py",
@@ -104,6 +104,9 @@
         "gsf_desktop_shell_v407.py",
         "tests/test_gsf_desktop_shell_v407.py",
         "scripts/apply_v407_desktop_shell.py",
+        "web/fix_v407_desktop_mobile_shell.py",
+        "web/test_v407_desktop_mobile_shell.py",
+        "web/start_web.sh",
         ".github/workflows/v407-desktop-shell.yml",
         "docs/architecture/gsf-desktop-mobile-shell.md"
       ],
