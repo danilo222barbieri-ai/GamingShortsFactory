@@ -108,13 +108,9 @@
       "branch": "chat/desktop-mobile-shell-v407-7e31ca",
       "scope": "Restore desktop as a mobile-first center shell with giant lateral advertising rails, preserving the mobile UI as the single source of truth",
       "paths": [
-        "gsf_desktop_shell_v407.py",
         "web/gsf_desktop_shell_v407.py",
-        "tests/test_gsf_desktop_shell_v407.py",
-        "scripts/apply_v407_desktop_shell.py",
-        "web/fix_v407_desktop_mobile_shell.py",
+        "web/install_adsense_bridge.py",
         "web/test_v407_desktop_mobile_shell.py",
-        "web/start_web.sh",
         ".github/workflows/v407-desktop-shell.yml",
         "docs/architecture/gsf-desktop-mobile-shell.md"
       ],
