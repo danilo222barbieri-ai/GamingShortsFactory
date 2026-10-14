@@ -1,0 +1,22 @@
+name: V409 Alive Notifications TDD
+
+on:
+  push:
+    branches:
+      - chat/alive-notifications-v409-4d7c2e
+  pull_request:
+    paths:
+      - gsf_alive_notifications.py
+      - tests/test_gsf_alive_notifications.py
+      - .github/workflows/v409-alive-notifications.yml
+
+jobs:
+  alive-notifications:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run Alive notification tests
+        run: python -m unittest tests/test_gsf_alive_notifications.py

@@ -18,6 +18,8 @@ WORKDIR /app
 COPY web/requirements-worker.txt /app/requirements-worker.txt
 RUN python -m pip install --upgrade pip && python -m pip install -r /app/requirements-worker.txt
 
+COPY gsf_core /app/gsf_core
+COPY gsf_project_state.py /app/
 COPY src_payload /app/src_payload
 COPY web /app/web
 COPY web/ffmpeg_lowmem.py /usr/local/bin/ffmpeg

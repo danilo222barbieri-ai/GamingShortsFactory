@@ -27,7 +27,7 @@ def _prepare_v400_component_dir():
         source = _SOURCE_COMPONENT_DIR / "index.html"
         raw = source.read_text(encoding="utf-8")
         patched = inject_hidpi_runtime(raw)
-        digest = hashlib.sha1(patched.encode("utf-8")).hexdigest()[:12]
+        digest = hashlib.sha256(patched.encode("utf-8")).hexdigest()[:12]
         runtime_dir = Path(tempfile.gettempdir()) / f"gsf_editor_2027_v400_{digest}"
         runtime_dir.mkdir(parents=True, exist_ok=True)
         target = runtime_dir / "index.html"
@@ -58,7 +58,7 @@ def _clamp(value, low, high, fallback):
 
 def editor_2027_state_key(video_path):
     raw = str(Path(video_path).resolve())
-    return "editor_2027_state_" + hashlib.sha1(raw.encode("utf-8")).hexdigest()[:12]
+    return "editor_2027_state_" + hashlib.sha1(raw.encode("utf-8"), usedforsecurity=False).hexdigest()[:12]
 
 
 def editor_2027_initial_state(duration=15.0, saved=None):

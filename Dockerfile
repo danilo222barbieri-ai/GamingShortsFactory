@@ -25,6 +25,9 @@ COPY requirements-web.txt /app/requirements-web.txt
 COPY constraints-web.txt /app/constraints-web.txt
 RUN python -m pip install --upgrade pip && python -m pip install -r /app/requirements-web.txt -c /app/constraints-web.txt
 RUN mkdir -p /app/.cache/huggingface && python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8')"
+COPY gsf_alive.py gsf_alive_notifications.py gsf_editor_v403.py gsf_project_state.py /app/
+COPY gsf_core /app/gsf_core
+COPY scripts /app/scripts
 COPY src_payload /app/src_payload
 COPY web /app/web
 COPY web/gsf_perf.py /app/gsf_perf.py
@@ -123,7 +126,13 @@ RUN python /app/web/test_v162_1_home_lift.py
 RUN chmod +x /app/web/start_web.sh /app/web/materialize_runtime_patches.sh /app/web/start_web_fast.sh && \
     /app/web/materialize_runtime_patches.sh && \
     python /app/web/test_v404_fast_startup.py /app
-RUN python -m compileall -q /app/web
+RUN python /app/web/fix_v403_creator_hub_simplified.py && \
+    python /app/web/fix_v410_security_hardening.py /app && \
+    python /app/web/fix_v410_1_edge_identity.py /app && \
+    python /app/web/fix_v411_queue_runtime.py /app && \
+    python /app/web/fix_v411_publish_surface.py /app && \
+    python /app/web/test_v410_security_hardening.py /app
+RUN python -m compileall -q /app/web /app/gsf_core
 COPY .streamlit /app/.streamlit
 RUN PORT=8080 envsubst '${PORT}' < /app/web/nginx.conf.template > /tmp/gsf-nginx-test.conf && cp /tmp/gsf-nginx-test.conf /etc/nginx/conf.d/default.conf && nginx -t
 RUN chmod +x /app/web/start_web.sh /app/web/start_web_fast.sh /app/web/materialize_runtime_patches.sh && mkdir -p /tmp/gsf-runtime

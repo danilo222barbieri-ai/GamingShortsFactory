@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>GSF · Crea Short</title>
+<style>
+:root{--ink:#0D2A66;--muted:#7185A6;--blue:#55AAF2;--mint:#CFF3DD;--line:rgba(143,181,216,.24);--glass:rgba(255,255,255,.9)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:"Avenir Next","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:transparent}
+body{padding:14px;background:radial-gradient(circle at 12% 8%,rgba(126,214,255,.22),transparent 28%),radial-gradient(circle at 88% 5%,rgba(127,236,197,.17),transparent 28%),linear-gradient(180deg,#FCFEFF,#F5FBFF)}
+/* V405_PUBLISH_SHORT_SIMPLE */
+.shell{width:min(720px,100%);margin:auto;text-align:center;min-height:calc(100vh - 28px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+h1{margin:0;font-size:clamp(30px,5vw,48px);letter-spacing:-.05em}.meta{font-size:13px;font-weight:800;color:var(--muted)}
+.video{width:min(310px,72vw);aspect-ratio:9/16;border-radius:27px;background:#07101D;box-shadow:0 24px 55px rgba(55,100,140,.16);display:grid;place-items:center;color:#DCE8F4;font-weight:850;overflow:hidden}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:min(520px,100%)}button{border:1px solid var(--line);border-radius:16px;background:var(--glass);padding:13px 16px;font:inherit;font-weight:900;color:var(--ink);cursor:pointer;box-shadow:0 10px 25px rgba(65,105,145,.06)}button.primary{grid-column:1/-1;background:linear-gradient(145deg,#61B5F6,#50A8EF);color:white;border:0;font-size:16px}.sub{color:#55738F}.sheet{position:fixed;inset:0;background:rgba(20,40,65,.18);backdrop-filter:blur(8px);display:none;align-items:flex-end;justify-content:center;padding:12px}.sheet.open{display:flex}.panel{width:min(560px,100%);max-height:88vh;overflow:auto;background:#fff;border-radius:28px;padding:20px;box-shadow:0 25px 65px rgba(25,55,85,.22);text-align:left}.handle{width:44px;height:5px;border-radius:99px;background:#D9E6EF;margin:0 auto 16px}.panel h2{margin:0 0 4px}.panel p{margin:0 0 16px;color:var(--muted);font-size:13px}.socials{display:grid;grid-template-columns:1fr 1fr;gap:8px}.social{display:flex;align-items:center;justify-content:space-between}.social small{color:var(--muted)}.fields{margin:14px 0;display:grid;gap:8px}.field{border:1px solid var(--line);border-radius:14px;padding:11px 12px;color:#59718A;background:#FAFDFF}.full{width:100%;margin-top:10px;background:#55AAF2;color:#fff;border:0}.downloadMeta{padding:12px;border-radius:15px;background:#F5FAFD;color:#6E8297;font-weight:800;font-size:13px}
+@media(max-width:620px){body{padding:8px}.shell{min-height:calc(100vh - 16px);justify-content:flex-start;padding-top:10px}.video{width:min(280px,68vw);border-radius:23px}.actions{width:100%}.panel{border-radius:25px 25px 20px 20px}.socials{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <h1>Il tuo Short è pronto</h1>
+  <div class="meta">1080×1920 · 60 fps · 24s</div>
+  <div class="video">VIDEO 9:16</div>
+  <div class="actions">
+    <button data-action="edit">✎ Modifica</button>
+    <button data-action="save">♡ Salva</button>
+    <button class="primary" data-action="publish">PUBBLICA</button>
+    <button class="sub" data-action="download">↓ Scarica</button>
+  </div>
+</main>
+<section class="sheet" id="publishSheet" aria-hidden="true"><div class="panel"><div class="handle"></div><h2>Pubblica il tuo Short</h2><p>Scegli dove pubblicarlo. Il resto è già pronto.</p><div class="socials"><button class="social">YouTube <small>+ Collega</small></button><button class="social">TikTok <small>+ Collega</small></button><button class="social">Instagram <small>+ Collega</small></button><button class="social">Facebook <small>+ Collega</small></button></div><div class="fields"><div class="field"><b>Titolo</b><br>La giocata che non doveva riuscire</div><div class="field"><b>Descrizione</b><br>Generata automaticamente dall'IA</div><div class="field">#gaming #shorts #gameplay</div></div><button>Modifica testi</button><button class="full">PUBBLICA ORA</button></div></section>
+<section class="sheet" id="downloadSheet" aria-hidden="true"><div class="panel"><div class="handle"></div><h2>Scarica Short</h2><p class="downloadMeta">MP4 · 1080×1920 · Alta qualità</p><button class="full">SCARICA</button></div></section>
+<script>
+const publishSheet=document.getElementById('publishSheet'),downloadSheet=document.getElementById('downloadSheet');
+document.querySelector('[data-action="publish"]').onclick=()=>publishSheet.classList.add('open');
+document.querySelector('[data-action="download"]').onclick=()=>downloadSheet.classList.add('open');
+for(const el of document.querySelectorAll('.sheet'))el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')});
+</script>
+</body>
+</html>

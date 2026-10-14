@@ -1,0 +1,23 @@
+name: Consolidated Queue Verification
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [chat/production-queue-20261014]
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pytest
+      - name: State, infrastructure, notifications and integration behavior
+        run: python -m pytest -q tests/test_gsf_core_infra.py tests/test_gsf_project_state.py tests/test_gsf_alive_notifications.py tests/test_queue_runtime_v411.py
+      - name: Syntax and UI contracts
+        run: |
+          python -m compileall -q gsf_core gsf_alive.py gsf_alive_notifications.py gsf_editor_v403.py gsf_project_state.py web/queue_runtime_v411.py web/fix_v411_queue_runtime.py web/fix_v411_publish_surface.py
+          python web/test_v403_creator_hub_simplified.py
+          python web/test_v405_publish_short_simple.py
+          python web/test_v407_desktop_mobile_shell.py
