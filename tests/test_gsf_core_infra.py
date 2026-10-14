@@ -84,9 +84,18 @@ def test_job_store_persists_and_enforces_lifecycle(tmp_path):
     with pytest.raises(InvalidJobTransition):
         reopened.heartbeat(job.job_id, worker_id="wrong-worker", progress=0.6)
 
+    with pytest.raises(InvalidJobTransition):
+        reopened.transition(
+            job.job_id,
+            JobStatus.COMPLETED,
+            worker_id="worker-b",
+            progress=1.0,
+        )
+
     completed = reopened.transition(
         job.job_id,
         JobStatus.COMPLETED,
+        worker_id="worker-a",
         progress=1.0,
         outputs=[make_asset(asset_id="asset-out", kind=AssetKind.RENDER)],
     )
@@ -98,20 +107,28 @@ def test_job_store_persists_and_enforces_lifecycle(tmp_path):
         reopened.transition(job.job_id, JobStatus.RUNNING)
 
 
+def test_running_job_requires_worker_ownership(tmp_path):
+    store = JsonJobStore(tmp_path / "jobs")
+    job = JobRecord.new(project_id="p1", kind="analyze")
+    store.create(job)
+    with pytest.raises(InvalidJobTransition):
+        store.transition(job.job_id, JobStatus.RUNNING)
+
+
 def test_failed_job_can_retry_until_max_attempts(tmp_path):
     store = JsonJobStore(tmp_path / "jobs")
     job = JobRecord.new(project_id="p1", kind="render", max_attempts=2)
     store.create(job)
 
     store.transition(job.job_id, JobStatus.RUNNING, worker_id="w1")
-    failed = store.transition(job.job_id, JobStatus.FAILED, error="ffmpeg exit 1")
+    failed = store.transition(job.job_id, JobStatus.FAILED, worker_id="w1", error="ffmpeg exit 1")
     assert failed.can_retry is True
 
     queued = store.retry(job.job_id)
     assert queued.status is JobStatus.QUEUED
 
     store.transition(job.job_id, JobStatus.RUNNING, worker_id="w2")
-    failed_again = store.transition(job.job_id, JobStatus.FAILED, error="ffmpeg exit 1")
+    failed_again = store.transition(job.job_id, JobStatus.FAILED, worker_id="w2", error="ffmpeg exit 1")
     assert failed_again.attempts == 2
     assert failed_again.can_retry is False
 
@@ -185,14 +202,17 @@ def test_s3_presigned_upload_targets_storage_not_frontend():
     conditions = fake.calls[0]["Conditions"]
     assert ["content-length-range", 1, 4 * 1024**3] in conditions
 
-    confirmed = storage.confirm_upload(target.asset, max_bytes=4 * 1024**3)
+    confirmed = storage.confirm_upload(target.asset, project_id="p1", max_bytes=4 * 1024**3)
     assert confirmed.size_bytes == 123456
     assert confirmed.checksum_sha256 == "b" * 64
     assert confirmed.metadata["upload_state"] == "confirmed"
 
     fake.head["ContentLength"] = 5 * 1024**3
     with pytest.raises(ValueError):
-        storage.confirm_upload(target.asset, max_bytes=4 * 1024**3)
+        storage.confirm_upload(target.asset, project_id="p1", max_bytes=4 * 1024**3)
+
+    with pytest.raises(ValueError):
+        storage.confirm_upload(target.asset, project_id="other-project", max_bytes=6 * 1024**3)
 
 
 def test_cache_key_is_deterministic_and_parameter_sensitive(tmp_path):
