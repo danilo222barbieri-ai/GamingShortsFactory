@@ -28,6 +28,8 @@ from pathlib import Path
 
 source_path = Path('/app/web/start_web.sh')
 out_path = Path('/tmp/gsf-runtime-patches-build.sh')
+ai_path = Path('/app/web/ai_v221_component/index.html')
+compat_path = Path('/app/web/v404_legacy_runtime_compat.py')
 source = source_path.read_text(encoding='utf-8')
 start_token = '# V311_RESTART_SAFE'
 end_token = "python - <<'PY'\nimport os,re\nfrom pathlib import Path\npath=Path(\"/tmp/gsf-ads.txt\")"
@@ -47,6 +49,28 @@ required = (
 missing = [token for token in required if token not in snippet]
 if missing:
     raise SystemExit('V404 materializer: incomplete migration block: ' + ', '.join(missing))
+
+# The new two-screen Crea con IA page intentionally replaced the V288/V308/
+# V317/V319/V320 ai221 DOM. Keep the legacy migration chain for the other
+# surfaces, but route the obsolete AI-specific steps through a compatibility
+# layer so build-time materialization cannot rewrite ai404 back to ai221.
+ai = ai_path.read_text(encoding='utf-8') if ai_path.is_file() else ''
+if 'id="ai404"' in ai:
+    if not compat_path.is_file():
+        raise SystemExit('V404 materializer: compatibility helper missing')
+    replacements = (
+        ('  python /app/web/fix_v288_ai_journey.py\n', '  python /app/web/v404_legacy_runtime_compat.py v288\n'),
+        ('  python /app/web/test_v288_ai_journey.py /app/web/ai_v221_component/index.html /app/web/home_v154_component/index.html /app/web/editor_2027_component/index.html /app/GamingShortsFactory_V154_STRUCTURAL_HOME.py\n', '  python /app/web/v404_legacy_runtime_compat.py test-v288\n'),
+        ('  python /app/web/fix_v308_mobile_ai_flow.py /app/web/ai_v221_component/index.html\n', '  python /app/web/v404_legacy_runtime_compat.py v308\n'),
+        ('  python /app/web/test_v308_mobile_ai_flow.py /app\n', '  python /app/web/v404_legacy_runtime_compat.py test-v308\n'),
+        ('python /app/web/fix_v316_creator_hub_dashboard_ad.py /app/web/creator_hub_v156_component/index.html\n', 'python /app/web/v404_legacy_runtime_compat.py v316\n'),
+        ('python /app/web/test_v316_creator_hub_dashboard_ad.py /app\n', 'python /app/web/v404_legacy_runtime_compat.py test-v316\n'),
+    )
+    for old, new in replacements:
+        if old not in snippet:
+            raise SystemExit('V404 materializer: expected legacy command missing: ' + old.strip())
+        snippet = snippet.replace(old, new, 1)
+    print('V404 materializer: ai404 compatibility routing enabled')
 
 # -x is intentional: if a build-time migration fails, the Production Gate
 # artifact records the exact command immediately before the failure.
