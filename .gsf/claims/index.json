@@ -24,6 +24,20 @@
       "owner": "chat/crea-con-ia-simple-3a72f1",
       "created_at": "2026-10-14T06:08:00+00:00",
       "state": "active"
+    },
+    {
+      "id": "game-editor-v403-021",
+      "branch": "chat/game-editor-v403-021",
+      "scope": "Build Game Editor V403 support engine, tests and deterministic integration patch without touching locked app.py until its active claim is released",
+      "paths": [
+        "gsf_editor_v403.py",
+        "tests/test_game_editor_v403.py",
+        "scripts/apply_v403_game_editor.py",
+        ".github/workflows/v403-game-editor.yml"
+      ],
+      "owner": "chat/game-editor-v403-021",
+      "created_at": "2026-10-14T06:14:00+00:00",
+      "state": "active"
     }
   ]
 }
