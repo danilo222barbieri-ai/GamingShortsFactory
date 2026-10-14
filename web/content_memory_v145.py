@@ -30,7 +30,7 @@ def candidate_fingerprint(source_fingerprint,short_pkg):
 
 def series_key(source_fingerprint,game="",event=""):
     raw="|".join((str(source_fingerprint or ""),str(game or "").lower(),str(event or "").lower()))
-    # Compatibility key only, never used for authentication or signatures.
+    # Stable compatibility identifier only; never used for auth, signatures or secrets.
     return hashlib.sha1(raw.encode("utf-8"),usedforsecurity=False).hexdigest()[:20]
 
 
@@ -69,3 +69,38 @@ def inspect_memory(records,record):
         "best_from_source":best,
         "recommendation":"use_alternative_moment" if exact else ("continue_series" if same_source else "new_content"),
     }
+
+
+def upsert_memory(records,record,max_rows=500):
+    rows=[_d(x) for x in (records or []) if isinstance(x,dict)]
+    row=_d(record); fp=str(row.get("fingerprint") or "")
+    found=False
+    for i,old in enumerate(rows):
+        if fp and str(old.get("fingerprint") or "")==fp:
+            merged={**old,**row}
+            merged["created_at"]=float(old.get("created_at") or row.get("created_at") or time.time())
+            merged["updated_at"]=time.time()
+            rows[i]=merged
+            found=True
+            break
+    if not found:
+        row["updated_at"]=time.time()
+        rows.append(row)
+    rows.sort(key=lambda x:float(x.get("updated_at") or x.get("created_at") or 0.0),reverse=True)
+    return rows[:max(20,int(max_rows))]
+
+
+def load_local(path):
+    p=Path(path)
+    try:
+        data=json.loads(p.read_text(encoding="utf-8"))
+        return data if isinstance(data,list) else []
+    except Exception:
+        return []
+
+
+def save_local(path,rows):
+    p=Path(path); p.parent.mkdir(parents=True,exist_ok=True)
+    tmp=p.with_suffix(p.suffix+".tmp")
+    tmp.write_text(json.dumps(list(rows or []),ensure_ascii=False,indent=2),encoding="utf-8")
+    tmp.replace(p)
