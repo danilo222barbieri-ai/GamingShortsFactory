@@ -15,6 +15,9 @@ spec.loader.exec_module(mod)
 
 fixture = '''import streamlit as st
 
+def _gsf_bytes_to_preview(data, key, suffix=".mp4"):
+    return data
+
 def render_gsf_player(source_path, key, *, scene=False, start_seconds=None):
     return None
 
@@ -66,6 +69,9 @@ assert 'if video:\n\n    if st.session_state.get("publication_ready"):\n        
 assert '[data-testid="stFileUploader"]{display:none!important}' in patched
 assert 'st.session_state["publication_status"] = "requested"' in patched
 assert 'Scegli almeno un social' in patched
+assert '_gsf_bytes_to_preview(_pb, "v405_final_short")' in patched
+assert 'render_gsf_player(_preview_path, "final_short")' in patched
+assert 'st.video(_pb)' not in patched, 'final page must use the unified GSF player'
 assert mod.patch_text(patched) == patched, 'V405 patch must be idempotent'
 
 html = COMPONENT.read_text(encoding='utf-8')
