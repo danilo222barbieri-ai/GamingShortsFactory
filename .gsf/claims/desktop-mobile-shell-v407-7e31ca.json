@@ -6,6 +6,9 @@
     "gsf_desktop_shell_v407.py",
     "tests/test_gsf_desktop_shell_v407.py",
     "scripts/apply_v407_desktop_shell.py",
+    "web/fix_v407_desktop_mobile_shell.py",
+    "web/test_v407_desktop_mobile_shell.py",
+    "web/start_web.sh",
     ".github/workflows/v407-desktop-shell.yml",
     "docs/architecture/gsf-desktop-mobile-shell.md"
   ],
