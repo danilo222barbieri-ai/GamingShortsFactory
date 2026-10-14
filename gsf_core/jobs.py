@@ -198,6 +198,14 @@ class JsonJobStore:
             current = self.get(job_id)
             if target not in _ALLOWED_TRANSITIONS[current.status]:
                 raise InvalidJobTransition(f"{current.status.value} -> {target.value}")
+            if target is JobStatus.RUNNING and not worker_id:
+                raise InvalidJobTransition("running jobs require a worker_id")
+            if (
+                current.status is JobStatus.RUNNING
+                and target in {JobStatus.COMPLETED, JobStatus.FAILED}
+                and worker_id != current.worker_id
+            ):
+                raise InvalidJobTransition("worker does not own this running job")
 
             now = _now()
             next_progress = current.progress if progress is None else float(progress)
