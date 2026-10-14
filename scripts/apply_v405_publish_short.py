@@ -42,7 +42,11 @@ def _gsf_render_publish_page_v405():
     """.replace("__DURATION__", _duration_label), unsafe_allow_html=True)
 
     if _pb:
-        st.video(_pb)
+        try:
+            _preview_path = _gsf_bytes_to_preview(_pb, "v405_final_short")
+            render_gsf_player(_preview_path, "final_short")
+        except Exception:
+            st.warning("Anteprima non disponibile. Il progetto resta salvato e modificabile.")
     else:
         st.info("Anteprima pronta non disponibile: il progetto resta salvato e modificabile.")
 
