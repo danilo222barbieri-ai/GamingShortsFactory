@@ -50,6 +50,17 @@ for token in (
 
 assert mod.patch_text(patched) == patched, 'V403 patch must be idempotent'
 
+# The runtime component is transformed by earlier Creator Hub patches before V403.
+# Those patches may add classes/data attributes to <main>, so V403 must detect the
+# Hub semantically instead of requiring the exact literal <main id="hub">.
+transformed_fixture = fixture.replace(
+    '<main id="hub">',
+    '<main class="v357-hierarchy" data-v373-ready="1" id="hub" aria-live="polite">',
+    1,
+)
+transformed_patched = mod.patch_text(transformed_fixture)
+assert 'V403_CREATOR_HUB_SIMPLIFIED' in transformed_patched, 'V403 must accept transformed Hub <main> attributes/order'
+
 real_patched = mod.patch_text(COMPONENT.read_text(encoding='utf-8'))
 assert 'V403_CREATOR_HUB_SIMPLIFIED' in real_patched
 assert 'v403CreatorHubSimplifiedRuntime' in real_patched
