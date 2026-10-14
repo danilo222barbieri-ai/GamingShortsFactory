@@ -3,9 +3,10 @@ name: V410 Security Gate
 on:
   push:
     branches:
-      - v410-security-hardening
+      - chat/security-hardening-v410-6f31c2
     paths:
       - 'web/fix_v410_security_hardening.py'
+      - 'web/fix_v410_1_edge_identity.py'
       - 'web/test_v410_security_hardening.py'
       - 'web/start_secure.sh'
       - 'web/direct_upload_server.py'
@@ -14,6 +15,7 @@ on:
       - 'web/editor_2027_embed.py'
       - 'requirements-web.txt'
       - 'constraints-web.txt'
+      - '.github/dependabot.yml'
       - '.github/workflows/v410-security-gate.yml'
   pull_request:
     branches:
@@ -33,7 +35,7 @@ jobs:
       - name: Verify patch idempotence
         run: python web/fix_v410_security_hardening.py .
       - name: Compile protected server
-        run: python -m py_compile web/direct_upload_server.py web/fix_v410_security_hardening.py web/test_v410_security_hardening.py web/content_memory_v145.py web/editor_2027_embed.py
+        run: python -m py_compile web/direct_upload_server.py web/fix_v410_security_hardening.py web/fix_v410_1_edge_identity.py web/test_v410_security_hardening.py web/content_memory_v145.py web/editor_2027_embed.py
       - name: V410 security contract
         run: python web/test_v410_security_hardening.py .
       - name: Verify production dependency lock resolves
