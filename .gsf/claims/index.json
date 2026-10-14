@@ -50,6 +50,8 @@
         "app.py",
         "gsf_alive.py",
         "tests/test_gsf_alive.py",
+        "scripts/apply_v405_alive.py",
+        ".github/workflows/v405-alive-core.yml",
         "docs/architecture/gsf-alive.md"
       ],
       "owner": "chat/alive-core-v405-b6f2a1",
