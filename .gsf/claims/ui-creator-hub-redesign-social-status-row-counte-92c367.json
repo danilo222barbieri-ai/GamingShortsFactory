@@ -1,0 +1,13 @@
+{
+  "branch": "chat/ui-creator-hub-redesign-social-status-row-counte-92c367",
+  "created_at": "2026-10-16T00:23:12+02:00",
+  "id": "ui-creator-hub-redesign-social-status-row-counte-92c367",
+  "owner": "chat/ui-creator-hub-redesign-social-status-row-counte-92c367",
+  "paths": [
+    ".github/workflows/gsf-ci.yml",
+    "tests/test_creator_hub_redesign_v415.py",
+    "web/creator_hub_v156_component/index.html"
+  ],
+  "scope": "ui: Creator Hub redesign - social status row, counters, draft/short actions, settings page",
+  "state": "active"
+}
