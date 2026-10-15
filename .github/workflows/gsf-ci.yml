@@ -1,0 +1,91 @@
+name: GSF CI
+
+# One job for every pull request: all fast contracts that used to run as 12
+# separate per-version workflows (each billed at least one runner minute).
+# Docker builds and the runtime smoke live in the GSF Production Gate.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gsf-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-web.txt
+
+      - name: Tools
+        run: python -m pip install --disable-pip-version-check pytest bandit
+
+      - name: Canonical UI pipeline guard
+        run: python tests/test_canonical_ui_pipeline.py
+
+      - name: Syntax
+        run: |
+          python -m compileall -q app.py web gsf_core gsf_alive.py gsf_alive_notifications.py gsf_editor_v403.py gsf_project_state.py tools tests
+
+      - name: Production, security and UI contracts
+        run: |
+          set -e
+          python web/test_v397_production_hardening.py .
+          python web/test_v410_security_hardening.py .
+          python web/test_v404_crea_con_ia_simple.py
+          python web/test_v405_publish_short_simple.py
+          python web/test_v407_desktop_mobile_shell.py
+          python web/test_v403_creator_hub_simplified.py
+
+      - name: AI, render and worker contracts
+        run: |
+          set -e
+          PYTHONPATH=web python - <<'PY'
+          from pathlib import Path
+          from semantic_video_v114 import is_retryable_provider_error
+          for message in ("503 UNAVAILABLE model high demand",
+                          "Gemini Generate Content video response empty",
+                          "Expecting value: line 1 column 1 (char 0)",
+                          "ReadTimeout timed out"):
+              assert is_retryable_provider_error(message), message
+          assert not is_retryable_provider_error("400 INVALID_ARGUMENT malformed request")
+          assert 'http_options=types.HttpOptions(timeout=' in Path("web/semantic_video_v114.py").read_text(encoding="utf-8")
+          print("V398 semantic resilience: PASS")
+          PY
+          PYTHONPATH=web python web/test_v399_quality_supreme.py
+          PYTHONPATH=web python web/test_v400_ai_hidpi.py
+          python web/test_v401_performance_stability.py
+          python web/test_v402_game_brain_auto_highlights.py
+
+      - name: Core, state, Alive, Game Editor and coordination tests
+        run: |
+          set -e
+          python -m pytest -q tests
+          python -m unittest discover -s tools -p 'test_gsf_*.py'
+
+      - name: V410 hardening is canonical (patches must be a no-op)
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/v410-canonical && mkdir -p /tmp/v410-canonical
+          git ls-files -z | xargs -0 -I{} cp --parents {} /tmp/v410-canonical/
+          (cd /tmp/v410-canonical && python web/fix_v410_security_hardening.py . && python web/fix_v410_1_edge_identity.py .)
+          for f in web/nginx.conf.template web/direct_upload_server.py; do
+            cmp -s "$f" "/tmp/v410-canonical/$f" || { echo "::error title=V410::$f would still be modified by the V410 patch"; exit 1; }
+          done
+
+      - name: Dependency lock and source security scan
+        run: |
+          python -m pip install --disable-pip-version-check --dry-run -r requirements-web.txt -c constraints-web.txt
+          bandit -q -r web -x 'web/test_*,tests' -lll
