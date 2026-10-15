@@ -1,0 +1,79 @@
+{
+ "base": "http://127.0.0.1:18080",
+ "cycles": [
+  {
+   "active": 17,
+   "created": 17,
+   "callbacks": 329,
+   "disconnects": 0,
+   "callbackMs": 502,
+   "cycle": 1
+  },
+  {
+   "active": 17,
+   "created": 17,
+   "callbacks": 383,
+   "disconnects": 0,
+   "callbackMs": 505,
+   "cycle": 2
+  }
+ ],
+ "console_errors": [
+  "pageerror: Unexpected identifier 'Avenir'",
+  "pageerror: Unexpected identifier 'Avenir'"
+ ],
+ "surfaces": {
+  "home": {
+   "active": 17,
+   "created": 17,
+   "callbacks": 105,
+   "disconnects": 0,
+   "callbackMs": 299
+  },
+  "02-hub": {
+   "active": 17,
+   "created": 17,
+   "callbacks": 145,
+   "disconnects": 0,
+   "callbackMs": 332
+  },
+  "03-projects": {
+   "active": 17,
+   "created": 17,
+   "callbacks": 173,
+   "disconnects": 0,
+   "callbackMs": 386
+  },
+  "04-live": {
+   "active": 17,
+   "created": 17,
+   "callbacks": 198,
+   "disconnects": 0,
+   "callbackMs": 416
+  },
+  "05-hub-profile": {
+   "active": 17,
+   "created": 17,
+   "callbacks": 226,
+   "disconnects": 0,
+   "callbackMs": 444
+  },
+  "06-editor": {
+   "active": 17,
+   "created": 17,
+   "callbacks": 255,
+   "disconnects": 0,
+   "callbackMs": 468
+  },
+  "07-home-again": {
+   "active": 17,
+   "created": 17,
+   "callbacks": 276,
+   "disconnects": 0,
+   "callbackMs": 498
+  }
+ },
+ "home_ready_seconds": 9.6,
+ "callback_ms_per_cycle": 3.0,
+ "observer_growth_per_cycle": 0.0
+}
