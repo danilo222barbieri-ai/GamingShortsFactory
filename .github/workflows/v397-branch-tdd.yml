@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: V397 structural contract
         run: python web/test_v397_production_hardening.py .
       - name: Compile hardened Python surfaces

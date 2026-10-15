@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Gate contract
         run: python web/test_mobile_only_gate.py web/nginx.conf.template web/mobile_only_gate.html

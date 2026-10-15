@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run V311 contract
         run: |
           python -m py_compile web/fix_v311_mobile_hub_clean_pass.py web/test_v311_mobile_hub_clean_pass.py

@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: V400 AI + Hi-DPI contract
         run: |
           PYTHONPATH=web python web/test_v400_ai_hidpi.py
