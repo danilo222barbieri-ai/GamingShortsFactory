@@ -9,6 +9,7 @@ import {
   previewSuggestion,
   projectGestureViewport,
 } from "./editor_state.mjs";
+import { installOverlay } from "./overlay_v414.mjs";
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -38,9 +39,12 @@ const enterEditorButton = $("#enterEditorButton");
 const closeToolSheetButton = $("#closeToolSheetButton");
 const toolDock = $("#toolDock");
 
+// Keys stay stable for the shell API (selectTool); labels follow V414 categories.
 const toolTitles = {
-  clip: "Taglio",
+  clip: "Frame",
   frame: "Camera",
+  look: "Look",
+  hud: "HUD",
   text: "Testo",
   audio: "Audio",
   ai: "Game AI",
@@ -54,6 +58,7 @@ let context = {
   event_map: [],
   brain_context: {},
   ai_suggestions: [],
+  focus_map: [],
 };
 let activeTool = "clip";
 let mediaUrl = "";
@@ -65,6 +70,7 @@ let activeSuggestionId = "";
 const activePointers = new Map();
 let gestureStart = null;
 let gestureFrame = 0;
+let overlay = null;
 
 function postToShell(message) {
   parent.postMessage(message, location.origin);
@@ -143,6 +149,8 @@ function renderChoiceButtons(state) {
   $$('[data-caption-mode]').forEach((button) => button.classList.toggle("is-selected", button.dataset.captionMode === state.captionMode));
   $$('[data-audio-mode]').forEach((button) => button.classList.toggle("is-selected", button.dataset.audioMode === state.audioMode));
   $$('[data-text-color]').forEach((button) => button.classList.toggle("is-selected", button.dataset.textColor.toLowerCase() === state.textColor));
+  $$('[data-look]').forEach((button) => button.classList.toggle("is-selected", button.dataset.look === state.look));
+  $$('[data-hud-mode]').forEach((button) => button.classList.toggle("is-selected", button.dataset.hudMode === state.hudMode));
   const camera = inferCameraPreset(state);
   $$('[data-camera-mode]').forEach((button) => button.classList.toggle("is-selected", button.dataset.cameraMode === camera));
 }
@@ -172,15 +180,14 @@ function renderState(state = stateValue()) {
   $("#volumeValue").textContent = `${normalized.volume}%`;
   $("#muteButton").textContent = normalized.muted ? "Riattiva audio" : "Disattiva audio";
   $("#muteButton").setAttribute("aria-pressed", String(normalized.muted));
-  $("#lookSelect").value = normalized.look;
   $("#coverModeSelect").value = normalized.coverMode;
-  $("#hudModeSelect").value = normalized.hudMode;
   $("#speedSelect").value = String(normalized.speed);
   $("#qualityModeSelect").value = normalized.qualityMode;
   renderChoiceButtons(normalized);
   syncTrimControls(normalized);
   renderTransport(normalized);
   updateHistoryButtons();
+  overlay?.ensureFocus();
 }
 
 function previewPatch(patch) {
@@ -189,6 +196,7 @@ function previewPatch(patch) {
 }
 
 function commitPatch(patch, { autosave = true, status = "Modifiche da salvare" } = {}) {
+  overlay?.cancelAiPreview({ render: false });
   previewState = null;
   const current = history.value;
   const next = normalizeEditorState({ ...current, ...patch }, current.sourceDuration);
@@ -202,6 +210,7 @@ function commitPatch(patch, { autosave = true, status = "Modifiche da salvare" }
 }
 
 function commitState(nextState, status = "Modifiche da salvare") {
+  overlay?.cancelAiPreview({ render: false });
   previewState = null;
   const next = normalizeEditorState(nextState, history.value.sourceDuration);
   history.commit(next);
@@ -251,7 +260,11 @@ function notifyFullscreen(active) {
   app.classList.toggle("is-fullscreen", expanded);
   app.classList.toggle("is-expanded", expanded);
   app.classList.toggle("is-mini", !expanded);
-  if (!expanded) closeToolSheet();
+  if (!expanded) {
+    closeToolSheet();
+    overlay?.cancelAiPreview();
+  }
+  overlay?.wake();
   postToShell({ type: "GSF_GAME_EDITOR_UI", action: "fullscreen_changed", active: expanded });
 }
 
@@ -296,6 +309,7 @@ function pointerDistance(points) {
 }
 
 function beginGesture() {
+  overlay.cancelAiPreview();
   const points = [...activePointers.values()].slice(0, 2);
   const center = pointerCenter(points);
   gestureStart = {
@@ -413,6 +427,7 @@ function renderAiContext() {
     revert.disabled = true;
 
     preview.addEventListener("click", () => {
+      overlay.cancelAiPreview({ render: false });
       activeSuggestionId = suggestionId;
       previewState = previewSuggestion(history.value, suggestion);
       renderState(previewState);
@@ -474,6 +489,7 @@ function receiveInit(message) {
     event_map: Array.isArray(message.event_map) ? message.event_map : [],
     brain_context: message.brain_context && typeof message.brain_context === "object" ? message.brain_context : {},
     ai_suggestions: Array.isArray(message.ai_suggestions) ? message.ai_suggestions : [],
+    focus_map: Array.isArray(message.focus_map) ? message.focus_map : [],
   };
   const proposedDuration = Number(message.initial_state?.sourceDuration || context.media.duration || 15);
   const initial = normalizeEditorState(message.initial_state || {}, proposedDuration);
@@ -482,6 +498,7 @@ function receiveInit(message) {
   projectTitle.textContent = String(context.project.title || context.project.name || "Nuovo gameplay").slice(0, 80);
   renderMarkers();
   renderAiContext();
+  overlay.setFocusMap(context.focus_map, initial.sourceDuration);
   renderState(initial);
   loadMedia(context.media.url || context.media.video_url || "");
   app.setAttribute("aria-busy", "false");
@@ -509,6 +526,7 @@ video.addEventListener("loadedmetadata", () => {
   const normalized = normalizeEditorState({ ...history.value, sourceDuration: duration }, duration);
   history.reset(normalized);
   renderMarkers();
+  overlay.setFocusMap(context.focus_map, duration);
   renderState(normalized);
   video.currentTime = normalized.inPoint;
   setStatus("Pronto", "saved");
@@ -599,16 +617,16 @@ $$('[data-camera-mode]').forEach((button) => button.addEventListener("click", ()
   const mode = button.dataset.cameraMode;
   commitPatch(cameraPresetPatch(mode, history.value), { status: `Camera · ${button.textContent.trim()}` });
 }));
+$$('[data-look]').forEach((button) => button.addEventListener("click", () => commitPatch({ look: button.dataset.look }, { status: `Look · ${button.dataset.look}` })));
+$$('[data-hud-mode]').forEach((button) => button.addEventListener("click", () => commitPatch({ hudMode: button.dataset.hudMode }, { status: button.dataset.hudMode === "Off" ? "HUD libero" : "HUD protetto" })));
+// Quick actions are two-phase: preview first, the overlay bar applies them.
 $$('[data-ai-quick]').forEach((button) => button.addEventListener("click", () => {
-  const patch = gamingQuickActionPatch(button.dataset.aiQuick, history.value);
-  if (!Object.keys(patch).length) return;
-  commitPatch(patch, { status: `Game AI · ${button.textContent.trim()}` });
+  if (!Object.keys(gamingQuickActionPatch(button.dataset.aiQuick, history.value)).length) return;
+  overlay.previewQuickActions([button.dataset.aiQuick]);
 }));
 
 for (const [selector, field, transform] of [
-  ["#lookSelect", "look", String],
   ["#coverModeSelect", "coverMode", String],
-  ["#hudModeSelect", "hudMode", String],
   ["#speedSelect", "speed", Number],
   ["#qualityModeSelect", "qualityMode", String],
 ]) {
@@ -633,6 +651,7 @@ closeToolSheetButton.addEventListener("click", closeToolSheet);
 $("#retryMediaButton").addEventListener("click", () => loadMedia());
 
 undoButton.addEventListener("click", () => {
+  overlay.cancelAiPreview({ render: false });
   const next = history.undo();
   previewState = null;
   renderState(next);
@@ -640,6 +659,7 @@ undoButton.addEventListener("click", () => {
   setStatus("Modifica annullata", "dirty");
 });
 redoButton.addEventListener("click", () => {
+  overlay.cancelAiPreview({ render: false });
   const next = history.redo();
   previewState = null;
   renderState(next);
@@ -713,11 +733,34 @@ document.addEventListener("keydown", (event) => {
 
 window.addEventListener("pagehide", () => saveSequencer.dispose(), { once: true });
 
+overlay = installOverlay({
+  app,
+  video,
+  getState: () => history.value,
+  getVisibleState: () => stateValue(),
+  previewPatch: (patch) => {
+    if (activeSuggestionId) {
+      activeSuggestionId = "";
+      renderAiContext();
+    }
+    previewPatch(patch);
+  },
+  clearPreview: () => {
+    previewState = null;
+    renderState(history.value);
+  },
+  commitPatch: (patch, status) => commitPatch(patch, { status }),
+  renderBase: () => renderState(),
+  selectTool,
+  setStatus,
+});
+
 window.GSFGameEditor2026 = {
   getState: () => history.value,
   commitEditorState: (patch) => commitPatch(patch),
   requestEditorAction,
   selectTool,
+  previewAiCommand: (text) => overlay.previewCommand(text),
 };
 
 renderState(history.value);

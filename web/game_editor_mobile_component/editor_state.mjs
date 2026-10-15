@@ -179,6 +179,125 @@ export function gamingQuickActionPatch(actionValue, state = {}) {
   return {};
 }
 
+export const GAMING_QUICK_ACTIONS = Object.freeze({
+  follow_action: "Segui l'azione",
+  auto_vertical: "Auto 9:16",
+  zoom_moments: "Zoom momenti",
+  protect_hud: "Proteggi HUD",
+  auto_caption: "Auto caption",
+  improve_all: "Migliora tutto",
+});
+
+/**
+ * Two-phase AI: every quick action (or a combination) is compiled into one
+ * bounded, persisted-field patch. The editor previews it first and commits it
+ * only on Apply, so a single undo reverts the whole AI application.
+ */
+export function combinedQuickActionPatch(actions = [], state = {}) {
+  const duration = state?.sourceDuration ?? 15;
+  let working = normalizeEditorState(state, duration);
+  const patch = {};
+  for (const action of actions) {
+    if (!(action in GAMING_QUICK_ACTIONS)) continue;
+    const step = gamingQuickActionPatch(action, working);
+    Object.assign(patch, step);
+    working = normalizeEditorState({ ...working, ...step }, duration);
+  }
+  return patch;
+}
+
+const COMMAND_RULES = [
+  ["improve_all", /\b(migliora tutto|migliora|improve( all)?|ottimizza)\b/],
+  ["follow_action", /\b(segui|seguire|follow|traccia|giocatore|player|azione|action)\b/],
+  ["zoom_moments", /\b(zoom|zooma|kill|uccision\w*|eliminazion\w*|headshot|clutch|moment\w*|highlight\w*)\b/],
+  ["protect_hud", /\b(hud|minimappa|minimap|mappa|killfeed|interfaccia|ui)\b/],
+  ["auto_caption", /\b(caption|sottotitol\w*|didascali\w*|testo|scritte|subtitle\w*)\b/],
+  ["auto_vertical", /(9:16|9\/16|\bvertical\w*|\bverticale\b|\breframe\b|\binquadra\w*)/],
+];
+
+/**
+ * Local, deterministic natural-language planner ("segui il giocatore e fai
+ * zoom sulle kill"). It only maps the request onto the existing quick actions;
+ * nothing is sent to a model and nothing is applied until the user confirms.
+ */
+export function planGamingCommand(text = "") {
+  const normalized = String(text || "").toLowerCase().normalize("NFKC").slice(0, 240);
+  const actions = [];
+  for (const [action, pattern] of COMMAND_RULES) {
+    if (pattern.test(normalized) && !actions.includes(action)) actions.push(action);
+  }
+  if (actions.includes("improve_all")) return { actions: ["improve_all"], understood: true };
+  return { actions, understood: actions.length > 0 };
+}
+
+/**
+ * Focus Map contract (time -> x/y -> confidence -> subject/action).
+ * x and y are normalised source-frame coordinates (0..1, origin top-left).
+ * Game Vision does not emit this yet; the editor only previews it when the
+ * shell provides `focus_map`, and it is never persisted into editor state.
+ */
+export function normalizeFocusMap(raw = [], durationValue = 15) {
+  const duration = Math.max(0.5, number(durationValue, 15));
+  if (!Array.isArray(raw)) return [];
+  const points = [];
+  for (const item of raw.slice(0, 4000)) {
+    if (!item || typeof item !== "object") continue;
+    const time = number(item.time ?? item.t, NaN);
+    const x = number(item.x, NaN);
+    const y = number(item.y, NaN);
+    if (![time, x, y].every(Number.isFinite) || time < 0 || time > duration) continue;
+    points.push({
+      time: rounded(time),
+      x: rounded(clamp(x, 0, 1)),
+      y: rounded(clamp(y, 0, 1)),
+      confidence: rounded(clamp(item.confidence ?? item.score, 0, 1, 0)),
+      subject: String(item.subject || "").slice(0, 40),
+      action: String(item.action || item.label || "").slice(0, 40),
+    });
+  }
+  return points.sort((left, right) => left.time - right.time);
+}
+
+export function sampleFocusMap(points = [], timeValue = 0, { minConfidence = 0.35, holdSeconds = 1.5 } = {}) {
+  const time = number(timeValue, 0);
+  const usable = points.filter((point) => point.confidence >= minConfidence);
+  if (!usable.length) return null;
+  let next = usable.findIndex((point) => point.time >= time);
+  if (next === -1) {
+    const last = usable[usable.length - 1];
+    return time - last.time <= holdSeconds ? { ...last } : null;
+  }
+  const after = usable[next];
+  if (next === 0) return after.time - time <= holdSeconds ? { ...after } : null;
+  const before = usable[next - 1];
+  const span = after.time - before.time;
+  if (span > holdSeconds * 2) {
+    const nearest = time - before.time <= after.time - time ? before : after;
+    return Math.abs(nearest.time - time) <= holdSeconds ? { ...nearest } : null;
+  }
+  const ratio = span > 0 ? (time - before.time) / span : 0;
+  const nearest = ratio < 0.5 ? before : after;
+  return {
+    time: rounded(time),
+    x: rounded(before.x + ((after.x - before.x) * ratio)),
+    y: rounded(before.y + ((after.y - before.y) * ratio)),
+    confidence: rounded(Math.min(before.confidence, after.confidence)),
+    subject: nearest.subject,
+    action: nearest.action,
+  };
+}
+
+/** Viewport that centres a focus sample, bounded exactly like a manual reframe. */
+export function focusViewport(sample, base = {}, { minZoom = 1.15 } = {}) {
+  const zoom = Math.max(number(base.zoom, 1), minZoom);
+  if (!sample) return clampViewport({ zoom: base.zoom, panX: base.panX, panY: base.panY });
+  return clampViewport({
+    zoom,
+    panX: -((sample.x - 0.5) * 100 * zoom),
+    panY: -((sample.y - 0.5) * 100 * zoom),
+  });
+}
+
 export function createEditorHistory(initialState, limitValue = 50) {
   const limit = Math.max(1, Math.floor(number(limitValue, 50)));
   let current = clone(initialState);

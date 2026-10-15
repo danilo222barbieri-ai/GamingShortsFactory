@@ -32,6 +32,7 @@
             <div class="history-actions" aria-label="Cronologia modifiche">
               <button id="undoButton" class="icon-button glass-button" type="button" aria-label="Annulla" disabled>↶</button>
               <button id="redoButton" class="icon-button glass-button" type="button" aria-label="Ripristina" disabled>↷</button>
+              <button id="aiTopButton" class="icon-button glass-button ai-top-button" type="button" aria-label="Apri Game AI">✦</button>
               <button id="fullscreenButton" class="icon-button glass-button" type="button" aria-label="Schermo intero" aria-pressed="false">⛶</button>
             </div>
           </header>
@@ -49,6 +50,13 @@
           <span class="ratio-badge">9:16</span>
 
           <button id="playButton" class="play-button v414-center-play" type="button" aria-label="Riproduci">▶</button>
+
+          <div id="aiPreviewBar" class="ai-preview-bar" role="status" aria-live="polite" hidden>
+            <span class="ai-orb" aria-hidden="true">✦</span>
+            <div class="ai-preview-copy"><strong>Anteprima AI</strong><span id="aiPreviewLabel">Nessuna modifica applicata</span></div>
+            <button id="aiPreviewCancelButton" class="ai-preview-cancel" type="button">Annulla</button>
+            <button id="aiPreviewApplyButton" class="ai-preview-apply" type="button">Applica</button>
+          </div>
 
           <div class="transport v414-transport" aria-label="Controlli riproduzione">
             <span id="currentTime" class="timecode">0:00.0</span>
@@ -71,11 +79,13 @@
             </div>
           </section>
 
-          <nav id="toolBar" class="tool-bar v414-tool-rail" aria-label="Strumenti principali">
-            <button class="tool-button" type="button" data-tool="clip" aria-pressed="false"><span aria-hidden="true">✂</span>Taglio</button>
-            <button class="tool-button" type="button" data-tool="frame" aria-pressed="false"><span aria-hidden="true">⌗</span>Inquadratura</button>
+          <nav id="toolBar" class="tool-bar v414-tool-rail" aria-label="Strumenti di modifica">
+            <button class="tool-button" type="button" data-tool="clip" aria-pressed="false"><span aria-hidden="true">⌗</span>Frame</button>
+            <button class="tool-button" type="button" data-tool="frame" aria-pressed="false"><span aria-hidden="true">◎</span>Camera</button>
+            <button class="tool-button" type="button" data-tool="look" aria-pressed="false"><span aria-hidden="true">✺</span>Look</button>
+            <button class="tool-button" type="button" data-tool="hud" aria-pressed="false"><span aria-hidden="true">▦</span>HUD</button>
             <button class="tool-button" type="button" data-tool="text" aria-pressed="false"><span aria-hidden="true">T</span>Testo</button>
-            <button class="tool-button" type="button" data-tool="audio" aria-pressed="false"><span aria-hidden="true">◖</span>Audio</button>
+            <button class="tool-button" type="button" data-tool="audio" aria-pressed="false"><span aria-hidden="true">♪</span>Audio</button>
             <button class="tool-button ai-tool" type="button" data-tool="ai" aria-pressed="false"><span aria-hidden="true">✦</span>AI</button>
           </nav>
 
@@ -91,7 +101,19 @@
             <section class="tool-panel" data-panel="clip" hidden>
               <label>Inizio preciso <output id="panelInValue">0:00.0</output><input id="panelInRange" type="range" min="0" max="14.5" step="0.05" value="0"></label>
               <label>Fine precisa <output id="panelOutValue">0:15.0</output><input id="panelOutRange" type="range" min="0.5" max="15" step="0.05" value="15"></label>
-              <button id="resetTrimButton" class="inline-action" type="button">Ripristina momento</button>
+              <div class="preset-row" aria-label="Preset inquadratura">
+                <button type="button" data-frame="center">Centro</button><button type="button" data-frame="gameplay">Gameplay</button><button type="button" data-frame="face">Facecam</button><button type="button" data-frame="free">Libero</button>
+              </div>
+              <label>Zoom <output id="zoomValue">1.00×</output><input id="zoomRange" type="range" min="0.8" max="2" step="0.01" value="1"></label>
+              <div class="split-controls">
+                <label>Orizzontale <input id="panXRange" type="range" min="-25" max="25" step="0.1" value="0"></label>
+                <label>Verticale <input id="panYRange" type="range" min="-25" max="25" step="0.1" value="0"></label>
+              </div>
+              <p class="panel-hint">Pizzica il video per lo zoom, trascina per reinquadrare.</p>
+              <div class="inline-actions">
+                <button id="resetFrameButton" class="inline-action" type="button">Ripristina inquadratura</button>
+                <button id="resetTrimButton" class="inline-action" type="button">Ripristina momento</button>
+              </div>
             </section>
 
             <section class="tool-panel" data-panel="frame" hidden>
@@ -101,15 +123,24 @@
                 <button type="button" data-camera-mode="dynamic"><span aria-hidden="true">↗</span>Dynamic</button>
                 <button type="button" data-camera-mode="cinematic"><span aria-hidden="true">◆</span>Cinematic</button>
               </div>
-              <div class="preset-row" aria-label="Preset inquadratura">
-                <button type="button" data-frame="center">Centro</button><button type="button" data-frame="gameplay">Gameplay</button><button type="button" data-frame="face">Facecam</button><button type="button" data-frame="free">Libero</button>
+              <p id="focusMapStatus" class="panel-hint focus-status" data-state="none">Follow Action segue l'azione nel render con Game Vision. Il tracking in anteprima si attiva quando è disponibile la Focus Map.</p>
+            </section>
+
+            <section class="tool-panel" data-panel="look" hidden>
+              <div class="choice-grid" aria-label="Look gaming">
+                <button type="button" data-look="Clean"><strong>Clean</strong><span>Colori naturali del gioco</span></button>
+                <button type="button" data-look="Competitive"><strong>Competitive</strong><span>Più nitido e leggibile</span></button>
+                <button type="button" data-look="Boss Cinematic"><strong>Boss Cinematic</strong><span>Atmosfera da film</span></button>
               </div>
-              <label>Zoom <output id="zoomValue">1.00×</output><input id="zoomRange" type="range" min="0.8" max="2" step="0.01" value="1"></label>
-              <div class="split-controls">
-                <label>Orizzontale <input id="panXRange" type="range" min="-25" max="25" step="0.1" value="0"></label>
-                <label>Verticale <input id="panYRange" type="range" min="-25" max="25" step="0.1" value="0"></label>
+              <p class="panel-hint">Il look viene applicato nel render finale.</p>
+            </section>
+
+            <section class="tool-panel" data-panel="hud" hidden>
+              <div class="choice-grid" aria-label="Protezione HUD">
+                <button type="button" data-hud-mode="Off"><strong>Libero</strong><span>Nessuna area protetta</span></button>
+                <button type="button" data-hud-mode="Smart Safe"><strong>Smart Safe</strong><span>Minimappa, killfeed e facecam restano visibili</span></button>
               </div>
-              <button id="resetFrameButton" class="inline-action" type="button">Ripristina inquadratura</button>
+              <p class="panel-hint">Le zone protette compaiono sopra il video.</p>
             </section>
 
             <section class="tool-panel" data-panel="text" hidden>
@@ -140,13 +171,16 @@
                 <button type="button" data-ai-quick="auto_caption">Auto caption</button>
                 <button type="button" data-ai-quick="improve_all" class="ai-improve-all">Migliora tutto</button>
               </div>
+              <form id="aiCommandForm" class="ai-command" autocomplete="off">
+                <input id="aiCommandInput" type="text" maxlength="240" placeholder="es. segui il giocatore e fai zoom sulle kill" aria-label="Comando per Game AI">
+                <button type="submit">Anteprima</button>
+              </form>
+              <p id="aiCommandHint" class="panel-hint" aria-live="polite">Ogni azione IA parte in anteprima: la applichi tu.</p>
               <div id="aiSuggestionList" class="ai-suggestion-list"><p class="panel-empty">Suggerimenti in preparazione.</p></div>
             </section>
 
             <section id="morePanel" class="tool-panel more-panel" data-panel="more" hidden>
-              <label>Look<select id="lookSelect"><option>Clean</option><option>Competitive</option><option>Boss Cinematic</option></select></label>
               <label>Cover<select id="coverModeSelect"><option>Auto</option><option>AI</option><option>Current</option><option>Manual</option></select></label>
-              <label>HUD<select id="hudModeSelect"><option>Off</option><option>Smart Safe</option></select></label>
               <label>Velocità<select id="speedSelect"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>
               <label>Qualità<select id="qualityModeSelect"><option>Adaptive AI</option><option>Fast HQ</option><option>Max Quality</option></select></label>
             </section>

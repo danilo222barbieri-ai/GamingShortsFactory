@@ -96,7 +96,7 @@ def check_mobile_editor(ctx, metrics):
         }"""
     )
     page.wait_for_function("() => document.querySelector('#projectTitle').textContent === 'Visual Game Editor'")
-    assert page.locator("[data-tool]").count() == 5
+    assert page.locator("[data-tool]").count() == 7
     assert page.locator("#eventMarkers .event-marker").count() == 1
 
     page.locator("#fullscreenButton").click()
@@ -158,6 +158,23 @@ def check_mobile_editor(ctx, metrics):
     assert state_after_ai["zoom"] == 1.8
     page.locator("#undoButton").click()
     assert page.evaluate("() => window.GSFGameEditor2026.getState()") == state_before_ai
+
+    # Quick Game AI actions are two-phase: preview must not commit, apply must, undo reverts.
+    state_before_quick = page.evaluate("() => window.GSFGameEditor2026.getState()")
+    page.locator('[data-ai-quick="protect_hud"]').click()
+    page.wait_for_selector("#aiPreviewBar:not([hidden])")
+    assert page.evaluate("() => window.GSFGameEditor2026.getState()") == state_before_quick
+    page.locator("#aiPreviewApplyButton").click()
+    assert page.locator("#aiPreviewBar").is_hidden()
+    assert page.evaluate("() => window.GSFGameEditor2026.getState().hudMode") == "Smart Safe"
+    page.locator("#undoButton").click()
+    assert page.evaluate("() => window.GSFGameEditor2026.getState()") == state_before_quick
+    page.locator("#aiCommandInput").fill("segui il giocatore e fai zoom sulle kill")
+    page.locator("#aiCommandForm button[type=submit]").click()
+    page.wait_for_selector("#aiPreviewBar:not([hidden])")
+    assert page.evaluate("() => window.GSFGameEditor2026.getState()") == state_before_quick
+    page.locator("#aiPreviewCancelButton").click()
+    assert page.evaluate("() => window.GSFGameEditor2026.getState()") == state_before_quick
 
     page.locator("#saveDraftButton").click()
     page.locator("#continueButton").click()

@@ -148,9 +148,10 @@ def test_primary_tools_and_static_panels_have_approved_order() -> None:
     html = _read(COMPONENT / "index.html")
     tools = re.findall(r'<button[^>]+data-tool="([^"]+)"[^>]*>\s*<span[^>]*>.*?</span>\s*([^<]+)\s*</button>', html, re.S)
 
-    assert [label.strip() for _key, label in tools] == ["Taglio", "Inquadratura", "Testo", "Audio", "AI"]
-    assert [key for key, _label in tools] == ["clip", "frame", "text", "audio", "ai"]
-    for panel in ("clip", "frame", "text", "audio", "ai", "more"):
+    # V414 gaming categories; data-tool keys stay stable for the shell API.
+    assert [label.strip() for _key, label in tools] == ["Frame", "Camera", "Look", "HUD", "Testo", "Audio", "AI"]
+    assert [key for key, _label in tools] == ["clip", "frame", "look", "hud", "text", "audio", "ai"]
+    for panel in ("clip", "frame", "look", "hud", "text", "audio", "ai", "more"):
         assert f'data-panel="{panel}"' in html
     assert 'data-tool="more"' not in html
 
