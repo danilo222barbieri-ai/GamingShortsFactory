@@ -804,6 +804,17 @@
     {
       "branch": "chat/ui-crea-con-ia-in-home-mural-style-big-circle-or-e0c710",
       "created_at": "2026-10-15T22:36:22+02:00",
+      "evidence": {
+        "gate": "success",
+        "merge_sha": "b515c5f34cc0087dc7f8173fcf758c1986e66ded",
+        "pr": 155,
+        "promotion": "9c04f10436694e557ec3261c32efc28f8de457bf",
+        "railway_frontend": "857af3ea-042d-4463-8928-ee849b6c151f SUCCESS",
+        "tests": "local V404,V412,V397,V410 PASS; tests/ 58 passed (test_gsf_core_infra not run locally, no pytest); PR contracts + production-gate success",
+        "ui_verify": "release 9c04f10 serves digest d50c4044 == repo, pages byte-identical, Home 200, creator-hub/state 200 + CSRF",
+        "ui_verify_run": 38817687407,
+        "unverified": "no end-to-end AI run with a real uploaded video on production"
+      },
       "id": "ui-crea-con-ia-in-home-mural-style-big-circle-or-e0c710",
       "owner": "chat/ui-crea-con-ia-in-home-mural-style-big-circle-or-e0c710",
       "paths": [
@@ -813,7 +824,7 @@
         "web/test_v412_ai_engines.py"
       ],
       "scope": "ui: Crea con IA in Home mural style (big circle, orbiting engines, portal shorts)",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/stability-unified-navigation-and-mobile-resume-l-395391",
