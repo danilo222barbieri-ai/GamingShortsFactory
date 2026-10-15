@@ -481,7 +481,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -846,8 +846,10 @@
       "owner": "chat/ui-creator-hub-redesign-social-status-row-counte-92c367",
       "paths": [
         ".github/workflows/gsf-ci.yml",
+        "PROJECT_STATUS.md",
         "tests/test_creator_hub_redesign_v415.py",
-        "web/creator_hub_v156_component/index.html"
+        "web/creator_hub_v156_component/index.html",
+        "web/direct_upload_server.py"
       ],
       "scope": "ui: Creator Hub redesign - social status row, counters, draft/short actions, settings page",
       "state": "active"
