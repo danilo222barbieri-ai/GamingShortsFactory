@@ -26,11 +26,11 @@ OUT.mkdir(parents=True, exist_ok=True)
 INSTRUMENT = r"""
 (() => {
   let topWin; try { topWin = window.top; void topWin.document; } catch (e) { topWin = window; }
-  const S = topWin.__gsfObs || (topWin.__gsfObs = {active: 0, created: 0, callbacks: 0, disconnects: 0});
+  const S = topWin.__gsfObs || (topWin.__gsfObs = {active: 0, created: 0, callbacks: 0, disconnects: 0, callbackMs: 0});
   const Native = window.MutationObserver;
   if (!Native || Native.__gsfWrapped) return;
   function Wrapped(cb) {
-    const self = new Native(function (records, obs) { S.callbacks += 1; return cb.call(this, records, obs); });
+    const self = new Native(function (records, obs) { S.callbacks += 1; const t = performance.now(); try { return cb.call(this, records, obs); } finally { S.callbackMs += performance.now() - t; } });
     let topTargets = 0;
     const observe = self.observe.bind(self), disconnect = self.disconnect.bind(self);
     self.observe = function (target, opts) {
@@ -109,10 +109,13 @@ def main():
             q.close()
         browser.close()
 
+    for c in metrics["cycles"]:
+        c["callbackMs"] = round(c.get("callbackMs", 0), 1)
     first, last = metrics["cycles"][0], metrics["cycles"][-1]
+    metrics["callback_ms_per_cycle"] = round((last["callbackMs"] - first["callbackMs"]) / max(1, CYCLES - 1), 1)
     metrics["observer_growth_per_cycle"] = round((last["active"] - first["active"]) / max(1, CYCLES - 1), 2)
     (OUT / "metrics.json").write_text(json.dumps(metrics, indent=1), encoding="utf-8")
-    print(json.dumps({k: metrics[k] for k in ("home_ready_seconds", "observer_growth_per_cycle")}),
+    print(json.dumps({k: metrics[k] for k in ("home_ready_seconds", "observer_growth_per_cycle", "callback_ms_per_cycle")}),
           "active after cycles:", [c["active"] for c in metrics["cycles"]])
 
 
