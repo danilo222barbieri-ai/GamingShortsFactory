@@ -442,6 +442,39 @@
       ],
       "scope": "ui: apply GSF brand tokens app-wide (colors, font, radius, spacing) + CI visual snapshots",
       "state": "abandoned"
+    },
+    {
+      "branch": "chat/ui-pipeline-canonical-mobile-ui-source-of-truth--941ec6",
+      "created_at": "2026-10-15T09:28:58+02:00",
+      "id": "ui-pipeline-canonical-mobile-ui-source-of-truth--941ec6",
+      "owner": "claude-chat",
+      "paths": [
+        ".github/workflows/**",
+        "Dockerfile",
+        "app.py",
+        "docs/architecture/gsf-canonical-ui.md",
+        "tests/test_canonical_ui_pipeline.py",
+        "tools/gsf_ui_manifest.py",
+        "web/ai_v221_component/index.html",
+        "web/canonical/**",
+        "web/creator_hub_v156_component/index.html",
+        "web/direct_upload_server.py",
+        "web/editor_2027_component/index.html",
+        "web/editor_2027_embed.py",
+        "web/gsf_bucket_bridge.py",
+        "web/home_v154_component/index.html",
+        "web/home_v154_embed.py",
+        "web/materialize_runtime_patches.sh",
+        "web/nginx.conf.template",
+        "web/runtime_smoke_v411.py",
+        "web/share_v156_component/index.html",
+        "web/start_web.sh",
+        "web/start_web_fast.sh",
+        "web/start_web_legacy.sh",
+        "web/test_v404_fast_startup.py"
+      ],
+      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "state": "active"
     }
   ],
   "version": 1
