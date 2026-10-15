@@ -825,6 +825,7 @@
         "web/game_editor_mobile_component/**",
         "web/gsf_navigation_lifecycle.js",
         "web/home_v154_component/index.html",
+        "web/install_adsense_bridge.py",
         "web/test_v302_global_live_gamebar.py"
       ],
       "scope": "stability: unified navigation and mobile resume lifecycle root cause",
