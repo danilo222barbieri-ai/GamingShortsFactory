@@ -898,6 +898,18 @@
       ],
       "scope": "notifications: event-driven web push (short ready, AI results, publish result, render failure) with dedupe and deep links; direct_upload_server.py hooks deferred until ui-creator-hub-redesign-social-status-row-counte-92c367 completes",
       "state": "active"
+    },
+    {
+      "branch": "chat/ci-gate-promote-when-newer-main-commits-are-coor-3881ae",
+      "created_at": "2026-10-16T00:48:59+02:00",
+      "id": "ci-gate-promote-when-newer-main-commits-are-coor-3881ae",
+      "owner": "chat/ci-gate-promote-when-newer-main-commits-are-coor-3881ae",
+      "paths": [
+        ".github/workflows/v397-production-gate.yml",
+        "tests/test_gate_promotion_diff.py"
+      ],
+      "scope": "ci(gate): promote when newer main commits are coordination-only",
+      "state": "active"
     }
   ],
   "version": 1

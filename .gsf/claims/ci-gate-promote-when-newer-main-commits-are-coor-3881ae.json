@@ -1,0 +1,12 @@
+{
+  "branch": "chat/ci-gate-promote-when-newer-main-commits-are-coor-3881ae",
+  "created_at": "2026-10-16T00:48:59+02:00",
+  "id": "ci-gate-promote-when-newer-main-commits-are-coor-3881ae",
+  "owner": "chat/ci-gate-promote-when-newer-main-commits-are-coor-3881ae",
+  "paths": [
+    ".github/workflows/v397-production-gate.yml",
+    "tests/test_gate_promotion_diff.py"
+  ],
+  "scope": "ci(gate): promote when newer main commits are coordination-only",
+  "state": "active"
+}
