@@ -1,0 +1,43 @@
+/* Gaming Shorts Factory — Brand Tokens v1
+   Frozen from the current GSF UI values.
+*/
+:root {
+  /* Brand */
+  --gsf-primary: #27AEF3;
+  --gsf-primary-light: #79D2FF;
+  --gsf-cyan: #53E0EA;
+
+  /* Product areas */
+  --gsf-ai: #9D82FF;
+  --gsf-editor: #27AEF3;
+  --gsf-short: #5ED6A0;
+
+  /* Feedback */
+  --gsf-warning: #FFD84D;
+  --gsf-danger: #FF6673;
+
+  /* Surfaces & text */
+  --gsf-bg-soft: #EEF9FF;
+  --gsf-surface: #FFFFFF;
+  --gsf-line: #D9EFFB;
+  --gsf-ink: #10283D;
+  --gsf-muted: #6D8497;
+
+  /* Typography */
+  --gsf-font: "Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+
+  /* Small UI scale, matching the rounded GSF language */
+  --gsf-radius-sm: 13px;
+  --gsf-radius-md: 18px;
+  --gsf-radius-lg: 28px;
+  --gsf-radius-pill: 999px;
+}
+
+html, body, button, input, select, textarea {
+  font-family: var(--gsf-font);
+  color: var(--gsf-ink);
+}
+
+.gsf-accent-ai { --gsf-accent: var(--gsf-ai); }
+.gsf-accent-editor { --gsf-accent: var(--gsf-editor); }
+.gsf-accent-short { --gsf-accent: var(--gsf-short); }
