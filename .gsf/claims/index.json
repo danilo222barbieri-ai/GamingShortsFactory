@@ -865,6 +865,13 @@
     {
       "branch": "chat/ui-crea-short-page-in-home-mural-style-rings-soc-85dd91",
       "created_at": "2026-10-16T00:23:38+02:00",
+      "evidence": {
+        "merge": "a942adb8dd97b0cee6834bd357ebd3bca2bdf314",
+        "pr": "#156",
+        "railway": "frontend 6e36f303 SUCCESS via owner-requested marker 7298444 (gate promotion skipped: coord commit landed mid-run)",
+        "tests": "test_v413 (V414 contract + shell safe area) PASS, V397 PASS, Chromium 390x680/360x560/1280x640 + mock shell full/bounded 844/667; PR CI + gate success; main gate 38818872801 success",
+        "ui_verify": "38819775180 success, digest ed479e93"
+      },
       "id": "ui-crea-short-page-in-home-mural-style-rings-soc-85dd91",
       "owner": "chat/ui-crea-short-page-in-home-mural-style-rings-soc-85dd91",
       "paths": [
@@ -872,7 +879,7 @@
         "web/test_v413_publish_multi.py"
       ],
       "scope": "ui: Crea Short page in Home mural style (rings, social orbit, cards)",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/ui-editor-home-style-light-glass-for-the-in-play-1d798f",
