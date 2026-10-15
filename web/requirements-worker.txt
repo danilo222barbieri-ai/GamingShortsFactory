@@ -1,2 +1,2 @@
-boto3==1.43.104
-google-genai==2.25.0
+boto3==1.43.111
+google-genai==2.29.0
