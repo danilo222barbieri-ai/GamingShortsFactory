@@ -134,6 +134,9 @@ RUN python /app/web/fix_v403_creator_hub_simplified.py && \
     python /app/web/test_v410_security_hardening.py /app
 RUN python -m compileall -q /app/web /app/gsf_core
 COPY .streamlit /app/.streamlit
+RUN python /app/web/fix_v412_brand_tokens.py /app && \
+    python /app/web/test_v412_brand_tokens.py /app && \
+    python -m compileall -q /app/web
 RUN PORT=8080 envsubst '${PORT}' < /app/web/nginx.conf.template > /tmp/gsf-nginx-test.conf && cp /tmp/gsf-nginx-test.conf /etc/nginx/conf.d/default.conf && nginx -t
 RUN chmod +x /app/web/start_web.sh /app/web/start_web_fast.sh /app/web/materialize_runtime_patches.sh && mkdir -p /tmp/gsf-runtime
 EXPOSE 8080
