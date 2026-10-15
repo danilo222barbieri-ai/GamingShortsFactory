@@ -231,6 +231,14 @@ async function toggleFullscreen() {
   }
 }
 
+async function exitFullscreenForShellClose() {
+  fullscreenFallback = false;
+  if (document.fullscreenElement === app && typeof document.exitFullscreen === "function") {
+    try { await document.exitFullscreen(); } catch (_error) { /* closing the shell still restores its chrome */ }
+  }
+  notifyFullscreen(false);
+}
+
 function pointerCenter(points) {
   const [first, second = first] = points;
   return { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
@@ -452,6 +460,7 @@ window.addEventListener("message", (event) => {
   if (event.origin !== location.origin || event.source !== parent || !event.data) return;
   if (event.data.type === "GSF_GAME_EDITOR_INIT") receiveInit(event.data);
   if (event.data.type === "GSF_GAME_EDITOR_SAVE_STATUS") receiveSaveStatus(event.data);
+  if (event.data.type === "GSF_GAME_EDITOR_SHELL_CLOSE") exitFullscreenForShellClose();
 });
 
 video.addEventListener("loadedmetadata", () => {

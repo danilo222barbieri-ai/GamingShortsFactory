@@ -109,6 +109,11 @@ def test_mobile_actions_use_ordered_save_ack_and_explicit_destinations() -> None
     save_index = bridge.index("persistMobileEditorState")
     route_index = bridge.index("navigateMobileEditorToShort", save_index)
     assert save_index < route_index
+    assert re.search(
+        r"if\(action==='close'\)\{\s*persistMobileEditorState\(message\).*?close\(\)",
+        bridge,
+        re.S,
+    ), "Back must persist the flushed editor state before closing"
 
 
 def test_workspace_has_professional_single_clip_hierarchy() -> None:
@@ -227,3 +232,9 @@ def test_parent_fullscreen_fallback_hides_and_restores_global_chrome() -> None:
     assert "#gsf-global-header" in bridge
     assert "#gsf-global-footer" in bridge
     assert "100dvh" in bridge
+    assert "GSF_GAME_EDITOR_SHELL_CLOSE" in bridge
+    assert "document.documentElement.classList.remove('gsf-mobile-editor-fullscreen')" in bridge
+
+    script = _read(COMPONENT / "editor.mjs")
+    assert "GSF_GAME_EDITOR_SHELL_CLOSE" in script
+    assert "exitFullscreenForShellClose" in script

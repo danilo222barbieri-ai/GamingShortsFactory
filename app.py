@@ -16770,6 +16770,11 @@ if GSF_WEB_MODE:
       const postMobileEditorStatus=(message,ok,error='',extra={})=>{
         try{frame.contentWindow.postMessage({type:'GSF_GAME_EDITOR_SAVE_STATUS',sequence:Number(message.sequence)||0,ok:!!ok,error:String(error||''),...extra},location.origin)}catch(_e){}
       };
+      const resetMobileEditorFullscreen=()=>{
+        o.classList.remove('gsf-mobile-editor-fullscreen');
+        document.documentElement.classList.remove('gsf-mobile-editor-fullscreen');
+        try{frame.contentWindow.postMessage({type:'GSF_GAME_EDITOR_SHELL_CLOSE'},location.origin)}catch(_e){}
+      };
       const persistMobileEditorState=(message)=>{
         const state=(message.state&&typeof message.state==='object')?message.state:{};
         editorMeta.initial_state={...state};
@@ -16807,7 +16812,10 @@ if GSF_WEB_MODE:
           persistMobileEditorState(message).then(()=>{postMobileEditorStatus(message,true);close();navigateMobileEditorToShort()}).catch(error=>postMobileEditorStatus(message,false,error&&error.message||error));
           return true;
         }
-        if(action==='close'){close();return true}
+        if(action==='close'){
+          persistMobileEditorState(message).then(()=>{postMobileEditorStatus(message,true);close()}).catch(error=>postMobileEditorStatus(message,false,error&&error.message||error));
+          return true;
+        }
         if(action==='fullscreen_changed'){
           const active=message.active===true;
           ensureMobileEditorFullscreenStyle();
@@ -16871,7 +16879,7 @@ setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326He
           })
           .catch(()=>{});
       };
-      const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true');try{sessionStorage.setItem(KEY,'0')}catch(e){}};
+      const close=()=>{resetMobileEditorFullscreen();o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true');try{sessionStorage.setItem(KEY,'0')}catch(e){}};
 
       /* V288 EDITOR JOURNEY BRIDGE */
       const triggerCreateShort=()=>{
