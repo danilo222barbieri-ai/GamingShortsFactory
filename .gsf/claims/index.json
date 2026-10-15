@@ -823,6 +823,7 @@
         "tests/visual/gsf_navigation_stress.py",
         "tests/visual/gsf_visual_check.py",
         "web/creator_hub_v156_component/index.html",
+        "web/editor_2027_component/index.html",
         "web/game_editor_mobile_component/**",
         "web/gsf_navigation_lifecycle.js",
         "web/home_v154_component/index.html",
