@@ -1,0 +1,12 @@
+{
+  "branch": "chat/editor-open-the-canonical-game-editor-2026-insid-28bd71",
+  "created_at": "2026-10-15T16:45:52+02:00",
+  "id": "editor-open-the-canonical-game-editor-2026-insid-28bd71",
+  "owner": "chat/editor-open-the-canonical-game-editor-2026-insid-28bd71",
+  "paths": [
+    "app.py",
+    "tests/test_mobile_editor_in_app.py"
+  ],
+  "scope": "editor: open the canonical Game Editor 2026 inside the mobile app (V220 overlay rendered as text, V343 shell loads legacy editor)",
+  "state": "active"
+}
