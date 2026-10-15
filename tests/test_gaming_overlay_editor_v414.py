@@ -62,6 +62,16 @@ def test_mini_player_expands_from_an_in_video_affordance() -> None:
     assert 'classList.toggle("is-expanded"' in script
 
 
+def test_loading_layer_does_not_block_in_video_editor_controls() -> None:
+    stage = _stage_html(_read("index.html"))
+    tag = re.search(r'<div id="mediaEmptyState"[^>]*>', stage)
+    assert tag is not None
+    assert 'style="z-index:25"' in tag.group(0)
+    css = _read("overlay_v414.css")
+    assert ".v414-top-hud" in css and "z-index: 50" in css
+    assert ".enter-editor-button" in css and "z-index: 45" in css
+
+
 def test_camera_and_ai_controls_are_inside_video_and_keep_legacy_tool_order() -> None:
     html = _read("index.html")
     stage = _stage_html(html)
