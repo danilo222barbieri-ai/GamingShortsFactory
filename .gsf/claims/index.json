@@ -824,7 +824,8 @@
         "web/creator_hub_v156_component/index.html",
         "web/game_editor_mobile_component/**",
         "web/gsf_navigation_lifecycle.js",
-        "web/home_v154_component/index.html"
+        "web/home_v154_component/index.html",
+        "web/test_v302_global_live_gamebar.py"
       ],
       "scope": "stability: unified navigation and mobile resume lifecycle root cause",
       "state": "active"
