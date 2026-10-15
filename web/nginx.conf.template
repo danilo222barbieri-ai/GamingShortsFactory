@@ -606,7 +606,31 @@ server {
         return 302 /;
     }
 
-    # V220 persistent Game Editor surface.
+    # Canonical mobile Game Editor 2026 surface. Files are served directly
+    # from the repository-owned component and are never materialized at runtime.
+    location = /game-editor-mobile {
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
+        return 302 /game-editor-mobile/;
+    }
+    location /game-editor-mobile/ {
+        alias /app/web/game_editor_mobile_component/;
+        index index.html;
+        try_files $uri $uri/ /game-editor-mobile/index.html;
+        add_header Cache-Control "no-store" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
+    }
+
+    # V220 persistent desktop Game Editor surface.
     location = /editor-live {
         # V411_LOCATION_SECURITY_HEADERS
         add_header X-Content-Type-Options "nosniff" always;

@@ -16740,9 +16740,38 @@ if GSF_WEB_MODE:
       const KEY='gsf_editor_overlay_open_v223';
       let editorMeta={video_url:'',initial_state:{}};
       let pendingSelection=null;
+      /* GSF_MOBILE_EDITOR_2026_BRIDGE */
+      const MOBILE_EDITOR_SRC='/game-editor-mobile/';
+      const DESKTOP_EDITOR_SRC='/editor-live/';
+      const selectedEditorSource=()=>window.matchMedia('(max-width: 760px)').matches?MOBILE_EDITOR_SRC:DESKTOP_EDITOR_SRC;
+      const isMobileEditor=()=>String(frame.dataset.editorSource||'')===MOBILE_EDITOR_SRC;
+      const sendMobileEditorInit=()=>{
+        if(!isMobileEditor())return;
+        const initial=(editorMeta.initial_state&&typeof editorMeta.initial_state==='object')?editorMeta.initial_state:{};
+        try{frame.contentWindow.postMessage({
+          type:'GSF_GAME_EDITOR_INIT',
+          session:(editorMeta.session&&typeof editorMeta.session==='object')?editorMeta.session:{},
+          project:(editorMeta.project&&typeof editorMeta.project==='object')?editorMeta.project:{},
+          media:{url:String(editorMeta.video_url||'/editor-media/current')},
+          initial_state:initial,
+          event_map:Array.isArray(editorMeta.event_map)?editorMeta.event_map:[],
+          brain_context:(editorMeta.brain_context&&typeof editorMeta.brain_context==='object')?editorMeta.brain_context:{},
+          ai_suggestions:Array.isArray(editorMeta.ai_suggestions)?editorMeta.ai_suggestions:[]
+        },location.origin)}catch(_e){}
+      };
+      const navigateMobileEditorToShort=()=>P.postMessage({type:'GSF_SHELL_NAV',target:'short'},location.origin);
+      const handleMobileEditorMessage=(event)=>{
+        if(event.origin!==location.origin||event.source!==frame.contentWindow||!event.data)return false;
+        if(event.data.type==='GSF_GAME_EDITOR_READY'){sendMobileEditorInit();return true}
+        if(event.data.type!=='GSF_GAME_EDITOR_UI')return false;
+        if(String(event.data.action||'')==='continue_to_short'){close();navigateMobileEditorToShort();return true}
+        return true;
+      };
+      /* GSF_MOBILE_EDITOR_2026_BRIDGE_END */
       /* V326_HEADER_FULL_WIRE */
 setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326HeaderFull');if(b&&!b.dataset.wired){b.dataset.wired='1';b.addEventListener('click',()=>{try{frame.contentWindow.postMessage({type:'GSF_EDITOR_FULLSCREEN_V326'},location.origin)}catch(_e){}})}},0);
       const sendRender=()=>{
+        if(isMobileEditor()){sendMobileEditorInit();return}
         try{
           frame.contentWindow.postMessage({
             type:'streamlit:render',
@@ -16756,7 +16785,7 @@ setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326He
           },location.origin);
         }catch(e){}
       };
-      frame.addEventListener('load',()=>{wire();setTimeout(sendRender,70)});
+      frame.addEventListener('load',()=>{if(!isMobileEditor())wire();setTimeout(sendRender,70)});
       const open=(remember=true)=>{
 
         const selection=pendingSelection;pendingSelection=null;
@@ -16765,8 +16794,10 @@ setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326He
         if(remember)try{sessionStorage.setItem(KEY,'1')}catch(e){}
         guide('idle');
 
-        if(frame.dataset.loaded!=='1'){
-          frame.src=(frame.dataset.src||'/editor-live/')+'?v=224';
+        const editorSource=selectedEditorSource();
+        if(frame.dataset.loaded!=='1'||frame.dataset.editorSource!==editorSource){
+          frame.dataset.editorSource=editorSource;
+          frame.src=editorSource+'?v=2026';
           frame.dataset.loaded='1';
         }else{
           setTimeout(sendRender,16);
@@ -16802,6 +16833,7 @@ setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326He
       };
       o.querySelector('.gsf-editor-close').onclick=close;o.addEventListener('click',e=>{if(e.target===o)close()});
       window.addEventListener('message',e=>{
+        if(handleMobileEditorMessage(e))return;
         if(e.source===frame.contentWindow&&e.data&&e.data.type==='streamlit:setComponentValue'){
           /* V323_EDITOR_ACTION_BRIDGE */
           const state=e.data.value;
@@ -16919,7 +16951,14 @@ if GSF_WEB_MODE:
         if(e.data.type==='GSF_AI_UI'){
           const action=String(e.data.action||'');
           if(action==='ready'){broadcastHome({type:'GSF_AI_COMMAND',action:'get_state'});return}
-          broadcastHome({type:'GSF_AI_COMMAND',action,duration:e.data.duration,engine:e.data.engine,index:e.data.index});
+          const selection={action,candidate_id:e.data.candidate_id,video:e.data.video,start_time:e.data.start_time,end_time:e.data.end_time,duration:e.data.duration,engine:e.data.engine,index:e.data.index};
+          if(action==='create_short'){
+            broadcastHome({...selection,type:'GSF_AI_COMMAND',action:'select_moment'});
+            close();
+            P.postMessage({type:'GSF_SHELL_NAV',target:'short',candidate_id:selection.candidate_id,video:selection.video,start_time:selection.start_time,end_time:selection.end_time,index:selection.index},location.origin);
+            return;
+          }
+          broadcastHome({type:'GSF_AI_COMMAND',...selection});
           return;
         }
         if(e.data.type!=='GSF_SHELL_NAV')return;

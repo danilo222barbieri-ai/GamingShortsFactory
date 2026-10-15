@@ -186,9 +186,8 @@ document.querySelectorAll("[data-duration]").forEach(btn=>btn.addEventListener("
 $("createAi").addEventListener("click",()=>{if(!state.loaded||state.processing)return;awaitingResults=true;state.processing=true;render();send("create",{engine:state.engine,duration:state.duration})});
 $("changeSearch").addEventListener("click",()=>{awaitingResults=false;state.processing=false;showView("engines");send("change_engine");render()});
 
-// Keep result navigation on the bridge action already supported by existing hosts.
-$("createShort").addEventListener("click",()=>send("preview",{...selectedPayload(),intent:"create_short"}));
-$("editMoment").addEventListener("click",()=>send("preview",{...selectedPayload(),intent:"edit"}));
+$("createShort").addEventListener("click",()=>send("create_short",selectedPayload()));
+$("editMoment").addEventListener("click",()=>send("open_editor",selectedPayload()));
 $("saveMoment").addEventListener("click",()=>send("save",selectedPayload()));
 
 window.addEventListener("message",event=>{
