@@ -1,6 +1,9 @@
 {
   "branch": "chat/ci-gate-promote-when-newer-main-commits-are-coor-3881ae",
   "created_at": "2026-10-16T00:48:59+02:00",
+  "evidence": {
+    "note": "owner chose to wait for the next gated merge; no changes made"
+  },
   "id": "ci-gate-promote-when-newer-main-commits-are-coor-3881ae",
   "owner": "chat/ci-gate-promote-when-newer-main-commits-are-coor-3881ae",
   "paths": [
@@ -8,5 +11,5 @@
     "tests/test_gate_promotion_diff.py"
   ],
   "scope": "ci(gate): promote when newer main commits are coordination-only",
-  "state": "active"
+  "state": "abandoned"
 }
