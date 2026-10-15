@@ -616,9 +616,10 @@
         "web/test_v3*",
         "web/test_v4*",
         "web/test_v8*",
-        "web/test_v9*"
+        "web/test_v9*",
+        "tests/visual/gsf_layout_probe.py"
       ],
-      "scope": "stability: home/hub parent observers, freeze probe in visual check, retire unused legacy scripts/payload/tests (non-editor, non-app.py)",
+      "scope": "stability: home/hub parent observers, freeze probe in visual check, retire unused legacy scripts/payload/tests (non-editor, non-app.py); mobile layout probe + Home/Hub Game Bar overlap",
       "state": "active"
     }
   ],
