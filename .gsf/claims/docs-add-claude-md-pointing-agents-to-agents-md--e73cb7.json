@@ -1,11 +1,20 @@
 {
   "branch": "chat/docs-add-claude-md-pointing-agents-to-agents-md--e73cb7",
   "created_at": "2026-10-15T08:54:55+02:00",
+  "evidence": {
+    "files": [
+      "CLAUDE.md"
+    ],
+    "merge_sha": "caf08569327c91137aa06cbede43b336ff8d7e54",
+    "pr": 133,
+    "railway": "no runtime change; merged with [skip ci] so no promotion or redeploy",
+    "tests": "PR checks all success: production-gate, contracts, security-contract, quality-supreme, semantic-resilience, v400-contract, v402-contract"
+  },
   "id": "docs-add-claude-md-pointing-agents-to-agents-md--e73cb7",
   "owner": "claude-chat",
   "paths": [
     "CLAUDE.md"
   ],
   "scope": "docs: add CLAUDE.md pointing agents to AGENTS.md and PROJECT_STATUS.md",
-  "state": "active"
+  "state": "completed"
 }
