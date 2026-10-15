@@ -646,6 +646,24 @@
       ],
       "scope": "stability: home/hub parent observers, freeze probe in visual check, retire unused legacy scripts/payload/tests (non-editor, non-app.py); mobile layout probe + Home/Hub Game Bar overlap",
       "state": "completed"
+    },
+    {
+      "branch": "chat/ui-ai-holographic-ai-engines-page-real-results-b-eada74",
+      "created_at": "2026-10-15T15:36:16+02:00",
+      "id": "ui-ai-holographic-ai-engines-page-real-results-b-eada74",
+      "owner": "chat/ui-ai-holographic-ai-engines-page-real-results-b-eada74",
+      "paths": [
+        ".github/workflows/gsf-ci.yml",
+        "PROJECT_STATUS.md",
+        "app.py",
+        "web/ai_v221_component/index.html",
+        "web/direct_upload_server.py",
+        "web/home_v154_component/index.html",
+        "web/test_v404_crea_con_ia_simple.py",
+        "web/test_v412_ai_engines.py"
+      ],
+      "scope": "ui+ai: holographic AI engines page, real results bridge, per-engine cache, Cambia short",
+      "state": "active"
     }
   ],
   "version": 1
