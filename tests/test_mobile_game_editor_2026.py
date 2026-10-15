@@ -109,3 +109,85 @@ def test_mobile_actions_use_ordered_save_ack_and_explicit_destinations() -> None
     save_index = bridge.index("persistMobileEditorState")
     route_index = bridge.index("navigateMobileEditorToShort", save_index)
     assert save_index < route_index
+
+
+def test_workspace_has_professional_single_clip_hierarchy() -> None:
+    html = _read(COMPONENT / "index.html")
+
+    for element_id in (
+        "backButton",
+        "projectTitle",
+        "editorStatus",
+        "undoButton",
+        "redoButton",
+        "fullscreenButton",
+        "previewStage",
+        "gameplayVideo",
+        "playButton",
+        "scrubRange",
+        "timelineTrack",
+        "trimInRange",
+        "trimOutRange",
+        "eventMarkers",
+        "moreButton",
+        "saveDraftButton",
+        "continueButton",
+    ):
+        assert f'id="{element_id}"' in html, element_id
+    assert 'aria-label="Timeline singola clip"' in html
+    assert 'aria-live="polite"' in html
+    assert "9:16" in html
+
+
+def test_primary_tools_and_static_panels_have_approved_order() -> None:
+    html = _read(COMPONENT / "index.html")
+    tools = re.findall(r'<button[^>]+data-tool="([^"]+)"[^>]*>\s*<span[^>]*>.*?</span>\s*([^<]+)\s*</button>', html, re.S)
+
+    assert [label.strip() for _key, label in tools] == ["Taglio", "Inquadratura", "Testo", "Audio", "AI"]
+    assert [key for key, _label in tools] == ["clip", "frame", "text", "audio", "ai"]
+    for panel in ("clip", "frame", "text", "audio", "ai", "more"):
+        assert f'data-panel="{panel}"' in html
+    assert 'data-tool="more"' not in html
+
+
+def test_mobile_accessibility_performance_and_safe_area_contract() -> None:
+    html = _read(COMPONENT / "index.html")
+    css = _read(COMPONENT / "editor.css")
+    script = _read(COMPONENT / "editor.mjs")
+    combined = "\n".join((html, css, script))
+
+    assert "min-height: 44px" in css or "min-height:44px" in css
+    assert "env(safe-area-inset-top)" in css
+    assert "env(safe-area-inset-bottom)" in css
+    assert "@media (prefers-reduced-motion: reduce)" in css
+    assert "overflow-x: hidden" in css
+    assert "loadedmetadata" in script
+    assert "timeupdate" in script
+    assert "requestEditorAction(\"save_draft\")" in script
+    assert "requestEditorAction(\"continue_to_short\")" in script
+    for forbidden in (
+        "MutationObserver",
+        "setInterval",
+        "streamlit:rerun",
+        "createElement(\"canvas\")",
+        "createElement('canvas')",
+        "V389_",
+        "V390_",
+        "V391_",
+        "V392_",
+        "V393_",
+        "V394_",
+        "V395_",
+    ):
+        assert forbidden not in combined, forbidden
+
+
+def test_desktop_editor_route_and_legacy_source_remain_separate() -> None:
+    nginx = _read(WEB / "nginx.conf.template")
+    desktop = _read(WEB / "editor_2027_component" / "index.html")
+
+    desktop_route = nginx[nginx.index("location /editor-live/ {") :]
+    desktop_route = desktop_route[: desktop_route.index("\n    }")]
+    assert "alias /app/web/editor_2027_component/;" in desktop_route
+    assert "game_editor_mobile_component" not in desktop_route
+    assert "V394_MOBILE_EDITOR_FOOTER_RESTORE" in desktop
