@@ -103,6 +103,10 @@ def check_mobile_editor(ctx, metrics):
     page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'true'")
     page.locator("#fullscreenButton").click()
     page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'false'")
+    # postMessage is delivered on a later task: wait for the shell signal, not just the DOM.
+    page.wait_for_function(
+        "() => window.__editorMessages.filter(message => message.action === 'fullscreen_changed').length >= 2"
+    )
     fullscreen_signals = page.evaluate(
         "() => window.__editorMessages.filter(message => message.action === 'fullscreen_changed').map(message => message.active)"
     )
@@ -157,6 +161,9 @@ def check_mobile_editor(ctx, metrics):
 
     page.locator("#saveDraftButton").click()
     page.locator("#continueButton").click()
+    page.wait_for_function(
+        "() => ['save_draft', 'continue_to_short'].every(action => window.__editorMessages.some(message => message.action === action))"
+    )
     actions = page.evaluate("() => window.__editorMessages.map(message => message.action)")
     assert "save_draft" in actions and "continue_to_short" in actions
     assert not errors, errors

@@ -525,7 +525,9 @@ body {
 
 @media (max-width: 420px) {
   .editor-app.is-expanded .v414-top-hud .project-identity h1 { max-width: 116px; }
-  .v414-editor-actions .draft-button { display: none; }
+  /* Save must stay reachable on phones: compact it, never hide it. */
+  .v414-editor-actions { gap: 5px; }
+  .v414-editor-actions button { min-height: 40px; padding: 0 10px; }
   .v414-tool-sheet { max-height: 58dvh; }
   .camera-mode-grid, .ai-quick-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
 }

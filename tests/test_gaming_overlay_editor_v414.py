@@ -72,6 +72,14 @@ def test_loading_layer_does_not_block_in_video_editor_controls() -> None:
     assert ".enter-editor-button" in css and "z-index: 45" in css
 
 
+def test_save_draft_stays_reachable_on_phone_widths() -> None:
+    # A phone-width media query once hid #saveDraftButton, leaving users unable
+    # to save a draft from the expanded editor on iPhone-class screens.
+    css = _read("overlay_v414.css")
+    hidden = re.search(r"\.draft-button\s*\{[^}]*display:\s*none", css)
+    assert hidden is None
+
+
 def test_fullscreen_avoids_webkit_100vw_rounding_overflow() -> None:
     css = _read("overlay_v414.css")
     root_block = re.search(
