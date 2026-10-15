@@ -486,7 +486,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -586,6 +586,40 @@
         "web/runtime_smoke_v411.py"
       ],
       "scope": "feat: canonical mobile Game Editor 2026 with AI, fullscreen gestures, persistence, and publication gates",
+      "state": "active"
+    },
+    {
+      "branch": "chat/stability-home-hub-parent-observers-freeze-probe-21f49e",
+      "created_at": "2026-10-15T14:27:26+02:00",
+      "id": "stability-home-hub-parent-observers-freeze-probe-21f49e",
+      "owner": "claude-chat",
+      "paths": [
+        ".github/workflows/gsf-visual-check.yml",
+        "README.md",
+        "README_RAILWAY.txt",
+        "README_WEB.txt",
+        "scripts/**",
+        "src_payload/**",
+        "tests/visual/gsf_freeze_probe.py",
+        "web/apply_v*",
+        "web/audit_*",
+        "web/creator_hub_v156_component/index.html",
+        "web/diagnose_*",
+        "web/fix_v*",
+        "web/home_v154_component/index.html",
+        "web/inspect_*",
+        "web/test_editor_2027_component.py",
+        "web/test_mobile_*",
+        "web/test_tiktok_site_verification.py",
+        "web/test_v1*",
+        "web/test_v2*",
+        "web/test_v3*",
+        "web/test_v4*",
+        "web/test_v8*",
+        "web/test_v9*",
+        "tests/visual/gsf_layout_probe.py"
+      ],
+      "scope": "stability: home/hub parent observers, freeze probe in visual check, retire unused legacy scripts/payload/tests (non-editor, non-app.py); mobile layout probe + Home/Hub Game Bar overlap",
       "state": "active"
     }
   ],

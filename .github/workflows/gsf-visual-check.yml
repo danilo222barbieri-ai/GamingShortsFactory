@@ -16,6 +16,12 @@ on:
         description: "Navigation cycles for the observer count"
         required: false
         default: "8"
+      mode:
+        description: "screenshots = every surface; freeze = step-by-step probe that finds where the page stops responding"
+        required: false
+        default: screenshots
+        type: choice
+        options: [screenshots, freeze]
 
 permissions:
   contents: write
@@ -68,19 +74,31 @@ jobs:
           python -m playwright install --with-deps webkit
 
       - name: Screenshots and observer metrics
+        if: inputs.mode != 'freeze'
         env:
           BASE: http://127.0.0.1:18080
           OUT_DIR: ${{ github.workspace }}/visual-out
           CYCLES: ${{ inputs.cycles }}
         run: |
-          python tool/tests/visual/gsf_visual_check.py | tee /tmp/visual-summary.txt
+          timeout 900 python tool/tests/visual/gsf_visual_check.py | tee /tmp/visual-summary.txt
           echo "::notice title=Visual check ${{ inputs.ref }}::$(tail -n 1 /tmp/visual-summary.txt | cut -c1-400)"
+
+      - name: Freeze probe
+        if: inputs.mode == 'freeze'
+        env:
+          BASE: http://127.0.0.1:18080
+          OUT_DIR: ${{ github.workspace }}/visual-out
+          STEPS: ${{ inputs.cycles }}
+        run: |
+          timeout 1200 python tool/tests/visual/gsf_freeze_probe.py | tee /tmp/freeze.txt || true
+          last=$(tail -n 1 /tmp/freeze.txt | cut -c1-500)
+          if grep -q '"hung": true' /tmp/freeze.txt; then echo "::error title=Freeze ${{ inputs.ref }}::$last"; else echo "::notice title=Freeze probe ${{ inputs.ref }}::$last"; fi
 
       - name: Publish results to ci-visual branch
         if: always()
         run: |
           set -e
-          slug=$(printf '%s' "${{ inputs.ref }}" | tr -c 'A-Za-z0-9._-' '-' | cut -c1-80)
+          slug=$(printf '%s-%s' "${{ inputs.ref }}" "${{ inputs.mode }}" | tr -c 'A-Za-z0-9._-' '-' | cut -c1-80)
           cd "$GITHUB_WORKSPACE/visual-out" 2>/dev/null || exit 0
           (cd "$GITHUB_WORKSPACE/src" && git rev-parse HEAD) > SOURCE_SHA
           docker logs gsf-visual > container.log 2>&1 || true
