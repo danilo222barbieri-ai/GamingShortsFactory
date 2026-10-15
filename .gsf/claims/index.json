@@ -1,21 +1,11 @@
 {
-  "version": 1,
   "claims": [
     {
-      "id": "creator-hub-simplify-8cf0cf",
       "branch": "chat/creator-hub-simplify-8cf0cf",
-      "scope": "Simplify Creator Hub project and Shorts pages",
-      "paths": [
-        "web/creator_hub_v156_component/index.html",
-        ".github/workflows/v403-creator-hub-simplified.yml"
-      ],
-      "owner": "chat/creator-hub-simplify-8cf0cf",
       "created_at": "2026-10-14T06:05:47+00:00",
-      "state": "active",
       "evidence": {
         "handoff": "User explicitly authorized transfer of V267 compatibility test from V407 on 2026-10-14; V268/V268.1 compatibility needed for same V404 replacement.",
         "integration_handoff": {
-          "to": "production-queue-20261014",
           "paths": [
             "web/fix_v374_creator_hub_spacing_live.py",
             "web/fix_v403_creator_hub_simplified.py",
@@ -24,99 +14,100 @@
             "web/test_v268_desktop_aesthetic_calibration.py",
             "web/test_v268_1_desktop_to_mobile_parity.py"
           ],
-          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14."
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
         }
-      }
+      },
+      "id": "creator-hub-simplify-8cf0cf",
+      "owner": "chat/creator-hub-simplify-8cf0cf",
+      "paths": [
+        "web/creator_hub_v156_component/index.html",
+        ".github/workflows/v403-creator-hub-simplified.yml"
+      ],
+      "scope": "Simplify Creator Hub project and Shorts pages",
+      "state": "active"
     },
     {
-      "id": "crea-con-ia-simple-3a72f1",
       "branch": "chat/crea-con-ia-simple-3a72f1",
-      "scope": "Simplify Crea con IA engine and top moments flow",
+      "created_at": "2026-10-14T06:08:00+00:00",
+      "evidence": {
+        "merge_sha": "c7a898aafd2d8909ff2433d838c6540f5b619226",
+        "pr": 113,
+        "runtime": "Merged to main; main component content verified. Production deployment is tracked separately by the GSF Production Gate.",
+        "tests": "V404 regression test RED before the bridge/state fix and GREEN on final head; V398/V399/V400/V402 checks GREEN"
+      },
+      "id": "crea-con-ia-simple-3a72f1",
+      "owner": "chat/crea-con-ia-simple-3a72f1",
       "paths": [
         "web/ai_v221_component/index.html",
         "web/test_v404_crea_con_ia_simple.py",
         ".github/workflows/v404-crea-con-ia-simple.yml"
       ],
-      "owner": "chat/crea-con-ia-simple-3a72f1",
-      "created_at": "2026-10-14T06:08:00+00:00",
-      "state": "completed",
-      "evidence": {
-        "pr": 113,
-        "merge_sha": "c7a898aafd2d8909ff2433d838c6540f5b619226",
-        "tests": "V404 regression test RED before the bridge/state fix and GREEN on final head; V398/V399/V400/V402 checks GREEN",
-        "runtime": "Merged to main; main component content verified. Production deployment is tracked separately by the GSF Production Gate."
-      }
+      "scope": "Simplify Crea con IA engine and top moments flow",
+      "state": "completed"
     },
     {
-      "id": "game-editor-v403-021",
       "branch": "chat/game-editor-v403-021",
-      "scope": "Build GSF Game Editor V403 support engine, tests and deterministic integration patch without touching locked app.py until its active claim is released",
-      "paths": [
-        "tests/test_game_editor_v403.py",
-        ".github/workflows/v403-game-editor.yml"
-      ],
-      "owner": "chat/game-editor-v403-021",
       "created_at": "2026-10-14T06:14:00+00:00",
-      "state": "completed",
       "evidence": {
-        "pr": 112,
-        "merge_sha": "f88217ed1aa9c762483962397e81219f90bc5127",
-        "tests": "v403-game-editor RED then GREEN; integration patch applied to disposable app.py and py_compile passed",
-        "runtime": "No app.py runtime change in this claim; visual integration remains serialized behind active app.py ownership",
         "integration_handoff": {
-          "to": "production-queue-20261014",
           "paths": [
             "gsf_editor_v403.py",
             "scripts/apply_v403_game_editor.py"
           ],
-          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14."
-        }
-      }
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
+        },
+        "merge_sha": "f88217ed1aa9c762483962397e81219f90bc5127",
+        "pr": 112,
+        "runtime": "No app.py runtime change in this claim; visual integration remains serialized behind active app.py ownership",
+        "tests": "v403-game-editor RED then GREEN; integration patch applied to disposable app.py and py_compile passed"
+      },
+      "id": "game-editor-v403-021",
+      "owner": "chat/game-editor-v403-021",
+      "paths": [
+        "tests/test_game_editor_v403.py",
+        ".github/workflows/v403-game-editor.yml"
+      ],
+      "scope": "Build GSF Game Editor V403 support engine, tests and deterministic integration patch without touching locked app.py until its active claim is released",
+      "state": "completed"
     },
     {
-      "id": "alive-core-v405-b6f2a1",
       "branch": "chat/alive-core-v405-b6f2a1",
-      "scope": "Build GSF Alive Core state engine, Streamlit bridge and safe global app integration",
-      "paths": [
-        "tests/test_gsf_alive.py",
-        ".github/workflows/v405-alive-core.yml",
-        "docs/architecture/gsf-alive.md"
-      ],
-      "owner": "chat/alive-core-v405-b6f2a1",
       "created_at": "2026-10-14T06:20:00+00:00",
-      "state": "active",
       "evidence": {
         "integration_handoff": {
-          "to": "production-queue-20261014",
           "paths": [
             "app.py",
             "gsf_alive.py",
             "scripts/apply_v405_alive.py"
           ],
-          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14."
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
         }
-      }
+      },
+      "id": "alive-core-v405-b6f2a1",
+      "owner": "chat/alive-core-v405-b6f2a1",
+      "paths": [
+        "tests/test_gsf_alive.py",
+        ".github/workflows/v405-alive-core.yml",
+        "docs/architecture/gsf-alive.md"
+      ],
+      "scope": "Build GSF Alive Core state engine, Streamlit bridge and safe global app integration",
+      "state": "active"
     },
     {
-      "id": "core-infra-v406-c81426",
       "branch": "chat/core-infra-v406-c81426",
-      "scope": "Build GSF infrastructure core for asset references, persistent job lifecycle, storage adapters, cache/proxy metadata, telemetry and cost accounting",
-      "paths": [
-        "docs/architecture/gsf-core-infrastructure.md",
-        "gsf_core/__init__.py",
-        "gsf_core/assets.py",
-        "gsf_core/cache.py",
-        "gsf_core/jobs.py",
-        "gsf_core/storage.py",
-        "gsf_core/telemetry.py",
-        "tests/test_gsf_core_infra.py"
-      ],
-      "owner": "chat/core-infra-v406-c81426",
       "created_at": "2026-10-14T06:32:00+00:00",
-      "state": "completed",
       "evidence": {
+        "completion": {
+          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+          "pr": 123,
+          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
+          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)",
+          "reason": "paths fully handed off to production-queue-20261014, which completed"
+        },
         "integration_handoff": {
-          "to": "production-queue-20261014",
           "paths": [
             "gsf_core/__init__.py",
             "gsf_core/assets.py",
@@ -127,67 +118,70 @@
             "tests/test_gsf_core_infra.py",
             "docs/architecture/gsf-core-infrastructure.md"
           ],
-          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14."
-        },
-        "completion": {
-          "reason": "paths fully handed off to production-queue-20261014, which completed",
-          "pr": 123,
-          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
-          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
-          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)"
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
         }
-      }
+      },
+      "id": "core-infra-v406-c81426",
+      "owner": "chat/core-infra-v406-c81426",
+      "paths": [
+        "docs/architecture/gsf-core-infrastructure.md",
+        "gsf_core/__init__.py",
+        "gsf_core/assets.py",
+        "gsf_core/cache.py",
+        "gsf_core/jobs.py",
+        "gsf_core/storage.py",
+        "gsf_core/telemetry.py",
+        "tests/test_gsf_core_infra.py"
+      ],
+      "scope": "Build GSF infrastructure core for asset references, persistent job lifecycle, storage adapters, cache/proxy metadata, telemetry and cost accounting",
+      "state": "completed"
     },
     {
-      "id": "publish-short-v405-7d91c4",
       "branch": "chat/publish-short-v405-7d91c4",
-      "scope": "Rebuild Crea Short final publication experience as a minimal video-first page with publish/download/edit/save actions and deterministic app integration",
-      "paths": [
-        ".github/workflows/v405-publish-short-simple.yml",
-        "scripts/apply_v405_publish_short.py",
-        "web/publish_short_v405_component/index.html",
-        "web/test_v405_publish_short_simple.py"
-      ],
-      "owner": "chat/publish-short-v405-7d91c4",
       "created_at": "2026-10-14T06:34:00+00:00",
-      "state": "completed",
       "evidence": {
+        "completion": {
+          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+          "pr": 123,
+          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
+          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)",
+          "reason": "paths fully handed off to production-queue-20261014, which completed"
+        },
         "integration_handoff": {
-          "to": "production-queue-20261014",
           "paths": [
             "web/publish_short_v405_component/index.html",
             "web/test_v405_publish_short_simple.py",
             "scripts/apply_v405_publish_short.py",
             ".github/workflows/v405-publish-short-simple.yml"
           ],
-          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14."
-        },
-        "completion": {
-          "reason": "paths fully handed off to production-queue-20261014, which completed",
-          "pr": 123,
-          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
-          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
-          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)"
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
         }
-      }
+      },
+      "id": "publish-short-v405-7d91c4",
+      "owner": "chat/publish-short-v405-7d91c4",
+      "paths": [
+        ".github/workflows/v405-publish-short-simple.yml",
+        "scripts/apply_v405_publish_short.py",
+        "web/publish_short_v405_component/index.html",
+        "web/test_v405_publish_short_simple.py"
+      ],
+      "scope": "Rebuild Crea Short final publication experience as a minimal video-first page with publish/download/edit/save actions and deterministic app integration",
+      "state": "completed"
     },
     {
-      "id": "desktop-mobile-shell-v407-7e31ca",
       "branch": "chat/desktop-mobile-shell-v407-7e31ca",
-      "scope": "Restore desktop as a mobile-first center shell with giant lateral advertising rails, preserving the mobile UI as the single source of truth and retiring incompatible V267 desktop-only assertions",
-      "paths": [
-        ".github/workflows/v407-desktop-shell.yml",
-        "docs/architecture/gsf-desktop-mobile-shell.md",
-        "web/gsf_desktop_shell_v407.py",
-        "web/install_adsense_bridge.py",
-        "web/test_v407_desktop_mobile_shell.py"
-      ],
-      "owner": "chat/desktop-mobile-shell-v407-7e31ca",
       "created_at": "2026-10-14T06:11:00+00:00",
-      "state": "completed",
       "evidence": {
+        "completion": {
+          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+          "pr": 123,
+          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
+          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)",
+          "reason": "paths fully handed off to production-queue-20261014, which completed"
+        },
         "integration_handoff": {
-          "to": "production-queue-20261014",
           "paths": [
             "web/gsf_desktop_shell_v407.py",
             "web/install_adsense_bridge.py",
@@ -195,97 +189,93 @@
             ".github/workflows/v407-desktop-shell.yml",
             "docs/architecture/gsf-desktop-mobile-shell.md"
           ],
-          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14."
-        },
-        "completion": {
-          "reason": "paths fully handed off to production-queue-20261014, which completed",
-          "pr": 123,
-          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
-          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
-          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)"
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
         }
-      }
+      },
+      "id": "desktop-mobile-shell-v407-7e31ca",
+      "owner": "chat/desktop-mobile-shell-v407-7e31ca",
+      "paths": [
+        ".github/workflows/v407-desktop-shell.yml",
+        "docs/architecture/gsf-desktop-mobile-shell.md",
+        "web/gsf_desktop_shell_v407.py",
+        "web/install_adsense_bridge.py",
+        "web/test_v407_desktop_mobile_shell.py"
+      ],
+      "scope": "Restore desktop as a mobile-first center shell with giant lateral advertising rails, preserving the mobile UI as the single source of truth and retiring incompatible V267 desktop-only assertions",
+      "state": "completed"
     },
     {
-      "id": "project-state-v408-3f4b21",
       "branch": "chat/project-state-v408-3f4b21",
-      "scope": "Add a durable unified ProjectState reducer and serialization layer without touching locked app.py",
-      "paths": [
-        ".github/workflows/v408-project-state.yml",
-        "docs/architecture/gsf-project-state.md",
-        "gsf_project_state.py",
-        "tests/test_gsf_project_state.py"
-      ],
-      "owner": "chat/project-state-v408-3f4b21",
       "created_at": "2026-10-14T06:39:00+00:00",
-      "state": "completed",
       "evidence": {
+        "completion": {
+          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+          "pr": 123,
+          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
+          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)",
+          "reason": "paths fully handed off to production-queue-20261014, which completed"
+        },
         "integration_handoff": {
-          "to": "production-queue-20261014",
           "paths": [
             "gsf_project_state.py",
             "tests/test_gsf_project_state.py",
             "docs/architecture/gsf-project-state.md",
             ".github/workflows/v408-project-state.yml"
           ],
-          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14."
-        },
-        "completion": {
-          "reason": "paths fully handed off to production-queue-20261014, which completed",
-          "pr": 123,
-          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
-          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
-          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)"
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
         }
-      }
+      },
+      "id": "project-state-v408-3f4b21",
+      "owner": "chat/project-state-v408-3f4b21",
+      "paths": [
+        ".github/workflows/v408-project-state.yml",
+        "docs/architecture/gsf-project-state.md",
+        "gsf_project_state.py",
+        "tests/test_gsf_project_state.py"
+      ],
+      "scope": "Add a durable unified ProjectState reducer and serialization layer without touching locked app.py",
+      "state": "completed"
     },
     {
-      "id": "alive-notifications-v409-4d7c2e",
       "branch": "chat/alive-notifications-v409-4d7c2e",
-      "scope": "Restore global one-shot Alive notifications as a non-overlapping sidecar extension of Alive Core",
-      "paths": [
-        ".github/workflows/v409-alive-notifications.yml",
-        "docs/architecture/gsf-alive-notifications.md",
-        "gsf_alive_notifications.py",
-        "tests/test_gsf_alive_notifications.py"
-      ],
-      "owner": "chat/alive-notifications-v409-4d7c2e",
       "created_at": "2026-10-14T06:45:00+00:00",
-      "state": "completed",
       "evidence": {
+        "completion": {
+          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+          "pr": 123,
+          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
+          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)",
+          "reason": "paths fully handed off to production-queue-20261014, which completed"
+        },
         "integration_handoff": {
-          "to": "production-queue-20261014",
           "paths": [
             "gsf_alive_notifications.py",
             "tests/test_gsf_alive_notifications.py",
             "docs/architecture/gsf-alive-notifications.md",
             ".github/workflows/v409-alive-notifications.yml"
           ],
-          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14."
-        },
-        "completion": {
-          "reason": "paths fully handed off to production-queue-20261014, which completed",
-          "pr": 123,
-          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
-          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
-          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)"
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
         }
-      }
+      },
+      "id": "alive-notifications-v409-4d7c2e",
+      "owner": "chat/alive-notifications-v409-4d7c2e",
+      "paths": [
+        ".github/workflows/v409-alive-notifications.yml",
+        "docs/architecture/gsf-alive-notifications.md",
+        "gsf_alive_notifications.py",
+        "tests/test_gsf_alive_notifications.py"
+      ],
+      "scope": "Restore global one-shot Alive notifications as a non-overlapping sidecar extension of Alive Core",
+      "state": "completed"
     },
     {
-      "id": "security-hardening-v410-6f31c2",
       "branch": "chat/security-hardening-v410-6f31c2",
-      "scope": "Harden GSF upload, session, social-token and edge security without changing user-facing flows",
-      "paths": [
-        "web/direct_upload_server.py",
-        "web/nginx.conf.template"
-      ],
-      "owner": "chat/security-hardening-v410-6f31c2",
       "created_at": "2026-10-14T07:28:25+00:00",
-      "state": "active",
       "evidence": {
         "integration_handoff": {
-          "to": "production-queue-20261014",
           "paths": [
             "web/fix_v410_security_hardening.py",
             "web/fix_v410_1_edge_identity.py",
@@ -298,14 +288,33 @@
             ".github/dependabot.yml",
             ".github/workflows/v410-security-gate.yml"
           ],
-          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14."
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
         }
-      }
+      },
+      "id": "security-hardening-v410-6f31c2",
+      "owner": "chat/security-hardening-v410-6f31c2",
+      "paths": [
+        "web/direct_upload_server.py",
+        "web/nginx.conf.template"
+      ],
+      "scope": "Harden GSF upload, session, social-token and edge security without changing user-facing flows",
+      "state": "active"
     },
     {
-      "id": "production-queue-20261014",
       "branch": "chat/production-queue-20261014",
-      "scope": "Consolidated V403-V410 release over V404 build-time materialization and fast startup; exclude obsolete PR116 and preserve PR112/113/117.",
+      "created_at": "2026-10-14T10:05:00+00:00",
+      "evidence": {
+        "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+        "pr": 123,
+        "promotion_commit": "e2f1de18e634d4308b1255b2a2e83396107522cd",
+        "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS /healthz 200",
+        "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SUCCESS",
+        "runtime": "Creator Hub stable sid and csrf_token verified live; missing CSRF 403; authorized missing draft 404",
+        "tests": "52 local pytest tests passed; PR Production Gate 38630205476 passed; main Production Gate 38631006544 passed"
+      },
+      "id": "production-queue-20261014",
+      "owner": "chat/production-queue-20261014",
       "paths": [
         ".github/workflows/v405-publish-short-simple.yml",
         "scripts/apply_v405_publish_short.py",
@@ -356,18 +365,20 @@
         ".github/workflows/v397-production-gate.yml",
         ".github/workflows/v411-queue-integration.yml"
       ],
-      "owner": "chat/production-queue-20261014",
-      "created_at": "2026-10-14T10:05:00+00:00",
-      "state": "completed",
-      "evidence": {
-        "pr": 123,
-        "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
-        "tests": "52 local pytest tests passed; PR Production Gate 38630205476 passed; main Production Gate 38631006544 passed",
-        "promotion_commit": "e2f1de18e634d4308b1255b2a2e83396107522cd",
-        "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS /healthz 200",
-        "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SUCCESS",
-        "runtime": "Creator Hub stable sid and csrf_token verified live; missing CSRF 403; authorized missing draft 404"
-      }
+      "scope": "Consolidated V403-V410 release over V404 build-time materialization and fast startup; exclude obsolete PR116 and preserve PR112/113/117.",
+      "state": "completed"
+    },
+    {
+      "branch": "chat/docs-add-claude-md-pointing-agents-to-agents-md--e73cb7",
+      "created_at": "2026-10-15T08:54:55+02:00",
+      "id": "docs-add-claude-md-pointing-agents-to-agents-md--e73cb7",
+      "owner": "claude-chat",
+      "paths": [
+        "CLAUDE.md"
+      ],
+      "scope": "docs: add CLAUDE.md pointing agents to AGENTS.md and PROJECT_STATUS.md",
+      "state": "active"
     }
-  ]
+  ],
+  "version": 1
 }
