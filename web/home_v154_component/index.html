@@ -3617,7 +3617,7 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    if(action==="select_moment"){
      const idx=Math.max(0,Math.min(2,Number(e.data.index)||0));
      try{sessionStorage.setItem("gsf_ai_selected_moment_v288",String(idx))}catch(_e){}
-     value({event:"preview_moment",index:idx,duration,engine});
+     value({event:"preview_moment",index:idx,start_time:Number(e.data.start_time),duration,engine});
      return;
    }
    if(action==="open_editor"){
@@ -3625,8 +3625,8 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
      if(!Number.isFinite(idx)){try{idx=Number(sessionStorage.getItem("gsf_ai_selected_moment_v288"))}catch(_e){idx=0}}
      idx=Math.max(0,Math.min(2,Number.isFinite(idx)?idx:0));
      const selectedPreview=(Array.isArray(previewData)?previewData[idx]:null)||{};
-     shellNav("editor",{momentIndex:idx,video_url:String(selectedPreview.video||""),cover:String(selectedPreview.cover||""),duration:Number(duration)||15,engine:String(engine||"")});
-     value({event:"open_editor",duration,engine,index:idx});
+     shellNav("editor",{momentIndex:idx,video_url:String(e.data.video||selectedPreview.video||""),cover:String(selectedPreview.cover||""),start_time:Number(e.data.start_time),end_time:Number(e.data.end_time),duration:Number(duration)||15,engine:String(engine||"")});
+     value({event:"open_editor",duration,engine,index:idx,start_time:Number(e.data.start_time)});
      return;
    }
    if(action==="create_short"){
@@ -3646,8 +3646,16 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
      const nextDuration=Number(e.data.duration)||duration;
      const nextEngine=String(e.data.engine||engine||"auto");
      setDuration(nextDuration,false);setEngine(nextEngine,false);
-     value({event:"create_ai",duration:nextDuration,engine:nextEngine});
+     value({event:"create_ai",duration:nextDuration,engine:nextEngine,request_id:String(e.data.request_id||"").slice(0,40)});
      publishAiState();
+   }
+   /* V412 AI ENGINES: "Cambia short" swaps one ranked moment for an AI alternate */
+   if(action==="replace"){
+     const idx=Math.max(0,Math.min(2,Number(e.data.index)||0));
+     const start=Number(e.data.start_time);
+     if(!Number.isFinite(start))return;
+     value({event:"replace_moment",index:idx,start_time:start,restore:e.data.restore===true,duration,engine});
+     return;
    }
  });
  function receive(args){

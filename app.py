@@ -11716,9 +11716,32 @@ if GSF_WEB_MODE:
                 "profile":_gsf_v291_profile_map[_v154_engine],
                 "duration":30 if int(_v154_duration)==30 else 15,
             }
-        elif _v154_engine=="manual" or _v154_event=="open_editor":
+        elif _v154_engine=="manual" or (_v154_event=="open_editor" and "index" not in _gsf_v154_event):
             st.session_state.pop("gsf_v291_engine_profile",None)
             st.session_state.pop("gsf_v291_ai_request",None)
+
+        # V412 AI ENGINES: the AI page drives selection, editor hand-off and
+        # "Cambia short" on the real AI run (same session-state keys used by
+        # preview, editor and final render).
+        try:
+            from web.ai_engines_v412 import apply_replacement as _gsf_v412_replace
+            from web.ai_engines_v412 import select_candidate as _gsf_v412_select
+            if _v154_event=="create_ai":
+                st.session_state["gsf_v412_request_id"]=str(_gsf_v154_event.get("request_id") or "")[:40]
+                st.session_state.pop("gsf_v412_replaced",None)
+            elif _v154_event in ("preview_moment","open_editor","create_short") and "index" in _gsf_v154_event:
+                _gsf_v412_select(st.session_state,_gsf_v154_event.get("index"),_gsf_v154_event.get("start_time"))
+            elif _v154_event=="replace_moment":
+                if _gsf_v412_replace(
+                    st.session_state,
+                    int(_gsf_v154_event.get("index") or 0),
+                    _gsf_v154_event.get("start_time"),
+                    restore=bool(_gsf_v154_event.get("restore")),
+                    duration=float(_v154_duration),
+                ):
+                    print("GSF_V412_REPLACE index="+str(_gsf_v154_event.get("index"))+" start="+str(_gsf_v154_event.get("start_time"))+" restore="+str(bool(_gsf_v154_event.get("restore"))),flush=True)
+        except Exception as _gsf_v412_event_exc:
+            print("GSF_V412_EVENT_WARN",repr(str(_gsf_v412_event_exc))[:220],flush=True)
 
         # Direct upload finishes in the existing upload server before the
         # component emits this event. A clean rerun lets _gsf_v989_direct_ready
@@ -13438,7 +13461,9 @@ if video:
                     GSF_AI_ENGINE_VERSION,
                     _video_cache_token,
                     modalita,
-                    float(duration)
+                    float(duration),
+                    # V412: each engine profile ranks differently, so it gets its own slot.
+                    __import__("web.ai_engines_v412",fromlist=["cache_profile"]).cache_profile(_gsf_v291_profile),
                 )
                 cached_ai = st.session_state.get("gsf_fast_ai_cache", {}).get(cache_key_ai)
 
@@ -13467,7 +13492,7 @@ if video:
 
                         # Solo Automatico e Momento migliore rifiniscono i bordi:
                         # per Azione/Reazioni non vogliamo spostare via il picco trovato.
-                        if modalita in ["🚀 AUTO TOTALE", "🎬 AI Director"]:
+                        if __import__("web.ai_engines_v412",fromlist=["should_refine"]).should_refine(_gsf_v291_profile, modalita):
                             clip_rifinite = {}
                             candidati_rifiniti = []
                             for start_ai in candidati:
@@ -13593,6 +13618,55 @@ if video:
                         )
                         if _mini_bytes:
                             _mini_preview_bytes[int(_card["index"])] = bytes(_mini_bytes)
+
+                # V412 AI ENGINES: results sheet read by /ai/results for the AI page.
+                try:
+                    from web.ai_engines_v412 import build_results_meta as _gsf_v412_meta
+                    from web.ai_engines_v412 import write_results_meta as _gsf_v412_write
+                    _gsf_v412_write(GSF_PREVIEW_DIR,_gsf_v412_meta(
+                        [float(_c["start"]) for _c in _short_cards],
+                        st.session_state.get("gsf_v112_brain_context") or {},
+                        duration=float(duration),
+                        profile=str(st.session_state.get("gsf_v291_engine_profile") or ""),
+                        request_id=str(st.session_state.get("gsf_v412_request_id") or ""),
+                        durations={round(float(_c["start"]),3):float(_c["preview_duration"]) for _c in _short_cards},
+                    ))
+                except Exception as _gsf_v412_meta_exc:
+                    print("GSF_V412_META_WARN",repr(str(_gsf_v412_meta_exc))[:220],flush=True)
+
+                # V412 AUTOSAVE: every AI result, selection or "Cambia short"
+                # updates ONE automatic draft in the Creator Hub (stable id, no
+                # duplicates). Posted in the background so the UI never waits.
+                try:
+                    _gsf_v412_sig=repr((
+                        st.session_state.get("gsf_v412_request_id"),
+                        [round(float(_c["start"]),2) for _c in _short_cards],
+                        round(float(st.session_state.get("auto_clip_scelta") or 0.0),2),
+                    ))
+                    if GSF_WEB_MODE and st.session_state.get("gsf_v412_autosaved")!=_gsf_v412_sig:
+                        st.session_state["gsf_v412_autosaved"]=_gsf_v412_sig
+                        _gsf_save_persistent_state()
+                        _gsf_v412_state=json.loads(GSF_SESSION_STATE_FILE.read_text(encoding="utf-8")) if GSF_SESSION_STATE_FILE.is_file() else {}
+                        _gsf_v412_src=str(st.session_state.get("gsf_source_name") or "Gameplay")[:120]
+                        _gsf_v412_owner=re.sub(r"[^A-Za-z0-9_-]+","",str(st.session_state.get("gsf_upload_id") or ""))[:40] or hashlib.sha256(_gsf_v412_src.encode("utf-8")).hexdigest()[:16]
+                        _gsf_v412_body=json.dumps({
+                            "id":"draft_ai_"+_gsf_v412_owner,
+                            "title":"Bozza IA · "+_gsf_v412_src,
+                            "source_name":_gsf_v412_src,
+                            "state":_gsf_v412_state if isinstance(_gsf_v412_state,dict) else {},
+                        },ensure_ascii=False,default=str).encode("utf-8")
+                        def _gsf_v412_post(_body=_gsf_v412_body,_sid=str(GSF_SESSION_ID)):
+                            try:
+                                import urllib.request as _gsf_v412_url
+                                _gsf_v412_url.urlopen(_gsf_v412_url.Request(
+                                    "http://127.0.0.1:8502/drafts/save",data=_body,method="POST",
+                                    headers={"Content-Type":"application/json","X-GSF-Session-ID":_sid},
+                                ),timeout=15).read()
+                            except Exception as _gsf_v412_post_exc:
+                                print("GSF_V412_AUTOSAVE_WARN",repr(str(_gsf_v412_post_exc))[:200],flush=True)
+                        __import__("threading").Thread(target=_gsf_v412_post,daemon=True).start()
+                except Exception as _gsf_v412_save_exc:
+                    print("GSF_V412_AUTOSAVE_WARN",repr(str(_gsf_v412_save_exc))[:200],flush=True)
 
                 _selected_card = next(
                     (
@@ -17009,7 +17083,7 @@ if GSF_WEB_MODE:
         if(e.data.type==='GSF_AI_UI'){
           const action=String(e.data.action||'');
           if(action==='ready'){broadcastHome({type:'GSF_AI_COMMAND',action:'get_state'});return}
-          const selection={action,candidate_id:e.data.candidate_id,video:e.data.video,start_time:e.data.start_time,end_time:e.data.end_time,duration:e.data.duration,engine:e.data.engine,index:e.data.index};
+          const selection={action,candidate_id:e.data.candidate_id,video:e.data.video,start_time:e.data.start_time,end_time:e.data.end_time,duration:e.data.duration,engine:e.data.engine,index:e.data.index,request_id:e.data.request_id,restore:e.data.restore===true};
           if(action==='create_short'){
             broadcastHome({...selection,type:'GSF_AI_COMMAND',action:'select_moment'});
             close();
