@@ -21,7 +21,11 @@ on:
         required: false
         default: screenshots
         type: choice
-        options: [screenshots, freeze]
+        options: [screenshots, freeze, layout]
+      route:
+        description: "freeze mode: comma-separated target[:section] list (e.g. home,editor,hub:dashboard)"
+        required: false
+        default: "hub:dashboard,projects,live,hub:profile,home"
 
 permissions:
   contents: write
@@ -74,7 +78,7 @@ jobs:
           python -m playwright install --with-deps webkit
 
       - name: Screenshots and observer metrics
-        if: inputs.mode != 'freeze'
+        if: inputs.mode == 'screenshots'
         env:
           BASE: http://127.0.0.1:18080
           OUT_DIR: ${{ github.workspace }}/visual-out
@@ -89,10 +93,20 @@ jobs:
           BASE: http://127.0.0.1:18080
           OUT_DIR: ${{ github.workspace }}/visual-out
           STEPS: ${{ inputs.cycles }}
+          ROUTE: ${{ inputs.route }}
         run: |
           timeout 1200 python tool/tests/visual/gsf_freeze_probe.py | tee /tmp/freeze.txt || true
           last=$(tail -n 1 /tmp/freeze.txt | cut -c1-500)
           if grep -q '"hung": true' /tmp/freeze.txt; then echo "::error title=Freeze ${{ inputs.ref }}::$last"; else echo "::notice title=Freeze probe ${{ inputs.ref }}::$last"; fi
+
+      - name: Layout probe (what sits under the header and Game Bar)
+        if: inputs.mode == 'layout'
+        env:
+          BASE: http://127.0.0.1:18080
+          OUT_DIR: ${{ github.workspace }}/visual-out
+        run: |
+          timeout 600 python tool/tests/visual/gsf_layout_probe.py | tee /tmp/layout.txt
+          echo "::notice title=Layout probe ${{ inputs.ref }}::$(tail -n 1 /tmp/layout.txt | cut -c1-500)"
 
       - name: Publish results to ci-visual branch
         if: always()
