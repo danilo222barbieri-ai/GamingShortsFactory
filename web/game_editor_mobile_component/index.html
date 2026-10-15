@@ -3,26 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="color-scheme" content="light">
+  <meta name="color-scheme" content="dark light">
   <title>Game Editor · Gaming Shorts Factory</title>
   <link rel="stylesheet" href="./editor.css">
+  <link rel="stylesheet" href="./overlay_v414.css">
 </head>
 <body>
-  <main id="gameEditorApp" class="editor-app" aria-busy="true">
-    <header class="editor-header">
-      <button id="backButton" class="icon-button" type="button" aria-label="Torna indietro">←</button>
-      <div class="project-identity">
-        <p class="editor-kicker">Game Editor</p>
-        <h1 id="projectTitle">Nuovo gameplay</h1>
-        <p id="editorStatus" role="status" aria-live="polite">Preparazione editor…</p>
-      </div>
-      <div class="history-actions" aria-label="Cronologia modifiche">
-        <button id="undoButton" class="icon-button" type="button" aria-label="Annulla" disabled>↶</button>
-        <button id="redoButton" class="icon-button" type="button" aria-label="Ripristina" disabled>↷</button>
-        <button id="fullscreenButton" class="icon-button" type="button" aria-label="Schermo intero" aria-pressed="false">⛶</button>
-      </div>
-    </header>
-
+  <main id="gameEditorApp" class="editor-app is-mini" aria-busy="true">
     <section class="editor-workspace" aria-label="Area di montaggio">
       <section class="preview-card" aria-label="Anteprima verticale 9:16">
         <div id="previewStage" class="preview-stage">
@@ -34,106 +21,144 @@
             <span class="hud-zone killfeed">KILLFEED</span>
             <span class="hud-zone facecam">FACECAM</span>
           </div>
-          <div id="mediaEmptyState" class="media-empty" role="status">
+
+          <header class="editor-header v414-top-hud">
+            <button id="backButton" class="icon-button glass-button" type="button" aria-label="Torna indietro">←</button>
+            <div class="project-identity">
+              <p class="editor-kicker">Game Editor</p>
+              <h1 id="projectTitle">Nuovo gameplay</h1>
+              <p id="editorStatus" role="status" aria-live="polite">Preparazione editor…</p>
+            </div>
+            <div class="history-actions" aria-label="Cronologia modifiche">
+              <button id="undoButton" class="icon-button glass-button" type="button" aria-label="Annulla" disabled>↶</button>
+              <button id="redoButton" class="icon-button glass-button" type="button" aria-label="Ripristina" disabled>↷</button>
+              <button id="fullscreenButton" class="icon-button glass-button" type="button" aria-label="Schermo intero" aria-pressed="false">⛶</button>
+            </div>
+          </header>
+
+          <button id="enterEditorButton" class="enter-editor-button" type="button" aria-label="Apri Game Editor a schermo intero">
+            <span aria-hidden="true">⛶</span><strong>MODIFICA</strong>
+          </button>
+
+          <div id="mediaEmptyState" class="media-empty" role="status" style="z-index:25">
             <span class="empty-icon" aria-hidden="true">▶</span>
             <strong>Gameplay in preparazione</strong>
             <span>Il progetto resta modificabile mentre recuperiamo il video.</span>
             <button id="retryMediaButton" type="button">Riprova</button>
           </div>
           <span class="ratio-badge">9:16</span>
-        </div>
-        <div class="transport" aria-label="Controlli riproduzione">
-          <button id="playButton" class="play-button" type="button" aria-label="Riproduci">▶</button>
-          <span id="currentTime" class="timecode">0:00.0</span>
-          <input id="scrubRange" class="scrub-range" type="range" min="0" max="15" step="0.01" value="0" aria-label="Posizione riproduzione">
-          <span id="durationTime" class="timecode">0:15.0</span>
-        </div>
-      </section>
 
-      <section class="timeline-card" aria-label="Timeline singola clip">
-        <div class="timeline-heading">
-          <div><span class="eyebrow">Timeline</span><strong>Clip gameplay</strong></div>
-          <div class="trim-readout"><span id="inTime">IN 0:00.0</span><span id="outTime">OUT 0:15.0</span></div>
-        </div>
-        <div id="timelineTrack" class="timeline-track">
-          <div class="clip-strip" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-          <div id="selectedRange" class="selected-range" aria-hidden="true"></div>
-          <div id="playhead" class="playhead" aria-hidden="true"></div>
-          <div id="eventMarkers" class="event-markers" aria-label="Eventi Game AI"></div>
-          <input id="trimInRange" class="trim-range trim-in" type="range" min="0" max="14.5" step="0.05" value="0" aria-label="Punto di ingresso">
-          <input id="trimOutRange" class="trim-range trim-out" type="range" min="0.5" max="15" step="0.05" value="15" aria-label="Punto di uscita">
+          <button id="playButton" class="play-button v414-center-play" type="button" aria-label="Riproduci">▶</button>
+
+          <div class="transport v414-transport" aria-label="Controlli riproduzione">
+            <span id="currentTime" class="timecode">0:00.0</span>
+            <input id="scrubRange" class="scrub-range" type="range" min="0" max="15" step="0.01" value="0" aria-label="Posizione riproduzione">
+            <span id="durationTime" class="timecode">0:15.0</span>
+          </div>
+
+          <section class="timeline-card v414-timeline" aria-label="Timeline singola clip">
+            <div class="timeline-heading">
+              <div><span class="eyebrow">Timeline</span><strong>Clip gameplay</strong></div>
+              <div class="trim-readout"><span id="inTime">IN 0:00.0</span><span id="outTime">OUT 0:15.0</span></div>
+            </div>
+            <div id="timelineTrack" class="timeline-track">
+              <div class="clip-strip" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+              <div id="selectedRange" class="selected-range" aria-hidden="true"></div>
+              <div id="playhead" class="playhead" aria-hidden="true"></div>
+              <div id="eventMarkers" class="event-markers" aria-label="Eventi Game AI"></div>
+              <input id="trimInRange" class="trim-range trim-in" type="range" min="0" max="14.5" step="0.05" value="0" aria-label="Punto di ingresso">
+              <input id="trimOutRange" class="trim-range trim-out" type="range" min="0.5" max="15" step="0.05" value="15" aria-label="Punto di uscita">
+            </div>
+          </section>
+
+          <nav id="toolBar" class="tool-bar v414-tool-rail" aria-label="Strumenti principali">
+            <button class="tool-button" type="button" data-tool="clip" aria-pressed="false"><span aria-hidden="true">✂</span>Taglio</button>
+            <button class="tool-button" type="button" data-tool="frame" aria-pressed="false"><span aria-hidden="true">⌗</span>Inquadratura</button>
+            <button class="tool-button" type="button" data-tool="text" aria-pressed="false"><span aria-hidden="true">T</span>Testo</button>
+            <button class="tool-button" type="button" data-tool="audio" aria-pressed="false"><span aria-hidden="true">◖</span>Audio</button>
+            <button class="tool-button ai-tool" type="button" data-tool="ai" aria-pressed="false"><span aria-hidden="true">✦</span>AI</button>
+          </nav>
+
+          <section id="toolDock" class="tool-dock v414-tool-sheet" aria-label="Impostazioni strumento" aria-hidden="true">
+            <header class="tool-dock-header">
+              <div><span class="eyebrow">Strumento</span><strong id="activeToolTitle">Taglio</strong></div>
+              <div class="sheet-actions">
+                <button id="moreButton" class="secondary-button" type="button" aria-expanded="false" aria-controls="morePanel">Altro <span aria-hidden="true">•••</span></button>
+                <button id="closeToolSheetButton" class="secondary-button sheet-close" type="button" aria-label="Chiudi strumenti">×</button>
+              </div>
+            </header>
+
+            <section class="tool-panel" data-panel="clip" hidden>
+              <label>Inizio preciso <output id="panelInValue">0:00.0</output><input id="panelInRange" type="range" min="0" max="14.5" step="0.05" value="0"></label>
+              <label>Fine precisa <output id="panelOutValue">0:15.0</output><input id="panelOutRange" type="range" min="0.5" max="15" step="0.05" value="15"></label>
+              <button id="resetTrimButton" class="inline-action" type="button">Ripristina momento</button>
+            </section>
+
+            <section class="tool-panel" data-panel="frame" hidden>
+              <div class="camera-mode-grid" aria-label="Modalità camera gaming">
+                <button type="button" data-camera-mode="static"><span aria-hidden="true">◉</span>Static</button>
+                <button type="button" data-camera-mode="follow"><span aria-hidden="true">◎</span>Follow Action</button>
+                <button type="button" data-camera-mode="dynamic"><span aria-hidden="true">↗</span>Dynamic</button>
+                <button type="button" data-camera-mode="cinematic"><span aria-hidden="true">◆</span>Cinematic</button>
+              </div>
+              <div class="preset-row" aria-label="Preset inquadratura">
+                <button type="button" data-frame="center">Centro</button><button type="button" data-frame="gameplay">Gameplay</button><button type="button" data-frame="face">Facecam</button><button type="button" data-frame="free">Libero</button>
+              </div>
+              <label>Zoom <output id="zoomValue">1.00×</output><input id="zoomRange" type="range" min="0.8" max="2" step="0.01" value="1"></label>
+              <div class="split-controls">
+                <label>Orizzontale <input id="panXRange" type="range" min="-25" max="25" step="0.1" value="0"></label>
+                <label>Verticale <input id="panYRange" type="range" min="-25" max="25" step="0.1" value="0"></label>
+              </div>
+              <button id="resetFrameButton" class="inline-action" type="button">Ripristina inquadratura</button>
+            </section>
+
+            <section class="tool-panel" data-panel="text" hidden>
+              <div class="segmented" aria-label="Modalità testo">
+                <button type="button" data-caption-mode="Auto">Auto</button><button type="button" data-caption-mode="Fixed">Testo</button><button type="button" data-caption-mode="Off">Off</button>
+              </div>
+              <label>Testo in scena <input id="captionTextInput" type="text" maxlength="240" placeholder="Scrivi una frase"></label>
+              <div class="split-controls">
+                <label>Dimensione <input id="captionSizeRange" type="range" min="18" max="72" step="1" value="36"></label>
+                <label>Posizione <input id="captionYRange" type="range" min="5" max="95" step="1" value="76"></label>
+              </div>
+              <div class="color-row" aria-label="Colore testo"><button type="button" data-text-color="#ffffff" aria-label="Bianco"></button><button type="button" data-text-color="#ffd400" aria-label="Giallo GSF"></button><button type="button" data-text-color="#56d6ff" aria-label="Ciano"></button></div>
+            </section>
+
+            <section class="tool-panel" data-panel="audio" hidden>
+              <div class="segmented" aria-label="Modalità audio"><button type="button" data-audio-mode="Originale">Originale</button><button type="button" data-audio-mode="Game Boost">Game Boost</button></div>
+              <label>Volume <output id="volumeValue">100%</output><input id="volumeRange" type="range" min="0" max="100" step="1" value="100"></label>
+              <button id="muteButton" class="inline-action" type="button" aria-pressed="false">Disattiva audio</button>
+            </section>
+
+            <section class="tool-panel ai-panel" data-panel="ai" hidden>
+              <div class="ai-intro"><span class="ai-orb" aria-hidden="true">✦</span><div><strong>Game AI</strong><p>Modifiche gaming in tempo reale. Le applichi sempre tu.</p></div></div>
+              <div class="ai-quick-grid" aria-label="Comandi rapidi Game AI">
+                <button type="button" data-ai-quick="follow_action">Segui l'azione</button>
+                <button type="button" data-ai-quick="auto_vertical">Auto 9:16</button>
+                <button type="button" data-ai-quick="zoom_moments">Zoom momenti</button>
+                <button type="button" data-ai-quick="protect_hud">Proteggi HUD</button>
+                <button type="button" data-ai-quick="auto_caption">Auto caption</button>
+                <button type="button" data-ai-quick="improve_all" class="ai-improve-all">Migliora tutto</button>
+              </div>
+              <div id="aiSuggestionList" class="ai-suggestion-list"><p class="panel-empty">Suggerimenti in preparazione.</p></div>
+            </section>
+
+            <section id="morePanel" class="tool-panel more-panel" data-panel="more" hidden>
+              <label>Look<select id="lookSelect"><option>Clean</option><option>Competitive</option><option>Boss Cinematic</option></select></label>
+              <label>Cover<select id="coverModeSelect"><option>Auto</option><option>AI</option><option>Current</option><option>Manual</option></select></label>
+              <label>HUD<select id="hudModeSelect"><option>Off</option><option>Smart Safe</option></select></label>
+              <label>Velocità<select id="speedSelect"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>
+              <label>Qualità<select id="qualityModeSelect"><option>Adaptive AI</option><option>Fast HQ</option><option>Max Quality</option></select></label>
+            </section>
+          </section>
+
+          <footer class="editor-actions v414-editor-actions">
+            <button id="saveDraftButton" class="draft-button" type="button">Salva</button>
+            <button id="continueButton" class="continue-button" type="button">Fatto <span aria-hidden="true">✓</span></button>
+          </footer>
         </div>
       </section>
     </section>
-
-    <nav class="tool-bar" aria-label="Strumenti principali">
-      <button class="tool-button is-active" type="button" data-tool="clip" aria-pressed="true"><span aria-hidden="true">✂</span>Taglio</button>
-      <button class="tool-button" type="button" data-tool="frame" aria-pressed="false"><span aria-hidden="true">⌗</span>Inquadratura</button>
-      <button class="tool-button" type="button" data-tool="text" aria-pressed="false"><span aria-hidden="true">T</span>Testo</button>
-      <button class="tool-button" type="button" data-tool="audio" aria-pressed="false"><span aria-hidden="true">◖</span>Audio</button>
-      <button class="tool-button" type="button" data-tool="ai" aria-pressed="false"><span aria-hidden="true">✦</span>AI</button>
-    </nav>
-
-    <section class="tool-dock" aria-label="Impostazioni strumento">
-      <header class="tool-dock-header">
-        <div><span class="eyebrow">Strumento</span><strong id="activeToolTitle">Taglio</strong></div>
-        <button id="moreButton" class="secondary-button" type="button" aria-expanded="false" aria-controls="morePanel">Altro <span aria-hidden="true">•••</span></button>
-      </header>
-
-      <section class="tool-panel" data-panel="clip">
-        <label>Inizio preciso <output id="panelInValue">0:00.0</output><input id="panelInRange" type="range" min="0" max="14.5" step="0.05" value="0"></label>
-        <label>Fine precisa <output id="panelOutValue">0:15.0</output><input id="panelOutRange" type="range" min="0.5" max="15" step="0.05" value="15"></label>
-        <button id="resetTrimButton" class="inline-action" type="button">Ripristina momento</button>
-      </section>
-
-      <section class="tool-panel" data-panel="frame" hidden>
-        <div class="preset-row" aria-label="Preset inquadratura">
-          <button type="button" data-frame="center">Centro</button><button type="button" data-frame="gameplay">Gameplay</button><button type="button" data-frame="face">Facecam</button><button type="button" data-frame="free">Libero</button>
-        </div>
-        <label>Zoom <output id="zoomValue">1.00×</output><input id="zoomRange" type="range" min="0.8" max="2" step="0.01" value="1"></label>
-        <div class="split-controls">
-          <label>Orizzontale <input id="panXRange" type="range" min="-25" max="25" step="0.1" value="0"></label>
-          <label>Verticale <input id="panYRange" type="range" min="-25" max="25" step="0.1" value="0"></label>
-        </div>
-        <button id="resetFrameButton" class="inline-action" type="button">Ripristina inquadratura</button>
-      </section>
-
-      <section class="tool-panel" data-panel="text" hidden>
-        <div class="segmented" aria-label="Modalità testo">
-          <button type="button" data-caption-mode="Auto">Auto</button><button type="button" data-caption-mode="Fixed">Testo</button><button type="button" data-caption-mode="Off">Off</button>
-        </div>
-        <label>Testo in scena <input id="captionTextInput" type="text" maxlength="240" placeholder="Scrivi una frase"></label>
-        <div class="split-controls">
-          <label>Dimensione <input id="captionSizeRange" type="range" min="18" max="72" step="1" value="36"></label>
-          <label>Posizione <input id="captionYRange" type="range" min="5" max="95" step="1" value="76"></label>
-        </div>
-        <div class="color-row" aria-label="Colore testo"><button type="button" data-text-color="#ffffff" aria-label="Bianco"></button><button type="button" data-text-color="#ffd400" aria-label="Giallo GSF"></button><button type="button" data-text-color="#56d6ff" aria-label="Ciano"></button></div>
-      </section>
-
-      <section class="tool-panel" data-panel="audio" hidden>
-        <div class="segmented" aria-label="Modalità audio"><button type="button" data-audio-mode="Originale">Originale</button><button type="button" data-audio-mode="Game Boost">Game Boost</button></div>
-        <label>Volume <output id="volumeValue">100%</output><input id="volumeRange" type="range" min="0" max="100" step="1" value="100"></label>
-        <button id="muteButton" class="inline-action" type="button" aria-pressed="false">Disattiva audio</button>
-      </section>
-
-      <section class="tool-panel ai-panel" data-panel="ai" hidden>
-        <div class="ai-intro"><span class="ai-orb" aria-hidden="true">✦</span><div><strong>Game AI</strong><p>Analizza il momento e propone modifiche. Sei sempre tu ad applicarle.</p></div></div>
-        <div id="aiSuggestionList" class="ai-suggestion-list"><p class="panel-empty">Suggerimenti in preparazione.</p></div>
-      </section>
-
-      <section id="morePanel" class="tool-panel more-panel" data-panel="more" hidden>
-        <label>Look<select id="lookSelect"><option>Clean</option><option>Competitive</option><option>Boss Cinematic</option></select></label>
-        <label>Cover<select id="coverModeSelect"><option>Auto</option><option>AI</option><option>Current</option><option>Manual</option></select></label>
-        <label>HUD<select id="hudModeSelect"><option>Off</option><option>Smart Safe</option></select></label>
-        <label>Velocità<select id="speedSelect"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>
-        <label>Qualità<select id="qualityModeSelect"><option>Adaptive AI</option><option>Fast HQ</option><option>Max Quality</option></select></label>
-      </section>
-    </section>
-
-    <footer class="editor-actions">
-      <button id="saveDraftButton" class="draft-button" type="button">Salva bozza</button>
-      <button id="continueButton" class="continue-button" type="button">Continua a Crea Shorts <span aria-hidden="true">→</span></button>
-    </footer>
   </main>
   <script type="module" src="./editor.mjs"></script>
 </body>

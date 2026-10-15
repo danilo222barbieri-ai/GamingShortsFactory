@@ -1,7 +1,10 @@
 import {
   applySuggestion,
+  cameraPresetPatch,
   createEditorHistory,
   createSaveSequencer,
+  gamingQuickActionPatch,
+  inferCameraPreset,
   normalizeEditorState,
   previewSuggestion,
   projectGestureViewport,
@@ -10,6 +13,7 @@ import {
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, Number(value) || 0));
+
 const app = $("#gameEditorApp");
 const video = $("#gameplayVideo");
 const previewStage = $("#previewStage");
@@ -30,10 +34,13 @@ const eventMarkers = $("#eventMarkers");
 const undoButton = $("#undoButton");
 const redoButton = $("#redoButton");
 const fullscreenButton = $("#fullscreenButton");
+const enterEditorButton = $("#enterEditorButton");
+const closeToolSheetButton = $("#closeToolSheetButton");
+const toolDock = $("#toolDock");
 
 const toolTitles = {
   clip: "Taglio",
-  frame: "Inquadratura",
+  frame: "Camera",
   text: "Testo",
   audio: "Audio",
   ai: "Game AI",
@@ -86,7 +93,11 @@ function stateValue() {
 
 function boundsFor(state) {
   const duration = Math.max(0.5, Number(state.sourceDuration) || 15);
-  return { duration, inPoint: Number(state.inPoint) || 0, outPoint: Number(state.outPoint) || duration };
+  return {
+    duration,
+    inPoint: Number(state.inPoint) || 0,
+    outPoint: Number(state.outPoint) || duration,
+  };
 }
 
 function updateHistoryButtons() {
@@ -132,15 +143,17 @@ function renderChoiceButtons(state) {
   $$('[data-caption-mode]').forEach((button) => button.classList.toggle("is-selected", button.dataset.captionMode === state.captionMode));
   $$('[data-audio-mode]').forEach((button) => button.classList.toggle("is-selected", button.dataset.audioMode === state.audioMode));
   $$('[data-text-color]').forEach((button) => button.classList.toggle("is-selected", button.dataset.textColor.toLowerCase() === state.textColor));
+  const camera = inferCameraPreset(state);
+  $$('[data-camera-mode]').forEach((button) => button.classList.toggle("is-selected", button.dataset.cameraMode === camera));
 }
 
 function renderState(state = stateValue()) {
   const normalized = normalizeEditorState(state, state.sourceDuration);
-  const transform = `translate(${normalized.panX}%, ${normalized.panY}%) scale(${normalized.zoom})`;
-  video.style.transform = transform;
+  video.style.transform = `translate(${normalized.panX}%, ${normalized.panY}%) scale(${normalized.zoom})`;
   video.playbackRate = normalized.speed;
   video.muted = normalized.muted;
   video.volume = normalized.volume / 100;
+
   captionOverlay.textContent = normalized.captionMode === "Off" ? "" : normalized.captionText;
   captionOverlay.hidden = normalized.captionMode === "Off" || !normalized.captionText;
   captionOverlay.style.top = `${normalized.captionY}%`;
@@ -175,7 +188,7 @@ function previewPatch(patch) {
   renderState(previewState);
 }
 
-function commitPatch(patch, { autosave = true } = {}) {
+function commitPatch(patch, { autosave = true, status = "Modifiche da salvare" } = {}) {
   previewState = null;
   const current = history.value;
   const next = normalizeEditorState({ ...current, ...patch }, current.sourceDuration);
@@ -183,7 +196,7 @@ function commitPatch(patch, { autosave = true } = {}) {
   renderState(next);
   if (autosave) {
     saveSequencer.schedule(next);
-    setStatus("Modifiche da salvare", "dirty");
+    setStatus(status, "dirty");
   }
   return next;
 }
@@ -202,11 +215,44 @@ function requestEditorAction(action) {
   saveSequencer.flush(history.value, action);
 }
 
+function closeToolSheet() {
+  app.classList.remove("is-tool-open");
+  toolDock.setAttribute("aria-hidden", "true");
+  $$('[data-tool]').forEach((button) => {
+    button.classList.remove("is-active");
+    button.setAttribute("aria-pressed", "false");
+  });
+  $("#moreButton").setAttribute("aria-expanded", "false");
+}
+
+function selectTool(tool, { toggle = false } = {}) {
+  if (!(tool in toolTitles)) return;
+  if (toggle && activeTool === tool && app.classList.contains("is-tool-open")) {
+    closeToolSheet();
+    return;
+  }
+  activeTool = tool;
+  app.classList.add("is-tool-open");
+  toolDock.setAttribute("aria-hidden", "false");
+  $$('[data-tool]').forEach((button) => {
+    const selected = button.dataset.tool === tool;
+    button.classList.toggle("is-active", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+  $$('[data-panel]').forEach((panel) => { panel.hidden = panel.dataset.panel !== tool; });
+  $("#activeToolTitle").textContent = toolTitles[tool];
+  $("#moreButton").setAttribute("aria-expanded", String(tool === "more"));
+}
+
 function notifyFullscreen(active) {
-  fullscreenButton.setAttribute("aria-pressed", String(active));
-  fullscreenButton.setAttribute("aria-label", active ? "Esci da schermo intero" : "Schermo intero");
-  app.classList.toggle("is-fullscreen", active);
-  postToShell({ type: "GSF_GAME_EDITOR_UI", action: "fullscreen_changed", active });
+  const expanded = Boolean(active);
+  fullscreenButton.setAttribute("aria-pressed", String(expanded));
+  fullscreenButton.setAttribute("aria-label", expanded ? "Esci da schermo intero" : "Schermo intero");
+  app.classList.toggle("is-fullscreen", expanded);
+  app.classList.toggle("is-expanded", expanded);
+  app.classList.toggle("is-mini", !expanded);
+  if (!expanded) closeToolSheet();
+  postToShell({ type: "GSF_GAME_EDITOR_UI", action: "fullscreen_changed", active: expanded });
 }
 
 async function toggleFullscreen() {
@@ -234,7 +280,7 @@ async function toggleFullscreen() {
 async function exitFullscreenForShellClose() {
   fullscreenFallback = false;
   if (document.fullscreenElement === app && typeof document.exitFullscreen === "function") {
-    try { await document.exitFullscreen(); } catch (_error) { /* closing the shell still restores its chrome */ }
+    try { await document.exitFullscreen(); } catch (_error) { /* shell close still restores chrome */ }
   }
   notifyFullscreen(false);
 }
@@ -341,6 +387,7 @@ function renderAiContext() {
     const card = document.createElement("article");
     card.className = "ai-suggestion-card";
     card.dataset.suggestionId = suggestionId;
+
     const copy = document.createElement("div");
     const title = document.createElement("strong");
     const reason = document.createElement("p");
@@ -349,7 +396,8 @@ function renderAiContext() {
     const preview = document.createElement("button");
     const apply = document.createElement("button");
     const revert = document.createElement("button");
-    title.textContent = String(suggestion.label || `Suggerimento ${index + 1}`);
+
+    title.textContent = String(suggestion.label || suggestion.title || `Suggerimento ${index + 1}`);
     reason.textContent = String(suggestion.reason || "Migliora questo momento senza cambiare il contenuto.");
     impact.textContent = String(suggestion.impact || "Mostra l’anteprima prima di applicare.");
     preview.type = "button";
@@ -363,12 +411,15 @@ function renderAiContext() {
     revert.textContent = "Annulla anteprima";
     revert.setAttribute("data-ai-action", "revert");
     revert.disabled = true;
+
     preview.addEventListener("click", () => {
       activeSuggestionId = suggestionId;
       previewState = previewSuggestion(history.value, suggestion);
       renderState(previewState);
       $$('.ai-suggestion-card').forEach((item) => item.classList.toggle("is-previewing", item === card));
-      $$('.ai-suggestion-card [data-ai-action="apply"], .ai-suggestion-card [data-ai-action="revert"]').forEach((button) => { button.disabled = !button.closest(".ai-suggestion-card").classList.contains("is-previewing"); });
+      $$('.ai-suggestion-card [data-ai-action="apply"], .ai-suggestion-card [data-ai-action="revert"]').forEach((button) => {
+        button.disabled = !button.closest(".ai-suggestion-card").classList.contains("is-previewing");
+      });
       setStatus("Anteprima AI · nessuna modifica applicata");
     });
     apply.addEventListener("click", () => {
@@ -385,26 +436,13 @@ function renderAiContext() {
       renderAiContext();
       setStatus("Anteprima annullata", "saved");
     });
+
     copy.append(title, reason, impact);
     actions.className = "ai-suggestion-actions";
     actions.append(preview, apply, revert);
     card.append(copy, actions);
     list.append(card);
   });
-}
-
-function selectTool(tool) {
-  if (!(tool in toolTitles)) return;
-  activeTool = tool;
-  $$('[data-tool]').forEach((button) => {
-    const selected = button.dataset.tool === tool;
-    button.classList.toggle("is-active", selected);
-    button.setAttribute("aria-pressed", String(selected));
-  });
-  $$('[data-panel]').forEach((panel) => { panel.hidden = panel.dataset.panel !== tool; });
-  $("#activeToolTitle").textContent = toolTitles[tool];
-  const showingMore = tool === "more";
-  $("#moreButton").setAttribute("aria-expanded", String(showingMore));
 }
 
 function showMediaUnavailable(message = "Gameplay non disponibile") {
@@ -485,8 +523,16 @@ video.addEventListener("timeupdate", () => {
   }
   renderTransport(state);
 });
-video.addEventListener("play", () => { playButton.textContent = "Ⅱ"; playButton.setAttribute("aria-label", "Pausa"); });
-video.addEventListener("pause", () => { playButton.textContent = "▶"; playButton.setAttribute("aria-label", "Riproduci"); });
+video.addEventListener("play", () => {
+  playButton.textContent = "Ⅱ";
+  playButton.setAttribute("aria-label", "Pausa");
+  app.classList.add("is-playing");
+});
+video.addEventListener("pause", () => {
+  playButton.textContent = "▶";
+  playButton.setAttribute("aria-label", "Riproduci");
+  app.classList.remove("is-playing");
+});
 
 playButton.addEventListener("click", async () => {
   if (!isMediaReady) return;
@@ -549,6 +595,15 @@ $$('[data-frame]').forEach((button) => button.addEventListener("click", () => co
 $$('[data-caption-mode]').forEach((button) => button.addEventListener("click", () => commitPatch({ captionMode: button.dataset.captionMode })));
 $$('[data-audio-mode]').forEach((button) => button.addEventListener("click", () => commitPatch({ audioMode: button.dataset.audioMode })));
 $$('[data-text-color]').forEach((button) => button.addEventListener("click", () => commitPatch({ textColor: button.dataset.textColor })));
+$$('[data-camera-mode]').forEach((button) => button.addEventListener("click", () => {
+  const mode = button.dataset.cameraMode;
+  commitPatch(cameraPresetPatch(mode, history.value), { status: `Camera · ${button.textContent.trim()}` });
+}));
+$$('[data-ai-quick]').forEach((button) => button.addEventListener("click", () => {
+  const patch = gamingQuickActionPatch(button.dataset.aiQuick, history.value);
+  if (!Object.keys(patch).length) return;
+  commitPatch(patch, { status: `Game AI · ${button.textContent.trim()}` });
+}));
 
 for (const [selector, field, transform] of [
   ["#lookSelect", "look", String],
@@ -571,8 +626,10 @@ $("#resetFrameButton").addEventListener("click", () => {
   };
   commitPatch(presets[history.value.framePreset] || presets.free);
 });
-$$('[data-tool]').forEach((button) => button.addEventListener("click", () => selectTool(button.dataset.tool)));
+
+$$('[data-tool]').forEach((button) => button.addEventListener("click", () => selectTool(button.dataset.tool, { toggle: true })));
 $("#moreButton").addEventListener("click", () => selectTool(activeTool === "more" ? "clip" : "more"));
+closeToolSheetButton.addEventListener("click", closeToolSheet);
 $("#retryMediaButton").addEventListener("click", () => loadMedia());
 
 undoButton.addEventListener("click", () => {
@@ -595,6 +652,7 @@ $("#saveDraftButton").addEventListener("click", () => requestEditorAction("save_
 $("#continueButton").addEventListener("click", () => requestEditorAction("continue_to_short"));
 
 fullscreenButton.addEventListener("click", toggleFullscreen);
+enterEditorButton.addEventListener("click", toggleFullscreen);
 document.addEventListener("fullscreenchange", () => {
   const active = document.fullscreenElement === app;
   if (active) fullscreenFallback = false;
@@ -604,6 +662,8 @@ document.addEventListener("fullscreenchange", () => {
 });
 
 previewStage.addEventListener("pointerdown", (event) => {
+  if (!app.classList.contains("is-expanded")) return;
+  if (event.target.closest("button,input,select,.tool-dock,.timeline-card,.transport")) return;
   if (event.pointerType === "mouse" && event.button !== 0) return;
   activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
   try { previewStage.setPointerCapture(event.pointerId); } catch (_error) { /* WebKit can reject capture during rotation */ }
@@ -616,6 +676,7 @@ previewStage.addEventListener("pointermove", (event) => {
   scheduleGesturePreview();
 });
 previewStage.addEventListener("pointerup", (event) => {
+  if (!activePointers.has(event.pointerId)) return;
   if (gestureFrame) {
     cancelAnimationFrame(gestureFrame);
     gestureFrame = 0;
@@ -659,7 +720,6 @@ window.GSFGameEditor2026 = {
   selectTool,
 };
 
-selectTool("clip");
 renderState(history.value);
 showMediaUnavailable("Gameplay in preparazione");
 postToShell({ type: "GSF_GAME_EDITOR_READY" });

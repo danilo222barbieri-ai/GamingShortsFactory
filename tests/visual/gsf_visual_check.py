@@ -103,6 +103,10 @@ def check_mobile_editor(ctx, metrics):
     page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'true'")
     page.locator("#fullscreenButton").click()
     page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'false'")
+    # postMessage is delivered on a later task: wait for the shell signal, not just the DOM.
+    page.wait_for_function(
+        "() => window.__editorMessages.filter(message => message.action === 'fullscreen_changed').length >= 2"
+    )
     fullscreen_signals = page.evaluate(
         "() => window.__editorMessages.filter(message => message.action === 'fullscreen_changed').map(message => message.active)"
     )
@@ -111,6 +115,14 @@ def check_mobile_editor(ctx, metrics):
     page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'true'")
     page.evaluate("() => window.postMessage({type: 'GSF_GAME_EDITOR_SHELL_CLOSE'}, location.origin)")
     page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'false'")
+
+    # V414 deliberately returns to the safe mini-player after shell/fullscreen close.
+    # Re-enter edit mode before exercising direct-manipulation gestures; gestures in
+    # mini mode are intentionally ignored to prevent accidental edits while viewing.
+    page.wait_for_function("() => document.querySelector('#gameEditorApp').classList.contains('is-mini')")
+    page.locator("#enterEditorButton").click()
+    page.wait_for_function("() => document.querySelector('#gameEditorApp').classList.contains('is-expanded')")
+    page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'true'")
 
     page.evaluate(
         """() => {
@@ -149,6 +161,9 @@ def check_mobile_editor(ctx, metrics):
 
     page.locator("#saveDraftButton").click()
     page.locator("#continueButton").click()
+    page.wait_for_function(
+        "() => ['save_draft', 'continue_to_short'].every(action => window.__editorMessages.some(message => message.action === action))"
+    )
     actions = page.evaluate("() => window.__editorMessages.map(message => message.action)")
     assert "save_draft" in actions and "continue_to_short" in actions
     assert not errors, errors
