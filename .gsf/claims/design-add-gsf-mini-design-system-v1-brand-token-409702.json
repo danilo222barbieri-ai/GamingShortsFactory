@@ -1,0 +1,12 @@
+{
+  "branch": "chat/design-add-gsf-mini-design-system-v1-brand-token-409702",
+  "created_at": "2026-10-15T09:08:12+02:00",
+  "id": "design-add-gsf-mini-design-system-v1-brand-token-409702",
+  "owner": "claude-chat",
+  "paths": [
+    "CLAUDE.md",
+    "design/brand/**"
+  ],
+  "scope": "design: add GSF mini design system v1 (brand tokens, wordmark, usage doc)",
+  "state": "active"
+}
