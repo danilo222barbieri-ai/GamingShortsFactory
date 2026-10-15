@@ -2107,6 +2107,24 @@ def _short_delete(sid,short_id):
     print("GSF_SHORT_DELETED",sid,short_id,flush=True)
     return True
 
+def _short_rename(sid,short_id,title):
+    """V415: rename a saved Short in the per-session index (title only)."""
+    sid=_safe_id(sid)
+    short_id=_safe_id(short_id)
+    if not sid or not short_id:
+        return {}
+    rows=_short_list(sid)
+    changed={}
+    for row in rows:
+        if _safe_id((row or {}).get("id",""))!=short_id:
+            continue
+        row["title"]=_v304_clean_title(title,"Short")[:160]
+        changed=dict(row)
+        break
+    if changed:
+        _short_index_save(sid,rows)
+    return changed
+
 def _short_mark_published(sid,short_id,platform):
     sid=_safe_id(sid)
     short_id=_safe_id(short_id)
@@ -4390,7 +4408,8 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 _html(self,404,"Short finale non ancora disponibile.")
             return
-        if clean=="/shorts/file":
+        # V415: /shorts/* is routed to Streamlit by nginx; the Hub uses the /creator-hub/ alias.
+        if clean in ("/shorts/file","/creator-hub/short/file"):
             sid=_social_sid(self)
             short_id=_safe_id((parse_qs(path.query).get("id") or [""])[0])
             row=next((dict(r) for r in _short_list(sid) if _safe_id((r or {}).get("id",""))==short_id),None)
@@ -4957,6 +4976,28 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,200,{"ok":True,"sent":bool(sent)})
             except Exception as exc:
                 _json(self,500,{"ok":False,"error":str(exc)[:180]})
+            return
+
+        # V415_CREATOR_HUB_SHORT_ACTIONS: rename/delete reachable through nginx /creator-hub/ (8502).
+        if path in ("/creator-hub/short/rename","/creator-hub/short/delete"):
+            if not _security_csrf_valid(self,sid):
+                _json(self,403,{"ok":False,"error":"csrf validation failed"})
+                return
+            try:
+                data=_read_json(self,max_bytes=16*1024)
+                data=data if isinstance(data,dict) else {}
+                short_id=_safe_id(data.get("id",""))
+                if path.endswith("/rename"):
+                    row=_short_rename(sid,short_id,data.get("title"))
+                    if not row:
+                        _json(self,404,{"ok":False,"error":"Short non trovato"})
+                    else:
+                        _json(self,200,{"ok":True,"short":{"id":row.get("id"),"title":row.get("title")}})
+                else:
+                    ok=_short_delete(sid,short_id)
+                    _json(self,200 if ok else 404,{"ok":bool(ok),"id":short_id})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
             return
 
         if path=="/shorts/delete":
