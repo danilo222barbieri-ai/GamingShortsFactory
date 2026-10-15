@@ -564,6 +564,18 @@
     {
       "branch": "chat/feat-canonical-mobile-game-editor-2026-with-ai-f-c38434",
       "created_at": "2026-10-15T09:48:54+00:00",
+      "evidence": {
+        "closed_by": "owner-authorized handoff to ai-engines chat after merge",
+        "gate": "success",
+        "gate_main_run": 38741480103,
+        "merge_sha": "74fc1a3259c1f19858c54e09adec4f778411b49e",
+        "pr": 146,
+        "promotion": "bcfe40e32d5165998569e11257e998ae68a0bb5f",
+        "railway_frontend": "baaed85b-58f4-4a87-8cbe-594eaddd9b02 SUCCESS",
+        "railway_worker": "not redeployed (worker marker unchanged)",
+        "ui_verify": "release bcfe40e serves digest c0d117f0, pages byte-identical, Home 200, creator-hub/state 200 + CSRF",
+        "ui_verify_run": 38742178354
+      },
       "id": "feat-canonical-mobile-game-editor-2026-with-ai-f-c38434",
       "owner": "chat/feat-canonical-mobile-game-editor-2026-with-ai-f-c38434",
       "paths": [
@@ -586,7 +598,7 @@
         "web/runtime_smoke_v411.py"
       ],
       "scope": "feat: canonical mobile Game Editor 2026 with AI, fullscreen gestures, persistence, and publication gates",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/stability-home-hub-parent-observers-freeze-probe-21f49e",
