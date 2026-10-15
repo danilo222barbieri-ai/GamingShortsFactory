@@ -7,22 +7,24 @@
 
 - **Repository:** `danilo222barbieri-ai/GamingShortsFactory`
 - **Production branch:** `main`
-- **Current product baseline:** **V411 — consolidated V403–V410 production queue**
+- **Current product baseline:** **V411 UI on the canonical UI pipeline** (repo files == served files; see `docs/architecture/gsf-canonical-ui.md`)
 - **Cross-chat orchestration:** **LIVE**
-- **Last fully tested main source commit:** `e89541f42cca0412465bf9629bbf0c0f13f5ee4f`
-- **Last runtime promotion commit:** `e2f1de18e634d4308b1255b2a2e83396107522cd` — `deploy: promote tested e89541f42cca [skip ci]`
+- **Last fully tested main source commit:** `fb0edf871c8fc178c7a4381ff1e15efe7c8730ba` (PR `#136`)
+- **Last runtime promotion commit:** `460102f077d8465a345fac45ca43284c30d3bfd6` — `deploy: promote tested fb0edf871c8f [skip ci]`
+- **Served canonical UI digest:** `fbe1875dbccfc915d12148f1b57ef833a0f41c1d0b77eac2dc0c4756641eb1c7` (`/healthz` → `ui_digest`)
 - **Current `main` HEAD:** always query GitHub live; coordination/status-only commits may advance `main` without changing production.
 
-## Production state — verified 2026-10-14 20:32 UTC
+## Production state — verified 2026-10-15 08:15 UTC
 
 ### Frontend
 
 - Railway service: `gaming-shorts-factory-v79`
 - Service ID: `89ae81ec-54d7-4f22-98f4-c88d6361a6a2`
 - Environment: `production` (`5cb868d5-9936-4ff0-be2d-ef42be7fe0ec`)
-- Verified deployment: `c348c7d9-c6f4-48e3-b469-1ad9638c49f9`
-- Status: **SUCCESS / Online**
-- Promotion commit: `e2f1de18e634d4308b1255b2a2e83396107522cd`
+- Verified deployment: `2df871ae-527d-471f-b14c-95fec3d51082`
+- Status: **SUCCESS / Online** — startup log `GSF UI manifest verify PASS digest=fbe1875d… files=571`
+- Promotion commit: `460102f077d8465a345fac45ca43284c30d3bfd6`
+- Start command `sh /app/web/start_web.sh` = canonical startup (verify manifest + launch; no migrations)
 - Healthcheck: `/healthz`
 - Railway deploy trigger: only changes to `.railway/frontend-deploy.txt`
 
@@ -30,9 +32,9 @@
 
 - Railway service: `gsf-ai-worker`
 - Service ID: `8cd8b98c-43b7-4c3f-bf9a-9c0968286ada`
-- Verified deployment: `ba536c6a-9544-42d6-9482-4ff0ba0d50d4`
+- Verified deployment: `31b06ef0-a4c1-49c1-95df-8f0b0b7d88f7`
 - State: **SUCCESS** — the service may return to expected `SLEEPING` after idle because sleep mode is enabled
-- Worker baseline commit: `e89541f42cca0412465bf9629bbf0c0f13f5ee4f`
+- Worker baseline commit: `fb0edf871c8fc178c7a4381ff1e15efe7c8730ba`
 - Healthcheck: `/health` when awake
 - Railway deploy trigger: only changes to `.railway/worker-deploy.txt`
 
@@ -171,6 +173,14 @@ No intentional destructive production rollback test was performed. Rollback exec
 - CI also applied `scripts/apply_v403_game_editor.py` to a disposable copy of the then-current `app.py` and successfully Python-compiled the fully patched app.
 - **Runtime UI is not yet integrated into `app.py`.** The active `alive-core-v405-b6f2a1` claim currently owns `app.py`; forcing an overlap would violate the repository isolation protocol.
 - The deterministic V403 app patch is staged on `main` and can be applied after that `app.py` claim is completed/released, then must pass the Production Gate and Railway verification before any LIVE claim.
+
+### Canonical UI pipeline — 2026-10-15 (PR #136)
+
+- **Root cause of "new in repo, old online":** the served UI was not in the repository. `app.py` was never copied into the image; the real app was generated from the V77 payload through 94 intermediate versions. `test_v269_creator_hub_recovery.py` ran `materialize_runtime_patches.sh`, which replayed the V285–V373 chain from `start_web.sh` over old component bases (Creator Hub 22 writes, Home 12, Editor 10 incl. nested V389–V396, app 22), then V403/V410/V411 patched again; some patches rewrote other patch scripts. Railway's start command ran the repo `start_web.sh` that still held the chain. Deploy trigger ignored `gsf_core/` and root `gsf_*.py`.
+- **Fix:** canonical files committed byte-identical to production (proved by the `legacy-equivalence` job with a real Docker build of the old image); Dockerfile copies 1:1; `start_web.sh` verifies `tools/gsf_ui_manifest.py` and launches; `materialize_runtime_patches.sh` retired (fails closed); `/healthz` exposes `ui_digest` + `release`; gate checks image == repo, served pages == repo bytes, no runtime rewrite; deploy trigger extended; V397/V410/V403 workflows no longer re-apply legacy patches.
+- **Guard:** `tests/test_canonical_ui_pipeline.py` (7 checks; mutation-tested) fails CI if a legacy migration returns to build/startup or an old UI is re-injected; also keeps V286/V302/V366 Game Bar + Hub-state and V370 navigation contracts on canonical files.
+- **Evidence:** PR head `beed9d0` 11/11 checks success; main gate success; promotion `460102f`; frontend `2df871ae` SUCCESS, worker `31b06ef0` SUCCESS; public `/healthz` ok with `ui_digest` == repo digest; `/creator-hub/state` ok + CSRF token.
+- **Unverified / follow-up:** `GSF Production UI Verify` (post-deploy byte comparison from the public domain) did not start — GitHub reported failed payment / spending limit for Actions. No real-browser visual pass on Safari was performed. Items 9–10 of the owner brief (Safari freeze audit, deprecated-component cleanup) not yet done. Edit mobile screens directly in the canonical files; never add a build/startup patch.
 
 ### Claims registry repair + CLAUDE.md — 2026-10-15
 
