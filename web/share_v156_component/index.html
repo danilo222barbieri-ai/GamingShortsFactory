@@ -3,745 +3,485 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Crea Short</title>
+<!-- V413_CREA_SHORT — new publish page: texts + hashtags, multi-publish, share, Dropbox. -->
 <style>
 :root{
-  --ink:#0D2A66;
-  --soft:#7185A6;
-  --line:rgba(143,181,216,.26);
-  --blue:#63B8F3;
-  --blueSoft:#D8EEFF;
-  --mint:#BFEFD4;
-  --mintInk:#0B8A62;
-  --yellow:#FFE39A;
-  --yellowInk:#D68000;
-  --glass:rgba(255,255,255,.88);
+  --gsf-primary:#27AEF3;--gsf-primary-light:#79D2FF;--gsf-cyan:#53E0EA;--gsf-ai:#9D82FF;
+  --gsf-short:#5ED6A0;--gsf-warning:#FFD84D;--gsf-danger:#FF6673;
+  --gsf-bg-soft:#EEF9FF;--gsf-surface:#FFFFFF;--gsf-line:#D9EFFB;--gsf-ink:#10283D;--gsf-muted:#6D8497;
+  --r-s:13px;--r-m:18px;--r-l:28px;--r-pill:999px;
+  --font:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --shadow:0 12px 32px rgba(16,40,61,.07);
+  --ease:cubic-bezier(.2,.8,.2,1);
 }
 *{box-sizing:border-box}
-html,body{
-  margin:0;width:100%;height:100%;overflow:hidden;background:transparent;
-  color:var(--ink);
-  font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-}
-button{font:inherit}
-#share{
-  width:100%;height:100%;overflow:auto;padding:18px 20px 16px;
-  background:
-    radial-gradient(circle at 8% 5%,rgba(126,214,255,.23),transparent 26%),
-    radial-gradient(circle at 92% 7%,rgba(127,236,197,.20),transparent 27%),
-    linear-gradient(180deg,#FCFEFF 0%,#F8FCFF 57%,#F5FBFF 100%);
-}
-.topline{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:2px 2px 13px}
-.titleWrap{display:flex;align-items:center;gap:13px;min-width:0}
-.titleIcon{
-  width:50px;height:50px;border-radius:18px;display:grid;place-items:center;flex:0 0 auto;
-  color:#2D8FE5;background:linear-gradient(145deg,#E7F7FF,#D5F1FF);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.92),0 10px 28px rgba(76,155,216,.14);
-}
-.titleIcon svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:880;letter-spacing:-.035em}
-.subtitle{margin:6px 0 0;color:var(--soft);font-size:12px;font-weight:650}
-.readyPill{
-  flex:0 0 auto;display:flex;align-items:center;gap:9px;max-width:300px;
-  padding:10px 13px;border:1px solid rgba(128,182,219,.24);border-radius:18px;
-  background:rgba(255,255,255,.80);box-shadow:0 9px 24px rgba(66,111,150,.07);
-  color:#66809D;font-size:9px;font-weight:800;
-}
-.readyPill .dot{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;background:#E6F5FF;color:#4B9DE2;font-size:13px}
-.readyPill.okay{color:#237A5A;background:rgba(246,255,251,.90)}
-.readyPill.okay .dot{background:#DDF8EB;color:#14966A}
+html,body{margin:0;height:100%;background:var(--gsf-bg-soft);color:var(--gsf-ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+body{overflow-y:auto;-webkit-overflow-scrolling:touch}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:disabled{cursor:not-allowed;opacity:.45}
+:focus-visible{outline:3px solid var(--gsf-primary-light);outline-offset:2px}
+[hidden]{display:none!important}
 
-.mural{
-  position:absolute;z-index:4;pointer-events:none;color:#647FA9;
-  font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive;
-  font-weight:600;line-height:1.05;letter-spacing:.01em;text-align:center;
-}
-#muralSocial{left:27px;top:102px;width:210px;font-size:18px;transform:rotate(-4deg)}
-#muralAction{right:32px;top:108px;width:220px;font-size:16px;transform:rotate(4deg)}
-.muralText{display:block;transition:opacity .44s ease,filter .44s ease,transform .44s ease}
-.muralText.out{opacity:0;filter:blur(7px);transform:translateY(-8px) scale(.93)}
-@keyframes socialWrite{
-  0%{opacity:0;filter:blur(8px);transform:translateY(10px) scale(.91);clip-path:inset(0 95% 0 0)}
-  35%{opacity:.65;filter:blur(3px);clip-path:inset(0 52% 0 0)}
-  70%{opacity:1;filter:blur(.5px);transform:translateY(-2px) scale(1.02);clip-path:inset(0 10% 0 0)}
-  100%{opacity:1;filter:blur(0);transform:none;clip-path:inset(0 0 0 0)}
-}
-.muralText.in{animation:socialWrite 1.05s cubic-bezier(.18,.72,.2,1) 1}
+#crea413{max-width:1080px;margin:0 auto;padding:16px 16px 112px;display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.eyebrow{margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--gsf-primary)}
+h1{margin:0;font-size:clamp(22px,5.6vw,30px);line-height:1.05;font-weight:800;letter-spacing:-.01em}
+.pill{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:var(--r-pill);background:var(--gsf-surface);border:1px solid var(--gsf-line);font-size:12px;font-weight:700;color:var(--gsf-muted);white-space:nowrap}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--gsf-warning)}
+.pill.ok i{background:var(--gsf-short)}
 
-.section{
-  position:relative;z-index:2;border:1px solid rgba(143,181,216,.24);border-radius:26px;
-  background:rgba(255,255,255,.78);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
-  box-shadow:0 16px 42px rgba(61,104,145,.08),inset 0 1px 0 rgba(255,255,255,.96);
-  padding:14px;
-}
-.section + .section{margin-top:12px}
-.sectionHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 11px}
-.sectionTitle{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:900}
-.step{
-  width:27px;height:27px;border-radius:10px;display:grid;place-items:center;
-  background:#DDEEFF;color:#1B73D1;font-weight:900;font-size:12px;
-}
-.quality{display:flex;align-items:center;gap:7px;font-size:8px;font-weight:850;color:#66809D}
-.quality strong{color:#168B65;background:#DDF8EB;padding:5px 8px;border-radius:999px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.main{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0}
+.card{background:var(--gsf-surface);border:1px solid var(--gsf-line);border-radius:var(--r-l);padding:16px;box-shadow:var(--shadow)}
+.card h2{margin:0 0 12px;font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gsf-muted);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card h2 small{letter-spacing:0;text-transform:none;font-weight:700;font-size:12px}
 
-.socials{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.card{
-  min-width:0;padding:13px;border-radius:21px;border:1px solid rgba(144,181,214,.23);
-  background:rgba(255,255,255,.91);
-  box-shadow:0 9px 26px rgba(65,105,145,.07),inset 0 1px 0 #fff;
-  display:flex;flex-direction:column;min-height:190px;
-  transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;
-}
-.card:hover,.card:focus-within{transform:translateY(-3px);border-color:rgba(107,171,218,.38);box-shadow:0 15px 32px rgba(65,105,145,.11),inset 0 1px 0 #fff}
-.cardTop{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.logo{
-  width:42px;height:42px;border-radius:14px;display:grid;place-items:center;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.72);
-}
-.logo svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.logo.yt{background:#FFE7E7;color:#FF0033}
-.logo.tt{background:#EEF2F6;color:#101820}
-.logo.ig{background:linear-gradient(145deg,#FFE4F1,#EEE3FF);color:#C13584}
-.logo.fb{background:#E2EEFF;color:#1877F2}
-.logo.yt svg path:last-child{fill:currentColor;stroke:none}
-.connected{white-space:nowrap;font-size:7.5px;font-weight:850;color:#8294AA;padding:5px 7px;border-radius:999px;background:#F2F6FA}
-.connected.on{color:#168B65;background:#DDF8EB}
-.card h3{margin:10px 0 4px;font-size:14px;font-weight:900;letter-spacing:-.02em}
-.card p{margin:0;color:var(--soft);font-size:9px;line-height:1.4;min-height:38px}
-.cardHint{
-  margin-top:auto;padding:9px;border-radius:13px;background:linear-gradient(145deg,#F2FAFF,#F6FCFA);
-  color:#6B83A0;font-size:8px;font-weight:750;line-height:1.3;border:1px solid rgba(148,190,217,.17)
-}
-.open{
-  width:100%;margin-top:9px;border:0;border-radius:13px;padding:9px 10px;cursor:pointer;
-  background:linear-gradient(135deg,#7BCBFA,#4EA9F4);color:white;font-size:9px;font-weight:900;
-  box-shadow:0 8px 20px rgba(69,160,225,.18)
-}
-.open.connect{background:#EAF5FF;color:#52769B;box-shadow:none}
+.previewCard{padding:12px;display:grid;gap:12px;justify-items:center}
+.stage{position:relative;width:min(100%,240px);aspect-ratio:9/16;max-height:46vh;border-radius:var(--r-m);overflow:hidden;background:linear-gradient(160deg,#E2F5FF,#F4FCFF);display:grid;place-items:center}
+.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.stage .wait{padding:24px;text-align:center;color:var(--gsf-muted);font-size:13px;font-weight:700;line-height:1.35}
+.spinner{width:28px;height:28px;margin:0 auto 12px;border-radius:50%;border:3px solid var(--gsf-line);border-top-color:var(--gsf-primary);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.meta{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.chipInfo{height:24px;padding:0 10px;border-radius:var(--r-pill);background:var(--gsf-bg-soft);color:var(--gsf-muted);font-size:11px;font-weight:700;display:inline-flex;align-items:center}
+.quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
+.quick .btn{padding:0 8px;font-size:13px;white-space:nowrap}
 
-.downloadRow{display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px}
-.downloadTitle{display:flex;align-items:center;gap:10px}
-.downloadTitle h2{margin:0;font-size:16px;font-weight:900}
-.downloadTitle p{margin:3px 0 0;color:var(--soft);font-size:9px}
-.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
-.chip{padding:5px 7px;border-radius:999px;background:#EDF6FF;color:#6984A2;font-size:7px;font-weight:850}
-.actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
-.downloadBtn{
-  border:0;border-radius:16px;padding:13px 20px;cursor:pointer;color:white;font-size:11px;font-weight:900;
-  background:linear-gradient(135deg,#79D7FF,#439FF5);box-shadow:0 10px 26px rgba(69,157,223,.22)
-}
-.downloadBtn:disabled{opacity:.45;cursor:not-allowed}
-.secondary{
-  border:1px solid rgba(143,181,214,.24);border-radius:14px;padding:11px 13px;background:#fff;color:#426A93;
-  font-size:9px;font-weight:850;cursor:pointer
-}
-.secondary[disabled]{opacity:.42;cursor:default}
+.btn{min-height:44px;padding:0 16px;border-radius:var(--r-s);border:1px solid var(--gsf-line);background:var(--gsf-surface);font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .18s var(--ease),background .18s var(--ease),border-color .18s var(--ease)}
+.btn:not(:disabled):active{transform:scale(.97)}
+.btn:not(:disabled):hover{border-color:var(--gsf-primary-light)}
+.btn.primary{background:var(--gsf-primary);border-color:var(--gsf-primary);color:#fff}
+.btn svg{width:18px;height:18px;flex:0 0 18px}
 
-.toast{
-  position:fixed;left:50%;bottom:14px;transform:translate(-50%,10px);opacity:0;pointer-events:none;
-  padding:8px 12px;border-radius:999px;background:rgba(18,44,75,.86);color:white;font-size:9px;font-weight:800;
-  transition:.2s ease;z-index:10
-}
+.tabs{display:flex;gap:4px;padding:4px;margin:0 0 12px;border-radius:var(--r-pill);background:var(--gsf-bg-soft);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1 0 auto;position:relative;min-height:34px;padding:0 12px;border:0;border-radius:var(--r-pill);background:transparent;font-size:13px;font-weight:700;color:var(--gsf-muted)}
+.tab[aria-selected="true"]{background:var(--gsf-surface);color:var(--gsf-ink);box-shadow:0 2px 8px rgba(16,40,61,.08)}
+.tab .dot{position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--gsf-ai);display:none}
+.tab.edited .dot{display:block}
+.hint{margin:-4px 0 12px;font-size:12px;line-height:1.4;color:var(--gsf-muted)}
+.hint button{border:0;background:none;padding:0;color:var(--gsf-primary);font-weight:700;font-size:12px}
+.field{display:grid;gap:6px;margin-bottom:12px}
+.field label{display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:700;color:var(--gsf-muted)}
+.field label .count.over{color:var(--gsf-danger)}
+.input{width:100%;min-height:44px;padding:12px;border-radius:var(--r-s);border:1px solid var(--gsf-line);background:#FBFEFF;font-size:16px;line-height:1.35;outline:none;transition:border-color .18s var(--ease),box-shadow .18s var(--ease)}
+textarea.input{min-height:88px;resize:vertical}
+.input:focus{border-color:var(--gsf-primary);box-shadow:0 0 0 4px rgba(39,174,243,.14)}
+.tagBox{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:48px;padding:8px;border-radius:var(--r-s);border:1px solid var(--gsf-line);background:#FBFEFF}
+.tagBox:focus-within{border-color:var(--gsf-primary);box-shadow:0 0 0 4px rgba(39,174,243,.14)}
+.tagBox input{flex:1 1 120px;min-width:100px;border:0;outline:0;background:transparent;font-size:16px;padding:4px}
+.tag{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 4px 0 10px;border-radius:var(--r-pill);background:rgba(39,174,243,.12);color:#126f9f;font-size:13px;font-weight:700}
+.tag button{width:20px;height:20px;border:0;border-radius:50%;background:transparent;color:inherit;font-size:14px;line-height:1}
+.suggest{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.suggest button{height:28px;padding:0 10px;border-radius:var(--r-pill);border:1px dashed var(--gsf-line);background:var(--gsf-surface);font-size:12px;font-weight:700;color:var(--gsf-muted)}
+.suggest button:hover{border-color:var(--gsf-primary-light);color:var(--gsf-primary)}
+
+.platforms{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.plat{position:relative;display:grid;grid-template-columns:36px 1fr;align-items:center;gap:10px;min-height:64px;padding:10px 28px 10px 10px;border-radius:var(--r-m);border:1.5px solid var(--gsf-line);background:var(--gsf-surface);text-align:left;transition:border-color .18s var(--ease),background .18s var(--ease)}
+.plat[aria-pressed="true"]{border-color:var(--gsf-primary);background:#F3FBFF}
+.logo{display:grid;place-items:center;color:#fff}
+.plat .logo{width:36px;height:36px;border-radius:12px}
+.plat .logo svg{width:20px;height:20px}
+.plat b{display:block;font-size:14px}
+.plat small{display:block;font-size:11px;font-weight:700;color:var(--gsf-muted);margin-top:2px}
+.plat small.on{color:#2f9e6f}
+.plat .check{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--gsf-line);display:grid;place-items:center;font-size:12px;color:#fff}
+.plat[aria-pressed="true"] .check{background:var(--gsf-primary);border-color:var(--gsf-primary)}
+.connect{display:inline-block;margin-top:4px;color:var(--gsf-primary);font-size:12px;font-weight:800}
+.yt{background:#FF0000}.tt{background:#010101}.ig{background:linear-gradient(45deg,#F77737,#E1306C,#833AB4)}.fb{background:#1877F2}
+.wa{background:#25D366}.tg{background:#229ED9}.xx{background:#010101}.em{background:var(--gsf-muted)}.ln{background:var(--gsf-primary)}.db{background:#0061FF}.mo{background:var(--gsf-ai)}
+
+.seg{display:flex;gap:4px;padding:4px;margin-top:12px;border-radius:var(--r-pill);background:var(--gsf-bg-soft)}
+.seg button{flex:1;min-height:34px;border:0;border-radius:var(--r-pill);background:transparent;font-size:12px;font-weight:700;color:var(--gsf-muted)}
+.seg button[aria-checked="true"]{background:var(--gsf-surface);color:var(--gsf-ink);box-shadow:0 2px 8px rgba(16,40,61,.08)}
+
+.results{display:grid;gap:8px;margin-top:12px}
+.results:empty{display:none}
+.row{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;padding:10px;border-radius:var(--r-s);background:var(--gsf-bg-soft)}
+.row .logo{width:28px;height:28px;border-radius:9px}
+.row .logo svg{width:16px;height:16px}
+.row b{font-size:13px;display:block}
+.row small{font-size:12px;color:var(--gsf-muted);display:block;line-height:1.3}
+.row small.err{color:#c9374a}
+.row a,.row button{height:32px;padding:0 12px;border-radius:var(--r-pill);border:1px solid var(--gsf-line);background:var(--gsf-surface);font-size:12px;font-weight:800;color:var(--gsf-primary);text-decoration:none;display:inline-flex;align-items:center;white-space:nowrap}
+.bar{height:4px;border-radius:2px;background:var(--gsf-line);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:40%;background:var(--gsf-primary);border-radius:2px;animation:slide 1.2s var(--ease) infinite}
+@keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+
+.shareGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.shareBtn{display:grid;justify-items:center;gap:6px;padding:12px 4px;border-radius:var(--r-m);border:1px solid var(--gsf-line);background:var(--gsf-surface);font-size:12px;font-weight:700;transition:transform .18s var(--ease),border-color .18s var(--ease)}
+.shareBtn:not(:disabled):hover{border-color:var(--gsf-primary-light)}
+.shareBtn:not(:disabled):active{transform:scale(.96)}
+.shareBtn .logo{width:40px;height:40px;border-radius:14px}
+.shareBtn .logo svg{width:20px;height:20px}
+.note{margin:12px 0 0;font-size:12px;line-height:1.4;color:var(--gsf-muted)}
+
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:20;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(238,249,255,0),rgba(238,249,255,.96) 32%)}
+.dock .inner{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:8px}
+.dock .btn.primary{min-height:52px;font-size:16px;font-weight:800;border-radius:var(--r-m);box-shadow:0 10px 24px rgba(39,174,243,.32)}
+.summary{display:none}
+
+.toast{position:fixed;left:50%;bottom:88px;z-index:30;transform:translate(-50%,16px);max-width:calc(100% - 32px);padding:12px 16px;border-radius:var(--r-s);background:var(--gsf-ink);color:#fff;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s var(--ease),transform .2s var(--ease)}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
-
-  #share{padding:14px 12px 12px}
-  .topline{margin-bottom:11px}
-  .readyPill{display:none}
-  .socials{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .card{min-height:166px}
-  .downloadRow{grid-template-columns:1fr}
-  .actions{justify-content:flex-start}
-  #muralSocial{left:16px;top:82px;width:160px;font-size:14px}
-  #muralAction{right:16px;top:82px;width:160px;font-size:13px}
-
-
-  #share{padding:11px 9px 12px}
-  .titleIcon{width:42px;height:42px;border-radius:15px}
-  h1{font-size:21px}
-  .subtitle{font-size:10px;max-width:250px}
-  .section{border-radius:20px;padding:10px}
-  .sectionHead{margin-bottom:8px}
-  .sectionTitle{font-size:12px}
-  .quality{display:none}
-  .socials{gap:7px}
-  .card{padding:10px;border-radius:17px;min-height:150px}
-  .logo{width:36px;height:36px;border-radius:12px}
-  .logo svg{width:21px;height:21px}
-  .card h3{font-size:12.3px}
-  .card p{font-size:8.8px;min-height:31px}
-  .cardHint{display:none}
-  .open{font-size:8.8px;padding:8px}
-  .downloadBtn{width:100%}
-  .actions{display:grid;grid-template-columns:1fr 1fr;width:100%}
-  .actions .downloadBtn{grid-column:1/-1}
-  #muralSocial{position:relative;left:auto;top:auto;width:100%;margin:2px 0 7px;font-size:12px;transform:rotate(-2deg)}
-  #muralAction{display:none}
-
-
-/* V219_1 V161 SHARE COMPATIBILITY — historical literal contract only.
-   This comment is intentionally inert; the real V219 Social stays compact.
-   #share{width:100%;height:100dvh;max-width:1920px
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* V289 SHARE FINAL — playerless GSF publishing/download surface */
-#share.gsfFinalSurface{
-  position:relative;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  min-height:100%;
-  padding:clamp(16px,2.1vh,24px) clamp(16px,2.25vw,30px) clamp(16px,2vh,22px)!important;
-  background:
-    radial-gradient(circle at 10% 5%,rgba(104,207,255,.19),transparent 27%),
-    radial-gradient(circle at 91% 8%,rgba(115,232,192,.17),transparent 27%),
-    radial-gradient(circle at 52% 92%,rgba(191,225,255,.14),transparent 31%),
-    linear-gradient(180deg,#FEFFFF 0%,#FAFDFF 55%,#F5FBFF 100%)!important;
+@media (min-width:761px){
+  #crea413{padding:24px 24px 120px}
+  .layout{grid-template-columns:300px minmax(0,1fr);align-items:start}
+  .side{position:sticky;top:16px}
+  .stage{width:100%;max-height:none}
+  .platforms{grid-template-columns:repeat(4,1fr)}
+  .shareGrid{grid-template-columns:repeat(8,1fr)}
+  .dock{padding-left:24px;padding-right:24px}
+  .dock .inner{max-width:1032px;grid-template-columns:1fr minmax(280px,360px)}
+  .summary{display:block;align-self:center;font-size:13px;font-weight:700;color:var(--gsf-muted)}
 }
-#share.gsfFinalSurface .topline{
-  position:relative;
-  z-index:3;
-  margin:0 2px 2px!important;
-  align-items:center;
-}
-#share.gsfFinalSurface .titleWrap{gap:15px}
-#share.gsfFinalSurface .titleIcon{
-  width:58px;height:58px;border-radius:20px;
-  background:linear-gradient(145deg,#E9F8FF,#DDF6EE)!important;
-  color:#318DDC;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.96),0 12px 30px rgba(66,145,204,.13)!important;
-}
-#share.gsfFinalSurface h1{
-  color:#0D2A66;
-  font-size:clamp(30px,2.7vw,43px)!important;
-  font-weight:900!important;
-  letter-spacing:-.045em!important;
-}
-#share.gsfFinalSurface .subtitle{
-  color:#7488A6!important;
-  font-size:clamp(12px,1vw,15px)!important;
-  font-weight:700!important;
-}
-#share.gsfFinalSurface .readyPill{
-  min-width:240px;
-  justify-content:flex-start;
-  border-radius:20px!important;
-  padding:11px 14px!important;
-  background:rgba(255,255,255,.88)!important;
-  border:1px solid rgba(143,181,216,.22)!important;
-  box-shadow:0 10px 26px rgba(62,107,147,.07)!important;
-}
-#share.gsfFinalSurface .section{
-  border:1px solid rgba(143,181,216,.22)!important;
-  border-radius:27px!important;
-  background:rgba(255,255,255,.82)!important;
-  box-shadow:0 15px 40px rgba(61,104,145,.075),inset 0 1px 0 rgba(255,255,255,.98)!important;
-  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
-}
-#share.gsfFinalSurface .section+.section{margin-top:0!important}
-#share.gsfFinalSurface .sectionHead{margin-bottom:12px!important}
-#share.gsfFinalSurface .sectionTitle{font-size:clamp(16px,1.25vw,20px)!important;color:#173873}
-#share.gsfFinalSurface .step{
-  width:31px;height:31px;border-radius:11px;
-  background:linear-gradient(145deg,#E1F2FF,#E4F8EF)!important;
-  color:#2277C6!important;
-  box-shadow:inset 0 0 0 1px rgba(111,185,226,.12);
-}
-#share.gsfFinalSurface .quality strong{
-  background:linear-gradient(145deg,#DDF7EA,#E8FBF3)!important;
-  color:#168B65!important;
-}
-#share.gsfFinalSurface .socials{gap:clamp(10px,1vw,15px)!important}
-#share.gsfFinalSurface .card{
-  min-height:210px!important;
-  padding:16px!important;
-  border-radius:22px!important;
-  background:linear-gradient(155deg,rgba(255,255,255,.98),rgba(248,252,255,.93))!important;
-  border:1px solid rgba(144,181,214,.20)!important;
-  box-shadow:0 8px 24px rgba(65,105,145,.055),inset 0 1px 0 #fff!important;
-}
-#share.gsfFinalSurface .card:hover,#share.gsfFinalSurface .card:focus-within{
-  transform:translateY(-3px)!important;
-  border-color:rgba(99,184,243,.36)!important;
-  box-shadow:0 16px 32px rgba(65,105,145,.095),inset 0 1px 0 #fff!important;
-}
-#share.gsfFinalSurface .logo{width:46px;height:46px!important}
-#share.gsfFinalSurface .card h3{font-size:clamp(15px,1.2vw,19px)!important;margin-top:12px!important}
-#share.gsfFinalSurface .card p{font-size:clamp(10.5px,.87vw,13px)!important;line-height:1.35!important}
-#share.gsfFinalSurface .cardHint{font-size:clamp(9px,.72vw,11px)!important}
-#share.gsfFinalSurface .open{
-  min-height:40px;
-  border-radius:14px!important;
-  background:linear-gradient(135deg,#78D1FA,#50A8F3)!important;
-  font-size:clamp(10px,.82vw,12px)!important;
-}
-#share.gsfFinalSurface .open.connect{background:#EAF5FF!important;color:#52769B!important}
-#share.gsfFinalSurface .downloadRow{
-  grid-template-columns:minmax(270px,1fr) minmax(420px,auto)!important;
-  gap:18px!important;
-}
-#share.gsfFinalSurface .downloadTitle h2{font-size:clamp(18px,1.45vw,23px)!important;color:#173873}
-#share.gsfFinalSurface .downloadTitle p{font-size:clamp(10px,.85vw,13px)!important}
-#share.gsfFinalSurface .chips{gap:6px!important}
-#share.gsfFinalSurface .chip{
-  padding:6px 9px!important;
-  background:#EDF6FF!important;
-  border:1px solid rgba(130,183,219,.12);
-  color:#6884A4!important;
-  font-size:clamp(8px,.65vw,10px)!important;
-}
-#share.gsfFinalSurface .qualityMax{
-  background:linear-gradient(145deg,#DDF8EB,#E8FBF3)!important;
-  color:#168B65!important;
-}
-#share.gsfFinalSurface .actions{gap:8px!important}
-#share.gsfFinalSurface .downloadBtn{
-  min-height:48px;
-  padding:13px 24px!important;
-  border-radius:16px!important;
-  background:linear-gradient(135deg,#79D7FF,#439FF5)!important;
-  box-shadow:0 11px 28px rgba(69,157,223,.22)!important;
-  font-size:clamp(12px,.95vw,14px)!important;
-}
-#share.gsfFinalSurface .secondary{
-  min-height:44px;
-  background:rgba(255,255,255,.94)!important;
-  border-color:rgba(143,181,214,.22)!important;
-  font-size:clamp(9.5px,.75vw,11px)!important;
-}
-/* The final surface intentionally contains no video/player: creation is already complete. */
-
-/* V289 SHARE MOBILE */
-
-  #share.gsfFinalSurface{
-    overflow:auto!important;
-    gap:9px;
-    padding:12px 9px 86px!important;
-  }
-  #share.gsfFinalSurface .topline{align-items:flex-start!important;margin-bottom:1px!important}
-  #share.gsfFinalSurface .titleWrap{gap:10px!important}
-  #share.gsfFinalSurface .titleIcon{width:44px;height:44px;border-radius:15px}
-  #share.gsfFinalSurface h1{font-size:25px!important;line-height:1.02!important}
-  #share.gsfFinalSurface .subtitle{font-size:11.5px!important;max-width:285px}
-  #share.gsfFinalSurface .readyPill{display:none!important}
-  #share.gsfFinalSurface .section{padding:11px!important;border-radius:21px!important}
-  #share.gsfFinalSurface .sectionHead{margin-bottom:9px!important}
-  #share.gsfFinalSurface .sectionTitle{font-size:14px!important}
-  #share.gsfFinalSurface .step{width:28px;height:28px;border-radius:10px}
-  #share.gsfFinalSurface .quality{display:none!important}
-  #share.gsfFinalSurface .socials{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
-  #share.gsfFinalSurface .card{min-height:164px!important;padding:11px!important;border-radius:18px!important}
-  #share.gsfFinalSurface .logo{width:38px;height:38px!important}
-  #share.gsfFinalSurface .connected{font-size:8.6px!important;padding:4px 6px!important}
-  #share.gsfFinalSurface .card h3{font-size:13.5px!important;margin:9px 0 4px!important}
-  #share.gsfFinalSurface .card p{font-size:9.8px!important;min-height:32px!important}
-  #share.gsfFinalSurface .cardHint{display:none!important}
-  #share.gsfFinalSurface .open{min-height:36px;font-size:9.6px!important}
-  #share.gsfFinalSurface .downloadRow{grid-template-columns:1fr!important;gap:10px!important}
-  #share.gsfFinalSurface .downloadTitle h2{font-size:17.5px!important}
-  #share.gsfFinalSurface .downloadTitle p{font-size:10.5px!important}
-  #share.gsfFinalSurface .actions{display:grid!important;grid-template-columns:1fr 1fr!important;width:100%}
-  #share.gsfFinalSurface .downloadBtn{grid-column:1/-1!important;width:100%;min-height:49px;font-size:12.5px!important}
-  #share.gsfFinalSurface .secondary{width:100%;min-height:40px;font-size:9.8px!important}
-  #share.gsfFinalSurface #muralSocial{font-size:12px!important}
-
-
-  #share.gsfFinalSurface .socials{grid-template-columns:1fr!important}
-  #share.gsfFinalSurface .card{min-height:140px!important}
-
-/* END V289 SHARE FINAL */
-
-
-/* V295 INTERNAL PAGE SYSTEM — SHARE */
-#share.gsfFinalSurface .card,
-#share.gsfFinalSurface .open,
-#share.gsfFinalSurface .downloadBtn,
-#share.gsfFinalSurface .secondary{
-  -webkit-tap-highlight-color:transparent;
-  touch-action:manipulation;
-}
-
-
-
-
-  #share.gsfFinalSurface{
-    width:100%!important;
-    height:100dvh!important;
-    min-height:0!important;
-    overflow:auto!important;
-    overscroll-behavior:contain!important;
-    -webkit-overflow-scrolling:touch!important;
-    gap:8px!important;
-    padding:max(9px,env(safe-area-inset-top)) 8px max(82px,calc(env(safe-area-inset-bottom) + 70px))!important;
-  }
-  #share.gsfFinalSurface .topline{margin:0 1px 2px!important}
-  #share.gsfFinalSurface .titleIcon{width:43px!important;height:43px!important;border-radius:14px!important}
-  #share.gsfFinalSurface h1{font-size:24px!important}
-  #share.gsfFinalSurface .subtitle{font-size:10.5px!important;line-height:1.2!important}
-  #share.gsfFinalSurface .readyPill{display:none!important}
-  #share.gsfFinalSurface .section{padding:10px!important;border-radius:20px!important}
-  #share.gsfFinalSurface .sectionHead{margin-bottom:8px!important}
-  #share.gsfFinalSurface .socials{
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
-    gap:7px!important;
-  }
-  #share.gsfFinalSurface .card{
-    min-height:154px!important;
-    padding:10px!important;
-    border-radius:17px!important;
-  }
-  #share.gsfFinalSurface .logo{width:38px!important;height:38px!important;border-radius:50%!important}
-  #share.gsfFinalSurface .card h3{font-size:13px!important;margin:8px 0 3px!important}
-  #share.gsfFinalSurface .card p{
-    min-height:30px!important;
-    font-size:9.4px!important;
-    line-height:1.25!important;
-    display:-webkit-box!important;
-    -webkit-line-clamp:2!important;
-    -webkit-box-orient:vertical!important;
-    overflow:hidden!important;
-  }
-  #share.gsfFinalSurface .cardHint{display:none!important}
-  #share.gsfFinalSurface .open{min-height:38px!important;font-size:9.5px!important}
-  #share.gsfFinalSurface .downloadRow{grid-template-columns:1fr!important;gap:9px!important}
-  #share.gsfFinalSurface .downloadTitle h2{font-size:17px!important}
-  #share.gsfFinalSurface .downloadTitle p{font-size:10px!important}
-  #share.gsfFinalSurface .actions{
-    width:100%!important;
-    display:grid!important;
-    grid-template-columns:1fr 1fr!important;
-    gap:7px!important;
-  }
-  #share.gsfFinalSurface .downloadBtn{
-    grid-column:1/-1!important;
-    width:100%!important;
-    min-height:49px!important;
-    font-size:12px!important;
-    border-radius:15px!important;
-  }
-  #share.gsfFinalSurface .secondary{width:100%!important;min-height:40px!important}
-  #share.gsfFinalSurface #muralSocial{
-    position:relative!important;left:auto!important;top:auto!important;width:100%!important;
-    margin:0 0 6px!important;font-size:12px!important;transform:rotate(-2deg)!important;
-  }
-  #share.gsfFinalSurface #muralAction{display:none!important}
-
-
-  #share.gsfFinalSurface .socials{grid-template-columns:repeat(2,minmax(0,1fr))!important}
-  #share.gsfFinalSurface .card{min-height:148px!important;padding:9px!important}
-  #share.gsfFinalSurface .card p{font-size:9px!important}
-
-/* END V295 INTERNAL PAGE SYSTEM — SHARE */
-
-
-/* GSF MOBILE-ONLY SCROLL CONTRACT */
-html,body{overflow:hidden!important}
-#share{height:100dvh!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch!important}
-/* END GSF MOBILE-ONLY SCROLL CONTRACT */
-
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<main id="share" class="gsfFinalSurface">
-  <div class="topline">
-    <div class="titleWrap">
-      <div class="titleIcon"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.4"/><circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="19" r="2.4"/><path d="m8.2 10.9 7.6-4.6M8.2 13.1l7.6 4.6"/></svg></div>
-      <div><h1>Condividi o scarica</h1><p class="subtitle">Il tuo Short è pronto. Pubblicalo sui social o scaricalo sul dispositivo.</p></div>
+<main id="crea413" aria-labelledby="pageTitle">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Crea Short</p>
+      <h1 id="pageTitle">Preparo il tuo Short</h1>
     </div>
-    <div class="readyPill" id="readyBadge"><span class="dot">↻</span><span class="readyText">Verifica video…</span></div>
+    <span class="pill" id="readyPill" role="status"><i></i><span>In arrivo</span></span>
+  </header>
+
+  <div class="layout">
+    <div class="side">
+      <section class="card previewCard" aria-label="Anteprima">
+        <div class="stage">
+          <video id="preview" playsinline controls preload="metadata" hidden></video>
+          <div class="wait" id="waitBox"><div class="spinner"></div>Lo Short finale sta arrivando.<br>Intanto scrivi titolo e hashtag.</div>
+        </div>
+        <div class="meta"><span class="chipInfo">9:16</span><span class="chipInfo" id="sizeInfo">—</span></div>
+        <div class="quick">
+          <button class="btn" type="button" id="editBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>Modifica</button>
+          <button class="btn" type="button" id="draftBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Salva bozza</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="main">
+      <section class="card" aria-labelledby="textsTitle">
+        <h2 id="textsTitle">Titolo, testo e hashtag</h2>
+        <div class="tabs" role="tablist" aria-label="Testi per social">
+          <button class="tab" type="button" role="tab" data-scope="all" aria-selected="true">Tutti</button>
+          <button class="tab" type="button" role="tab" data-scope="youtube" aria-selected="false">YouTube<span class="dot"></span></button>
+          <button class="tab" type="button" role="tab" data-scope="tiktok" aria-selected="false">TikTok<span class="dot"></span></button>
+          <button class="tab" type="button" role="tab" data-scope="instagram" aria-selected="false">Instagram<span class="dot"></span></button>
+          <button class="tab" type="button" role="tab" data-scope="facebook" aria-selected="false">Facebook<span class="dot"></span></button>
+        </div>
+        <p class="hint" id="scopeHint">Scrivi una volta: vale per tutti i social.</p>
+        <div class="field">
+          <label for="fTitle"><span>Titolo</span><span class="count" id="cTitle">0/100</span></label>
+          <input class="input" id="fTitle" maxlength="150" autocomplete="off" placeholder="Es. Clutch 1v4 all'ultimo secondo">
+        </div>
+        <div class="field">
+          <label for="fDesc"><span>Descrizione</span><span class="count" id="cDesc">0/2200</span></label>
+          <textarea class="input" id="fDesc" maxlength="5000" placeholder="Racconta il momento in una riga"></textarea>
+        </div>
+        <div class="field">
+          <label for="fTag"><span>Hashtag</span><span class="count" id="cTags">0</span></label>
+          <div class="tagBox" id="tagBox"><input id="fTag" autocomplete="off" autocapitalize="off" enterkeyhint="done" placeholder="Scrivi e premi invio"></div>
+          <div class="suggest" id="suggest" aria-label="Hashtag suggeriti"></div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="pubTitle" id="pubCard">
+        <h2 id="pubTitle">Pubblica su <small id="pubCount">0 selezionati</small></h2>
+        <div class="platforms" id="platforms">
+          <button class="plat" type="button" data-platform="youtube" aria-pressed="true"><span class="logo yt" data-icon="youtube"></span><span><b>YouTube</b><small data-status>…</small></span><span class="check">✓</span></button>
+          <button class="plat" type="button" data-platform="tiktok" aria-pressed="true"><span class="logo tt" data-icon="tiktok"></span><span><b>TikTok</b><small data-status>…</small></span><span class="check">✓</span></button>
+          <button class="plat" type="button" data-platform="instagram" aria-pressed="false"><span class="logo ig" data-icon="instagram"></span><span><b>Instagram</b><small data-status>…</small></span><span class="check">✓</span></button>
+          <button class="plat" type="button" data-platform="facebook" aria-pressed="false"><span class="logo fb" data-icon="facebook"></span><span><b>Facebook</b><small data-status>…</small></span><span class="check">✓</span></button>
+        </div>
+        <div class="seg" role="radiogroup" aria-label="Visibilità">
+          <button type="button" role="radio" data-privacy="public" aria-checked="true">Pubblico</button>
+          <button type="button" role="radio" data-privacy="unlisted" aria-checked="false">Non in elenco</button>
+          <button type="button" role="radio" data-privacy="private" aria-checked="false">Privato</button>
+        </div>
+        <div class="results" id="results" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-labelledby="shareTitle">
+        <h2 id="shareTitle">Condividi e salva</h2>
+        <div class="shareGrid">
+          <button class="shareBtn" type="button" data-share="whatsapp"><span class="logo wa" data-icon="whatsapp"></span>WhatsApp</button>
+          <button class="shareBtn" type="button" data-share="telegram"><span class="logo tg" data-icon="telegram"></span>Telegram</button>
+          <button class="shareBtn" type="button" data-share="x"><span class="logo xx" data-icon="x"></span>X</button>
+          <button class="shareBtn" type="button" data-share="email"><span class="logo em" data-icon="email"></span>Email</button>
+          <button class="shareBtn" type="button" data-share="copy"><span class="logo ln" data-icon="link"></span>Copia link</button>
+          <button class="shareBtn" type="button" data-share="native"><span class="logo mo" data-icon="more"></span>Altro…</button>
+          <button class="shareBtn" type="button" data-share="download"><span class="logo ln" data-icon="download"></span>Scarica</button>
+          <button class="shareBtn" type="button" data-share="dropbox"><span class="logo db" data-icon="dropbox"></span>Dropbox</button>
+        </div>
+        <p class="note" id="shareNote">I link condivisi restano attivi per 24 ore.</p>
+      </section>
+    </div>
   </div>
-
-  <div id="muralSocial" class="mural"><span class="muralText">Il tuo Short<br>è pronto</span></div>
-  <div id="muralAction" class="mural"><span class="muralText">Scegli dove<br>farlo vivere</span></div>
-
-  <section class="section gsfFinalGrid">
-    <div class="sectionHead">
-      <div class="sectionTitle"><span class="step">1</span><span>Pubblica sui tuoi social</span></div>
-      <div class="quality"><span>Stesso video, pronto per tutti</span><strong>9:16 · 1080×1920</strong></div>
-    </div>
-    <div class="socials">
-      <article class="card" data-card="youtube" tabindex="0">
-        <div class="cardTop"><span class="logo yt"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="4"/><path d="m10 9 6 3-6 3Z"/></svg></span><span class="connected">○ Non collegato</span></div>
-        <h3>YouTube Shorts</h3><p>Condividi il tuo Short sul tuo canale YouTube.</p>
-        <div class="cardHint">Video finale già pronto per la piattaforma.</div>
-        <button class="open" data-platform="youtube">Collega YouTube</button>
-      </article>
-      <article class="card" data-card="tiktok" tabindex="0">
-        <div class="cardTop"><span class="logo tt"><svg viewBox="0 0 24 24"><path d="M14 4v10.2a4.2 4.2 0 1 1-3.3-4.1"/><path d="M14 4c.8 3.1 2.6 4.8 5.5 5"/></svg></span><span class="connected">○ Non collegato</span></div>
-        <h3>TikTok</h3><p>Pubblica direttamente il tuo Short su TikTok.</p>
-        <div class="cardHint">Formato verticale già ottimizzato.</div>
-        <button class="open" data-platform="tiktok">Collega TikTok</button>
-      </article>
-      <article class="card" data-card="instagram" tabindex="0">
-        <div class="cardTop"><span class="logo ig"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.5"/><circle cx="17.3" cy="6.8" r=".8"/></svg></span><span class="connected">○ Non collegato</span></div>
-        <h3>Instagram Reels</h3><p>Condividi il tuo Short come Reel.</p>
-        <div class="cardHint">Pronto per Reel e pubblicazione mobile.</div>
-        <button class="open" data-platform="instagram">Collega Instagram</button>
-      </article>
-      <article class="card" data-card="facebook" tabindex="0">
-        <div class="cardTop"><span class="logo fb"><svg viewBox="0 0 24 24"><path d="M14.5 8H18V4.5h-3.6C10.8 4.5 9 6.5 9 9.8V12H6v3.5h3V21h4v-5.5h3.4L17 12h-4V9.8c0-1.2.4-1.8 1.5-1.8Z"/></svg></span><span class="connected">○ Non collegato</span></div>
-        <h3>Facebook Reels</h3><p>Apri Facebook e completa la pubblicazione manualmente.</p>
-        <div class="cardHint">Il video resta pronto da scaricare e caricare su Facebook.</div>
-        <button class="open" data-platform="facebook">Collega Facebook</button>
-      </article>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="downloadRow">
-      <div>
-        <div class="downloadTitle"><span class="step">2</span><div><h2>Scarica il tuo Short</h2><p>Video finale ad alta qualità, pronto ovunque.</p></div></div>
-        <div class="chips"><span class="chip">MP4</span><span class="chip">1080×1920</span><span class="chip">H.264</span><span class="chip">60 FPS</span><span class="chip">AAC</span><span class="chip qualityMax">✓ Qualità massima</span></div>
-      </div>
-      <div class="actions">
-        <button class="downloadBtn" disabled>↓ &nbsp; Scarica video</button>
-        <button class="secondary copyLink" disabled>⌁ &nbsp; Copia link</button>
-        <button class="secondary" disabled title="In arrivo">Drive</button>
-        <button class="secondary" disabled title="In arrivo">Dropbox</button>
-      </div>
-    </div>
-  </section>
 </main>
-<div id="toast" class="toast"></div>
+
+<div class="dock">
+  <div class="inner">
+    <span class="summary" id="dockSummary">Scegli i social e pubblica in un colpo solo.</span>
+    <button class="btn primary" type="button" id="publishBtn" disabled>Pubblica</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script>
 (()=>{
- const nav=(target,data={})=>{try{parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin)}catch(e){}};
- const parentClick=(words)=>{try{const d=parent.document,els=[...d.querySelectorAll("button,a,[role=button]")].filter(x=>!x.closest("#gsf-social-overlay-v159"));const e=els.find(x=>words.some(w=>(x.innerText||x.textContent||"").toLowerCase().includes(w)));if(e){e.click();return true}}catch(e){}return false};
- const names={youtube:"YouTube",tiktok:"TikTok",instagram:"Instagram",facebook:"Facebook"};
- const guide={
-   idle:["Il tuo Short<br>è pronto","Scegli dove<br>farlo vivere"],
-   youtube:["YouTube?<br>Ci siamo","Shorts è pronto<br>per il tuo canale"],
-   tiktok:["Vai di TikTok","Verticale, veloce<br>e già pronto"],
-   instagram:["Portalo su<br>Instagram","Il Reel è già<br>nel formato giusto"],
-   facebook:["Anche Facebook<br>è pronto","Pagina o profilo?<br>Scegli tu"],
-   download:["Vuoi tenerlo<br>con te?","Scaricalo in<br>massima qualità"],
-   connect:["Prima colleghiamo<br>l'account","Un tocco e<br>torni qui"]
- };
- const ms=document.querySelector("#muralSocial .muralText"),ma=document.querySelector("#muralAction .muralText");
- let seq=0;
- const morph=(el,html,s)=>{
-   if(!el||el.innerHTML===html)return;
-   el.classList.remove("in");el.classList.add("out");
-   setTimeout(()=>{if(s!==seq)return;el.innerHTML=html;el.classList.remove("out");void el.offsetWidth;el.classList.add("in");setTimeout(()=>el.classList.remove("in"),1100)},420);
- };
- const setGuide=(key)=>{
-   const copy=guide[key]||guide.idle,s=++seq;
-   morph(ms,copy[0],s);morph(ma,copy[1],s);
- };
- const toast=(msg)=>{const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),1800)};
- let state={ready:false,video_url:"",social:{}};
+"use strict";
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const ICONS={
+  youtube:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.5 15.6V8.4L15.8 12z"/></svg>',
+  tiktok:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.8A4.3 4.3 0 0 1 15.5 3h-3.1v12.4a2.6 2.6 0 1 1-2.6-2.6c.3 0 .5 0 .8.1V9.7a5.8 5.8 0 1 0 4.9 5.7V9.1a7.3 7.3 0 0 0 4.3 1.4V7.4a4.3 4.3 0 0 1-3.2-1.6z"/></svg>',
+  instagram:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>',
+  facebook:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 21v-7.5H16l.4-3h-2.9V8.6c0-.9.3-1.5 1.5-1.5h1.5V4.4c-.3 0-1.2-.1-2.2-.1-2.2 0-3.8 1.4-3.8 3.9v2.3H8v3h2.5V21z"/></svg>',
+  whatsapp:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2zm5.2 13.9c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7a11.6 11.6 0 0 1-4.5-4c-.3-.5-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.1.1.3 0 .5l-.3.5-.4.4c-.1.2-.3.3-.1.6.2.3.7 1.2 1.6 2 1.1.9 2 1.2 2.3 1.4.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3z"/></svg>',
+  telegram:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="m21.4 4.2-3.1 15c-.2 1-.8 1.3-1.7.8l-4.7-3.5-2.3 2.2c-.2.3-.5.5-1 .5l.3-4.8 8.8-8c.4-.3-.1-.5-.6-.2L6.4 13 1.7 11.6c-1-.3-1-1 .2-1.5L20.2 3c.9-.3 1.6.2 1.2 1.2z"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.8 3h3.1l-6.8 7.7 8 10.3h-6.2l-4.9-6.3L5.4 21H2.3l7.3-8.3L2 3h6.4l4.4 5.8zm-1.1 16.2h1.7L7.4 4.7H5.6z"/></svg>',
+  email:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+  link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
+  more:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>',
+  download:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>',
+  dropbox:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2.5 2 5.8l5 3.2 5-3.2zm10 0-5 3.3 5 3.2 5-3.2zM2 12.2l5 3.3 5-3.3L7 9zm15-3.2-5 3.2 5 3.3 5-3.3zM7 16.6l5 3.3 5-3.3-5-3.2z"/></svg>'
+};
+$$('[data-icon]').forEach(el=>{el.innerHTML=ICONS[el.dataset.icon]||'';el.setAttribute('aria-hidden','true')});
 
- async function load(){
-   try{
-     const r=await fetch("/share/state",{cache:"no-store",credentials:"same-origin"}),j=await r.json();
-     if(!r.ok||!j.ok)throw new Error(j.error||"Share non disponibile");
-     state=j;
-     const ready=!!j.ready,badge=document.getElementById("readyBadge");
-     badge.querySelector(".readyText").textContent=ready?"Video pronto per la pubblicazione":"Video finale non ancora pronto";
-     badge.querySelector(".dot").textContent=ready?"✓":"↻";
-     badge.classList.toggle("okay",ready);
-     document.querySelector(".downloadBtn").disabled=!ready;
-     document.querySelector(".copyLink").disabled=!ready;
-     document.querySelectorAll("[data-card]").forEach(card=>{
-       const key=card.dataset.card,yes=!!(j.social||{})[key],status=card.querySelector(".connected"),btn=card.querySelector(".open");
-       if(key==="facebook"){
-         status.textContent="Pubblicazione manuale";status.classList.remove("on");
-         btn.textContent="Apri Facebook ↗";btn.classList.remove("connect");
-       }else{
-         status.textContent=yes?"✓ Collegato":"○ Non collegato";status.classList.toggle("on",yes);
-         btn.textContent=(yes?"Apri ":"Collega ")+names[key]+(yes?" ↗":"");
-         btn.classList.toggle("connect",!yes);
-       }
-     });
-   }catch(e){
-     const badge=document.getElementById("readyBadge");
-     badge.querySelector(".readyText").textContent="Stato non disponibile";
-   }
- }
+const NAMES={youtube:'YouTube',tiktok:'TikTok',instagram:'Instagram',facebook:'Facebook'};
+const LIMITS={all:{title:100,desc:2200},youtube:{title:100,desc:5000},tiktok:{title:0,desc:2200},instagram:{title:0,desc:2200},facebook:{title:255,desc:5000}};
+const SUGGEST={all:['gaming','shorts','gameplay','gamer','clip','highlights','viral'],youtube:['Shorts','gaming','youtubeshorts'],tiktok:['fyp','perte','gamingtiktok'],instagram:['reels','gamingreels','instagaming'],facebook:['gaming','video']};
+const STORE='gsf_crea_short_v413';
 
- document.querySelectorAll("[data-card]").forEach(card=>{
-   const key=card.dataset.card;
-   card.addEventListener("mouseenter",()=>setGuide(key));
-   card.addEventListener("focusin",()=>setGuide(key));
-   card.addEventListener("touchstart",()=>setGuide(key),{passive:true});
-   card.addEventListener("mouseleave",()=>setTimeout(()=>setGuide("idle"),260));
-   card.addEventListener("focusout",()=>setTimeout(()=>setGuide("idle"),260));
- });
+let server={ready:false,social:{},csrf_token:'',dropbox_app_key:'',publish_supported:['youtube','tiktok'],publish_job:{},revision:''};
+let scope='all', privacy='public', polling=null;
+const texts={all:{title:'',description:'',tags:[]}};   // per-social overrides live in texts[platform]
 
- document.querySelectorAll("[data-platform]").forEach(b=>b.onclick=()=>{
-   const key=b.dataset.platform,connected=!!(state.social||{})[key];
-   if(key==="facebook"){
-     setGuide("facebook");
-     window.open("https://www.facebook.com/","_blank","noopener,noreferrer");
-     return;
-   }
-   setGuide(connected?key:"connect");
-   setTimeout(()=>parentClick([key]),connected?180:650);
- });
+const toast=(msg)=>{const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2400)};
+const nav=(target)=>{try{parent.postMessage({type:'GSF_SHELL_NAV',target},location.origin)}catch(_e){}};
 
- document.querySelector(".downloadBtn").onclick=()=>{
-   setGuide("download");
-   setTimeout(()=>{
-     if(!parentClick(["scarica video","scarica","download"])){
-       const a=document.createElement("a");a.href="/share/final";a.download="gaming_short_finale.mp4";document.body.appendChild(a);a.click();a.remove();
-     }
-   },520);
- };
+/* persistence: texts survive reloads (per viewer, best effort) */
+const load=()=>{try{const s=JSON.parse(localStorage.getItem(STORE)||'{}');if(s.texts&&s.texts.all)Object.assign(texts,s.texts);if(s.privacy)privacy=s.privacy;if(Array.isArray(s.selected))$$('.plat').forEach(b=>b.setAttribute('aria-pressed',String(s.selected.includes(b.dataset.platform))))}catch(_e){}};
+const save=()=>{try{localStorage.setItem(STORE,JSON.stringify({texts,privacy,selected:selected()}))}catch(_e){}};
 
- document.querySelector(".copyLink").onclick=async()=>{
-   setGuide("download");
-   try{
-     const url=new URL("/share/final",location.origin).href;
-     await navigator.clipboard.writeText(url);
-     toast("Link copiato");
-   }catch(e){toast("Copia non disponibile")}
- };
-
- window.addEventListener("message",e=>{
-   if(e.origin!==location.origin||!e.data||e.data.type!=="GSF_SHARE_FOCUS")return;
-   const key=String(e.data.platform||"");
-   if(!key)return;
-   const card=document.querySelector('[data-card="'+key+'"]');
-   if(card){
-     setGuide(key);
-     try{card.scrollIntoView({behavior:"smooth",block:"center"})}catch(_e){}
-     card.focus({preventScroll:true});
-   }
- });
- load();
- /* V159 regression compatibility only; no visible player exists:
-    video_url
-    mini.classList.add("ready")
- */
-})();
-</script>
-
-<!-- V396_MOBILE_SHARE_PUBLISH_SURFACE -->
-<style id="v396MobileSharePublishSurface">
-#v396MobilePublishSurface{display:none}
-@media(max-width:760px){
-  #share.v396MobileMode{overflow:auto!important;padding:8px 8px 14px!important;background:linear-gradient(180deg,#fbfeff 0%,#f3fbff 100%)!important}
-  #share.v396MobileMode>:not(#v396MobilePublishSurface){display:none!important}
-  #v396MobilePublishSurface{display:flex!important;flex-direction:column;gap:7px;width:100%;min-height:100%;padding:0 0 6px;color:#153d69;font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-  #v396MobilePublishSurface *{box-sizing:border-box}
-  .v396Mural{position:relative;min-height:92px;padding:12px 18px 10px;border-radius:23px;border:1px solid rgba(99,190,230,.28);background:radial-gradient(circle at 14% 18%,rgba(130,219,255,.18),transparent 29%),radial-gradient(circle at 86% 72%,rgba(119,226,193,.13),transparent 30%),linear-gradient(180deg,rgba(255,255,255,.88),rgba(239,249,254,.76));box-shadow:0 10px 26px rgba(55,112,151,.09),inset 0 1px 0 rgba(255,255,255,.96);overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center}
-  .v396Mural:before,.v396Mural:after{content:"";position:absolute;width:44px;height:19px;border-top:2px solid rgba(89,129,174,.33);border-radius:50%;pointer-events:none}.v396Mural:before{left:20px;bottom:18px;transform:rotate(-13deg)}.v396Mural:after{right:18px;top:19px;transform:rotate(165deg)}
-  .v396MuralText{position:relative;z-index:1;font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive;color:#5b78a6;font-size:21px;font-weight:600;line-height:1.05;transform:rotate(-1.5deg);text-shadow:0 1px 0 rgba(255,255,255,.75)}
-  .v396MuralText small{display:block;margin-top:6px;font-family:"Avenir Next","SF Pro Text",sans-serif;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:#7891ad;font-weight:850;transform:rotate(1.5deg)}
-  .v396Panel{border:1px solid rgba(131,176,210,.22);border-radius:18px;background:rgba(255,255,255,.79);box-shadow:0 8px 21px rgba(58,103,139,.07),inset 0 1px 0 rgba(255,255,255,.95);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);padding:9px}
-  .v396Label{display:flex;align-items:center;gap:6px;margin:0 2px 7px;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase;color:#2f6594}
-  .v396ShareIcon{width:17px;height:17px;display:grid;place-items:center;border-radius:7px;background:#e8f5fd;color:#3688c8;font-size:10px}
-  .v396Platforms{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-  .v396Platform{position:relative;min-width:0;height:58px;border:1px solid rgba(125,178,215,.23);border-radius:14px;background:linear-gradient(155deg,rgba(255,255,255,.96),rgba(237,248,253,.90));box-shadow:0 5px 13px rgba(52,100,136,.07);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#28557e;font-size:7.3px;font-weight:900;cursor:pointer;padding:3px}
-  .v396Platform[aria-pressed="true"]{border-color:rgba(63,153,224,.40);box-shadow:0 6px 15px rgba(46,132,198,.12),inset 0 0 0 1px rgba(79,176,235,.08)}
-  .v396Platform[aria-pressed="true"]:after{content:"✓";position:absolute;right:5px;top:4px;width:12px;height:12px;border-radius:50%;display:grid;place-items:center;background:#3295ed;color:#fff;font-size:7px;font-weight:1000}
-  .v396SocialMark{width:22px;height:22px;display:grid;place-items:center;font-weight:950;font-size:13px;line-height:1}.v396SocialMark.yt{color:#f0002f}.v396SocialMark.tt{color:#111}.v396SocialMark.ig{border-radius:7px;color:#fff;background:linear-gradient(145deg,#ffad33,#e73b8f 48%,#7355d9);font-size:11px}.v396SocialMark.fb{border-radius:50%;background:#287be9;color:#fff;font-size:15px}
-  .v396Fields{display:grid;gap:6px}
-  .v396Field{display:grid;grid-template-columns:31px 1fr;gap:7px;align-items:center;border:1px solid rgba(132,179,213,.19);border-radius:15px;background:rgba(255,255,255,.78);padding:7px 8px}
-  .v396FieldIcon{width:31px;height:31px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg,#eef9ff,#e2f3fb);color:#2b75ac;font-size:15px;font-weight:850}
-  .v396FieldBody label{display:block;margin:0 0 3px;font-size:7.5px;letter-spacing:.08em;text-transform:uppercase;color:#55789a;font-weight:950}
-  .v396FieldBody input,.v396FieldBody textarea{display:block;width:100%;min-width:0;border:0;outline:0;resize:none;background:transparent;color:#183f69;padding:0;font:750 10px/1.25 "Avenir Next","SF Pro Text",sans-serif}.v396FieldBody textarea{height:26px}
-  .v396FieldBody input::placeholder,.v396FieldBody textarea::placeholder{color:#93a7b9}
-  .v396Settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
-  .v396Setting{display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0;padding:7px;border:1px solid rgba(132,179,213,.18);border-radius:13px;background:rgba(249,253,255,.88)}
-  .v396SettingText{min-width:0}.v396SettingText b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:7.6px;color:#315d84}.v396SettingText small{display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:5.9px;color:#8b9eb1}
-  .v396Switch{position:relative;width:25px;height:15px;flex:0 0 auto;border:0;border-radius:99px;background:#cbd9e4;padding:0;cursor:pointer}.v396Switch:after{content:"";position:absolute;width:11px;height:11px;left:2px;top:2px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(27,63,91,.16);transition:.15s}.v396Switch.on{background:linear-gradient(90deg,#5fc8f0,#398ee9)}.v396Switch.on:after{left:12px}
-  .v396Actions{display:grid;grid-template-columns:1fr 1fr 1.12fr;gap:6px;margin-top:1px}
-  .v396Action{height:43px;border-radius:14px;border:1px solid rgba(106,170,214,.24);background:linear-gradient(150deg,#fff,#edf8fc);color:#2e6894;font-size:8.3px;font-weight:950;letter-spacing:.025em;box-shadow:0 6px 16px rgba(47,96,132,.08);cursor:pointer}.v396Action.primary{border-color:rgba(52,145,224,.40);background:linear-gradient(135deg,#67cff2 0%,#419ff0 52%,#3486e8 100%);color:#fff;box-shadow:0 8px 20px rgba(49,139,211,.20)}.v396Action:active{transform:scale(.985)}
-  .v396Toast{position:fixed;left:50%;bottom:12px;z-index:9999;transform:translate(-50%,9px);opacity:0;pointer-events:none;max-width:82vw;padding:7px 10px;border-radius:99px;background:rgba(24,61,92,.89);color:#fff;font-size:7.5px;font-weight:850;text-align:center;transition:.18s}.v396Toast.show{opacity:1;transform:translate(-50%,0)}
+/* texts */
+const cleanTag=(t)=>String(t||'').replace(/^#+/,'').replace(/[^0-9A-Za-zÀ-ÖØ-öø-ÿ_]/g,'').slice(0,60);
+const effective=(p)=>{const o=texts[p]||{};return{title:o.title??texts.all.title,description:o.description??texts.all.description,tags:o.tags??texts.all.tags}};
+const own=()=>{if(scope==='all')return texts.all;if(!texts[scope])texts[scope]=JSON.parse(JSON.stringify(effective(scope)));return texts[scope]};
+const view=()=>scope==='all'?texts.all:effective(scope);
+function renderTexts(){
+  const v=view(), lim=LIMITS[scope];
+  $('#fTitle').value=v.title||'';$('#fDesc').value=v.description||'';
+  $('#fTitle').closest('.field').hidden=lim.title===0;
+  $$('.tag',$('#tagBox')).forEach(n=>n.remove());
+  (v.tags||[]).forEach(t=>{const c=document.createElement('span');c.className='tag';c.append('#'+t);const x=document.createElement('button');x.type='button';x.setAttribute('aria-label','Rimuovi #'+t);x.textContent='×';x.onclick=()=>edit(o=>{o.tags=(o.tags||[]).filter(y=>y!==t)});c.append(x);$('#tagBox').insertBefore(c,$('#fTag'))});
+  const used=new Set((v.tags||[]).map(t=>t.toLowerCase()));
+  $('#suggest').innerHTML='';
+  [...new Set([...(SUGGEST[scope]||[]),...SUGGEST.all])].filter(t=>!used.has(t.toLowerCase())).slice(0,8).forEach(t=>{const b=document.createElement('button');b.type='button';b.textContent='#'+t;b.onclick=()=>edit(o=>{o.tags=[...(o.tags||[]),t].slice(0,30)});$('#suggest').append(b)});
+  const hint=$('#scopeHint');hint.textContent='';
+  if(scope==='all')hint.textContent='Scrivi una volta: vale per tutti i social.';
+  else if(texts[scope]){hint.append('Testo personalizzato per '+NAMES[scope]+'. ');const r=document.createElement('button');r.type='button';r.textContent='Usa il testo comune';r.onclick=()=>{delete texts[scope];save();renderAll()};hint.append(r)}
+  else hint.textContent='Stai vedendo il testo comune: se lo modifichi qui, cambia solo per '+NAMES[scope]+'.';
+  counters();
 }
-</style>
-<script id="v396MobileSharePublishRuntime">
-(()=>{
-  const share=document.getElementById('share');if(!share||window.__GSF_V396_SHARE)return;window.__GSF_V396_SHARE=true;
-  const mobile=()=>window.matchMedia('(max-width:760px)').matches;
-  const html=`<div id="v396MobilePublishSurface" aria-label="Crea Short">
-    <section class="v396Mural"><div class="v396MuralText">Il tuo video è pronto<small>pubblicalo quando vuoi</small></div></section>
-    <section class="v396Panel"><div class="v396Label"><span class="v396ShareIcon">↗</span>PUBBLICA SU</div><div class="v396Platforms">
-      <button class="v396Platform" data-v396-platform="youtube" aria-pressed="true"><span class="v396SocialMark yt">▶</span><span>YouTube</span></button>
-      <button class="v396Platform" data-v396-platform="tiktok" aria-pressed="true"><span class="v396SocialMark tt">♪</span><span>TikTok</span></button>
-      <button class="v396Platform" data-v396-platform="instagram" aria-pressed="true"><span class="v396SocialMark ig">◎</span><span>Instagram</span></button>
-      <button class="v396Platform" data-v396-platform="facebook" aria-pressed="true"><span class="v396SocialMark fb">f</span><span>Facebook</span></button>
-    </div></section>
-    <section class="v396Panel v396Fields">
-      <div class="v396Field"><span class="v396FieldIcon">T</span><div class="v396FieldBody"><label for="v396Title">Titolo</label><input id="v396Title" maxlength="100" placeholder="Titolo del tuo Short"></div></div>
-      <div class="v396Field"><span class="v396FieldIcon">▤</span><div class="v396FieldBody"><label for="v396Description">Descrizione</label><textarea id="v396Description" maxlength="500" placeholder="Descrivi il tuo momento"></textarea></div></div>
-      <div class="v396Field"><span class="v396FieldIcon">#</span><div class="v396FieldBody"><label for="v396Hashtags">Hashtag</label><input id="v396Hashtags" maxlength="180" placeholder="#gaming #shorts"></div></div>
-    </section>
-    <section class="v396Panel"><div class="v396Label"><span class="v396ShareIcon">⚙</span>IMPOSTAZIONI</div><div class="v396Settings">
-      <div class="v396Setting"><span class="v396SettingText"><b>Pubblico</b><small>Visibile a tutti</small></span><button class="v396Switch on" data-setting="public" aria-pressed="true"></button></div>
-      <div class="v396Setting"><span class="v396SettingText"><b>Sottotitoli</b><small>Automatici</small></span><button class="v396Switch on" data-setting="captions" aria-pressed="true"></button></div>
-      <div class="v396Setting"><span class="v396SettingText"><b>Audio</b><small>Attivo</small></span><button class="v396Switch on" data-setting="audio" aria-pressed="true"></button></div>
-    </div></section>
-    <div class="v396Actions"><button class="v396Action" id="v396Download">SCARICA</button><button class="v396Action" id="v396Share">CONDIVIDI</button><button class="v396Action primary" id="v396Publish">PUBBLICA ORA</button></div>
-    <div class="v396Toast" id="v396Toast"></div>
-  </div>`;
-  share.insertAdjacentHTML('beforeend',html);share.classList.add('v396MobileMode');
-  const root=document.getElementById('v396MobilePublishSurface'),toast=document.getElementById('v396Toast');
-  const say=(msg)=>{if(!toast)return;toast.textContent=msg;toast.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>toast.classList.remove('show'),1700)};
-  const findByText=(selector,needle)=>[...document.querySelectorAll(selector)].find(el=>String(el.textContent||'').toLowerCase().includes(needle));
-  root.querySelectorAll('.v396Platform').forEach(btn=>btn.onclick=()=>{const on=btn.getAttribute('aria-pressed')==='true';btn.setAttribute('aria-pressed',String(!on))});
-  root.querySelectorAll('.v396Switch').forEach(btn=>btn.onclick=()=>{const on=btn.classList.toggle('on');btn.setAttribute('aria-pressed',String(on))});
-  const meta=()=>({title:root.querySelector('#v396Title')?.value||'',description:root.querySelector('#v396Description')?.value||'',hashtags:root.querySelector('#v396Hashtags')?.value||'',settings:Object.fromEntries([...root.querySelectorAll('.v396Switch')].map(b=>[b.dataset.setting,b.getAttribute('aria-pressed')==='true']))});
-  const originalDownload=()=>document.querySelector('.downloadBtn:not(#v396Download)')||findByText('button,a','scarica video');
-  const findAsset=()=>{const a=document.querySelector('a[download][href],a[href*=".mp4"],a[href*="/media/"]');if(a&&a.href)return a.href;const b=originalDownload();return b?.dataset?.url||b?.dataset?.href||''};
-  root.querySelector('#v396Download').onclick=()=>{const b=originalDownload();if(b){b.click();say('Download aperto');return}say('Download non ancora disponibile')};
-  root.querySelector('#v396Share').onclick=async()=>{const data=meta(),url=findAsset();try{if(url&&navigator.share){let file=null;try{const r=await fetch(url);const blob=await r.blob();file=new File([blob],'gaming-short.mp4',{type:blob.type||'video/mp4'})}catch(_e){}if(file&&(!navigator.canShare||navigator.canShare({files:[file]}))){await navigator.share({title:data.title||'Gaming Shorts Factory',text:data.description||'Il mio Short',files:[file]});return}await navigator.share({title:data.title||'Gaming Shorts Factory',text:data.description||'Il mio Short',url:url||undefined});return}if(navigator.share){await navigator.share({title:data.title||'Gaming Shorts Factory',text:data.description||'Il mio Short'});return}if(url&&navigator.clipboard){await navigator.clipboard.writeText(url);say('Link copiato');return}say('Condivisione non disponibile')}catch(e){if(e&&e.name!=='AbortError')say('Condivisione non disponibile')}};
-  root.querySelector('#v396Publish').onclick=()=>{const data=meta();try{window.parent.postMessage({type:'GSF_SHARE_METADATA',payload:data},window.location.origin)}catch(_e){}const selected=[...root.querySelectorAll('.v396Platform[aria-pressed="true"]')].map(b=>b.dataset.v396Platform);let fired=0;selected.forEach(name=>{const target=document.querySelector(`[data-platform="${name}"]`);if(target){target.click();fired++}});say(fired?`Apro ${fired} destinazioni`:'Seleziona almeno un social')};
-  const sync=()=>share.classList.toggle('v396MobileMode',mobile());sync();window.addEventListener('resize',sync,{passive:true});
+function counters(){
+  const lim=LIMITS[scope], v=view();
+  const tagLen=(v.tags||[]).reduce((n,t)=>n+t.length+2,0);
+  const tl=($('#fTitle').value||'').length, dl=($('#fDesc').value||'').length+tagLen;
+  $('#cTitle').textContent=tl+'/'+(lim.title||'–');$('#cTitle').classList.toggle('over',!!lim.title&&tl>lim.title);
+  $('#cDesc').textContent=dl+'/'+lim.desc;$('#cDesc').classList.toggle('over',dl>lim.desc);
+  const n=(v.tags||[]).length;
+  $('#cTags').textContent=n+(n===1?' hashtag':' hashtag')+(scope==='youtube'||scope==='all'?' · #Shorts aggiunto su YouTube':'');
+}
+function edit(fn){fn(own());save();renderAll()}
+$('#fTitle').addEventListener('input',e=>{own().title=e.target.value;save();counters();markTabs()});
+$('#fDesc').addEventListener('input',e=>{own().description=e.target.value;save();counters();markTabs()});
+const addTags=(raw)=>{const list=String(raw||'').split(/[\s,]+/).map(cleanTag).filter(Boolean);$('#fTag').value='';if(!list.length)return;edit(o=>{const have=new Set((o.tags||[]).map(t=>t.toLowerCase()));o.tags=[...(o.tags||[])];list.forEach(t=>{if(!have.has(t.toLowerCase())){have.add(t.toLowerCase());o.tags.push(t)}});o.tags=o.tags.slice(0,30)});$('#fTag').focus()};
+$('#fTag').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===','||e.key===' '){e.preventDefault();addTags(e.target.value)}else if(e.key==='Backspace'&&!e.target.value&&(view().tags||[]).length){edit(o=>{o.tags=o.tags.slice(0,-1)})}});
+$('#fTag').addEventListener('blur',e=>{if(e.target.value.trim())addTags(e.target.value)});
+$('#fTag').addEventListener('paste',e=>{const t=(e.clipboardData&&e.clipboardData.getData('text'))||'';if(/[\s,#]/.test(t)){e.preventDefault();addTags(t)}});
+$('#tagBox').addEventListener('click',e=>{if(e.target===e.currentTarget)$('#fTag').focus()});
+const markTabs=()=>$$('.tab').forEach(t=>t.classList.toggle('edited',t.dataset.scope!=='all'&&!!texts[t.dataset.scope]));
+const pickScope=(s)=>{scope=s;$$('.tab').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.scope===s)));renderTexts()};
+$$('.tab').forEach(t=>t.onclick=()=>pickScope(t.dataset.scope));
+
+/* platforms */
+const selected=()=>$$('.plat[aria-pressed="true"]').map(b=>b.dataset.platform);
+function renderPlatforms(){
+  const social=server.social||{}, supported=server.publish_supported||[];
+  $$('.plat').forEach(b=>{
+    const p=b.dataset.platform, st=$('[data-status]',b), old=$('.connect',b);
+    if(old)old.remove();
+    if(!supported.includes(p)){st.textContent='Condivisione guidata';st.className=''}
+    else if(social[p]){st.textContent='✓ Collegato';st.className='on'}
+    else{st.textContent='Non collegato';st.className='';const c=document.createElement('span');c.className='connect';c.textContent='Collega →';c.onclick=(e)=>{e.stopPropagation();connect(p)};st.after(c)}
+  });
+  const sel=selected(), n=sel.length, busy=(server.publish_job||{}).state==='running';
+  $('#pubCount').textContent=n+(n===1?' selezionato':' selezionati');
+  const btn=$('#publishBtn');
+  btn.disabled=!server.ready||!n||busy;
+  btn.textContent=busy?'Pubblicazione in corso…':!server.ready?'In attesa dello Short':n>1?'Pubblica su '+n+' social':n===1?'Pubblica su '+NAMES[sel[0]]:'Scegli almeno un social';
+  $('#dockSummary').textContent=n?sel.map(p=>NAMES[p]).join(' · '):'Scegli i social e pubblica in un colpo solo.';
+  $$('.seg button').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.privacy===privacy)));
+}
+$$('.plat').forEach(b=>b.onclick=()=>{b.setAttribute('aria-pressed',String(b.getAttribute('aria-pressed')!=='true'));save();renderPlatforms()});
+$$('.seg button').forEach(b=>b.onclick=()=>{privacy=b.dataset.privacy;save();renderPlatforms()});
+function connect(p){
+  if(!(server.publish_supported||[]).includes(p)){window.open(p==='instagram'?'https://www.instagram.com/':'https://www.facebook.com/','_blank','noopener');return}
+  const url='/social-connect/'+p+'/start';
+  if(!window.open(url,'_blank'))location.href=url;
+  toast('Collega '+NAMES[p]+' e poi torna qui');
+}
+
+/* results of the last multi-publish */
+const CLS={youtube:'yt',tiktok:'tt',instagram:'ig',facebook:'fb'};
+function renderResults(){
+  const job=server.publish_job||{}, box=$('#results');box.innerHTML='';
+  if(!job.results)return;
+  Object.values(job.results).forEach(r=>{
+    const row=document.createElement('div');row.className='row';
+    let msg='',act=null;
+    if(r.status==='queued')msg='In coda…';
+    else if(r.status==='running')msg='Caricamento in corso…';
+    else if(r.status==='done'){
+      msg=r.platform==='tiktok'?(r.private_only?'Inviato come privato: TikTok non ha ancora approvato l\'app per i post pubblici.':'Inviato: TikTok lo mostra tra qualche minuto.'):('Pubblicato'+(r.privacy==='private'?' come privato':r.privacy==='unlisted'?' non in elenco':''));
+      if(r.url&&/^https:\/\//.test(r.url)){act=document.createElement('a');act.href=r.url;act.target='_blank';act.rel='noopener';act.textContent='Apri'}
+    }
+    else if(r.status==='needs_connection'){msg='Account non collegato.';act=document.createElement('button');act.type='button';act.textContent='Collega';act.onclick=()=>connect(r.platform)}
+    else if(r.status==='manual'){msg='Il testo viene copiato: incollalo nell\'app.';act=document.createElement('button');act.type='button';act.textContent='Condividi';act.onclick=()=>manualShare(r.platform,r.caption||'')}
+    else msg=r.error||'Non riuscito.';
+    const logo=document.createElement('span');logo.className='logo '+CLS[r.platform];logo.innerHTML=ICONS[r.platform]||'';
+    const body=document.createElement('span');const b=document.createElement('b');b.textContent=r.label||NAMES[r.platform]||r.platform;const sm=document.createElement('small');sm.textContent=msg;if(r.status==='error')sm.className='err';body.append(b,sm);
+    if(r.status==='running'||r.status==='queued'){const bar=document.createElement('div');bar.className='bar';bar.innerHTML='<i></i>';body.append(bar)}
+    row.append(logo,body);if(act)row.append(act);
+    box.append(row);
+  });
+  if(job.state==='running'&&!polling)polling=setInterval(pollJob,2500);
+  if(job.state!=='running'&&polling){clearInterval(polling);polling=null}
+}
+async function pollJob(){
+  try{
+    const r=await fetch('/publish/status',{cache:'no-store',credentials:'same-origin'});const j=await r.json();
+    if(!r.ok||!j.ok)return;
+    const was=(server.publish_job||{}).state;server.publish_job=j.job||{};renderResults();renderPlatforms();
+    if(was==='running'&&server.publish_job.state==='finished'){const res=Object.values(server.publish_job.results||{});const ok=res.filter(x=>x.status==='done').length,ko=res.filter(x=>x.status==='error').length;toast(ko?ok+' pubblicati, '+ko+' da riprovare':'Fatto! Short pubblicato')}
+  }catch(_e){}
+}
+
+/* multi-publish */
+function payload(){
+  const overrides={};
+  Object.keys(NAMES).forEach(p=>{if(texts[p])overrides[p]={title:texts[p].title||'',description:texts[p].description||'',hashtags:(texts[p].tags||[]).join(' ')}});
+  return{platforms:selected(),privacy,shared:{title:texts.all.title||'',description:texts.all.description||'',hashtags:(texts.all.tags||[]).join(' ')},overrides};
+}
+$('#publishBtn').onclick=async()=>{
+  const sel=selected();if(!sel.length){toast('Scegli almeno un social');return}
+  if(sel.includes('youtube')&&!String(effective('youtube').title||'').trim()){pickScope('all');$('#fTitle').focus();toast('Serve un titolo per YouTube');return}
+  const btn=$('#publishBtn');btn.disabled=true;btn.textContent='Avvio…';
+  try{
+    const r=await fetch('/publish/multi',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-GSF-CSRF':server.csrf_token||''},body:JSON.stringify(payload())});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.ok)throw new Error(j.error||'Pubblicazione non avviata');
+    server.publish_job=j.job||{};renderResults();renderPlatforms();
+    $('#pubCard').scrollIntoView({behavior:'smooth',block:'start'});
+    const manual=Object.values(server.publish_job.results||{}).filter(x=>x.status==='manual');
+    if(manual.length)toast('Per '+manual.map(x=>x.label).join(' e ')+' tocca "Condividi" qui sotto');
+  }catch(e){toast(e.message||'Pubblicazione non avviata');renderPlatforms()}
+};
+
+/* share + save */
+let linkCache={url:'',exp:0};
+async function publicLink(){
+  if(linkCache.url&&linkCache.exp*1000-Date.now()>600000)return linkCache.url;
+  const r=await fetch('/share/link',{method:'POST',credentials:'same-origin',headers:{'X-GSF-CSRF':server.csrf_token||''}});
+  const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw new Error(j.error||'Link non disponibile');
+  linkCache={url:new URL(j.path,location.origin).href,exp:j.expires_at||0};return linkCache.url;
+}
+const shareText=()=>{const v=texts.all;const tags=(v.tags||[]).map(t=>'#'+t).join(' ');return[v.title,v.description,tags].filter(Boolean).join('\n')};
+async function copy(text){try{await navigator.clipboard.writeText(text);return true}catch(_e){const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.append(ta);ta.select();let ok=false;try{ok=document.execCommand('copy')}catch(_e2){}ta.remove();return ok}}
+async function nativeShare(){
+  if(!navigator.share)return false;
+  try{const r=await fetch('/share/final',{credentials:'same-origin'});if(r.ok){const blob=await r.blob();const f=new File([blob],'gaming-short.mp4',{type:blob.type||'video/mp4'});if(!navigator.canShare||navigator.canShare({files:[f]})){await navigator.share({files:[f],title:texts.all.title||'Gaming Short',text:shareText()});return true}}}catch(e){if(e&&e.name==='AbortError')return true}
+  try{await navigator.share({title:texts.all.title||'Gaming Short',text:shareText(),url:await publicLink()});return true}catch(e){return !!(e&&e.name==='AbortError')}
+}
+function download(){const a=document.createElement('a');a.href='/share/final';a.download='gaming-short.mp4';document.body.append(a);a.click();a.remove();toast('Download avviato')}
+async function manualShare(p,caption){
+  await copy(caption);toast('Testo copiato');
+  if(await nativeShare())return;
+  download();window.open(p==='instagram'?'https://www.instagram.com/':'https://www.facebook.com/','_blank','noopener');
+}
+let dropboxLoading=null;
+function loadDropbox(){
+  if(window.Dropbox&&window.Dropbox.save)return Promise.resolve();
+  if(!dropboxLoading)dropboxLoading=new Promise((ok,ko)=>{const s=document.createElement('script');s.src='https://www.dropbox.com/static/api/2/dropins.js';s.id='dropboxjs';s.setAttribute('data-app-key',server.dropbox_app_key);s.onload=ok;s.onerror=()=>{dropboxLoading=null;ko(new Error('Dropbox non raggiungibile'))};document.head.append(s)});
+  return dropboxLoading;
+}
+const SHARE_URL={
+  whatsapp:(url,text)=>'https://wa.me/?text='+encodeURIComponent((text?text+'\n':'')+url),
+  telegram:(url,text)=>'https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(text),
+  x:(url)=>'https://x.com/intent/post?text='+encodeURIComponent(((texts.all.title||'')+' '+(texts.all.tags||[]).slice(0,4).map(t=>'#'+t).join(' ')).trim())+'&url='+encodeURIComponent(url)
+};
+$$('[data-share]').forEach(b=>b.onclick=async()=>{
+  const kind=b.dataset.share;
+  if(!server.ready){toast('Lo Short non è ancora pronto');return}
+  // open the window inside the tap so popup blockers allow it, then point it at the target
+  const pop=SHARE_URL[kind]?window.open('about:blank','_blank'):null;
+  b.disabled=true;
+  try{
+    if(kind==='download'){download();return}
+    if(kind==='native'){if(!(await nativeShare())){await copy(await publicLink());toast('Link copiato')}return}
+    if(kind==='dropbox'){
+      if(!server.dropbox_app_key){toast('Dropbox non è ancora configurato');return}
+      const url=await publicLink();await loadDropbox();
+      window.Dropbox.save(url,'gaming-short.mp4',{success:()=>toast('Salvato su Dropbox'),error:(m)=>toast(m||'Dropbox non riuscito'),cancel:()=>{}});
+      return;
+    }
+    const url=await publicLink();
+    if(kind==='copy'){toast((await copy(url))?'Link copiato: valido 24 ore':'Copia non riuscita');return}
+    if(kind==='email'){location.href='mailto:?subject='+encodeURIComponent(texts.all.title||'Il mio Gaming Short')+'&body='+encodeURIComponent((shareText()?shareText()+'\n\n':'')+url);return}
+    const target=SHARE_URL[kind](url,shareText());
+    if(pop){pop.opener=null;pop.location.href=target}else location.href=target;
+  }catch(e){if(pop)pop.close();toast(e.message||'Non disponibile')}
+  finally{b.disabled=!server.ready}
+});
+$('#editBtn').onclick=()=>nav('editor');
+$('#draftBtn').onclick=async()=>{const b=$('#draftBtn');b.disabled=true;try{const r=await fetch('/drafts/save-current',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'});const j=await r.json().catch(()=>({}));toast(r.ok&&j.ok?'Salvato nei tuoi Progetti':(j.error||'Salvataggio non riuscito'))}catch(_e){toast('Salvataggio non riuscito')}finally{b.disabled=false}};
+
+/* server state */
+async function sync(){
+  try{
+    const r=await fetch('/share/state',{cache:'no-store',credentials:'same-origin'});const j=await r.json();
+    if(!r.ok||!j.ok)throw new Error('state');
+    const rev=String(j.revision||''), was=server.revision;
+    Object.assign(server,j);server.revision=rev;
+    const pill=$('#readyPill');pill.classList.toggle('ok',!!j.ready);$('span',pill).textContent=j.ready?'Pronto':'In arrivo';
+    $('#pageTitle').textContent=j.ready?'Il tuo Short è pronto':'Preparo il tuo Short';
+    const v=$('#preview');
+    if(j.ready&&(rev!==was||!v.getAttribute('src'))){v.src='/share/final?revision='+encodeURIComponent(rev);v.hidden=false;$('#waitBox').hidden=true;linkCache={url:'',exp:0}}
+    if(!j.ready){v.removeAttribute('src');v.hidden=true;$('#waitBox').hidden=false}
+    $('#sizeInfo').textContent=j.final_bytes?(j.final_bytes/1048576).toFixed(1)+' MB':'—';
+    $$('[data-share]').forEach(b=>{b.disabled=!j.ready});
+    $('#shareNote').textContent=j.dropbox_app_key?'I link condivisi restano attivi per 24 ore.':'I link condivisi restano attivi per 24 ore. Dropbox si attiva appena configurato.';
+    renderPlatforms();renderResults();
+  }catch(_e){$('span',$('#readyPill')).textContent='Non disponibile'}
+}
+function renderAll(){renderTexts();renderPlatforms();markTabs()}
+
+window.addEventListener('message',e=>{
+  if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHARE_FOCUS')return;
+  const b=$('.plat[data-platform="'+String(e.data.platform||'').replace(/[^a-z]/g,'')+'"]');
+  if(b){b.setAttribute('aria-pressed','true');save();renderPlatforms();b.scrollIntoView({behavior:'smooth',block:'center'});b.focus({preventScroll:true})}
+});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
+window.addEventListener('focus',sync);
+load();renderAll();sync();setInterval(()=>{if(!server.ready)sync()},4000);
 })();
 </script>
-
-
-<!-- V405_PUBLISH_SHORT_LIVE -->
-<style>
-#v396MobilePublishSurface{display:flex!important;flex-direction:column;gap:12px;align-items:center;text-align:center}
-#v396MobilePublishSurface>.v396Mural,#v396MobilePublishSurface>.v396Actions{display:none!important}
-.v405Title{margin:6px 0;font-size:clamp(26px,6vw,38px);line-height:1.05;color:#0d2a66;letter-spacing:-.04em}
-.v405Preview{display:block;width:min(280px,70vw);max-height:52dvh;border-radius:23px;background:#07101d;object-fit:contain}
-.v405Actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:520px}
-.v405Actions button{border:1px solid rgba(143,181,216,.24);border-radius:16px;padding:13px;background:#fff;color:#28557e;font:inherit;font-weight:850;cursor:pointer}
-.v405Actions .primary{grid-column:1/-1;background:#55aaf2;color:#fff;border:0}
-.v405Actions button:disabled{opacity:.45;cursor:not-allowed}
-.v405Sheet{position:fixed;inset:0;z-index:10000;display:none;align-items:flex-end;justify-content:center;background:rgba(20,40,65,.18);padding:10px}
-.v405Sheet.open{display:flex}.v405Panel{width:min(560px,100%);max-height:85dvh;overflow:auto;border-radius:25px;background:#fff;padding:16px;text-align:left;display:grid;gap:10px}
-.v405Close{justify-self:end;border:0;background:#edf6fd;border-radius:10px;padding:8px 14px;color:#28557e}
-.v405Feedback{min-height:18px;color:#7185a6;font-size:12px}
-</style>
-<script id="v405PublishLive">
-(()=>{
- const root=document.getElementById('v396MobilePublishSurface');if(!root||root.dataset.v405Live)return;root.dataset.v405Live='1';
- const title=document.createElement('h1');title.className='v405Title';title.textContent='Il tuo Short è pronto';root.prepend(title);
- const video=document.createElement('video');video.className='v405Preview';video.controls=true;video.playsInline=true;video.preload='metadata';video.hidden=true;title.after(video);
- const note=document.createElement('div');note.className='v405Feedback';note.setAttribute('role','status');root.append(note);
- const sheet=document.createElement('section');sheet.className='v405Sheet';sheet.id='v405PublishSheet';sheet.setAttribute('role','dialog');sheet.setAttribute('aria-label','Pubblica il tuo Short');sheet.setAttribute('aria-modal','true');sheet.setAttribute('aria-hidden','true');
- const panel=document.createElement('div');panel.className='v405Panel';const close=document.createElement('button');close.className='v405Close';close.textContent='Chiudi';panel.append(close);sheet.append(panel);root.append(sheet);
- [...root.querySelectorAll(':scope > .v396Panel')].forEach(el=>panel.append(el));
- const originalPublish=root.querySelector('#v396Publish');if(originalPublish)panel.append(originalPublish);
- const actions=document.createElement('div');actions.className='v405Actions';
- function button(label,action,handler){const b=document.createElement('button');b.type='button';b.dataset.action=action;b.textContent=label;b.onclick=handler;actions.append(b);return b}
- button('Modifica','edit',()=>parent.postMessage({type:'GSF_SHELL_NAV',target:'editor'},location.origin));
- const save=button('Salva','save',async()=>{save.disabled=true;try{const r=await fetch('/drafts/save-current',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'});const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||'Salvataggio non riuscito');note.textContent='Salvato nei tuoi Progetti'}catch(e){note.textContent=e.message||'Salvataggio non riuscito'}finally{save.disabled=false}});
- const publish=button('PUBBLICA','publish',()=>{sheet.classList.add('open');sheet.setAttribute('aria-hidden','false');publish.setAttribute('aria-expanded','true');close.focus()});publish.className='primary';publish.setAttribute('aria-controls',sheet.id);publish.setAttribute('aria-expanded','false');
- const download=button('Scarica','download',()=>root.querySelector('#v396Download')?.click());
- root.insertBefore(actions,note);
- const hide=()=>{sheet.classList.remove('open');sheet.setAttribute('aria-hidden','true');publish.setAttribute('aria-expanded','false');publish.focus()};close.onclick=hide;sheet.onclick=e=>{if(e.target===sheet)hide()};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sheet.classList.contains('open'))hide()});
- async function sync(){try{const r=await fetch('/share/state',{cache:'no-store',credentials:'same-origin'});const state=await r.json();const ready=r.ok&&state.ok&&state.ready;publish.disabled=!ready;download.disabled=!ready;if(ready&&video.dataset.revision!==String(state.revision||'')){video.dataset.revision=String(state.revision||'');video.src='/share/final?revision='+encodeURIComponent(video.dataset.revision);video.hidden=false}if(!ready){delete video.dataset.revision;video.removeAttribute('src');video.hidden=true;title.textContent='Preparo il tuo Short'}else title.textContent='Il tuo Short è pronto'}catch(e){publish.disabled=true;download.disabled=true}}
- sync();setInterval(sync,2500);
-})();
-</script>
-
 </body>
 </html>

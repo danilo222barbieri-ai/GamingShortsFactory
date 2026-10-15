@@ -37,6 +37,7 @@ from feedback_learning_v127 import (
 )
 from content_memory_v145 import inspect_memory as _content_memory_inspect, upsert_memory as _content_memory_upsert
 from social_analytics_v148 import collect as _social_analytics_collect, dynamic_performance_score as _social_dynamic_score
+import publish_multi_v413 as _pm413
 
 try:
     from gsf_editor_v403 import game_director_suggestions, normalize_editor_state, normalize_timeline_markers
@@ -3951,6 +3952,163 @@ def _ai_results_payload(sid):
         })
     return {"ok":True,"previews":previews[:3],"count":min(3,len(previews))}
 
+
+# V413_PUBLISH_MULTI — one-click multi-publish + signed share links.
+DROPBOX_APP_KEY=_env_first("GSF_DROPBOX_APP_KEY",default="")
+_PUBLISH_LOCK=threading.Lock()
+_PUBLISH_JOBS={}
+_PUBLISH_LABELS={"youtube":"YouTube","tiktok":"TikTok","instagram":"Instagram","facebook":"Facebook"}
+
+def _share_link_secret():
+    return str(
+        os.environ.get("GSF_CSRF_SECRET","")
+        or os.environ.get("GSF_DATA_ENCRYPTION_KEY","")
+        or os.environ.get("GSF_SOCIAL_CONNECT_KEY","")
+        or ""
+    ).encode("utf-8")
+
+def _publish_job_path(sid):
+    return ROOT/"sessions"/_safe_id(sid)/"publish_v413.json"
+
+def _publish_job_save(sid,job):
+    path=_publish_job_path(sid)
+    path.parent.mkdir(parents=True,exist_ok=True)
+    tmp=Path(str(path)+".tmp")
+    tmp.write_text(json.dumps(job,ensure_ascii=False),encoding="utf-8")
+    os.replace(tmp,path)
+
+def _publish_job_load(sid):
+    with _PUBLISH_LOCK:
+        job=_PUBLISH_JOBS.get(_safe_id(sid))
+        if job:
+            return json.loads(json.dumps(job))
+    try:
+        return json.loads(_publish_job_path(sid).read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+def _publish_update(sid,job,platform=None,**fields):
+    with _PUBLISH_LOCK:
+        if platform:
+            job["results"][platform].update(fields)
+        else:
+            job.update(fields)
+        job["updated_at"]=time.time()
+        _PUBLISH_JOBS[_safe_id(sid)]=job
+        snapshot=json.loads(json.dumps(job))
+    try:_publish_job_save(sid,snapshot)
+    except Exception:pass
+
+def _publish_final_path(sid):
+    stable,_job=_final_local_paths(sid)
+    if not (stable and stable.is_file() and stable.stat().st_size>1024):
+        _final_restore_from_bucket(sid)
+    if stable and stable.is_file() and stable.stat().st_size>1024:
+        return stable
+    return None
+
+def _publish_run(sid,job,request,video_path):
+    privacy=request["privacy"]
+    for platform in request["platforms"]:
+        plan=request["plans"][platform]
+        if platform not in _pm413.SUPPORTED or job["results"][platform].get("status")!="queued":
+            continue
+        _publish_update(sid,job,platform,status="running")
+        try:
+            if platform=="youtube":
+                token=_youtube_analytics_token(sid)
+                result=_pm413.youtube_upload(str(token.get("token") or token.get("access_token") or ""),str(video_path),plan,privacy)
+                id_type="video_id"
+            else:
+                token=_tiktok_analytics_token(sid)
+                result=_pm413.tiktok_direct_post(str(token.get("access_token") or ""),str(video_path),plan,privacy)
+                id_type="publish_id"
+            _publish_update(sid,job,platform,status="done",url=str(result.get("url") or ""),
+                            content_id=str(result.get("id") or ""),privacy=str(result.get("privacy") or ""),
+                            private_only=bool(result.get("private_only")),error="")
+            try:
+                _analytics_register(sid,{"platform":_PUBLISH_LABELS[platform],"content_id":str(result.get("id") or ""),
+                                         "id_type":id_type,"metadata":{"title":plan.get("title",""),"source":"crea_short_v413"}})
+            except Exception:
+                pass
+            print("GSF_V413_PUBLISH_OK",sid,platform,flush=True)
+        except Exception as exc:
+            message=str(exc)[:220] or "Pubblicazione non riuscita."
+            _publish_update(sid,job,platform,status="error",error=message)
+            print("GSF_V413_PUBLISH_FAIL",sid,platform,type(exc).__name__,flush=True)
+    done=all(r.get("status") in ("done","error","manual","needs_connection") for r in job["results"].values())
+    if done:
+        _publish_update(sid,job,state="finished")
+
+def _publish_start(sid,payload):
+    request=_pm413.normalize_request(payload)
+    current=_publish_job_load(sid)
+    if current.get("state")=="running" and time.time()-float(current.get("updated_at") or 0)<900:
+        raise ValueError("Una pubblicazione è già in corso.")
+    video_path=_publish_final_path(sid)
+    if not video_path:
+        raise ValueError("Lo Short finale non è ancora pronto.")
+    social=_creator_social_snapshot(sid,{})
+    results={}
+    for platform in request["platforms"]:
+        if platform not in _pm413.SUPPORTED:
+            status="manual"
+        elif not social.get(platform):
+            status="needs_connection"
+        else:
+            status="queued"
+        results[platform]={"platform":platform,"label":_PUBLISH_LABELS[platform],"status":status,"url":"","error":"",
+                           "caption":request["plans"][platform]["caption"]}
+    job={"id":uuid.uuid4().hex[:16],"state":"running","created_at":time.time(),"updated_at":time.time(),
+         "privacy":request["privacy"],"results":results}
+    _publish_update(sid,job)
+    if any(r["status"]=="queued" for r in results.values()):
+        threading.Thread(target=_publish_run,args=(sid,job,request,video_path),daemon=True,name="gsf-publish-v413").start()
+    else:
+        _publish_update(sid,job,state="finished")
+    return _publish_job_load(sid)
+
+def _share_public_stream(handler,token):
+    sid=_pm413.verify_share_link(_share_link_secret(),token)
+    path=_publish_final_path(sid) if sid else None
+    if not path:
+        _html(handler,404,"Link scaduto o Short non disponibile.")
+        return
+    size=path.stat().st_size
+    start,end=0,size-1
+    rng=str(handler.headers.get("Range","") or "")
+    m=re.fullmatch(r"bytes=(\d*)-(\d*)",rng.strip())
+    partial=False
+    if m and (m.group(1) or m.group(2)):
+        if m.group(1):
+            start=int(m.group(1));end=min(size-1,int(m.group(2))) if m.group(2) else size-1
+        else:
+            start=max(0,size-int(m.group(2)))
+        if start>end or start>=size:
+            handler.send_response(416);handler.send_header("Content-Range",f"bytes */{size}");handler.end_headers();return
+        partial=True
+    handler.send_response(206 if partial else 200)
+    handler.send_header("Content-Type","video/mp4")
+    handler.send_header("Content-Length",str(end-start+1))
+    handler.send_header("Accept-Ranges","bytes")
+    handler.send_header("Content-Disposition",'inline; filename="gaming-short.mp4"')
+    handler.send_header("Cache-Control","private, max-age=300")
+    handler.send_header("X-Robots-Tag","noindex")
+    if partial:
+        handler.send_header("Content-Range",f"bytes {start}-{end}/{size}")
+    handler.end_headers()
+    if handler.command=="HEAD":
+        return
+    remaining=end-start+1
+    with open(path,"rb") as fh:
+        fh.seek(start)
+        while remaining>0:
+            chunk=fh.read(min(1024*1024,remaining))
+            if not chunk:
+                break
+            handler.wfile.write(chunk)
+            remaining-=len(chunk)
+
 class Handler(BaseHTTPRequestHandler):
     server_version="GSFDirectUpload/2.0"
 
@@ -4164,6 +4322,16 @@ class Handler(BaseHTTPRequestHandler):
         if clean=="/drafts/delete":
             _json(self,405,{"ok":False,"error":"method not allowed"})
             return
+        if clean=="/publish/status":
+            sid=_social_sid(self)
+            if not sid:
+                _json(self,400,{"ok":False,"error":"Sessione browser non valida."})
+                return
+            _json(self,200,{"ok":True,"job":_publish_job_load(sid)})
+            return
+        if clean.startswith("/share/public/"):
+            _share_public_stream(self,clean[len("/share/public/"):])
+            return
         if clean=="/share/state":
             sid=_social_sid(self)
             if not sid:
@@ -4202,6 +4370,11 @@ class Handler(BaseHTTPRequestHandler):
                 "revision":revision,
                 "video_url":"/share/final" if ready else "",
                 "social":social_snapshot,
+                # V413_PUBLISH_MULTI
+                "csrf_token":_security_csrf_token(sid),
+                "dropbox_app_key":DROPBOX_APP_KEY,
+                "publish_supported":list(_pm413.SUPPORTED),
+                "publish_job":_publish_job_load(sid),
             })
             return
         if clean=="/share/final":
@@ -4459,6 +4632,34 @@ class Handler(BaseHTTPRequestHandler):
         sid=_safe_id(self.headers.get("X-GSF-Session-ID"))
         if not sid:
             _json(self,400,{"ok":False,"error":"invalid session"})
+            return
+
+        if path in ("/publish/multi","/share/link"):
+            if not _security_csrf_valid(self,sid):
+                _json(self,403,{"ok":False,"error":"csrf validation failed"})
+                return
+            if path=="/share/link":
+                if not _publish_final_path(sid):
+                    _json(self,409,{"ok":False,"error":"Lo Short finale non è ancora pronto."})
+                    return
+                try:
+                    token,exp=_pm413.sign_share_link(_share_link_secret(),sid,ttl=86400)
+                except ValueError:
+                    _json(self,503,{"ok":False,"error":"Link non disponibile."})
+                    return
+                _json(self,200,{"ok":True,"path":"/share/public/"+token,"expires_at":exp})
+                return
+            try:
+                payload=_read_json(self,max_bytes=64*1024)
+                job=_publish_start(sid,payload)
+            except ValueError as exc:
+                _json(self,400,{"ok":False,"error":str(exc)})
+                return
+            except Exception as exc:
+                print("GSF_V413_PUBLISH_START_FAIL",sid,type(exc).__name__,flush=True)
+                _json(self,500,{"ok":False,"error":"Pubblicazione non avviata. Riprova."})
+                return
+            _json(self,202,{"ok":True,"job":job})
             return
 
         if path=="/drafts/delete":
