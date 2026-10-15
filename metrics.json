@@ -1,0 +1,119 @@
+{
+ "base": "http://127.0.0.1:18080",
+ "cycles": [
+  {
+   "active": 19,
+   "created": 19,
+   "callbacks": 341,
+   "disconnects": 0,
+   "callbackMs": 561,
+   "cycle": 1
+  },
+  {
+   "active": 19,
+   "created": 19,
+   "callbacks": 401,
+   "disconnects": 0,
+   "callbackMs": 564,
+   "cycle": 2
+  }
+ ],
+ "console_errors": [
+  "pageerror: Unexpected identifier 'Avenir'",
+  "pageerror: Unexpected identifier 'Avenir'"
+ ],
+ "surfaces": {
+  "home": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 111,
+   "disconnects": 0,
+   "callbackMs": 352
+  },
+  "02-hub": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 153,
+   "disconnects": 0,
+   "callbackMs": 379
+  },
+  "03-projects": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 181,
+   "disconnects": 0,
+   "callbackMs": 435
+  },
+  "04-live": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 206,
+   "disconnects": 0,
+   "callbackMs": 468
+  },
+  "05-hub-profile": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 236,
+   "disconnects": 0,
+   "callbackMs": 502
+  },
+  "06-editor": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 259,
+   "disconnects": 0,
+   "callbackMs": 525
+  },
+  "07-home-again": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 282,
+   "disconnects": 0,
+   "callbackMs": 557
+  },
+  "mobile-game-editor": {
+   "gesture_state": {
+    "zoom": 1.55,
+    "panX": 9.04,
+    "panY": 0,
+    "framePreset": "free",
+    "coverMode": "Auto",
+    "coverTime": 0,
+    "coverLocked": false,
+    "look": "Clean",
+    "intensity": 64,
+    "brightness": 100,
+    "contrast": 100,
+    "hudMode": "Off",
+    "captionOn": true,
+    "captionMode": "Auto",
+    "captionText": "",
+    "captionSize": 36,
+    "captionY": 76,
+    "textColor": "#ffffff",
+    "activeColor": "#ffd400",
+    "outlineColor": "#000000",
+    "muted": false,
+    "volume": 100,
+    "speed": 1,
+    "audioMode": "Originale",
+    "inPoint": 1,
+    "outPoint": 14,
+    "aiMode": "Auto Gaming",
+    "visionEnabled": false,
+    "qualityMode": "Adaptive AI",
+    "editorVersion": "2026.2",
+    "sourceDuration": 18
+   },
+   "fullscreen_signals": [
+    true,
+    false
+   ],
+   "console_errors": []
+  }
+ },
+ "home_ready_seconds": 9.7,
+ "callback_ms_per_cycle": 3.0,
+ "observer_growth_per_cycle": 0.0
+}

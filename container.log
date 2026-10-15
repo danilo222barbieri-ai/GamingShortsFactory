@@ -1,0 +1,60 @@
+GSF UI manifest verify PASS: digest=038d41bb8c895dd34d80adeb05f5c57df575126f26b68ec174cf7d5c620769ad files=175
+GSF_CANONICAL_UI release=unknown
+GSF canonical startup: services launched; waiting for real Streamlit readiness
+GSF contact server listening on 127.0.0.1:8503 delivery=stored smtp_fallback=off
+GSF_V128_GUARDIAN started interval=60.0 max_sessions=24
+GSF direct upload server listening on 127.0.0.1:8502 bucket=off worker=off
+2026-10-15 20:09:14.711 Uvicorn server started on 127.0.0.1:8501
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://127.0.0.1:8501
+
+GSF_LIVING_UI_ACTIVE V153.16
+2026-10-15 20:10:10.133 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-15 20:10:10.613 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-15 20:10:10.614 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-15 20:10:10.616 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-15 20:10:10.617 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-15 20:10:10.617 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-15 20:10:10.618 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-15 20:10:10.619 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-15 20:10:10.620 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-15 20:10:10.621 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-15 20:10:10.621 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-15 20:10:10.621 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-15 20:10:10.623 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-15 20:10:10.623 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-15 20:10:10.623 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+GSF_EDITOR_MEDIA_NOT_READY 72713e8ac28b81b900733c4e00722842
+GSF_EDITOR_MEDIA_NOT_READY 9abac277fbea6c088acd268d64b06eb1
