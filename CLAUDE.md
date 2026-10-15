@@ -36,6 +36,9 @@ evidence and say so.
 - The repo may be a shallow clone: `git fetch origin main` (and rebase)
   before pushing a branch, or the push can be rejected as too large.
 - Running the tools creates `tools/__pycache__/`; delete it, never commit it.
+- Never put `[skip ci]` in a commit on a product branch: squash merges copy
+  every commit message into the merge commit, and GitHub then skips the
+  Production Gate on `main`, so nothing is promoted.
 - Coordination-only commits (`.gsf/**`, `PROJECT_STATUS.md`, runbooks) use
   the `coord:` prefix and `[skip ci]`.
 - Never store secrets, tokens or personal data in the repo, `.gsf/**` or
