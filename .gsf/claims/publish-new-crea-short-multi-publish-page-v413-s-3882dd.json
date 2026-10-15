@@ -1,0 +1,20 @@
+{
+  "branch": "chat/publish-new-crea-short-multi-publish-page-v413-s-3882dd",
+  "created_at": "2026-10-15T16:46:14+02:00",
+  "id": "publish-new-crea-short-multi-publish-page-v413-s-3882dd",
+  "owner": "chat/publish-new-crea-short-multi-publish-page-v413-s-3882dd",
+  "paths": [
+    ".github/workflows/gsf-ci.yml",
+    "web/direct_upload_server.py",
+    "web/nginx.conf.template",
+    "web/publish_multi_v413.py",
+    "web/runtime_smoke_v411.py",
+    "web/share_v156_component/**",
+    "web/test_v396_mobile_share_publish_surface.py",
+    "web/test_v397_production_hardening.py",
+    "web/test_v405_publish_short_simple.py",
+    "web/test_v413_publish_multi.py"
+  ],
+  "scope": "publish: new Crea Short multi-publish page V413 (share page + /publish/multi backend)",
+  "state": "active"
+}
