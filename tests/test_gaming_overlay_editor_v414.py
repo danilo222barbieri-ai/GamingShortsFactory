@@ -82,9 +82,9 @@ def test_v414_glass_layer_is_video_first_not_external_card_layout() -> None:
         ".editor-app.is-expanded",
         ".preview-stage",
         ".v414-top-hud",
-        ".tool-bar",
-        ".timeline-card",
-        ".tool-dock",
+        ".v414-tool-rail",
+        ".v414-timeline",
+        ".v414-tool-sheet",
         "backdrop-filter",
         "env(safe-area-inset-top)",
         "env(safe-area-inset-bottom)",
@@ -99,7 +99,7 @@ def test_playback_state_reduces_nonessential_chrome_without_polling() -> None:
     assert ".is-playing" in css
     assert 'classList.add("is-playing")' in script
     assert 'classList.remove("is-playing")' in script
-    combined = html_js_css = "\n".join((_read("index.html"), script, css))
+    combined = "\n".join((_read("index.html"), script, css))
     for forbidden in ("MutationObserver", "setInterval", "createElement(\"canvas\")", "createElement('canvas')"):
         assert forbidden not in combined, forbidden
 
