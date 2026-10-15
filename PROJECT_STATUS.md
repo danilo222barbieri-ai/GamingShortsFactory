@@ -219,6 +219,15 @@ No intentional destructive production rollback test was performed. Rollback exec
 - Railway frontend `c92759e3-6a72-40e3-b269-0ba61c3fdd66` (release `518e8fb`) then `cb0bff7b-9a2b-4545-9c7b-7b1151479a18` (release `36ff303`): **SUCCESS** — startup `GSF UI manifest verify PASS digest=b3a16c29… files=173`; `/healthz` 200 after start. `GSF Production UI Verify` run `38793356058`: **SUCCESS**. Worker not redeployed (SLEEPING, expected).
 - Unverified / follow-up: WebKit only verified in CI (sandbox has Chromium only); no real-device Safari pass; Game Vision does not emit Focus Map coordinates yet, so Follow Action tracking in preview stays inactive until the backend sends `focus_map` in `GSF_GAME_EDITOR_INIT`.
 
+### Crea con IA V413 — Home mural style — 2026-10-16 (PR #155)
+
+- Claim `ui-crea-con-ia-in-home-mural-style-big-circle-or-e0c710`, squash `b515c5f34cc0087dc7f8173fcf758c1986e66ded`; only `web/ai_v221_component/index.html` changed.
+- Redesign approved by the owner from a preview: big glass circle (search button) with the four engines orbiting it, handwritten murals that follow the state, scan inside the circle (real timer, sweeping ring); results as three portal circles (ring = AI score), one detail card with "Cambia short", pill actions Apri nell'editor / Pubblica. Owner follow-up: no "Gameplay caricato" pill, no mural above the duration. One screen, no scrolling (390×760, 390×680, 360×600, 1280×800). V412 behaviour unchanged.
+- Tests: local V404/V412/V397/V410 PASS, `tests/` 58 passed (`test_gsf_core_infra.py` not run locally); PR contracts + production-gate success.
+- Main Production Gate: **SUCCESS**; promotion `9c04f10` (frontend). Railway frontend `857af3ea-042d-4463-8928-ee849b6c151f`: **SUCCESS**.
+- `GSF Production UI Verify` run `38817687407`: **SUCCESS** — release `9c04f10`, digest `d50c4044…` == repo, pages byte-identical, Home 200, `/creator-hub/state` 200 + CSRF.
+- Unverified: no end-to-end AI run with a real uploaded video on production.
+
 ## Current user-facing verification priorities
 
 These are re-verification priorities, not claims that a feature is currently broken:
