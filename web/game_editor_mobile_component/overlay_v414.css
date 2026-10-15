@@ -54,6 +54,9 @@ body {
   aspect-ratio: 9 / 16;
   margin: 0 auto;
   overflow: hidden;
+  /* clip, not hidden: focusing a drawer input must never scroll the stage
+     (a zoomed video is larger than the stage and would shift every overlay). */
+  overflow: clip;
   isolation: isolate;
   border: 1px solid rgba(221, 245, 255, .34);
   border-radius: 28px;
@@ -252,8 +255,8 @@ body {
   z-index: 32;
   left: max(12px, env(safe-area-inset-left));
   right: max(12px, env(safe-area-inset-right));
-  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 142px);
-  min-height: 36px;
+  bottom: calc(max(10px, env(safe-area-inset-bottom)) + 66px);
+  min-height: 34px;
   display: grid;
   grid-template-columns: auto minmax(0,1fr) auto;
   align-items: center;
@@ -274,9 +277,9 @@ body {
   z-index: 30;
   left: max(12px, env(safe-area-inset-left));
   right: max(12px, env(safe-area-inset-right));
-  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 70px);
-  height: 66px;
-  padding: 6px 8px;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  height: 52px;
+  padding: 4px 8px 6px;
   overflow: hidden;
   border: 1px solid var(--v414-line);
   border-radius: 16px;
@@ -286,12 +289,12 @@ body {
   -webkit-backdrop-filter: blur(16px) saturate(1.15);
   backdrop-filter: blur(16px) saturate(1.15);
 }
-.v414-timeline .timeline-heading { margin: 0 0 4px; }
-.v414-timeline .timeline-heading strong { font-size: 9px; color: #fff; }
+.v414-timeline .timeline-heading { margin: 0 0 3px; min-height: 10px; }
+.v414-timeline .timeline-heading strong { font-size: 8px; color: rgba(255,255,255,.82); }
 .v414-timeline .eyebrow { display: none; }
 .v414-timeline .trim-readout { color: rgba(255,255,255,.70); font-size: 7px; }
 .v414-timeline .timeline-track {
-  height: 39px;
+  height: 30px;
   border: 1px solid rgba(255,255,255,.12);
   border-radius: 10px;
   background: rgba(255,255,255,.08);
@@ -301,21 +304,25 @@ body {
   background: linear-gradient(145deg, rgba(67,151,216,.68), rgba(82,220,255,.42), rgba(96,226,182,.45));
 }
 .v414-timeline .selected-range { top: 4px; bottom: 4px; border-color: var(--v414-cyan); }
-.v414-timeline .trim-range::-webkit-slider-thumb { height: 39px; }
-.v414-timeline .trim-range::-moz-range-thumb { height: 39px; }
+.v414-timeline .trim-range::-webkit-slider-thumb { height: 30px; }
+.v414-timeline .trim-range::-moz-range-thumb { height: 30px; }
 
 /* tool rail */
 .v414-tool-rail {
   position: absolute;
   z-index: 35;
-  left: max(10px, env(safe-area-inset-left));
-  right: max(10px, env(safe-area-inset-right));
-  bottom: max(10px, env(safe-area-inset-bottom));
-  min-height: 54px;
+  top: calc(max(10px, env(safe-area-inset-top)) + 110px);
+  right: max(8px, env(safe-area-inset-right));
+  width: 58px;
+  max-height: calc(100% - max(10px, env(safe-area-inset-top)) - max(10px, env(safe-area-inset-bottom)) - 222px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0,1fr));
-  gap: 5px;
-  padding: 5px;
+  grid-template-columns: 1fr;
+  grid-auto-rows: minmax(46px, auto);
+  gap: 4px;
+  padding: 5px 4px;
   border: 1px solid var(--v414-line);
   border-radius: 18px;
   background: var(--v414-glass);
@@ -323,9 +330,10 @@ body {
   -webkit-backdrop-filter: blur(20px) saturate(1.2);
   backdrop-filter: blur(20px) saturate(1.2);
 }
+.v414-tool-rail::-webkit-scrollbar { display: none; }
 .v414-tool-rail .tool-button {
-  min-height: 44px;
-  padding: 3px 2px;
+  min-height: 46px;
+  padding: 3px 1px;
   border: 1px solid transparent;
   border-radius: 13px;
   background: transparent;
@@ -359,7 +367,7 @@ body {
   position: absolute;
   z-index: 44;
   left: max(10px, env(safe-area-inset-left));
-  right: max(10px, env(safe-area-inset-right));
+  right: calc(max(8px, env(safe-area-inset-right)) + 66px);
   bottom: calc(max(10px, env(safe-area-inset-bottom)) + 62px);
   max-height: min(54dvh, 520px);
   min-height: 0;
@@ -465,6 +473,18 @@ body {
   background: rgba(255,255,255,.07);
   color: #fff;
 }
+.ai-suggestion-card p { color: var(--v414-muted); }
+.ai-suggestion-actions button {
+  min-height: 40px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 12px;
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 850;
+}
+.ai-suggestion-actions button:disabled { opacity: .38; }
+.ai-suggestion-card.is-previewing { border-color: rgba(154,124,255,.50); }
 
 /* Save/Done are in-video top-right actions, not a page footer. */
 .v414-editor-actions {
@@ -528,15 +548,137 @@ body {
   /* Save must stay reachable on phones: compact it, never hide it. */
   .v414-editor-actions { gap: 5px; }
   .v414-editor-actions button { min-height: 40px; padding: 0 10px; }
-  .v414-tool-sheet { max-height: 58dvh; }
+  .v414-tool-sheet { max-height: 56dvh; }
   .camera-mode-grid, .ai-quick-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
 
 @media (orientation: landscape) and (max-height: 540px) {
-  .v414-timeline { left: 72px; right: 72px; bottom: 66px; }
-  .v414-transport { left: 72px; right: 72px; bottom: 134px; }
-  .v414-tool-sheet { left: 70px; right: 70px; max-height: 66dvh; }
+  .v414-tool-rail { top: calc(max(8px, env(safe-area-inset-top)) + 58px); max-height: calc(100% - 140px); }
+  .v414-editor-actions { top: max(10px, env(safe-area-inset-top)); right: calc(max(8px, env(safe-area-inset-right)) + 260px); }
+  .v414-timeline { right: calc(max(8px, env(safe-area-inset-right)) + 70px); }
+  .v414-transport { right: calc(max(8px, env(safe-area-inset-right)) + 70px); }
+  .v414-tool-sheet { max-height: 66dvh; }
+  .ai-preview-bar { top: calc(max(8px, env(safe-area-inset-top)) + 58px); }
 }
+
+/* Top bar: Game AI shortcut */
+.v414-top-hud .history-actions { display: flex; gap: 4px; }
+.v414-top-hud .ai-top-button {
+  border-color: rgba(154,124,255,.42);
+  background: linear-gradient(135deg, rgba(88,220,255,.20), rgba(154,124,255,.30));
+  color: #fff;
+  font-size: 17px;
+}
+.editor-app.is-mini .history-actions #aiTopButton { display: none; }
+
+/* Two-phase Game AI: Preview never commits, Apply does. */
+.ai-preview-bar {
+  position: absolute;
+  z-index: 52;
+  top: calc(max(10px, env(safe-area-inset-top)) + 108px);
+  left: max(10px, env(safe-area-inset-left));
+  right: calc(max(8px, env(safe-area-inset-right)) + 66px);
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto auto;
+  align-items: center;
+  gap: 7px;
+  padding: 6px;
+  border: 1px solid rgba(154,124,255,.46);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(10,22,44,.78), rgba(34,22,66,.72));
+  color: #fff;
+  box-shadow: 0 14px 34px rgba(0,0,0,.30), 0 0 0 1px rgba(88,220,255,.10), inset 0 1px 0 rgba(255,255,255,.14);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  backdrop-filter: blur(20px) saturate(1.25);
+  animation: v414-rise .18s ease;
+}
+.ai-preview-bar[hidden] { display: none; }
+.ai-preview-bar .ai-orb { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: rgba(154,124,255,.28); color: #d9ccff; }
+.ai-preview-copy { min-width: 0; display: grid; }
+.ai-preview-copy strong { font-size: 10px; letter-spacing: .04em; }
+.ai-preview-copy span { overflow: hidden; color: rgba(236,244,255,.76); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.ai-preview-bar button { min-height: 40px; padding: 0 11px; border-radius: 13px; font-size: 10px; font-weight: 850; }
+.ai-preview-cancel { border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.08); color: #fff; }
+.ai-preview-apply { border: 0; background: linear-gradient(135deg, #58dcff, #9a7cff); color: #071322; }
+.editor-app.is-ai-previewing .preview-stage { box-shadow: inset 0 0 0 2px rgba(154,124,255,.55); }
+.ai-quick-grid button.is-previewing { border-color: rgba(154,124,255,.60); background: rgba(154,124,255,.22); color: #fff; }
+
+.ai-command { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px; margin-top: 8px; }
+.ai-command input { min-height: 44px; }
+.ai-command button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(154,124,255,.42);
+  border-radius: 13px;
+  background: rgba(154,124,255,.20);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.panel-hint { margin: 6px 0 0; color: var(--v414-muted); font-size: 9px; line-height: 1.35; }
+.focus-status[data-state="ready"] { color: var(--v414-mint); }
+.inline-actions { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px; margin-top: 6px; }
+
+.choice-grid { display: grid; gap: 6px; }
+.choice-grid button {
+  min-height: 50px;
+  padding: 7px 10px;
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 14px;
+  background: rgba(255,255,255,.07);
+  color: #fff;
+  text-align: left;
+}
+.choice-grid button strong { font-size: 10px; }
+.choice-grid button span { color: var(--v414-muted); font-size: 8px; }
+.choice-grid button.is-selected { border-color: rgba(88,220,255,.42); background: rgba(88,220,255,.15); }
+
+/* Focus Map moments on the timeline */
+.focus-markers { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.focus-marker {
+  position: absolute;
+  top: 3px;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: #b9a7ff;
+  box-shadow: 0 0 8px rgba(154,124,255,.85);
+}
+.preview-stage.is-focus-tracking::before {
+  content: "FOLLOW";
+  position: absolute;
+  z-index: 20;
+  top: calc(max(10px, env(safe-area-inset-top)) + 64px);
+  left: max(12px, env(safe-area-inset-left));
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(98,226,182,.20);
+  color: var(--v414-mint);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .1em;
+}
+
+/* Playback: chrome fades away and returns on touch or movement. */
+.v414-top-hud,
+.v414-tool-rail,
+.v414-editor-actions,
+.v414-transport,
+.v414-timeline,
+.ratio-badge { transition: opacity .28s ease, transform .28s ease; }
+.editor-app.is-chrome-hidden .v414-top-hud,
+.editor-app.is-chrome-hidden .v414-editor-actions,
+.editor-app.is-chrome-hidden .ratio-badge { opacity: 0; transform: translateY(-6px); pointer-events: none; }
+.editor-app.is-chrome-hidden .v414-tool-rail { opacity: 0; transform: translateX(8px); pointer-events: none; }
+.editor-app.is-chrome-hidden .v414-transport { opacity: 0; pointer-events: none; }
+.editor-app.is-chrome-hidden .v414-timeline { opacity: .30; pointer-events: none; }
+
+@keyframes v414-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 @media (prefers-reduced-motion: reduce) {
   .preview-stage,
@@ -544,5 +686,10 @@ body {
   .v414-center-play,
   .enter-editor-button,
   .v414-top-hud,
+  .v414-tool-rail,
+  .v414-editor-actions,
+  .v414-transport,
+  .ratio-badge,
   .v414-timeline { transition: none !important; }
+  .ai-preview-bar { animation: none; }
 }

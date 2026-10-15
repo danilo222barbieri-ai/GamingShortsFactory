@@ -102,11 +102,15 @@ def test_fullscreen_avoids_webkit_100vw_rounding_overflow() -> None:
     assert "width: 100vw;" not in stage_block.group("body")
 
 
-def test_camera_and_ai_controls_are_inside_video_and_keep_legacy_tool_order() -> None:
+def test_camera_and_ai_controls_are_inside_video_with_gaming_categories() -> None:
     html = _read("index.html")
     stage = _stage_html(html)
     tools = re.findall(r'<button[^>]+data-tool="([^"]+)"[^>]*>.*?</button>', stage, re.S)
-    assert tools == ["clip", "frame", "text", "audio", "ai"]
+    assert tools == ["clip", "frame", "look", "hud", "text", "audio", "ai"]
+    for look in ("Clean", "Competitive", "Boss Cinematic"):
+        assert f'data-look="{look}"' in stage
+    for mode in ("Off", "Smart Safe"):
+        assert f'data-hud-mode="{mode}"' in stage
     for mode in ("static", "follow", "dynamic", "cinematic"):
         assert f'data-camera-mode="{mode}"' in stage
     for action in ("follow_action", "auto_vertical", "zoom_moments", "protect_hud", "auto_caption", "improve_all"):
@@ -139,7 +143,7 @@ def test_playback_state_reduces_nonessential_chrome_without_polling() -> None:
     assert ".is-playing" in css
     assert 'classList.add("is-playing")' in script
     assert 'classList.remove("is-playing")' in script
-    combined = "\n".join((_read("index.html"), script, css))
+    combined = "\n".join((_read("index.html"), script, css, _read("overlay_v414.mjs")))
     for forbidden in ("MutationObserver", "setInterval", "createElement(\"canvas\")", "createElement('canvas')"):
         assert forbidden not in combined, forbidden
 
@@ -156,10 +160,54 @@ def test_tool_sheet_is_static_and_closable_inside_stage() -> None:
 
 def test_v414_node_state_contracts() -> None:
     result = subprocess.run(
-        ["node", "--test", str(ROOT / "tests" / "js" / "gaming_overlay_editor_v414_state.test.mjs")],
+        [
+            "node",
+            "--test",
+            str(ROOT / "tests" / "js" / "gaming_overlay_editor_v414_state.test.mjs"),
+            str(ROOT / "tests" / "js" / "gaming_overlay_editor_v414_ai_focus.test.mjs"),
+        ],
         cwd=ROOT,
         text=True,
         capture_output=True,
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_top_bar_has_floating_ai_entry_point() -> None:
+    stage = _stage_html(_read("index.html"))
+    top = stage[stage.index('class="editor-header v414-top-hud"'):stage.index("</header>")]
+    for element_id in ("backButton", "undoButton", "redoButton", "aiTopButton"):
+        assert f'id="{element_id}"' in top, element_id
+    assert 'selectTool("ai")' in _read("overlay_v414.mjs")
+
+
+def test_quick_ai_actions_are_two_phase_preview_then_apply() -> None:
+    stage = _stage_html(_read("index.html"))
+    script = _read("editor.mjs")
+    overlay = _read("overlay_v414.mjs")
+    for element_id in ("aiPreviewBar", "aiPreviewApplyButton", "aiPreviewCancelButton", "aiCommandForm", "aiCommandInput"):
+        assert f'id="{element_id}"' in stage, element_id
+    assert "overlay.previewQuickActions" in script
+    assert "commitPatch(patch, { status: `Game AI" not in script
+    assert "previewPatch(patch)" in overlay and "commitPatch(combinedQuickActionPatch" in overlay
+    assert "planGamingCommand" in overlay
+
+
+def test_focus_map_is_preview_only_and_never_persisted() -> None:
+    script = _read("editor.mjs")
+    overlay = _read("overlay_v414.mjs")
+    state = _read("editor_state.mjs")
+    assert "focus_map" in script and "setFocusMap" in overlay
+    assert "export function normalizeFocusMap" in state and "export function sampleFocusMap" in state
+    normalize = state[state.index("export function normalizeEditorState"):state.index("export function cameraPresetPatch")]
+    assert "focus" not in normalize.lower()
+    assert 'id="focusMapStatus"' in _stage_html(_read("index.html"))
+
+
+def test_chrome_auto_hides_during_playback_and_returns_on_touch() -> None:
+    css = _read("overlay_v414.css")
+    overlay = _read("overlay_v414.mjs")
+    assert ".editor-app.is-chrome-hidden .v414-top-hud" in css
+    assert "is-chrome-hidden" in overlay and 'addEventListener("pointerdown", wake' in overlay
+    assert "setInterval" not in overlay
