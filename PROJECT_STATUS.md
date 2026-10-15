@@ -172,6 +172,14 @@ No intentional destructive production rollback test was performed. Rollback exec
 - **Runtime UI is not yet integrated into `app.py`.** The active `alive-core-v405-b6f2a1` claim currently owns `app.py`; forcing an overlap would violate the repository isolation protocol.
 - The deterministic V403 app patch is staged on `main` and can be applied after that `app.py` claim is completed/released, then must pass the Production Gate and Railway verification before any LIVE claim.
 
+### Claims registry repair + CLAUDE.md — 2026-10-15
+
+- `tools/gsf_task.py start` was failing for every new task (`claim paths must be a non-empty list`): five V405–V409 claims (`core-infra-v406-c81426`, `publish-short-v405-7d91c4`, `desktop-mobile-shell-v407-7e31ca`, `project-state-v408-3f4b21`, `alive-notifications-v409-4d7c2e`) were still `active` with `paths: []` after handing all paths to the completed `production-queue-20261014`. Fixed in coord commit `bbd6713`: marked `completed` with their historical handoff paths and PR `#123` evidence. The validator requires non-empty `paths` on every claim, including completed ones.
+- `CLAUDE.md` added (imports `AGENTS.md` + orientation) via PR `#133`, claim `docs-add-claude-md-pointing-agents-to-agents-md--e73cb7`, squash `caf08569327c91137aa06cbede43b336ff8d7e54`. All PR checks passed, including Production Gate. Merged with `[skip ci]` because `CLAUDE.md` is not in the gate's `paths-ignore`; no promotion, no Railway redeploy.
+- Railway production re-checked 2026-10-15 ~06:50 UTC: frontend `c348c7d9-c6f4-48e3-b469-1ad9638c49f9` **SUCCESS**; worker `ba536c6a-9544-42d6-9482-4ff0ba0d50d4` **SLEEPING** (expected).
+- Social publishing configuration (variable names only, frontend service): YouTube and TikTok credentials are set; no Meta (`GSF_META_APP_ID`/`GSF_META_APP_SECRET`) credentials are set, so Instagram cannot connect; Facebook publishing is still a disabled placeholder (not implemented). Owner reports TikTok, Instagram and Facebook are not connected.
+- Follow-up: consider adding `CLAUDE.md` to the Production Gate `paths-ignore`.
+
 ## Current user-facing verification priorities
 
 These are re-verification priorities, not claims that a feature is currently broken:
