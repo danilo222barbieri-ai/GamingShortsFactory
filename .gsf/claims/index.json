@@ -816,9 +816,11 @@
       "paths": [
         "app.py",
         "docs/architecture/gsf-navigation-lifecycle.md",
+        "tests/test_canonical_ui_pipeline.py",
         "tests/test_mobile_resume_stability.py",
         "tests/test_navigation_stability.py",
         "tests/visual/gsf_navigation_stress.py",
+        "tests/visual/gsf_visual_check.py",
         "web/creator_hub_v156_component/index.html",
         "web/game_editor_mobile_component/**",
         "web/gsf_navigation_lifecycle.js",
