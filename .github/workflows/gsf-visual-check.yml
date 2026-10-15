@@ -1,0 +1,92 @@
+name: GSF Visual Check
+
+# Builds the image for a ref, opens it as an iPhone in WebKit (Safari's engine),
+# screenshots every mobile surface and counts MutationObservers attached to the
+# page across navigation cycles. Results are pushed to branch
+# `ci-visual/<ref-slug>` so reviewers (and Claude) can diff them pixel by pixel.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag or SHA to check"
+        required: true
+        default: main
+      cycles:
+        description: "Navigation cycles for the observer count"
+        required: false
+        default: "8"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gsf-visual-${{ inputs.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          path: src
+
+      - uses: actions/checkout@v4
+        with:
+          path: tool
+
+      - name: Build image
+        working-directory: src
+        run: |
+          set -o pipefail
+          docker build --progress=plain -t gsf-visual . 2>&1 | tee /tmp/build.log || {
+            grep -Eq '429 Too Many Requests|Data limit exceeded' /tmp/build.log || exit 1
+            sed -i '1s#^FROM public.ecr.aws/docker/library/python:3.12-slim$#FROM python:3.12-slim#' Dockerfile
+            docker build --progress=plain -t gsf-visual .
+          }
+
+      - name: Start container
+        run: |
+          docker run -d --name gsf-visual -e PORT=8080 -e GSF_WEB_MODE=1 -e GSF_LOW_MEMORY_WEB=1 \
+            -e GSF_DATA_ENCRYPTION_KEY=visual-ci-only -e GSF_CSRF_SECRET=visual-ci-only -p 18080:8080 gsf-visual
+          for i in $(seq 1 120); do
+            [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18080/healthz)" = "200" ] && exit 0
+            sleep 2
+          done
+          docker logs gsf-visual | tail -n 80; exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Playwright (WebKit)
+        run: |
+          python -m pip install --disable-pip-version-check playwright
+          python -m playwright install --with-deps webkit
+
+      - name: Screenshots and observer metrics
+        env:
+          BASE: http://127.0.0.1:18080
+          OUT_DIR: ${{ github.workspace }}/visual-out
+          CYCLES: ${{ inputs.cycles }}
+        run: |
+          python tool/tests/visual/gsf_visual_check.py | tee /tmp/visual-summary.txt
+          echo "::notice title=Visual check ${{ inputs.ref }}::$(tail -n 1 /tmp/visual-summary.txt | cut -c1-400)"
+
+      - name: Publish results to ci-visual branch
+        if: always()
+        run: |
+          set -e
+          slug=$(printf '%s' "${{ inputs.ref }}" | tr -c 'A-Za-z0-9._-' '-' | cut -c1-80)
+          cd "$GITHUB_WORKSPACE/visual-out" 2>/dev/null || exit 0
+          (cd "$GITHUB_WORKSPACE/src" && git rev-parse HEAD) > SOURCE_SHA
+          docker logs gsf-visual > container.log 2>&1 || true
+          git init -q && git checkout -q -b "ci-visual/$slug"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A && git commit -q -m "visual check of ${{ inputs.ref }} ($(cat SOURCE_SHA)) [skip ci]"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "HEAD:refs/heads/ci-visual/$slug"
+          echo "::notice title=Visual results::branch ci-visual/$slug"
