@@ -3910,6 +3910,19 @@ def _ai_results_payload(sid):
     media_dir = ROOT / "sessions" / sid / "media"
     if not media_dir.is_dir():
         return {"ok":True,"previews":[],"count":0}
+    # V412 AI ENGINES: when the app wrote a results sheet, join it with the
+    # start-stamped mini previews (score, reason, times, alternates, request id).
+    try:
+        import ai_engines_v412 as _v412
+        merged = _v412.merge_results(
+            _v412.read_results_meta(media_dir),
+            _v412.mini_files(media_dir),
+            lambda name: "/media/" + sid + "/media/" + urllib.parse.quote(name, safe=""),
+        )
+        if merged is not None:
+            return merged
+    except Exception as exc:
+        print("GSF_V412_RESULTS_WARN", repr(str(exc))[:200], flush=True)
     by_index = {}
     for path in media_dir.iterdir():
         if not path.is_file() or path.suffix.lower() != ".mp4":
