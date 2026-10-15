@@ -79,7 +79,18 @@ DUMP = r"""
     if (band) topHits.push({band: band[0], el: desc(el), text: own.slice(0, 60), rect: r2(r), opacity: cs.opacity, position: cs.position});
     if (topHits.length > 40) break;
   }
-  return {viewport: {w: window.innerWidth, h: vh}, header, gamebar, footer, frames, topHits};
+  // Geometry of every ancestor of each visible iframe (which layer decides where a surface sits).
+  const chains = [...D.querySelectorAll('iframe')].filter((f) => { const r = f.getBoundingClientRect(); return r.width > 2 && r.height > 2; }).map((f) => {
+    const out = [];
+    for (let el = f; el && el !== D.documentElement; el = el.parentElement) {
+      const cs = getComputedStyle(el);
+      out.push({el: desc(el), rect: r2(el.getBoundingClientRect()), position: cs.position, top: cs.top, bottom: cs.bottom, height: cs.height,
+                padding: cs.padding, transform: cs.transform === 'none' ? '' : cs.transform, visibility: cs.visibility, opacity: cs.opacity});
+      if (out.length > 8) break;
+    }
+    return {title: f.title || '', chain: out};
+  });
+  return {viewport: {w: window.innerWidth, h: vh}, header, gamebar, footer, frames, topHits, chains};
 }
 """
 
@@ -95,11 +106,14 @@ def main():
         browser = p.webkit.launch()
         ctx = browser.new_context(**p.devices["iPhone 13"])
         page = ctx.new_page()
+        errors = []
+        page.on("pageerror", lambda e: errors.append({"message": str(e)[:300], "stack": (getattr(e, "stack", "") or "")[:1500]}))
         page.goto(BASE + "/", wait_until="domcontentloaded")
         page.wait_for_selector("button[data-page='hub']", timeout=120_000)
         page.wait_for_timeout(6000)
         summary = {}
-        for name, target, section in (("home", None, ""), ("hub", "hub", "dashboard"), ("home-again", "home", "")):
+        for name, target, section in (("home", None, ""), ("hub", "hub", "dashboard"), ("editor", "editor", ""),
+                                      ("ai", "ai", ""), ("home-again", "home", "")):
             if target:
                 nav(page, target, section)
             data = page.evaluate(DUMP)
@@ -107,6 +121,8 @@ def main():
             page.screenshot(path=str(OUT / f"layout-{name}.png"))
             summary[name] = {"gamebar": data["gamebar"], "frames": [(f["rect"], len(f["hits"])) for f in data["frames"]],
                              "topHits": len(data["topHits"])}
+        (OUT / "page-errors.json").write_text(json.dumps(errors, indent=1), encoding="utf-8")
+        summary["page_errors"] = len(errors)
         browser.close()
     print(json.dumps(summary))
 
