@@ -18009,7 +18009,7 @@ if GSF_WEB_MODE:
       /* GSF_MOBILE_SURFACE_FIT: the V343 shell owns the header, Game Bar and footer on phones.
          The V250 per-page top bar showed through the shell header, and every surface was
          viewport-tall but started 32px down, so its last 32px fell below the screen. */
-      .gsf-page-top-v250,.gsf-page-footer-v250,.gsf-page-ad-v250{display:none!important}
+      .gsf-page-top-v250,.gsf-page-footer-v250,.gsf-page-ad-v250,#gsf-page-chrome-v250{display:none!important}
       #gsf-social-overlay-v159 .gsf-social-shell,
       #gsf-creator-hub-live-v160 .gsf-hub-shell-v160,
       #gsf-ai-overlay-v221 .gsf-ai-shell,

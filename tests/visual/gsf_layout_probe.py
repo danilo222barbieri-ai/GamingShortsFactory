@@ -69,7 +69,7 @@ DUMP = r"""
   // Top-page elements (outside the shell) whose own text sits under the header or Game Bar.
   const topHits = [];
   for (const el of D.body.querySelectorAll('*')) {
-    if (el.closest('#gsf-global-header,#gsf-global-gamebar,#gsf-global-footer,header')) continue;
+    if (el.closest('#gsf-global-header,#gsf-global-gamebar,#gsf-global-footer')) continue;  // only the shell itself
     const own = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' ').trim();
     if (!own) continue;
     const r = el.getBoundingClientRect(); if (r.width < 4 || r.height < 4) continue;

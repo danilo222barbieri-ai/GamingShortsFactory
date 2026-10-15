@@ -19,7 +19,7 @@ def _mobile_page_block():
 
 def test_v250_page_chrome_is_hidden_on_phones():
     block = _mobile_page_block()
-    assert ".gsf-page-top-v250,.gsf-page-footer-v250,.gsf-page-ad-v250{display:none!important}" in block
+    assert ".gsf-page-top-v250,.gsf-page-footer-v250,.gsf-page-ad-v250,#gsf-page-chrome-v250{display:none!important}" in block
 
 
 def test_surfaces_end_at_the_screen_and_editor_stops_at_the_game_bar():
