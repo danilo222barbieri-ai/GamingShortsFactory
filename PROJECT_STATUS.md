@@ -9,9 +9,9 @@
 - **Production branch:** `main`
 - **Current product baseline:** **V411 UI on the canonical UI pipeline** (repo files == served files; see `docs/architecture/gsf-canonical-ui.md`)
 - **Cross-chat orchestration:** **LIVE**
-- **Last fully tested main source commit:** `74fc1a3259c1f19858c54e09adec4f778411b49e` (PR `#146`)
-- **Last runtime promotion commit:** `bcfe40e32d5165998569e11257e998ae68a0bb5f` — `deploy: promote tested 74fc1a3259c1 [skip ci]`
-- **Served canonical UI digest:** `c0d117f0721f72566ff2478528aa0afa478f40f95bf8360377290b51523d868f` (`/healthz` → `ui_digest`)
+- **Last fully tested main source commit:** `cd25ce33ea8b89af8f4857e8e315100bf8dec1a2` (PR `#147`)
+- **Last runtime promotion commit:** `f28a38b6b174cfd9aa1dc027315b96a530837ed1` — `deploy: promote tested cd25ce33ea8b [skip ci]`
+- **Served canonical UI digest:** `3023c4912ee3359655b9fbfb9711d54897eca1422bf14941b0e04f1048c7b339` (`/healthz` → `ui_digest`)
 - **Current `main` HEAD:** always query GitHub live; coordination/status-only commits may advance `main` without changing production.
 
 ## Production state — verified 2026-10-15 08:15 UTC
@@ -197,6 +197,18 @@ No intentional destructive production rollback test was performed. Rollback exec
 - Railway frontend deployment `baaed85b-58f4-4a87-8cbe-594eaddd9b02`: **SUCCESS** — startup `GSF UI manifest verify PASS digest=c0d117f0… files=169`, `release=bcfe40e`. Worker not redeployed (marker unchanged, expected).
 - `GSF Production UI Verify` run `38742178354`: **SUCCESS** — public domain serves release `bcfe40e` with digest `c0d117f0…`, pages byte-identical, Home 200, `/creator-hub/state` 200 with CSRF enforced.
 - The owning chat merged but did not close the claim; closed by owner-authorized handoff (coord `f870816`). No real-device Safari pass recorded.
+
+### Crea con IA V412 — holographic AI engines page — 2026-10-15 (PR #147)
+
+- Claim `ui-ai-holographic-ai-engines-page-real-results-b-eada74`, squash `cd25ce33ea8b89af8f4857e8e315100bf8dec1a2`.
+- Files: `web/ai_v221_component/index.html` (new one-screen page, no scrolling), `web/ai_engines_v412.py` (new: results sheet, merge, replacement/selection helpers), `app.py`, `web/home_v154_component/index.html`, `web/direct_upload_server.py`, `web/test_v412_ai_engines.py` (new, in GSF CI), `web/test_v404_crea_con_ia_simple.py`, `.github/workflows/gsf-ci.yml`.
+- Fixed root causes found in the audit: (1) results never reached the AI page (canonical page no longer polled `/ai/results`, Home always sent an empty list) → page polls `/ai/results` with a per-search `request_id`; (2) the AI cache key ignored the engine, so on the same video every engine returned the first engine's results → profile added to the key; border refinement only for AUTO/STORIA; (3) the short picked on the page was ignored, so Pubblica used short #1 → `auto_clip_scelta` follows the selection; opening the editor from results no longer drops the AI run; (4) Cambia short re-enabled on real AI alternates (V125 UI was `if False`), with restore.
+- Autosave: every result/selection/swap updates one Creator Hub draft `draft_ai_<upload>` via the internal `/drafts/save` (background thread).
+- Tests: local V397/V410/V404/V412/V405/V407/V403 PASS, `tests/` 36 passed (`test_gsf_core_infra.py` not run locally: no pytest in sandbox); PR CI + Production Gate success; browser flow with mocked `/ai/results` (stale results ignored, request match, swap and publish payloads).
+- Main Production Gate run `38752227187`: **SUCCESS**; promotion `f28a38b` (frontend only).
+- Railway frontend `3e2c45ff-e010-4a63-8302-a2676b13fc6e`: **SUCCESS** — startup `GSF UI manifest verify PASS digest=3023c491… files=171`, `release=f28a38b`. Worker not redeployed (expected).
+- `GSF Production UI Verify` run `38752986530`: **SUCCESS** — public domain serves release `f28a38b`, digest `3023c491…` (== repo), pages byte-identical, Home 200, `/creator-hub/state` 200 + CSRF.
+- Unverified / follow-up: no end-to-end AI run on production with a real uploaded video yet; AZIONE profile weights are weakly differentiated from AUTO (Game Brain tuning, not changed here); `/drafts/save-current` used by Home and Share has no nginx route (pre-existing, not touched).
 
 ## Current user-facing verification priorities
 
