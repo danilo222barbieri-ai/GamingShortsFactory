@@ -1,0 +1,16 @@
+{
+  "branch": "chat/ui-apply-gsf-brand-tokens-app-wide-colors-font-r-24fdf3",
+  "created_at": "2026-10-15T09:19:24+02:00",
+  "id": "ui-apply-gsf-brand-tokens-app-wide-colors-font-r-24fdf3",
+  "owner": "claude-chat",
+  "paths": [
+    ".github/workflows/gsf-visual-snapshot.yml",
+    "Dockerfile",
+    "tests/visual/**",
+    "web/fix_v412_brand_tokens.py",
+    "web/gsf_brand_tokens_v412.css",
+    "web/test_v412_brand_tokens.py"
+  ],
+  "scope": "ui: apply GSF brand tokens app-wide (colors, font, radius, spacing) + CI visual snapshots",
+  "state": "active"
+}
