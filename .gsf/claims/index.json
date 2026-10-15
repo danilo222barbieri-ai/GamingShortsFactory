@@ -927,6 +927,19 @@
       ],
       "scope": "ci(gate): promote when newer main commits are coordination-only",
       "state": "abandoned"
+    },
+    {
+      "branch": "chat/ui-crea-con-ia-respects-the-shell-header-and-gam-10462c",
+      "created_at": "2026-10-16T00:57:08+02:00",
+      "id": "ui-crea-con-ia-respects-the-shell-header-and-gam-10462c",
+      "owner": "chat/ui-crea-con-ia-respects-the-shell-header-and-gam-10462c",
+      "paths": [
+        "PROJECT_STATUS.md",
+        "web/ai_v221_component/index.html",
+        "web/test_v412_ai_engines.py"
+      ],
+      "scope": "ui: Crea con IA respects the shell header and Game Bar on phones",
+      "state": "active"
     }
   ],
   "version": 1
