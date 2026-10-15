@@ -1,6 +1,19 @@
 {
   "branch": "chat/stability-home-hub-parent-observers-freeze-probe-21f49e",
   "created_at": "2026-10-15T14:27:26+02:00",
+  "evidence": {
+    "commit": "8846ec25bb339f66c86e945f9cb72ae5ecc1a522",
+    "freeze_probe": "40 steps hub/projects/live/profile/home: no hang, 17 observers constant",
+    "gate": "GSF Production Gate success run 38737973060; promoted c46731e",
+    "prs": [
+      "#143",
+      "#144",
+      "#145"
+    ],
+    "railway": "frontend deployment 64fd383f SUCCESS; /healthz ok, release c46731e, ui_digest 1b6c8c28 == main; /creator-hub/state 200; worker SLEEPING (sleep mode)",
+    "tests": "canonical UI guard, V397, V403, V404, V407 local; GSF CI contracts green on #144/#145; WebKit visual check + layout probe on branch",
+    "unresolved": "app.py (Game Editor claim): Hub ghost header div.gsf-page-brand-v250, Hub overlay frame top 32px so its ad sits under the Game Bar, raw <code> editor overlay markup rendered on top page, V348/V350/V351 footer observer cleanup, st.components.v1.html deprecation"
+  },
   "id": "stability-home-hub-parent-observers-freeze-probe-21f49e",
   "owner": "claude-chat",
   "paths": [
@@ -11,6 +24,7 @@
     "scripts/**",
     "src_payload/**",
     "tests/visual/gsf_freeze_probe.py",
+    "tests/visual/gsf_layout_probe.py",
     "web/apply_v*",
     "web/audit_*",
     "web/creator_hub_v156_component/index.html",
@@ -18,11 +32,16 @@
     "web/fix_v*",
     "web/home_v154_component/index.html",
     "web/inspect_*",
+    "web/test_editor_2027_component.py",
+    "web/test_mobile_*",
+    "web/test_tiktok_site_verification.py",
     "web/test_v1*",
     "web/test_v2*",
+    "web/test_v3*",
+    "web/test_v4*",
     "web/test_v8*",
     "web/test_v9*"
   ],
-  "scope": "stability: home/hub parent observers, freeze probe in visual check, retire unused legacy scripts/payload/tests (non-editor, non-app.py)",
-  "state": "active"
+  "scope": "stability: home/hub parent observers, freeze probe in visual check, retire unused legacy scripts/payload/tests (non-editor, non-app.py); mobile layout probe + Home/Hub Game Bar overlap",
+  "state": "completed"
 }

@@ -3028,6 +3028,8 @@ body.gsfDesktopPreview .feature{
 html.gsf-v343-parent-ready #home154 .topbar,
 html.gsf-v343-parent-ready #home154 .bottomNav,
 html.gsf-v343-parent-ready #home154 .siteFooter{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+/* The shell owns the Game Bar: the action cards stay inside the reserved area above it. */
+html.gsf-v343-parent-ready #home154 .features{top:0!important}
 @media(max-width:760px){
   html,body{height:100%!important;min-height:100%!important;overflow:hidden!important}
   #home154{height:100dvh!important;min-height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
@@ -3289,7 +3291,9 @@ html.gsf-v343-parent-ready #home154 .siteFooter{visibility:hidden!important;opac
      const pw=Math.max(320,Number(window.parent.innerWidth||window.innerWidth||1920));
      const shell=normalizeParentHomeShell();
      if(pw<=760){
-       const viewport=Math.max(720,Math.floor(Number(window.parent.innerHeight||window.innerHeight||780)));
+       // The Home frame must end exactly at the bottom of the visible viewport: the shell Game Bar
+       // and footer are fixed to it, so any extra height slides the action cards under the bar.
+       const viewport=Math.max(480,Math.floor(Number(window.parent.innerHeight||window.innerHeight||780)));
        [shell.own,shell.custom].filter(Boolean).forEach(el=>{
          el.style.setProperty("height",viewport+"px","important");
          el.style.setProperty("min-height","0","important");
