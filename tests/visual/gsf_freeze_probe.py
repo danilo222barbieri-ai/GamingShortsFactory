@@ -55,7 +55,9 @@ INSTRUMENT = r"""
 })();
 """
 
-ROUTE = (("hub", "dashboard"), ("projects", ""), ("live", ""), ("hub", "profile"), ("home", ""))
+_DEFAULT_ROUTE = "hub:dashboard,projects,live,hub:profile,home"
+# ROUTE env: comma-separated target[:section] list, e.g. "home,editor,hub:dashboard"
+ROUTE = tuple((part.split(":") + [""])[:2] for part in os.environ.get("ROUTE", _DEFAULT_ROUTE).split(",") if part)
 
 
 def log(row):
