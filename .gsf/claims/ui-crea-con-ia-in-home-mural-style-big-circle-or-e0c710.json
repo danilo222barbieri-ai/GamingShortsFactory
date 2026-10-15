@@ -1,0 +1,14 @@
+{
+  "branch": "chat/ui-crea-con-ia-in-home-mural-style-big-circle-or-e0c710",
+  "created_at": "2026-10-15T22:36:22+02:00",
+  "id": "ui-crea-con-ia-in-home-mural-style-big-circle-or-e0c710",
+  "owner": "chat/ui-crea-con-ia-in-home-mural-style-big-circle-or-e0c710",
+  "paths": [
+    "PROJECT_STATUS.md",
+    "web/ai_v221_component/index.html",
+    "web/test_v404_crea_con_ia_simple.py",
+    "web/test_v412_ai_engines.py"
+  ],
+  "scope": "ui: Crea con IA in Home mural style (big circle, orbiting engines, portal shorts)",
+  "state": "active"
+}
