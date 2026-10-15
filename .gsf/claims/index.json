@@ -650,6 +650,19 @@
     {
       "branch": "chat/ui-ai-holographic-ai-engines-page-real-results-b-eada74",
       "created_at": "2026-10-15T15:36:16+02:00",
+      "evidence": {
+        "gate": "success",
+        "gate_main_run": 38752227187,
+        "merge_sha": "cd25ce33ea8b89af8f4857e8e315100bf8dec1a2",
+        "pr": 147,
+        "promotion": "f28a38b6b174cfd9aa1dc027315b96a530837ed1",
+        "railway_frontend": "3e2c45ff-e010-4a63-8302-a2676b13fc6e SUCCESS",
+        "railway_worker": "not redeployed (marker unchanged)",
+        "tests": "local: V397,V410,V404,V412,V405,V407,V403 PASS; tests/ 36 passed (test_gsf_core_infra not run locally, pytest unavailable); PR CI contracts + Production Gate success",
+        "ui_verify": "release f28a38b serves digest 3023c491 == repo, pages byte-identical, Home 200, creator-hub/state 200 + CSRF",
+        "ui_verify_run": 38752986530,
+        "unverified": "no real end-to-end AI run on production with an uploaded video yet"
+      },
       "id": "ui-ai-holographic-ai-engines-page-real-results-b-eada74",
       "owner": "chat/ui-ai-holographic-ai-engines-page-real-results-b-eada74",
       "paths": [
@@ -664,7 +677,7 @@
         "web/test_v412_ai_engines.py"
       ],
       "scope": "ui+ai: holographic AI engines page, real results bridge, per-engine cache, Cambia short",
-      "state": "active"
+      "state": "completed"
     }
   ],
   "version": 1
