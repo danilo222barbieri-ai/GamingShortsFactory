@@ -1,8 +1,8 @@
 :root {
   color-scheme: light;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; /* GSF_ONE_STYLE */
   --ink: #0d2a66;
-  --muted: #6d82a2;
+  --muted: #7185a6;
   --line: rgba(111, 158, 199, .22);
   --surface: rgba(255, 255, 255, .92);
   --soft: #eef7ff;
@@ -11,7 +11,7 @@
   --mint: #2fbd91;
   --violet: #8b73ff;
   --shadow: 0 18px 46px rgba(51, 97, 138, .14);
-  background: #f3f9ff;
+  background: #fafdff;
   color: var(--ink);
 }
 
@@ -20,9 +20,8 @@ html, body { min-height: 100%; margin: 0; overflow-x: hidden; }
 body {
   min-width: 320px;
   background:
-    radial-gradient(circle at 8% 0%, rgba(86, 214, 255, .20), transparent 26%),
-    radial-gradient(circle at 96% 12%, rgba(139, 115, 255, .13), transparent 27%),
-    linear-gradient(180deg, #fbfeff 0%, #eef7ff 100%);
+    /* GSF_HEADER_CANVAS: header colour fading into a soft glow */
+    radial-gradient(120% 55% at 50% 100%,rgba(122,200,255,.10),transparent 72%),linear-gradient(180deg,#FAFDFF 0%,#F7FBFF 60%,#F2F8FE 100%);
 }
 button, input, select { font: inherit; }
 button, select { min-height: 44px; }
@@ -36,7 +35,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   display: grid;
   grid-template-rows: auto auto auto auto auto;
   gap: 10px;
-  padding: max(10px, env(safe-area-inset-top)) 10px max(12px, env(safe-area-inset-bottom));
+  padding: max(10px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)); /* GSF_ONE_STYLE gutter */
 }
 
 .editor-header {

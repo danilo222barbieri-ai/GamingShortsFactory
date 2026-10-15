@@ -2285,18 +2285,13 @@ html,body{
 #home154 .rings.uploading:before{animation:gsfInnerWave213 .90s ease-in-out infinite!important}
 #home154 .rings.uploading:after{animation:gsfOuterWave213 .90s .06s ease-in-out infinite!important}
 
-/* Mobile reference optical recipe shared as the source of truth. */
+/* Mobile reference optical recipe shared as the source of truth.
+   GSF_HEADER_CANVAS: starts as the shell header colour (#FAFDFF) and fades into a soft glow. */
 #home154{
-  background:
-    radial-gradient(circle at 12% 8%,rgba(125,214,255,.18),transparent 24%),
-    radial-gradient(circle at 88% 10%,rgba(126,235,198,.17),transparent 25%),
-    radial-gradient(circle at 50% 44%,rgba(255,255,255,.985),transparent 43%),
-    linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F6FBFF 100%)!important;
+  background:radial-gradient(120% 55% at 50% 100%,rgba(122,200,255,.10),transparent 72%),linear-gradient(180deg,#FAFDFF 0%,#F7FBFF 60%,#F2F8FE 100%)!important;
 }
 #home154:before{
-  background:
-    radial-gradient(circle at 22% 45%,rgba(117,211,251,.05),transparent 31%),
-    radial-gradient(circle at 78% 52%,rgba(111,229,190,.05),transparent 31%)!important;
+  background:none!important;
 }
 #home154 .rings{
   background:
