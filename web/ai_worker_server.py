@@ -22,6 +22,7 @@ from game_vision_v108 import build_event_map
 from semantic_video_v114 import analyze_gameplay_video, merge_semantic_events, semantic_enabled
 from ai_director_v124 import cloud_decision
 from auto_highlights.engine_v129 import analysis_to_candidates, candidate_dict
+from job_state_v401 import (ACTIVE_JOB_STATES, enrich_job_state, persist_job_state, load_job_state, recover_persisted_state)
 
 PORT=int(os.environ.get("PORT","8600"))
 WORKER_TOKEN=os.environ.get("GSF_WORKER_TOKEN","")
@@ -156,16 +157,56 @@ def _object_exists(key):
             return False
         raise
 
+# GSF_V401_PERSISTENT_JOB_STATE
+def _set_job_state(job_id,payload):
+    state=enrich_job_state(payload)
+    with JOBS_LOCK:
+        JOBS[job_id]=state
+    if _bucket_enabled():
+        try:
+            persist_job_state(_s3(),S3_BUCKET,job_id,state)
+        except Exception as exc:
+            print(f"GSF V401 job-state persist warning {job_id}: {str(exc)[:160]}",flush=True)
+    return state
+
+
+def _get_job_state(job_id,analysis_key=""):
+    with JOBS_LOCK:
+        state=dict(JOBS.get(job_id,{}) or {})
+    if state:
+        return state
+
+    if _bucket_enabled() and analysis_key:
+        try:
+            if _object_exists(analysis_key):
+                state=enrich_job_state({"state":"done","cached":True,"analysis_key":analysis_key})
+                with JOBS_LOCK:
+                    JOBS[job_id]=state
+                return state
+        except Exception:
+            pass
+
+    if _bucket_enabled():
+        try:
+            persisted=load_job_state(_s3(),S3_BUCKET,job_id)
+            if persisted:
+                return recover_persisted_state(persisted)
+        except ClientError as exc:
+            code=str((exc.response.get("Error") or {}).get("Code",""))
+            if code not in ("NoSuchKey","404","NotFound"):
+                print(f"GSF V401 job-state load warning {job_id}: {code[:80]}",flush=True)
+        except Exception as exc:
+            print(f"GSF V401 job-state load warning {job_id}: {str(exc)[:160]}",flush=True)
+    return {}
+
 def _run_job(job_id,key,analysis_key,engine_version,name,size):
     with SCAN_SEMAPHORE:
         started=time.perf_counter()
         local=None
         try:
-            with JOBS_LOCK:
-                JOBS[job_id]={"state":"downloading","started_at":time.time(),"analysis_key":analysis_key}
+            _set_job_state(job_id,{"state":"downloading","started_at":time.time(),"analysis_key":analysis_key})
             if _object_exists(analysis_key):
-                with JOBS_LOCK:
-                    JOBS[job_id]={"state":"done","cached":True,"analysis_key":analysis_key}
+                _set_job_state(job_id,{"state":"done","cached":True,"analysis_key":analysis_key})
                 return
 
             suffix=Path(name or key).suffix.lower()
@@ -187,8 +228,7 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
             if size and local.stat().st_size!=int(size):
                 raise IOError("worker download size mismatch")
 
-            with JOBS_LOCK:
-                JOBS[job_id]={"state":"scanning","download_seconds":round(download_seconds,3),"analysis_key":analysis_key}
+            _set_job_state(job_id,{"state":"scanning","download_seconds":round(download_seconds,3),"analysis_key":analysis_key})
 
             scan=_load_scan_fn()(str(local))
             # V114: local scan remains the guaranteed baseline. Cloud semantic
@@ -209,13 +249,12 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
                 enabled=bool(semantic_enabled()),
             )
             if semantic_enabled() and router.get("use_cloud",True):
-                with JOBS_LOCK:
-                    JOBS[job_id]={
+                _set_job_state(job_id,{
                         "state":"semantic",
                         "download_seconds":round(download_seconds,3),
                         "analysis_key":analysis_key,
                         "router":router,
-                    }
+                    })
                 semantic_result=analyze_gameplay_video(
                     str(local),
                     game_hint=name,
@@ -275,20 +314,18 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
                 Body=json.dumps(payload,separators=(",",":"),ensure_ascii=False).encode("utf-8"),
                 ContentType="application/json",
             )
-            with JOBS_LOCK:
-                JOBS[job_id]={
+            _set_job_state(job_id,{
                     "state":"done",
                     "analysis_key":analysis_key,
                     "download_seconds":round(download_seconds,3),
                     "wall_seconds":round(wall,3),
-                }
+                })
             print(
                 f"GSF worker done {analysis_key} download={download_seconds:.2f}s wall={wall:.2f}s",
                 flush=True
             )
         except Exception as exc:
-            with JOBS_LOCK:
-                JOBS[job_id]={"state":"error","analysis_key":analysis_key,"error":str(exc)[:240]}
+            _set_job_state(job_id,{"state":"error","analysis_key":analysis_key,"error":str(exc)[:240]})
             print(f"GSF worker failed {analysis_key}: {str(exc)[:240]}",flush=True)
         finally:
             if local is not None:
@@ -394,14 +431,7 @@ class Handler(BaseHTTPRequestHandler):
         if path.path.rstrip("/")=="/status":
             analysis_key=(parse_qs(path.query).get("analysis_key") or [""])[0]
             job_id=_job_id(analysis_key)
-            with JOBS_LOCK:
-                state=dict(JOBS.get(job_id,{}) or {})
-            if not state and _bucket_enabled() and analysis_key:
-                try:
-                    if _object_exists(analysis_key):
-                        state={"state":"done","cached":True,"analysis_key":analysis_key}
-                except Exception:
-                    pass
+            state=_get_job_state(job_id,analysis_key)
             _json(self,200,{"ok":True,"job":state})
             return
         _json(self,404,{"ok":False,"error":"not found"})
@@ -447,10 +477,10 @@ class Handler(BaseHTTPRequestHandler):
                 return
             with JOBS_LOCK:
                 existing=JOBS.get(job_id)
-                if existing and existing.get("state") in ("downloading","scanning","queued"):
+                if existing and existing.get("state") in ACTIVE_JOB_STATES:
                     _json(self,202,{"ok":True,"queued":True,"job_id":job_id,"existing":True})
                     return
-                JOBS[job_id]={"state":"queued","analysis_key":analysis_key}
+            _set_job_state(job_id,{"state":"queued","analysis_key":analysis_key})
             threading.Thread(
                 target=_run_job,
                 args=(job_id,key,analysis_key,engine_version,name,size),

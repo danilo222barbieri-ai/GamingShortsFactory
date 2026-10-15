@@ -1,0 +1,44 @@
+name: GSF Worker Equivalence
+
+# One-time proof for the worker cut-over: build the legacy worker image from the
+# PR base (V77 payload + apply_v78..v99 chain) and prove the canonical files in
+# this PR are byte-identical to what it ran. Skips itself once main is canonical.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'web/Dockerfile.worker'
+      - 'web/gsf_worker_app.py'
+      - 'web/ai_worker_server.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  equivalence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Detect legacy base
+        id: base
+        run: |
+          base=${{ github.event.pull_request.base.sha || 'origin/main' }}
+          git worktree add /tmp/base "$base"
+          if grep -q 'apply_v99_final_arch.py' /tmp/base/web/Dockerfile.worker; then echo "legacy=1" >> "$GITHUB_OUTPUT"; else echo "legacy=0" >> "$GITHUB_OUTPUT"; echo "::notice title=Worker equivalence::base already canonical"; fi
+      - name: Build legacy worker and compare
+        if: steps.base.outputs.legacy == '1'
+        run: |
+          set -euo pipefail
+          cd /tmp/base && docker build --progress=plain -f web/Dockerfile.worker -t gsf-worker-legacy . > /tmp/build.log 2>&1 || { tail -n 40 /tmp/build.log; exit 1; }
+          docker create --name legacy gsf-worker-legacy >/dev/null
+          docker cp legacy:/app/GamingShortsFactory_V99_FINAL_ARCH.py /tmp/legacy-app.py
+          docker cp legacy:/app/web/ai_worker_server.py /tmp/legacy-server.py
+          cd "$GITHUB_WORKSPACE"
+          cmp /tmp/legacy-app.py web/gsf_worker_app.py || { echo "::error title=Worker equivalence::web/gsf_worker_app.py differs from the legacy worker app"; exit 1; }
+          cmp /tmp/legacy-server.py web/ai_worker_server.py || { echo "::error title=Worker equivalence::web/ai_worker_server.py differs from the legacy worker server"; exit 1; }
+          echo "::notice title=Worker equivalence::canonical worker files are byte-identical to the legacy worker image"
