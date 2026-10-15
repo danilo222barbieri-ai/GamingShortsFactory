@@ -785,6 +785,13 @@
     {
       "branch": "chat/ci-production-gate-promotes-against-last-promote-decf76",
       "created_at": "2026-10-15T22:09:46+02:00",
+      "evidence": {
+        "pr": "#154",
+        "proof": "#134 docs-only merge a1a6728: gate promoted frontend+worker from their markers (fea4f52)",
+        "railway": "frontend 86c2e3ac SUCCESS, worker dbf3c9ee deployed then SLEEPING (expected)",
+        "tests": "tests/test_gate_promotion_diff.py fails on old step, passes on new; PR CI + gate success",
+        "ui_verify": "success on fea4f52"
+      },
       "id": "ci-production-gate-promotes-against-last-promote-decf76",
       "owner": "chat/ci-production-gate-promotes-against-last-promote-decf76",
       "paths": [
@@ -792,7 +799,7 @@
         "tests/test_gate_promotion_diff.py"
       ],
       "scope": "ci: Production Gate promotes against last promoted marker, not only last push",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/ui-crea-con-ia-in-home-mural-style-big-circle-or-e0c710",
