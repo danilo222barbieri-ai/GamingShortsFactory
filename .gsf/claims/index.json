@@ -685,6 +685,15 @@
     {
       "branch": "chat/editor-open-the-canonical-game-editor-2026-insid-28bd71",
       "created_at": "2026-10-15T16:45:52+02:00",
+      "evidence": {
+        "commit": "0cc1e4c4c025d60f5d230a5b77630beba9216e03",
+        "gate": "main Production Gate run 38756150965 success; promoted 84a42d5",
+        "pr": "#148",
+        "railway": "frontend deployment 666e1ded SUCCESS; /healthz ok release 84a42d5, ui_digest 300da020 == repo; /creator-hub/state ok with csrf_token",
+        "tests": "tests/test_mobile_editor_in_app.py new; canonical UI guard, Game Editor 2026/state tests, V397/V403/V404/V405/V407 local; GSF CI contracts + PR gate green",
+        "unresolved": "pre-existing pageerror Unexpected identifier Avenir (also on main); Hub ghost V250 header and Hub frame top 32px; no real-device Safari pass",
+        "visual": "WebKit iPhone 13 visual check on branch: in-app Editor = Game Editor 2026 (was legacy FRAME/CAPTION/LOOK); observer growth 0.0"
+      },
       "id": "editor-open-the-canonical-game-editor-2026-insid-28bd71",
       "owner": "chat/editor-open-the-canonical-game-editor-2026-insid-28bd71",
       "paths": [
@@ -692,7 +701,7 @@
         "tests/test_mobile_editor_in_app.py"
       ],
       "scope": "editor: open the canonical Game Editor 2026 inside the mobile app (V220 overlay rendered as text, V343 shell loads legacy editor)",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/publish-new-crea-short-multi-publish-page-v413-s-3882dd",
