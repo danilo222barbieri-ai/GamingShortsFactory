@@ -53,6 +53,9 @@ jobs:
       - name: Canonical UI pipeline guard
         run: python tests/test_canonical_ui_pipeline.py
 
+      - name: Promotion diff contract
+        run: python tests/test_gate_promotion_diff.py
+
       - name: Mobile Game Editor JavaScript contracts
         run: |
           node --test tests/js/mobile_game_editor_state.test.mjs
@@ -246,9 +249,28 @@ jobs:
             before="${TESTED_SHA}^"
           fi
 
-          git diff --name-only "$before" "$TESTED_SHA" > /tmp/gsf-changed-files.txt
-          echo 'Files covered by this promotion:'
-          cat /tmp/gsf-changed-files.txt
+          # Diff each service against the commit it currently runs (its marker),
+          # not only against the previous push: a push that touches no runtime
+          # file must still promote runtime commits that were never promoted
+          # (e.g. a merge whose gate run was skipped).
+          base_for() {
+            marker=$(tr -d '[:space:]' < "$1" 2>/dev/null || true)
+            if printf '%s' "$marker" | grep -Eq '^[0-9a-f]{40}$' \
+               && git cat-file -e "${marker}^{commit}" 2>/dev/null \
+               && git merge-base --is-ancestor "$marker" "$TESTED_SHA"; then
+              echo "$marker"
+            else
+              echo "$before"
+            fi
+          }
+          frontend_base=$(base_for .railway/frontend-deploy.txt)
+          worker_base=$(base_for .railway/worker-deploy.txt)
+          git diff --name-only "$frontend_base" "$TESTED_SHA" > /tmp/gsf-frontend-files.txt
+          git diff --name-only "$worker_base" "$TESTED_SHA" > /tmp/gsf-worker-files.txt
+          echo "Frontend files since ${frontend_base::12}:"
+          cat /tmp/gsf-frontend-files.txt
+          echo "Worker files since ${worker_base::12}:"
+          cat /tmp/gsf-worker-files.txt
 
           frontend=0
           worker=0
@@ -258,12 +280,14 @@ jobs:
                 frontend=1
                 ;;
             esac
+          done < /tmp/gsf-frontend-files.txt
+          while IFS= read -r path; do
             case "$path" in
               src_payload/*|web/Dockerfile.worker|web/requirements-worker.txt|web/ai_worker_server.py|web/ffmpeg_lowmem.py|web/gsf_bucket_bridge.py|web/semantic_video_v114.py|web/test_v114_semantic_video.py|web/ai_director_v124.py|web/quality_control_v124.py|web/guardian_intelligence_v124.py|web/test_v124_ai_core.py|web/job_state_v401.py|web/fix_v401_worker_state.py|web/highlight_fusion_v402.py|web/auto_highlights/*|web/game_brain_v112.py|web/quality_supreme_v399.py|web/director_render_exec_v143.py|web/privacy_cleanup_v149.py|web/apply_v7*.py|web/apply_v8*.py|web/apply_v9*.py)
                 worker=1
                 ;;
             esac
-          done < /tmp/gsf-changed-files.txt
+          done < /tmp/gsf-worker-files.txt
 
           if [ "$frontend" -eq 0 ] && [ "$worker" -eq 0 ]; then
             echo 'No Railway runtime files changed; no deployment marker needed.'
