@@ -129,8 +129,12 @@ need(patch_worker_source(patched_worker) == patched_worker,
      "worker-state patch is idempotent across image rebuilds")
 
 worker_docker = Path("web/Dockerfile.worker").read_text(encoding="utf-8")
-need("fix_v401_worker_state.py" in worker_docker,
-     "worker image applies V401 state persistence before syntax verification")
+# Canonical worker: V401 persistence is committed in ai_worker_server.py and the
+# image copies it as-is (no build-time patch).
+need("GSF_V401_PERSISTENT_JOB_STATE" in worker and patch_worker_source(worker) == worker,
+     "canonical worker server already carries V401 state persistence")
+need("fix_v401_worker_state.py /app/web/ai_worker_server.py" not in worker_docker,
+     "worker image does not re-patch the canonical server at build time")
 
 compat = Path("web/apply_v343_v293_compat.py").read_text(encoding="utf-8")
 need("fix_v401_frontend_memory" in compat and "patch_runtime_file" in compat,

@@ -85,6 +85,11 @@ jobs:
             cmp -s "$f" "/tmp/v410-canonical/$f" || { echo "::error title=V410::$f would still be modified by the V410 patch"; exit 1; }
           done
 
+      - name: Dependency audit with pip-audit
+        uses: pypa/gh-action-pip-audit@v1.1.0
+        with:
+          inputs: requirements-web.txt
+
       - name: Dependency lock and source security scan
         run: |
           python -m pip install --disable-pip-version-check --dry-run -r requirements-web.txt -c constraints-web.txt

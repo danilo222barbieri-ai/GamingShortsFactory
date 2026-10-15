@@ -87,7 +87,7 @@ assert "gsfDeleteDraft" in server and 'method:"POST"' in server, "draft UI does 
 assert "cryptography==50.0.1" in requirements, "cryptography must be an explicit dependency"
 
 # In a repository checkout, CI must continuously scan dependencies + source.
-workflow = root / ".github" / "workflows" / "v410-security-gate.yml"
+workflow = root / ".github" / "workflows" / "gsf-ci.yml"  # V410 checks run in the single GSF CI job
 if (root / ".github").exists():
     assert workflow.is_file(), "V410 security CI workflow missing"
     wf = workflow.read_text(encoding="utf-8")
