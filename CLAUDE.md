@@ -27,6 +27,13 @@ evidence and say so.
   deployments, logs, metrics) and `gh run list` / `gh run view` for CI.
   Report `LIVE`/`SUCCESS` only with fresh evidence.
 
+## Design system
+
+The official brand kit lives in `design/brand/` (wordmark SVGs, color/type/
+radius tokens as CSS and JSON, usage rules in `design/brand/README.md`). New
+UI work uses those tokens instead of literal hex values; `design/brand/AUDIT.md`
+records how far the current code is from them.
+
 ## Practical notes
 
 - Claims: `python tools/gsf_task.py start|finish|status`. The registry
