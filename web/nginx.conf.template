@@ -1,7 +1,22 @@
+# GSF_SECURITY_V410 — edge hardening, abuse control and browser policy
+# GSF_SECURITY_V410_EDGE_ID — Railway publishes the remote client as X-Real-IP.
+map $http_x_real_ip $gsf_client_key {
+    "~^[0-9A-Fa-f:.]{2,45}$" $http_x_real_ip;
+    default $binary_remote_addr;
+}
+limit_req_zone $gsf_client_key zone=gsf_api_v410:10m rate=20r/s;
+limit_req_zone $gsf_client_key zone=gsf_upload_v410:10m rate=20r/s;
+limit_conn_zone $gsf_client_key zone=gsf_conn_v410:10m;
+
 map $cookie_gsf_sid $gsf_session_cookie {
     "~^[A-Za-z0-9_-]{1,80}$" $cookie_gsf_sid;
     default                     $request_id;
 }
+
+# V411_STABLE_SESSION_COOKIE
+# Keep one browser session id across sequential requests. When no cookie exists,
+# use the request id for this response; once Set-Cookie is received the browser
+# sends that same id back and all protected companion routes reuse it.
 
 map $http_sec_ch_ua_mobile $gsf_ch_mobile {
     default 0;
@@ -24,124 +39,371 @@ server {
     listen ${PORT};
     server_name _;
 
+    # V410 browser hardening. CSP remains compatible with Streamlit/components and social embeds.
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+    add_header Strict-Transport-Security "max-age=15552000" always;
+    add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
+    limit_conn gsf_conn_v410 40;
+
     client_max_body_size 4096m;
     proxy_read_timeout 86400s;
     proxy_send_timeout 86400s;
 
     location = /__gsf_mobile_gate {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         internal;
         alias /app/web/mobile_only_gate.html;
         default_type text/html;
         add_header Cache-Control "no-store, max-age=0" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # V105.7: Google AdSense ownership / authorized seller declaration.
     # The file exists only when GSF_ADSENSE_CLIENT contains a valid ca-pub id.
     location = /ads.txt {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         alias /tmp/gsf-ads.txt;
         default_type text/plain;
         add_header Cache-Control "public, max-age=300";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # TikTok URL-prefix ownership verification.
     location = /tiktokAvCxVH6S4w3BElUktwlT3dRIBn1ECcZv.txt {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         alias /app/web/tiktokAvCxVH6S4w3BElUktwlT3dRIBn1ECcZv.txt;
         default_type text/plain;
         add_header Cache-Control "no-store";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # V104.2: public legal pages used by social-provider app reviews.
     location = /privacy {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         alias /app/web/legal/privacy.html;
         default_type text/html;
         add_header Cache-Control "public, max-age=300";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /terms {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         alias /app/web/legal/terms.html;
         default_type text/html;
         add_header Cache-Control "public, max-age=300";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # Official Gaming Shorts Factory app identity.
     location = /app-icon.png {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         alias /app/web/app_icons/app-icon.png;
         default_type image/png;
         add_header Cache-Control "no-store";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /app-icon-192.png {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         alias /app/web/app_icons/app-icon-192.png;
         default_type image/png;
         add_header Cache-Control "public, max-age=86400";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /app-icon-512.png {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         alias /app/web/app_icons/app-icon-512.png;
         default_type image/png;
         add_header Cache-Control "public, max-age=86400";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /favicon.ico {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         alias /app/web/app_icons/app-icon.png;
         default_type image/png;
         add_header Cache-Control "no-store";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # iOS/iPadOS Home Screen icon discovery paths.
     location = /apple-touch-icon.png {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         alias /app/web/app_icons/apple-touch-icon.png;
         default_type image/png;
         add_header Cache-Control "no-store";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /apple-touch-icon-precomposed.png {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         alias /app/web/app_icons/apple-touch-icon.png;
         default_type image/png;
         add_header Cache-Control "no-store";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /apple-touch-icon-180x180.png {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         alias /app/web/app_icons/apple-touch-icon.png;
         default_type image/png;
         add_header Cache-Control "no-store";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /apple-touch-icon-152x152.png {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         alias /app/web/app_icons/apple-touch-icon.png;
         default_type image/png;
         add_header Cache-Control "no-store";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /manifest.webmanifest {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         proxy_pass http://127.0.0.1:8502/manifest.webmanifest;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
     }
 
     location = /gsf-sw.js {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         proxy_pass http://127.0.0.1:8502/gsf-sw.js;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         add_header Service-Worker-Allowed "/" always;
         add_header Cache-Control "no-cache" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /gsf-push.js {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         proxy_pass http://127.0.0.1:8502/gsf-push.js;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         add_header Cache-Control "no-cache" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /push/public-key {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         proxy_pass http://127.0.0.1:8502/push/public-key;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         add_header Cache-Control "no-store" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /push/subscribe {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502/push/subscribe;
         proxy_http_version 1.1;
@@ -149,11 +411,25 @@ server {
         proxy_request_buffering off;
         proxy_set_header Host $host;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # V84: app media URLs are /media/<session-id>/<subdir>/<file>.
     # Map that URL directly to the matching anonymous session on disk.
     location ~ "^/media/(?<gsf_media_sid>[A-Za-z0-9_-]{1,80})/(?<gsf_media_path>.+)$" {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         if ($gsf_media_sid != $gsf_session_cookie) {
             return 403;
         }
@@ -173,26 +449,68 @@ server {
             text/vtt vtt;
         }
         default_type application/octet-stream;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /healthz {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         proxy_pass http://127.0.0.1:8502/healthz;
         proxy_http_version 1.1;
         proxy_buffering off;
         proxy_set_header Host $host;
         add_header Cache-Control "no-store" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /job/status {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502/job/status;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
         add_header Cache-Control "no-store" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /editor-media/current {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502;
         proxy_http_version 1.1;
@@ -204,10 +522,25 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # Private contact form. Recipient addresses stay server-side.
     location = /contact {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
+        limit_req zone=gsf_api_v410 burst=8 nodelay;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8503;
         proxy_http_version 1.1;
@@ -219,49 +552,124 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # Legacy desktop routes are intentionally retired. Root decides mobile vs desktop gate.
     location = /desktop-preview {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         return 302 /;
     }
 
     location /desktop-preview/ {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         return 302 /;
     }
 
     location = /desktop-home {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         return 302 /;
     }
 
     location /desktop-home/ {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         return 302 /;
     }
 
     # V220 persistent Game Editor surface.
     location = /editor-live {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         return 302 /editor-live/;
     }
     location /editor-live/ {
-        error_page 424 = /__gsf_mobile_gate;
-        if ($gsf_mobile_client = 0) {
-            return 424;
-        }
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
+        # V407_DESKTOP_ACCESS
+
         alias /app/web/editor_2027_component/;
         index index.html;
         try_files $uri $uri/ /editor-live/index.html;
         add_header Cache-Control "no-store" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
     location = /editor/state {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502/editor/state;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
         add_header Cache-Control "no-store" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /editor/state/save {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502/editor/state/save;
         proxy_http_version 1.1;
@@ -270,50 +678,141 @@ server {
         proxy_set_header Content-Type $content_type;
         proxy_request_buffering off;
         add_header Cache-Control "no-store" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
+    }
+
+
+    # V319 AI RESULTS NGINX
+    location = /ai/results {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
+        add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
+        proxy_pass http://127.0.0.1:8502/ai/results$is_args$args;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+        add_header Cache-Control "no-store" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # V221 living AI engines surface.
     location = /ai-v221 {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         return 302 /ai-v221/;
     }
     location /ai-v221/ {
-        error_page 424 = /__gsf_mobile_gate;
-        if ($gsf_mobile_client = 0) {
-            return 424;
-        }
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
+        # V407_DESKTOP_ACCESS
+
         alias /app/web/ai_v221_component/;
         index index.html;
         try_files $uri $uri/ /ai-v221/index.html;
         add_header Cache-Control "no-store" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # V158 fixed Creator Hub surface + live state API.
     location = /creator-hub-v156 {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         return 302 /creator-hub-v156/;
     }
 
     location /creator-hub-v156/ {
-        error_page 424 = /__gsf_mobile_gate;
-        if ($gsf_mobile_client = 0) {
-            return 424;
-        }
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
+        # V407_DESKTOP_ACCESS
+
         alias /app/web/creator_hub_v156_component/;
         index index.html;
         try_files $uri $uri/ /creator-hub-v156/index.html;
         add_header Cache-Control "no-store";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /creator-hub/state {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502/creator-hub/state;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
         add_header Cache-Control "no-store" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # V269 Creator Hub action routes: profile, logout and social disconnect.
     location /creator-hub/ {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502;
         proxy_http_version 1.1;
@@ -325,34 +824,81 @@ server {
         proxy_set_header Content-Type $content_type;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
         add_header Cache-Control "no-store" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # V159 persistent Social/Share surface.
     location = /share-v156 {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         return 302 /share-v156/;
     }
 
     location /share-v156/ {
-        error_page 424 = /__gsf_mobile_gate;
-        if ($gsf_mobile_client = 0) {
-            return 424;
-        }
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
+        # V407_DESKTOP_ACCESS
+
         alias /app/web/share_v156_component/;
         index index.html;
         try_files $uri $uri/ /share-v156/index.html;
         add_header Cache-Control "no-store";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /share/state {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502/share/state;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
         add_header Cache-Control "no-store" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /share/final {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502/share/final;
         proxy_http_version 1.1;
@@ -360,26 +906,70 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
         add_header Cache-Control "private, no-store" always;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # Creator Hub: account/profile page handled by the lightweight companion server.
     location = /drafts/delete {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
+        limit_req zone=gsf_api_v410 burst=10 nodelay;
+        limit_except POST { deny all; }
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502/drafts/delete$is_args$args;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /drafts/resume {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502/drafts/resume$is_args$args;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location = /account {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502;
         proxy_http_version 1.1;
@@ -391,9 +981,23 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location /account/ {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502;
         proxy_http_version 1.1;
@@ -405,10 +1009,24 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # Dedicated Instagram OAuth callback used by Meta/Instagram Business Login.
     location = /auth/instagram/callback {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502/social-connect/instagram/callback;
         proxy_http_version 1.1;
@@ -420,11 +1038,25 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # V104.4: standalone social-account connection flow.
     # This bypasses Streamlit so OAuth can be completed without a loaded video.
     location = /social-connect {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502;
         proxy_http_version 1.1;
@@ -436,9 +1068,23 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location /social-connect/ {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502;
         proxy_http_version 1.1;
@@ -450,10 +1096,26 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # V98.9: chunked disk upload bypasses Streamlit's in-memory UploadedFile.
     location /direct-upload/ {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
+        limit_req zone=gsf_upload_v410 burst=80 nodelay;
+        limit_conn gsf_conn_v410 16;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
 
         proxy_pass http://127.0.0.1:8502/;
@@ -468,11 +1130,25 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     # V104.4: reuse the already-registered app root as TikTok OAuth callback.
     # Only our cryptographic state prefix is diverted; ordinary "/" goes to mobile GSF or the desktop gate.
     location = / {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
 
         error_page 418 = @gsf_tiktok_oauth_callback;
@@ -504,11 +1180,8 @@ server {
         if ($arg_state ~ "^gsfact_") {
             return 423;
         }
+        # V407_DESKTOP_ACCESS
 
-        error_page 424 = /__gsf_mobile_gate;
-        if ($gsf_mobile_client = 0) {
-            return 424;
-        }
 
         proxy_pass http://127.0.0.1:8501;
         proxy_http_version 1.1;
@@ -524,9 +1197,23 @@ server {
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location @gsf_tiktok_oauth_callback {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         rewrite ^ /social-connect/tiktok/callback break;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502;
@@ -536,9 +1223,23 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location @gsf_youtube_oauth_callback {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         rewrite ^ /social-connect/youtube/callback break;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502;
@@ -548,9 +1249,23 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location @gsf_instagram_oauth_callback {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         rewrite ^ /social-connect/instagram/callback break;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502;
@@ -560,9 +1275,23 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location @gsf_account_google_callback {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         rewrite ^ /account/google/callback break;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502;
@@ -572,9 +1301,23 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location @gsf_account_facebook_callback {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         rewrite ^ /account/facebook/callback break;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502;
@@ -584,9 +1327,23 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location @gsf_account_tiktok_callback {
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
         rewrite ^ /account/tiktok/callback break;
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
         proxy_pass http://127.0.0.1:8502;
@@ -596,13 +1353,25 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 
     location / {
-        error_page 424 = /__gsf_mobile_gate;
-        if ($gsf_mobile_client = 0) {
-            return 424;
-        }
+        # V411_LOCATION_SECURITY_HEADERS
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
+        # V407_DESKTOP_ACCESS
+
 
         add_header Set-Cookie "gsf_sid=$gsf_session_cookie; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly" always;
 
@@ -620,5 +1389,12 @@ server {
         proxy_set_header X-GSF-Session-ID $gsf_session_cookie;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)" always;
+        add_header Strict-Transport-Security "max-age=15552000" always;
+        add_header Content-Security-Policy "default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https:; frame-ancestors 'self';" always;
     }
 }

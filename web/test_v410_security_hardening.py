@@ -10,13 +10,16 @@ server = (web / "direct_upload_server.py").read_text(encoding="utf-8")
 secure_start = (web / "start_secure.sh").read_text(encoding="utf-8")
 requirements = (root / "requirements-web.txt").read_text(encoding="utf-8")
 
-# Security is materialized once in the immutable V404 image.
+# Security now lives directly in the canonical nginx/server files (canonical UI
+# pipeline). The image must copy them as-is: re-running the V410 patches at build
+# time would make the served files differ from the repository.
 dockerfile = root / 'Dockerfile'
 if dockerfile.is_file():
     docker = dockerfile.read_text(encoding='utf-8')
-    assert 'python /app/web/fix_v410_security_hardening.py /app' in docker
-    assert 'python /app/web/fix_v410_1_edge_identity.py /app' in docker
-    assert 'CMD ["/app/web/start_web_fast.sh"]' in docker
+    assert 'fix_v410_security_hardening.py' not in docker
+    assert 'fix_v410_1_edge_identity.py' not in docker
+    assert 'python /app/web/test_v410_security_hardening.py /app' in docker
+    assert 'CMD ["/app/web/start_web.sh"]' in docker
 
 # Nginx edge protections.
 security_headers = (

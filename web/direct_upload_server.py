@@ -7,11 +7,17 @@ import time
 import threading
 import uuid
 import urllib.request
+import urllib.error
 import urllib.parse
 import secrets
+import shutil
 import html
+import hashlib
+import hmac
+import subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from cryptography.fernet import Fernet, InvalidToken
 from urllib.parse import unquote, urlparse, parse_qs
 
 import boto3
@@ -95,6 +101,7 @@ META_SCOPES="pages_show_list,instagram_basic,instagram_content_publish,pages_rea
 # _redirect(handler,"/social-connect")
 # _redirect(handler,"/social-connect")
 FREE_DRAFT_LIMIT=5
+# V366_CREATOR_HUB_STATE_STABILITY
 FREE_SHORT_LIMIT=10
 PREMIUM_DRAFT_LIMIT=max(FREE_DRAFT_LIMIT,int(os.environ.get("GSF_PREMIUM_DRAFT_LIMIT","25") or 25))
 PREMIUM_SHORT_LIMIT=max(FREE_SHORT_LIMIT,int(os.environ.get("GSF_PREMIUM_SHORT_LIMIT","100") or 100))
@@ -129,7 +136,24 @@ def _composite_health(timeout=1.5):
         "streamlit":streamlit_ready,
         "bucket":_bucket_enabled(),
         "worker":bool(WORKER_URL),
+        # GSF_CANONICAL_UI: lets CI and post-deploy checks prove which UI is served.
+        "ui_digest":_canonical_ui_digest(),
+        "release":str(os.environ.get("RAILWAY_GIT_COMMIT_SHA","") or "")[:40],
     }
+
+
+_CANONICAL_UI_DIGEST=None
+
+
+def _canonical_ui_digest():
+    global _CANONICAL_UI_DIGEST
+    if _CANONICAL_UI_DIGEST is None:
+        try:
+            data=json.loads(Path("/app/.gsf-ui-manifest.json").read_text(encoding="utf-8"))
+            _CANONICAL_UI_DIGEST=str(data.get("digest") or "")[:64]
+        except Exception:
+            _CANONICAL_UI_DIGEST=""
+    return _CANONICAL_UI_DIGEST
 
 
 def _upload_concurrency_for_user_agent(user_agent):
@@ -142,10 +166,10 @@ def _upload_concurrency_for_user_agent(user_agent):
 
 def _materialize_concurrency():
     try:
-        value=int(os.environ.get("GSF_MATERIALIZE_CONCURRENCY","6") or 6)
+        value=int(os.environ.get("GSF_MATERIALIZE_CONCURRENCY","1") or 1)
     except Exception:
-        value=6
-    return max(1,min(8,value))
+        value=1
+    return max(1,min(2,value))
 
 
 def _s3():
@@ -612,6 +636,25 @@ def _read_json(handler,max_bytes=1024*1024):
     raw=handler.rfile.read(length)
     return json.loads(raw.decode("utf-8"))
 
+def _worker_request_with_retry(req,timeout=12,attempts=3):
+    last_exc=None
+    total=max(1,int(attempts or 1))
+    for attempt in range(total):
+        try:
+            return urllib.request.urlopen(req,timeout=timeout)
+        except urllib.error.HTTPError as exc:
+            last_exc=exc
+            if int(getattr(exc,"code",0) or 0) not in (502,503,504) or attempt>=total-1:
+                raise
+        except (urllib.error.URLError,TimeoutError,ConnectionError,OSError) as exc:
+            last_exc=exc
+            if attempt>=total-1:
+                raise
+        time.sleep(0.45*(attempt+1))
+    if last_exc is not None:
+        raise last_exc
+    raise RuntimeError("worker request retry exhausted")
+
 def _trigger_prescan(payload):
     if not WORKER_URL:
         perf_event("prescan_queue_end",queued=False,reason="worker_url_missing")
@@ -633,7 +676,7 @@ def _trigger_prescan(payload):
             headers=headers,
             method="POST",
         )
-        with urllib.request.urlopen(req,timeout=12) as resp:
+        with _worker_request_with_retry(req,timeout=12,attempts=3) as resp:
             resp.read(4096)
         perf_event(
             "prescan_queue_end",
@@ -677,6 +720,7 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
             os.fsync(out.fileno())
         if tmp.stat().st_size!=total:
             raise IOError(f"bucket materialization size mismatch {tmp.stat().st_size} != {total}")
+        _security_validate_media(tmp,ext)
         os.replace(tmp,final)
         marker=media/".direct_upload_ready.json"
         _write_json_atomic(marker,{
@@ -891,6 +935,124 @@ def _social_sid(handler):
     return _safe_id(handler.headers.get("X-GSF-Session-ID"))
 
 
+# GSF_SECURITY_V410 — application-layer hardening.
+def _security_fernet():
+    raw=str(os.environ.get("GSF_DATA_ENCRYPTION_KEY","") or "").strip()
+    if not raw:
+        raise RuntimeError("GSF_DATA_ENCRYPTION_KEY is required")
+    try:
+        return Fernet(raw.encode("ascii"))
+    except Exception:
+        derived=base64.urlsafe_b64encode(hashlib.sha256(raw.encode("utf-8")).digest())
+        return Fernet(derived)
+
+
+def _security_encrypt_json(payload):
+    raw=json.dumps(dict(payload or {}),ensure_ascii=False,separators=(",",":")).encode("utf-8")
+    return _security_fernet().encrypt(raw)
+
+
+def _security_decrypt_json(raw):
+    data=raw.encode("utf-8") if isinstance(raw,str) else bytes(raw or b"")
+    if not data:
+        return {}
+    # Backward-compatible migration: legacy objects were plaintext JSON.
+    if data.lstrip().startswith((b"{",b"[")):
+        payload=json.loads(data.decode("utf-8"))
+    else:
+        try:
+            payload=json.loads(_security_fernet().decrypt(data).decode("utf-8"))
+        except InvalidToken as exc:
+            raise RuntimeError("encrypted social token cannot be decrypted") from exc
+    return payload if isinstance(payload,dict) else {}
+
+
+def _security_write_json(path,payload):
+    path=Path(path)
+    path.parent.mkdir(parents=True,exist_ok=True)
+    tmp=Path(str(path)+".tmp")
+    tmp.write_bytes(_security_encrypt_json(payload))
+    try:
+        os.chmod(tmp,0o600)
+    except Exception:
+        pass
+    os.replace(tmp,path)
+
+
+def _security_read_json(path):
+    path=Path(path)
+    return _security_decrypt_json(path.read_bytes())
+
+
+def _security_csrf_token(sid):
+    sid=_safe_id(sid)
+    secret=str(
+        os.environ.get("GSF_CSRF_SECRET","")
+        or os.environ.get("GSF_DATA_ENCRYPTION_KEY","")
+        or os.environ.get("GSF_SOCIAL_CONNECT_KEY","")
+        or ""
+    ).encode("utf-8")
+    if not sid or not secret:
+        return ""
+    return hmac.new(secret,sid.encode("utf-8"),hashlib.sha256).hexdigest()
+
+
+def _security_csrf_valid(handler,sid):
+    expected=_security_csrf_token(sid)
+    provided=str(handler.headers.get("X-GSF-CSRF","") or "")
+    fetch_site=str(handler.headers.get("Sec-Fetch-Site","") or "").strip().lower()
+    if fetch_site and fetch_site not in ("same-origin","same-site","none"):
+        return False
+    return bool(expected and provided and hmac.compare_digest(expected,provided))
+
+
+def _security_validate_media(path,expected_ext=""):
+    path=Path(path)
+    if not path.is_file() or path.stat().st_size<=1024:
+        raise ValueError("media validation failed: empty or missing file")
+    ext=str(expected_ext or path.suffix or "").lower()
+    if ext not in ALLOWED_EXT:
+        raise ValueError("media validation failed: unsupported container")
+    probe=subprocess.run(
+        [
+            "ffprobe","-v","error","-show_entries",
+            "format=format_name,duration:stream=codec_type,width,height",
+            "-of","json",str(path),
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=30,
+    )
+    if probe.returncode!=0:
+        raise ValueError("media validation failed: decoder rejected file")
+    try:
+        payload=json.loads(probe.stdout or "{}")
+    except Exception as exc:
+        raise ValueError("media validation failed: invalid probe output") from exc
+    fmt=str((payload.get("format") or {}).get("format_name") or "").lower()
+    if not any(name in fmt for name in ("mov","mp4","matroska","webm")):
+        raise ValueError("media validation failed: unexpected format")
+    try:
+        duration=float((payload.get("format") or {}).get("duration") or 0.0)
+    except Exception:
+        duration=0.0
+    if duration<=0.0 or duration>43200.0:
+        raise ValueError("media validation failed: invalid duration")
+    streams=list(payload.get("streams") or [])
+    if not streams or len(streams)>32:
+        raise ValueError("media validation failed: invalid stream count")
+    videos=[s for s in streams if str((s or {}).get("codec_type") or "")=="video"]
+    if not videos:
+        raise ValueError("media validation failed: no video stream")
+    for stream in videos:
+        width=int((stream or {}).get("width") or 0)
+        height=int((stream or {}).get("height") or 0)
+        if width<=0 or height<=0 or width>8192 or height>8192 or width*height>40000000:
+            raise ValueError("media validation failed: unsafe dimensions")
+    return {"format":fmt,"duration":duration,"streams":len(streams)}
+
+
 _EDITOR_STATE_KEYS={
     "zoom","panX","panY","framePreset","coverMode","coverTime","coverLocked",
     "look","intensity","brightness","contrast","hudMode","captionOn","captionMode",
@@ -1027,7 +1189,7 @@ def _tiktok_user_load(sid):
         return {}
     local=ROOT/"sessions"/sid/"social"/"tiktok_token.json"
     try:
-        payload=json.loads(local.read_text(encoding="utf-8"))
+        payload=_security_read_json(local)
         if isinstance(payload,dict) and payload.get("access_token"):
             return payload
     except Exception:
@@ -1036,7 +1198,7 @@ def _tiktok_user_load(sid):
         return {}
     try:
         obj=_s3().get_object(Bucket=S3_BUCKET,Key=_tiktok_user_key(sid))
-        payload=json.loads(obj["Body"].read().decode("utf-8"))
+        payload=_security_decrypt_json(obj["Body"].read())
         if isinstance(payload,dict):
             _tiktok_user_write_local(sid,payload)
             return payload
@@ -1053,8 +1215,8 @@ def _tiktok_user_write_local(sid,payload):
     social.mkdir(parents=True,exist_ok=True)
     token=dict(payload or {})
     token.setdefault("_saved_at",time.time())
-    _write_json_atomic(social/"tiktok_token.json",token)
-    _write_json_atomic(social/"tiktok_config.json",{
+    _security_write_json(social/"tiktok_token.json",token)
+    _security_write_json(social/"tiktok_config.json",{
         "client_key":TIKTOK_CLIENT_KEY,
         "client_secret":TIKTOK_CLIENT_SECRET,
     })
@@ -1070,8 +1232,8 @@ def _tiktok_user_save(sid,payload):
     _s3().put_object(
         Bucket=S3_BUCKET,
         Key=_tiktok_user_key(sid),
-        Body=json.dumps(payload,ensure_ascii=False).encode("utf-8"),
-        ContentType="application/json",
+        Body=_security_encrypt_json(payload),
+        ContentType="application/octet-stream",
         CacheControl="no-store",
     )
 
@@ -1088,7 +1250,7 @@ def _youtube_user_load(sid):
         return {}
     local=ROOT/"sessions"/sid/"social"/"youtube_token.json"
     try:
-        payload=json.loads(local.read_text(encoding="utf-8"))
+        payload=_security_read_json(local)
         if isinstance(payload,dict) and payload.get("token"):
             return payload
     except Exception:
@@ -1097,7 +1259,7 @@ def _youtube_user_load(sid):
         return {}
     try:
         obj=_s3().get_object(Bucket=S3_BUCKET,Key=_youtube_user_key(sid))
-        payload=json.loads(obj["Body"].read().decode("utf-8"))
+        payload=_security_decrypt_json(obj["Body"].read())
         if isinstance(payload,dict):
             _youtube_user_write_local(sid,payload)
             return payload
@@ -1113,7 +1275,7 @@ def _youtube_user_write_local(sid,payload):
     social=ROOT/"sessions"/sid/"social"
     social.mkdir(parents=True,exist_ok=True)
     token=dict(payload or {})
-    _write_json_atomic(social/"youtube_token.json",token)
+    _security_write_json(social/"youtube_token.json",token)
 
 
 def _youtube_user_save(sid,payload):
@@ -1126,8 +1288,8 @@ def _youtube_user_save(sid,payload):
     _s3().put_object(
         Bucket=S3_BUCKET,
         Key=_youtube_user_key(sid),
-        Body=json.dumps(payload,ensure_ascii=False).encode("utf-8"),
-        ContentType="application/json",
+        Body=_security_encrypt_json(payload),
+        ContentType="application/octet-stream",
         CacheControl="no-store",
     )
 
@@ -1145,7 +1307,7 @@ def _instagram_user_load(sid):
         return {}
     local=ROOT/"sessions"/sid/"social"/"instagram_config.json"
     try:
-        payload=json.loads(local.read_text(encoding="utf-8"))
+        payload=_security_read_json(local)
         if isinstance(payload,dict) and payload.get("ig_user_id") and payload.get("access_token"):
             return payload
     except Exception:
@@ -1154,7 +1316,7 @@ def _instagram_user_load(sid):
         return {}
     try:
         obj=_s3().get_object(Bucket=S3_BUCKET,Key=_instagram_user_key(sid))
-        payload=json.loads(obj["Body"].read().decode("utf-8"))
+        payload=_security_decrypt_json(obj["Body"].read())
         if isinstance(payload,dict):
             _instagram_user_write_local(sid,payload)
             return payload
@@ -1169,7 +1331,7 @@ def _instagram_user_write_local(sid,payload):
         return
     social=ROOT/"sessions"/sid/"social"
     social.mkdir(parents=True,exist_ok=True)
-    _write_json_atomic(social/"instagram_config.json",dict(payload or {}))
+    _security_write_json(social/"instagram_config.json",dict(payload or {}))
 
 
 def _instagram_user_save(sid,payload):
@@ -1182,8 +1344,8 @@ def _instagram_user_save(sid,payload):
     _s3().put_object(
         Bucket=S3_BUCKET,
         Key=_instagram_user_key(sid),
-        Body=json.dumps(payload,ensure_ascii=False).encode("utf-8"),
-        ContentType="application/json",
+        Body=_security_encrypt_json(payload),
+        ContentType="application/octet-stream",
         CacheControl="no-store",
     )
 
@@ -1552,6 +1714,8 @@ def _draft_delete(sid,draft_id):
     sid=_safe_id(sid); draft_id=_safe_id(draft_id)
     if not sid or not draft_id:
         return False
+    if not _draft_load(sid,draft_id):
+        return False
     root=_draft_dir(sid)
     try:
         (root/(draft_id+".json")).unlink(missing_ok=True)
@@ -1566,6 +1730,103 @@ def _draft_delete(sid,draft_id):
             pass
     _draft_index_remove(sid,draft_id)
     print("GSF_DRAFT_DELETED",sid,draft_id,flush=True)
+    return True
+
+# V304 PROJECT + DRAFT DETAIL API
+
+def _v304_clean_title(value, fallback="Progetto"):
+    value=re.sub(r"\s+"," ",str(value or "").strip())[:180]
+    return value or fallback
+
+def _draft_rename(sid,draft_id,title):
+    sid=_safe_id(sid); draft_id=_safe_id(draft_id)
+    if not sid or not draft_id:
+        return {}
+    draft=_draft_load(sid,draft_id)
+    if not isinstance(draft,dict) or not draft.get("id"):
+        return {}
+    draft["title"]=_v304_clean_title(title,"Bozza")
+    draft["updated_at"]=time.time()
+    path=_draft_dir(sid)/(draft_id+".json")
+    _write_json_atomic(path,draft)
+    if _bucket_enabled():
+        try:
+            _s3().put_object(
+                Bucket=S3_BUCKET,Key=_draft_key(sid,draft_id),
+                Body=json.dumps(draft,ensure_ascii=False,separators=(",",":")).encode("utf-8"),
+                ContentType="application/json",CacheControl="no-store",
+            )
+        except Exception as exc:
+            print("GSF_DRAFT_RENAME_BUCKET_WARN",sid,draft_id,repr(str(exc))[:180],flush=True)
+    _draft_index_upsert(sid,draft)
+    print("GSF_DRAFT_RENAMED",sid,draft_id,draft["title"],flush=True)
+    return _draft_summary(draft)
+
+def _current_project_record(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return None,{},"",{}
+    profile=_creator_account_load(sid) or {}
+    account_id=_safe_id(profile.get("account_id","")) if isinstance(profile,dict) else ""
+    root=(ROOT/"creator-projects"/account_id) if account_id else (ROOT/"sessions"/sid/"projects")
+    idx_path=root/"index.json"
+    try:
+        idx=json.loads(idx_path.read_text(encoding="utf-8"))
+        if not isinstance(idx,dict): idx={}
+    except Exception:
+        idx={}
+    pid=_safe_id(idx.get("active_project_id",""))
+    if not pid:
+        return root,idx,"",{}
+    try:
+        pdata=json.loads((root/pid/"project_state.json").read_text(encoding="utf-8"))
+        if not isinstance(pdata,dict): pdata={}
+    except Exception:
+        pdata={}
+    return root,idx,pid,pdata
+
+def _current_project_rename(sid,title):
+    root,idx,pid,pdata=_current_project_record(sid)
+    if not pid or not pdata:
+        return {}
+    clean=_v304_clean_title(title,"Progetto corrente")
+    pdata["title"]=clean
+    pdata["updated_at"]=time.time()
+    _write_json_atomic(root/pid/"project_state.json",pdata)
+    idx["active_project_title"]=clean
+    idx["updated_at"]=time.time()
+    _write_json_atomic(root/"index.json",idx)
+    print("GSF_PROJECT_RENAMED",_safe_id(sid),pid,clean,flush=True)
+    return {"id":pid,"title":clean,"updated_at":pdata["updated_at"]}
+
+def _current_project_save_draft(sid,title=""):
+    root,idx,pid,pdata=_current_project_record(sid)
+    if not pid or not pdata:
+        return {}
+    state=pdata.get("state") if isinstance(pdata.get("state"),dict) else {}
+    source_name=str(state.get("gsf_source_name") or state.get("source_name") or "Gameplay")[:160]
+    desired=_v304_clean_title(title or pdata.get("title") or idx.get("active_project_title"),"Bozza · "+source_name)
+    draft=_draft_save(sid,{"title":desired,"source_name":source_name,"state":state})
+    print("GSF_PROJECT_SAVED_AS_DRAFT",_safe_id(sid),pid,draft.get("id",""),flush=True)
+    return _draft_summary(draft)
+
+def _current_project_delete(sid):
+    root,idx,pid,pdata=_current_project_record(sid)
+    if not pid:
+        return False
+    try:
+        shutil.rmtree(root/pid,ignore_errors=True)
+    except Exception:
+        pass
+    idx["active_project_id"]=""
+    idx.pop("active_project_title",None)
+    idx["updated_at"]=time.time()
+    for key in ("projects","items"):
+        if isinstance(idx.get(key),list):
+            idx[key]=[row for row in idx[key] if _safe_id((row or {}).get("id","") if isinstance(row,dict) else row)!=pid]
+    root.mkdir(parents=True,exist_ok=True)
+    _write_json_atomic(root/"index.json",idx)
+    print("GSF_PROJECT_DELETED",_safe_id(sid),pid,flush=True)
     return True
 
 def _short_index_path(sid):
@@ -1812,10 +2073,12 @@ def _draft_prepare_resume(sid,draft):
     return state
 
 def _draft_cards_html(sid):
+    sid=_safe_id(sid)
     drafts=_draft_list(sid)
     if not drafts:
         return '<div class="draftEmpty">Nessuna bozza salvata.</div>'
     rows=[]
+    csrf=_security_csrf_token(sid)
     for draft in drafts:
         did=_safe_id(draft.get("id",""))
         title=html.escape(str(draft.get("title") or "Bozza"))
@@ -1826,12 +2089,11 @@ def _draft_cards_html(sid):
         except Exception:
             updated=""
         href="/drafts/resume?id="+urllib.parse.quote(did,safe="")
-        delete_href="/drafts/delete?id="+urllib.parse.quote(did,safe="")
         safety='<span class="draftSafe">salvata</span>' if persistent else '<span class="draftSafe draftSafeSync">sincronizzazione</span>'
         rows.append(
             '<div class="draftCard"><div class="draftInfo"><strong>'+title+'</strong><span>'+source+' · '+html.escape(updated)+' · '+safety+
             '</span></div><div class="draftActions"><a class="draftOpen" href="'+href+'" onclick="return gsfResumeDraft(event,this.href)">RIPRENDI</a>'+
-            '<a class="draftDelete" href="'+delete_href+'" onclick="return confirm(\'Eliminare questa bozza?\')">ELIMINA</a></div></div>'
+            '<a class="draftDelete" href="#" onclick="return gsfDeleteDraft(event,\''+did+'\',\''+csrf+'\')">ELIMINA</a></div></div>'
         )
     return (
         '<div id="draftInlineMessage" class="draftInlineMessage" aria-live="polite"></div>'
@@ -1844,6 +2106,10 @@ def _draft_cards_html(sid):
         'window.top.location.href=j.url||"/";}'
         'catch(e){if(m){m.textContent=e.message||"Bozza non disponibile. Riprova.";m.className="draftInlineMessage show error";}}'
         'return false;}'
+        'async function gsfDeleteDraft(ev,id,csrf){ev.preventDefault();if(!confirm("Eliminare questa bozza?"))return false;'
+        'const m=document.getElementById("draftInlineMessage");try{const r=await fetch("/drafts/delete?id="+encodeURIComponent(id),{method:"POST",cache:"no-store",credentials:"same-origin",headers:{"X-GSF-CSRF":csrf,"Accept":"application/json"}});const j=await r.json();'
+        'if(!r.ok||!j.ok)throw new Error(j.error||"Eliminazione non riuscita");window.location.reload();}'
+        'catch(e){if(m){m.textContent=e.message||"Eliminazione non riuscita.";m.className="draftInlineMessage show error";}}return false;}'
         '</script>'
     )
 
@@ -3508,6 +3774,45 @@ def _start_proactive_guardian():
     )
     return _GUARDIAN_WATCHDOG
 
+
+# V319 AI RESULTS BRIDGE
+_AI_RESULT_FILE_RE = re.compile(r'(?:^|[_-])(?:mini|candidate|preview)[_-]?([1-3])(?:[^0-9].*)?\.mp4$', re.IGNORECASE)
+
+def _ai_results_payload(sid):
+    sid = _safe_id(sid)
+    if not sid:
+        return {"ok":False,"previews":[],"count":0}
+    media_dir = ROOT / "sessions" / sid / "media"
+    if not media_dir.is_dir():
+        return {"ok":True,"previews":[],"count":0}
+    by_index = {}
+    for path in media_dir.iterdir():
+        if not path.is_file() or path.suffix.lower() != ".mp4":
+            continue
+        match = _AI_RESULT_FILE_RE.search(path.name)
+        if not match:
+            continue
+        index = int(match.group(1))
+        if index < 1 or index > 3:
+            continue
+        try:
+            mtime = float(path.stat().st_mtime)
+        except Exception:
+            mtime = 0.0
+        prev = by_index.get(index)
+        if prev is None or mtime >= prev[0]:
+            by_index[index] = (mtime, path)
+    previews = []
+    for index in sorted(by_index):
+        mtime, path = by_index[index]
+        previews.append({
+            "index": index - 1,
+            "title": "Momento " + str(index),
+            "video": "/media/" + sid + "/media/" + urllib.parse.quote(path.name, safe=""),
+            "mtime": mtime,
+        })
+    return {"ok":True,"previews":previews[:3],"count":min(3,len(previews))}
+
 class Handler(BaseHTTPRequestHandler):
     server_version="GSFDirectUpload/2.0"
 
@@ -3521,6 +3826,13 @@ class Handler(BaseHTTPRequestHandler):
             health=_composite_health()
             _json(self,200 if health.get("ok") else 503,health)
             return
+
+        # V319 AI RESULTS ROUTE
+        if clean=="/ai/results":
+            sid=_social_sid(self)
+            _json(self,200,_ai_results_payload(sid))
+            return
+
         if clean in ("","/health"):
             _json(self,200,{
                 "ok":True,
@@ -3712,20 +4024,21 @@ class Handler(BaseHTTPRequestHandler):
                 _redirect(self,target)
             return
         if clean=="/drafts/delete":
-            sid=_social_sid(self)
-            draft_id=_safe_id((parse_qs(path.query).get("id") or [""])[0])
-            if sid and draft_id:
-                _draft_delete(sid,draft_id)
-            _redirect(self,"/account")
+            _json(self,405,{"ok":False,"error":"method not allowed"})
             return
         if clean=="/share/state":
             sid=_social_sid(self)
             if not sid:
                 _json(self,400,{"ok":False,"error":"Sessione browser non valida."})
                 return
+            profile=_creator_account_load(sid) or {}
+            providers=dict(profile.get("providers") or {}) if isinstance(profile,dict) else {}
+            social_snapshot=_creator_social_snapshot(sid,providers)
             stable,_job=_final_local_paths(sid)
             ready=bool(stable and stable.is_file() and stable.stat().st_size>1024)
             final_bytes=int(stable.stat().st_size) if ready else 0
+            # V411_SHARE_REVISION
+            revision=str(stable.stat().st_mtime_ns) if ready else ""
             if not ready and _bucket_enabled():
                 try:
                     obj=_s3().get_object(Bucket=S3_BUCKET,Key=_final_meta_key(sid))
@@ -3733,11 +4046,13 @@ class Handler(BaseHTTPRequestHandler):
                     key=str((meta or {}).get("bucket_key") or "")
                     if key:
                         head=_s3().head_object(Bucket=S3_BUCKET,Key=key)
+                        revision=str(head.get("ETag") or head.get("LastModified") or "")
                         final_bytes=int(head.get("ContentLength") or 0)
                         ready=final_bytes>1024
                 except Exception:
                     try:
                         head=_s3().head_object(Bucket=S3_BUCKET,Key=_final_bucket_key(sid))
+                        revision=str(head.get("ETag") or head.get("LastModified") or "")
                         final_bytes=int(head.get("ContentLength") or 0)
                         ready=final_bytes>1024
                     except Exception:
@@ -3746,6 +4061,7 @@ class Handler(BaseHTTPRequestHandler):
                 "ok":True,
                 "ready":ready,
                 "final_bytes":final_bytes,
+                "revision":revision,
                 "video_url":"/share/final" if ready else "",
                 "social":social_snapshot,
             })
@@ -3787,10 +4103,47 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 _json(self,500,{"ok":False,"error":str(exc)[:180]})
             return
+        if clean=="/creator-hub/avatar":
+            sid=_social_sid(self)
+            if not sid:
+                _json(self,400,{"ok":False,"error":"Sessione browser non valida."})
+                return
+            profile=_creator_account_load(sid) or {}
+            avatar=str(profile.get("avatar") or "") if isinstance(profile,dict) else ""
+            if avatar.startswith("data:image/") and ";base64," in avatar:
+                try:
+                    head,data=avatar.split(",",1)
+                    mime=head.split(";",1)[0].split(":",1)[1]
+                    raw=base64.b64decode(data,validate=True)
+                    _send_bytes(self,200,raw,mime,"private, max-age=60")
+                except Exception:
+                    _json(self,404,{"ok":False,"error":"Avatar non disponibile"})
+            else:
+                _json(self,404,{"ok":False,"error":"Avatar non disponibile"})
+            return
         if clean=="/creator-hub/state":
             sid=_social_sid(self)
             if not sid:
                 _json(self,400,{"ok":False,"error":"Sessione browser non valida."})
+                return
+            scope=str((parse_qs(path.query).get("scope") or [""])[0] or "")
+            if scope=="header":
+                profile=_creator_account_load(sid) or {}
+                account_id=_safe_id(profile.get("account_id","")) if isinstance(profile,dict) else ""
+                avatar=str(profile.get("avatar") or "") if isinstance(profile,dict) else ""
+                if avatar.startswith("data:image/"):
+                    avatar="/creator-hub/avatar"
+                _json(self,200,{
+                    "ok":True,
+                    "account":{
+                        "connected":bool(account_id),
+                        "id":account_id,
+                        "display_name":str(profile.get("display_name") or "Creator")[:120] if isinstance(profile,dict) else "Creator",
+                        "avatar":avatar[:1800],
+                        "plan":str(profile.get("plan") or "FREE")[:24] if isinstance(profile,dict) else "FREE",
+                        "creator_level":int(profile.get("creator_level") or 1) if isinstance(profile,dict) else 1,
+                    },
+                })
                 return
             profile=_creator_account_load(sid) or {}
             providers=dict(profile.get("providers") or {}) if isinstance(profile,dict) else {}
@@ -3798,6 +4151,9 @@ class Handler(BaseHTTPRequestHandler):
             limits=_storage_limits_for_sid(sid)
             all_drafts=_draft_list(sid)
             all_shorts=_short_list(sid)
+            youtube_state=_youtube_user_load(sid)
+            tiktok_state=_tiktok_user_load(sid)
+            instagram_state=_instagram_user_load(sid)
             drafts=[]
             for row in all_drafts[:max(1,int(limits.get("drafts") or FREE_DRAFT_LIMIT))]:
                 if not isinstance(row,dict):
@@ -3821,23 +4177,25 @@ class Handler(BaseHTTPRequestHandler):
                         "id":pid,
                         "updated_at":float(pdata.get("updated_at") or idx.get("updated_at") or 0),
                         "has_source":bool((pdata.get("state") or {}).get("gsf_source_path") or (pdata.get("state") or {}).get("gsf_editor_source_path")),
+                        "title":str(pdata.get("title") or idx.get("active_project_title") or "Progetto corrente")[:180],
                     }
             except Exception:
                 pass
             _json(self,200,{
                 "ok":True,
+                "csrf_token":_security_csrf_token(sid),
                 "account":{
                     "connected":bool(account_id),
                     "id":account_id,
                     "display_name":str(profile.get("display_name") or "Creator")[:120] if isinstance(profile,dict) else "Creator",
-                    "avatar":str(profile.get("avatar") or "")[:1800000] if isinstance(profile,dict) else "",
+                    "avatar":(("/creator-hub/avatar" if str(profile.get("avatar") or "").startswith("data:image/") else str(profile.get("avatar") or "")[:1800000]) if isinstance(profile,dict) else ""),
                     "plan":str(profile.get("plan") or "FREE")[:24] if isinstance(profile,dict) else "FREE",
                     "creator_level":int(profile.get("creator_level") or 1) if isinstance(profile,dict) else 1,
                 },
                 "social":{
-                    "youtube":bool(_youtube_user_load(sid)),
-                    "tiktok":bool(_tiktok_user_load(sid)),
-                    "instagram":bool(_instagram_user_load(sid)),
+                    "youtube":bool(youtube_state),
+                    "tiktok":bool(tiktok_state),
+                    "instagram":bool(instagram_state),
                     "facebook":bool(providers.get("facebook")),
                     "twitch":bool(providers.get("twitch")),
                 },
@@ -3965,6 +4323,18 @@ class Handler(BaseHTTPRequestHandler):
             _json(self,400,{"ok":False,"error":"invalid session"})
             return
 
+        if path=="/drafts/delete":
+            if not _security_csrf_valid(self,sid):
+                _json(self,403,{"ok":False,"error":"csrf validation failed"})
+                return
+            draft_id=_safe_id((parse_qs(urlparse(self.path).query).get("id") or [""])[0])
+            if not draft_id:
+                _json(self,400,{"ok":False,"error":"invalid draft id"})
+                return
+            ok=bool(_draft_delete(sid,draft_id))
+            _json(self,200 if ok else 404,{"ok":ok,"id":draft_id})
+            return
+
         if path=="/editor/state/save":
             try:
                 data=_read_json(self,max_bytes=128*1024)
@@ -4029,6 +4399,18 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,200,{"ok":True,"context":_analytics_context(sid)})
             except Exception as exc:
                 _json(self,500,{"ok":False,"error":str(exc)[:220]})
+            return
+
+        if path=="/creator-hub/client-error":
+            try:
+                data=_read_json(self,max_bytes=8*1024)
+                stage=str((data or {}).get("stage") or "unknown")[:80]
+                message=str((data or {}).get("message") or "")[:300]
+                stack=str((data or {}).get("stack") or "")[:1200].replace("\n"," | ")
+                print("GSF_HUB_CLIENT_ERROR",sid,stage,repr(message),repr(stack),flush=True)
+                _json(self,200,{"ok":True})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
             return
 
         if path=="/creator-hub/profile":
@@ -4152,6 +4534,58 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,409,{"ok":False,"verified":False,"error":str(exc)[:220]})
             return
 
+        # V304 project/draft detail actions.
+        if path=="/creator-hub/draft/rename":
+            try:
+                data=_read_json(self,max_bytes=32768)
+                row=_draft_rename(sid,data.get("id"),data.get("title"))
+                if not row:
+                    _json(self,404,{"ok":False,"error":"Bozza non trovata"})
+                else:
+                    _json(self,200,{"ok":True,"draft":row})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+        if path=="/creator-hub/draft/delete":
+            try:
+                data=_read_json(self,max_bytes=32768)
+                did=_safe_id(data.get("id",""))
+                ok=_draft_delete(sid,did) if did else False
+                _json(self,200 if ok else 404,{"ok":bool(ok)})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+        if path=="/creator-hub/project/rename":
+            try:
+                data=_read_json(self,max_bytes=32768)
+                row=_current_project_rename(sid,data.get("title"))
+                if not row:
+                    _json(self,404,{"ok":False,"error":"Progetto corrente non trovato"})
+                else:
+                    _json(self,200,{"ok":True,"project":row})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+        if path=="/creator-hub/project/save-draft":
+            try:
+                data=_read_json(self,max_bytes=32768)
+                row=_current_project_save_draft(sid,data.get("title"))
+                if not row:
+                    _json(self,404,{"ok":False,"error":"Progetto corrente non trovato"})
+                else:
+                    _json(self,200,{"ok":True,"draft":row})
+            except StorageQuotaError as exc:
+                _json(self,409,{"ok":False,"code":"storage_limit","kind":exc.kind,"limit":exc.limit,"plan":exc.plan,"error":str(exc)})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+        if path=="/creator-hub/project/delete":
+            try:
+                ok=_current_project_delete(sid)
+                _json(self,200 if ok else 404,{"ok":bool(ok)})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
         if path=="/drafts/save":
             try:
                 data=_read_json(self,max_bytes=1024*1024)
@@ -4485,6 +4919,7 @@ class Handler(BaseHTTPRequestHandler):
                         return
 
                     final=media/f"source_direct_{safe_stem}_{upload_id}{ext}"
+                    _security_validate_media(data_path,ext)
                     os.replace(data_path,final)
                     marker=media/".direct_upload_ready.json"
                     _write_json_atomic(marker,{

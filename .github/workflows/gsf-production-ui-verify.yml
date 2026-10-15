@@ -1,0 +1,95 @@
+name: GSF Production UI Verify
+
+# After the Production Gate promotes a commit, prove that the UI actually served
+# by the production domain is byte-identical to the repository's canonical files.
+# Results are written as annotations (notice = verified, error = drift/timeout).
+
+on:
+  workflow_run:
+    workflows: ["GSF Production Gate"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Commit whose canonical UI must be served (default: main)"
+        required: false
+      timeout_minutes:
+        description: "How long to wait for Railway to serve it"
+        required: false
+        default: "30"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gsf-production-ui-verify
+  cancel-in-progress: true
+
+env:
+  GSF_PRODUCTION_URL: ${{ vars.GSF_PRODUCTION_URL || 'https://gaming-shorts-factory-v79-production.up.railway.app' }}
+  UA_IPHONE: "Mozilla/5.0 (iPhone; CPU iPhone OS 19_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/19.0 Mobile/15E148 Safari/604.1"
+
+jobs:
+  verify:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha || github.event.workflow_run.head_sha || 'main' }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Wait until production serves this canonical UI
+        id: wait
+        run: |
+          set -euo pipefail
+          expected=$(python tools/gsf_ui_manifest.py digest --repo .)
+          echo "expected=$expected" >> "$GITHUB_OUTPUT"
+          deadline=$(( $(date +%s) + 60 * ${{ inputs.timeout_minutes || 30 }} ))
+          served=""; release=""
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            body=$(curl -sS -m 20 "$GSF_PRODUCTION_URL/healthz" || true)
+            served=$(printf '%s' "$body" | python -c 'import json,sys
+          try: d=json.load(sys.stdin); print(d.get("ui_digest",""), d.get("release",""))
+          except Exception: print("", "")' || true)
+            release=${served#* }; served=${served%% *}
+            if [ "$served" = "$expected" ]; then
+              echo "release=$release" >> "$GITHUB_OUTPUT"
+              echo "Production serves canonical UI $expected (release $release)"
+              exit 0
+            fi
+            echo "waiting: served=${served:-none} release=${release:-?} expected=$expected"
+            sleep 30
+          done
+          echo "::error title=Production UI drift::production serves ui_digest='${served:-none}' (release ${release:-?}), expected $expected"
+          exit 1
+
+      - name: Served mobile pages are byte-identical to the repository
+        run: |
+          set -euo pipefail
+          for page in creator_hub_v156_component:/creator-hub-v156/ ai_v221_component:/ai-v221/ editor_2027_component:/editor-live/ share_v156_component:/share-v156/; do
+            dir=${page%%:*}; url=${page#*:}
+            code=$(curl -sS -m 30 -A "$UA_IPHONE" -o /tmp/served.html -w '%{http_code}' "$GSF_PRODUCTION_URL$url")
+            test "$code" = "200" || { echo "::error title=Production UI::$url returned $code"; exit 1; }
+            cmp -s /tmp/served.html "web/$dir/index.html" || { echo "::error title=Production UI::$url served bytes differ from web/$dir/index.html"; exit 1; }
+            echo "production $url == web/$dir/index.html"
+          done
+
+      - name: Home, Creator Hub state and CSRF on production
+        run: |
+          set -euo pipefail
+          jar=/tmp/gsf-cookies.txt
+          code=$(curl -sS -m 30 -A "$UA_IPHONE" -c "$jar" -b "$jar" -o /tmp/home.html -w '%{http_code}' "$GSF_PRODUCTION_URL/")
+          test "$code" = "200" || { echo "::error title=Production UI::mobile Home returned $code"; exit 1; }
+          grep -q 'id="gsf-adsense-bridge"' /tmp/home.html || { echo "::error title=Production UI::Home is missing the canonical Streamlit bridge"; exit 1; }
+          code=$(curl -sS -m 30 -A "$UA_IPHONE" -c "$jar" -b "$jar" -o /tmp/state.json -w '%{http_code}' "$GSF_PRODUCTION_URL/creator-hub/state")
+          test "$code" = "200" || { echo "::error title=Production UI::/creator-hub/state returned $code"; exit 1; }
+          python -c 'import json;d=json.load(open("/tmp/state.json"));assert d.get("csrf_token"),"csrf token missing"'
+          code=$(curl -sS -m 30 -A "$UA_IPHONE" -c "$jar" -b "$jar" -X POST -o /dev/null -w '%{http_code}' "$GSF_PRODUCTION_URL/drafts/delete?id=gsf-verify-nonexistent")
+          test "$code" = "403" || { echo "::error title=Production UI::POST without CSRF returned $code (expected 403)"; exit 1; }
+          echo "::notice title=Production UI verified::release ${{ steps.wait.outputs.release }} serves canonical UI ${{ steps.wait.outputs.expected }}; pages byte-identical; Home 200; /creator-hub/state 200 with CSRF; CSRF enforced"

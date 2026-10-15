@@ -6,7 +6,10 @@ root=Path(sys.argv[1] if len(sys.argv)>1 else '.').resolve()
 nginx=(root/'web'/'nginx.conf.template').read_text(encoding='utf-8')
 companion=(root/'web'/'direct_upload_server.py').read_text(encoding='utf-8')
 start=(root/'web'/'start_web.sh').read_text(encoding='utf-8')
-continuation=(root/'web'/'fix_v373_creator_hub_spacing.py').read_text(encoding='utf-8')
+editor=(root/'web'/'editor_2027_component'/'index.html').read_text(encoding='utf-8')
+share=(root/'web'/'share_v156_component'/'index.html').read_text(encoding='utf-8')
+app_path=root/'app.py' if (root/'app.py').is_file() else root/'GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py'
+app=app_path.read_text(encoding='utf-8')
 smoke=(root/'web'/'runtime_smoke_v107.py').read_text(encoding='utf-8')
 gate_path=root/'.github'/'workflows'/'v397-production-gate.yml'
 gate=gate_path.read_text(encoding='utf-8') if gate_path.is_file() else ''
@@ -55,18 +58,22 @@ require(gate,'docker exec','production gate enters built container')
 require(gate,'/app/web/runtime_smoke_v107.py','production gate runs runtime smoke synchronously')
 require(gate,'docker logs','production gate preserves failure evidence')
 
-# Existing production ownership must stay intact in Phase 1.
-require(start,'test_v343_single_global_shell.py','V343 global shell contract retained')
+# Existing production ownership must stay intact. Since the canonical UI
+# pipeline, the approved work is present in the canonical files themselves and
+# the startup path only verifies and launches (no migration chain to retain).
+require(app,'GSF_GLOBAL_SHELL_V343','V343 global shell present in canonical app')
+require(start,'gsf_ui_manifest.py verify','startup verifies the canonical UI manifest')
+forbid(start,'fix_v','startup must not replay legacy migrations')
 for token in (
-    'fix_v389_mobile_editor_bounded_reset.py',
-    'fix_v390_mobile_editor_owner_cleanup.py',
-    'fix_v391_mobile_editor_top_actions.py',
-    'fix_v392_mobile_editor_premium_skin.py',
-    'fix_v393_mobile_editor_clean_transport.py',
-    'fix_v394_mobile_editor_footer_restore.py',
-    'fix_v395_mobile_editor_atomic_skin.py',
-    'fix_v396_mobile_share_publish_surface.py',
+    'V389_MOBILE_EDITOR_BOUNDED_RESET',
+    'V390_MOBILE_EDITOR_OWNER_CLEANUP',
+    'V391_MOBILE_EDITOR_TOP_ACTIONS',
+    'V392_MOBILE_EDITOR_PREMIUM_SKIN',
+    'V393_MOBILE_EDITOR_CLEAN_TRANSPORT',
+    'V394_MOBILE_EDITOR_FOOTER_RESTORE',
+    'V395_MOBILE_EDITOR_ATOMIC_SKIN',
 ):
-    require(continuation,token,'V389-V396 continuation chain retained')
+    require(editor,token,'V389-V395 mobile editor retained in canonical editor')
+require(share,'V396_MOBILE_SHARE_PUBLISH_SURFACE','V396 share/publish surface retained in canonical share')
 
 print('V397 production hardening structural contract: PASS')

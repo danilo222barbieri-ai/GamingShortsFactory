@@ -143,7 +143,7 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:880;lett
 }
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
-@media(max-width:900px){
+
   #share{padding:14px 12px 12px}
   .topline{margin-bottom:11px}
   .readyPill{display:none}
@@ -153,8 +153,8 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:880;lett
   .actions{justify-content:flex-start}
   #muralSocial{left:16px;top:82px;width:160px;font-size:14px}
   #muralAction{right:16px;top:82px;width:160px;font-size:13px}
-}
-@media(max-width:520px){
+
+
   #share{padding:11px 9px 12px}
   .titleIcon{width:42px;height:42px;border-radius:15px}
   h1{font-size:21px}
@@ -176,170 +176,285 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:880;lett
   .actions .downloadBtn{grid-column:1/-1}
   #muralSocial{position:relative;left:auto;top:auto;width:100%;margin:2px 0 7px;font-size:12px;transform:rotate(-2deg)}
   #muralAction{display:none}
-}
+
 
 /* V219_1 V161 SHARE COMPATIBILITY — historical literal contract only.
    This comment is intentionally inert; the real V219 Social stays compact.
    #share{width:100%;height:100dvh;max-width:1920px
 */
 
-/* V267 GLOBAL DESKTOP POLISH — Share surface, desktop only. */
-@media (min-width:761px){
-  #share{
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* V289 SHARE FINAL — playerless GSF publishing/download surface */
+#share.gsfFinalSurface{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  min-height:100%;
+  padding:clamp(16px,2.1vh,24px) clamp(16px,2.25vw,30px) clamp(16px,2vh,22px)!important;
+  background:
+    radial-gradient(circle at 10% 5%,rgba(104,207,255,.19),transparent 27%),
+    radial-gradient(circle at 91% 8%,rgba(115,232,192,.17),transparent 27%),
+    radial-gradient(circle at 52% 92%,rgba(191,225,255,.14),transparent 31%),
+    linear-gradient(180deg,#FEFFFF 0%,#FAFDFF 55%,#F5FBFF 100%)!important;
+}
+#share.gsfFinalSurface .topline{
+  position:relative;
+  z-index:3;
+  margin:0 2px 2px!important;
+  align-items:center;
+}
+#share.gsfFinalSurface .titleWrap{gap:15px}
+#share.gsfFinalSurface .titleIcon{
+  width:58px;height:58px;border-radius:20px;
+  background:linear-gradient(145deg,#E9F8FF,#DDF6EE)!important;
+  color:#318DDC;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.96),0 12px 30px rgba(66,145,204,.13)!important;
+}
+#share.gsfFinalSurface h1{
+  color:#0D2A66;
+  font-size:clamp(30px,2.7vw,43px)!important;
+  font-weight:900!important;
+  letter-spacing:-.045em!important;
+}
+#share.gsfFinalSurface .subtitle{
+  color:#7488A6!important;
+  font-size:clamp(12px,1vw,15px)!important;
+  font-weight:700!important;
+}
+#share.gsfFinalSurface .readyPill{
+  min-width:240px;
+  justify-content:flex-start;
+  border-radius:20px!important;
+  padding:11px 14px!important;
+  background:rgba(255,255,255,.88)!important;
+  border:1px solid rgba(143,181,216,.22)!important;
+  box-shadow:0 10px 26px rgba(62,107,147,.07)!important;
+}
+#share.gsfFinalSurface .section{
+  border:1px solid rgba(143,181,216,.22)!important;
+  border-radius:27px!important;
+  background:rgba(255,255,255,.82)!important;
+  box-shadow:0 15px 40px rgba(61,104,145,.075),inset 0 1px 0 rgba(255,255,255,.98)!important;
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+}
+#share.gsfFinalSurface .section+.section{margin-top:0!important}
+#share.gsfFinalSurface .sectionHead{margin-bottom:12px!important}
+#share.gsfFinalSurface .sectionTitle{font-size:clamp(16px,1.25vw,20px)!important;color:#173873}
+#share.gsfFinalSurface .step{
+  width:31px;height:31px;border-radius:11px;
+  background:linear-gradient(145deg,#E1F2FF,#E4F8EF)!important;
+  color:#2277C6!important;
+  box-shadow:inset 0 0 0 1px rgba(111,185,226,.12);
+}
+#share.gsfFinalSurface .quality strong{
+  background:linear-gradient(145deg,#DDF7EA,#E8FBF3)!important;
+  color:#168B65!important;
+}
+#share.gsfFinalSurface .socials{gap:clamp(10px,1vw,15px)!important}
+#share.gsfFinalSurface .card{
+  min-height:210px!important;
+  padding:16px!important;
+  border-radius:22px!important;
+  background:linear-gradient(155deg,rgba(255,255,255,.98),rgba(248,252,255,.93))!important;
+  border:1px solid rgba(144,181,214,.20)!important;
+  box-shadow:0 8px 24px rgba(65,105,145,.055),inset 0 1px 0 #fff!important;
+}
+#share.gsfFinalSurface .card:hover,#share.gsfFinalSurface .card:focus-within{
+  transform:translateY(-3px)!important;
+  border-color:rgba(99,184,243,.36)!important;
+  box-shadow:0 16px 32px rgba(65,105,145,.095),inset 0 1px 0 #fff!important;
+}
+#share.gsfFinalSurface .logo{width:46px;height:46px!important}
+#share.gsfFinalSurface .card h3{font-size:clamp(15px,1.2vw,19px)!important;margin-top:12px!important}
+#share.gsfFinalSurface .card p{font-size:clamp(10.5px,.87vw,13px)!important;line-height:1.35!important}
+#share.gsfFinalSurface .cardHint{font-size:clamp(9px,.72vw,11px)!important}
+#share.gsfFinalSurface .open{
+  min-height:40px;
+  border-radius:14px!important;
+  background:linear-gradient(135deg,#78D1FA,#50A8F3)!important;
+  font-size:clamp(10px,.82vw,12px)!important;
+}
+#share.gsfFinalSurface .open.connect{background:#EAF5FF!important;color:#52769B!important}
+#share.gsfFinalSurface .downloadRow{
+  grid-template-columns:minmax(270px,1fr) minmax(420px,auto)!important;
+  gap:18px!important;
+}
+#share.gsfFinalSurface .downloadTitle h2{font-size:clamp(18px,1.45vw,23px)!important;color:#173873}
+#share.gsfFinalSurface .downloadTitle p{font-size:clamp(10px,.85vw,13px)!important}
+#share.gsfFinalSurface .chips{gap:6px!important}
+#share.gsfFinalSurface .chip{
+  padding:6px 9px!important;
+  background:#EDF6FF!important;
+  border:1px solid rgba(130,183,219,.12);
+  color:#6884A4!important;
+  font-size:clamp(8px,.65vw,10px)!important;
+}
+#share.gsfFinalSurface .qualityMax{
+  background:linear-gradient(145deg,#DDF8EB,#E8FBF3)!important;
+  color:#168B65!important;
+}
+#share.gsfFinalSurface .actions{gap:8px!important}
+#share.gsfFinalSurface .downloadBtn{
+  min-height:48px;
+  padding:13px 24px!important;
+  border-radius:16px!important;
+  background:linear-gradient(135deg,#79D7FF,#439FF5)!important;
+  box-shadow:0 11px 28px rgba(69,157,223,.22)!important;
+  font-size:clamp(12px,.95vw,14px)!important;
+}
+#share.gsfFinalSurface .secondary{
+  min-height:44px;
+  background:rgba(255,255,255,.94)!important;
+  border-color:rgba(143,181,214,.22)!important;
+  font-size:clamp(9.5px,.75vw,11px)!important;
+}
+/* The final surface intentionally contains no video/player: creation is already complete. */
+
+/* V289 SHARE MOBILE */
+
+  #share.gsfFinalSurface{
+    overflow:auto!important;
+    gap:9px;
+    padding:12px 9px 86px!important;
+  }
+  #share.gsfFinalSurface .topline{align-items:flex-start!important;margin-bottom:1px!important}
+  #share.gsfFinalSurface .titleWrap{gap:10px!important}
+  #share.gsfFinalSurface .titleIcon{width:44px;height:44px;border-radius:15px}
+  #share.gsfFinalSurface h1{font-size:25px!important;line-height:1.02!important}
+  #share.gsfFinalSurface .subtitle{font-size:11.5px!important;max-width:285px}
+  #share.gsfFinalSurface .readyPill{display:none!important}
+  #share.gsfFinalSurface .section{padding:11px!important;border-radius:21px!important}
+  #share.gsfFinalSurface .sectionHead{margin-bottom:9px!important}
+  #share.gsfFinalSurface .sectionTitle{font-size:14px!important}
+  #share.gsfFinalSurface .step{width:28px;height:28px;border-radius:10px}
+  #share.gsfFinalSurface .quality{display:none!important}
+  #share.gsfFinalSurface .socials{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  #share.gsfFinalSurface .card{min-height:164px!important;padding:11px!important;border-radius:18px!important}
+  #share.gsfFinalSurface .logo{width:38px;height:38px!important}
+  #share.gsfFinalSurface .connected{font-size:8.6px!important;padding:4px 6px!important}
+  #share.gsfFinalSurface .card h3{font-size:13.5px!important;margin:9px 0 4px!important}
+  #share.gsfFinalSurface .card p{font-size:9.8px!important;min-height:32px!important}
+  #share.gsfFinalSurface .cardHint{display:none!important}
+  #share.gsfFinalSurface .open{min-height:36px;font-size:9.6px!important}
+  #share.gsfFinalSurface .downloadRow{grid-template-columns:1fr!important;gap:10px!important}
+  #share.gsfFinalSurface .downloadTitle h2{font-size:17.5px!important}
+  #share.gsfFinalSurface .downloadTitle p{font-size:10.5px!important}
+  #share.gsfFinalSurface .actions{display:grid!important;grid-template-columns:1fr 1fr!important;width:100%}
+  #share.gsfFinalSurface .downloadBtn{grid-column:1/-1!important;width:100%;min-height:49px;font-size:12.5px!important}
+  #share.gsfFinalSurface .secondary{width:100%;min-height:40px;font-size:9.8px!important}
+  #share.gsfFinalSurface #muralSocial{font-size:12px!important}
+
+
+  #share.gsfFinalSurface .socials{grid-template-columns:1fr!important}
+  #share.gsfFinalSurface .card{min-height:140px!important}
+
+/* END V289 SHARE FINAL */
+
+
+/* V295 INTERNAL PAGE SYSTEM — SHARE */
+#share.gsfFinalSurface .card,
+#share.gsfFinalSurface .open,
+#share.gsfFinalSurface .downloadBtn,
+#share.gsfFinalSurface .secondary{
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+
+
+
+
+  #share.gsfFinalSurface{
+    width:100%!important;
+    height:100dvh!important;
+    min-height:0!important;
+    overflow:auto!important;
+    overscroll-behavior:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+    gap:8px!important;
+    padding:max(9px,env(safe-area-inset-top)) 8px max(82px,calc(env(safe-area-inset-bottom) + 70px))!important;
+  }
+  #share.gsfFinalSurface .topline{margin:0 1px 2px!important}
+  #share.gsfFinalSurface .titleIcon{width:43px!important;height:43px!important;border-radius:14px!important}
+  #share.gsfFinalSurface h1{font-size:24px!important}
+  #share.gsfFinalSurface .subtitle{font-size:10.5px!important;line-height:1.2!important}
+  #share.gsfFinalSurface .readyPill{display:none!important}
+  #share.gsfFinalSurface .section{padding:10px!important;border-radius:20px!important}
+  #share.gsfFinalSurface .sectionHead{margin-bottom:8px!important}
+  #share.gsfFinalSurface .socials{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:7px!important;
+  }
+  #share.gsfFinalSurface .card{
+    min-height:154px!important;
+    padding:10px!important;
+    border-radius:17px!important;
+  }
+  #share.gsfFinalSurface .logo{width:38px!important;height:38px!important;border-radius:50%!important}
+  #share.gsfFinalSurface .card h3{font-size:13px!important;margin:8px 0 3px!important}
+  #share.gsfFinalSurface .card p{
+    min-height:30px!important;
+    font-size:9.4px!important;
+    line-height:1.25!important;
+    display:-webkit-box!important;
+    -webkit-line-clamp:2!important;
+    -webkit-box-orient:vertical!important;
     overflow:hidden!important;
-    padding:clamp(13px,1.7vh,18px) clamp(16px,1.8vw,22px) clamp(12px,1.5vh,16px)!important;
-    background:
-      radial-gradient(circle at 9% 6%,rgba(126,214,255,.16),transparent 24%),
-      radial-gradient(circle at 91% 8%,rgba(127,236,197,.14),transparent 25%),
-      linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important;
   }
-  #share .topline{
-    margin:1px 2px clamp(9px,1.3vh,13px)!important;
+  #share.gsfFinalSurface .cardHint{display:none!important}
+  #share.gsfFinalSurface .open{min-height:38px!important;font-size:9.5px!important}
+  #share.gsfFinalSurface .downloadRow{grid-template-columns:1fr!important;gap:9px!important}
+  #share.gsfFinalSurface .downloadTitle h2{font-size:17px!important}
+  #share.gsfFinalSurface .downloadTitle p{font-size:10px!important}
+  #share.gsfFinalSurface .actions{
+    width:100%!important;
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:7px!important;
   }
-  #share .section{
-    border-color:rgba(143,181,216,.22)!important;
-    border-radius:24px!important;
-    padding:clamp(11px,1.4vh,14px)!important;
-    box-shadow:
-      0 12px 30px rgba(61,104,145,.075),
-      inset 0 1px 0 rgba(255,255,255,.97)!important;
+  #share.gsfFinalSurface .downloadBtn{
+    grid-column:1/-1!important;
+    width:100%!important;
+    min-height:49px!important;
+    font-size:12px!important;
+    border-radius:15px!important;
   }
-  #share .section+.section{
-    margin-top:clamp(8px,1.15vh,11px)!important;
+  #share.gsfFinalSurface .secondary{width:100%!important;min-height:40px!important}
+  #share.gsfFinalSurface #muralSocial{
+    position:relative!important;left:auto!important;top:auto!important;width:100%!important;
+    margin:0 0 6px!important;font-size:12px!important;transform:rotate(-2deg)!important;
   }
-  #share .socials{
-    gap:clamp(9px,.85vw,12px)!important;
-  }
-  #share .card{
-    min-height:clamp(158px,23vh,180px)!important;
-    border-color:rgba(144,181,214,.21)!important;
-    box-shadow:0 7px 20px rgba(65,105,145,.055),inset 0 1px 0 #fff!important;
-    transition:
-      transform .28s cubic-bezier(.2,.8,.2,1),
-      box-shadow .28s cubic-bezier(.2,.8,.2,1),
-      border-color .24s ease!important;
-  }
-  #share .card:hover,
-  #share .card:focus-within{
-    transform:translateY(-3px) scale(1.006)!important;
-    border-color:rgba(105,172,220,.35)!important;
-    box-shadow:0 14px 30px rgba(65,105,145,.10),inset 0 1px 0 #fff!important;
-  }
-  #share .logo{
-    border-radius:50%!important;
-    transition:transform .24s cubic-bezier(.2,.8,.2,1)!important;
-  }
-  #share .card:hover .logo,
-  #share .card:focus-within .logo{
-    transform:scale(1.045)!important;
-  }
-  #share .logo svg{
-    stroke-width:1.9!important;
-  }
-  #share .open,
-  #share .downloadBtn,
-  #share .secondary{
-    transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s ease,border-color .2s ease!important;
-  }
-  #share .open:active,
-  #share .downloadBtn:active,
-  #share .secondary:active{
-    transform:scale(.98)!important;
-  }
-}
-@media (min-width:761px) and (max-height:720px){
-  #share .card{min-height:148px!important;padding:11px!important}
-  #share .cardHint{padding:7px!important}
-  #share .section{padding:10px!important}
-}
-@media (prefers-reduced-motion:reduce) and (min-width:761px){
-  #share .card,#share .logo,#share .open,#share .downloadBtn,#share .secondary{transition:none!important}
-}
-/* END V267 GLOBAL DESKTOP POLISH */
+  #share.gsfFinalSurface #muralAction{display:none!important}
 
 
-/* V268 DESKTOP AESTHETIC CALIBRATION — typography scale only. */
-@media (min-width:761px){
-  #share h1{font-size:clamp(24.5px,2.22vw,35px)!important}
-  #share .subtitle{font-size:12.8px!important}
-  #share .readyPill{font-size:9.6px!important}
-  #share .sectionTitle{font-size:15px!important}
-  #share .quality{font-size:8.6px!important}
-  #share .connected{font-size:8px!important}
-  #share .card h3{font-size:15px!important}
-  #share .card p{font-size:9.7px!important}
-  #share .cardHint{font-size:8.6px!important}
-  #share .open{font-size:9.6px!important}
-  #share .downloadTitle h2{font-size:17px!important}
-  #share .downloadTitle p{font-size:9.7px!important}
-  #share .chip{font-size:7.6px!important}
-  #share .downloadBtn{font-size:11.8px!important}
-  #share .secondary{font-size:9.6px!important}
-}
-/* END V268 DESKTOP AESTHETIC CALIBRATION */
+  #share.gsfFinalSurface .socials{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #share.gsfFinalSurface .card{min-height:148px!important;padding:9px!important}
+  #share.gsfFinalSurface .card p{font-size:9px!important}
+
+/* END V295 INTERNAL PAGE SYSTEM — SHARE */
 
 
-/* V268.1 DESKTOP MASTER -> MOBILE PARITY — Share.
-   Existing mobile murals remain independent. */
-@media (max-width:760px){
-  #share{overflow:hidden!important;background:radial-gradient(circle at 9% 6%,rgba(126,214,255,.16),transparent 24%),radial-gradient(circle at 91% 8%,rgba(127,236,197,.14),transparent 25%),linear-gradient(180deg,#FEFFFF 0%,#FBFDFF 54%,#F7FCFF 100%)!important}
-  #share .section{border-color:rgba(143,181,216,.22)!important;border-radius:24px!important;box-shadow:0 12px 30px rgba(61,104,145,.075),inset 0 1px 0 rgba(255,255,255,.97)!important}
-  #share .card{border-color:rgba(144,181,214,.21)!important;box-shadow:0 7px 20px rgba(65,105,145,.055),inset 0 1px 0 #fff!important;transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s cubic-bezier(.2,.8,.2,1),border-color .24s ease!important}
-  #share .logo{border-radius:50%!important;transition:transform .24s cubic-bezier(.2,.8,.2,1)!important}
-  #share .logo svg{stroke-width:1.9!important}
-  #share .open,#share .downloadBtn,#share .secondary{transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s ease,border-color .2s ease!important}
-  #share h1{font-size:22px!important} #share .subtitle{font-size:10.7px!important}
-  #share .sectionTitle{font-size:12.8px!important} #share .card h3{font-size:13.1px!important}
-  #share .card p{font-size:9.3px!important} #share .open{font-size:9.3px!important}
-  #share .downloadTitle h2{font-size:16.2px!important} #share .downloadTitle p{font-size:9.5px!important}
-  #share .chip{font-size:7.5px!important} #share .downloadBtn{font-size:11.3px!important} #share .secondary{font-size:9.3px!important}
-  #share .open:active,#share .downloadBtn:active,#share .secondary:active{transform:scale(.98)!important}
-}
-/* END V268.1 DESKTOP MASTER -> MOBILE PARITY */
-
-
-
-/* V281 GLOBAL TYPE SCALE SHARE — larger text across desktop + mobile, same font family. */
-@media(min-width:761px){
-  #share h1{font-size:clamp(29px,2.55vw,40px)!important}
-  #share .subtitle{font-size:14px!important}
-  #share .readyPill{font-size:11.5px!important}
-  #share .sectionTitle{font-size:18px!important}
-  #share .quality{font-size:10.5px!important}
-  #share .connected{font-size:10px!important}
-  #share .card h3{font-size:18px!important}
-  #share .card p{font-size:12px!important;line-height:1.32!important}
-  #share .cardHint{font-size:10.5px!important}
-  #share .open{font-size:11.5px!important}
-  #share .downloadTitle h2{font-size:20px!important}
-  #share .downloadTitle p{font-size:12px!important}
-  #share .chip{font-size:9.5px!important}
-  #share .downloadBtn{font-size:14px!important}
-  #share .secondary{font-size:11.5px!important}
-}
-@media(max-width:760px){
-  #share h1{font-size:23px!important}
-  #share .subtitle{font-size:11.5px!important}
-  #share .readyPill{font-size:10px!important}
-  #share .sectionTitle{font-size:14px!important}
-  #share .quality{font-size:9px!important}
-  #share .connected{font-size:8.8px!important}
-  #share .card h3{font-size:14px!important}
-  #share .card p{font-size:10.2px!important}
-  #share .cardHint{font-size:9.2px!important}
-  #share .open{font-size:10px!important}
-  #share .downloadTitle h2{font-size:17.5px!important}
-  #share .downloadTitle p{font-size:10.5px!important}
-  #share .chip{font-size:8.5px!important}
-  #share .downloadBtn{font-size:12px!important}
-  #share .secondary{font-size:10px!important}
-}
-/* END V281 GLOBAL TYPE SCALE SHARE */
+/* GSF MOBILE-ONLY SCROLL CONTRACT */
+html,body{overflow:hidden!important}
+#share{height:100dvh!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch!important}
+/* END GSF MOBILE-ONLY SCROLL CONTRACT */
 
 </style>
 </head>
 <body>
-<main id="share">
+<main id="share" class="gsfFinalSurface">
   <div class="topline">
     <div class="titleWrap">
       <div class="titleIcon"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.4"/><circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="19" r="2.4"/><path d="m8.2 10.9 7.6-4.6M8.2 13.1l7.6 4.6"/></svg></div>
@@ -351,7 +466,7 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:880;lett
   <div id="muralSocial" class="mural"><span class="muralText">Il tuo Short<br>è pronto</span></div>
   <div id="muralAction" class="mural"><span class="muralText">Scegli dove<br>farlo vivere</span></div>
 
-  <section class="section">
+  <section class="section gsfFinalGrid">
     <div class="sectionHead">
       <div class="sectionTitle"><span class="step">1</span><span>Pubblica sui tuoi social</span></div>
       <div class="quality"><span>Stesso video, pronto per tutti</span><strong>9:16 · 1080×1920</strong></div>
@@ -387,8 +502,8 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:880;lett
   <section class="section">
     <div class="downloadRow">
       <div>
-        <div class="downloadTitle"><span class="step">2</span><div><h2>Scarica sul dispositivo</h2><p>Video finale ad alta qualità, pronto ovunque.</p></div></div>
-        <div class="chips"><span class="chip">MP4</span><span class="chip">1080×1920</span><span class="chip">H.264</span><span class="chip">60 FPS</span><span class="chip">AAC</span></div>
+        <div class="downloadTitle"><span class="step">2</span><div><h2>Scarica il tuo Short</h2><p>Video finale ad alta qualità, pronto ovunque.</p></div></div>
+        <div class="chips"><span class="chip">MP4</span><span class="chip">1080×1920</span><span class="chip">H.264</span><span class="chip">60 FPS</span><span class="chip">AAC</span><span class="chip qualityMax">✓ Qualità massima</span></div>
       </div>
       <div class="actions">
         <button class="downloadBtn" disabled>↓ &nbsp; Scarica video</button>
@@ -512,5 +627,121 @@ h1{margin:0;font-size:clamp(23px,2.15vw,34px);line-height:1;font-weight:880;lett
  */
 })();
 </script>
+
+<!-- V396_MOBILE_SHARE_PUBLISH_SURFACE -->
+<style id="v396MobileSharePublishSurface">
+#v396MobilePublishSurface{display:none}
+@media(max-width:760px){
+  #share.v396MobileMode{overflow:auto!important;padding:8px 8px 14px!important;background:linear-gradient(180deg,#fbfeff 0%,#f3fbff 100%)!important}
+  #share.v396MobileMode>:not(#v396MobilePublishSurface){display:none!important}
+  #v396MobilePublishSurface{display:flex!important;flex-direction:column;gap:7px;width:100%;min-height:100%;padding:0 0 6px;color:#153d69;font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  #v396MobilePublishSurface *{box-sizing:border-box}
+  .v396Mural{position:relative;min-height:92px;padding:12px 18px 10px;border-radius:23px;border:1px solid rgba(99,190,230,.28);background:radial-gradient(circle at 14% 18%,rgba(130,219,255,.18),transparent 29%),radial-gradient(circle at 86% 72%,rgba(119,226,193,.13),transparent 30%),linear-gradient(180deg,rgba(255,255,255,.88),rgba(239,249,254,.76));box-shadow:0 10px 26px rgba(55,112,151,.09),inset 0 1px 0 rgba(255,255,255,.96);overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center}
+  .v396Mural:before,.v396Mural:after{content:"";position:absolute;width:44px;height:19px;border-top:2px solid rgba(89,129,174,.33);border-radius:50%;pointer-events:none}.v396Mural:before{left:20px;bottom:18px;transform:rotate(-13deg)}.v396Mural:after{right:18px;top:19px;transform:rotate(165deg)}
+  .v396MuralText{position:relative;z-index:1;font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive;color:#5b78a6;font-size:21px;font-weight:600;line-height:1.05;transform:rotate(-1.5deg);text-shadow:0 1px 0 rgba(255,255,255,.75)}
+  .v396MuralText small{display:block;margin-top:6px;font-family:"Avenir Next","SF Pro Text",sans-serif;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:#7891ad;font-weight:850;transform:rotate(1.5deg)}
+  .v396Panel{border:1px solid rgba(131,176,210,.22);border-radius:18px;background:rgba(255,255,255,.79);box-shadow:0 8px 21px rgba(58,103,139,.07),inset 0 1px 0 rgba(255,255,255,.95);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);padding:9px}
+  .v396Label{display:flex;align-items:center;gap:6px;margin:0 2px 7px;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase;color:#2f6594}
+  .v396ShareIcon{width:17px;height:17px;display:grid;place-items:center;border-radius:7px;background:#e8f5fd;color:#3688c8;font-size:10px}
+  .v396Platforms{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+  .v396Platform{position:relative;min-width:0;height:58px;border:1px solid rgba(125,178,215,.23);border-radius:14px;background:linear-gradient(155deg,rgba(255,255,255,.96),rgba(237,248,253,.90));box-shadow:0 5px 13px rgba(52,100,136,.07);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#28557e;font-size:7.3px;font-weight:900;cursor:pointer;padding:3px}
+  .v396Platform[aria-pressed="true"]{border-color:rgba(63,153,224,.40);box-shadow:0 6px 15px rgba(46,132,198,.12),inset 0 0 0 1px rgba(79,176,235,.08)}
+  .v396Platform[aria-pressed="true"]:after{content:"✓";position:absolute;right:5px;top:4px;width:12px;height:12px;border-radius:50%;display:grid;place-items:center;background:#3295ed;color:#fff;font-size:7px;font-weight:1000}
+  .v396SocialMark{width:22px;height:22px;display:grid;place-items:center;font-weight:950;font-size:13px;line-height:1}.v396SocialMark.yt{color:#f0002f}.v396SocialMark.tt{color:#111}.v396SocialMark.ig{border-radius:7px;color:#fff;background:linear-gradient(145deg,#ffad33,#e73b8f 48%,#7355d9);font-size:11px}.v396SocialMark.fb{border-radius:50%;background:#287be9;color:#fff;font-size:15px}
+  .v396Fields{display:grid;gap:6px}
+  .v396Field{display:grid;grid-template-columns:31px 1fr;gap:7px;align-items:center;border:1px solid rgba(132,179,213,.19);border-radius:15px;background:rgba(255,255,255,.78);padding:7px 8px}
+  .v396FieldIcon{width:31px;height:31px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg,#eef9ff,#e2f3fb);color:#2b75ac;font-size:15px;font-weight:850}
+  .v396FieldBody label{display:block;margin:0 0 3px;font-size:7.5px;letter-spacing:.08em;text-transform:uppercase;color:#55789a;font-weight:950}
+  .v396FieldBody input,.v396FieldBody textarea{display:block;width:100%;min-width:0;border:0;outline:0;resize:none;background:transparent;color:#183f69;padding:0;font:750 10px/1.25 "Avenir Next","SF Pro Text",sans-serif}.v396FieldBody textarea{height:26px}
+  .v396FieldBody input::placeholder,.v396FieldBody textarea::placeholder{color:#93a7b9}
+  .v396Settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .v396Setting{display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0;padding:7px;border:1px solid rgba(132,179,213,.18);border-radius:13px;background:rgba(249,253,255,.88)}
+  .v396SettingText{min-width:0}.v396SettingText b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:7.6px;color:#315d84}.v396SettingText small{display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:5.9px;color:#8b9eb1}
+  .v396Switch{position:relative;width:25px;height:15px;flex:0 0 auto;border:0;border-radius:99px;background:#cbd9e4;padding:0;cursor:pointer}.v396Switch:after{content:"";position:absolute;width:11px;height:11px;left:2px;top:2px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(27,63,91,.16);transition:.15s}.v396Switch.on{background:linear-gradient(90deg,#5fc8f0,#398ee9)}.v396Switch.on:after{left:12px}
+  .v396Actions{display:grid;grid-template-columns:1fr 1fr 1.12fr;gap:6px;margin-top:1px}
+  .v396Action{height:43px;border-radius:14px;border:1px solid rgba(106,170,214,.24);background:linear-gradient(150deg,#fff,#edf8fc);color:#2e6894;font-size:8.3px;font-weight:950;letter-spacing:.025em;box-shadow:0 6px 16px rgba(47,96,132,.08);cursor:pointer}.v396Action.primary{border-color:rgba(52,145,224,.40);background:linear-gradient(135deg,#67cff2 0%,#419ff0 52%,#3486e8 100%);color:#fff;box-shadow:0 8px 20px rgba(49,139,211,.20)}.v396Action:active{transform:scale(.985)}
+  .v396Toast{position:fixed;left:50%;bottom:12px;z-index:9999;transform:translate(-50%,9px);opacity:0;pointer-events:none;max-width:82vw;padding:7px 10px;border-radius:99px;background:rgba(24,61,92,.89);color:#fff;font-size:7.5px;font-weight:850;text-align:center;transition:.18s}.v396Toast.show{opacity:1;transform:translate(-50%,0)}
+}
+</style>
+<script id="v396MobileSharePublishRuntime">
+(()=>{
+  const share=document.getElementById('share');if(!share||window.__GSF_V396_SHARE)return;window.__GSF_V396_SHARE=true;
+  const mobile=()=>window.matchMedia('(max-width:760px)').matches;
+  const html=`<div id="v396MobilePublishSurface" aria-label="Crea Short">
+    <section class="v396Mural"><div class="v396MuralText">Il tuo video è pronto<small>pubblicalo quando vuoi</small></div></section>
+    <section class="v396Panel"><div class="v396Label"><span class="v396ShareIcon">↗</span>PUBBLICA SU</div><div class="v396Platforms">
+      <button class="v396Platform" data-v396-platform="youtube" aria-pressed="true"><span class="v396SocialMark yt">▶</span><span>YouTube</span></button>
+      <button class="v396Platform" data-v396-platform="tiktok" aria-pressed="true"><span class="v396SocialMark tt">♪</span><span>TikTok</span></button>
+      <button class="v396Platform" data-v396-platform="instagram" aria-pressed="true"><span class="v396SocialMark ig">◎</span><span>Instagram</span></button>
+      <button class="v396Platform" data-v396-platform="facebook" aria-pressed="true"><span class="v396SocialMark fb">f</span><span>Facebook</span></button>
+    </div></section>
+    <section class="v396Panel v396Fields">
+      <div class="v396Field"><span class="v396FieldIcon">T</span><div class="v396FieldBody"><label for="v396Title">Titolo</label><input id="v396Title" maxlength="100" placeholder="Titolo del tuo Short"></div></div>
+      <div class="v396Field"><span class="v396FieldIcon">▤</span><div class="v396FieldBody"><label for="v396Description">Descrizione</label><textarea id="v396Description" maxlength="500" placeholder="Descrivi il tuo momento"></textarea></div></div>
+      <div class="v396Field"><span class="v396FieldIcon">#</span><div class="v396FieldBody"><label for="v396Hashtags">Hashtag</label><input id="v396Hashtags" maxlength="180" placeholder="#gaming #shorts"></div></div>
+    </section>
+    <section class="v396Panel"><div class="v396Label"><span class="v396ShareIcon">⚙</span>IMPOSTAZIONI</div><div class="v396Settings">
+      <div class="v396Setting"><span class="v396SettingText"><b>Pubblico</b><small>Visibile a tutti</small></span><button class="v396Switch on" data-setting="public" aria-pressed="true"></button></div>
+      <div class="v396Setting"><span class="v396SettingText"><b>Sottotitoli</b><small>Automatici</small></span><button class="v396Switch on" data-setting="captions" aria-pressed="true"></button></div>
+      <div class="v396Setting"><span class="v396SettingText"><b>Audio</b><small>Attivo</small></span><button class="v396Switch on" data-setting="audio" aria-pressed="true"></button></div>
+    </div></section>
+    <div class="v396Actions"><button class="v396Action" id="v396Download">SCARICA</button><button class="v396Action" id="v396Share">CONDIVIDI</button><button class="v396Action primary" id="v396Publish">PUBBLICA ORA</button></div>
+    <div class="v396Toast" id="v396Toast"></div>
+  </div>`;
+  share.insertAdjacentHTML('beforeend',html);share.classList.add('v396MobileMode');
+  const root=document.getElementById('v396MobilePublishSurface'),toast=document.getElementById('v396Toast');
+  const say=(msg)=>{if(!toast)return;toast.textContent=msg;toast.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>toast.classList.remove('show'),1700)};
+  const findByText=(selector,needle)=>[...document.querySelectorAll(selector)].find(el=>String(el.textContent||'').toLowerCase().includes(needle));
+  root.querySelectorAll('.v396Platform').forEach(btn=>btn.onclick=()=>{const on=btn.getAttribute('aria-pressed')==='true';btn.setAttribute('aria-pressed',String(!on))});
+  root.querySelectorAll('.v396Switch').forEach(btn=>btn.onclick=()=>{const on=btn.classList.toggle('on');btn.setAttribute('aria-pressed',String(on))});
+  const meta=()=>({title:root.querySelector('#v396Title')?.value||'',description:root.querySelector('#v396Description')?.value||'',hashtags:root.querySelector('#v396Hashtags')?.value||'',settings:Object.fromEntries([...root.querySelectorAll('.v396Switch')].map(b=>[b.dataset.setting,b.getAttribute('aria-pressed')==='true']))});
+  const originalDownload=()=>document.querySelector('.downloadBtn:not(#v396Download)')||findByText('button,a','scarica video');
+  const findAsset=()=>{const a=document.querySelector('a[download][href],a[href*=".mp4"],a[href*="/media/"]');if(a&&a.href)return a.href;const b=originalDownload();return b?.dataset?.url||b?.dataset?.href||''};
+  root.querySelector('#v396Download').onclick=()=>{const b=originalDownload();if(b){b.click();say('Download aperto');return}say('Download non ancora disponibile')};
+  root.querySelector('#v396Share').onclick=async()=>{const data=meta(),url=findAsset();try{if(url&&navigator.share){let file=null;try{const r=await fetch(url);const blob=await r.blob();file=new File([blob],'gaming-short.mp4',{type:blob.type||'video/mp4'})}catch(_e){}if(file&&(!navigator.canShare||navigator.canShare({files:[file]}))){await navigator.share({title:data.title||'Gaming Shorts Factory',text:data.description||'Il mio Short',files:[file]});return}await navigator.share({title:data.title||'Gaming Shorts Factory',text:data.description||'Il mio Short',url:url||undefined});return}if(navigator.share){await navigator.share({title:data.title||'Gaming Shorts Factory',text:data.description||'Il mio Short'});return}if(url&&navigator.clipboard){await navigator.clipboard.writeText(url);say('Link copiato');return}say('Condivisione non disponibile')}catch(e){if(e&&e.name!=='AbortError')say('Condivisione non disponibile')}};
+  root.querySelector('#v396Publish').onclick=()=>{const data=meta();try{window.parent.postMessage({type:'GSF_SHARE_METADATA',payload:data},window.location.origin)}catch(_e){}const selected=[...root.querySelectorAll('.v396Platform[aria-pressed="true"]')].map(b=>b.dataset.v396Platform);let fired=0;selected.forEach(name=>{const target=document.querySelector(`[data-platform="${name}"]`);if(target){target.click();fired++}});say(fired?`Apro ${fired} destinazioni`:'Seleziona almeno un social')};
+  const sync=()=>share.classList.toggle('v396MobileMode',mobile());sync();window.addEventListener('resize',sync,{passive:true});
+})();
+</script>
+
+
+<!-- V405_PUBLISH_SHORT_LIVE -->
+<style>
+#v396MobilePublishSurface{display:flex!important;flex-direction:column;gap:12px;align-items:center;text-align:center}
+#v396MobilePublishSurface>.v396Mural,#v396MobilePublishSurface>.v396Actions{display:none!important}
+.v405Title{margin:6px 0;font-size:clamp(26px,6vw,38px);line-height:1.05;color:#0d2a66;letter-spacing:-.04em}
+.v405Preview{display:block;width:min(280px,70vw);max-height:52dvh;border-radius:23px;background:#07101d;object-fit:contain}
+.v405Actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:520px}
+.v405Actions button{border:1px solid rgba(143,181,216,.24);border-radius:16px;padding:13px;background:#fff;color:#28557e;font:inherit;font-weight:850;cursor:pointer}
+.v405Actions .primary{grid-column:1/-1;background:#55aaf2;color:#fff;border:0}
+.v405Actions button:disabled{opacity:.45;cursor:not-allowed}
+.v405Sheet{position:fixed;inset:0;z-index:10000;display:none;align-items:flex-end;justify-content:center;background:rgba(20,40,65,.18);padding:10px}
+.v405Sheet.open{display:flex}.v405Panel{width:min(560px,100%);max-height:85dvh;overflow:auto;border-radius:25px;background:#fff;padding:16px;text-align:left;display:grid;gap:10px}
+.v405Close{justify-self:end;border:0;background:#edf6fd;border-radius:10px;padding:8px 14px;color:#28557e}
+.v405Feedback{min-height:18px;color:#7185a6;font-size:12px}
+</style>
+<script id="v405PublishLive">
+(()=>{
+ const root=document.getElementById('v396MobilePublishSurface');if(!root||root.dataset.v405Live)return;root.dataset.v405Live='1';
+ const title=document.createElement('h1');title.className='v405Title';title.textContent='Il tuo Short è pronto';root.prepend(title);
+ const video=document.createElement('video');video.className='v405Preview';video.controls=true;video.playsInline=true;video.preload='metadata';video.hidden=true;title.after(video);
+ const note=document.createElement('div');note.className='v405Feedback';note.setAttribute('role','status');root.append(note);
+ const sheet=document.createElement('section');sheet.className='v405Sheet';sheet.id='v405PublishSheet';sheet.setAttribute('role','dialog');sheet.setAttribute('aria-label','Pubblica il tuo Short');sheet.setAttribute('aria-modal','true');sheet.setAttribute('aria-hidden','true');
+ const panel=document.createElement('div');panel.className='v405Panel';const close=document.createElement('button');close.className='v405Close';close.textContent='Chiudi';panel.append(close);sheet.append(panel);root.append(sheet);
+ [...root.querySelectorAll(':scope > .v396Panel')].forEach(el=>panel.append(el));
+ const originalPublish=root.querySelector('#v396Publish');if(originalPublish)panel.append(originalPublish);
+ const actions=document.createElement('div');actions.className='v405Actions';
+ function button(label,action,handler){const b=document.createElement('button');b.type='button';b.dataset.action=action;b.textContent=label;b.onclick=handler;actions.append(b);return b}
+ button('Modifica','edit',()=>parent.postMessage({type:'GSF_SHELL_NAV',target:'editor'},location.origin));
+ const save=button('Salva','save',async()=>{save.disabled=true;try{const r=await fetch('/drafts/save-current',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'});const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||'Salvataggio non riuscito');note.textContent='Salvato nei tuoi Progetti'}catch(e){note.textContent=e.message||'Salvataggio non riuscito'}finally{save.disabled=false}});
+ const publish=button('PUBBLICA','publish',()=>{sheet.classList.add('open');sheet.setAttribute('aria-hidden','false');publish.setAttribute('aria-expanded','true');close.focus()});publish.className='primary';publish.setAttribute('aria-controls',sheet.id);publish.setAttribute('aria-expanded','false');
+ const download=button('Scarica','download',()=>root.querySelector('#v396Download')?.click());
+ root.insertBefore(actions,note);
+ const hide=()=>{sheet.classList.remove('open');sheet.setAttribute('aria-hidden','true');publish.setAttribute('aria-expanded','false');publish.focus()};close.onclick=hide;sheet.onclick=e=>{if(e.target===sheet)hide()};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sheet.classList.contains('open'))hide()});
+ async function sync(){try{const r=await fetch('/share/state',{cache:'no-store',credentials:'same-origin'});const state=await r.json();const ready=r.ok&&state.ok&&state.ready;publish.disabled=!ready;download.disabled=!ready;if(ready&&video.dataset.revision!==String(state.revision||'')){video.dataset.revision=String(state.revision||'');video.src='/share/final?revision='+encodeURIComponent(video.dataset.revision);video.hidden=false}if(!ready){delete video.dataset.revision;video.removeAttribute('src');video.hidden=true;title.textContent='Preparo il tuo Short'}else title.textContent='Il tuo Short è pronto'}catch(e){publish.disabled=true;download.disabled=true}}
+ sync();setInterval(sync,2500);
+})();
+</script>
+
 </body>
 </html>

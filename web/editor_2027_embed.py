@@ -28,7 +28,7 @@ def _prepare_v400_component_dir():
         raw = source.read_text(encoding="utf-8")
         patched = inject_hidpi_runtime(raw)
         digest = hashlib.sha256(patched.encode("utf-8")).hexdigest()[:12]
-        runtime_dir = Path(tempfile.gettempdir()) / f"gsf_editor_2027_v400_{digest}"
+        runtime_dir = Path(tempfile.gettempdir()) / f"gsf_editor_2027_v307"
         runtime_dir.mkdir(parents=True, exist_ok=True)
         target = runtime_dir / "index.html"
         if not target.exists() or target.read_text(encoding="utf-8") != patched:
@@ -43,7 +43,7 @@ _COMPONENT_DIR = _prepare_v400_component_dir()
 # runtime layer, not a new component registration: changing this name breaks
 # the editor asset/session contract and the production build guard.
 _EDITOR_2027_COMPONENT = components.declare_component(
-    "gsf_editor_2027_v1086",
+    "gsf_editor_2027_v295",
     path=str(_COMPONENT_DIR),
 )
 
