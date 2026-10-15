@@ -123,6 +123,7 @@ def _simulate_reinjection(tool):
 
 
 def test_mobile_game_editor_is_manifested_and_untouchable_by_legacy_scripts():
+    import os
     tool = _load_manifest_tool()
     files = tool.files_from_repo(ROOT)
     prefix = "web/game_editor_mobile_component/"
@@ -158,7 +159,12 @@ def test_mobile_game_editor_is_manifested_and_untouchable_by_legacy_scripts():
         assert tool.main(["write", "--root", str(image)]) == 0
         target = image / prefix / "index.html"
         target.write_text("<!-- forbidden legacy editor -->\n" + target.read_text(encoding="utf-8"), encoding="utf-8")
-        assert tool.main(["verify", "--root", str(image)]) == 1
+        saved = os.environ.pop("GITHUB_ACTIONS", None)
+        try:
+            assert tool.main(["verify", "--root", str(image)]) == 1
+        finally:
+            if saved is not None:
+                os.environ["GITHUB_ACTIONS"] = saved
 
 
 def test_every_editor_navigation_owner_selects_mobile_without_changing_desktop():
