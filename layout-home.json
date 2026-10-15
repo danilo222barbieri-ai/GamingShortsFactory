@@ -1,0 +1,369 @@
+{
+ "viewport": {
+  "w": 390,
+  "h": 664
+ },
+ "header": {
+  "x": 0,
+  "y": 0,
+  "w": 390,
+  "h": 44
+ },
+ "gamebar": {
+  "x": 18,
+  "y": 558,
+  "w": 354,
+  "h": 62
+ },
+ "footer": {
+  "x": 0,
+  "y": 626,
+  "w": 390,
+  "h": 38
+ },
+ "frames": [
+  {
+   "src": "http://127.0.0.1:18080/component/web.home_v154_embed.gsf_home_v154_live_307/index.html?streamlitUrl=http%3A%2F%2F127.0.0",
+   "title": "web.home_v154_embed.gsf_home_v154_live_307",
+   "rect": {
+    "x": 0,
+    "y": 0,
+    "w": 390,
+    "h": 664
+   },
+   "hits": [
+    {
+     "band": "header",
+     "el": "div#home154",
+     "text": "",
+     "rect": {
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 664
+     },
+     "opacity": "1",
+     "position": "relative",
+     "z": "auto"
+    },
+    {
+     "band": "gamebar",
+     "el": "a.footerSocialLink",
+     "text": "",
+     "rect": {
+      "x": 142,
+      "y": 625,
+      "w": 15,
+      "h": 15
+     },
+     "opacity": "1",
+     "position": "static",
+     "z": "auto"
+    },
+    {
+     "band": "gamebar",
+     "el": "a.footerSocialLink",
+     "text": "",
+     "rect": {
+      "x": 165,
+      "y": 625,
+      "w": 15,
+      "h": 15
+     },
+     "opacity": "1",
+     "position": "static",
+     "z": "auto"
+    },
+    {
+     "band": "gamebar",
+     "el": "a.footerSocialLink",
+     "text": "",
+     "rect": {
+      "x": 188,
+      "y": 625,
+      "w": 15,
+      "h": 15
+     },
+     "opacity": "1",
+     "position": "static",
+     "z": "auto"
+    },
+    {
+     "band": "gamebar",
+     "el": "a.footerSocialLink",
+     "text": "",
+     "rect": {
+      "x": 211,
+      "y": 625,
+      "w": 15,
+      "h": 15
+     },
+     "opacity": "1",
+     "position": "static",
+     "z": "auto"
+    },
+    {
+     "band": "gamebar",
+     "el": "a.footerSocialLink",
+     "text": "",
+     "rect": {
+      "x": 234,
+      "y": 625,
+      "w": 15,
+      "h": 15
+     },
+     "opacity": "1",
+     "position": "static",
+     "z": "auto"
+    }
+   ],
+   "innerHeight": 664,
+   "scrollHeight": 664
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 0,
+    "w": 0,
+    "h": 0
+   },
+   "hits": []
+  },
+  {
+   "src": "about:blank",
+   "title": "Condividi o scarica",
+   "rect": {
+    "x": 12,
+    "y": 32,
+    "w": 390,
+    "h": 664
+   },
+   "hits": [],
+   "innerHeight": 664,
+   "scrollHeight": 664
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 537,
+    "w": 390,
+    "h": 0
+   },
+   "hits": []
+  },
+  {
+   "src": "about:blank",
+   "title": "Creator Hub",
+   "rect": {
+    "x": 12,
+    "y": 32,
+    "w": 390,
+    "h": 664
+   },
+   "hits": [],
+   "innerHeight": 664,
+   "scrollHeight": 664
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 556,
+    "w": 390,
+    "h": 0
+   },
+   "hits": []
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 875,
+    "w": 390,
+    "h": 0
+   },
+   "hits": []
+  },
+  {
+   "src": "about:blank",
+   "title": "Motori IA",
+   "rect": {
+    "x": 12,
+    "y": 32,
+    "w": 390,
+    "h": 664
+   },
+   "hits": [],
+   "innerHeight": 664,
+   "scrollHeight": 664
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 893,
+    "w": 390,
+    "h": 0
+   },
+   "hits": []
+  },
+  {
+   "src": "about:blank",
+   "title": "Account",
+   "rect": {
+    "x": 12,
+    "y": 32,
+    "w": 390,
+    "h": 664
+   },
+   "hits": [],
+   "innerHeight": 664,
+   "scrollHeight": 664
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 912,
+    "w": 390,
+    "h": 0
+   },
+   "hits": []
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 931,
+    "w": 390,
+    "h": 0
+   },
+   "hits": []
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 949,
+    "w": 390,
+    "h": 0
+   },
+   "hits": []
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 968,
+    "w": 390,
+    "h": 0
+   },
+   "hits": []
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 977,
+    "w": 390,
+    "h": 0
+   },
+   "hits": []
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 986,
+    "w": 390,
+    "h": 0
+   },
+   "hits": []
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 1005,
+    "w": 390,
+    "h": 0
+   },
+   "hits": []
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 1014,
+    "w": 390,
+    "h": 0
+   },
+   "hits": []
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 1023,
+    "w": 390,
+    "h": 0
+   },
+   "hits": []
+  },
+  {
+   "src": "",
+   "title": "st.iframe",
+   "rect": {
+    "x": 0,
+    "y": 1032,
+    "w": 390,
+    "h": 0
+   },
+   "hits": []
+  }
+ ],
+ "topHits": [
+  {
+   "band": "gamebar",
+   "el": "code",
+   "text": "<section class=\"gsf-editor-shell\" role=\"dialog\" aria-modal=\"",
+   "rect": {
+    "x": 16,
+    "y": 563,
+    "w": 1940,
+    "h": 269
+   },
+   "opacity": "1",
+   "position": "static"
+  },
+  {
+   "band": "gamebar",
+   "el": "span",
+   "text": "<div id=\"gsf-editor-overlay-v220\" aria-hidden=\"true\">",
+   "rect": {
+    "x": 16,
+    "y": 565,
+    "w": 445,
+    "h": 18
+   },
+   "opacity": "1",
+   "position": "static"
+  }
+ ]
+}
