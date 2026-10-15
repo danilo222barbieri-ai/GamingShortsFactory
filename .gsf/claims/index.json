@@ -488,6 +488,28 @@
       ],
       "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
+    },
+    {
+      "branch": "chat/cleanup-consolidate-ci-into-one-job-retire-legac-4601da",
+      "created_at": "2026-10-15T10:22:33+02:00",
+      "id": "cleanup-consolidate-ci-into-one-job-retire-legac-4601da",
+      "owner": "claude-chat",
+      "paths": [
+        ".dockerignore",
+        ".github/**",
+        "Dockerfile",
+        "README.md",
+        "README_RAILWAY.txt",
+        "README_WEB.txt",
+        "app.py",
+        "docs/architecture/gsf-canonical-ui.md",
+        "scripts/**",
+        "tests/**",
+        "tools/test_*.py",
+        "web/**"
+      ],
+      "scope": "cleanup: consolidate CI into one job, retire legacy workflows/scripts/tests, trim Dependabot, freeze audit",
+      "state": "active"
     }
   ],
   "version": 1
