@@ -1,0 +1,356 @@
+/* Gaming Shorts Factory — V416 Home-style skin for the in-player Game Editor
+   Loaded after overlay_v414.css. Same layout, same controls, all still inside
+   #previewStage: only the look changes, from dark glass to the light frosted
+   glass, ink, blue/mint and rounded pills of the Home (design/brand tokens). */
+
+:root {
+  color-scheme: light;
+  --gsf-primary: #27AEF3;
+  --gsf-primary-light: #79D2FF;
+  --gsf-ai: #9D82FF;
+  --gsf-short: #5ED6A0;
+  --gsf-danger: #FF6673;
+  --gsf-ink: #10283D;
+  --gsf-muted: #6D8497;
+  --gsf-radius-sm: 13px;
+  --gsf-radius-md: 18px;
+  --gsf-radius-lg: 28px;
+  --gsf-radius-pill: 999px;
+
+  --v416-ink: #102858;
+  --v416-soft: #58739a;
+  --v416-glass: rgba(255, 255, 255, .76);
+  --v416-glass-strong: rgba(255, 255, 255, .88);
+  --v416-glass-line: rgba(255, 255, 255, .80);
+  --v416-hairline: rgba(143, 177, 208, .32);
+  --v416-shadow: 0 10px 30px rgba(16, 40, 88, .22);
+  --v416-blue: #4f93d7;
+  --v416-mint-ink: #1f8a66;
+  --v416-ai-ink: #7a5ff0;
+  --v416-cta: linear-gradient(135deg, #4fa8f2, #5ad1b4);
+  --v416-active: linear-gradient(145deg, #ddf1ff, #d8f6ec);
+}
+
+.editor-app { color: var(--v416-ink); }
+
+/* Fullscreen background matches the Home canvas, never pure black. */
+.editor-app.is-expanded,
+.editor-app:fullscreen,
+.editor-app:-webkit-full-screen { background: #0d1d34; }
+
+/* Mini player: same size as before (it must stay between the app header and
+   the Game Bar/footer), framed with the Home's soft blue/mint rings. */
+.editor-app.is-mini .preview-stage {
+  border: 1px solid rgba(121, 205, 235, .50);
+  box-shadow:
+    0 0 0 10px rgba(130, 218, 255, .07),
+    0 0 0 18px rgba(99, 226, 192, .045),
+    0 18px 44px rgba(40, 80, 130, .24);
+}
+
+/* Softer top/bottom scrim so the light glass reads on any gameplay. */
+.preview-stage::after {
+  background: linear-gradient(180deg, rgba(16,40,88,.22), transparent 18%, transparent 70%, rgba(16,40,88,.30));
+}
+
+/* ---------- shared light glass ---------- */
+.v414-top-hud,
+.v414-tool-rail,
+.v414-timeline,
+.v414-transport,
+.v414-tool-sheet,
+.enter-editor-button,
+.mini-short-button,
+.v414-center-play,
+.ratio-badge,
+.v414-editor-actions .draft-button {
+  border: 1px solid var(--v416-glass-line);
+  background: var(--v416-glass);
+  color: var(--v416-ink);
+  box-shadow: var(--v416-shadow);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+}
+
+.gsf-ico {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- top HUD: one pill, like the Home "Accedi" chip ---------- */
+.v414-top-hud {
+  border-radius: var(--gsf-radius-pill);
+  padding: 4px 5px;
+}
+.v414-top-hud .editor-kicker {
+  color: #5b95d6;
+  letter-spacing: .22em;
+}
+.v414-top-hud h1 { color: var(--v416-ink); font-size: 13px; font-weight: 850; }
+.v414-top-hud #editorStatus { color: var(--v416-soft); font-size: 9px; font-weight: 800; }
+.v414-top-hud #editorStatus[data-state="saved"] { color: var(--v416-mint-ink); }
+.v414-top-hud #editorStatus[data-state="error"] { color: #c2414f; }
+
+.glass-button,
+.v414-top-hud .icon-button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #4f6f9c;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.v414-top-hud .icon-button:disabled { color: #b5c3d6; opacity: 1; }
+.v414-top-hud .ai-top-button {
+  border: 0;
+  background: linear-gradient(145deg, #efeaff, #e2d9ff);
+  color: var(--v416-ai-ink);
+}
+
+/* ---------- Save / Done ---------- */
+.v414-editor-actions button {
+  border-radius: var(--gsf-radius-pill);
+  font-size: 12px;
+  font-weight: 900;
+}
+.v414-editor-actions .continue-button {
+  border: 1px solid rgba(255,255,255,.55);
+  background: var(--v416-cta);
+  color: #fff;
+  box-shadow: 0 10px 26px rgba(60,150,210,.40);
+}
+
+.ratio-badge {
+  border-radius: var(--gsf-radius-pill);
+  color: #4f6f9c;
+  font-weight: 900;
+}
+
+/* ---------- tool rail ---------- */
+.v414-tool-rail {
+  width: 62px;
+  border-radius: 31px;
+  padding: 6px 3px;
+}
+.v414-tool-rail .tool-button {
+  border-radius: 22px;
+  color: var(--v416-soft);
+  font-size: 9px;
+  font-weight: 850;
+}
+.v414-tool-rail .tool-button span {
+  color: var(--v416-soft);
+}
+.v414-tool-rail .tool-button span .gsf-ico { width: 21px; height: 21px; }
+.v414-tool-rail .tool-button.is-active {
+  border-color: rgba(79,168,242,.35);
+  background: var(--v416-active);
+  color: #1f7fcf;
+}
+.v414-tool-rail .tool-button.is-active span { color: #1f7fcf; }
+.v414-tool-rail .ai-tool,
+.v414-tool-rail .ai-tool span { color: var(--v416-ai-ink); }
+.v414-tool-rail .ai-tool.is-active {
+  border-color: rgba(157,130,255,.40);
+  background: linear-gradient(145deg, #efeaff, #e2d9ff);
+}
+.v414-tool-rail .ai-tool.is-active span { color: var(--v416-ai-ink); }
+.editor-app.is-playing .v414-tool-rail { background: rgba(255,255,255,.55); }
+
+/* ---------- center play: the Home's ringed circle ---------- */
+.v414-center-play {
+  width: 64px;
+  height: 64px;
+  min-height: 64px;
+  background: rgba(255,255,255,.82);
+  color: var(--v416-blue);
+  font-size: 22px;
+  box-shadow:
+    0 0 0 10px rgba(255,255,255,.18),
+    0 0 0 20px rgba(137,220,255,.10),
+    0 14px 36px rgba(16,40,88,.30);
+}
+
+/* ---------- transport + timeline ---------- */
+.v414-transport { border-radius: var(--gsf-radius-pill); }
+.v414-transport .timecode { color: var(--v416-ink); font-size: 9px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.v414-transport input[type="range"] { accent-color: var(--gsf-primary); }
+
+.v414-timeline {
+  height: 58px;
+  border-radius: 20px;
+}
+.v414-timeline .timeline-heading strong { color: var(--v416-ink); font-size: 9px; font-weight: 900; }
+.v414-timeline .trim-readout { color: var(--v416-soft); font-size: 8px; font-weight: 850; }
+.v414-timeline .timeline-track {
+  border: 0;
+  border-radius: 12px;
+  background: rgba(16,40,88,.10);
+}
+.v414-timeline .clip-strip span {
+  background: linear-gradient(145deg, #2d3f6e, #3b5088 55%, #4a5f97);
+}
+.v414-timeline .selected-range {
+  border: 3px solid var(--gsf-short);
+  border-radius: 10px;
+  box-shadow: 0 0 0 3px rgba(94,214,160,.22);
+}
+
+/* ---------- tool sheet ---------- */
+.v414-tool-sheet {
+  background: var(--v416-glass-strong);
+  border-radius: 26px;
+}
+.v414-tool-sheet .tool-dock-header strong { color: var(--v416-ink); font-weight: 900; }
+.v414-tool-sheet .eyebrow { color: #5b95d6; }
+.v414-tool-sheet .secondary-button,
+.v414-tool-sheet .inline-action,
+.v414-tool-sheet .preset-row button,
+.v414-tool-sheet .segmented button,
+.v414-tool-sheet .camera-mode-grid button,
+.v414-tool-sheet .ai-quick-grid button,
+.choice-grid button {
+  border: 1px solid var(--v416-hairline);
+  border-radius: 16px;
+  background: rgba(255,255,255,.80);
+  color: #3e5d82;
+}
+.v414-tool-sheet .sheet-close { border-radius: 50%; }
+.v414-tool-sheet .tool-panel label { color: var(--v416-soft); font-weight: 800; }
+.v414-tool-sheet .tool-panel output { color: var(--v416-ink); font-weight: 900; }
+.v414-tool-sheet input[type="text"],
+.v414-tool-sheet select {
+  border-color: var(--v416-hairline);
+  background: #fff;
+  color: var(--v416-ink);
+}
+.v414-tool-sheet input[type="range"] { accent-color: var(--gsf-primary); }
+.v414-tool-sheet .preset-row button.is-selected,
+.v414-tool-sheet .segmented button.is-selected,
+.camera-mode-grid button.is-selected,
+.choice-grid button.is-selected {
+  border-color: #9ed5eb;
+  background: linear-gradient(145deg, #e4f4ff, #e3f8f0);
+  color: #255f86;
+  box-shadow: none;
+}
+.camera-mode-grid button span { color: #3d9be8; }
+.choice-grid button strong { color: var(--v416-ink); }
+.choice-grid button span,
+.panel-hint,
+.ai-intro p,
+.panel-empty { color: var(--v416-soft); }
+.focus-status[data-state="ready"] { color: var(--v416-mint-ink); }
+
+.ai-intro {
+  color: var(--v416-ink);
+  background: linear-gradient(135deg, #eef7ff, #f1ecff);
+}
+.ai-quick-grid .ai-improve-all {
+  border-color: rgba(157,130,255,.45);
+  background: linear-gradient(135deg, #e7f4ff, #ece5ff);
+  color: #5a3fd6;
+}
+.ai-quick-grid button.is-previewing {
+  border-color: rgba(157,130,255,.60);
+  background: #efe9ff;
+  color: #5a3fd6;
+}
+.ai-command button {
+  border-color: rgba(157,130,255,.45);
+  background: #efe9ff;
+  color: #5a3fd6;
+}
+.ai-suggestion-card {
+  border-color: var(--v416-hairline);
+  background: rgba(255,255,255,.80);
+  color: var(--v416-ink);
+}
+.ai-suggestion-card p { color: var(--v416-soft); }
+.ai-suggestion-actions button {
+  border-color: var(--v416-hairline);
+  background: #fff;
+  color: #3e5d82;
+}
+
+/* Two-phase Game AI bar */
+.ai-preview-bar {
+  border: 1px solid rgba(157,130,255,.45);
+  background: var(--v416-glass-strong);
+  color: var(--v416-ink);
+  box-shadow: var(--v416-shadow);
+}
+.ai-preview-bar .ai-orb { background: linear-gradient(145deg, #efeaff, #e2d9ff); color: var(--v416-ai-ink); }
+.ai-preview-copy span { color: var(--v416-soft); }
+.ai-preview-cancel { border: 1px solid var(--v416-hairline); background: #fff; color: #3e5d82; }
+.ai-preview-apply { background: linear-gradient(135deg, #4fa8f2, #9D82FF); color: #fff; }
+
+/* Loading state uses the Home canvas, not a black slab. */
+.media-empty {
+  color: var(--v416-ink);
+  background:
+    radial-gradient(circle at 20% 10%, rgba(128,217,255,.22), transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(117,230,195,.18), transparent 40%),
+    linear-gradient(180deg, #fbfdff, #eef6fd);
+}
+.media-empty span { color: var(--v416-soft); }
+.media-empty button { border: 1px solid var(--v416-hairline); background: #fff; color: var(--v416-ink); }
+
+/* ---------- mini player actions, inside the video ---------- */
+.enter-editor-button,
+.mini-short-button {
+  min-height: 46px;
+  border-radius: var(--gsf-radius-pill);
+  font-size: 12px;
+  font-weight: 900;
+}
+.enter-editor-button span { display: grid; color: #3d9be8; }
+.enter-editor-button span .gsf-ico { width: 17px; height: 17px; }
+
+.mini-short-button {
+  position: absolute;
+  z-index: 45;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  right: 12px;
+  padding: 0 16px;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255,255,255,.55);
+  background: var(--v416-cta);
+  color: #fff;
+  box-shadow: 0 10px 26px rgba(60,150,210,.40);
+  letter-spacing: .02em;
+}
+.mini-short-button span { display: grid; }
+.mini-short-button .gsf-ico { width: 16px; height: 16px; stroke-width: 2.6; }
+
+/* In mini mode MODIFICA and Crea Short sit side by side at the bottom of the
+   gameplay, and play is available in the middle. Nothing leaves the stage. */
+.editor-app.is-mini .mini-short-button { display: inline-flex; }
+.editor-app.is-mini .enter-editor-button {
+  left: 12px;
+  right: auto;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  transform: none;
+  padding: 0 14px;
+  letter-spacing: .1em;
+}
+.editor-app.is-mini .preview-stage .v414-center-play { display: grid !important; }
+
+@media (max-width: 340px) {
+  .editor-app.is-mini .enter-editor-button,
+  .mini-short-button { padding: 0 11px; font-size: 11px; }
+}
+
+/* While the gameplay is loading or unavailable, its message owns the center:
+   the play control would only cover it. */
+.preview-stage #mediaEmptyState:not([hidden]) ~ .v414-center-play { display: none !important; }
