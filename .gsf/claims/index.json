@@ -851,6 +851,13 @@
     {
       "branch": "chat/ui-creator-hub-redesign-social-status-row-counte-92c367",
       "created_at": "2026-10-16T00:23:12+02:00",
+      "evidence": {
+        "commit": "58762de6a7c807720a0f47a61851c8f2dbbbc85d",
+        "gate": "main run 38818632289 cancelled by #156 push; run 38818872801 on a942adb success; promotion 7298444 (owner-requested, coord-only commits after a942adb)",
+        "pr": 157,
+        "railway": "frontend 6e36f303-a5f3-4fb6-8511-1ecded777754 SUCCESS, release=7298444, manifest digest ed479e93 == repo at 7298444; /healthz, /creator-hub-v156/, /creator-hub/state 200",
+        "tests": "test_creator_hub_redesign_v415, canonical UI pipeline, V397, V410, V404, V412, V405, V413, V407, V403, mobile polish: PASS; PR CI contracts + production-gate success"
+      },
       "id": "ui-creator-hub-redesign-social-status-row-counte-92c367",
       "owner": "chat/ui-creator-hub-redesign-social-status-row-counte-92c367",
       "paths": [
@@ -860,7 +867,7 @@
         "web/direct_upload_server.py"
       ],
       "scope": "ui: Creator Hub redesign - social status row, counters, draft/short actions, settings page",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/ui-crea-short-page-in-home-mural-style-rings-soc-85dd91",
