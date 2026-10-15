@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - v397-structural-hardening
     paths-ignore:
       - '.railway/frontend-deploy.txt'
       - '.railway/worker-deploy.txt'
@@ -16,6 +15,19 @@ on:
   pull_request:
     branches:
       - main
+    # Docker build + runtime smoke only when something that ships in the image changes.
+    paths:
+      - 'Dockerfile'
+      - 'app.py'
+      - 'web/**'
+      - 'gsf_core/**'
+      - 'gsf_*.py'
+      - '.streamlit/**'
+      - 'requirements-web.txt'
+      - 'constraints-web.txt'
+      - 'tools/gsf_ui_manifest.py'
+      - 'tests/test_canonical_ui_pipeline.py'
+      - '.github/workflows/v397-production-gate.yml'
   workflow_dispatch:
 
 permissions:

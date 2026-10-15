@@ -50,7 +50,6 @@ require(companion,'sum(1 for connected in social_snapshot.values() if connected)
 
 # Blocking current production gate: source contract + real image + live container smoke.
 require(gate,'main','production gate targets main')
-require(gate,'v397-structural-hardening','production gate targets hardening branch')
 require(gate,'python web/test_v397_production_hardening.py .','production gate source contract')
 require(gate,'docker build','production gate builds production image')
 require(gate,'/healthz','production gate waits on composite health')

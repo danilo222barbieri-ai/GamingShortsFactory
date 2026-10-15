@@ -49,7 +49,7 @@ Historical `fix_v*.py` / `apply_v*.py` scripts remain in `web/` for the record
 
 ## Guards
 
-- `tests/test_canonical_ui_pipeline.py` (gate + `GSF Canonical UI` workflow):
+- `tests/test_canonical_ui_pipeline.py` (gate + `GSF CI` workflow):
   fails if the Dockerfile or startup runs any legacy migration/payload, if the
   startup transforms files, if the manifest stops detecting a re-injected old
   UI, if approved surfaces lose their markers, or if Creator Hub session/CSRF
