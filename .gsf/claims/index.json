@@ -481,7 +481,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -701,6 +701,13 @@
     {
       "branch": "chat/publish-new-crea-short-multi-publish-page-v413-s-3882dd",
       "created_at": "2026-10-15T16:46:14+02:00",
+      "evidence": {
+        "merge": "5e9024a882022f406741529641713ac8bd585d9f",
+        "pr": "#151 (+#152 docs)",
+        "railway": "frontend d1463534-1076-41bf-b0ff-118969b27522 SUCCESS, manifest digest 038d41bb; owner-requested marker promotion 28de107",
+        "tests": "V397,V410,V404,V412,V405,V413,V407,V403 local PASS; PR CI + Production Gate success; main gate 38795632437 success on cb12256",
+        "ui_verify": "38799588794 success: release 28de107 serves digest 038d41bb, pages byte-identical, CSRF enforced"
+      },
       "id": "publish-new-crea-short-multi-publish-page-v413-s-3882dd",
       "owner": "chat/publish-new-crea-short-multi-publish-page-v413-s-3882dd",
       "paths": [
@@ -716,7 +723,7 @@
         "web/test_v413_publish_multi.py"
       ],
       "scope": "publish: new Crea Short multi-publish page V413 (share page + /publish/multi backend)",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/mobile-polish-hub-ghost-v250-header-hub-frame-un-f12d0f",
