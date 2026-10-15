@@ -16780,18 +16780,19 @@ if GSF_WEB_MODE:
     #gsf-editor-overlay-v220 .editor-note span.in{animation:gsfEditorWrite 1.05s cubic-bezier(.18,.72,.2,1) 1}
     @media(max-width:900px){#gsf-editor-overlay-v220{bottom:70px;padding:8px 5px}#gsf-editor-overlay-v220 .gsf-editor-shell{width:calc(100vw - 10px);height:calc(100dvh - 84px);border-radius:22px}#gsf-editor-overlay-v220 .gsf-editor-body{grid-template-columns:1fr;top:48px}#gsf-editor-overlay-v220 .editor-note{display:none}#gsf-editor-overlay-v220 .gsf-editor-head{height:48px;padding-left:14px}#gsf-editor-overlay-v220 .gsf-editor-close{top:7px;right:8px;width:31px;height:31px}}
     </style>
-    <div id="gsf-editor-overlay-v220" aria-hidden="true">
-      <section class="gsf-editor-shell" role="dialog" aria-modal="false" aria-label="Game Editor">
-        <button class="gsf-editor-close" type="button" aria-label="Chiudi">×</button>
-        <div class="gsf-editor-head"><div>Game Editor<small>Il tuo gameplay resta nel progetto mentre modifichi.</small></div><button class="v326HeaderFull" type="button" aria-label="Schermo intero"><span>↗</span> FULL</button></div>
-        <div class="gsf-editor-body">
-          <div class="editor-note left"><span id="gsf-editor-note-left">Qui modelli<br>la tua giocata</span></div>
-          <iframe class="gsf-editor-frame" src="about:blank" data-src="/editor-live/" data-loaded="0" title="Game Editor"></iframe>
-          <div class="editor-note right"><span id="gsf-editor-note-right">Tocca uno strumento<br>e guarda cosa cambia</span></div>
-        </div>
-      </section>
+<!-- GSF_EDITOR_OVERLAY_HTML: kept at column 0; 4-space indentation turns this markup into a Markdown code block. -->
+<div id="gsf-editor-overlay-v220" aria-hidden="true">
+  <section class="gsf-editor-shell" role="dialog" aria-modal="false" aria-label="Game Editor">
+    <button class="gsf-editor-close" type="button" aria-label="Chiudi">×</button>
+    <div class="gsf-editor-head"><div>Game Editor<small>Il tuo gameplay resta nel progetto mentre modifichi.</small></div><button class="v326HeaderFull" type="button" aria-label="Schermo intero"><span>↗</span> FULL</button></div>
+    <div class="gsf-editor-body">
+      <div class="editor-note left"><span id="gsf-editor-note-left">Qui modelli<br>la tua giocata</span></div>
+      <iframe class="gsf-editor-frame" src="about:blank" data-src="/editor-live/" data-loaded="0" title="Game Editor"></iframe>
+      <div class="editor-note right"><span id="gsf-editor-note-right">Tocca uno strumento<br>e guarda cosa cambia</span></div>
     </div>
-    <div class="gsf-script-guard" style="display:none!important"></div>
+  </section>
+</div>
+<div class="gsf-script-guard" style="display:none!important"></div>
 
     """, unsafe_allow_html=True)
 
