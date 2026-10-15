@@ -187,6 +187,19 @@ def test_game_bar_and_navigation_contracts_on_canonical_files():
     assert fix.HEADER_STATE_NEW in shells[0] and fix.HEADER_STATE_OLD not in shells[0]
 
 
+def test_worker_image_runs_canonical_files_only():
+    """The worker ships web/gsf_worker_app.py and web/ai_worker_server.py as committed."""
+    text = (WEB / "Dockerfile.worker").read_text(encoding="utf-8")
+    cmds = "\n".join(l for l in text.splitlines() if not l.lstrip().startswith("#"))
+    hits = sorted({m.group(1) for m in LEGACY_RE.finditer(cmds)})
+    assert not hits, f"worker Dockerfile must not execute legacy migrations/payloads: {hits}"
+    assert "COPY web/gsf_worker_app.py /app/GamingShortsFactory_V99_FINAL_ARCH.py" in cmds
+    assert "GSF_AI_APP_PATH=/app/GamingShortsFactory_V99_FINAL_ARCH.py" in cmds
+    server = (WEB / "ai_worker_server.py").read_text(encoding="utf-8")
+    assert "GSF_V401_PERSISTENT_JOB_STATE" in server, "V401 worker state must live in the canonical server"
+    compile((WEB / "gsf_worker_app.py").read_text(encoding="utf-8"), "gsf_worker_app.py", "exec")
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):
