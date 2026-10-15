@@ -3549,7 +3549,7 @@ def _gsf_materialize_upload_once(video_obj):
 
     ext=Path(name).suffix or ".mp4"
     safe_base=re.sub(r"[^A-Za-z0-9_.-]+","_",Path(name).stem)[:80] or "video"
-    digest=token.rsplit("|",1)[-1] if "|" in token else hashlib.md5(token.encode()).hexdigest()[:16]
+    digest=token.rsplit("|",1)[-1] if "|" in token else hashlib.md5(token.encode(), usedforsecurity=False).hexdigest()[:16]
     path=GSF_PREVIEW_DIR / f"source_{safe_base}_{digest}{ext}"
 
     previous_token=st.session_state.get("gsf_source_token")
@@ -5042,7 +5042,7 @@ def _gsf_ai_voice_features(input_file,start,duration,force=False):
     try:
         temp_dir=str(GSF_SESSION_TMP_DIR / "gsf_ai_voice")
         os.makedirs(temp_dir,exist_ok=True)
-        token=hashlib.md5(f"{input_file}|{start:.2f}|{duration:.2f}".encode()).hexdigest()[:14]
+        token=hashlib.md5(f"{input_file}|{start:.2f}|{duration:.2f}".encode(), usedforsecurity=False).hexdigest()[:14]
         wav=os.path.join(temp_dir,f"{token}.wav")
         cmd=[
             FFMPEG_PATH,"-y","-ss",str(max(0.0,float(start))),"-i",str(input_file),
@@ -8646,11 +8646,11 @@ def _gsf_recipe_token(recipe):
             ensure_ascii=False,
             default=str
         ).encode("utf-8")
-        return hashlib.sha1(raw).hexdigest()[:16]
+        return hashlib.sha1(raw, usedforsecurity=False).hexdigest()[:16]
     except Exception:
         return hashlib.sha1(
             repr(recipe).encode("utf-8","ignore")
-        ).hexdigest()[:16]
+        , usedforsecurity=False).hexdigest()[:16]
 
 
 def _gsf_set_final_recipe(recipe,source_label=""):
@@ -8832,7 +8832,7 @@ def _gsf_publish_context_token(pack):
             sort_keys=True,
             ensure_ascii=False
         ).encode("utf-8")
-    ).hexdigest()[:10]
+    , usedforsecurity=False).hexdigest()[:10]
 
 
 def _gsf_publish_readiness(pack,video_bytes=None,master_signature=""):
@@ -10212,7 +10212,7 @@ def _gsf_sync_inline_subtitle_font(widget_key, state_key):
 def _gsf_live_signature(*values):
     """Short signature used to rebuild the LIVE iframe when editor controls change."""
     raw="|".join(str(v) for v in values)
-    return hashlib.md5(raw.encode("utf-8")).hexdigest()[:10]
+    return hashlib.md5(raw.encode("utf-8"), usedforsecurity=False).hexdigest()[:10]
 
 
 # ==========================================================
@@ -10690,7 +10690,7 @@ def _gsf_transcribe_editor_scene(source_path, start_seconds, duration_seconds):
         return [], "FFmpeg non disponibile"
     temp_dir=str(GSF_SESSION_TMP_DIR / "gsf_editor_subs")
     os.makedirs(temp_dir,exist_ok=True)
-    token=hashlib.md5(f"{source_path}|{start_seconds:.2f}|{duration_seconds:.2f}".encode()).hexdigest()[:12]
+    token=hashlib.md5(f"{source_path}|{start_seconds:.2f}|{duration_seconds:.2f}".encode(), usedforsecurity=False).hexdigest()[:12]
     wav=os.path.join(temp_dir,f"{token}.wav")
     cmd=[
         FFMPEG_PATH,"-y","-ss",str(float(start_seconds)),"-i",str(source_path),
