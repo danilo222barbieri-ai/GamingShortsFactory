@@ -1,0 +1,12 @@
+{
+  "branch": "chat/ci-production-gate-promotes-against-last-promote-decf76",
+  "created_at": "2026-10-15T22:09:46+02:00",
+  "id": "ci-production-gate-promotes-against-last-promote-decf76",
+  "owner": "chat/ci-production-gate-promotes-against-last-promote-decf76",
+  "paths": [
+    ".github/workflows/v397-production-gate.yml",
+    "tests/test_gate_promotion_diff.py"
+  ],
+  "scope": "ci: Production Gate promotes against last promoted marker, not only last push",
+  "state": "active"
+}
