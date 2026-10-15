@@ -6,6 +6,7 @@ const AUDIO_MODES = new Set(["Originale", "Game Boost"]);
 const AI_MODES = new Set(["Auto Gaming", "Manuale"]);
 const QUALITY_MODES = new Set(["Fast HQ", "Max Quality", "Adaptive AI"]);
 const COVER_MODES = new Set(["Auto", "AI", "Current", "Manual"]);
+const CAMERA_PRESETS = new Set(["static", "follow", "dynamic", "cinematic"]);
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -86,9 +87,96 @@ export function normalizeEditorState(raw = {}, durationValue = 15) {
     aiMode: choice(source.aiMode, AI_MODES, "Auto Gaming"),
     visionEnabled: source.visionEnabled === true,
     qualityMode: choice(source.qualityMode, QUALITY_MODES, "Adaptive AI"),
-    editorVersion: "2026.1",
+    editorVersion: "2026.2",
     sourceDuration,
   };
+}
+
+/**
+ * V414 camera modes deliberately compile to the existing persisted renderer
+ * vocabulary. The backend whitelist therefore keeps the choice without a new
+ * preview-only cameraMode field.
+ */
+export function cameraPresetPatch(modeValue, state = {}) {
+  const mode = choice(String(modeValue || "").toLowerCase(), CAMERA_PRESETS, "static");
+  const current = normalizeEditorState(state, state?.sourceDuration ?? 15);
+  if (mode === "follow") {
+    return {
+      visionEnabled: true,
+      aiMode: "Auto Gaming",
+      framePreset: "gameplay",
+      zoom: 1,
+      look: "Clean",
+    };
+  }
+  if (mode === "dynamic") {
+    return {
+      visionEnabled: true,
+      aiMode: "Auto Gaming",
+      framePreset: "gameplay",
+      zoom: rounded(clamp(Math.max(1.12, current.zoom), 1.12, 2, 1.12)),
+      look: "Clean",
+    };
+  }
+  if (mode === "cinematic") {
+    return {
+      visionEnabled: true,
+      aiMode: "Auto Gaming",
+      framePreset: "gameplay",
+      zoom: rounded(clamp(Math.max(1.18, current.zoom), 1.18, 2, 1.18)),
+      look: "Boss Cinematic",
+    };
+  }
+  return {
+    visionEnabled: false,
+    aiMode: "Manuale",
+    framePreset: "free",
+    zoom: 1,
+    look: "Clean",
+  };
+}
+
+export function inferCameraPreset(state = {}) {
+  const current = normalizeEditorState(state, state?.sourceDuration ?? 15);
+  if (!current.visionEnabled) return "static";
+  if (current.look === "Boss Cinematic") return "cinematic";
+  if (current.zoom >= 1.08) return "dynamic";
+  return "follow";
+}
+
+export function gamingQuickActionPatch(actionValue, state = {}) {
+  const action = String(actionValue || "").toLowerCase();
+  const current = normalizeEditorState(state, state?.sourceDuration ?? 15);
+  if (action === "follow_action") return cameraPresetPatch("follow", current);
+  if (action === "auto_vertical") {
+    return {
+      framePreset: "gameplay",
+      panX: 0,
+      panY: 0,
+      zoom: Math.max(1, current.zoom),
+      qualityMode: "Adaptive AI",
+    };
+  }
+  if (action === "zoom_moments") return cameraPresetPatch("dynamic", current);
+  if (action === "protect_hud") return { hudMode: "Smart Safe", visionEnabled: true };
+  if (action === "auto_caption") return {
+    captionMode: "Auto",
+    captionOn: true,
+    captionY: Math.min(78, current.captionY),
+  };
+  if (action === "improve_all") {
+    return {
+      ...cameraPresetPatch("dynamic", current),
+      look: "Competitive",
+      hudMode: "Smart Safe",
+      captionMode: "Auto",
+      captionOn: true,
+      captionY: Math.min(78, current.captionY),
+      audioMode: "Game Boost",
+      qualityMode: "Adaptive AI",
+    };
+  }
+  return {};
 }
 
 export function createEditorHistory(initialState, limitValue = 50) {
