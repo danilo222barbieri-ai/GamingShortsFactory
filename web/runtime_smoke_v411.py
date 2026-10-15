@@ -66,4 +66,16 @@ status,_,_=request('/drafts/delete?id=v411-nonexistent',method='POST')
 assert status==403, ('missing CSRF accepted',status)
 status,_,_=request('/drafts/delete?id=v411-nonexistent',method='POST',headers={'X-GSF-CSRF':identity['csrf_token']})
 assert status==404, ('authorized non-existing draft must fail safely',status)
+# Canonical UI pipeline: mobile Home is served, and the companion still rejects
+# requests that bypass the edge session (security must not be weakened).
+status,headers,body=request('/')
+assert status==200 and b'Streamlit' in body, ('mobile home',status)
+try:
+    direct=urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8502/creator-hub/state'),timeout=10)
+    direct_status=direct.status
+except urllib.error.HTTPError as error:
+    direct_status=error.code
+assert direct_status==400, ('companion accepted a request without edge session id',direct_status)
+health=json.loads(request('/healthz')[2])
+assert re.fullmatch(r'[0-9a-f]{64}',health.get('ui_digest','')), ('healthz must expose the canonical UI digest',health)
 print('V411 essential UI/security runtime smoke: PASS')

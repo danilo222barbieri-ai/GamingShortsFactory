@@ -38,6 +38,9 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Canonical UI pipeline guard
+        run: python tests/test_canonical_ui_pipeline.py
+
       - name: V397 structural production contract
         run: |
           python web/test_v397_production_hardening.py .
@@ -161,10 +164,27 @@ jobs:
       - name: Blocking runtime smoke
         run: docker exec gsf-production-gate python /app/web/runtime_smoke_v107.py
 
+      - name: Image serves exactly the repository UI
+        run: |
+          set -euo pipefail
+          docker cp gsf-production-gate:/app/.gsf-ui-manifest.json /tmp/gsf-ui-manifest.json
+          python tools/gsf_ui_manifest.py compare --repo . --image-json /tmp/gsf-ui-manifest.json
+          repo_digest=$(python tools/gsf_ui_manifest.py digest --repo .)
+          served_digest=$(curl -sS http://127.0.0.1:18080/healthz | python -c 'import json,sys;print(json.load(sys.stdin).get("ui_digest",""))')
+          test "$repo_digest" = "$served_digest" || { echo "::error title=Canonical UI::healthz digest $served_digest != repo $repo_digest"; exit 1; }
+          for page in creator_hub_v156_component:/creator-hub-v156/ ai_v221_component:/ai-v221/ editor_2027_component:/editor-live/ share_v156_component:/share-v156/; do
+            dir=${page%%:*}; url=${page#*:}
+            curl -sS -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 19_0 like Mac OS X) Mobile/15E148 Safari/605.1' -o /tmp/served.html "http://127.0.0.1:18080$url"
+            cmp -s /tmp/served.html "web/$dir/index.html" || { echo "::error title=Canonical UI::$url served bytes differ from web/$dir/index.html"; exit 1; }
+            echo "served $url == web/$dir/index.html"
+          done
+          echo "::notice title=Canonical UI::image == repo, digest $repo_digest"
+
       - name: Essential UI and security runtime
         run: |
-          docker exec gsf-production-gate python /app/web/test_v404_fast_startup.py /app
           docker exec gsf-production-gate python /app/web/runtime_smoke_v411.py
+          # the running container must not have rewritten any canonical file
+          docker exec gsf-production-gate python /app/gsf_ui_manifest.py verify
 
       - name: Promote tested commit to Railway
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -193,7 +213,7 @@ jobs:
           worker=0
           while IFS= read -r path; do
             case "$path" in
-              Dockerfile|app.py|requirements-web.txt|constraints-web.txt|.streamlit/*|src_payload/*|web/*|.github/workflows/v397-production-gate.yml)
+              Dockerfile|app.py|requirements-web.txt|constraints-web.txt|.streamlit/*|src_payload/*|web/*|gsf_core/*|gsf_alive.py|gsf_alive_notifications.py|gsf_editor_v403.py|gsf_project_state.py|tools/gsf_ui_manifest.py|.github/workflows/v397-production-gate.yml)
                 frontend=1
                 ;;
             esac
@@ -247,6 +267,13 @@ jobs:
             docker cp gsf-production-gate:/tmp/gsf-runtime /tmp/gsf-production-diagnostics/runtime >/dev/null 2>&1 || true
           fi
           find /tmp/gsf-production-diagnostics -maxdepth 3 -type f -print -exec sh -c 'echo "--- $1 ---"; tail -n 120 "$1"' _ {} \; || true
+          # Surface the decisive lines as annotations (readable via the API even when logs are not).
+          for f in /tmp/gsf-production-diagnostics/frontend-build.log /tmp/gsf-production-diagnostics/docker.log; do
+            [ -f "$f" ] || continue
+            grep -nE 'Error|ERROR|FAIL|Traceback|AssertionError|exit code|missing|drift' "$f" | tail -n 8 | while IFS= read -r line; do
+              printf '::error title=%s::%s\n' "$(basename "$f")" "$(printf '%s' "$line" | cut -c1-400 | tr -d '\r')"
+            done
+          done
 
       - name: Upload structural diagnostics
         if: failure()

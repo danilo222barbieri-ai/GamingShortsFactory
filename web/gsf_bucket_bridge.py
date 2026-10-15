@@ -4,6 +4,7 @@ import os
 import time
 import urllib.parse
 import urllib.request
+import urllib.error
 from pathlib import Path
 
 import boto3
@@ -60,6 +61,24 @@ def _load_analysis_object(s3,c,analysis_key,engine_version):
     return None
 
 
+def _worker_status_request(req,timeout=3.0):
+    last_exc=None
+    for attempt in range(3):
+        try:
+            return urllib.request.urlopen(req,timeout=timeout)
+        except urllib.error.HTTPError as exc:
+            last_exc=exc
+            if int(getattr(exc,"code",0) or 0) not in (502,503,504) or attempt>=2:
+                raise
+        except (urllib.error.URLError,TimeoutError,ConnectionError,OSError) as exc:
+            last_exc=exc
+            if attempt>=2:
+                raise
+        time.sleep(0.45*(attempt+1))
+    if last_exc is not None:
+        raise last_exc
+    raise RuntimeError("worker status retry exhausted")
+
 def _worker_status(analysis_key):
     worker_url=str(os.environ.get("GSF_WORKER_URL","") or "").rstrip("/")
     if not worker_url:
@@ -76,7 +95,7 @@ def _worker_status(analysis_key):
             headers=headers,
             method="GET",
         )
-        with urllib.request.urlopen(req,timeout=3.0) as resp:
+        with _worker_status_request(req,timeout=3.0) as resp:
             payload=json.loads(resp.read().decode("utf-8"))
         job=(payload or {}).get("job") or {}
         state=str(job.get("state","") or "").lower()
