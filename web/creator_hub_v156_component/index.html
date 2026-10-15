@@ -9,15 +9,14 @@
  --violet:#E9E2FF;--line:rgba(143,181,216,.25);--glass:rgba(255,255,255,.88);
 }
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#F7FCFF;color:var(--ink);font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#FAFDFF;color:var(--ink);font-family:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 button{font:inherit}
 #hub{width:100%;height:100dvh;max-width:1920px;
  overflow:hidden;padding:14px 16px 12px;
  display:grid;grid-template-rows:auto minmax(0,1fr);gap:10px;
  background:
-  radial-gradient(circle at 8% 6%,rgba(126,214,255,.22),transparent 25%),
-  radial-gradient(circle at 92% 7%,rgba(127,236,197,.18),transparent 26%),
-  linear-gradient(180deg,#FCFEFF 0%,#F8FCFF 60%,#F4FAFF 100%);
+  /* GSF_HEADER_CANVAS: header colour fading into a soft glow */
+  radial-gradient(120% 55% at 50% 100%,rgba(122,200,255,.10),transparent 72%),linear-gradient(180deg,#FAFDFF 0%,#F7FBFF 60%,#F2F8FE 100%);
  opacity:1!important;visibility:visible!important;
 }
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px}
