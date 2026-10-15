@@ -228,6 +228,17 @@ No intentional destructive production rollback test was performed. Rollback exec
 - `GSF Production UI Verify` run `38817687407`: **SUCCESS** — release `9c04f10`, digest `d50c4044…` == repo, pages byte-identical, Home 200, `/creator-hub/state` 200 + CSRF.
 - Unverified: no end-to-end AI run with a real uploaded video on production.
 
+### Creator Hub V415 redesign — 2026-10-16 (PR #157)
+
+- Claim `ui-creator-hub-redesign-social-status-row-counte-92c367` (completed). The Hub file was released from `stability-unified-navigation-and-mobile-resume-l-395391` by owner-authorized priority (coord `88b842e`; that branch had no Hub commits). Squash `58762de`.
+- Files: `web/creator_hub_v156_component/index.html` (one canonical page, single runtime, no MutationObservers; replaces the stacked V300–V403 layers), `web/direct_upload_server.py`, `tests/test_creator_hub_redesign_v415.py` (new, in GSF CI), `.github/workflows/gsf-ci.yml`.
+- Layout (owner-approved): header (photo, name, plan, settings) → social row YouTube/TikTok/Instagram/Facebook/Twitch with green tick if connected, grey if not → counters Bozze/Shorts/Pubblicati → Bozze and Shorts cards with menu (Riprendi or Scarica, Rinomina, Elimina with confirmation) → Live e VOD (empty "In arrivo") → Impostazioni (photo auto-resized to 512px, name, connect/disconnect social, plan shown once, notifications, language, login/logout). Desktop two columns. Brand tokens. The empty "Pubblicità" placeholder was removed.
+- Root cause fixed: nginx sends `/shorts/*` to Streamlit (8501), so the old Hub's short download/delete never reached the companion server. New CSRF-protected `/creator-hub/short/rename` and `/creator-hub/short/delete`, plus the `/creator-hub/short/file` download alias, under the existing `/creator-hub/` proxy (8502).
+- Tests: V415 contract, canonical UI pipeline (incl. V286/V366 on canonical files), V397, V410, V404, V412, V405, V413, V407, V403, mobile polish shell PASS locally; Chromium mock-data pass at 390px and 1366px with no console errors. PR CI `contracts` + `production-gate` success.
+- Main gate: run `38818632289` (58762de) cancelled by the #156 push; run `38818872801` on `a942adb` (contains 58762de) success, its promotion skipped because a coord commit landed mid-run; promoted by owner-requested commit `7298444`.
+- Railway frontend `6e36f303-a5f3-4fb6-8511-1ecded777754`: **SUCCESS** — `GSF UI manifest verify PASS digest=ed479e93…` (== repo digest at `7298444`), `release=7298444`; `/healthz`, `/creator-hub-v156/`, `/creator-hub/state` 200. Worker not redeployed (expected).
+- Unverified / follow-up: no real-device Safari pass; short rename/delete not exercised on production with real data; Shorts have no project link, so the menu offers Scarica instead of Riprendi; Twitch OAuth not implemented ("In arrivo"). Coordination commits pushed during a main gate run make its promotion skip (seen twice tonight); a gate change to tolerate coord-only commits was proposed but not made (owner chose to wait).
+
 ## Current user-facing verification priorities
 
 These are re-verification priorities, not claims that a feature is currently broken:
