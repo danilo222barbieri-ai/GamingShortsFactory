@@ -1,0 +1,116 @@
+{
+ "base": "http://127.0.0.1:18080",
+ "cycles": [
+  {
+   "active": 19,
+   "created": 19,
+   "callbacks": 339,
+   "disconnects": 0,
+   "callbackMs": 350,
+   "cycle": 1
+  },
+  {
+   "active": 19,
+   "created": 19,
+   "callbacks": 399,
+   "disconnects": 0,
+   "callbackMs": 356,
+   "cycle": 2
+  }
+ ],
+ "console_errors": [],
+ "surfaces": {
+  "home": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 109,
+   "disconnects": 0,
+   "callbackMs": 204
+  },
+  "02-hub": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 151,
+   "disconnects": 0,
+   "callbackMs": 227
+  },
+  "03-projects": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 179,
+   "disconnects": 0,
+   "callbackMs": 267
+  },
+  "04-live": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 204,
+   "disconnects": 0,
+   "callbackMs": 285
+  },
+  "05-hub-profile": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 234,
+   "disconnects": 0,
+   "callbackMs": 305
+  },
+  "06-editor": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 257,
+   "disconnects": 0,
+   "callbackMs": 327
+  },
+  "07-home-again": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 280,
+   "disconnects": 0,
+   "callbackMs": 346
+  },
+  "mobile-game-editor": {
+   "gesture_state": {
+    "zoom": 1.55,
+    "panX": 9.04,
+    "panY": 0,
+    "framePreset": "free",
+    "coverMode": "Auto",
+    "coverTime": 0,
+    "coverLocked": false,
+    "look": "Clean",
+    "intensity": 64,
+    "brightness": 100,
+    "contrast": 100,
+    "hudMode": "Off",
+    "captionOn": true,
+    "captionMode": "Auto",
+    "captionText": "",
+    "captionSize": 36,
+    "captionY": 76,
+    "textColor": "#ffffff",
+    "activeColor": "#ffd400",
+    "outlineColor": "#000000",
+    "muted": false,
+    "volume": 100,
+    "speed": 1,
+    "audioMode": "Originale",
+    "inPoint": 1,
+    "outPoint": 14,
+    "aiMode": "Auto Gaming",
+    "visionEnabled": false,
+    "qualityMode": "Adaptive AI",
+    "editorVersion": "2026.2",
+    "sourceDuration": 18
+   },
+   "fullscreen_signals": [
+    true,
+    false
+   ],
+   "console_errors": []
+  }
+ },
+ "home_ready_seconds": 8.6,
+ "callback_ms_per_cycle": 6.0,
+ "observer_growth_per_cycle": 0.0
+}
