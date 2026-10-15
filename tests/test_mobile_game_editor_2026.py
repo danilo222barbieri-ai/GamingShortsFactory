@@ -93,3 +93,19 @@ def test_mobile_continue_uses_named_short_route_without_label_lookup() -> None:
     assert re.search(r"GSF_SHELL_NAV['\"]\s*,\s*target\s*:\s*['\"]short", bridge)
     for forbidden in ("innerText", "textContent", "querySelectorAll('button", 'querySelectorAll("button'):
         assert forbidden not in bridge
+
+
+def test_mobile_actions_use_ordered_save_ack_and_explicit_destinations() -> None:
+    app = _read(ROOT / "app.py")
+    bridge = _mobile_bridge(app)
+
+    assert "mobileSaveChain" in bridge
+    assert "'/editor/state/save'" in bridge
+    assert "'/creator-hub/project/save-draft'" in bridge
+    assert "GSF_GAME_EDITOR_SAVE_STATUS" in bridge
+    assert "sequence" in bridge
+    for action in ("autosave", "save_draft", "continue_to_short", "close", "fullscreen_changed"):
+        assert action in bridge
+    save_index = bridge.index("persistMobileEditorState")
+    route_index = bridge.index("navigateMobileEditorToShort", save_index)
+    assert save_index < route_index

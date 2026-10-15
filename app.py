@@ -16759,12 +16759,54 @@ if GSF_WEB_MODE:
           ai_suggestions:Array.isArray(editorMeta.ai_suggestions)?editorMeta.ai_suggestions:[]
         },location.origin)}catch(_e){}
       };
+      let mobileSaveChain=Promise.resolve();
+      const postMobileEditorStatus=(message,ok,error='',extra={})=>{
+        try{frame.contentWindow.postMessage({type:'GSF_GAME_EDITOR_SAVE_STATUS',sequence:Number(message.sequence)||0,ok:!!ok,error:String(error||''),...extra},location.origin)}catch(_e){}
+      };
+      const persistMobileEditorState=(message)=>{
+        const state=(message.state&&typeof message.state==='object')?message.state:{};
+        editorMeta.initial_state={...state};
+        const operation=mobileSaveChain.then(async()=>{
+          const response=await fetch('/editor/state/save',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({state})});
+          const payload=await response.json().catch(()=>({}));
+          if(!response.ok||!payload.ok)throw new Error(payload.error||'Stato Editor non salvato');
+          return payload;
+        });
+        mobileSaveChain=operation.catch(()=>{});
+        return operation;
+      };
       const navigateMobileEditorToShort=()=>P.postMessage({type:'GSF_SHELL_NAV',target:'short'},location.origin);
+      const saveMobileDraft=(message)=>persistMobileEditorState(message).then(async()=>{
+        const response=await fetch('/creator-hub/project/save-draft',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+        const payload=await response.json().catch(()=>({}));
+        if(!response.ok||!payload.ok)throw new Error(payload.error||'Bozza non salvata');
+        postMobileEditorStatus(message,true,'',{draft:true});
+      });
       const handleMobileEditorMessage=(event)=>{
         if(event.origin!==location.origin||event.source!==frame.contentWindow||!event.data)return false;
         if(event.data.type==='GSF_GAME_EDITOR_READY'){sendMobileEditorInit();return true}
         if(event.data.type!=='GSF_GAME_EDITOR_UI')return false;
-        if(String(event.data.action||'')==='continue_to_short'){close();navigateMobileEditorToShort();return true}
+        const message=event.data;
+        const action=String(message.action||'');
+        if(action==='autosave'){
+          persistMobileEditorState(message).then(()=>postMobileEditorStatus(message,true)).catch(error=>postMobileEditorStatus(message,false,error&&error.message||error));
+          return true;
+        }
+        if(action==='save_draft'){
+          saveMobileDraft(message).catch(error=>postMobileEditorStatus(message,false,error&&error.message||error));
+          return true;
+        }
+        if(action==='continue_to_short'){
+          persistMobileEditorState(message).then(()=>{postMobileEditorStatus(message,true);close();navigateMobileEditorToShort()}).catch(error=>postMobileEditorStatus(message,false,error&&error.message||error));
+          return true;
+        }
+        if(action==='close'){close();return true}
+        if(action==='fullscreen_changed'){
+          const active=message.active===true;
+          o.classList.toggle('gsf-mobile-editor-fullscreen',active);
+          document.documentElement.classList.toggle('gsf-mobile-editor-fullscreen',active);
+          return true;
+        }
         return true;
       };
       /* GSF_MOBILE_EDITOR_2026_BRIDGE_END */
