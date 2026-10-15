@@ -9,9 +9,9 @@
 - **Production branch:** `main`
 - **Current product baseline:** **V411 UI on the canonical UI pipeline** (repo files == served files; see `docs/architecture/gsf-canonical-ui.md`)
 - **Cross-chat orchestration:** **LIVE**
-- **Last fully tested main source commit:** `cd25ce33ea8b89af8f4857e8e315100bf8dec1a2` (PR `#147`)
-- **Last runtime promotion commit:** `f28a38b6b174cfd9aa1dc027315b96a530837ed1` — `deploy: promote tested cd25ce33ea8b [skip ci]`
-- **Served canonical UI digest:** `3023c4912ee3359655b9fbfb9711d54897eca1422bf14941b0e04f1048c7b339` (`/healthz` → `ui_digest`)
+- **Last fully tested main source commit:** `154eac8006222152b137d2094752cab83f7f5457` (PR `#150`)
+- **Last runtime promotion commit:** `36ff30369974ccbc21fa5c0416544acfdc164806` — `deploy: promote tested 154eac800622 [skip ci]`
+- **Served canonical UI digest:** `b3a16c2909e0c11a7159830b9875f93c33f84e62014adb3ce5fd7358daf613fb` (`/healthz` → `ui_digest`)
 - **Current `main` HEAD:** always query GitHub live; coordination/status-only commits may advance `main` without changing production.
 
 ## Production state — verified 2026-10-15 08:15 UTC
@@ -209,6 +209,15 @@ No intentional destructive production rollback test was performed. Rollback exec
 - Railway frontend `3e2c45ff-e010-4a63-8302-a2676b13fc6e`: **SUCCESS** — startup `GSF UI manifest verify PASS digest=3023c491… files=171`, `release=f28a38b`. Worker not redeployed (expected).
 - `GSF Production UI Verify` run `38752986530`: **SUCCESS** — public domain serves release `f28a38b`, digest `3023c491…` (== repo), pages byte-identical, Home 200, `/creator-hub/state` 200 + CSRF.
 - Unverified / follow-up: no end-to-end AI run on production with a real uploaded video yet; AZIONE profile weights are weakly differentiated from AUTO (Game Brain tuning, not changed here); `/drafts/save-current` used by Home and Share has no nginx route (pre-existing, not touched).
+
+### Game Editor V414 — gaming overlay editor — 2026-10-15 (PR #149, PR #150)
+
+- Claim `gaming-overlay-editor-v414-7c2a9e` (completed, coord `8491a03`). Files: `web/game_editor_mobile_component/{index.html,editor.mjs,editor_state.mjs,overlay_v414.css,overlay_v414.mjs}`, `tests/test_gaming_overlay_editor_v414.py`, `tests/test_mobile_game_editor_2026.py`, `tests/js/gaming_overlay_editor_v414_*.test.mjs`, `tests/visual/gsf_visual_check.py`.
+- PR #149 squash `4049bb7`: video-first glass overlay editor. WebKit gate root cause (reproduced with the gate's own sequence on an iPhone 13 viewport): a `max-width:420px` rule hid `#saveDraftButton`, so phones could not save a draft; the button is now compacted, never hidden (contract test added). The visual check also read `postMessage` results synchronously; it now waits for them. Gestures stay disabled in the mini-player.
+- PR #150 squash `154eac8`: vertical tool rail Frame/Camera/Look/HUD/Testo/Audio/AI (`data-tool` keys unchanged), Game AI button in the top bar, two-phase quick AI + local natural-language command (Preview never commits, Apply commits once, one undo reverts), Focus Map contract `time -> x/y -> confidence -> subject/action` (preview-only while playing, never persisted), auto-hiding chrome during playback, slimmer timeline, stage `overflow: clip` (a focused drawer input used to scroll the stage and shift every overlay).
+- Main Production Gate runs `38790231577` (4049bb7) and `38792712945` (154eac8): **SUCCESS**, including Mobile WebKit interaction gate; promotions `518e8fb` and `36ff303` (frontend only).
+- Railway frontend `c92759e3-6a72-40e3-b269-0ba61c3fdd66` (release `518e8fb`) then `cb0bff7b-9a2b-4545-9c7b-7b1151479a18` (release `36ff303`): **SUCCESS** — startup `GSF UI manifest verify PASS digest=b3a16c29… files=173`; `/healthz` 200 after start. `GSF Production UI Verify` run `38793356058`: **SUCCESS**. Worker not redeployed (SLEEPING, expected).
+- Unverified / follow-up: WebKit only verified in CI (sandbox has Chromium only); no real-device Safari pass; Game Vision does not emit Focus Map coordinates yet, so Follow Action tracking in preview stays inactive until the backend sends `focus_map` in `GSF_GAME_EDITOR_INIT`.
 
 ## Current user-facing verification priorities
 
