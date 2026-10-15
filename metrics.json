@@ -1,0 +1,127 @@
+{
+ "base": "http://127.0.0.1:18080",
+ "cycles": [
+  {
+   "active": 19,
+   "created": 19,
+   "callbacks": 342,
+   "disconnects": 0,
+   "callbackMs": 432,
+   "cycle": 1
+  },
+  {
+   "active": 19,
+   "created": 19,
+   "callbacks": 402,
+   "disconnects": 0,
+   "callbackMs": 437,
+   "cycle": 2
+  },
+  {
+   "active": 19,
+   "created": 19,
+   "callbacks": 462,
+   "disconnects": 0,
+   "callbackMs": 441,
+   "cycle": 3
+  }
+ ],
+ "console_errors": [
+  "pageerror: Unexpected identifier 'Avenir'",
+  "pageerror: Unexpected identifier 'Avenir'"
+ ],
+ "surfaces": {
+  "home": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 112,
+   "disconnects": 0,
+   "callbackMs": 246
+  },
+  "02-hub": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 154,
+   "disconnects": 0,
+   "callbackMs": 275
+  },
+  "03-projects": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 182,
+   "disconnects": 0,
+   "callbackMs": 325
+  },
+  "04-live": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 207,
+   "disconnects": 0,
+   "callbackMs": 350
+  },
+  "05-hub-profile": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 237,
+   "disconnects": 0,
+   "callbackMs": 378
+  },
+  "06-editor": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 260,
+   "disconnects": 0,
+   "callbackMs": 403
+  },
+  "07-home-again": {
+   "active": 19,
+   "created": 19,
+   "callbacks": 283,
+   "disconnects": 0,
+   "callbackMs": 429
+  },
+  "mobile-game-editor": {
+   "gesture_state": {
+    "zoom": 1.55,
+    "panX": 11.56,
+    "panY": 0,
+    "framePreset": "free",
+    "coverMode": "Auto",
+    "coverTime": 0,
+    "coverLocked": false,
+    "look": "Clean",
+    "intensity": 64,
+    "brightness": 100,
+    "contrast": 100,
+    "hudMode": "Off",
+    "captionOn": true,
+    "captionMode": "Auto",
+    "captionText": "",
+    "captionSize": 36,
+    "captionY": 76,
+    "textColor": "#ffffff",
+    "activeColor": "#ffd400",
+    "outlineColor": "#000000",
+    "muted": false,
+    "volume": 100,
+    "speed": 1,
+    "audioMode": "Originale",
+    "inPoint": 1,
+    "outPoint": 14,
+    "aiMode": "Auto Gaming",
+    "visionEnabled": false,
+    "qualityMode": "Adaptive AI",
+    "editorVersion": "2026.1",
+    "sourceDuration": 18
+   },
+   "fullscreen_signals": [
+    true,
+    false
+   ],
+   "console_errors": []
+  }
+ },
+ "home_ready_seconds": 9.2,
+ "callback_ms_per_cycle": 4.5,
+ "observer_growth_per_cycle": 0.0
+}
