@@ -456,6 +456,7 @@
         "tests/test_canonical_ui_pipeline.py",
         "tools/gsf_ui_manifest.py",
         "web/ai_v221_component/index.html",
+        "web/app_icons/app-icon.png",
         "web/canonical/**",
         "web/creator_hub_v156_component/index.html",
         "web/direct_upload_server.py",
@@ -471,9 +472,11 @@
         "web/start_web.sh",
         "web/start_web_fast.sh",
         "web/start_web_legacy.sh",
-        "web/test_v404_fast_startup.py"
+        "web/test_v397_production_hardening.py",
+        "web/test_v404_fast_startup.py",
+        "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "active"
     }
   ],
