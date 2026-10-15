@@ -1,6 +1,15 @@
 {
   "branch": "chat/mobile-polish-hub-ghost-v250-header-hub-frame-un-f12d0f",
   "created_at": "2026-10-15T17:12:02+02:00",
+  "evidence": {
+    "commit": "f8b8f770803b72cf438267ee8e4c159e07005bba",
+    "gate": "main Production Gate run 38800844582 success; promoted 3f4a122",
+    "notes": "owner-authorized priority over paused claim 3882dd for web/direct_upload_server.py (gsf-push.js quote fix), share_v156 and publish_short_v405; desktop editor_2027 not restyled; stale web/test_v404_fast_startup.py fails on main too (not in CI)",
+    "pr": "#153",
+    "railway": "frontend deployment 3f7c5319 SUCCESS; /healthz ok release 3f4a122, ui_digest d54a8bf8 == repo; /creator-hub/state ok with csrf_token",
+    "tests": "tests/test_mobile_polish_shell.py new; canonical UI guard; editor 2026 + state (JS 6/6); V396 V397 V400-V405 V407 V410 V412 V413 local; GSF CI contracts + PR gate green",
+    "visual": "WebKit iPhone 13 layout probe on eb2907e: Hub frame y=32 h=632, Editor y=44 h=508, no V250 elements under header, page-errors empty; screenshots all surfaces, observer growth 0.0"
+  },
   "id": "mobile-polish-hub-ghost-v250-header-hub-frame-un-f12d0f",
   "owner": "chat/mobile-polish-hub-ghost-v250-header-hub-frame-un-f12d0f",
   "paths": [
@@ -9,9 +18,14 @@
     "tests/visual/gsf_layout_probe.py",
     "web/ai_v221_component/index.html",
     "web/creator_hub_v156_component/index.html",
+    "web/direct_upload_server.py",
     "web/game_editor_mobile_component/editor.css",
-    "web/home_v154_component/index.html"
+    "web/home_v154_component/index.html",
+    "web/publish_short_v405_component/index.html",
+    "web/share_v156_component/index.html",
+    "web/test_v396_mobile_share_publish_surface.py",
+    "web/test_v405_publish_short_simple.py"
   ],
-  "scope": "mobile polish: Hub ghost V250 header, Hub frame under Game Bar, Avenir page error, whiter page background",
-  "state": "active"
+  "scope": "mobile polish: Hub ghost V250 header, Hub frame under Game Bar, Avenir page error, whiter page background; owner-authorized priority over paused claim publish-new-crea-short-multi-publish-page-v413-s-3882dd for the one-line gsf-push.js quote fix in web/direct_upload_server.py; one style (canvas, font, colours, spacing) across all mobile surfaces incl. Crea Short and Share (owner-authorized over paused 3882dd)",
+  "state": "completed"
 }
