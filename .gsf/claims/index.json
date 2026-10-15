@@ -481,7 +481,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -824,19 +824,17 @@
         "app.py",
         "docs/architecture/gsf-navigation-lifecycle.md",
         "tests/test_canonical_ui_pipeline.py",
-        "tests/test_mobile_game_editor_2026.py",
         "tests/test_mobile_resume_stability.py",
         "tests/test_navigation_stability.py",
         "tests/visual/gsf_navigation_stress.py",
         "tests/visual/gsf_visual_check.py",
         "web/editor_2027_component/index.html",
-        "web/game_editor_mobile_component/**",
         "web/gsf_navigation_lifecycle.js",
         "web/home_v154_component/index.html",
         "web/install_adsense_bridge.py",
         "web/test_v302_global_live_gamebar.py"
       ],
-      "scope": "stability: unified navigation and mobile resume lifecycle root cause; web/creator_hub_v156_component/index.html released by owner-authorized priority to the Creator Hub redesign (2026-10-16); rebase on it before touching the Hub again",
+      "scope": "stability: unified navigation and mobile resume lifecycle root cause; web/creator_hub_v156_component/index.html released by owner-authorized priority to the Creator Hub redesign (2026-10-16); rebase on it before touching the Hub again; web/game_editor_mobile_component/** and tests/test_mobile_game_editor_2026.py released by owner-authorized priority to the in-player Home-style editor restyle (2026-10-16); rebase on it before touching the mobile editor again",
       "state": "active"
     },
     {
