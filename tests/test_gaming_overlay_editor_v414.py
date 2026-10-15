@@ -72,6 +72,28 @@ def test_loading_layer_does_not_block_in_video_editor_controls() -> None:
     assert ".enter-editor-button" in css and "z-index: 45" in css
 
 
+def test_fullscreen_avoids_webkit_100vw_rounding_overflow() -> None:
+    css = _read("overlay_v414.css")
+    root_block = re.search(
+        r"\.editor-app\.is-expanded,\s*\.editor-app:fullscreen,\s*\.editor-app:-webkit-full-screen\s*\{(?P<body>.*?)\}",
+        css,
+        re.S,
+    )
+    stage_block = re.search(
+        r"\.editor-app\.is-expanded \.preview-stage,\s*\.editor-app:fullscreen \.preview-stage,\s*\.editor-app:-webkit-full-screen \.preview-stage\s*\{(?P<body>.*?)\}",
+        css,
+        re.S,
+    )
+    assert root_block is not None
+    assert stage_block is not None
+    assert "width: 100%;" in root_block.group("body")
+    assert "max-width: none;" in root_block.group("body")
+    assert "width: 100vw;" not in root_block.group("body")
+    assert "width: 100%;" in stage_block.group("body")
+    assert "height: 100%;" in stage_block.group("body")
+    assert "width: 100vw;" not in stage_block.group("body")
+
+
 def test_camera_and_ai_controls_are_inside_video_and_keep_legacy_tool_order() -> None:
     html = _read("index.html")
     stage = _stage_html(html)
