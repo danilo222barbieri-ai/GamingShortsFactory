@@ -851,6 +851,18 @@
       ],
       "scope": "ui: Creator Hub redesign - social status row, counters, draft/short actions, settings page",
       "state": "active"
+    },
+    {
+      "branch": "chat/ui-crea-short-page-in-home-mural-style-rings-soc-85dd91",
+      "created_at": "2026-10-16T00:23:38+02:00",
+      "id": "ui-crea-short-page-in-home-mural-style-rings-soc-85dd91",
+      "owner": "chat/ui-crea-short-page-in-home-mural-style-rings-soc-85dd91",
+      "paths": [
+        "web/share_v156_component/**",
+        "web/test_v413_publish_multi.py"
+      ],
+      "scope": "ui: Crea Short page in Home mural style (rings, social orbit, cards)",
+      "state": "active"
     }
   ],
   "version": 1
