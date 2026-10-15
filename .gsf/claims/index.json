@@ -722,6 +722,23 @@
       ],
       "scope": "publish: new Crea Short multi-publish page V413 (share page + /publish/multi backend)",
       "state": "active"
+    },
+    {
+      "branch": "chat/mobile-polish-hub-ghost-v250-header-hub-frame-un-f12d0f",
+      "created_at": "2026-10-15T17:12:02+02:00",
+      "id": "mobile-polish-hub-ghost-v250-header-hub-frame-un-f12d0f",
+      "owner": "chat/mobile-polish-hub-ghost-v250-header-hub-frame-un-f12d0f",
+      "paths": [
+        "app.py",
+        "tests/test_mobile_polish_shell.py",
+        "tests/visual/gsf_layout_probe.py",
+        "web/ai_v221_component/index.html",
+        "web/creator_hub_v156_component/index.html",
+        "web/game_editor_mobile_component/editor.css",
+        "web/home_v154_component/index.html"
+      ],
+      "scope": "mobile polish: Hub ghost V250 header, Hub frame under Game Bar, Avenir page error, whiter page background",
+      "state": "active"
     }
   ],
   "version": 1
