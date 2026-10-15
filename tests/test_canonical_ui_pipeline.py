@@ -86,7 +86,19 @@ def test_materializer_is_retired_and_fails_closed():
 
 def test_manifest_detects_reinjected_old_ui():
     """Simulate a legacy migration restoring an older Creator Hub: the guard must fail."""
+    import os
     tool = _load_manifest_tool()
+    # The drift below is simulated on purpose: keep it out of GitHub annotations
+    # so it is never mistaken for a real "Canonical UI drift" error.
+    saved = os.environ.pop("GITHUB_ACTIONS", None)
+    try:
+        _simulate_reinjection(tool)
+    finally:
+        if saved is not None:
+            os.environ["GITHUB_ACTIONS"] = saved
+
+
+def _simulate_reinjection(tool):
     with tempfile.TemporaryDirectory() as tmp:
         image = Path(tmp) / "app"
         for src, dst in tool.CANONICAL_MAP:
