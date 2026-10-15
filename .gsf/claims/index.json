@@ -481,7 +481,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -730,9 +730,10 @@
         "web/ai_v221_component/index.html",
         "web/creator_hub_v156_component/index.html",
         "web/game_editor_mobile_component/editor.css",
-        "web/home_v154_component/index.html"
+        "web/home_v154_component/index.html",
+        "web/direct_upload_server.py"
       ],
-      "scope": "mobile polish: Hub ghost V250 header, Hub frame under Game Bar, Avenir page error, whiter page background",
+      "scope": "mobile polish: Hub ghost V250 header, Hub frame under Game Bar, Avenir page error, whiter page background; owner-authorized priority over paused claim publish-new-crea-short-multi-publish-page-v413-s-3882dd for the one-line gsf-push.js quote fix in web/direct_upload_server.py",
       "state": "active"
     },
     {
