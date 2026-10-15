@@ -731,9 +731,13 @@
         "web/creator_hub_v156_component/index.html",
         "web/game_editor_mobile_component/editor.css",
         "web/home_v154_component/index.html",
-        "web/direct_upload_server.py"
+        "web/direct_upload_server.py",
+        "web/publish_short_v405_component/index.html",
+        "web/share_v156_component/index.html",
+        "web/test_v405_publish_short_simple.py",
+        "web/test_v396_mobile_share_publish_surface.py"
       ],
-      "scope": "mobile polish: Hub ghost V250 header, Hub frame under Game Bar, Avenir page error, whiter page background; owner-authorized priority over paused claim publish-new-crea-short-multi-publish-page-v413-s-3882dd for the one-line gsf-push.js quote fix in web/direct_upload_server.py",
+      "scope": "mobile polish: Hub ghost V250 header, Hub frame under Game Bar, Avenir page error, whiter page background; owner-authorized priority over paused claim publish-new-crea-short-multi-publish-page-v413-s-3882dd for the one-line gsf-push.js quote fix in web/direct_upload_server.py; one style (canvas, font, colours, spacing) across all mobile surfaces incl. Crea Short and Share (owner-authorized over paused 3882dd)",
       "state": "active"
     },
     {
