@@ -16745,6 +16745,13 @@ if GSF_WEB_MODE:
       const DESKTOP_EDITOR_SRC='/editor-live/';
       const selectedEditorSource=()=>window.matchMedia('(max-width: 760px)').matches?MOBILE_EDITOR_SRC:DESKTOP_EDITOR_SRC;
       const isMobileEditor=()=>String(frame.dataset.editorSource||'')===MOBILE_EDITOR_SRC;
+      const ensureMobileEditorFullscreenStyle=()=>{
+        let style=document.getElementById('gsf-mobile-editor-fullscreen-style');
+        if(style)return style;
+        style=document.createElement('style');style.id='gsf-mobile-editor-fullscreen-style';
+        style.append(document.createTextNode(`html.gsf-mobile-editor-fullscreen #gsf-global-gamebar,html.gsf-mobile-editor-fullscreen #gsf-global-header,html.gsf-mobile-editor-fullscreen #gsf-global-footer{display:none!important;visibility:hidden!important;pointer-events:none!important}html.gsf-mobile-editor-fullscreen #gsf-editor-overlay-v220{inset:0!important;top:0!important;bottom:0!important;width:100vw!important;height:100dvh!important;padding:0!important;z-index:2147483646!important}html.gsf-mobile-editor-fullscreen #gsf-editor-overlay-v220 .gsf-editor-shell,html.gsf-mobile-editor-fullscreen #gsf-editor-overlay-v220 .gsf-editor-body{inset:0!important;top:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;border:0!important;border-radius:0!important}`));
+        document.head.appendChild(style);return style;
+      };
       const sendMobileEditorInit=()=>{
         if(!isMobileEditor())return;
         const initial=(editorMeta.initial_state&&typeof editorMeta.initial_state==='object')?editorMeta.initial_state:{};
@@ -16803,6 +16810,7 @@ if GSF_WEB_MODE:
         if(action==='close'){close();return true}
         if(action==='fullscreen_changed'){
           const active=message.active===true;
+          ensureMobileEditorFullscreenStyle();
           o.classList.toggle('gsf-mobile-editor-fullscreen',active);
           document.documentElement.classList.toggle('gsf-mobile-editor-fullscreen',active);
           return true;

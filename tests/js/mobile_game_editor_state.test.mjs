@@ -8,6 +8,7 @@ import {
   createSaveSequencer,
   normalizeEditorState,
   previewSuggestion,
+  projectGestureViewport,
 } from "../../web/game_editor_mobile_component/editor_state.mjs";
 
 
@@ -128,4 +129,17 @@ test("save sequencer debounces, flushes latest state, and ignores stale ACKs", a
   assert.equal(sequencer.acknowledge(1, false, "old failure"), false);
   assert.equal(sequencer.snapshot().status, "saved");
   sequencer.dispose();
+});
+
+
+test("gesture projection keeps pinch and pan crop-safe", () => {
+  assert.deepEqual(projectGestureViewport(
+    { zoom: 1.25, panX: 0, panY: 0 },
+    { startDistance: 100, currentDistance: 160, deltaX: 400, deltaY: -400, width: 320, height: 568 },
+  ), { zoom: 2, panX: 25, panY: -25 });
+
+  assert.deepEqual(projectGestureViewport(
+    { zoom: 1, panX: 0, panY: 0 },
+    { startDistance: 100, currentDistance: 100, deltaX: 30, deltaY: 30, width: 300, height: 500 },
+  ), { zoom: 1, panX: 0, panY: 0 });
 });

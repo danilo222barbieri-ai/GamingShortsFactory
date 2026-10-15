@@ -30,6 +30,18 @@ export function clampViewport(viewport = {}, bounds = {}) {
   };
 }
 
+export function projectGestureViewport(startViewport = {}, gesture = {}) {
+  const startDistance = Math.max(1, number(gesture.startDistance, 1));
+  const currentDistance = Math.max(1, number(gesture.currentDistance, startDistance));
+  const width = Math.max(1, number(gesture.width, 1));
+  const height = Math.max(1, number(gesture.height, 1));
+  return clampViewport({
+    zoom: number(startViewport.zoom, 1) * (currentDistance / startDistance),
+    panX: number(startViewport.panX, 0) + ((number(gesture.deltaX, 0) / width) * 100),
+    panY: number(startViewport.panY, 0) + ((number(gesture.deltaY, 0) / height) * 100),
+  });
+}
+
 export function normalizeEditorState(raw = {}, durationValue = 15) {
   const source = raw && typeof raw === "object" ? raw : {};
   const sourceDuration = rounded(clamp(source.sourceDuration ?? durationValue, 0.5, 21600, 15));

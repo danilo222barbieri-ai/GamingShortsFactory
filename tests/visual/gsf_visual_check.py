@@ -67,6 +67,96 @@ def nav(page, target, section=""):
     settle(page)
 
 
+def check_mobile_editor(ctx, metrics):
+    page = ctx.new_page()
+    errors = []
+    page.on("console", lambda message: message.type == "error" and errors.append(message.text[:300]))
+    page.on("pageerror", lambda error: errors.append(("pageerror: " + str(error))[:300]))
+    page.goto(BASE + "/game-editor-mobile/", wait_until="load")
+    page.wait_for_selector("#gameEditorApp")
+    page.evaluate(
+        """() => {
+          window.__editorMessages = [];
+          window.addEventListener('message', event => {
+            if (event.origin === location.origin && event.data?.type === 'GSF_GAME_EDITOR_UI') {
+              window.__editorMessages.push(structuredClone(event.data));
+            }
+          });
+          document.querySelector('#gameEditorApp').requestFullscreen = () => Promise.reject(new Error('test fallback'));
+          window.postMessage({
+            type: 'GSF_GAME_EDITOR_INIT',
+            session: {sid: 'visual-session'},
+            project: {title: 'Visual Game Editor'},
+            media: {url: ''},
+            initial_state: {sourceDuration: 18, inPoint: 1, outPoint: 14, zoom: 1},
+            event_map: [{time: 4.2, label: 'Eliminazione'}],
+            brain_context: {game: 'Test Arena'},
+            ai_suggestions: [{id: 'focus-action', label: 'Focus azione', reason: 'Porta il duello al centro', impact: 'Zoom 1.8×', patch: {zoom: 1.8, panX: 8}}]
+          }, location.origin);
+        }"""
+    )
+    page.wait_for_function("() => document.querySelector('#projectTitle').textContent === 'Visual Game Editor'")
+    assert page.locator("[data-tool]").count() == 5
+    assert page.locator("#eventMarkers .event-marker").count() == 1
+
+    page.locator("#fullscreenButton").click()
+    page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'true'")
+    page.locator("#fullscreenButton").click()
+    page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'false'")
+    fullscreen_signals = page.evaluate(
+        "() => window.__editorMessages.filter(message => message.action === 'fullscreen_changed').map(message => message.active)"
+    )
+    assert fullscreen_signals[-2:] == [True, False]
+
+    page.evaluate(
+        """() => {
+          const stage = document.querySelector('#previewStage');
+          const emit = (type, id, x, y) => stage.dispatchEvent(new PointerEvent(type, {bubbles: true, pointerId: id, pointerType: 'touch', clientX: x, clientY: y}));
+          emit('pointerdown', 1, 90, 180); emit('pointerdown', 2, 190, 180);
+          emit('pointermove', 2, 245, 180); emit('pointerup', 2, 245, 180);
+        }"""
+    )
+    page.wait_for_function("() => window.GSFGameEditor2026.getState().zoom > 1")
+    gesture_state = page.evaluate("() => window.GSFGameEditor2026.getState()")
+    page.evaluate(
+        """() => {
+          const stage = document.querySelector('#previewStage');
+          const before = window.GSFGameEditor2026.getState();
+          const emit = (type, id, x, y) => stage.dispatchEvent(new PointerEvent(type, {bubbles: true, pointerId: id, pointerType: 'touch', clientX: x, clientY: y}));
+          emit('pointerdown', 7, 120, 210); emit('pointermove', 7, 180, 210); emit('pointercancel', 7, 180, 210);
+          window.__cancelledGestureBefore = before;
+        }"""
+    )
+    cancelled_state = page.evaluate("() => window.GSFGameEditor2026.getState()")
+    cancelled_before = page.evaluate("() => window.__cancelledGestureBefore")
+    assert cancelled_state == cancelled_before
+    assert not page.locator("#previewStage").evaluate("node => node.classList.contains('is-gesturing')")
+
+    page.locator('[data-tool="ai"]').click()
+    state_before_ai = page.evaluate("() => window.GSFGameEditor2026.getState()")
+    page.locator('[data-ai-action="preview"]').click()
+    assert page.evaluate("() => window.GSFGameEditor2026.getState()") == state_before_ai
+    assert page.locator('[data-ai-action="apply"]').is_enabled()
+    page.locator('[data-ai-action="apply"]').click()
+    state_after_ai = page.evaluate("() => window.GSFGameEditor2026.getState()")
+    assert state_after_ai["zoom"] == 1.8
+    page.locator("#undoButton").click()
+    assert page.evaluate("() => window.GSFGameEditor2026.getState()") == state_before_ai
+
+    page.locator("#saveDraftButton").click()
+    page.locator("#continueButton").click()
+    actions = page.evaluate("() => window.__editorMessages.map(message => message.action)")
+    assert "save_draft" in actions and "continue_to_short" in actions
+    assert not errors, errors
+    page.screenshot(path=str(OUT / "14-mobile-game-editor.png"), full_page=False)
+    metrics["surfaces"]["mobile-game-editor"] = {
+        "gesture_state": gesture_state,
+        "fullscreen_signals": fullscreen_signals,
+        "console_errors": errors,
+    }
+    page.close()
+
+
 def main():
     metrics = {"base": BASE, "cycles": [], "console_errors": [], "surfaces": {}}
     with sync_playwright() as p:
@@ -107,6 +197,7 @@ def main():
             settle(q, 2500)
             q.screenshot(path=str(OUT / f"{name}.png"), full_page=False)
             q.close()
+        check_mobile_editor(ctx, metrics)
         browser.close()
 
     for c in metrics["cycles"]:

@@ -3,6 +3,8 @@ import {
   createEditorHistory,
   createSaveSequencer,
   normalizeEditorState,
+  previewSuggestion,
+  projectGestureViewport,
 } from "./editor_state.mjs";
 
 const $ = (selector) => document.querySelector(selector);
@@ -51,6 +53,11 @@ let mediaUrl = "";
 let history = createEditorHistory(normalizeEditorState({}, 15), 50);
 let previewState = null;
 let isMediaReady = false;
+let fullscreenFallback = false;
+let activeSuggestionId = "";
+const activePointers = new Map();
+let gestureStart = null;
+let gestureFrame = 0;
 
 function postToShell(message) {
   parent.postMessage(message, location.origin);
@@ -181,8 +188,114 @@ function commitPatch(patch, { autosave = true } = {}) {
   return next;
 }
 
+function commitState(nextState, status = "Modifiche da salvare") {
+  previewState = null;
+  const next = normalizeEditorState(nextState, history.value.sourceDuration);
+  history.commit(next);
+  renderState(next);
+  saveSequencer.schedule(next);
+  setStatus(status, "dirty");
+  return next;
+}
+
 function requestEditorAction(action) {
   saveSequencer.flush(history.value, action);
+}
+
+function notifyFullscreen(active) {
+  fullscreenButton.setAttribute("aria-pressed", String(active));
+  fullscreenButton.setAttribute("aria-label", active ? "Esci da schermo intero" : "Schermo intero");
+  app.classList.toggle("is-fullscreen", active);
+  postToShell({ type: "GSF_GAME_EDITOR_UI", action: "fullscreen_changed", active });
+}
+
+async function toggleFullscreen() {
+  const nativeActive = document.fullscreenElement === app;
+  if (nativeActive) {
+    await document.exitFullscreen();
+    return;
+  }
+  if (fullscreenFallback) {
+    fullscreenFallback = false;
+    notifyFullscreen(false);
+    fullscreenButton.focus();
+    return;
+  }
+  try {
+    if (typeof app.requestFullscreen !== "function") throw new Error("Fullscreen API unavailable");
+    await app.requestFullscreen({ navigationUI: "hide" });
+    notifyFullscreen(true);
+  } catch (_error) {
+    fullscreenFallback = true;
+    notifyFullscreen(true);
+  }
+}
+
+function pointerCenter(points) {
+  const [first, second = first] = points;
+  return { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
+}
+
+function pointerDistance(points) {
+  if (points.length < 2) return 1;
+  return Math.max(1, Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y));
+}
+
+function beginGesture() {
+  const points = [...activePointers.values()].slice(0, 2);
+  const center = pointerCenter(points);
+  gestureStart = {
+    viewport: { zoom: history.value.zoom, panX: history.value.panX, panY: history.value.panY },
+    center,
+    distance: pointerDistance(points),
+  };
+  previewStage.classList.add("is-gesturing");
+}
+
+function updateGesturePreview() {
+  gestureFrame = 0;
+  if (!gestureStart || !activePointers.size) return;
+  const points = [...activePointers.values()].slice(0, 2);
+  const center = pointerCenter(points);
+  const rect = previewStage.getBoundingClientRect();
+  const viewport = projectGestureViewport(gestureStart.viewport, {
+    startDistance: gestureStart.distance,
+    currentDistance: pointerDistance(points),
+    deltaX: center.x - gestureStart.center.x,
+    deltaY: center.y - gestureStart.center.y,
+    width: rect.width,
+    height: rect.height,
+  });
+  previewState = normalizeEditorState({ ...history.value, ...viewport }, history.value.sourceDuration);
+  renderState(previewState);
+}
+
+function scheduleGesturePreview() {
+  if (!gestureFrame) gestureFrame = requestAnimationFrame(updateGesturePreview);
+}
+
+function releaseCapturedPointers() {
+  for (const pointerId of activePointers.keys()) {
+    try {
+      if (previewStage.hasPointerCapture(pointerId)) previewStage.releasePointerCapture(pointerId);
+    } catch (_error) { /* pointer ownership already ended */ }
+  }
+  activePointers.clear();
+}
+
+function finishGesture({ cancelled = false } = {}) {
+  if (gestureFrame) cancelAnimationFrame(gestureFrame);
+  gestureFrame = 0;
+  const next = previewState;
+  releaseCapturedPointers();
+  gestureStart = null;
+  previewStage.classList.remove("is-gesturing");
+  if (cancelled || !next) {
+    previewState = null;
+    renderState(history.value);
+    return;
+  }
+  commitState(next, "Inquadratura aggiornata");
 }
 
 function renderMarkers() {
@@ -215,24 +328,59 @@ function renderAiContext() {
     return;
   }
   context.ai_suggestions.slice(0, 6).forEach((suggestion, index) => {
+    if (!suggestion.patch || typeof suggestion.patch !== "object") return;
+    const suggestionId = String(suggestion.id || `suggestion-${index + 1}`);
     const card = document.createElement("article");
     card.className = "ai-suggestion-card";
+    card.dataset.suggestionId = suggestionId;
     const copy = document.createElement("div");
     const title = document.createElement("strong");
     const reason = document.createElement("p");
+    const impact = document.createElement("p");
+    const actions = document.createElement("div");
+    const preview = document.createElement("button");
     const apply = document.createElement("button");
+    const revert = document.createElement("button");
     title.textContent = String(suggestion.label || `Suggerimento ${index + 1}`);
-    reason.textContent = String(suggestion.reason || suggestion.impact || "Migliora questo momento senza cambiare il contenuto.");
+    reason.textContent = String(suggestion.reason || "Migliora questo momento senza cambiare il contenuto.");
+    impact.textContent = String(suggestion.impact || "Mostra l’anteprima prima di applicare.");
+    preview.type = "button";
+    preview.textContent = "Anteprima";
+    preview.setAttribute("data-ai-action", "preview");
     apply.type = "button";
     apply.textContent = "Applica";
-    apply.addEventListener("click", () => {
-      history.commit(applySuggestion(history.value, suggestion));
-      renderState(history.value);
-      saveSequencer.schedule(history.value);
-      setStatus("Suggerimento applicato", "dirty");
+    apply.setAttribute("data-ai-action", "apply");
+    apply.disabled = true;
+    revert.type = "button";
+    revert.textContent = "Annulla anteprima";
+    revert.setAttribute("data-ai-action", "revert");
+    revert.disabled = true;
+    preview.addEventListener("click", () => {
+      activeSuggestionId = suggestionId;
+      previewState = previewSuggestion(history.value, suggestion);
+      renderState(previewState);
+      $$('.ai-suggestion-card').forEach((item) => item.classList.toggle("is-previewing", item === card));
+      $$('.ai-suggestion-card [data-ai-action="apply"], .ai-suggestion-card [data-ai-action="revert"]').forEach((button) => { button.disabled = !button.closest(".ai-suggestion-card").classList.contains("is-previewing"); });
+      setStatus("Anteprima AI · nessuna modifica applicata");
     });
-    copy.append(title, reason);
-    card.append(copy, apply);
+    apply.addEventListener("click", () => {
+      if (activeSuggestionId !== suggestionId || !previewState) return;
+      commitState(applySuggestion(history.value, suggestion), "Suggerimento applicato");
+      activeSuggestionId = "";
+      renderAiContext();
+    });
+    revert.addEventListener("click", () => {
+      if (activeSuggestionId !== suggestionId) return;
+      activeSuggestionId = "";
+      previewState = null;
+      renderState(history.value);
+      renderAiContext();
+      setStatus("Anteprima annullata", "saved");
+    });
+    copy.append(title, reason, impact);
+    actions.className = "ai-suggestion-actions";
+    actions.append(preview, apply, revert);
+    card.append(copy, actions);
     list.append(card);
   });
 }
@@ -405,6 +553,15 @@ for (const [selector, field, transform] of [
 
 $("#muteButton").addEventListener("click", () => commitPatch({ muted: !history.value.muted }));
 $("#resetTrimButton").addEventListener("click", () => commitPatch({ inPoint: 0, outPoint: history.value.sourceDuration }));
+$("#resetFrameButton").addEventListener("click", () => {
+  const presets = {
+    center: { zoom: 1, panX: 0, panY: 0 },
+    gameplay: { zoom: 1.15, panX: 0, panY: -3 },
+    face: { zoom: 1.35, panX: 12, panY: -8 },
+    free: { zoom: 1, panX: 0, panY: 0 },
+  };
+  commitPatch(presets[history.value.framePreset] || presets.free);
+});
 $$('[data-tool]').forEach((button) => button.addEventListener("click", () => selectTool(button.dataset.tool)));
 $("#moreButton").addEventListener("click", () => selectTool(activeTool === "more" ? "clip" : "more"));
 $("#retryMediaButton").addEventListener("click", () => loadMedia());
@@ -428,12 +585,42 @@ $("#backButton").addEventListener("click", () => requestEditorAction("close"));
 $("#saveDraftButton").addEventListener("click", () => requestEditorAction("save_draft"));
 $("#continueButton").addEventListener("click", () => requestEditorAction("continue_to_short"));
 
-fullscreenButton.addEventListener("click", () => {
-  const active = fullscreenButton.getAttribute("aria-pressed") !== "true";
-  fullscreenButton.setAttribute("aria-pressed", String(active));
-  app.classList.toggle("is-fullscreen", active);
-  postToShell({ type: "GSF_GAME_EDITOR_UI", action: "fullscreen_changed", active });
+fullscreenButton.addEventListener("click", toggleFullscreen);
+document.addEventListener("fullscreenchange", () => {
+  const active = document.fullscreenElement === app;
+  if (active) fullscreenFallback = false;
+  if (!active) finishGesture({ cancelled: true });
+  notifyFullscreen(active || fullscreenFallback);
+  if (!active && !fullscreenFallback) fullscreenButton.focus();
 });
+
+previewStage.addEventListener("pointerdown", (event) => {
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  try { previewStage.setPointerCapture(event.pointerId); } catch (_error) { /* WebKit can reject capture during rotation */ }
+  beginGesture();
+});
+previewStage.addEventListener("pointermove", (event) => {
+  if (!activePointers.has(event.pointerId)) return;
+  activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  event.preventDefault();
+  scheduleGesturePreview();
+});
+previewStage.addEventListener("pointerup", (event) => {
+  if (gestureFrame) {
+    cancelAnimationFrame(gestureFrame);
+    gestureFrame = 0;
+    updateGesturePreview();
+  }
+  activePointers.delete(event.pointerId);
+  try { previewStage.releasePointerCapture(event.pointerId); } catch (_error) { /* already released */ }
+  finishGesture();
+});
+previewStage.addEventListener("pointercancel", () => finishGesture({ cancelled: true }));
+previewStage.addEventListener("lostpointercapture", (event) => {
+  if (activePointers.has(event.pointerId)) finishGesture({ cancelled: true });
+});
+window.addEventListener("orientationchange", () => finishGesture({ cancelled: true }));
 
 document.addEventListener("keydown", (event) => {
   const editingText = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName || "");

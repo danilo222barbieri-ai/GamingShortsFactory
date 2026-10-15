@@ -191,3 +191,39 @@ def test_desktop_editor_route_and_legacy_source_remain_separate() -> None:
     assert "alias /app/web/editor_2027_component/;" in desktop_route
     assert "game_editor_mobile_component" not in desktop_route
     assert "V394_MOBILE_EDITOR_FOOTER_RESTORE" in desktop
+
+
+def test_fullscreen_gestures_and_ai_are_explicit_mobile_interactions() -> None:
+    html = _read(COMPONENT / "index.html")
+    css = _read(COMPONENT / "editor.css")
+    script = _read(COMPONENT / "editor.mjs")
+
+    assert "requestFullscreen" in script
+    assert 'addEventListener("fullscreenchange"' in script
+    assert "fullscreen_changed" in script
+    assert "setPointerCapture" in script
+    assert "releasePointerCapture" in script
+    for event_name in ("pointerdown", "pointermove", "pointerup", "pointercancel", "lostpointercapture"):
+        assert event_name in script
+    assert "requestAnimationFrame" in script
+    assert "projectGestureViewport" in script
+    assert "touch-action: none" in css
+
+    for action in ("Anteprima", "Applica", "Annulla anteprima"):
+        assert action in script
+    assert 'setAttribute("data-ai-action", "apply")' in script
+    assert 'setAttribute("data-ai-action", "preview")' in script
+    assert 'setAttribute("data-ai-action", "revert")' in script
+    assert "previewSuggestion" in script
+    assert 'id="resetFrameButton"' in html
+
+
+def test_parent_fullscreen_fallback_hides_and_restores_global_chrome() -> None:
+    app = _read(ROOT / "app.py")
+    bridge = _mobile_bridge(app)
+
+    assert "gsf-mobile-editor-fullscreen" in bridge
+    assert "#gsf-global-gamebar" in bridge
+    assert "#gsf-global-header" in bridge
+    assert "#gsf-global-footer" in bridge
+    assert "100dvh" in bridge
