@@ -11,7 +11,7 @@
   --gsf-primary:#27AEF3;--gsf-primary-light:#79D2FF;--gsf-cyan:#53E0EA;
   --gsf-ai:#9D82FF;--gsf-editor:#27AEF3;--gsf-short:#5ED6A0;
   --gsf-warning:#FFD84D;--gsf-danger:#FF6673;
-  --gsf-bg-soft:#FAFDFF;--gsf-surface:#FFFFFF;--gsf-line:#D9EFFB;--gsf-ink:#10283D;--gsf-muted:#6D8497;
+  --gsf-bg-soft:#FAFDFF;--gsf-surface:#FFFFFF;--gsf-line:#D9EFFB;--gsf-ink:#0D2A66;--gsf-muted:#7185A6;
   --gsf-font:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   --gsf-mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
   --gsf-radius-sm:13px;--gsf-radius-md:18px;--gsf-radius-lg:28px;--gsf-radius-pill:999px;
@@ -34,7 +34,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid rgba(39,174,243,
 
 #ai404{position:relative;height:100%;overflow:hidden;overscroll-behavior:none;isolation:isolate;display:flex;flex-direction:column;
   padding-block:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-bottom,0px));
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px)); /* GSF_ONE_STYLE gutter */
   background:
     radial-gradient(120% 55% at 50% 100%,rgba(122,200,255,.10),transparent 72%),linear-gradient(180deg,#FAFDFF 0%,#F7FBFF 60%,#F2F8FE 100%)} /* GSF_HEADER_CANVAS: header colour fading into a soft glow */
 #ai404:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
