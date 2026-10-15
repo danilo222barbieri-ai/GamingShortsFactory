@@ -53,6 +53,7 @@ jobs:
           python web/test_v404_crea_con_ia_simple.py
           python web/test_v412_ai_engines.py
           python web/test_v405_publish_short_simple.py
+          python web/test_v413_publish_multi.py
           python web/test_v407_desktop_mobile_shell.py
           python web/test_v403_creator_hub_simplified.py
 

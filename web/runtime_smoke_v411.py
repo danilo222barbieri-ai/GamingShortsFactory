@@ -46,7 +46,7 @@ status,headers,body=request('/healthz')
 assert status==200 and json.loads(body)['ok'] is True
 status,headers,body=request('/',headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0 Safari/537.36'})
 assert status==200 and b'Streamlit' in body and b'GSF Mobile Only Gate' not in body
-for path,marker in [('/creator-hub-v156/','V403_CREATOR_HUB_SIMPLIFIED'),('/ai-v221/','id="ai404"'),('/editor-live/','V395_MOBILE_EDITOR_ATOMIC_SKIN'),('/share-v156/','V405_PUBLISH_SHORT_LIVE')]:
+for path,marker in [('/creator-hub-v156/','V403_CREATOR_HUB_SIMPLIFIED'),('/ai-v221/','id="ai404"'),('/editor-live/','V395_MOBILE_EDITOR_ATOMIC_SKIN'),('/share-v156/','V413_CREA_SHORT')]:
     status,headers,body=request(path)
     assert status==200 and marker in body.decode('utf-8'), (path,status)
     assert headers.get('X-Content-Type-Options')=='nosniff', (path,'missing security headers')
@@ -86,6 +86,17 @@ status,_,_=request('/drafts/delete?id=v411-nonexistent',method='POST')
 assert status==403, ('missing CSRF accepted',status)
 status,_,_=request('/drafts/delete?id=v411-nonexistent',method='POST',headers={'X-GSF-CSRF':identity['csrf_token']})
 assert status==404, ('authorized non-existing draft must fail safely',status)
+# V413 multi-publish: CSRF enforced, invalid share links fail closed.
+status,_,_=request('/publish/multi',method='POST')
+assert status==403, ('publish without CSRF accepted',status)
+status,_,_=request('/share/link',method='POST')
+assert status==403, ('share link without CSRF accepted',status)
+status,_,body=request('/publish/multi',method='POST',headers={'X-GSF-CSRF':identity['csrf_token'],'Content-Type':'application/json'})
+assert status==400 and json.loads(body).get('ok') is False, ('empty publish must be rejected',status,body[:200])
+status,_,_=request('/publish/status')
+assert status==200, ('publish status',status)
+status,headers,_=request('/share/public/not-a-valid-token')
+assert status==404 and 'gsf_sid' not in str(headers.get('Set-Cookie','')), ('invalid public share link',status)
 # Canonical UI pipeline: mobile Home is served, and the companion still rejects
 # requests that bypass the edge session (security must not be weakened).
 status,headers,body=request('/')

@@ -73,6 +73,11 @@ for token in (
     'V395_MOBILE_EDITOR_ATOMIC_SKIN',
 ):
     require(editor,token,'V389-V395 mobile editor retained in canonical editor')
-require(share,'V396_MOBILE_SHARE_PUBLISH_SURFACE','V396 share/publish surface retained in canonical share')
+# V413 replaced the V396/V405 share surface with the new Crea Short page.
+if 'V413_CREA_SHORT' in share:
+    for token in ('V413_CREA_SHORT','/publish/multi','/share/link','data-platform="youtube"','data-platform="tiktok"'):
+        require(share,token,'V413 Crea Short page in canonical share')
+else:
+    require(share,'V396_MOBILE_SHARE_PUBLISH_SURFACE','V396 share/publish surface retained in canonical share')
 
 print('V397 production hardening structural contract: PASS')

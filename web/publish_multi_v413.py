@@ -123,7 +123,7 @@ def normalize_request(payload) -> dict:
         p_tags = p_tags[: lim["tags"]]
         plans[p] = {
             "platform": p,
-            "title": _clip(p_title or "Gaming Short", lim["title"]) if lim["title"] else "",
+            "title": _clip(p_title, lim["title"]) if lim["title"] else "",
             "description": _clip(p_desc, lim["description"]),
             "tags": p_tags,
             "caption": build_caption(p_desc or p_title, p_tags, lim["description"]),

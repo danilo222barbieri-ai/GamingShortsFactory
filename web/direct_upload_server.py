@@ -4011,7 +4011,7 @@ def _publish_run(sid,job,request,video_path):
     privacy=request["privacy"]
     for platform in request["platforms"]:
         plan=request["plans"][platform]
-        if platform not in _pm413.SUPPORTED:
+        if platform not in _pm413.SUPPORTED or job["results"][platform].get("status")!="queued":
             continue
         _publish_update(sid,job,platform,status="running")
         try:
