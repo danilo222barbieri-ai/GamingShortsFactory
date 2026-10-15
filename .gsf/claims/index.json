@@ -4,6 +4,7 @@
       "branch": "chat/creator-hub-simplify-8cf0cf",
       "created_at": "2026-10-14T06:05:47+00:00",
       "evidence": {
+        "closed_by": "owner request 2026-10-15",
         "handoff": "User explicitly authorized transfer of V267 compatibility test from V407 on 2026-10-14; V268/V268.1 compatibility needed for same V404 replacement.",
         "integration_handoff": {
           "paths": [
@@ -16,16 +17,21 @@
           ],
           "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
           "to": "production-queue-20261014"
-        }
+        },
+        "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+        "pr": 123,
+        "promotion_commit": "e2f1de18e634d4308b1255b2a2e83396107522cd",
+        "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (re-verified 2026-10-15)",
+        "reason": "work integrated via production-queue-20261014 and live; claim was left open after handoff"
       },
       "id": "creator-hub-simplify-8cf0cf",
       "owner": "chat/creator-hub-simplify-8cf0cf",
       "paths": [
-        "web/creator_hub_v156_component/index.html",
-        ".github/workflows/v403-creator-hub-simplified.yml"
+        ".github/workflows/v403-creator-hub-simplified.yml",
+        "web/creator_hub_v156_component/index.html"
       ],
       "scope": "Simplify Creator Hub project and Shorts pages",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/crea-con-ia-simple-3a72f1",
