@@ -9,9 +9,9 @@
 - **Production branch:** `main`
 - **Current product baseline:** **V411 UI on the canonical UI pipeline** (repo files == served files; see `docs/architecture/gsf-canonical-ui.md`)
 - **Cross-chat orchestration:** **LIVE**
-- **Last fully tested main source commit:** `fb0edf871c8fc178c7a4381ff1e15efe7c8730ba` (PR `#136`)
-- **Last runtime promotion commit:** `460102f077d8465a345fac45ca43284c30d3bfd6` — `deploy: promote tested fb0edf871c8f [skip ci]`
-- **Served canonical UI digest:** `fbe1875dbccfc915d12148f1b57ef833a0f41c1d0b77eac2dc0c4756641eb1c7` (`/healthz` → `ui_digest`)
+- **Last fully tested main source commit:** `74fc1a3259c1f19858c54e09adec4f778411b49e` (PR `#146`)
+- **Last runtime promotion commit:** `bcfe40e32d5165998569e11257e998ae68a0bb5f` — `deploy: promote tested 74fc1a3259c1 [skip ci]`
+- **Served canonical UI digest:** `c0d117f0721f72566ff2478528aa0afa478f40f95bf8360377290b51523d868f` (`/healthz` → `ui_digest`)
 - **Current `main` HEAD:** always query GitHub live; coordination/status-only commits may advance `main` without changing production.
 
 ## Production state — verified 2026-10-15 08:15 UTC
@@ -189,6 +189,14 @@ No intentional destructive production rollback test was performed. Rollback exec
 - Railway production re-checked 2026-10-15 ~06:50 UTC: frontend `c348c7d9-c6f4-48e3-b469-1ad9638c49f9` **SUCCESS**; worker `ba536c6a-9544-42d6-9482-4ff0ba0d50d4` **SLEEPING** (expected).
 - Social publishing configuration (variable names only, frontend service): YouTube and TikTok credentials are set; no Meta (`GSF_META_APP_ID`/`GSF_META_APP_SECRET`) credentials are set, so Instagram cannot connect; Facebook publishing is still a disabled placeholder (not implemented). Owner reports TikTok, Instagram and Facebook are not connected.
 - Follow-up: consider adding `CLAUDE.md` to the Production Gate `paths-ignore`.
+
+### Canonical mobile Game Editor 2026 — 2026-10-15 (PR #146)
+
+- Claim `feat-canonical-mobile-game-editor-2026-with-ai-f-c38434`, squash `74fc1a3259c1f19858c54e09adec4f778411b49e`.
+- Main Production Gate run `38741480103`: **SUCCESS**; promotion `bcfe40e32d5165998569e11257e998ae68a0bb5f` (frontend marker only).
+- Railway frontend deployment `baaed85b-58f4-4a87-8cbe-594eaddd9b02`: **SUCCESS** — startup `GSF UI manifest verify PASS digest=c0d117f0… files=169`, `release=bcfe40e`. Worker not redeployed (marker unchanged, expected).
+- `GSF Production UI Verify` run `38742178354`: **SUCCESS** — public domain serves release `bcfe40e` with digest `c0d117f0…`, pages byte-identical, Home 200, `/creator-hub/state` 200 with CSRF enforced.
+- The owning chat merged but did not close the claim; closed by owner-authorized handoff (coord `f870816`). No real-device Safari pass recorded.
 
 ## Current user-facing verification priorities
 
