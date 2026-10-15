@@ -39,6 +39,12 @@ jobs:
         run: |
           python -m compileall -q app.py web gsf_core gsf_alive.py gsf_alive_notifications.py gsf_editor_v403.py gsf_project_state.py tools tests
 
+      - name: Mobile Game Editor JavaScript contracts
+        run: |
+          node --test tests/js/mobile_game_editor_state.test.mjs
+          node --check web/game_editor_mobile_component/editor.mjs
+          node --check web/game_editor_mobile_component/editor_state.mjs
+
       - name: Production, security and UI contracts
         run: |
           set -e

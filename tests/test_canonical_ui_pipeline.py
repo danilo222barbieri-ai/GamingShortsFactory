@@ -122,6 +122,80 @@ def _simulate_reinjection(tool):
         assert problems["unexpected"] == ["web/legacy_overlay.css"]
 
 
+def test_mobile_game_editor_is_manifested_and_untouchable_by_legacy_scripts():
+    import os
+    tool = _load_manifest_tool()
+    files = tool.files_from_repo(ROOT)
+    prefix = "web/game_editor_mobile_component/"
+    expected = {
+        prefix + "index.html",
+        prefix + "editor.css",
+        prefix + "editor.mjs",
+        prefix + "editor_state.mjs",
+    }
+    assert expected <= files.keys(), "canonical mobile editor must be covered by the existing recursive manifest"
+
+    candidates = [ROOT / "Dockerfile", WEB / "start_web.sh", WEB / "start_web_fast.sh",
+                  WEB / "materialize_runtime_patches.sh"]
+    candidates.extend(WEB.glob("fix_v*.py"))
+    candidates.extend(WEB.glob("apply_v*.py"))
+    candidates.extend((ROOT / "scripts").glob("apply_v*.py"))
+    offenders = []
+    for path in candidates:
+        source = path.read_text(encoding="utf-8")
+        if "game_editor_mobile_component" in source:
+            offenders.append(path.relative_to(ROOT).as_posix())
+    assert not offenders, f"legacy/build scripts must never target the canonical mobile editor: {offenders}"
+
+    with tempfile.TemporaryDirectory() as tmp:
+        image = Path(tmp) / "app"
+        for src, dst in tool.CANONICAL_MAP:
+            source, destination = ROOT / src, image / dst
+            if source.is_dir():
+                shutil.copytree(source, destination, dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__"))
+            else:
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+        assert tool.main(["write", "--root", str(image)]) == 0
+        target = image / prefix / "index.html"
+        target.write_text("<!-- forbidden legacy editor -->\n" + target.read_text(encoding="utf-8"), encoding="utf-8")
+        saved = os.environ.pop("GITHUB_ACTIONS", None)
+        try:
+            assert tool.main(["verify", "--root", str(image)]) == 1
+        finally:
+            if saved is not None:
+                os.environ["GITHUB_ACTIONS"] = saved
+
+
+def test_every_editor_navigation_owner_selects_mobile_without_changing_desktop():
+    app = (ROOT / "app.py").read_text(encoding="utf-8")
+    mobile_owner_start = app.index("/* GSF_MOBILE_EDITOR_2026_BRIDGE */")
+    mobile_open = app.index("const open=(remember=true)=>{", mobile_owner_start)
+    start = app.rindex("const ensureEditorSurface=()=>{")
+    end = app.index("const ensureHubSurface=()=>{", start)
+    global_owner = app[start:end].replace("\\'", "'")
+    assert mobile_owner_start < mobile_open < start, "canonical mobile owner must register before the global fallback"
+    assert "selectedEditorSource()" in app[mobile_open:start]
+    assert "frame.dataset.loaded='1'" in app[mobile_open:start]
+    assert "if(f&&f.dataset.loaded!=='1')" in global_owner, "global fallback must not overwrite the selected mobile source"
+    assert "'/editor-live/'" in global_owner, "desktop fallback must remain unchanged"
+
+
+def test_ci_and_production_gate_execute_mobile_editor_contracts():
+    ci = (ROOT / ".github/workflows/gsf-ci.yml").read_text(encoding="utf-8")
+    gate = (ROOT / ".github/workflows/v397-production-gate.yml").read_text(encoding="utf-8")
+    runtime = (WEB / "runtime_smoke_v411.py").read_text(encoding="utf-8")
+    for workflow in (ci, gate):
+        assert "node --test tests/js/mobile_game_editor_state.test.mjs" in workflow
+        assert "node --check web/game_editor_mobile_component/editor.mjs" in workflow
+        assert "node --check web/game_editor_mobile_component/editor_state.mjs" in workflow
+    assert "game_editor_mobile_component:/game-editor-mobile/" in gate
+    for asset in ("/game-editor-mobile/", "/game-editor-mobile/editor.css",
+                  "/game-editor-mobile/editor.mjs", "/game-editor-mobile/editor_state.mjs"):
+        assert asset in runtime
+    assert "sha256" in runtime
+
+
 def test_canonical_mobile_surfaces_keep_approved_markers():
     hub = (WEB / "creator_hub_v156_component/index.html").read_text(encoding="utf-8")
     ai = (WEB / "ai_v221_component/index.html").read_text(encoding="utf-8")

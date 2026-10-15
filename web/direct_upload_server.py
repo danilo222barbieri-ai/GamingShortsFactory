@@ -14,7 +14,9 @@ import shutil
 import html
 import hashlib
 import hmac
+import math
 import subprocess
+import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from cryptography.fernet import Fernet, InvalidToken
@@ -35,6 +37,12 @@ from feedback_learning_v127 import (
 )
 from content_memory_v145 import inspect_memory as _content_memory_inspect, upsert_memory as _content_memory_upsert
 from social_analytics_v148 import collect as _social_analytics_collect, dynamic_performance_score as _social_dynamic_score
+
+try:
+    from gsf_editor_v403 import game_director_suggestions, normalize_editor_state, normalize_timeline_markers
+except ModuleNotFoundError:
+    sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+    from gsf_editor_v403 import game_director_suggestions, normalize_editor_state, normalize_timeline_markers
 
 try:
     from pywebpush import webpush, WebPushException
@@ -1058,8 +1066,108 @@ _EDITOR_STATE_KEYS={
     "look","intensity","brightness","contrast","hudMode","captionOn","captionMode",
     "captionText","captionSize","captionY","textColor","activeColor","outlineColor",
     "muted","volume","speed","audioMode","inPoint","outPoint","aiMode","visionEnabled",
-    "editorVersion","sourceDuration"
+    "editorVersion","sourceDuration","qualityMode"
 }
+
+_EDITOR_DIRECTOR_PATCH_KEYS={
+    "start":"inPoint","end":"outPoint","zoom":"zoom","x":"panX","y":"panY",
+    "volume":"volume","speed":"speed","brightness":"brightness","contrast":"contrast",
+    "subtitles_enabled":"captionOn","subtitle_y":"captionY","safe_zones":"hudMode",
+}
+
+def _editor_number(value,fallback):
+    try:
+        parsed=float(value)
+        return parsed if math.isfinite(parsed) else float(fallback)
+    except (TypeError,ValueError):
+        return float(fallback)
+
+def _editor_json_safe(value,depth=0):
+    if depth>5:
+        return None
+    if value is None or isinstance(value,(bool,int)):
+        return value
+    if isinstance(value,float):
+        return value if math.isfinite(value) else None
+    if isinstance(value,str):
+        return value[:500]
+    if isinstance(value,(list,tuple)):
+        return [_editor_json_safe(item,depth+1) for item in list(value)[:40]]
+    if isinstance(value,dict):
+        return {
+            str(key)[:80]:_editor_json_safe(item,depth+1)
+            for key,item in list(value.items())[:60]
+            if isinstance(key,(str,int,float,bool))
+        }
+    return None
+
+def _editor_mobile_context(session_state,editor_state):
+    """Return bounded real markers and explicit V403 suggestions for the mobile editor."""
+    session_state=dict(session_state) if isinstance(session_state,dict) else {}
+    editor_state=dict(editor_state) if isinstance(editor_state,dict) else {}
+    duration=max(0.5,_editor_number(editor_state.get("sourceDuration"),editor_state.get("outPoint") or 15.0))
+    director_state=normalize_editor_state({
+        "source_duration":duration,
+        "start":_editor_number(editor_state.get("inPoint"),0.0),
+        "end":_editor_number(editor_state.get("outPoint"),min(duration,15.0)),
+        "zoom":_editor_number(editor_state.get("zoom"),1.0),
+        "x":_editor_number(editor_state.get("panX"),0.0),
+        "y":_editor_number(editor_state.get("panY"),0.0),
+        "volume":_editor_number(editor_state.get("volume"),100.0),
+        "speed":_editor_number(editor_state.get("speed"),1.0),
+        "brightness":(_editor_number(editor_state.get("brightness"),100.0)-100.0)/100.0,
+        "contrast":_editor_number(editor_state.get("contrast"),100.0)/100.0,
+        "subtitles_enabled":editor_state.get("captionOn",True) is not False,
+        "subtitle_y":_editor_number(editor_state.get("captionY"),76.0),
+        "safe_zones":str(editor_state.get("hudMode") or "Off")!="Off",
+    },duration)
+    raw_events=session_state.get("gsf_v108_event_map")
+    if not isinstance(raw_events,list):
+        raw_events=[]
+    markers=normalize_timeline_markers(raw_events,director_state["start"],director_state["end"])[:18]
+    for marker in markers:
+        marker["label"]=str(marker.get("label") or marker.get("type") or "Evento")[:80]
+    raw_brain=session_state.get("gsf_v112_brain_context")
+    brain=_editor_json_safe(raw_brain) if isinstance(raw_brain,dict) else {}
+    brain=brain if isinstance(brain,dict) else {}
+    suggestions=[]
+    for item in game_director_suggestions(director_state,markers)[:6]:
+        raw_patch=item.get("patch") if isinstance(item,dict) else {}
+        patch={}
+        if isinstance(raw_patch,dict):
+            for key,value in raw_patch.items():
+                target=_EDITOR_DIRECTOR_PATCH_KEYS.get(str(key))
+                if not target:
+                    continue
+                if key=="brightness":
+                    value=round(100.0+_editor_number(value,0.0)*100.0,2)
+                elif key=="contrast":
+                    value=round(_editor_number(value,1.0)*100.0,2)
+                elif key=="safe_zones":
+                    value="Smart Safe" if bool(value) else "Off"
+                patch[target]=_editor_json_safe(value)
+        if not patch:
+            continue
+        category=str(item.get("category") or "AI")[:24]
+        if any(key in patch for key in ("inPoint","outPoint")):
+            impact="Aggiorna il taglio della clip"
+        elif any(key in patch for key in ("zoom","panX","panY")):
+            impact="Aggiorna l'inquadratura verticale"
+        elif any(key in patch for key in ("captionOn","captionY","hudMode")):
+            impact="Protegge testo e HUD nella safe zone"
+        elif "volume" in patch:
+            impact="Ribilancia l'audio del gameplay"
+        else:
+            impact="Aggiorna le impostazioni della clip"
+        suggestions.append({
+            "id":str(item.get("id") or "suggestion")[:80],
+            "category":category,
+            "label":str(item.get("title") or "Suggerimento Game AI")[:120],
+            "reason":str(item.get("reason") or "")[:360],
+            "impact":impact,
+            "patch":patch,
+        })
+    return {"event_map":markers,"brain_context":brain,"ai_suggestions":suggestions}
 
 def _editor_overlay_state_path(sid):
     sid=_safe_id(sid)
@@ -1097,15 +1205,32 @@ def _editor_overlay_state_save(sid,state):
     _write_json_atomic(path,{"version":223,"updated_at":time.time(),"state":clean})
     return clean
 
+def _editor_session_state_load(sid):
+    sid=_safe_id(sid)
+    if not sid:
+        return {}
+    path=ROOT/"sessions"/sid/"session_state.json"
+    if not path.is_file():
+        return {}
+    try:
+        payload=json.loads(path.read_text(encoding="utf-8"))
+        candidate=payload.get("state") if isinstance(payload,dict) and isinstance(payload.get("state"),dict) else payload
+        return dict(candidate) if isinstance(candidate,dict) else {}
+    except Exception:
+        return {}
+
 def _editor_state_payload(sid,current):
     stat=current.stat()
     stamp=str(stat.st_size)+"-"+str(int(stat.st_mtime))
+    initial_state=_editor_overlay_state_load(sid)
+    context=_editor_mobile_context(_editor_session_state_load(sid),initial_state)
     return {
         "ok":True,
         "ready":True,
         "name":current.name,
         "video_url":"/editor-media/current?v="+urllib.parse.quote(stamp,safe=""),
-        "initial_state":_editor_overlay_state_load(sid),
+        "initial_state":initial_state,
+        **context,
     }
 
 def _editor_prepare_current(sid):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Essential live surface and CSRF/header checks against the built image."""
-import json, os, re, urllib.error, urllib.request
+import hashlib, json, os, re, urllib.error, urllib.request
 from pathlib import Path
 BASE = 'http://127.0.0.1:' + os.environ.get('PORT', '8080')
 COOKIE = ''
@@ -50,6 +50,21 @@ for path,marker in [('/creator-hub-v156/','V403_CREATOR_HUB_SIMPLIFIED'),('/ai-v
     status,headers,body=request(path)
     assert status==200 and marker in body.decode('utf-8'), (path,status)
     assert headers.get('X-Content-Type-Options')=='nosniff', (path,'missing security headers')
+mobile_assets=(
+    ('/game-editor-mobile/','index.html','text/html',b'id="gameEditorApp"'),
+    ('/game-editor-mobile/editor.css','editor.css','text/css',b'.editor-app'),
+    ('/game-editor-mobile/editor.mjs','editor.mjs','javascript',b'GSFGameEditor2026'),
+    ('/game-editor-mobile/editor_state.mjs','editor_state.mjs','javascript',b'normalizeEditorState'),
+)
+for url,name,content_type,marker in mobile_assets:
+    status,headers,body=request(url)
+    expected=(Path('/app/web/game_editor_mobile_component')/name).read_bytes()
+    assert status==200 and marker in body, (url,status)
+    assert body==expected, (url,'served bytes differ',hashlib.sha256(body).hexdigest(),hashlib.sha256(expected).hexdigest())
+    assert content_type in str(headers.get('Content-Type','')).lower(), (url,headers.get('Content-Type'))
+    assert headers.get('Cache-Control')=='no-store', (url,'unexpected cache',headers.get('Cache-Control'))
+    assert headers.get('X-Content-Type-Options')=='nosniff', (url,'missing nosniff')
+    assert headers.get('X-Frame-Options')=='SAMEORIGIN', (url,'missing same-origin framing')
 status,headers,body=request('/creator-hub/state')
 try:
     identity=json.loads(body)
@@ -60,6 +75,11 @@ if status!=200:
     dump_generated_creator_hub_state()
 assert status==200, ('creator hub state status',status,body[:500],COOKIE)
 assert identity.get('csrf_token'), ('creator hub csrf token missing',identity,COOKIE)
+stable_cookie=COOKIE
+stable_csrf=identity['csrf_token']
+status,_,body=request('/creator-hub/state')
+assert status==200 and COOKIE==stable_cookie, ('creator hub session changed',stable_cookie,COOKIE)
+assert json.loads(body).get('csrf_token')==stable_csrf, ('creator hub csrf changed for stable session',stable_cookie)
 status,_,_=request('/drafts/delete?id=v411-nonexistent')
 assert status in (403,405)
 status,_,_=request('/drafts/delete?id=v411-nonexistent',method='POST')

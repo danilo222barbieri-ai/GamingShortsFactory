@@ -165,6 +165,8 @@ function scoreOf(item){const n=Number(item?.score??item?.score_virality??item?.s
 function titleOf(item,index){return String(item?.label||item?.why||item?.title||(index===0?"Il momento più forte":"Momento selezionato"))}
 function timeOf(item){const start=Number(item?.start_time??item?.start??0),end=Number(item?.end_time??item?.end??0);if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start)return "Pronto per l'anteprima";const fmt=s=>`${Math.floor(s/60)}:${String(Math.max(0,Math.floor(s%60))).padStart(2,"0")}`;return `${fmt(start)} – ${fmt(end)}`}
 function selectedPayload(){const rows=Array.isArray(state.previews)?state.previews.slice(0,3):[],index=Math.max(0,Math.min(Number(state.selectedMoment)||0,Math.max(rows.length-1,0))),item=rows[index]||{};return{index,candidate_id:item.candidate_id||"",video:item.video||"",start_time:item.start_time,end_time:item.end_time}}
+function createSelectedShort(){const payload=selectedPayload();send("preview",{...payload,intent:"create_short"});send("create_short",payload)}
+function editSelectedMoment(){const payload=selectedPayload();send("preview",{...payload,intent:"edit"});send("open_editor",payload)}
 function selectMoment(index){state.selectedMoment=index;document.querySelectorAll(".moment-card").forEach(card=>{const active=Number(card.dataset.index)===index;card.classList.toggle("is-selected",active);card.setAttribute("aria-pressed",String(active))})}
 
 function renderMoments(){
@@ -186,9 +188,8 @@ document.querySelectorAll("[data-duration]").forEach(btn=>btn.addEventListener("
 $("createAi").addEventListener("click",()=>{if(!state.loaded||state.processing)return;awaitingResults=true;state.processing=true;render();send("create",{engine:state.engine,duration:state.duration})});
 $("changeSearch").addEventListener("click",()=>{awaitingResults=false;state.processing=false;showView("engines");send("change_engine");render()});
 
-// Keep result navigation on the bridge action already supported by existing hosts.
-$("createShort").addEventListener("click",()=>send("preview",{...selectedPayload(),intent:"create_short"}));
-$("editMoment").addEventListener("click",()=>send("preview",{...selectedPayload(),intent:"edit"}));
+$("createShort").addEventListener("click",createSelectedShort);
+$("editMoment").addEventListener("click",editSelectedMoment);
 $("saveMoment").addEventListener("click",()=>send("save",selectedPayload()));
 
 window.addEventListener("message",event=>{
