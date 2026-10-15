@@ -656,6 +656,7 @@
         ".github/workflows/gsf-ci.yml",
         "PROJECT_STATUS.md",
         "app.py",
+        "web/ai_engines_v412.py",
         "web/ai_v221_component/index.html",
         "web/direct_upload_server.py",
         "web/home_v154_component/index.html",
