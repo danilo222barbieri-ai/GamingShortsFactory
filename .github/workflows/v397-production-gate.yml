@@ -53,6 +53,12 @@ jobs:
       - name: Canonical UI pipeline guard
         run: python tests/test_canonical_ui_pipeline.py
 
+      - name: Mobile Game Editor JavaScript contracts
+        run: |
+          node --test tests/js/mobile_game_editor_state.test.mjs
+          node --check web/game_editor_mobile_component/editor.mjs
+          node --check web/game_editor_mobile_component/editor_state.mjs
+
       - name: V397 structural production contract
         run: |
           python web/test_v397_production_hardening.py .
@@ -184,11 +190,15 @@ jobs:
           repo_digest=$(python tools/gsf_ui_manifest.py digest --repo .)
           served_digest=$(curl -sS http://127.0.0.1:18080/healthz | python -c 'import json,sys;print(json.load(sys.stdin).get("ui_digest",""))')
           test "$repo_digest" = "$served_digest" || { echo "::error title=Canonical UI::healthz digest $served_digest != repo $repo_digest"; exit 1; }
-          for page in creator_hub_v156_component:/creator-hub-v156/ ai_v221_component:/ai-v221/ editor_2027_component:/editor-live/ share_v156_component:/share-v156/; do
+          for page in creator_hub_v156_component:/creator-hub-v156/ ai_v221_component:/ai-v221/ game_editor_mobile_component:/game-editor-mobile/ editor_2027_component:/editor-live/ share_v156_component:/share-v156/; do
             dir=${page%%:*}; url=${page#*:}
             curl -sS -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 19_0 like Mac OS X) Mobile/15E148 Safari/605.1' -o /tmp/served.html "http://127.0.0.1:18080$url"
             cmp -s /tmp/served.html "web/$dir/index.html" || { echo "::error title=Canonical UI::$url served bytes differ from web/$dir/index.html"; exit 1; }
             echo "served $url == web/$dir/index.html"
+          done
+          for asset in editor.css editor.mjs editor_state.mjs; do
+            curl -sS -o "/tmp/$asset" "http://127.0.0.1:18080/game-editor-mobile/$asset"
+            cmp -s "/tmp/$asset" "web/game_editor_mobile_component/$asset" || { echo "::error title=Canonical UI::mobile editor $asset served bytes differ"; exit 1; }
           done
           echo "::notice title=Canonical UI::image == repo, digest $repo_digest"
 
@@ -197,6 +207,25 @@ jobs:
           docker exec gsf-production-gate python /app/web/runtime_smoke_v411.py
           # the running container must not have rewritten any canonical file
           docker exec gsf-production-gate python /app/gsf_ui_manifest.py verify
+
+      - name: Mobile WebKit interaction gate
+        env:
+          BASE: http://127.0.0.1:18080
+          CYCLES: '2'
+          OUT_DIR: /tmp/gsf-mobile-webkit
+        run: |
+          python -m pip install --disable-pip-version-check playwright
+          python -m playwright install --with-deps webkit
+          python tests/visual/gsf_visual_check.py
+
+      - name: Upload mobile WebKit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gsf-mobile-webkit-${{ github.sha }}
+          path: /tmp/gsf-mobile-webkit
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Promote tested commit to Railway
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -621,6 +621,11 @@ server {
         alias /app/web/game_editor_mobile_component/;
         index index.html;
         try_files $uri $uri/ /game-editor-mobile/index.html;
+        types {
+            text/html html;
+            text/css css;
+            application/javascript js mjs;
+        }
         add_header Cache-Control "no-store" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-Frame-Options "SAMEORIGIN" always;

@@ -35,6 +35,7 @@ def test_mobile_editor_is_a_direct_canonical_nginx_surface() -> None:
     route = route[: route.index("\n    }")]
     assert "alias /app/web/game_editor_mobile_component/;" in route
     assert "try_files $uri $uri/ /game-editor-mobile/index.html;" in route
+    assert "application/javascript js mjs;" in route
     assert 'add_header Cache-Control "no-store" always;' in route
     assert 'add_header X-Frame-Options "SAMEORIGIN" always;' in route
     assert "Content-Security-Policy" in route
@@ -60,9 +61,8 @@ def test_ai_actions_are_distinct_and_keep_selected_moment_payload() -> None:
     ai = _read(WEB / "ai_v221_component" / "index.html")
     app = _read(ROOT / "app.py")
 
-    assert 'send("open_editor",selectedPayload())' in ai
-    assert 'send("create_short",selectedPayload())' in ai
-    assert 'send("preview",{...selectedPayload(),intent:' not in ai
+    assert 'send("preview",{...payload,intent:"edit"});send("open_editor",payload)' in ai
+    assert 'send("preview",{...payload,intent:"create_short"});send("create_short",payload)' in ai
     for field in ("candidate_id", "video", "start_time", "end_time"):
         assert field in ai
 
