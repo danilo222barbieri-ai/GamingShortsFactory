@@ -1,0 +1,26 @@
+{
+  "branch": "chat/gaming-overlay-editor-v414-7c2a9e",
+  "created_at": "2026-10-15T17:25:00+02:00",
+  "evidence": {
+    "commit": "154eac800622",
+    "gate": "main Production Gate 38790231577 SUCCESS (4049bb7), 38792712945 SUCCESS (154eac8)",
+    "pr": "#149 (4049bb7), #150 (154eac8)",
+    "railway": "frontend cb0bff7b SUCCESS release 36ff303 digest b3a16c29; healthz 200; Production UI Verify 38793356058 SUCCESS; worker SLEEPING (unchanged)",
+    "tests": "V414/mobile editor/canonical UI python contracts, node JS tests 16/16, gate check_mobile_editor sequence in Chromium iPhone 13 + desktop; WebKit via Production Gate"
+  },
+  "id": "gaming-overlay-editor-v414-7c2a9e",
+  "owner": "chat/gaming-overlay-editor-v414-7c2a9e",
+  "paths": [
+    "PROJECT_STATUS.md",
+    "docs/superpowers/plans/2026-10-15-gaming-overlay-editor-v414.md",
+    "docs/superpowers/specs/2026-10-15-gaming-overlay-editor-v414-design.md",
+    "tests/js/gaming_overlay_editor_v414_state.test.mjs",
+    "tests/test_gaming_overlay_editor_v414.py",
+    "web/game_editor_mobile_component/editor.mjs",
+    "web/game_editor_mobile_component/editor_state.mjs",
+    "web/game_editor_mobile_component/index.html",
+    "web/game_editor_mobile_component/overlay_v414.css"
+  ],
+  "scope": "editor: rebuild canonical Game Editor as video-first glass gaming overlay with realtime AI camera controls",
+  "state": "completed"
+}

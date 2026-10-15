@@ -7,7 +7,14 @@
         "closed_by": "owner request 2026-10-15",
         "handoff": "User explicitly authorized transfer of V267 compatibility test from V407 on 2026-10-14; V268/V268.1 compatibility needed for same V404 replacement.",
         "integration_handoff": {
-          "paths": ["web/fix_v374_creator_hub_spacing_live.py","web/fix_v403_creator_hub_simplified.py","web/test_v403_creator_hub_simplified.py","web/test_v267_global_desktop_polish.py","web/test_v268_desktop_aesthetic_calibration.py","web/test_v268_1_desktop_to_mobile_parity.py"],
+          "paths": [
+            "web/fix_v374_creator_hub_spacing_live.py",
+            "web/fix_v403_creator_hub_simplified.py",
+            "web/test_v403_creator_hub_simplified.py",
+            "web/test_v267_global_desktop_polish.py",
+            "web/test_v268_desktop_aesthetic_calibration.py",
+            "web/test_v268_1_desktop_to_mobile_parity.py"
+          ],
           "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
           "to": "production-queue-20261014"
         },
@@ -19,117 +26,378 @@
       },
       "id": "creator-hub-simplify-8cf0cf",
       "owner": "chat/creator-hub-simplify-8cf0cf",
-      "paths": [".github/workflows/v403-creator-hub-simplified.yml","web/creator_hub_v156_component/index.html"],
+      "paths": [
+        ".github/workflows/v403-creator-hub-simplified.yml",
+        "web/creator_hub_v156_component/index.html"
+      ],
       "scope": "Simplify Creator Hub project and Shorts pages",
       "state": "completed"
     },
     {
       "branch": "chat/crea-con-ia-simple-3a72f1",
       "created_at": "2026-10-14T06:08:00+00:00",
-      "evidence": {"merge_sha":"c7a898aafd2d8909ff2433d838c6540f5b619226","pr":113,"runtime":"Merged to main; main component content verified. Production deployment is tracked separately by the GSF Production Gate.","tests":"V404 regression test RED before the bridge/state fix and GREEN on final head; V398/V399/V400/V402 checks GREEN"},
+      "evidence": {
+        "merge_sha": "c7a898aafd2d8909ff2433d838c6540f5b619226",
+        "pr": 113,
+        "runtime": "Merged to main; main component content verified. Production deployment is tracked separately by the GSF Production Gate.",
+        "tests": "V404 regression test RED before the bridge/state fix and GREEN on final head; V398/V399/V400/V402 checks GREEN"
+      },
       "id": "crea-con-ia-simple-3a72f1",
       "owner": "chat/crea-con-ia-simple-3a72f1",
-      "paths": ["web/ai_v221_component/index.html","web/test_v404_crea_con_ia_simple.py",".github/workflows/v404-crea-con-ia-simple.yml"],
+      "paths": [
+        "web/ai_v221_component/index.html",
+        "web/test_v404_crea_con_ia_simple.py",
+        ".github/workflows/v404-crea-con-ia-simple.yml"
+      ],
       "scope": "Simplify Crea con IA engine and top moments flow",
       "state": "completed"
     },
     {
       "branch": "chat/game-editor-v403-021",
       "created_at": "2026-10-14T06:14:00+00:00",
-      "evidence": {"integration_handoff":{"paths":["gsf_editor_v403.py","scripts/apply_v403_game_editor.py"],"reason":"User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.","to":"production-queue-20261014"},"merge_sha":"f88217ed1aa9c762483962397e81219f90bc5127","pr":112,"runtime":"No app.py runtime change in this claim; visual integration remains serialized behind active app.py ownership","tests":"v403-game-editor RED then GREEN; integration patch applied to disposable app.py and py_compile passed"},
+      "evidence": {
+        "integration_handoff": {
+          "paths": [
+            "gsf_editor_v403.py",
+            "scripts/apply_v403_game_editor.py"
+          ],
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
+        },
+        "merge_sha": "f88217ed1aa9c762483962397e81219f90bc5127",
+        "pr": 112,
+        "runtime": "No app.py runtime change in this claim; visual integration remains serialized behind active app.py ownership",
+        "tests": "v403-game-editor RED then GREEN; integration patch applied to disposable app.py and py_compile passed"
+      },
       "id": "game-editor-v403-021",
       "owner": "chat/game-editor-v403-021",
-      "paths": ["tests/test_game_editor_v403.py",".github/workflows/v403-game-editor.yml"],
+      "paths": [
+        "tests/test_game_editor_v403.py",
+        ".github/workflows/v403-game-editor.yml"
+      ],
       "scope": "Build GSF Game Editor V403 support engine, tests and deterministic integration patch without touching locked app.py until its active claim is released",
       "state": "completed"
     },
     {
       "branch": "chat/alive-core-v405-b6f2a1",
       "created_at": "2026-10-14T06:20:00+00:00",
-      "evidence": {"closed_by":"owner request 2026-10-15","integration_handoff":{"paths":["app.py","gsf_alive.py","scripts/apply_v405_alive.py"],"reason":"User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.","to":"production-queue-20261014"},"merge_sha":"e89541f42cca0412465bf9629bbf0c0f13f5ee4f","pr":123,"promotion_commit":"e2f1de18e634d4308b1255b2a2e83396107522cd","railway_frontend":"c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (re-verified 2026-10-15)","reason":"work integrated via production-queue-20261014 and live; claim was left open after handoff"},
+      "evidence": {
+        "closed_by": "owner request 2026-10-15",
+        "integration_handoff": {
+          "paths": [
+            "app.py",
+            "gsf_alive.py",
+            "scripts/apply_v405_alive.py"
+          ],
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
+        },
+        "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+        "pr": 123,
+        "promotion_commit": "e2f1de18e634d4308b1255b2a2e83396107522cd",
+        "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (re-verified 2026-10-15)",
+        "reason": "work integrated via production-queue-20261014 and live; claim was left open after handoff"
+      },
       "id": "alive-core-v405-b6f2a1",
       "owner": "chat/alive-core-v405-b6f2a1",
-      "paths": [".github/workflows/v405-alive-core.yml","docs/architecture/gsf-alive.md","tests/test_gsf_alive.py"],
+      "paths": [
+        ".github/workflows/v405-alive-core.yml",
+        "docs/architecture/gsf-alive.md",
+        "tests/test_gsf_alive.py"
+      ],
       "scope": "Build GSF Alive Core state engine, Streamlit bridge and safe global app integration",
       "state": "completed"
     },
     {
       "branch": "chat/core-infra-v406-c81426",
       "created_at": "2026-10-14T06:32:00+00:00",
-      "evidence": {"completion":{"merge_sha":"e89541f42cca0412465bf9629bbf0c0f13f5ee4f","pr":123,"railway_frontend":"c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)","railway_worker":"ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)","reason":"paths fully handed off to production-queue-20261014, which completed"},"integration_handoff":{"paths":["gsf_core/__init__.py","gsf_core/assets.py","gsf_core/jobs.py","gsf_core/storage.py","gsf_core/cache.py","gsf_core/telemetry.py","tests/test_gsf_core_infra.py","docs/architecture/gsf-core-infrastructure.md"],"reason":"User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.","to":"production-queue-20261014"}},
+      "evidence": {
+        "completion": {
+          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+          "pr": 123,
+          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
+          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)",
+          "reason": "paths fully handed off to production-queue-20261014, which completed"
+        },
+        "integration_handoff": {
+          "paths": [
+            "gsf_core/__init__.py",
+            "gsf_core/assets.py",
+            "gsf_core/jobs.py",
+            "gsf_core/storage.py",
+            "gsf_core/cache.py",
+            "gsf_core/telemetry.py",
+            "tests/test_gsf_core_infra.py",
+            "docs/architecture/gsf-core-infrastructure.md"
+          ],
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
+        }
+      },
       "id": "core-infra-v406-c81426",
       "owner": "chat/core-infra-v406-c81426",
-      "paths": ["docs/architecture/gsf-core-infrastructure.md","gsf_core/__init__.py","gsf_core/assets.py","gsf_core/cache.py","gsf_core/jobs.py","gsf_core/storage.py","gsf_core/telemetry.py","tests/test_gsf_core_infra.py"],
+      "paths": [
+        "docs/architecture/gsf-core-infrastructure.md",
+        "gsf_core/__init__.py",
+        "gsf_core/assets.py",
+        "gsf_core/cache.py",
+        "gsf_core/jobs.py",
+        "gsf_core/storage.py",
+        "gsf_core/telemetry.py",
+        "tests/test_gsf_core_infra.py"
+      ],
       "scope": "Build GSF infrastructure core for asset references, persistent job lifecycle, storage adapters, cache/proxy metadata, telemetry and cost accounting",
       "state": "completed"
     },
     {
       "branch": "chat/publish-short-v405-7d91c4",
       "created_at": "2026-10-14T06:34:00+00:00",
-      "evidence": {"completion":{"merge_sha":"e89541f42cca0412465bf9629bbf0c0f13f5ee4f","pr":123,"railway_frontend":"c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)","railway_worker":"ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)","reason":"paths fully handed off to production-queue-20261014, which completed"},"integration_handoff":{"paths":["web/publish_short_v405_component/index.html","web/test_v405_publish_short_simple.py","scripts/apply_v405_publish_short.py",".github/workflows/v405-publish-short-simple.yml"],"reason":"User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.","to":"production-queue-20261014"}},
+      "evidence": {
+        "completion": {
+          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+          "pr": 123,
+          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
+          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)",
+          "reason": "paths fully handed off to production-queue-20261014, which completed"
+        },
+        "integration_handoff": {
+          "paths": [
+            "web/publish_short_v405_component/index.html",
+            "web/test_v405_publish_short_simple.py",
+            "scripts/apply_v405_publish_short.py",
+            ".github/workflows/v405-publish-short-simple.yml"
+          ],
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
+        }
+      },
       "id": "publish-short-v405-7d91c4",
       "owner": "chat/publish-short-v405-7d91c4",
-      "paths": [".github/workflows/v405-publish-short-simple.yml","scripts/apply_v405_publish_short.py","web/publish_short_v405_component/index.html","web/test_v405_publish_short_simple.py"],
+      "paths": [
+        ".github/workflows/v405-publish-short-simple.yml",
+        "scripts/apply_v405_publish_short.py",
+        "web/publish_short_v405_component/index.html",
+        "web/test_v405_publish_short_simple.py"
+      ],
       "scope": "Rebuild Crea Short final publication experience as a minimal video-first page with publish/download/edit/save actions and deterministic app integration",
       "state": "completed"
     },
     {
       "branch": "chat/desktop-mobile-shell-v407-7e31ca",
       "created_at": "2026-10-14T06:11:00+00:00",
-      "evidence": {"completion":{"merge_sha":"e89541f42cca0412465bf9629bbf0c0f13f5ee4f","pr":123,"railway_frontend":"c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)","railway_worker":"ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)","reason":"paths fully handed off to production-queue-20261014, which completed"},"integration_handoff":{"paths":["web/gsf_desktop_shell_v407.py","web/install_adsense_bridge.py","web/test_v407_desktop_mobile_shell.py",".github/workflows/v407-desktop-shell.yml","docs/architecture/gsf-desktop-mobile-shell.md"],"reason":"User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.","to":"production-queue-20261014"}},
+      "evidence": {
+        "completion": {
+          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+          "pr": 123,
+          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
+          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)",
+          "reason": "paths fully handed off to production-queue-20261014, which completed"
+        },
+        "integration_handoff": {
+          "paths": [
+            "web/gsf_desktop_shell_v407.py",
+            "web/install_adsense_bridge.py",
+            "web/test_v407_desktop_mobile_shell.py",
+            ".github/workflows/v407-desktop-shell.yml",
+            "docs/architecture/gsf-desktop-mobile-shell.md"
+          ],
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
+        }
+      },
       "id": "desktop-mobile-shell-v407-7e31ca",
       "owner": "chat/desktop-mobile-shell-v407-7e31ca",
-      "paths": [".github/workflows/v407-desktop-shell.yml","docs/architecture/gsf-desktop-mobile-shell.md","web/gsf_desktop_shell_v407.py","web/install_adsense_bridge.py","web/test_v407_desktop_mobile_shell.py"],
+      "paths": [
+        ".github/workflows/v407-desktop-shell.yml",
+        "docs/architecture/gsf-desktop-mobile-shell.md",
+        "web/gsf_desktop_shell_v407.py",
+        "web/install_adsense_bridge.py",
+        "web/test_v407_desktop_mobile_shell.py"
+      ],
       "scope": "Restore desktop as a mobile-first center shell with giant lateral advertising rails, preserving the mobile UI as the single source of truth and retiring incompatible V267 desktop-only assertions",
       "state": "completed"
     },
     {
       "branch": "chat/project-state-v408-3f4b21",
       "created_at": "2026-10-14T06:39:00+00:00",
-      "evidence": {"completion":{"merge_sha":"e89541f42cca0412465bf9629bbf0c0f13f5ee4f","pr":123,"railway_frontend":"c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)","railway_worker":"ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)","reason":"paths fully handed off to production-queue-20261014, which completed"},"integration_handoff":{"paths":["gsf_project_state.py","tests/test_gsf_project_state.py","docs/architecture/gsf-project-state.md",".github/workflows/v408-project-state.yml"],"reason":"User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.","to":"production-queue-20261014"}},
+      "evidence": {
+        "completion": {
+          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+          "pr": 123,
+          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
+          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)",
+          "reason": "paths fully handed off to production-queue-20261014, which completed"
+        },
+        "integration_handoff": {
+          "paths": [
+            "gsf_project_state.py",
+            "tests/test_gsf_project_state.py",
+            "docs/architecture/gsf-project-state.md",
+            ".github/workflows/v408-project-state.yml"
+          ],
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
+        }
+      },
       "id": "project-state-v408-3f4b21",
       "owner": "chat/project-state-v408-3f4b21",
-      "paths": [".github/workflows/v408-project-state.yml","docs/architecture/gsf-project-state.md","gsf_project_state.py","tests/test_gsf_project_state.py"],
+      "paths": [
+        ".github/workflows/v408-project-state.yml",
+        "docs/architecture/gsf-project-state.md",
+        "gsf_project_state.py",
+        "tests/test_gsf_project_state.py"
+      ],
       "scope": "Add a durable unified ProjectState reducer and serialization layer without touching locked app.py",
       "state": "completed"
     },
     {
       "branch": "chat/alive-notifications-v409-4d7c2e",
       "created_at": "2026-10-14T06:45:00+00:00",
-      "evidence": {"completion":{"merge_sha":"e89541f42cca0412465bf9629bbf0c0f13f5ee4f","pr":123,"railway_frontend":"c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)","railway_worker":"ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)","reason":"paths fully handed off to production-queue-20261014, which completed"},"integration_handoff":{"paths":["gsf_alive_notifications.py","tests/test_gsf_alive_notifications.py","docs/architecture/gsf-alive-notifications.md",".github/workflows/v409-alive-notifications.yml"],"reason":"User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.","to":"production-queue-20261014"}},
+      "evidence": {
+        "completion": {
+          "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+          "pr": 123,
+          "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (verified live 2026-10-15)",
+          "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SLEEPING (sleep mode)",
+          "reason": "paths fully handed off to production-queue-20261014, which completed"
+        },
+        "integration_handoff": {
+          "paths": [
+            "gsf_alive_notifications.py",
+            "tests/test_gsf_alive_notifications.py",
+            "docs/architecture/gsf-alive-notifications.md",
+            ".github/workflows/v409-alive-notifications.yml"
+          ],
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
+        }
+      },
       "id": "alive-notifications-v409-4d7c2e",
       "owner": "chat/alive-notifications-v409-4d7c2e",
-      "paths": [".github/workflows/v409-alive-notifications.yml","docs/architecture/gsf-alive-notifications.md","gsf_alive_notifications.py","tests/test_gsf_alive_notifications.py"],
+      "paths": [
+        ".github/workflows/v409-alive-notifications.yml",
+        "docs/architecture/gsf-alive-notifications.md",
+        "gsf_alive_notifications.py",
+        "tests/test_gsf_alive_notifications.py"
+      ],
       "scope": "Restore global one-shot Alive notifications as a non-overlapping sidecar extension of Alive Core",
       "state": "completed"
     },
     {
       "branch": "chat/security-hardening-v410-6f31c2",
       "created_at": "2026-10-14T07:28:25+00:00",
-      "evidence": {"closed_by":"owner request 2026-10-15","integration_handoff":{"paths":["web/fix_v410_security_hardening.py","web/fix_v410_1_edge_identity.py","web/test_v410_security_hardening.py","web/start_secure.sh","web/content_memory_v145.py","web/editor_2027_embed.py","requirements-web.txt","constraints-web.txt",".github/dependabot.yml",".github/workflows/v410-security-gate.yml"],"reason":"User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.","to":"production-queue-20261014"},"merge_sha":"e89541f42cca0412465bf9629bbf0c0f13f5ee4f","pr":123,"promotion_commit":"e2f1de18e634d4308b1255b2a2e83396107522cd","railway_frontend":"c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (re-verified 2026-10-15)","reason":"work integrated via production-queue-20261014 and live; claim was left open after handoff"},
+      "evidence": {
+        "closed_by": "owner request 2026-10-15",
+        "integration_handoff": {
+          "paths": [
+            "web/fix_v410_security_hardening.py",
+            "web/fix_v410_1_edge_identity.py",
+            "web/test_v410_security_hardening.py",
+            "web/start_secure.sh",
+            "web/content_memory_v145.py",
+            "web/editor_2027_embed.py",
+            "requirements-web.txt",
+            "constraints-web.txt",
+            ".github/dependabot.yml",
+            ".github/workflows/v410-security-gate.yml"
+          ],
+          "reason": "User requested repair and Railway deployment of the entire current V403-V410 queue in this chat on 2026-10-14.",
+          "to": "production-queue-20261014"
+        },
+        "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+        "pr": 123,
+        "promotion_commit": "e2f1de18e634d4308b1255b2a2e83396107522cd",
+        "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS (re-verified 2026-10-15)",
+        "reason": "work integrated via production-queue-20261014 and live; claim was left open after handoff"
+      },
       "id": "security-hardening-v410-6f31c2",
       "owner": "chat/security-hardening-v410-6f31c2",
-      "paths": ["web/direct_upload_server.py","web/nginx.conf.template"],
+      "paths": [
+        "web/direct_upload_server.py",
+        "web/nginx.conf.template"
+      ],
       "scope": "Harden GSF upload, session, social-token and edge security without changing user-facing flows",
       "state": "completed"
     },
     {
       "branch": "chat/production-queue-20261014",
       "created_at": "2026-10-14T10:05:00+00:00",
-      "evidence": {"merge_sha":"e89541f42cca0412465bf9629bbf0c0f13f5ee4f","pr":123,"promotion_commit":"e2f1de18e634d4308b1255b2a2e83396107522cd","railway_frontend":"c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS /healthz 200","railway_worker":"ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SUCCESS","runtime":"Creator Hub stable sid and csrf_token verified live; missing CSRF 403; authorized missing draft 404","tests":"52 local pytest tests passed; PR Production Gate 38630205476 passed; main Production Gate 38631006544 passed"},
+      "evidence": {
+        "merge_sha": "e89541f42cca0412465bf9629bbf0c0f13f5ee4f",
+        "pr": 123,
+        "promotion_commit": "e2f1de18e634d4308b1255b2a2e83396107522cd",
+        "railway_frontend": "c348c7d9-c6f4-48e3-b469-1ad9638c49f9 SUCCESS /healthz 200",
+        "railway_worker": "ba536c6a-9544-42d6-9482-4ff0ba0d50d4 SUCCESS",
+        "runtime": "Creator Hub stable sid and csrf_token verified live; missing CSRF 403; authorized missing draft 404",
+        "tests": "52 local pytest tests passed; PR Production Gate 38630205476 passed; main Production Gate 38631006544 passed"
+      },
       "id": "production-queue-20261014",
       "owner": "chat/production-queue-20261014",
-      "paths": [".github/workflows/v405-publish-short-simple.yml","scripts/apply_v405_publish_short.py","web/publish_short_v405_component/index.html","web/test_v405_publish_short_simple.py","docs/architecture/gsf-core-infrastructure.md","gsf_core/__init__.py","gsf_core/assets.py","gsf_core/cache.py","gsf_core/jobs.py","gsf_core/storage.py","gsf_core/telemetry.py","tests/test_gsf_core_infra.py",".github/workflows/v407-desktop-shell.yml","docs/architecture/gsf-desktop-mobile-shell.md","gsf_project_state.py","tests/test_gsf_project_state.py",".github/workflows/v409-alive-notifications.yml","docs/architecture/gsf-alive-notifications.md","gsf_alive_notifications.py","tests/test_gsf_alive_notifications.py",".github/dependabot.yml",".github/workflows/v410-security-gate.yml","constraints-web.txt","requirements-web.txt","web/content_memory_v145.py","web/editor_2027_embed.py","web/fix_v410_1_edge_identity.py","web/fix_v410_security_hardening.py","web/start_secure.sh","web/test_v105_dependency_lock.py","web/test_v410_security_hardening.py","Dockerfile","web/Dockerfile.worker","web/fix_v403_creator_hub_simplified.py","web/test_v403_creator_hub_simplified.py","web/fix_v411_queue_runtime.py","web/fix_v411_publish_surface.py","web/queue_runtime_v411.py","web/project_state_v157.py","web/runtime_smoke_v411.py","tests/test_queue_runtime_v411.py",".github/workflows/v397-production-gate.yml",".github/workflows/v411-queue-integration.yml"],
+      "paths": [
+        ".github/workflows/v405-publish-short-simple.yml",
+        "scripts/apply_v405_publish_short.py",
+        "web/publish_short_v405_component/index.html",
+        "web/test_v405_publish_short_simple.py",
+        "docs/architecture/gsf-core-infrastructure.md",
+        "gsf_core/__init__.py",
+        "gsf_core/assets.py",
+        "gsf_core/cache.py",
+        "gsf_core/jobs.py",
+        "gsf_core/storage.py",
+        "gsf_core/telemetry.py",
+        "tests/test_gsf_core_infra.py",
+        ".github/workflows/v407-desktop-shell.yml",
+        "docs/architecture/gsf-desktop-mobile-shell.md",
+        "gsf_project_state.py",
+        "tests/test_gsf_project_state.py",
+        ".github/workflows/v409-alive-notifications.yml",
+        "docs/architecture/gsf-alive-notifications.md",
+        "gsf_alive_notifications.py",
+        "tests/test_gsf_alive_notifications.py",
+        ".github/dependabot.yml",
+        ".github/workflows/v410-security-gate.yml",
+        "constraints-web.txt",
+        "requirements-web.txt",
+        "web/content_memory_v145.py",
+        "web/editor_2027_embed.py",
+        "web/fix_v410_1_edge_identity.py",
+        "web/fix_v410_security_hardening.py",
+        "web/start_secure.sh",
+        "web/test_v105_dependency_lock.py",
+        "web/test_v410_security_hardening.py",
+        "Dockerfile",
+        "web/Dockerfile.worker",
+        "web/fix_v403_creator_hub_simplified.py",
+        "web/test_v403_creator_hub_simplified.py",
+        "web/fix_v411_queue_runtime.py",
+        "web/fix_v411_publish_surface.py",
+        "web/queue_runtime_v411.py",
+        "web/project_state_v157.py",
+        "web/runtime_smoke_v411.py",
+        "tests/test_queue_runtime_v411.py",
+        ".github/workflows/v397-production-gate.yml",
+        ".github/workflows/v411-queue-integration.yml"
+      ],
       "scope": "Consolidated V403-V410 release over V404 build-time materialization and fast startup; exclude obsolete PR116 and preserve PR112/113/117.",
       "state": "completed"
     },
     {
       "branch": "chat/docs-add-claude-md-pointing-agents-to-agents-md--e73cb7",
       "created_at": "2026-10-15T08:54:55+02:00",
-      "evidence": {"files":["CLAUDE.md"],"merge_sha":"caf08569327c91137aa06cbede43b336ff8d7e54","pr":133,"railway":"no runtime change; merged with [skip ci] so no promotion or redeploy","tests":"PR checks all success: production-gate, contracts, security-contract, quality-supreme, semantic-resilience, v400-contract, v402-contract"},
+      "evidence": {
+        "files": [
+          "CLAUDE.md"
+        ],
+        "merge_sha": "caf08569327c91137aa06cbede43b336ff8d7e54",
+        "pr": 133,
+        "railway": "no runtime change; merged with [skip ci] so no promotion or redeploy",
+        "tests": "PR checks all success: production-gate, contracts, security-contract, quality-supreme, semantic-resilience, v400-contract, v402-contract"
+      },
       "id": "docs-add-claude-md-pointing-agents-to-agents-md--e73cb7",
       "owner": "claude-chat",
-      "paths": ["CLAUDE.md"],
+      "paths": [
+        "CLAUDE.md"
+      ],
       "scope": "docs: add CLAUDE.md pointing agents to AGENTS.md and PROJECT_STATUS.md",
       "state": "completed"
     },
@@ -138,97 +406,295 @@
       "created_at": "2026-10-15T09:08:12+02:00",
       "id": "design-add-gsf-mini-design-system-v1-brand-token-409702",
       "owner": "claude-chat",
-      "paths": ["CLAUDE.md","design/brand/**"],
+      "paths": [
+        "CLAUDE.md",
+        "design/brand/**"
+      ],
       "scope": "design: add GSF mini design system v1 (brand tokens, wordmark, usage doc)",
       "state": "active"
     },
     {
       "branch": "chat/ui-apply-gsf-brand-tokens-app-wide-colors-font-r-24fdf3",
       "created_at": "2026-10-15T09:19:24+02:00",
-      "evidence": {"branch":"chat/ui-apply-gsf-brand-tokens-app-wide-colors-font-r-24fdf3","ci":"runs cancelled","last_commit":"7d712b6","pr":135,"pr_state":"closed (draft, never merged)","railway":"untouched","reason":"stopped at owner request before integration"},
+      "evidence": {
+        "branch": "chat/ui-apply-gsf-brand-tokens-app-wide-colors-font-r-24fdf3",
+        "ci": "runs cancelled",
+        "last_commit": "7d712b6",
+        "pr": 135,
+        "pr_state": "closed (draft, never merged)",
+        "railway": "untouched",
+        "reason": "stopped at owner request before integration"
+      },
       "id": "ui-apply-gsf-brand-tokens-app-wide-colors-font-r-24fdf3",
       "owner": "claude-chat",
-      "paths": [".github/workflows/gsf-visual-snapshot.yml","Dockerfile","tests/visual/**","web/fix_v412_brand_tokens.py","web/gsf_brand_tokens_v412.css","web/test_v412_brand_tokens.py"],
+      "paths": [
+        ".github/workflows/gsf-visual-snapshot.yml",
+        "Dockerfile",
+        "tests/visual/**",
+        "web/fix_v412_brand_tokens.py",
+        "web/gsf_brand_tokens_v412.css",
+        "web/test_v412_brand_tokens.py"
+      ],
       "scope": "ui: apply GSF brand tokens app-wide (colors, font, radius, spacing) + CI visual snapshots",
       "state": "abandoned"
     },
     {
       "branch": "chat/ui-pipeline-canonical-mobile-ui-source-of-truth--941ec6",
       "created_at": "2026-10-15T09:28:58+02:00",
-      "evidence": {"merge_sha":"fb0edf871c8fc178c7a4381ff1e15efe7c8730ba","pr":136,"production_check":"public /healthz ok, ui_digest=fbe1875d... == repo digest, release=460102f; /creator-hub/state ok with csrf_token","promotion_commit":"460102f077d8465a345fac45ca43284c30d3bfd6","railway_frontend":"2df871ae-527d-471f-b14c-95fec3d51082 SUCCESS; startup log: GSF UI manifest verify PASS digest=fbe1875dbccfc915d12148f1b57ef833a0f41c1d0b77eac2dc0c4756641eb1c7 files=571","railway_worker":"31b06ef0-a4c1-49c1-95df-8f0b0b7d88f7 SUCCESS","tests":"PR head beed9d0 all 11 checks success incl. production-gate, guard, legacy-equivalence (real Docker: canonical files byte-identical to legacy image); main Production Gate success","unverified":"GSF Production UI Verify workflow did not start (GitHub Actions billing/spending limit); real-browser visual check not performed"},
+      "evidence": {
+        "merge_sha": "fb0edf871c8fc178c7a4381ff1e15efe7c8730ba",
+        "pr": 136,
+        "production_check": "public /healthz ok, ui_digest=fbe1875d... == repo digest, release=460102f; /creator-hub/state ok with csrf_token",
+        "promotion_commit": "460102f077d8465a345fac45ca43284c30d3bfd6",
+        "railway_frontend": "2df871ae-527d-471f-b14c-95fec3d51082 SUCCESS; startup log: GSF UI manifest verify PASS digest=fbe1875dbccfc915d12148f1b57ef833a0f41c1d0b77eac2dc0c4756641eb1c7 files=571",
+        "railway_worker": "31b06ef0-a4c1-49c1-95df-8f0b0b7d88f7 SUCCESS",
+        "tests": "PR head beed9d0 all 11 checks success incl. production-gate, guard, legacy-equivalence (real Docker: canonical files byte-identical to legacy image); main Production Gate success",
+        "unverified": "GSF Production UI Verify workflow did not start (GitHub Actions billing/spending limit); real-browser visual check not performed"
+      },
       "id": "ui-pipeline-canonical-mobile-ui-source-of-truth--941ec6",
       "owner": "claude-chat",
-      "paths": [".github/workflows/**","Dockerfile","app.py","docs/architecture/gsf-canonical-ui.md","tests/test_canonical_ui_pipeline.py","tools/gsf_ui_manifest.py","web/ai_v221_component/index.html","web/app_icons/app-icon.png","web/canonical/**","web/creator_hub_v156_component/index.html","web/direct_upload_server.py","web/editor_2027_component/index.html","web/editor_2027_embed.py","web/gsf_bucket_bridge.py","web/home_v154_component/index.html","web/home_v154_embed.py","web/materialize_runtime_patches.sh","web/nginx.conf.template","web/runtime_smoke_v411.py","web/share_v156_component/index.html","web/start_web.sh","web/start_web_fast.sh","web/start_web_legacy.sh","web/test_v397_production_hardening.py","web/test_v404_fast_startup.py","web/test_v410_security_hardening.py"],
-      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "paths": [
+        ".github/workflows/**",
+        "Dockerfile",
+        "app.py",
+        "docs/architecture/gsf-canonical-ui.md",
+        "tests/test_canonical_ui_pipeline.py",
+        "tools/gsf_ui_manifest.py",
+        "web/ai_v221_component/index.html",
+        "web/app_icons/app-icon.png",
+        "web/canonical/**",
+        "web/creator_hub_v156_component/index.html",
+        "web/direct_upload_server.py",
+        "web/editor_2027_component/index.html",
+        "web/editor_2027_embed.py",
+        "web/gsf_bucket_bridge.py",
+        "web/home_v154_component/index.html",
+        "web/home_v154_embed.py",
+        "web/materialize_runtime_patches.sh",
+        "web/nginx.conf.template",
+        "web/runtime_smoke_v411.py",
+        "web/share_v156_component/index.html",
+        "web/start_web.sh",
+        "web/start_web_fast.sh",
+        "web/start_web_legacy.sh",
+        "web/test_v397_production_hardening.py",
+        "web/test_v404_fast_startup.py",
+        "web/test_v410_security_hardening.py"
+      ],
+      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
       "branch": "chat/cleanup-consolidate-ci-into-one-job-retire-legac-4601da",
       "created_at": "2026-10-15T10:22:33+02:00",
-      "evidence": {"branch":"chat/cleanup-consolidate-ci-into-one-job-retire-legac-4601da","commit":"326cbcc","pr":"https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/142","result":"PR #142 merged; claim branch tree matches merged commit.","tests":["GSF CI contracts: SUCCESS","GSF Production Gate: SUCCESS","git diff --stat 326cbcc..ee5bc70: empty"]},
+      "evidence": {
+        "branch": "chat/cleanup-consolidate-ci-into-one-job-retire-legac-4601da",
+        "commit": "326cbcc",
+        "pr": "https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/142",
+        "result": "PR #142 merged; claim branch tree matches merged commit.",
+        "tests": [
+          "GSF CI contracts: SUCCESS",
+          "GSF Production Gate: SUCCESS",
+          "git diff --stat 326cbcc..ee5bc70: empty"
+        ]
+      },
       "id": "cleanup-consolidate-ci-into-one-job-retire-legac-4601da",
       "owner": "claude-chat",
-      "paths": [".dockerignore",".github/**","Dockerfile","README.md","README_RAILWAY.txt","README_WEB.txt","app.py","docs/architecture/gsf-canonical-ui.md","scripts/**","tests/**","tools/test_*.py","web/**"],
+      "paths": [
+        ".dockerignore",
+        ".github/**",
+        "Dockerfile",
+        "README.md",
+        "README_RAILWAY.txt",
+        "README_WEB.txt",
+        "app.py",
+        "docs/architecture/gsf-canonical-ui.md",
+        "scripts/**",
+        "tests/**",
+        "tools/test_*.py",
+        "web/**"
+      ],
       "scope": "cleanup: consolidate CI into one job, retire legacy workflows/scripts/tests, trim Dependabot, freeze audit",
       "state": "completed"
     },
     {
       "branch": "chat/design-the-canonical-2026-mobile-game-editor-and-e96164",
       "created_at": "2026-10-15T09:31:24+00:00",
-      "evidence": {"commit":"bcf462b","note":"Design spec approved by user; transitioning to implementation plan.","terminal_status":"HANDOFF_REQUIRED","tests":{"spec_self_review":"PASS"}},
+      "evidence": {
+        "commit": "bcf462b",
+        "note": "Design spec approved by user; transitioning to implementation plan.",
+        "terminal_status": "HANDOFF_REQUIRED",
+        "tests": {
+          "spec_self_review": "PASS"
+        }
+      },
       "id": "design-the-canonical-2026-mobile-game-editor-and-e96164",
       "owner": "chat/design-the-canonical-2026-mobile-game-editor-and-e96164",
-      "paths": ["docs/superpowers/specs/2026-10-15-mobile-game-editor-2026-design.md"],
+      "paths": [
+        "docs/superpowers/specs/2026-10-15-mobile-game-editor-2026-design.md"
+      ],
       "scope": "Design the canonical 2026 mobile Game Editor and IA-to-Editor-to-Crea-Shorts flow",
       "state": "completed"
     },
     {
       "branch": "chat/plan-the-canonical-2026-mobile-game-editor-imple-17a691",
       "created_at": "2026-10-15T09:38:22+00:00",
-      "evidence": {"branch":"chat/plan-the-canonical-2026-mobile-game-editor-imple-17a691","commit":"208ab4d","result":"Implementation plan written, self-reviewed, committed, and pushed; no product files changed.","tests":["git diff --check"]},
+      "evidence": {
+        "branch": "chat/plan-the-canonical-2026-mobile-game-editor-imple-17a691",
+        "commit": "208ab4d",
+        "result": "Implementation plan written, self-reviewed, committed, and pushed; no product files changed.",
+        "tests": [
+          "git diff --check"
+        ]
+      },
       "id": "plan-the-canonical-2026-mobile-game-editor-imple-17a691",
       "owner": "chat/plan-the-canonical-2026-mobile-game-editor-imple-17a691",
-      "paths": ["docs/superpowers/plans/2026-10-15-mobile-game-editor-2026.md","docs/superpowers/specs/2026-10-15-mobile-game-editor-2026-design.md"],
+      "paths": [
+        "docs/superpowers/plans/2026-10-15-mobile-game-editor-2026.md",
+        "docs/superpowers/specs/2026-10-15-mobile-game-editor-2026-design.md"
+      ],
       "scope": "Plan the canonical 2026 mobile Game Editor implementation",
       "state": "completed"
     },
     {
       "branch": "chat/feat-canonical-mobile-game-editor-2026-with-ai-f-c38434",
       "created_at": "2026-10-15T09:48:54+00:00",
-      "evidence": {"closed_by":"owner-authorized handoff to ai-engines chat after merge","gate":"success","gate_main_run":38741480103,"merge_sha":"74fc1a3259c1f19858c54e09adec4f778411b49e","pr":146,"promotion":"bcfe40e32d5165998569e11257e998ae68a0bb5f","railway_frontend":"baaed85b-58f4-4a87-8cbe-594eaddd9b02 SUCCESS","railway_worker":"not redeployed (worker marker unchanged)","ui_verify":"release bcfe40e serves digest c0d117f0, pages byte-identical, Home 200, creator-hub/state 200 + CSRF","ui_verify_run":38742178354},
+      "evidence": {
+        "closed_by": "owner-authorized handoff to ai-engines chat after merge",
+        "gate": "success",
+        "gate_main_run": 38741480103,
+        "merge_sha": "74fc1a3259c1f19858c54e09adec4f778411b49e",
+        "pr": 146,
+        "promotion": "bcfe40e32d5165998569e11257e998ae68a0bb5f",
+        "railway_frontend": "baaed85b-58f4-4a87-8cbe-594eaddd9b02 SUCCESS",
+        "railway_worker": "not redeployed (worker marker unchanged)",
+        "ui_verify": "release bcfe40e serves digest c0d117f0, pages byte-identical, Home 200, creator-hub/state 200 + CSRF",
+        "ui_verify_run": 38742178354
+      },
       "id": "feat-canonical-mobile-game-editor-2026-with-ai-f-c38434",
       "owner": "chat/feat-canonical-mobile-game-editor-2026-with-ai-f-c38434",
-      "paths": [".github/workflows/gsf-ci.yml",".github/workflows/v397-production-gate.yml","PROJECT_STATUS.md","app.py","docs/superpowers/plans/2026-10-15-mobile-game-editor-2026.md","docs/superpowers/specs/2026-10-15-mobile-game-editor-2026-design.md","tests/js/mobile_game_editor_state.test.mjs","tests/test_canonical_ui_pipeline.py","tests/test_mobile_game_editor_2026.py","tests/test_mobile_game_editor_state.py","tests/visual/gsf_visual_check.py","tools/gsf_ui_manifest.py","web/ai_v221_component/index.html","web/direct_upload_server.py","web/game_editor_mobile_component/**","web/nginx.conf.template","web/runtime_smoke_v411.py"],
+      "paths": [
+        ".github/workflows/gsf-ci.yml",
+        ".github/workflows/v397-production-gate.yml",
+        "PROJECT_STATUS.md",
+        "app.py",
+        "docs/superpowers/plans/2026-10-15-mobile-game-editor-2026.md",
+        "docs/superpowers/specs/2026-10-15-mobile-game-editor-2026-design.md",
+        "tests/js/mobile_game_editor_state.test.mjs",
+        "tests/test_canonical_ui_pipeline.py",
+        "tests/test_mobile_game_editor_2026.py",
+        "tests/test_mobile_game_editor_state.py",
+        "tests/visual/gsf_visual_check.py",
+        "tools/gsf_ui_manifest.py",
+        "web/ai_v221_component/index.html",
+        "web/direct_upload_server.py",
+        "web/game_editor_mobile_component/**",
+        "web/nginx.conf.template",
+        "web/runtime_smoke_v411.py"
+      ],
       "scope": "feat: canonical mobile Game Editor 2026 with AI, fullscreen gestures, persistence, and publication gates",
       "state": "completed"
     },
     {
       "branch": "chat/stability-home-hub-parent-observers-freeze-probe-21f49e",
       "created_at": "2026-10-15T14:27:26+02:00",
-      "evidence": {"commit":"8846ec25bb339f66c86e945f9cb72ae5ecc1a522","freeze_probe":"40 steps hub/projects/live/profile/home: no hang, 17 observers constant","gate":"GSF Production Gate success run 38737973060; promoted c46731e","prs":["#143","#144","#145"],"railway":"frontend deployment 64fd383f SUCCESS; /healthz ok, release c46731e, ui_digest 1b6c8c28 == main; /creator-hub/state 200; worker SLEEPING (sleep mode)","tests":"canonical UI guard, V397, V403, V404, V407 local; GSF CI contracts green on #144/#145; WebKit visual check + layout probe on branch","unresolved":"app.py (Game Editor claim): Hub ghost header div.gsf-page-brand-v250, Hub overlay frame top 32px so its ad sits under the Game Bar, raw <code> editor overlay markup rendered on top page, V348/V350/V351 footer observer cleanup, st.components.v1.html deprecation"},
+      "evidence": {
+        "commit": "8846ec25bb339f66c86e945f9cb72ae5ecc1a522",
+        "freeze_probe": "40 steps hub/projects/live/profile/home: no hang, 17 observers constant",
+        "gate": "GSF Production Gate success run 38737973060; promoted c46731e",
+        "prs": [
+          "#143",
+          "#144",
+          "#145"
+        ],
+        "railway": "frontend deployment 64fd383f SUCCESS; /healthz ok, release c46731e, ui_digest 1b6c8c28 == main; /creator-hub/state 200; worker SLEEPING (sleep mode)",
+        "tests": "canonical UI guard, V397, V403, V404, V407 local; GSF CI contracts green on #144/#145; WebKit visual check + layout probe on branch",
+        "unresolved": "app.py (Game Editor claim): Hub ghost header div.gsf-page-brand-v250, Hub overlay frame top 32px so its ad sits under the Game Bar, raw <code> editor overlay markup rendered on top page, V348/V350/V351 footer observer cleanup, st.components.v1.html deprecation"
+      },
       "id": "stability-home-hub-parent-observers-freeze-probe-21f49e",
       "owner": "claude-chat",
-      "paths": [".github/workflows/gsf-visual-check.yml","README.md","README_RAILWAY.txt","README_WEB.txt","scripts/**","src_payload/**","tests/visual/gsf_freeze_probe.py","tests/visual/gsf_layout_probe.py","web/apply_v*","web/audit_*","web/creator_hub_v156_component/index.html","web/diagnose_*","web/fix_v*","web/home_v154_component/index.html","web/inspect_*","web/test_editor_2027_component.py","web/test_mobile_*","web/test_tiktok_site_verification.py","web/test_v1*","web/test_v2*","web/test_v3*","web/test_v4*","web/test_v8*","web/test_v9*"],
+      "paths": [
+        ".github/workflows/gsf-visual-check.yml",
+        "README.md",
+        "README_RAILWAY.txt",
+        "README_WEB.txt",
+        "scripts/**",
+        "src_payload/**",
+        "tests/visual/gsf_freeze_probe.py",
+        "tests/visual/gsf_layout_probe.py",
+        "web/apply_v*",
+        "web/audit_*",
+        "web/creator_hub_v156_component/index.html",
+        "web/diagnose_*",
+        "web/fix_v*",
+        "web/home_v154_component/index.html",
+        "web/inspect_*",
+        "web/test_editor_2027_component.py",
+        "web/test_mobile_*",
+        "web/test_tiktok_site_verification.py",
+        "web/test_v1*",
+        "web/test_v2*",
+        "web/test_v3*",
+        "web/test_v4*",
+        "web/test_v8*",
+        "web/test_v9*"
+      ],
       "scope": "stability: home/hub parent observers, freeze probe in visual check, retire unused legacy scripts/payload/tests (non-editor, non-app.py); mobile layout probe + Home/Hub Game Bar overlap",
       "state": "completed"
     },
     {
       "branch": "chat/ui-ai-holographic-ai-engines-page-real-results-b-eada74",
       "created_at": "2026-10-15T15:36:16+02:00",
-      "evidence": {"commit":"cd25ce33ea8b89af8f4857e8e315100bf8dec1a2","gate":"promoted f28a38b6b174","gate_main_run":38752227187,"merge_sha":"cd25ce33ea8b89af8f4857e8e315100bf8dec1a2","note":"closed by owner-authorized handoff: work merged, branch deleted, no open PR; owning chat did not finish the claim","pr":"#147","promotion":"f28a38b6b174cfd9aa1dc027315b96a530837ed1","railway":"frontend SUCCESS; /healthz release f28a38b, ui_digest 3023c491 == repo","railway_frontend":"3e2c45ff-e010-4a63-8302-a2676b13fc6e SUCCESS","railway_worker":"not redeployed (marker unchanged)","tests":"local: V397,V410,V404,V412,V405,V407,V403 PASS; tests/ 36 passed (test_gsf_core_infra not run locally, pytest unavailable); PR CI contracts + Production Gate success","ui_verify":"release f28a38b serves digest 3023c491 == repo, pages byte-identical, Home 200, creator-hub/state 200 + CSRF","ui_verify_run":38752986530,"unverified":"no real end-to-end AI run on production with an uploaded video yet"},
+      "evidence": {
+        "commit": "cd25ce33ea8b89af8f4857e8e315100bf8dec1a2",
+        "gate": "promoted f28a38b6b174",
+        "gate_main_run": 38752227187,
+        "merge_sha": "cd25ce33ea8b89af8f4857e8e315100bf8dec1a2",
+        "note": "closed by owner-authorized handoff: work merged, branch deleted, no open PR; owning chat did not finish the claim",
+        "pr": "#147",
+        "promotion": "f28a38b6b174cfd9aa1dc027315b96a530837ed1",
+        "railway": "frontend SUCCESS; /healthz release f28a38b, ui_digest 3023c491 == repo",
+        "railway_frontend": "3e2c45ff-e010-4a63-8302-a2676b13fc6e SUCCESS",
+        "railway_worker": "not redeployed (marker unchanged)",
+        "tests": "local: V397,V410,V404,V412,V405,V407,V403 PASS; tests/ 36 passed (test_gsf_core_infra not run locally, pytest unavailable); PR CI contracts + Production Gate success",
+        "ui_verify": "release f28a38b serves digest 3023c491 == repo, pages byte-identical, Home 200, creator-hub/state 200 + CSRF",
+        "ui_verify_run": 38752986530,
+        "unverified": "no real end-to-end AI run on production with an uploaded video yet"
+      },
       "id": "ui-ai-holographic-ai-engines-page-real-results-b-eada74",
       "owner": "chat/ui-ai-holographic-ai-engines-page-real-results-b-eada74",
-      "paths": [".github/workflows/gsf-ci.yml","PROJECT_STATUS.md","app.py","web/ai_engines_v412.py","web/ai_v221_component/index.html","web/direct_upload_server.py","web/home_v154_component/index.html","web/test_v404_crea_con_ia_simple.py","web/test_v412_ai_engines.py"],
+      "paths": [
+        ".github/workflows/gsf-ci.yml",
+        "PROJECT_STATUS.md",
+        "app.py",
+        "web/ai_engines_v412.py",
+        "web/ai_v221_component/index.html",
+        "web/direct_upload_server.py",
+        "web/home_v154_component/index.html",
+        "web/test_v404_crea_con_ia_simple.py",
+        "web/test_v412_ai_engines.py"
+      ],
       "scope": "ui+ai: holographic AI engines page, real results bridge, per-engine cache, Cambia short",
       "state": "completed"
     },
     {
       "branch": "chat/editor-open-the-canonical-game-editor-2026-insid-28bd71",
       "created_at": "2026-10-15T16:45:52+02:00",
-      "evidence": {"commit":"0cc1e4c4c025d60f5d230a5b77630beba9216e03","gate":"main Production Gate run 38756150965 success; promoted 84a42d5","pr":"#148","railway":"frontend deployment 666e1ded SUCCESS; /healthz ok release 84a42d5, ui_digest 300da020 == repo; /creator-hub/state ok with csrf_token","tests":"tests/test_mobile_editor_in_app.py new; canonical UI guard, Game Editor 2026/state tests, V397/V403/V404/V405/V407 local; GSF CI contracts + PR gate green","unresolved":"pre-existing pageerror Unexpected identifier Avenir (also on main); Hub ghost V250 header and Hub frame top 32px; no real-device Safari pass","visual":"WebKit iPhone 13 visual check on branch: in-app Editor = Game Editor 2026 (was legacy FRAME/CAPTION/LOOK); observer growth 0.0"},
+      "evidence": {
+        "commit": "0cc1e4c4c025d60f5d230a5b77630beba9216e03",
+        "gate": "main Production Gate run 38756150965 success; promoted 84a42d5",
+        "pr": "#148",
+        "railway": "frontend deployment 666e1ded SUCCESS; /healthz ok release 84a42d5, ui_digest 300da020 == repo; /creator-hub/state ok with csrf_token",
+        "tests": "tests/test_mobile_editor_in_app.py new; canonical UI guard, Game Editor 2026/state tests, V397/V403/V404/V405/V407 local; GSF CI contracts + PR gate green",
+        "unresolved": "pre-existing pageerror Unexpected identifier Avenir (also on main); Hub ghost V250 header and Hub frame top 32px; no real-device Safari pass",
+        "visual": "WebKit iPhone 13 visual check on branch: in-app Editor = Game Editor 2026 (was legacy FRAME/CAPTION/LOOK); observer growth 0.0"
+      },
       "id": "editor-open-the-canonical-game-editor-2026-insid-28bd71",
       "owner": "chat/editor-open-the-canonical-game-editor-2026-insid-28bd71",
-      "paths": ["app.py","tests/test_mobile_editor_in_app.py"],
+      "paths": [
+        "app.py",
+        "tests/test_mobile_editor_in_app.py"
+      ],
       "scope": "editor: open the canonical Game Editor 2026 inside the mobile app (V220 overlay rendered as text, V343 shell loads legacy editor)",
       "state": "completed"
     },
@@ -237,7 +703,18 @@
       "created_at": "2026-10-15T16:46:14+02:00",
       "id": "publish-new-crea-short-multi-publish-page-v413-s-3882dd",
       "owner": "chat/publish-new-crea-short-multi-publish-page-v413-s-3882dd",
-      "paths": [".github/workflows/gsf-ci.yml","web/direct_upload_server.py","web/nginx.conf.template","web/publish_multi_v413.py","web/runtime_smoke_v411.py","web/share_v156_component/**","web/test_v396_mobile_share_publish_surface.py","web/test_v397_production_hardening.py","web/test_v405_publish_short_simple.py","web/test_v413_publish_multi.py"],
+      "paths": [
+        ".github/workflows/gsf-ci.yml",
+        "web/direct_upload_server.py",
+        "web/nginx.conf.template",
+        "web/publish_multi_v413.py",
+        "web/runtime_smoke_v411.py",
+        "web/share_v156_component/**",
+        "web/test_v396_mobile_share_publish_surface.py",
+        "web/test_v397_production_hardening.py",
+        "web/test_v405_publish_short_simple.py",
+        "web/test_v413_publish_multi.py"
+      ],
       "scope": "publish: new Crea Short multi-publish page V413 (share page + /publish/multi backend)",
       "state": "active"
     },
@@ -246,18 +723,43 @@
       "created_at": "2026-10-15T17:12:02+02:00",
       "id": "mobile-polish-hub-ghost-v250-header-hub-frame-un-f12d0f",
       "owner": "chat/mobile-polish-hub-ghost-v250-header-hub-frame-un-f12d0f",
-      "paths": ["app.py","tests/test_mobile_polish_shell.py","tests/visual/gsf_layout_probe.py","web/ai_v221_component/index.html","web/creator_hub_v156_component/index.html","web/game_editor_mobile_component/editor.css","web/home_v154_component/index.html"],
+      "paths": [
+        "app.py",
+        "tests/test_mobile_polish_shell.py",
+        "tests/visual/gsf_layout_probe.py",
+        "web/ai_v221_component/index.html",
+        "web/creator_hub_v156_component/index.html",
+        "web/game_editor_mobile_component/editor.css",
+        "web/home_v154_component/index.html"
+      ],
       "scope": "mobile polish: Hub ghost V250 header, Hub frame under Game Bar, Avenir page error, whiter page background",
       "state": "active"
     },
     {
       "branch": "chat/gaming-overlay-editor-v414-7c2a9e",
       "created_at": "2026-10-15T17:25:00+02:00",
+      "evidence": {
+        "commit": "154eac800622",
+        "gate": "main Production Gate 38790231577 SUCCESS (4049bb7), 38792712945 SUCCESS (154eac8)",
+        "pr": "#149 (4049bb7), #150 (154eac8)",
+        "railway": "frontend cb0bff7b SUCCESS release 36ff303 digest b3a16c29; healthz 200; Production UI Verify 38793356058 SUCCESS; worker SLEEPING (unchanged)",
+        "tests": "V414/mobile editor/canonical UI python contracts, node JS tests 16/16, gate check_mobile_editor sequence in Chromium iPhone 13 + desktop; WebKit via Production Gate"
+      },
       "id": "gaming-overlay-editor-v414-7c2a9e",
       "owner": "chat/gaming-overlay-editor-v414-7c2a9e",
-      "paths": ["PROJECT_STATUS.md","docs/superpowers/specs/2026-10-15-gaming-overlay-editor-v414-design.md","docs/superpowers/plans/2026-10-15-gaming-overlay-editor-v414.md","tests/js/gaming_overlay_editor_v414_state.test.mjs","tests/test_gaming_overlay_editor_v414.py","web/game_editor_mobile_component/index.html","web/game_editor_mobile_component/editor.mjs","web/game_editor_mobile_component/editor_state.mjs","web/game_editor_mobile_component/overlay_v414.css"],
+      "paths": [
+        "PROJECT_STATUS.md",
+        "docs/superpowers/plans/2026-10-15-gaming-overlay-editor-v414.md",
+        "docs/superpowers/specs/2026-10-15-gaming-overlay-editor-v414-design.md",
+        "tests/js/gaming_overlay_editor_v414_state.test.mjs",
+        "tests/test_gaming_overlay_editor_v414.py",
+        "web/game_editor_mobile_component/editor.mjs",
+        "web/game_editor_mobile_component/editor_state.mjs",
+        "web/game_editor_mobile_component/index.html",
+        "web/game_editor_mobile_component/overlay_v414.css"
+      ],
       "scope": "editor: rebuild canonical Game Editor as video-first glass gaming overlay with realtime AI camera controls",
-      "state": "active"
+      "state": "completed"
     }
   ],
   "version": 1
