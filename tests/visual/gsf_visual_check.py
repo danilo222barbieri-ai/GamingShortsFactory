@@ -112,6 +112,14 @@ def check_mobile_editor(ctx, metrics):
     page.evaluate("() => window.postMessage({type: 'GSF_GAME_EDITOR_SHELL_CLOSE'}, location.origin)")
     page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'false'")
 
+    # V414 deliberately returns to the safe mini-player after shell/fullscreen close.
+    # Re-enter edit mode before exercising direct-manipulation gestures; gestures in
+    # mini mode are intentionally ignored to prevent accidental edits while viewing.
+    page.wait_for_function("() => document.querySelector('#gameEditorApp').classList.contains('is-mini')")
+    page.locator("#enterEditorButton").click()
+    page.wait_for_function("() => document.querySelector('#gameEditorApp').classList.contains('is-expanded')")
+    page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'true'")
+
     page.evaluate(
         """() => {
           const stage = document.querySelector('#previewStage');
