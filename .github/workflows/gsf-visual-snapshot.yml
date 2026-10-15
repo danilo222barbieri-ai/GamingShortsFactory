@@ -1,0 +1,89 @@
+name: GSF Visual Snapshot
+
+# Builds the frontend image, runs it, and captures screenshots (mobile +
+# desktop) of the live app and of every UI component, plus the materialized UI
+# files. Read-only: never promotes, never touches .railway/ markers.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'web/**'
+      - 'Dockerfile'
+      - 'design/brand/**'
+      - 'tests/visual/**'
+      - '.github/workflows/gsf-visual-snapshot.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gsf-visual-snapshot-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build frontend image
+        run: |
+          set -o pipefail
+          if docker build --progress=plain -t gsf-visual:${{ github.sha }} . 2>&1 | tee /tmp/build.log; then
+            exit 0
+          fi
+          if grep -Eq '429 Too Many Requests|Data limit exceeded' /tmp/build.log \
+             && grep -q 'public.ecr.aws/docker/library/python' /tmp/build.log; then
+            cp Dockerfile /tmp/Dockerfile.visual
+            sed -i '1s#^FROM public.ecr.aws/docker/library/python:3.12-slim$#FROM python:3.12-slim#' /tmp/Dockerfile.visual
+            docker build --progress=plain -f /tmp/Dockerfile.visual -t gsf-visual:${{ github.sha }} .
+          else
+            exit 1
+          fi
+
+      - name: Start frontend
+        run: |
+          docker run -d --name gsf-visual \
+            -e PORT=8080 -e GSF_WEB_MODE=1 -e GSF_LOW_MEMORY_WEB=1 \
+            -e GSF_DATA_ENCRYPTION_KEY=visual-ci-only-key \
+            -e GSF_CSRF_SECRET=visual-ci-only-csrf \
+            -p 18080:8080 gsf-visual:${{ github.sha }}
+          for i in $(seq 1 120); do
+            [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18080/healthz)" = "200" ] && exit 0
+            sleep 2
+          done
+          docker logs gsf-visual | tail -50
+          exit 1
+
+      - name: Export materialized UI files
+        run: |
+          mkdir -p /tmp/gsf-ui
+          docker cp gsf-visual:/app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py /tmp/gsf-ui/
+          for d in $(docker exec gsf-visual sh -c 'ls -d /app/web/*_component'); do
+            docker cp "gsf-visual:$d" /tmp/gsf-ui/
+          done
+          docker exec gsf-visual sh -c 'cd /app/web && ls *.css *.html 2>/dev/null' > /tmp/gsf-ui/web-static-files.txt || true
+          for f in $(cat /tmp/gsf-ui/web-static-files.txt); do docker cp "gsf-visual:/app/web/$f" /tmp/gsf-ui/ || true; done
+          ls -la /tmp/gsf-ui
+
+      - name: Screenshots
+        run: |
+          python -m pip install -q playwright==1.55.0
+          python -m playwright install --with-deps chromium >/dev/null
+          python tests/visual/snapshot.py http://127.0.0.1:18080 /tmp/gsf-ui /tmp/gsf-shots
+
+      - name: Upload snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gsf-visual-snapshot
+          path: |
+            /tmp/gsf-shots
+            /tmp/gsf-ui
+          retention-days: 14
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f gsf-visual || true
