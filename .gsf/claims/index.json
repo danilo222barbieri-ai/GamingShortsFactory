@@ -486,7 +486,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -608,8 +608,13 @@
         "web/fix_v*",
         "web/home_v154_component/index.html",
         "web/inspect_*",
+        "web/test_editor_2027_component.py",
+        "web/test_mobile_*",
+        "web/test_tiktok_site_verification.py",
         "web/test_v1*",
         "web/test_v2*",
+        "web/test_v3*",
+        "web/test_v4*",
         "web/test_v8*",
         "web/test_v9*"
       ],
