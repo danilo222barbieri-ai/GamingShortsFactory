@@ -446,6 +446,16 @@
     {
       "branch": "chat/ui-pipeline-canonical-mobile-ui-source-of-truth--941ec6",
       "created_at": "2026-10-15T09:28:58+02:00",
+      "evidence": {
+        "merge_sha": "fb0edf871c8fc178c7a4381ff1e15efe7c8730ba",
+        "pr": 136,
+        "production_check": "public /healthz ok, ui_digest=fbe1875d... == repo digest, release=460102f; /creator-hub/state ok with csrf_token",
+        "promotion_commit": "460102f077d8465a345fac45ca43284c30d3bfd6",
+        "railway_frontend": "2df871ae-527d-471f-b14c-95fec3d51082 SUCCESS; startup log: GSF UI manifest verify PASS digest=fbe1875dbccfc915d12148f1b57ef833a0f41c1d0b77eac2dc0c4756641eb1c7 files=571",
+        "railway_worker": "31b06ef0-a4c1-49c1-95df-8f0b0b7d88f7 SUCCESS",
+        "tests": "PR head beed9d0 all 11 checks success incl. production-gate, guard, legacy-equivalence (real Docker: canonical files byte-identical to legacy image); main Production Gate success",
+        "unverified": "GSF Production UI Verify workflow did not start (GitHub Actions billing/spending limit); real-browser visual check not performed"
+      },
       "id": "ui-pipeline-canonical-mobile-ui-source-of-truth--941ec6",
       "owner": "claude-chat",
       "paths": [
@@ -476,8 +486,8 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
-      "state": "active"
+      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "state": "completed"
     }
   ],
   "version": 1
