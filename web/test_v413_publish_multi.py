@@ -163,5 +163,10 @@ for token in ("V413_CREA_SHORT", "/publish/multi", "/publish/status", "/share/li
     check(token in page, "page contract missing: " + token)
 check("innerHTML=r." not in page and "innerHTML='<span" not in page, "server strings must not be injected as HTML")
 check(page.count("<script") == 1, "single self-contained script")
+for token in ("V414_CREA_SHORT_MURALS", 'class="orbit"', 'class="scribble m1"', 'id="sheet-texts"', 'id="sheet-share"', 'id="sheet-save"', 'id="sheet-results"', "GSF_HEADER_CANVAS"):
+    check(token in page, "V414 mural page contract missing: " + token)
+for token in ("V414_SHELL_SAFE_AREA", "gsf-global-gamebar", "gsf-global-header", "gsf-global-footer", "var(--shell-bottom,0px)"):
+    check(token in page, "page must stay clear of the app header/Game Bar/footer: " + token)
+check("Un solo tocco" not in page, "owner asked to remove the mural between Instagram and the cards")
 
 print("V413 PUBLISH MULTI CONTRACT: PASS")

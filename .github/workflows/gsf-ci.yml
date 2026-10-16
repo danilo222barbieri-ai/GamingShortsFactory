@@ -56,6 +56,7 @@ jobs:
           python web/test_v413_publish_multi.py
           python web/test_v407_desktop_mobile_shell.py
           python web/test_v403_creator_hub_simplified.py
+          python tests/test_creator_hub_redesign_v415.py
 
       - name: AI, render and worker contracts
         run: |

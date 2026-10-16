@@ -1,0 +1,27 @@
+{
+  "branch": "chat/ui-editor-home-style-light-glass-for-the-in-play-1d798f",
+  "created_at": "2026-10-16T00:32:53+02:00",
+  "evidence": {
+    "lifecycle_handoff": {
+      "authorization": "Owner explicitly approved transfer of these two files in stability chat on 2026-10-16, preserving the integrated editor restyle.",
+      "paths": [
+        "web/game_editor_mobile_component/editor.mjs",
+        "tests/test_mobile_game_editor_2026.py"
+      ],
+      "to": "stability-unified-navigation-and-mobile-resume-l-395391"
+    }
+  },
+  "id": "ui-editor-home-style-light-glass-for-the-in-play-1d798f",
+  "owner": "chat/ui-editor-home-style-light-glass-for-the-in-play-1d798f",
+  "paths": [
+    "tests/test_gsf_editor_home_style.py",
+    "web/game_editor_mobile_component/editor.css",
+    "web/game_editor_mobile_component/editor_state.mjs",
+    "web/game_editor_mobile_component/home_style_v416.css",
+    "web/game_editor_mobile_component/index.html",
+    "web/game_editor_mobile_component/overlay_v414.css",
+    "web/game_editor_mobile_component/overlay_v414.mjs"
+  ],
+  "scope": "ui(editor): Home-style light glass for the in-player mobile Game Editor; Crea Short action in mini mode",
+  "state": "active"
+}

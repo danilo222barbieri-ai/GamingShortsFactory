@@ -785,6 +785,13 @@
     {
       "branch": "chat/ci-production-gate-promotes-against-last-promote-decf76",
       "created_at": "2026-10-15T22:09:46+02:00",
+      "evidence": {
+        "pr": "#154",
+        "proof": "#134 docs-only merge a1a6728: gate promoted frontend+worker from their markers (fea4f52)",
+        "railway": "frontend 86c2e3ac SUCCESS, worker dbf3c9ee deployed then SLEEPING (expected)",
+        "tests": "tests/test_gate_promotion_diff.py fails on old step, passes on new; PR CI + gate success",
+        "ui_verify": "success on fea4f52"
+      },
       "id": "ci-production-gate-promotes-against-last-promote-decf76",
       "owner": "chat/ci-production-gate-promotes-against-last-promote-decf76",
       "paths": [
@@ -792,11 +799,22 @@
         "tests/test_gate_promotion_diff.py"
       ],
       "scope": "ci: Production Gate promotes against last promoted marker, not only last push",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/ui-crea-con-ia-in-home-mural-style-big-circle-or-e0c710",
       "created_at": "2026-10-15T22:36:22+02:00",
+      "evidence": {
+        "gate": "success",
+        "merge_sha": "b515c5f34cc0087dc7f8173fcf758c1986e66ded",
+        "pr": 155,
+        "promotion": "9c04f10436694e557ec3261c32efc28f8de457bf",
+        "railway_frontend": "857af3ea-042d-4463-8928-ee849b6c151f SUCCESS",
+        "tests": "local V404,V412,V397,V410 PASS; tests/ 58 passed (test_gsf_core_infra not run locally, no pytest); PR contracts + production-gate success",
+        "ui_verify": "release 9c04f10 serves digest d50c4044 == repo, pages byte-identical, Home 200, creator-hub/state 200 + CSRF",
+        "ui_verify_run": 38817687407,
+        "unverified": "no end-to-end AI run with a real uploaded video on production"
+      },
       "id": "ui-crea-con-ia-in-home-mural-style-big-circle-or-e0c710",
       "owner": "chat/ui-crea-con-ia-in-home-mural-style-big-circle-or-e0c710",
       "paths": [
@@ -806,25 +824,147 @@
         "web/test_v412_ai_engines.py"
       ],
       "scope": "ui: Crea con IA in Home mural style (big circle, orbiting engines, portal shorts)",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/stability-unified-navigation-and-mobile-resume-l-395391",
       "created_at": "2026-10-15T21:07:33+00:00",
+      "evidence": {
+        "editor_handoff": {
+          "authorization": "Owner explicitly approved transfer of these two files in stability chat on 2026-10-16, preserving the integrated editor restyle.",
+          "paths": [
+            "web/game_editor_mobile_component/editor.mjs",
+            "tests/test_mobile_game_editor_2026.py"
+          ],
+          "to": "stability-unified-navigation-and-mobile-resume-l-395391"
+        }
+      },
       "id": "stability-unified-navigation-and-mobile-resume-l-395391",
       "owner": "chat/stability-unified-navigation-and-mobile-resume-l-395391",
       "paths": [
         "app.py",
         "docs/architecture/gsf-navigation-lifecycle.md",
+        "tests/test_canonical_ui_pipeline.py",
+        "tests/test_mobile_game_editor_2026.py",
         "tests/test_mobile_resume_stability.py",
         "tests/test_navigation_stability.py",
         "tests/visual/gsf_navigation_stress.py",
-        "web/creator_hub_v156_component/index.html",
-        "web/game_editor_mobile_component/**",
+        "tests/visual/gsf_visual_check.py",
+        "web/editor_2027_component/index.html",
+        "web/game_editor_mobile_component/editor.mjs",
         "web/gsf_navigation_lifecycle.js",
-        "web/home_v154_component/index.html"
+        "web/home_v154_component/index.html",
+        "web/install_adsense_bridge.py",
+        "web/test_v302_global_live_gamebar.py"
       ],
-      "scope": "stability: unified navigation and mobile resume lifecycle root cause",
+      "scope": "stability: unified navigation and mobile resume lifecycle root cause; web/creator_hub_v156_component/index.html released by owner-authorized priority to the Creator Hub redesign (2026-10-16); rebase on it before touching the Hub again; web/game_editor_mobile_component/** and tests/test_mobile_game_editor_2026.py released by owner-authorized priority to the in-player Home-style editor restyle (2026-10-16); rebase on it before touching the mobile editor again",
+      "state": "active"
+    },
+    {
+      "branch": "chat/ui-creator-hub-redesign-social-status-row-counte-92c367",
+      "created_at": "2026-10-16T00:23:12+02:00",
+      "evidence": {
+        "commit": "58762de6a7c807720a0f47a61851c8f2dbbbc85d",
+        "gate": "main run 38818632289 cancelled by #156 push; run 38818872801 on a942adb success; promotion 7298444 (owner-requested, coord-only commits after a942adb)",
+        "pr": 157,
+        "railway": "frontend 6e36f303-a5f3-4fb6-8511-1ecded777754 SUCCESS, release=7298444, manifest digest ed479e93 == repo at 7298444; /healthz, /creator-hub-v156/, /creator-hub/state 200",
+        "tests": "test_creator_hub_redesign_v415, canonical UI pipeline, V397, V410, V404, V412, V405, V413, V407, V403, mobile polish: PASS; PR CI contracts + production-gate success"
+      },
+      "id": "ui-creator-hub-redesign-social-status-row-counte-92c367",
+      "owner": "chat/ui-creator-hub-redesign-social-status-row-counte-92c367",
+      "paths": [
+        ".github/workflows/gsf-ci.yml",
+        "tests/test_creator_hub_redesign_v415.py",
+        "web/creator_hub_v156_component/index.html",
+        "web/direct_upload_server.py"
+      ],
+      "scope": "ui: Creator Hub redesign - social status row, counters, draft/short actions, settings page",
+      "state": "completed"
+    },
+    {
+      "branch": "chat/ui-crea-short-page-in-home-mural-style-rings-soc-85dd91",
+      "created_at": "2026-10-16T00:23:38+02:00",
+      "evidence": {
+        "merge": "a942adb8dd97b0cee6834bd357ebd3bca2bdf314",
+        "pr": "#156",
+        "railway": "frontend 6e36f303 SUCCESS via owner-requested marker 7298444 (gate promotion skipped: coord commit landed mid-run)",
+        "tests": "test_v413 (V414 contract + shell safe area) PASS, V397 PASS, Chromium 390x680/360x560/1280x640 + mock shell full/bounded 844/667; PR CI + gate success; main gate 38818872801 success",
+        "ui_verify": "38819775180 success, digest ed479e93"
+      },
+      "id": "ui-crea-short-page-in-home-mural-style-rings-soc-85dd91",
+      "owner": "chat/ui-crea-short-page-in-home-mural-style-rings-soc-85dd91",
+      "paths": [
+        "web/share_v156_component/**",
+        "web/test_v413_publish_multi.py"
+      ],
+      "scope": "ui: Crea Short page in Home mural style (rings, social orbit, cards)",
+      "state": "completed"
+    },
+    {
+      "branch": "chat/ui-editor-home-style-light-glass-for-the-in-play-1d798f",
+      "created_at": "2026-10-16T00:32:53+02:00",
+      "evidence": {
+        "lifecycle_handoff": {
+          "authorization": "Owner explicitly approved transfer of these two files in stability chat on 2026-10-16, preserving the integrated editor restyle.",
+          "paths": [
+            "web/game_editor_mobile_component/editor.mjs",
+            "tests/test_mobile_game_editor_2026.py"
+          ],
+          "to": "stability-unified-navigation-and-mobile-resume-l-395391"
+        }
+      },
+      "id": "ui-editor-home-style-light-glass-for-the-in-play-1d798f",
+      "owner": "chat/ui-editor-home-style-light-glass-for-the-in-play-1d798f",
+      "paths": [
+        "tests/test_gsf_editor_home_style.py",
+        "web/game_editor_mobile_component/editor.css",
+        "web/game_editor_mobile_component/editor_state.mjs",
+        "web/game_editor_mobile_component/home_style_v416.css",
+        "web/game_editor_mobile_component/index.html",
+        "web/game_editor_mobile_component/overlay_v414.css",
+        "web/game_editor_mobile_component/overlay_v414.mjs"
+      ],
+      "scope": "ui(editor): Home-style light glass for the in-player mobile Game Editor; Crea Short action in mini mode",
+      "state": "active"
+    },
+    {
+      "branch": "chat/notifications-event-driven-web-push-short-ready--e5303c",
+      "created_at": "2026-10-16T00:43:33+02:00",
+      "id": "notifications-event-driven-web-push-short-ready--e5303c",
+      "owner": "chat/notifications-event-driven-web-push-short-ready--e5303c",
+      "paths": [
+        "tests/test_push_notifications_v416.py",
+        "web/gsf_push_v416.py"
+      ],
+      "scope": "notifications: event-driven web push (short ready, AI results, publish result, render failure) with dedupe and deep links; direct_upload_server.py hooks deferred until ui-creator-hub-redesign-social-status-row-counte-92c367 completes",
+      "state": "active"
+    },
+    {
+      "branch": "chat/ci-gate-promote-when-newer-main-commits-are-coor-3881ae",
+      "created_at": "2026-10-16T00:48:59+02:00",
+      "evidence": {
+        "note": "owner chose to wait for the next gated merge; no changes made"
+      },
+      "id": "ci-gate-promote-when-newer-main-commits-are-coor-3881ae",
+      "owner": "chat/ci-gate-promote-when-newer-main-commits-are-coor-3881ae",
+      "paths": [
+        ".github/workflows/v397-production-gate.yml",
+        "tests/test_gate_promotion_diff.py"
+      ],
+      "scope": "ci(gate): promote when newer main commits are coordination-only",
+      "state": "abandoned"
+    },
+    {
+      "branch": "chat/ui-crea-con-ia-respects-the-shell-header-and-gam-10462c",
+      "created_at": "2026-10-16T00:57:08+02:00",
+      "id": "ui-crea-con-ia-respects-the-shell-header-and-gam-10462c",
+      "owner": "chat/ui-crea-con-ia-respects-the-shell-header-and-gam-10462c",
+      "paths": [
+        "PROJECT_STATUS.md",
+        "web/ai_v221_component/index.html",
+        "web/test_v412_ai_engines.py"
+      ],
+      "scope": "ui: Crea con IA respects the shell header and Game Bar on phones",
       "state": "active"
     }
   ],

@@ -219,6 +219,26 @@ No intentional destructive production rollback test was performed. Rollback exec
 - Railway frontend `c92759e3-6a72-40e3-b269-0ba61c3fdd66` (release `518e8fb`) then `cb0bff7b-9a2b-4545-9c7b-7b1151479a18` (release `36ff303`): **SUCCESS** — startup `GSF UI manifest verify PASS digest=b3a16c29… files=173`; `/healthz` 200 after start. `GSF Production UI Verify` run `38793356058`: **SUCCESS**. Worker not redeployed (SLEEPING, expected).
 - Unverified / follow-up: WebKit only verified in CI (sandbox has Chromium only); no real-device Safari pass; Game Vision does not emit Focus Map coordinates yet, so Follow Action tracking in preview stays inactive until the backend sends `focus_map` in `GSF_GAME_EDITOR_INIT`.
 
+### Crea con IA V413 — Home mural style — 2026-10-16 (PR #155)
+
+- Claim `ui-crea-con-ia-in-home-mural-style-big-circle-or-e0c710`, squash `b515c5f34cc0087dc7f8173fcf758c1986e66ded`; only `web/ai_v221_component/index.html` changed.
+- Redesign approved by the owner from a preview: big glass circle (search button) with the four engines orbiting it, handwritten murals that follow the state, scan inside the circle (real timer, sweeping ring); results as three portal circles (ring = AI score), one detail card with "Cambia short", pill actions Apri nell'editor / Pubblica. Owner follow-up: no "Gameplay caricato" pill, no mural above the duration. One screen, no scrolling (390×760, 390×680, 360×600, 1280×800). V412 behaviour unchanged.
+- Tests: local V404/V412/V397/V410 PASS, `tests/` 58 passed (`test_gsf_core_infra.py` not run locally); PR contracts + production-gate success.
+- Main Production Gate: **SUCCESS**; promotion `9c04f10` (frontend). Railway frontend `857af3ea-042d-4463-8928-ee849b6c151f`: **SUCCESS**.
+- `GSF Production UI Verify` run `38817687407`: **SUCCESS** — release `9c04f10`, digest `d50c4044…` == repo, pages byte-identical, Home 200, `/creator-hub/state` 200 + CSRF.
+- Unverified: no end-to-end AI run with a real uploaded video on production.
+
+### Creator Hub V415 redesign — 2026-10-16 (PR #157)
+
+- Claim `ui-creator-hub-redesign-social-status-row-counte-92c367` (completed). The Hub file was released from `stability-unified-navigation-and-mobile-resume-l-395391` by owner-authorized priority (coord `88b842e`; that branch had no Hub commits). Squash `58762de`.
+- Files: `web/creator_hub_v156_component/index.html` (one canonical page, single runtime, no MutationObservers; replaces the stacked V300–V403 layers), `web/direct_upload_server.py`, `tests/test_creator_hub_redesign_v415.py` (new, in GSF CI), `.github/workflows/gsf-ci.yml`.
+- Layout (owner-approved): header (photo, name, plan, settings) → social row YouTube/TikTok/Instagram/Facebook/Twitch with green tick if connected, grey if not → counters Bozze/Shorts/Pubblicati → Bozze and Shorts cards with menu (Riprendi or Scarica, Rinomina, Elimina with confirmation) → Live e VOD (empty "In arrivo") → Impostazioni (photo auto-resized to 512px, name, connect/disconnect social, plan shown once, notifications, language, login/logout). Desktop two columns. Brand tokens. The empty "Pubblicità" placeholder was removed.
+- Root cause fixed: nginx sends `/shorts/*` to Streamlit (8501), so the old Hub's short download/delete never reached the companion server. New CSRF-protected `/creator-hub/short/rename` and `/creator-hub/short/delete`, plus the `/creator-hub/short/file` download alias, under the existing `/creator-hub/` proxy (8502).
+- Tests: V415 contract, canonical UI pipeline (incl. V286/V366 on canonical files), V397, V410, V404, V412, V405, V413, V407, V403, mobile polish shell PASS locally; Chromium mock-data pass at 390px and 1366px with no console errors. PR CI `contracts` + `production-gate` success.
+- Main gate: run `38818632289` (58762de) cancelled by the #156 push; run `38818872801` on `a942adb` (contains 58762de) success, its promotion skipped because a coord commit landed mid-run; promoted by owner-requested commit `7298444`.
+- Railway frontend `6e36f303-a5f3-4fb6-8511-1ecded777754`: **SUCCESS** — `GSF UI manifest verify PASS digest=ed479e93…` (== repo digest at `7298444`), `release=7298444`; `/healthz`, `/creator-hub-v156/`, `/creator-hub/state` 200. Worker not redeployed (expected).
+- Unverified / follow-up: no real-device Safari pass; short rename/delete not exercised on production with real data; Shorts have no project link, so the menu offers Scarica instead of Riprendi; Twitch OAuth not implemented ("In arrivo"). Coordination commits pushed during a main gate run make its promotion skip (seen twice tonight); a gate change to tolerate coord-only commits was proposed but not made (owner chose to wait).
+
 ## Current user-facing verification priorities
 
 These are re-verification priorities, not claims that a feature is currently broken:

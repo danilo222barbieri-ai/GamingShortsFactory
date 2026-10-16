@@ -1,19 +1,34 @@
 {
   "branch": "chat/stability-unified-navigation-and-mobile-resume-l-395391",
   "created_at": "2026-10-15T21:07:33+00:00",
+  "evidence": {
+    "editor_handoff": {
+      "authorization": "Owner explicitly approved transfer of these two files in stability chat on 2026-10-16, preserving the integrated editor restyle.",
+      "paths": [
+        "web/game_editor_mobile_component/editor.mjs",
+        "tests/test_mobile_game_editor_2026.py"
+      ],
+      "to": "stability-unified-navigation-and-mobile-resume-l-395391"
+    }
+  },
   "id": "stability-unified-navigation-and-mobile-resume-l-395391",
   "owner": "chat/stability-unified-navigation-and-mobile-resume-l-395391",
   "paths": [
     "app.py",
     "docs/architecture/gsf-navigation-lifecycle.md",
+    "tests/test_canonical_ui_pipeline.py",
+    "tests/test_mobile_game_editor_2026.py",
     "tests/test_mobile_resume_stability.py",
     "tests/test_navigation_stability.py",
     "tests/visual/gsf_navigation_stress.py",
-    "web/creator_hub_v156_component/index.html",
-    "web/game_editor_mobile_component/**",
+    "tests/visual/gsf_visual_check.py",
+    "web/editor_2027_component/index.html",
+    "web/game_editor_mobile_component/editor.mjs",
     "web/gsf_navigation_lifecycle.js",
-    "web/home_v154_component/index.html"
+    "web/home_v154_component/index.html",
+    "web/install_adsense_bridge.py",
+    "web/test_v302_global_live_gamebar.py"
   ],
-  "scope": "stability: unified navigation and mobile resume lifecycle root cause",
+  "scope": "stability: unified navigation and mobile resume lifecycle root cause; web/creator_hub_v156_component/index.html released by owner-authorized priority to the Creator Hub redesign (2026-10-16); rebase on it before touching the Hub again; web/game_editor_mobile_component/** and tests/test_mobile_game_editor_2026.py released by owner-authorized priority to the in-player Home-style editor restyle (2026-10-16); rebase on it before touching the mobile editor again",
   "state": "active"
 }
