@@ -273,6 +273,12 @@ input::placeholder,textarea::placeholder{color:var(--na-text-faint)}
 .sheet{background:rgba(2,6,12,.6)}
 .sheetBox{background:var(--na-glass-strong);border:1px solid var(--na-edge);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);box-shadow:var(--na-shadow)}
 .toastLocal{background:var(--na-glass-strong);border:1px solid var(--na-edge-strong);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+
+/* Info group (old footer) */
+a.row{color:inherit;text-decoration:none}
+.followRow .follow{display:flex;gap:6px}
+.followRow .follow a{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--na-edge);color:var(--na-text);text-decoration:none;font-size:10px;font-weight:800}
+.appVersion{margin:14px 4px 0;text-align:center;color:var(--na-text-faint);font-size:11.5px;font-weight:700}
 /* GSF_NIGHT_ARENA_PAGE:END */
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&amp;display=swap" data-gsf-night-arena-font>
@@ -354,6 +360,25 @@ input::placeholder,textarea::placeholder{color:var(--na-text-faint)}
     <div class="row"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span><span class="rtext"><b>Lingua</b><small>Altre lingue in arrivo</small></span><span class="rval">Italiano</span></div>
     <button class="row" type="button" id="accountBtn"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg></span><span class="rtext"><b id="accountBtnLabel">Accedi</b><small id="accountBtnText">Salva bozze e Shorts nel tuo account</small></span><span class="chev">›</span></button>
    </div>
+
+   <!-- GSF_NIGHT_ARENA: the old app footer (legal links, GSF channels, bug report, version) lives here now. -->
+   <div class="groupLabel">Info</div>
+   <div class="card rows" id="infoRows">
+    <a class="row" href="/privacy" target="_blank" rel="noopener"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg></span><span class="rtext"><b>Privacy</b></span><span class="chev">›</span></a>
+    <a class="row" href="/terms" target="_blank" rel="noopener"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg></span><span class="rtext"><b>Termini</b></span><span class="chev">›</span></a>
+    <a class="row" href="/contact" target="_blank" rel="noopener"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 8l9 6 9-6"/></svg></span><span class="rtext"><b>Contatti</b></span><span class="chev">›</span></a>
+    <button class="row" type="button" id="bugReportBtn"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8a4 4 0 0 1 8 0v6a4 4 0 0 1-8 0z"/><path d="M4 12h4M16 12h4M5 6l3 2M19 6l-3 2M5 18l3-2M19 18l-3-2"/></svg></span><span class="rtext"><b>Segnala un bug</b><small>Aiutaci a migliorare GSF</small></span><span class="chev">›</span></button>
+    <div class="row followRow"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0"/><path d="M8 12h8M12 8v8"/></svg></span><span class="rtext"><b>Segui GSF</b></span>
+     <span class="follow">
+      <a href="https://www.youtube.com/@Dans222nrg" target="_blank" rel="noopener noreferrer" aria-label="YouTube">YT</a>
+      <a href="https://www.tiktok.com/@gamingshortsfactory" target="_blank" rel="noopener noreferrer" aria-label="TikTok">TT</a>
+      <a href="https://www.instagram.com/gamingshortsfactory/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">IG</a>
+      <a href="https://www.facebook.com/profile.php?id=61595124112318&amp;locale=it_IT" target="_blank" rel="noopener noreferrer" aria-label="Facebook">FB</a>
+      <a href="https://www.twitch.tv/dan222s86" target="_blank" rel="noopener noreferrer" aria-label="Twitch">TW</a>
+     </span>
+    </div>
+   </div>
+   <p class="appVersion" id="appVersion">Gaming Shorts Factory</p>
   </div>
  </section>
 
@@ -465,6 +490,14 @@ input::placeholder,textarea::placeholder{color:var(--na-text-faint)}
    :'<div class="empty"><b>Nessuno Short</b>Gli Short che crei compaiono qui, pronti da scaricare.'+cta+'</div>';
  }
  document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-empty-cta]");if(b)shell("home",{section:""});});
+ // GSF_NIGHT_ARENA: bug report reuses the app's own "Segnala bug" control; version comes from /healthz.
+ document.addEventListener("click",e=>{
+  if(!(e.target.closest&&e.target.closest("#bugReportBtn")))return;
+  try{const D=parent.document;const hit=[...D.querySelectorAll('button,a,[role="button"]')].find(x=>String(x.textContent||"").trim().toLowerCase().includes("segnala bug"));if(hit){hit.click();return}}catch(_e){}
+  location.href="/contact";
+ });
+ fetch("/healthz",{cache:"no-store",credentials:"same-origin"}).then(r=>r.json()).then(j=>{const rel=String((j&&(j.release||j.version))||"").slice(0,7);if(rel)$("#appVersion").textContent="Gaming Shorts Factory · build "+rel}).catch(()=>{});
+
  function bindCards(root){
   root.querySelectorAll(".pcard [data-act]").forEach(b=>b.onclick=()=>{
    const card=b.closest(".pcard");const kind=card.dataset.kind,id=card.dataset.id;
