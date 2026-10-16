@@ -105,6 +105,8 @@ require('fetch("/ai/results' in page and "request_id:requestId" in page, "la pag
 require("j.request_id===requestId" in page, "risultati di ricerche precedenti non mostrati")
 require('send("replace"' in page and "pollReplaced" in page, "Cambia short invia la sostituzione e aggiorna il clip")
 require("overflow:hidden" in page and "100vh" not in page, "pagina senza scroll")
+require("GSF_AI_SHELL_FIT" in page and 'getElementById("gsf-global-header")' in page and 'gsf-global-gamebar' in page, "su mobile la pagina misura header e Game Bar della shell")
+require("var(--shell-top,0px)" in page and "var(--shell-bottom,0px)" in page, "contenuto e pannello Cambia short restano tra header e Game Bar")
 require('action==="replace"' in home and 'event:"replace_moment"' in home, "Home inoltra Cambia short all'app")
 require('request_id:String(e.data.request_id' in home, "Home inoltra l'id richiesta")
 require("request_id:e.data.request_id" in app and "restore:e.data.restore===true" in app, "bridge host inoltra id e ripristino")
