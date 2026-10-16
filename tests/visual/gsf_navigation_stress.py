@@ -80,6 +80,10 @@ def browser_page(mobile=True):
                 'X-GSF-Chunk-Start':'0','X-GSF-Chunk-Index':'0','X-GSF-Chunk-Count':'1',
                 'Content-Type':'application/octet-stream'})
             assert response.ok and response.json().get('completed'),response.text()
+            # Like the real Home uploader: once the companion has the file, the Home
+            # component emits upload_complete and the app reruns to materialize it.
+            home=next(f for f in page.frames if f.evaluate("()=>{try{return window.__GSF_V333_CTA_TOUCH===true}catch(_){return false}}"))
+            home.evaluate("()=>value({event:'upload_complete',duration:2,engine:'auto'})")
             # Upload completion triggers a real Streamlit rerun. Warm-up must
             # measure the loaded app, including its finite widget hotkeys.
             page.wait_for_function("()=>[...document.querySelectorAll('iframe')].some(f=>{try{return f.contentWindow.__GSF_V333_CTA_TOUCH===true&&!!f.contentDocument.querySelector('.rings.uploaded')}catch(_){return false}})",timeout=120000)
