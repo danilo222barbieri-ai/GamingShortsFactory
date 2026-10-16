@@ -14,6 +14,7 @@
   "id": "stability-unified-navigation-and-mobile-resume-l-395391",
   "owner": "chat/stability-unified-navigation-and-mobile-resume-l-395391",
   "paths": [
+    "PROJECT_STATUS.md",
     "app.py",
     "docs/architecture/gsf-navigation-lifecycle.md",
     "tests/test_canonical_ui_pipeline.py",
