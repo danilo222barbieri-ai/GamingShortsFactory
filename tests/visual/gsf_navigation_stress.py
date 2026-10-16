@@ -57,6 +57,13 @@ def browser_page(mobile=True):
         print("BROWSER LAUNCHED",engine,round(time.monotonic()-started,2),flush=True)
         ctx = browser.new_context(**(p.devices['iPhone 13'] if mobile else {'viewport':{'width':1440,'height':1000}}))
         ctx.add_init_script(INSTRUMENT)
+        # The edge issues gsf_sid as a Secure cookie. Production is HTTPS; the gate talks to the
+        # container over plain http://127.0.0.1, where WebKit drops Secure cookies, so every
+        # request would get a fresh session (upload in one session, app in another). Give the
+        # browser the same stable session id a real HTTPS visitor keeps.
+        base=os.environ['GSF_BASE_URL'].rstrip('/')
+        if base.startswith('http://'):
+            ctx.add_cookies([{'name':'gsf_sid','value':'stability'+uuid.uuid4().hex[:20],'url':base+'/'}])
         if os.environ.get("GSF_DOM_DIAGNOSTICS"):
             from pathlib import Path
             ctx.add_init_script(Path(os.environ["GSF_DOM_DIAGNOSTICS"]).read_text())
