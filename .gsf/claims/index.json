@@ -999,6 +999,22 @@
       ],
       "scope": "ui: Crea con IA fits between shell header and Game Bar on phones; drop CREA CON IA label",
       "state": "completed"
+    },
+    {
+      "branch": "chat/ui-night-arena-single-look-shared-theme-creator--1fc1b7",
+      "created_at": "2026-10-16T10:03:49+02:00",
+      "id": "ui-night-arena-single-look-shared-theme-creator--1fc1b7",
+      "owner": "chat/ui-night-arena-single-look-shared-theme-creator--1fc1b7",
+      "paths": [
+        "tests/test_night_arena_theme.py",
+        "web/ai_v221_component/**",
+        "web/creator_hub_v156_component/**",
+        "web/gsf_night_arena.css",
+        "web/publish_short_v405_component/**",
+        "web/share_v156_component/**"
+      ],
+      "scope": "ui: Night Arena single look \u2014 shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages",
+      "state": "active"
     }
   ],
   "version": 1
