@@ -970,6 +970,19 @@
       ],
       "scope": "ui: Crea con IA respects the shell header and Game Bar on phones",
       "state": "abandoned"
+    },
+    {
+      "branch": "chat/ui-crea-con-ia-fits-between-shell-header-and-gam-76ec0a",
+      "created_at": "2026-10-16T08:53:34+02:00",
+      "id": "ui-crea-con-ia-fits-between-shell-header-and-gam-76ec0a",
+      "owner": "chat/ui-crea-con-ia-fits-between-shell-header-and-gam-76ec0a",
+      "paths": [
+        "PROJECT_STATUS.md",
+        "web/ai_v221_component/index.html",
+        "web/test_v412_ai_engines.py"
+      ],
+      "scope": "ui: Crea con IA fits between shell header and Game Bar on phones; drop CREA CON IA label",
+      "state": "active"
     }
   ],
   "version": 1
