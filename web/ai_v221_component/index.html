@@ -308,6 +308,10 @@ html,body{background:var(--na-bg)}
 .alt .thumb{border-color:rgba(121,210,255,.35);background:var(--na-deep);box-shadow:0 0 22px rgba(39,174,243,.25)}
 .alt strong{color:#fff}
 .sheet-empty{background:rgba(255,255,255,.04);color:var(--na-text-muted)}
+/* One mural per screen, written with a marker */
+@keyframes naPen{from{clip-path:inset(0 100% 0 0);opacity:.2}to{clip-path:inset(0 0 0 0);opacity:1}}
+.m2{display:none!important}
+.m1,.title-mural{animation:naPen 1.1s cubic-bezier(.3,.7,.2,1) both}
 /* GSF_NIGHT_ARENA_PAGE:END */
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&amp;display=swap" data-gsf-night-arena-font>
