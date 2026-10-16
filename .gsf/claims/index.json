@@ -846,6 +846,7 @@
         "app.py",
         "docs/architecture/gsf-navigation-lifecycle.md",
         "tests/test_canonical_ui_pipeline.py",
+        "tests/test_mobile_editor_in_app.py",
         "tests/test_mobile_game_editor_2026.py",
         "tests/test_mobile_resume_stability.py",
         "tests/test_navigation_stability.py",
