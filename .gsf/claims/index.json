@@ -855,6 +855,7 @@
         "web/gsf_navigation_lifecycle.js",
         "web/home_v154_component/index.html",
         "web/install_adsense_bridge.py",
+        "web/test_v286_global_gamebar.py",
         "web/test_v302_global_live_gamebar.py"
       ],
       "scope": "stability: unified navigation and mobile resume lifecycle root cause; web/creator_hub_v156_component/index.html released by owner-authorized priority to the Creator Hub redesign (2026-10-16); rebase on it before touching the Hub again; web/game_editor_mobile_component/** and tests/test_mobile_game_editor_2026.py released by owner-authorized priority to the in-player Home-style editor restyle (2026-10-16); rebase on it before touching the mobile editor again",
