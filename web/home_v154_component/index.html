@@ -3945,6 +3945,16 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
  const onState=()=>circle.classList.contains("loaded")?showPreview():hidePreview();
  new MutationObserver(onState).observe(circle,{attributes:true,attributeFilter:["class"]});onState();
  try{if(navigator.vibrate)circle.addEventListener("click",()=>navigator.vibrate(12))}catch(_e){}
+ // Shared-element hand-off: tell the shell where the tapped card's circle is, so the page
+ // it opens grows out of that circle (see web/gsf_navigation_lifecycle.js). Light haptic on Android.
+ document.addEventListener("pointerdown",e=>{
+  const card=e.target.closest&&e.target.closest("#home154 .feature");if(!card)return;
+  try{
+   const ic=(card.querySelector(".featureIcon")||card).getBoundingClientRect(),fe=window.frameElement,off=fe?fe.getBoundingClientRect():{left:0,top:0};
+   window.parent.__gsfNavOrigin={x:Math.round(off.left+ic.left+ic.width/2),y:Math.round(off.top+ic.top+ic.height/2),color:getComputedStyle(card).getPropertyValue("--na-area").trim()||"#27AEF3",t:Date.now()};
+  }catch(_e){}
+  try{navigator.vibrate&&navigator.vibrate(10)}catch(_e){}
+ },{capture:true,passive:true});
 })();
 </script>
 </body>
