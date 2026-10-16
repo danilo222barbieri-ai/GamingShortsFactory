@@ -119,7 +119,55 @@ class NavigationStability(unittest.TestCase):
             page.wait_for_timeout(150)
             self.assertEqual(frame.locator('#gameEditorApp').evaluate("()=>window.GSFGameEditor2026.getState().zoom"),1.9)
 
+    def test_streamlit_rerun_preserves_editor_and_history(self):
+        with browser_page() as (page,errors,_):
+            navigate(page,'editor')
+            frame=page.frame_locator('#gsf-editor-overlay-v220 iframe')
+            frame.locator('#gameEditorApp').evaluate("()=>{window.GSFGameEditor2026.commitEditorState({zoom:1.4});window.GSFGameEditor2026.commitEditorState({zoom:1.9})}")
+            page.evaluate("""()=>{
+                const app=document.querySelector('[data-testid="stApp"]');
+                if(!app)throw new Error('Streamlit app missing');
+                const host=document.querySelector('#gsf-editor-overlay-v220'),frame=host.querySelector('iframe');
+                window.__gsfEditorIdentity={host,frame,doc:frame.contentDocument};
+                window.__gsfRerunComplete=false;
+                let running=false;
+                const observer=new MutationObserver(()=>{
+                    const state=app.getAttribute('data-test-script-state');
+                    if(state==='running')running=true;
+                    if(running&&state==='notRunning'){window.__gsfRerunComplete=true;observer.disconnect();}
+                });
+                observer.observe(app,{attributes:true,attributeFilter:['data-test-script-state']});
+                const button=document.querySelector('.st-key-gsf_final_ready_sync_v111 button');
+                if(!button)throw new Error('Streamlit rerun control missing');
+                button.click();
+            }""")
+            page.wait_for_function('()=>window.__gsfRerunComplete',timeout=30000)
+            self.assertTrue(page.evaluate("()=>{const old=window.__gsfEditorIdentity,host=document.querySelector('#gsf-editor-overlay-v220'),frame=host.querySelector('iframe');return old.host===host&&old.frame===frame&&old.doc===frame.contentDocument}"))
+            self.assertAlmostEqual(frame.locator('#gameEditorApp').evaluate("()=>window.GSFGameEditor2026.getState().zoom"),1.9)
+            frame.locator('#undoButton').evaluate("b=>b.click()")
+            self.assertAlmostEqual(frame.locator('#gameEditorApp').evaluate("()=>window.GSFGameEditor2026.getState().zoom"),1.4)
+            assert_gamebar(page)
+            self.assertFalse(errors,errors)
+
 class ParentBundleContract(unittest.TestCase):
+    def test_completed_timeouts_release_abort_handlers(self):
+        import subprocess
+        root=Path(__file__).resolve().parents[1]
+        program=r"""
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const document={getElementById:()=>null,querySelectorAll:()=>[],addEventListener(){},documentElement:{classList:{toggle(){},remove(){}}}};
+const window={WebSocket:class{},addEventListener(){}};
+vm.runInNewContext(fs.readFileSync(process.argv[1],'utf8'),{window,document,location:{href:'http://localhost/',origin:'http://localhost'},innerWidth:390,sessionStorage:{setItem(){}},URL,AbortController,MutationObserver:class{},setTimeout,clearTimeout});
+const bridge=window.GSFNavigation.bridge('timer-contract',null),signal=bridge.signal;
+let retained=0;const add=signal.addEventListener.bind(signal),remove=signal.removeEventListener.bind(signal);
+signal.addEventListener=(type,...args)=>{if(type==='abort')retained++;return add(type,...args)};
+signal.removeEventListener=(type,...args)=>{if(type==='abort')retained--;return remove(type,...args)};
+let called=0;for(let i=0;i<100;i++)bridge.timeout(()=>called++,0);
+setTimeout(()=>{assert.equal(called,100);assert.equal(retained,0,'completed timeouts retain abort handlers');bridge.timeout(()=>{throw Error('cancelled callback ran')},30);window.GSFNavigation.bridge('timer-contract',null);},10);
+"""
+        result=subprocess.run(['node','-e',program,str(root/'web/gsf_navigation_lifecycle.js')],capture_output=True,text=True,timeout=15)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+
     def test_parent_bundle_is_complete_parseable_and_idempotent(self):
         import re,subprocess,sys,tempfile,types,runpy
         root=Path(__file__).resolve().parents[1]
@@ -158,7 +206,8 @@ class ParentBundleContract(unittest.TestCase):
                 calls.append(True)
                 route.fulfill(status=200,json={'ok':True,'ready':False,'video_url':'','initial_state':{'zoom':1.2 if len(calls)==1 else 2.0,'sourceDuration':15}})
             page.route('**/editor/state',metadata)
-            navigate(page,'editor')
+            # This metadata contract intentionally supplies no media.
+            navigate(page,'editor',ready=False)
             frame=page.frame_locator('#gsf-editor-overlay-v220 iframe')
             frame.locator('#gameEditorApp').wait_for()
             frame.locator('#gameEditorApp').evaluate("()=>window.GSFGameEditor2026.getState()")

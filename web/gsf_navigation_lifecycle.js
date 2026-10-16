@@ -2,6 +2,22 @@
 (() => {
   if (window.GSFNavigation) return;
   const D = document;
+  // Streamlit owns reconnection. Close its live transport cleanly before the
+  // browser caches the document instead of letting Chrome abort it. Ordinary
+  // background/freeze keeps the connection and mounted Home intact.
+  const streamlitSockets=new Set(),NativeWebSocket=window.WebSocket;
+  window.WebSocket=class extends NativeWebSocket {
+    constructor(...args) {
+      super(...args);
+      if(new URL(String(args[0]),location.href).pathname==='/_stcore/stream') {
+        streamlitSockets.add(this);
+        this.addEventListener('close',()=>streamlitSockets.delete(this),{once:true});
+      }
+    }
+  };
+  const closeStreamlitTransport=()=>{
+    for(const socket of streamlitSockets)if(socket.readyState===NativeWebSocket.OPEN)socket.close(1000,'document suspended');
+  };
   const ids = {
     hub: 'gsf-creator-hub-live-v160', editor: 'gsf-editor-overlay-v220',
     ai: 'gsf-ai-overlay-v221', short: 'gsf-short-overlay-v343',
@@ -86,8 +102,13 @@
           signal.addEventListener('abort',()=>observer.disconnect(),{once:true});return observer;
         },
         timeout(callback,delay) {
-          const id=setTimeout(()=>{if(!signal.aborted)callback();},delay);
-          signal.addEventListener('abort',()=>clearTimeout(id),{once:true});return id;
+          if(signal.aborted)return null;
+          const cancel=()=>clearTimeout(id);
+          const id=setTimeout(()=>{
+            signal.removeEventListener('abort',cancel);
+            if(!signal.aborted)callback();
+          },delay);
+          signal.addEventListener('abort',cancel,{once:true});return id;
         },
       };
     },
@@ -99,7 +120,7 @@
     if(mounted) navigate(e.data);
   });
   D.addEventListener('visibilitychange',()=>D.hidden?suspend():resume());
-  window.addEventListener('pagehide',suspend);
+  window.addEventListener('pagehide',()=>{suspend();closeStreamlitTransport();});
   window.addEventListener('pageshow',resume);
   // Focusing an iframe also blurs the parent; it is not backgrounding.
   window.addEventListener('blur',()=>post(current.target,'GSF_APP_BLUR'));

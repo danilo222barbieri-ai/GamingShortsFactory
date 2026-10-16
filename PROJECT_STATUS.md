@@ -291,3 +291,14 @@ Live ownership is read from `.gsf/claims/index.json` and is authoritative. As of
 ---
 
 When this file disagrees with chat memory, verify GitHub/Railway and update this file. Never silently choose the more convenient version of events.
+
+
+## Navigation / mobile resume structural investigation — 2026-10-16
+
+- Claim/branch: `stability-unified-navigation-and-mobile-resume-l-395391` / `chat/stability-unified-navigation-and-mobile-resume-l-395391`.
+- Explicit handoff authorized by the user for mobile `editor.mjs` and its test; preserves the merged Editor restyle, Hub V415 and AI shell fit.
+- Confirmed causes: independent route owners bypassed Editor cleanup; stale async saves/bootstrap replayed old routes/state; parent bridges depended on transient Streamlit iframes; legacy cleanup removed React-owned V249 navigation (native DOM instrumentation recorded the exact node before React `removeChild` failed); reconnect selected the wrong Python `web/web` package after late `sys.path` mutations.
+- Fix: one parent navigation/lifecycle registry, persistent top-owned surfaces and controllers, abortable bridge replacement and route epochs, Editor suspend/resume without history reset, explicit canonical Python package/bootstrap. Clean Streamlit socket closure only on pagehide; ordinary background retains transport. Completed bridge timers release their abort handlers.
+- Evidence: import-resolution regression failed before correction and passes four reloads; 100-timer retention regression failed before correction and passes afterward. Current selected suite: 26 passed / 12 browser skips without running URL; JavaScript contracts 16 passed. Production-image browser checks use real uploaded media and fail on JS, console, HTTP and request errors.
+- Full final browser stress, integration PR, main Production Gate and Railway verification remain pending. No new production fix is claimed by this entry. Physical OS switching and physical iOS/Safari remain unverified.
+- Investigation and regression design: `docs/architecture/gsf-navigation-lifecycle.md`.

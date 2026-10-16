@@ -1,3 +1,13 @@
+# One import-path owner for the shared Streamlit interpreter. Keep the real
+# package before legacy bare-helper paths on every initial run and reconnect.
+import sys as _gsf_module_sys
+from pathlib import Path as _GSF_ENTRY_PATH
+_gsf_module_root=str(_GSF_ENTRY_PATH(__file__).resolve().parent)
+_gsf_module_web=str(_GSF_ENTRY_PATH(_gsf_module_root)/"web")
+_gsf_module_sys.path[:]=[_gsf_module_root,_gsf_module_web]+[
+    entry for entry in _gsf_module_sys.path if entry not in (_gsf_module_root,_gsf_module_web)
+]
+
 # V293 RENDER MEMORY GUARD
 from web.render_gate_v293 import render_slot as _gsf_render_slot_v293
 GSF_FINAL_RENDER_SLOTS=max(1,min(2,int(__import__("os").environ.get("GSF_FINAL_RENDER_SLOTS","1") or 1)))
@@ -3378,9 +3388,6 @@ def _gsf_render_video_filters(
 # ===== V109 NATIVE ZOOM-OUT =====
 GSF_V109_ZOOMOUT = True
 try:
-    import sys as _gsf_v109_sys
-    if "/app/web" not in _gsf_v109_sys.path:
-        _gsf_v109_sys.path.insert(0,"/app/web")
     from zoomout_v109 import build_zoomout_filter as _gsf_v109_zoomout_filter
 except Exception as _gsf_v109_exc:
     raise RuntimeError("V109 zoom-out helper unavailable: "+str(_gsf_v109_exc))
@@ -4587,9 +4594,6 @@ def _gsf_ai_scan_cached(input_file, cache_token=None):
 
     scan = None
     try:
-        import sys as _gsf_sys
-        if "/app/web" not in _gsf_sys.path:
-            _gsf_sys.path.insert(0,"/app/web")
         from gsf_bucket_bridge import load_prescan_from_marker as _gsf_load_prescan
         scan = _gsf_load_prescan(
             GSF_PREVIEW_DIR,
@@ -6202,9 +6206,6 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3, cache
 # ===== V108 GAME VISION + EVENT MAP =====
 GSF_V108_GAME_VISION = True
 try:
-    import sys as _gsf_v108_sys
-    if "/app/web" not in _gsf_v108_sys.path:
-        _gsf_v108_sys.path.insert(0,"/app/web")
     from game_vision_v108 import (
         build_event_map as _gsf_v108_build_event_map,
         tag_chosen_moments as _gsf_v108_tag_chosen,
@@ -6311,9 +6312,6 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3, cache
 # ===== V112 GAME BRAIN =====
 GSF_V112_GAME_BRAIN=True
 try:
-    import sys as _gsf_v112_sys
-    if "/app/web" not in _gsf_v112_sys.path:
-        _gsf_v112_sys.path.insert(0,"/app/web")
     from game_brain_v112 import rerank_moments as _gsf_v112_rerank
 except Exception as _gsf_v112_import_exc:
     raise RuntimeError("V112 Game Brain unavailable: "+str(_gsf_v112_import_exc))
@@ -13305,9 +13303,6 @@ if video:
         st.markdown('<div class="gsf-major-note gsf-editor-note">Modifica scena, look, sottotitoli e audio prima di continuare.</div>',unsafe_allow_html=True)
         try:
             import os as _gsf_manual_os
-            import sys as _gsf_manual_sys
-            if "/app/web" not in _gsf_manual_sys.path:
-                _gsf_manual_sys.path.insert(0,"/app/web")
             from editor_2027_embed import (
                 render_editor_2027_embed as _gsf_render_manual_editor_2027,
                 editor_2027_state_key as _gsf_editor_2027_state_key,
@@ -13863,9 +13858,6 @@ if video:
                     and abs(float(st.session_state.get("gsf_editor_2027_start",start))-float(start))<0.05
                 ):
                     try:
-                        import sys as _gsf_ed27_sys
-                        if "/app/web" not in _gsf_ed27_sys.path:
-                            _gsf_ed27_sys.path.insert(0,"/app/web")
                         from editor_2027_embed import (
                             render_editor_2027_embed as _gsf_render_editor_2027_embed,
                             editor_2027_state_key as _gsf_inline_state_key,
@@ -16200,68 +16192,7 @@ st.markdown("""
   outline-offset:3px !important;
 }
 </style>
-<script>
-(()=>{
-  const HOST_ID='gsf-creator-hub-portal-v107';
-  const STYLE_ID='gsf-creator-hub-portal-style-v107';
-  if(!document.getElementById(STYLE_ID)){
-    const st=document.createElement('style');
-    st.id=STYLE_ID;
-    const p='#'+HOST_ID+' ';
-    st.textContent=
-      '#'+HOST_ID+'{position:relative!important;z-index:2147483000!important;opacity:1!important;filter:none!important}'+
-      p+'.gsf-account-fab{z-index:2147483500!important;opacity:1!important;visibility:visible!important;filter:none!important;mix-blend-mode:normal!important}'+
-      p+'.gsf-creator-hub-overlay{position:fixed!important;inset:0!important;z-index:2147483600!important;filter:none!important;mix-blend-mode:normal!important}'+
-      p+'.gsf-creator-hub-overlay.is-open,'+p+'.gsf-creator-hub-overlay:target{opacity:1!important;visibility:visible!important;pointer-events:auto!important}'+
-      p+'.gsf-creator-hub-backdrop{background:#EAF2F7!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;opacity:1!important}'+
-      p+'.gsf-creator-hub-shell{background:#F7FBFF!important;opacity:1!important;filter:none!important;mix-blend-mode:normal!important;isolation:isolate!important;border:1px solid #D3E3ED!important;box-shadow:0 30px 86px rgba(19,45,65,.38)!important}'+
-      p+'.gsf-creator-hub-head{background:#FFFFFF!important;opacity:1!important;filter:none!important}'+
-      p+'.gsf-creator-hub-frame{background:#F7FBFF!important;opacity:1!important;filter:none!important;mix-blend-mode:normal!important;color-scheme:light!important}';
-    document.head.appendChild(st);
-  }
-
-  let host=document.getElementById(HOST_ID);
-  if(!host){
-    host=document.createElement('div');
-    host.id=HOST_ID;
-    document.body.appendChild(host);
-  }
-
-  const sync=()=>{
-    let panel=host.querySelector('#gsf-creator-hub-panel');
-    let fab=host.querySelector('.gsf-account-fab');
-    const freshPanels=[...document.querySelectorAll('#gsf-creator-hub-panel')].filter(x=>!host.contains(x));
-    const freshFabs=[...document.querySelectorAll('.gsf-account-fab')].filter(x=>!host.contains(x));
-
-    if(!panel && freshPanels.length){panel=freshPanels.shift();host.appendChild(panel);}
-    freshPanels.forEach(x=>x.remove());
-    if(!fab && freshFabs.length){fab=freshFabs.shift();host.appendChild(fab);}
-    freshFabs.forEach(x=>x.remove());
-
-    if(panel){
-      let keep=false;
-      try{keep=sessionStorage.getItem('gsf_creator_hub_open_v107')==='1'}catch(e){}
-      if(location.hash==='#gsf-creator-hub-panel')keep=true;
-      panel.classList.toggle('is-open',keep);
-      panel.style.opacity=keep?'1':'0';
-      panel.style.visibility=keep?'visible':'hidden';
-      panel.style.pointerEvents=keep?'auto':'none';
-    }
-    if(fab){
-      fab.style.opacity='1';
-      fab.style.visibility='visible';
-      fab.style.filter='none';
-    }
-  };
-  sync();
-  let raf=0;
-  new MutationObserver(()=>{
-    if(raf)return;
-    raf=requestAnimationFrame(()=>{raf=0;sync();});
-  }).observe(document.body,{childList:true,subtree:true});
-  window.addEventListener('hashchange',sync);
-})();
-</script>
+<!-- GSFNavigation owns Creator Hub; obsolete React-node portal retired. -->
 """, unsafe_allow_html=True)
 
 # ===== V110 CREATOR HUB SOLID LOCK =====
@@ -16421,6 +16352,13 @@ if GSF_WEB_MODE:
     <!-- V158 router retired; GSFNavigation owns all destinations. -->
     """, unsafe_allow_html=True)
 
+_GSF_SURFACE_SOCIAL = r"""<div id="gsf-social-overlay-v159" aria-hidden="true">
+      <section class="gsf-social-shell" role="dialog" aria-modal="false" aria-label="Condividi o scarica">
+        <button class="gsf-social-close" type="button" aria-label="Chiudi">×</button>
+        <iframe src="about:blank" data-src="/share-v156/" data-loaded="0" title="Condividi o scarica"></iframe>
+      </section>
+    </div>"""
+
 if GSF_WEB_MODE:
     st.markdown(r"""
     <style id="gsf-v159-social-shell">
@@ -16473,12 +16411,7 @@ if GSF_WEB_MODE:
       #gsf-social-overlay-v159 .gsf-social-close{right:9px;top:8px;width:31px;height:31px}
     }
     </style>
-    <div id="gsf-social-overlay-v159" aria-hidden="true">
-      <section class="gsf-social-shell" role="dialog" aria-modal="false" aria-label="Condividi o scarica">
-        <button class="gsf-social-close" type="button" aria-label="Chiudi">×</button>
-        <iframe src="about:blank" data-src="/share-v156/" data-loaded="0" title="Condividi o scarica"></iframe>
-      </section>
-    </div>
+        <!-- gsf-social-overlay-v159: mounted once by the parent app. -->
     <div class="gsf-script-guard" style="display:none!important"></div>
 
     """, unsafe_allow_html=True)
@@ -16532,6 +16465,13 @@ if GSF_WEB_MODE:
     </script>
     </body></html>"""
 
+_GSF_SURFACE_HUB = r"""<div id="gsf-creator-hub-live-v160" aria-hidden="true">
+      <section class="gsf-hub-shell-v160" role="dialog" aria-modal="false" aria-label="Creator Hub">
+        <button class="gsf-hub-close-v160" type="button" aria-label="Chiudi">×</button>
+        <iframe src="about:blank" data-src="/creator-hub-v156/" data-loaded="0" title="Creator Hub"></iframe>
+      </section>
+    </div>"""
+
 if GSF_WEB_MODE:
     st.markdown(r"""
     <style id="gsf-v160-hub-shell">
@@ -16568,18 +16508,25 @@ if GSF_WEB_MODE:
       #gsf-creator-hub-live-v160 .gsf-hub-close-v160{right:8px;top:7px;width:31px;height:31px}
     }
     </style>
-    <div id="gsf-creator-hub-live-v160" aria-hidden="true">
-      <section class="gsf-hub-shell-v160" role="dialog" aria-modal="false" aria-label="Creator Hub">
-        <button class="gsf-hub-close-v160" type="button" aria-label="Chiudi">×</button>
-        <iframe src="about:blank" data-src="/creator-hub-v156/" data-loaded="0" title="Creator Hub"></iframe>
-      </section>
-    </div>
+        <!-- gsf-creator-hub-live-v160: mounted once by the parent app. -->
     <div class="gsf-script-guard" style="display:none!important"></div>
 
     """, unsafe_allow_html=True)
 
     import streamlit.components.v1 as components
     components.html('<!-- Surface navigation is owned by GSFNavigation. -->', height=0, scrolling=False)
+
+_GSF_SURFACE_EDITOR = r"""<div id="gsf-editor-overlay-v220" aria-hidden="true">
+  <section class="gsf-editor-shell" role="dialog" aria-modal="false" aria-label="Game Editor">
+    <button class="gsf-editor-close" type="button" aria-label="Chiudi">×</button>
+    <div class="gsf-editor-head"><div>Game Editor<small>Il tuo gameplay resta nel progetto mentre modifichi.</small></div><button class="v326HeaderFull" type="button" aria-label="Schermo intero"><span>↗</span> FULL</button></div>
+    <div class="gsf-editor-body">
+      <div class="editor-note left"><span id="gsf-editor-note-left">Qui modelli<br>la tua giocata</span></div>
+      <iframe class="gsf-editor-frame" src="about:blank" data-src="/editor-live/" data-loaded="0" title="Game Editor"></iframe>
+      <div class="editor-note right"><span id="gsf-editor-note-right">Tocca uno strumento<br>e guarda cosa cambia</span></div>
+    </div>
+  </section>
+</div>"""
 
 if GSF_WEB_MODE:
     st.markdown(r"""
@@ -16639,17 +16586,7 @@ if GSF_WEB_MODE:
     @media(max-width:900px){#gsf-editor-overlay-v220{bottom:70px;padding:8px 5px}#gsf-editor-overlay-v220 .gsf-editor-shell{width:calc(100vw - 10px);height:calc(100dvh - 84px);border-radius:22px}#gsf-editor-overlay-v220 .gsf-editor-body{grid-template-columns:1fr;top:48px}#gsf-editor-overlay-v220 .editor-note{display:none}#gsf-editor-overlay-v220 .gsf-editor-head{height:48px;padding-left:14px}#gsf-editor-overlay-v220 .gsf-editor-close{top:7px;right:8px;width:31px;height:31px}}
     </style>
 <!-- GSF_EDITOR_OVERLAY_HTML: kept at column 0; 4-space indentation turns this markup into a Markdown code block. -->
-<div id="gsf-editor-overlay-v220" aria-hidden="true">
-  <section class="gsf-editor-shell" role="dialog" aria-modal="false" aria-label="Game Editor">
-    <button class="gsf-editor-close" type="button" aria-label="Chiudi">×</button>
-    <div class="gsf-editor-head"><div>Game Editor<small>Il tuo gameplay resta nel progetto mentre modifichi.</small></div><button class="v326HeaderFull" type="button" aria-label="Schermo intero"><span>↗</span> FULL</button></div>
-    <div class="gsf-editor-body">
-      <div class="editor-note left"><span id="gsf-editor-note-left">Qui modelli<br>la tua giocata</span></div>
-      <iframe class="gsf-editor-frame" src="about:blank" data-src="/editor-live/" data-loaded="0" title="Game Editor"></iframe>
-      <div class="editor-note right"><span id="gsf-editor-note-right">Tocca uno strumento<br>e guarda cosa cambia</span></div>
-    </div>
-  </section>
-</div>
+    <!-- gsf-editor-overlay-v220: mounted once by the parent app. -->
 <div class="gsf-script-guard" style="display:none!important"></div>
 
     """, unsafe_allow_html=True)
@@ -16890,6 +16827,13 @@ setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326He
     </script>
     </body></html>"""
 
+_GSF_SURFACE_AI = r"""<div id="gsf-ai-overlay-v221" aria-hidden="true">
+      <section class="gsf-ai-shell" role="dialog" aria-modal="false" aria-label="Motori IA">
+        <button class="gsf-ai-close" type="button" aria-label="Chiudi">×</button>
+        <iframe src="about:blank" data-src="/ai-v221/" data-loaded="0" title="Motori IA"></iframe>
+      </section>
+    </div>"""
+
 if GSF_WEB_MODE:
     st.markdown(r"""
     <style id="gsf-v221-ai-shell">
@@ -16901,12 +16845,7 @@ if GSF_WEB_MODE:
     #gsf-ai-overlay-v221 .gsf-ai-close{position:absolute;z-index:7;right:13px;top:11px;width:34px;height:34px;border-radius:12px;border:1px solid rgba(158,190,216,.34);background:rgba(255,255,255,.94);color:#617B9D;font-size:20px;cursor:pointer;box-shadow:0 7px 18px rgba(64,104,143,.09)}
     @media(max-width:760px){#gsf-ai-overlay-v221{bottom:70px;padding:8px 5px}#gsf-ai-overlay-v221 .gsf-ai-shell{width:calc(100vw - 10px);height:calc(100dvh - 84px);border-radius:22px}#gsf-ai-overlay-v221 .gsf-ai-close{right:8px;top:7px;width:31px;height:31px}}
     </style>
-    <div id="gsf-ai-overlay-v221" aria-hidden="true">
-      <section class="gsf-ai-shell" role="dialog" aria-modal="false" aria-label="Motori IA">
-        <button class="gsf-ai-close" type="button" aria-label="Chiudi">×</button>
-        <iframe src="about:blank" data-src="/ai-v221/" data-loaded="0" title="Motori IA"></iframe>
-      </section>
-    </div>
+        <!-- gsf-ai-overlay-v221: mounted once by the parent app. -->
     <div class="gsf-script-guard" style="display:none!important"></div>
 
     """, unsafe_allow_html=True)
@@ -17164,21 +17103,7 @@ if GSF_WEB_MODE:
     }
     </style>
 
-    <nav id="gsf-page-nav-v249" aria-label="Navigazione pagina">
-      <button class="gsf-page-nav-item" data-target="home" data-active="home" type="button">
-        <svg viewBox="0 0 32 32"><path d="M4 14 16 4l12 10"/><path d="M7 13v14h18V13"/><path d="M13 27v-8h6v8"/></svg><span>Home</span>
-      </button>
-      <button class="gsf-page-nav-item" data-target="hub" data-section="dashboard" data-active="hub" type="button">
-        <svg viewBox="0 0 32 32"><rect x="5" y="5" width="8" height="8" rx="2"/><rect x="19" y="5" width="8" height="8" rx="2"/><rect x="5" y="19" width="8" height="8" rx="2"/><rect x="19" y="19" width="8" height="8" rx="2"/></svg><span>Hub</span>
-      </button>
-      
-      <button class="gsf-page-nav-item" data-target="hub" data-section="projects" data-active="projects" type="button">
-        <svg viewBox="0 0 32 32"><path d="M4 10h9l3 3h12v14H4Z"/><path d="M4 10V7h10l3 3"/></svg><span>Progetti</span>
-      </button>
-      <button class="gsf-page-nav-item" data-target="hub" data-section="live" data-active="live" type="button">
-        <svg viewBox="0 0 32 32"><g transform="rotate(-8 16 16)"><circle cx="16" cy="14" r="3"/><path d="M16 17v10M11 27h10"/><path d="M9.5 8.5a8 8 0 0 0 0 11M22.5 8.5a8 8 0 0 1 0 11"/><path d="M6 5a13 13 0 0 0 0 18M26 5a13 13 0 0 1 0 18"/></g></svg><span>Live</span>
-      </button>
-    </nav>
+
     """, unsafe_allow_html=True)
 
     import streamlit.components.v1 as components
@@ -17911,7 +17836,6 @@ if GSF_WEB_MODE:
       const D=P.document;
       const SHELL_Z=2147483600;
       const OVERLAY_Z=2147483400;
-      const OLD_IDS=['gsf-v328-global-footer','gsf-v330-global-brand','gsf-v330-global-footer','gsf-page-nav-v249','gsf-v334-header','gsf-v334-gamebar','gsf-v334-footer'];
       const SURFACES=['gsf-social-overlay-v159','gsf-creator-hub-live-v160','gsf-editor-overlay-v220','gsf-ai-overlay-v221','gsf-account-overlay-v223','gsf-short-overlay-v343'];
 
       const ensureStyle=()=>{
@@ -17995,10 +17919,9 @@ if GSF_WEB_MODE:
       const syncSocials=()=>{const f=D.getElementById('gsf-global-footer');const dst=f?.querySelector('.v343Socials');if(!dst)return;try{const hf=[...D.querySelectorAll('iframe')].find(x=>String(x.title||x.src||'').includes('home_v154'));const src=hf?.contentDocument?.querySelector('.footerSocial');if(src&&src.children.length)dst.innerHTML=src.innerHTML}catch(_e){}};
       const suppressChildChrome=(doc)=>{try{if(!doc||!doc.documentElement)return;if(doc.getElementById('home154')){doc.documentElement.classList.add('gsf-v343-parent-ready');return}let s=doc.getElementById('gsf-v343-child-chrome-lock');if(!s){s=doc.createElement('style');s.id='gsf-v343-child-chrome-lock';s.textContent=`.bottomNav,.siteFooter,[id^="gsf-page-nav"],[data-global-gamebar],.footerBrand{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}.brandOnly,.brandText{display:none!important}`;(doc.head||doc.documentElement).appendChild(s)}}catch(_e){}};
       const syncChildren=()=>D.querySelectorAll('iframe').forEach(f=>{const apply=()=>{try{suppressChildChrome(f.contentDocument)}catch(_e){}};apply();if(f.dataset.v343Chrome!=='1'){f.dataset.v343Chrome='1';f.addEventListener('load',apply,{passive:true})}});
-      const retireLegacyChrome=()=>OLD_IDS.forEach(id=>{const n=D.getElementById(id);if(n)n.remove()});
 
       function keepGlobalShellMounted(){
-        ensureStyle();retireLegacyChrome();
+        ensureStyle();
         const header=mount('gsf-global-header',markup.header);const bar=mount('gsf-global-gamebar',markup.gamebar);const footer=mount('gsf-global-footer',markup.footer);
         if(header&&header.dataset.v343Bound!=='1'){header.dataset.v343Bound='1';header.querySelector('.v343Account')?.addEventListener('click',()=>route({target:'hub',section:'profile'}))}
         if(bar&&bar.dataset.v343Bound!=='1'){bar.dataset.v343Bound='1';bar.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>route({target:b.dataset.page,section:b.dataset.page==='hub'?'dashboard':''})))}

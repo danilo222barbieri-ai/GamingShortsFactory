@@ -6,6 +6,7 @@ uses Playwright WebKit. No request mocking or swallowed JS errors.
 import os
 import base64
 import uuid
+import time
 from contextlib import contextmanager
 
 # A real, generated 2-second H.264 fixture. No provider or AI calls are needed.
@@ -37,6 +38,7 @@ INSTRUMENT = r"""
 @contextmanager
 def browser_page(mobile=True):
     from playwright.sync_api import sync_playwright
+    started=time.monotonic()
     with sync_playwright() as p:
         engine = os.environ.get('GSF_BROWSER','chromium')
         opts = {'headless':True}
@@ -46,18 +48,30 @@ def browser_page(mobile=True):
             opts['proxy']={'server':os.environ['GSF_BROWSER_PROXY']}
             opts['env']={**os.environ,'HOME':'/tmp/gsf-browser-home'}
         browser = getattr(p,engine).launch(**opts)
+        print("BROWSER LAUNCHED",engine,round(time.monotonic()-started,2),flush=True)
         ctx = browser.new_context(**(p.devices['iPhone 13'] if mobile else {'viewport':{'width':1440,'height':1000}}))
         ctx.add_init_script(INSTRUMENT)
+        if os.environ.get("GSF_DOM_DIAGNOSTICS"):
+            from pathlib import Path
+            ctx.add_init_script(Path(os.environ["GSF_DOM_DIAGNOSTICS"]).read_text())
         page = ctx.new_page()
         page.set_default_timeout(15000)
         errors=[]
         page.on('pageerror',lambda e:errors.append('pageerror: '+str(e)))
-        page.on('console',lambda m:errors.append('console: '+m.text) if m.type=='error' else None)
+        def console_error(message):
+            if message.type!='error':return
+            errors.append('console: '+message.text+' '+str(message.location))
+            if os.environ.get('GSF_DOM_DIAGNOSTICS'):print('BROWSER ERROR',message.text,flush=True)
+        page.on('console',console_error)
         page.on('requestfailed',lambda r:errors.append('network: '+r.url+' '+str(r.failure)))
+        page.on('response',lambda r:errors.append('http: '+str(r.status)+' '+r.url) if r.status>=400 else None)
         page.goto(os.environ['GSF_BASE_URL'],wait_until='domcontentloaded',timeout=120000)
+        print('DOCUMENT READY',round(time.monotonic()-started,2),flush=True)
         page.wait_for_selector('#gsf-global-gamebar',timeout=120000)
         page.wait_for_function("()=>window.GSFNavigation?.snapshot().surfaces===5",timeout=120000)
         page.wait_for_function("()=>[...document.querySelectorAll('iframe')].some(f=>{try{return f.contentWindow.__GSF_V333_CTA_TOUCH===true}catch(_){return false}})",timeout=120000)
+        page.wait_for_function("()=>document.querySelector('[data-testid=stApp]')?.getAttribute('data-test-script-state')==='notRunning'",timeout=120000)
+        print("APP READY",round(time.monotonic()-started,2),flush=True)
         assert not errors,errors
         if os.environ.get('GSF_TEST_MEDIA')=='1':
             response=ctx.request.put(os.environ['GSF_BASE_URL'].rstrip('/')+'/direct-upload/chunk',data=MEDIA_FIXTURE,headers={
@@ -66,26 +80,44 @@ def browser_page(mobile=True):
                 'X-GSF-Chunk-Start':'0','X-GSF-Chunk-Index':'0','X-GSF-Chunk-Count':'1',
                 'Content-Type':'application/octet-stream'})
             assert response.ok and response.json().get('completed'),response.text()
+            # Upload completion triggers a real Streamlit rerun. Warm-up must
+            # measure the loaded app, including its finite widget hotkeys.
+            page.wait_for_function("()=>[...document.querySelectorAll('iframe')].some(f=>{try{return f.contentWindow.__GSF_V333_CTA_TOUCH===true&&!!f.contentDocument.querySelector('.rings.uploaded')}catch(_){return false}})",timeout=120000)
+            page.wait_for_function("()=>!!document.querySelector('.st-key-v81_new_video button')&&document.querySelector('[data-testid=stApp]')?.getAttribute('data-test-script-state')==='notRunning'",timeout=120000)
         try:
             yield page,errors,ctx
+        except BaseException:
+            print('CAPTURED ERRORS',errors,flush=True)
+            try:
+                print('FAILURE STATE',page.evaluate("()=>({nav:window.GSFNavigation?.snapshot(),editor:[...document.querySelectorAll('#gsf-editor-overlay-v220')].map(e=>({cls:e.className,hidden:e.getAttribute('aria-hidden'),inert:e.inert,visibility:getComputedStyle(e).visibility,frame:e.querySelector('iframe')?.src})),errors:document.body.innerText.slice(-500)})"),flush=True)
+            except Exception:pass
+            raise
         finally:
             browser.close()
 
 def navigate(page,target,ready=True):
     if target in ('home','hub','projects','live'):
-        page.locator(f'#gsf-global-gamebar [data-page="{target}"]').click()
+        page.locator(f'#gsf-global-gamebar [data-page="{target}"]').click(no_wait_after=True)
     elif target=='profile':
-        page.locator('#gsf-global-header .v343Account').click()
+        page.locator('#gsf-global-header .v343Account').click(no_wait_after=True)
     else:
         # The public protocol used by Home CTAs, AI results and Editor actions.
         page.evaluate("t=>window.postMessage({type:'GSF_SHELL_NAV',target:t},location.origin)",target)
     expected=SURFACES.get('hub' if target in ('profile','projects','live') else target)
     page.wait_for_function("id=>{const ids=['gsf-creator-hub-live-v160','gsf-editor-overlay-v220','gsf-ai-overlay-v221','gsf-short-overlay-v343','gsf-social-overlay-v159','gsf-account-overlay-v223'];return ids.every(k=>{const e=document.getElementById(k);return k===id?e?.classList.contains('is-open'):!e?.classList.contains('is-open')})}",arg=expected)
     if target in ('hub','profile','projects','live'):
-        section={'hub':'dashboard','profile':'profile','projects':'projects','live':'live'}[target]
-        page.frame_locator('#gsf-creator-hub-live-v160 iframe').locator(f'.view[data-view="{section}"].active').wait_for(state='visible')
+        section={'hub':'dashboard','profile':'settings','projects':'projects','live':'live'}[target]
+        # Read the actual same-origin view; cached iframe targets may not be
+        # reattached in Playwright after a genuine BFCache pageshow.
+        page.wait_for_function("section=>{const f=document.querySelector('#gsf-creator-hub-live-v160 iframe'),d=f?.contentDocument,e=d?.querySelector('.view[data-view=\"'+section+'\"].active');return !!e&&e.getBoundingClientRect().height>0&&f.contentWindow.getComputedStyle(e).visibility!=='hidden'}",arg=section)
+    if target=='ai':
+        page.wait_for_function("()=>{const d=document.querySelector('#gsf-ai-overlay-v221 iframe')?.contentDocument;return d?.readyState==='complete'&&!!d.querySelector('#ai404')}")
     if target=='editor' and ready:
         page.wait_for_function("()=>document.querySelector('#gsf-editor-overlay-v220 iframe')?.__gsfEditorInitialized===true")
+        if os.environ.get('GSF_TEST_MEDIA')=='1':
+            page.wait_for_function("()=>{const f=document.querySelector('#gsf-editor-overlay-v220 iframe'),videos=[...f.contentDocument.querySelectorAll('video')].filter(v=>v.getAttribute('src'));return videos.length>0&&videos.every(v=>v.readyState>=1)}")
+    if target=='short' and os.environ.get('GSF_TEST_MEDIA')=='1':
+        page.wait_for_function("()=>document.querySelector('#gsf-short-overlay-v343 video')?.readyState>=1")
     assert_gamebar(page)
 
 def assert_gamebar(page):
@@ -107,6 +139,6 @@ def force_fallback_fullscreen(page):
     frame=page.frame_locator('#gsf-editor-overlay-v220 iframe')
     frame.locator('#gameEditorApp').wait_for()
     frame.locator('#gameEditorApp').evaluate("e=>e.requestFullscreen=()=>Promise.reject(new Error('Fullscreen unavailable on this device'))")
-    frame.locator('#fullscreenButton').click()
+    frame.locator('#fullscreenButton').click(no_wait_after=True)
     page.wait_for_function("()=>document.documentElement.classList.contains('gsf-mobile-editor-fullscreen')")
     return frame

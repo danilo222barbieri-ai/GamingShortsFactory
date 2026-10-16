@@ -1,4 +1,5 @@
 import ast
+import json
 import re
 from pathlib import Path
 import streamlit
@@ -19,11 +20,16 @@ navigation=(Path(__file__).parent/"gsf_navigation_lifecycle.js").read_text(encod
 app_source=(Path(__file__).parent.parent/"app.py").read_text(encoding="utf-8")
 selectors={"SHELL":"body","SOCIAL":"#gsf-social-overlay-v159","EDITOR":"#gsf-editor-overlay-v220","AI":"#gsf-ai-overlay-v221","FOOTER348":"#gsf-global-footer","FOOTER350":"#gsf-global-footer","FOOTER351":"#gsf-global-footer","NOTIFICATIONS":"body"}
 controllers={}
+surfaces={}
+surface_ids={"SOCIAL":"gsf-social-overlay-v159","HUB":"gsf-creator-hub-live-v160","EDITOR":"gsf-editor-overlay-v220","AI":"gsf-ai-overlay-v221"}
 for node in ast.walk(ast.parse(app_source)):
     if not isinstance(node,ast.Assign) or not isinstance(node.value,ast.Constant):continue
     for target in node.targets:
         if isinstance(target,ast.Name) and target.id.startswith("_GSF_PARENT_"):
             controllers[target.id.removeprefix("_GSF_PARENT_")]=node.value.value
+        if isinstance(target,ast.Name) and target.id.startswith("_GSF_SURFACE_"):
+            surfaces[target.id.removeprefix("_GSF_SURFACE_")]=node.value.value
+if surfaces.keys()!=surface_ids.keys():raise RuntimeError("incomplete persistent surfaces")
 if controllers.keys()!=selectors.keys():raise RuntimeError("incomplete parent controllers")
 mounts=[]
 for name,selector in selectors.items():
@@ -33,7 +39,12 @@ for name,selector in selectors.items():
 bootstrap="""
 (() => {
  const controllers=[CONTROLLERS];
+ const surfaces=SURFACE_MARKUP;
  const mount=()=>{
+   if(!document.body)return;
+   for(const [id,html] of surfaces){
+     if(!document.getElementById(id))document.body.insertAdjacentHTML("beforeend",html);
+   }
    for(const entry of controllers){
      const node=document.querySelector(entry.selector);
      if(node&&node!==entry.node){entry.node=node;entry.mount();}
@@ -42,7 +53,7 @@ bootstrap="""
  new MutationObserver(mount).observe(document.documentElement,{childList:true,subtree:true});
  mount();
 })();
-""".replace("CONTROLLERS",",\n".join(mounts))
+""".replace("CONTROLLERS",",\n".join(mounts)).replace("SURFACE_MARKUP",json.dumps([[surface_ids[name],html] for name,html in surfaces.items()]))
 navigation_script='<script '+navigation_marker+'>'+navigation+bootstrap+'</script>'
 if navigation_marker in s:
     start=s.index('<script '+navigation_marker)
