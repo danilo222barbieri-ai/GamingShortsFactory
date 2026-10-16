@@ -481,7 +481,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -843,10 +843,8 @@
       "owner": "chat/stability-unified-navigation-and-mobile-resume-l-395391",
       "paths": [
         "PROJECT_STATUS.md",
-        "app.py",
         "docs/architecture/gsf-navigation-lifecycle.md",
         "tests/test_canonical_ui_pipeline.py",
-        "tests/test_mobile_game_editor_2026.py",
         "tests/test_mobile_resume_stability.py",
         "tests/test_navigation_stability.py",
         "tests/test_runtime_import_stability.py",
@@ -854,14 +852,12 @@
         "tests/visual/gsf_visual_check.py",
         "web/__init__.py",
         "web/editor_2027_component/index.html",
-        "web/game_editor_mobile_component/editor.mjs",
         "web/gsf_navigation_lifecycle.js",
-        "web/home_v154_component/index.html",
         "web/install_adsense_bridge.py",
         "web/test_v286_global_gamebar.py",
         "web/test_v302_global_live_gamebar.py"
       ],
-      "scope": "stability: unified navigation and mobile resume lifecycle root cause; web/creator_hub_v156_component/index.html released by owner-authorized priority to the Creator Hub redesign (2026-10-16); rebase on it before touching the Hub again; web/game_editor_mobile_component/** and tests/test_mobile_game_editor_2026.py released by owner-authorized priority to the in-player Home-style editor restyle (2026-10-16); rebase on it before touching the mobile editor again",
+      "scope": "stability: unified navigation and mobile resume lifecycle root cause; web/creator_hub_v156_component/index.html released by owner-authorized priority to the Creator Hub redesign (2026-10-16); rebase on it before touching the Hub again; web/game_editor_mobile_component/** and tests/test_mobile_game_editor_2026.py released by owner-authorized priority to the in-player Home-style editor restyle (2026-10-16); rebase on it before touching the mobile editor again; app.py, web/home_v154_component/index.html, web/game_editor_mobile_component/editor.mjs and the mobile editor tests released by owner authorization (2026-10-16, stability chat idle) to the Night Arena single-look redesign; rebase on it before touching them again",
       "state": "active"
     },
     {
@@ -908,6 +904,8 @@
       "branch": "chat/ui-editor-home-style-light-glass-for-the-in-play-1d798f",
       "created_at": "2026-10-16T00:32:53+02:00",
       "evidence": {
+        "commit": "ae4245b70f204abf7c6cd4a4f8689ae8fa0af193",
+        "gate": "main Production Gate 38870351507 success; promoted ae4245b70f20 (e0e896a). #158 first promoted with a4f9d86 (1e596cd) after its own main run skipped promotion due to newer coord commits",
         "lifecycle_handoff": {
           "authorization": "Owner explicitly approved transfer of these two files in stability chat on 2026-10-16, preserving the integrated editor restyle.",
           "paths": [
@@ -915,6 +913,12 @@
             "tests/test_mobile_game_editor_2026.py"
           ],
           "to": "stability-unified-navigation-and-mobile-resume-l-395391"
+        },
+        "pr": "#158 (5c0d768), #159 (ae4245b)",
+        "railway": "frontend deployment 203797f5-e32e-4381-b06f-91897c17e1f8 SUCCESS, manifest verify PASS digest=0efca29fdeb9 == repo digest at ae4245b",
+        "tests": {
+          "local": "editor/pipeline tests 45-56 pass (direct run, no pytest in sandbox); node --test 16 pass; gsf_visual_check mobile editor pass",
+          "pr_ci": "contracts + production-gate success on #158 and #159"
         }
       },
       "id": "ui-editor-home-style-light-glass-for-the-in-play-1d798f",
@@ -929,7 +933,7 @@
         "web/game_editor_mobile_component/overlay_v414.mjs"
       ],
       "scope": "ui(editor): Home-style light glass for the in-player mobile Game Editor; Crea Short action in mini mode",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/notifications-event-driven-web-push-short-ready--e5303c",
@@ -998,6 +1002,34 @@
       ],
       "scope": "ui: Crea con IA fits between shell header and Game Bar on phones; drop CREA CON IA label",
       "state": "completed"
+    },
+    {
+      "branch": "chat/ui-night-arena-single-look-shared-theme-creator--1fc1b7",
+      "created_at": "2026-10-16T10:03:49+02:00",
+      "id": "ui-night-arena-single-look-shared-theme-creator--1fc1b7",
+      "owner": "chat/ui-night-arena-single-look-shared-theme-creator--1fc1b7",
+      "paths": [
+        "app.py",
+        "tests/test_gsf_editor_home_style.py",
+        "tests/test_mobile_editor_in_app.py",
+        "tests/test_mobile_game_editor_2026.py",
+        "tests/test_night_arena_theme.py",
+        "web/ai_v221_component/**",
+        "web/creator_hub_v156_component/**",
+        "web/game_editor_mobile_component/editor.css",
+        "web/game_editor_mobile_component/editor.mjs",
+        "web/game_editor_mobile_component/editor_state.mjs",
+        "web/game_editor_mobile_component/home_style_v416.css",
+        "web/game_editor_mobile_component/index.html",
+        "web/game_editor_mobile_component/overlay_v414.css",
+        "web/game_editor_mobile_component/overlay_v414.mjs",
+        "web/gsf_night_arena.css",
+        "web/home_v154_component/index.html",
+        "web/publish_short_v405_component/**",
+        "web/share_v156_component/**"
+      ],
+      "scope": "ui: Night Arena single look — shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
+      "state": "active"
     }
   ],
   "version": 1

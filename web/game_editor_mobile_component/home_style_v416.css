@@ -354,3 +354,52 @@
 /* While the gameplay is loading or unavailable, its message owns the center:
    the play control would only cover it. */
 .preview-stage #mediaEmptyState:not([hidden]) ~ .v414-center-play { display: none !important; }
+
+/* Sliders: light track and white thumb like the Home sliders, instead of the
+   native dark track that showed through the light glass. */
+.v414-transport input[type="range"],
+.v414-tool-sheet input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 28px;
+  background: transparent;
+}
+.v414-transport input[type="range"]::-webkit-slider-runnable-track,
+.v414-tool-sheet input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #cfe9fb, #d3f3e6);
+}
+.v414-transport input[type="range"]::-moz-range-track,
+.v414-tool-sheet input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #cfe9fb, #d3f3e6);
+}
+.v414-transport input[type="range"]::-moz-range-progress,
+.v414-tool-sheet input[type="range"]::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #70c4ef, #75dcbb);
+}
+.v414-transport input[type="range"]::-webkit-slider-thumb,
+.v414-tool-sheet input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -7px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(39,174,243,.35), 0 2px 8px rgba(20,60,90,.30);
+}
+.v414-transport input[type="range"]::-moz-range-thumb,
+.v414-tool-sheet input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(39,174,243,.35), 0 2px 8px rgba(20,60,90,.30);
+}

@@ -66,3 +66,11 @@ def test_play_never_covers_the_loading_message() -> None:
     assert "#mediaEmptyState:not([hidden]) ~ .v414-center-play { display: none !important; }" in css
     stage = _stage_html(_read("index.html"))
     assert stage.index('id="mediaEmptyState"') < stage.index('id="playButton"')
+
+
+def test_sliders_use_light_track_not_native_dark() -> None:
+    css = _read("home_style_v416.css")
+    assert ".v414-transport input[type=\"range\"]::-webkit-slider-runnable-track" in css
+    assert ".v414-tool-sheet input[type=\"range\"]::-webkit-slider-thumb" in css
+    # The trim handles are invisible native ranges over the strip: never restyle them.
+    assert ".trim-range" not in css.split("/* Sliders:")[1]
