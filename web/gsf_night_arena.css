@@ -1,0 +1,67 @@
+/* GSF Night Arena v1 — the single look of the whole app.
+   Canonical source. Every surface inlines this block verbatim between
+   GSF_NIGHT_ARENA:BEGIN / GSF_NIGHT_ARENA:END (tests/test_night_arena_theme.py).
+   Brand hues are the official kit (design/brand); only the surface/text
+   roles are re-mapped for the dark ground. */
+:root{
+ color-scheme:dark;
+ /* Ground */
+ --na-bg:#050D16;
+ --na-bg-2:#081827;
+ --na-deep:#0A1D2E;
+ /* Glass */
+ --na-glass:rgba(16,40,61,.55);
+ --na-glass-strong:rgba(16,40,61,.78);
+ --na-glass-hi:rgba(255,255,255,.06);
+ --na-edge:rgba(121,210,255,.18);
+ --na-edge-strong:rgba(121,210,255,.32);
+ --na-shine:inset 0 1px 0 rgba(255,255,255,.08);
+ --na-shadow:0 18px 40px rgba(0,0,0,.45);
+ /* Text */
+ --na-text:#EAF6FF;
+ --na-text-strong:#FFFFFF;
+ --na-text-muted:#9FB7CA;
+ --na-text-faint:#6F879A;
+ /* Area glows (official hues) */
+ --na-glow-primary:0 0 24px rgba(39,174,243,.45);
+ --na-glow-ai:0 0 24px rgba(157,130,255,.5);
+ --na-glow-short:0 0 24px rgba(94,214,160,.45);
+ --na-ring:conic-gradient(from 0deg,#27AEF3,#53E0EA,#5ED6A0,#9D82FF,#27AEF3);
+ --na-cta:linear-gradient(90deg,#27AEF3,#53E0EA);
+ --na-cta-ink:#052033;
+ --na-mural-font:"Caveat","Segoe Print","Bradley Hand",cursive;
+ /* One typeface everywhere: Avenir Next / SF on Apple, Nunito Sans (bundled via Google Fonts) elsewhere,
+    so Android and Windows never fall back to a different system font page by page. */
+ --na-font:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Nunito Sans","Segoe UI",sans-serif;
+ --gsf-font:var(--na-font);
+ /* Brand role tokens re-mapped onto the dark ground */
+ --gsf-surface:var(--na-glass);
+ --gsf-bg-soft:rgba(39,174,243,.10);
+ --gsf-line:var(--na-edge);
+ --gsf-ink:var(--na-text);
+ --gsf-muted:var(--na-text-muted);
+}
+html,body{background:var(--na-bg);color:var(--na-text);font-family:var(--na-font)}
+button,input,select,textarea{font-family:inherit}
+/* Retina / high-density quality: crisp type, vector-sharp icons, smooth media scaling. */
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+svg{shape-rendering:geometricPrecision}
+img,video{image-rendering:auto;-webkit-user-drag:none}
+time,output,.tc,.timecode,[data-num]{font-variant-numeric:tabular-nums}
+body{
+ background:
+  radial-gradient(60% 40% at 0% 18%,rgba(39,174,243,.20),transparent 70%),
+  radial-gradient(55% 38% at 100% 46%,rgba(157,130,255,.16),transparent 70%),
+  radial-gradient(60% 40% at 30% 100%,rgba(83,224,234,.10),transparent 70%),
+  var(--na-bg);
+ background-attachment:fixed;
+}
+::selection{background:rgba(39,174,243,.45);color:#fff}
+:focus-visible{outline:2px solid #79D2FF;outline-offset:2px}
+input,textarea,select{background:rgba(5,13,22,.55);color:var(--na-text);border-color:var(--na-edge)}
+input::placeholder,textarea::placeholder{color:var(--na-text-faint)}
+*{scrollbar-color:rgba(121,210,255,.25) transparent}
+.na-glass{background:var(--na-glass);border:1px solid var(--na-edge);box-shadow:var(--na-shine);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.na-cta{background:var(--na-cta);color:var(--na-cta-ink);border:0;box-shadow:0 8px 24px rgba(39,174,243,.4)}
+.na-mural{font-family:var(--na-mural-font);color:#79D2FF;font-weight:600}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

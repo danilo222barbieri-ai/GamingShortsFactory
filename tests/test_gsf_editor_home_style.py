@@ -1,7 +1,8 @@
-"""V416: Home-style skin for the in-player mobile Game Editor.
+"""In-player mobile Game Editor skins.
 
-The editor keeps the V414 layout (every control inside #previewStage); this
-layer only changes the look and adds a Crea Short action to the mini player.
+V416 keeps the V414 layout (every control inside #previewStage) and the mini
+player's Crea Short action; V417 (Night Arena) is the single app look loaded
+last: mini player fills its slot, nothing useless covers the gameplay.
 """
 from __future__ import annotations
 
@@ -22,11 +23,27 @@ def _stage_html(html: str) -> str:
     return html[start:end]
 
 
-def test_home_skin_is_loaded_last() -> None:
+def test_night_arena_skin_is_loaded_last() -> None:
     html = _read("index.html")
-    assert 'href="./home_style_v416.css"' in html
-    assert html.index('href="./overlay_v414.css"') < html.index('href="./home_style_v416.css"')
-    assert '<meta name="color-scheme" content="light">' in html
+    assert html.index('href="./overlay_v414.css"') < html.index('href="./home_style_v416.css"') < html.index('href="./night_arena_v417.css"')
+    assert '<meta name="color-scheme" content="dark">' in html
+
+
+def test_nothing_useless_covers_the_gameplay() -> None:
+    css = _read("night_arena_v417.css")
+    assert ".v414-top-hud .editor-kicker,\n.ratio-badge,\n.v414-top-hud .ai-top-button { display: none !important; }" in css
+    # Save status stays for screen readers; only errors are visible.
+    assert '.v414-top-hud #editorStatus[data-state="error"]' in css
+    assert ".editor-app.is-expanded .v414-top-hud #backButton { display: none; }" in css
+
+
+def test_mini_player_fills_its_slot() -> None:
+    css = _read("night_arena_v417.css")
+    mini = re.search(r"\.editor-app\.is-mini \.preview-stage\s*\{(?P<body>.*?)\}", css, re.S)
+    assert mini is not None
+    # Sized from the iframe viewport, which the shell keeps between header and Game Bar.
+    assert "width: min(calc(100vw - 20px), calc((100dvh - 20px) * 9 / 16));" in mini.group("body")
+    assert "position:" not in mini.group("body")
 
 
 def test_mini_player_has_crea_short_inside_the_video() -> None:
@@ -54,11 +71,10 @@ def test_tool_rail_order_and_labels_unchanged() -> None:
     assert tools == ["clip", "frame", "look", "hud", "text", "audio", "ai"]
 
 
-def test_skin_uses_light_glass_and_brand_tokens() -> None:
-    css = _read("home_style_v416.css")
-    for token in ("--gsf-primary: #27AEF3", "--gsf-short: #5ED6A0", "--gsf-ai: #9D82FF", "backdrop-filter"):
+def test_skin_uses_dark_glass_and_brand_tokens() -> None:
+    css = _read("night_arena_v417.css")
+    for token in ("#27AEF3", "#53E0EA", "#9D82FF", "backdrop-filter", "--v417-glass: rgba(10, 26, 42, .62);"):
         assert token in css, token
-    assert "rgba(255, 255, 255, .76)" in css
 
 
 def test_play_never_covers_the_loading_message() -> None:
@@ -68,7 +84,7 @@ def test_play_never_covers_the_loading_message() -> None:
     assert stage.index('id="mediaEmptyState"') < stage.index('id="playButton"')
 
 
-def test_sliders_use_light_track_not_native_dark() -> None:
+def test_sliders_are_styled_and_trim_handles_untouched() -> None:
     css = _read("home_style_v416.css")
     assert ".v414-transport input[type=\"range\"]::-webkit-slider-runnable-track" in css
     assert ".v414-tool-sheet input[type=\"range\"]::-webkit-slider-thumb" in css
