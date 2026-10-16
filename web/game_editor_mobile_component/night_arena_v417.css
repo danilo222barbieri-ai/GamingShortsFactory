@@ -258,3 +258,22 @@
 .v414-tool-sheet input[type="range"]::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(39, 174, 243, .45), 0 0 14px rgba(39, 174, 243, .6); }
 .v414-transport input[type="range"]::-moz-range-thumb,
 .v414-tool-sheet input[type="range"]::-moz-range-thumb { box-shadow: 0 0 0 3px rgba(39, 174, 243, .45), 0 0 14px rgba(39, 174, 243, .6); }
+
+/* Game AI heat strip under the clip: violet where something happens, cyan where it peaks. */
+.v414-timeline .event-markers.has-heat::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 3px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--heat);
+  box-shadow: 0 0 10px rgba(157, 130, 255, .35);
+  pointer-events: none;
+}
+.v414-timeline .event-marker {
+  border-color: #fff;
+  background: #9D82FF;
+  box-shadow: 0 0 10px rgba(157, 130, 255, .8);
+}

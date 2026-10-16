@@ -30,6 +30,10 @@
  --na-cta:linear-gradient(90deg,#27AEF3,#53E0EA);
  --na-cta-ink:#052033;
  --na-mural-font:"Caveat","Segoe Print","Bradley Hand",cursive;
+ /* One typeface everywhere: Avenir Next / SF on Apple, Nunito Sans (bundled via Google Fonts) elsewhere,
+    so Android and Windows never fall back to a different system font page by page. */
+ --na-font:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Nunito Sans","Segoe UI",sans-serif;
+ --gsf-font:var(--na-font);
  /* Brand role tokens re-mapped onto the dark ground */
  --gsf-surface:var(--na-glass);
  --gsf-bg-soft:rgba(39,174,243,.10);
@@ -37,7 +41,8 @@
  --gsf-ink:var(--na-text);
  --gsf-muted:var(--na-text-muted);
 }
-html,body{background:var(--na-bg);color:var(--na-text)}
+html,body{background:var(--na-bg);color:var(--na-text);font-family:var(--na-font)}
+button,input,select,textarea{font-family:inherit}
 body{
  background:
   radial-gradient(60% 40% at 0% 18%,rgba(39,174,243,.20),transparent 70%),
