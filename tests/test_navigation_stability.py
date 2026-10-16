@@ -216,3 +216,19 @@ setTimeout(()=>{assert.equal(called,100);assert.equal(retained,0,'completed time
             page.evaluate("()=>window.postMessage({type:'GSF_SHELL_NAV',target:'editor',resume:true,draft_id:'different-draft'},location.origin)")
             page.wait_for_function("()=>document.querySelector('#gsf-editor-overlay-v220 iframe').contentWindow.GSFGameEditor2026?.getState().zoom===2.0")
             assert_gamebar(page)
+
+
+def test_crea_short_opens_the_canonical_page_and_starts_the_render():
+    ROOT = Path(__file__).resolve().parents[1]
+    lifecycle = (ROOT / "web/gsf_navigation_lifecycle.js").read_text()
+    app = (ROOT / "app.py").read_text()
+    share = (ROOT / "web/share_v156_component/index.html").read_text()
+    # "short" is an alias of the canonical Crea Short page, never the legacy V343 box.
+    assert "if (target==='short') return {target:'social',section:'',createShort:true,requestedAt:Date.now()};" in lifecycle
+    # The social surface starts the render once per request when no final Short is ready.
+    assert "if(data.createShort)startShortIfNeeded(Number(data.requestedAt)||0)" in app
+    assert "if(!requestedAt||requestedAt===lastShortRequest)return;" in app
+    assert "fetch('/share/state'" in app
+    # The page shows why nothing is rendering yet.
+    assert "e.data.type!=='GSF_SHARE_NOTICE'" in share
+    assert "sub=shortNotice||'Lo Short finale sta arrivando'" in share

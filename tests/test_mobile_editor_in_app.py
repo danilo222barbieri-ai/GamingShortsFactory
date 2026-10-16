@@ -19,12 +19,14 @@ def _markdown_blocks():
 
 
 def test_editor_overlay_markup_is_html_not_a_code_block():
-    blocks = [b for b in _markdown_blocks() if 'id="gsf-editor-overlay-v220"' in b]
-    assert blocks, "V220 editor overlay markup not found in any st.markdown block"
-    for block in blocks:
-        # An HTML block must START at <= 3 spaces; lines inside it may be indented freely.
-        opener = next(line for line in block.splitlines() if 'id="gsf-editor-overlay-v220"' in line)
-        assert not opener.startswith("    "), f"indented overlay markup renders as a Markdown code block: {opener.strip()[:80]}"
+    # The overlay is a persistent top-level surface installed into Streamlit's index.html
+    # (web/install_adsense_bridge.py reads every _GSF_SURFACE_* constant), so it never
+    # passes through st.markdown and can never render as a Markdown code block.
+    surfaces = re.findall(r'^_GSF_SURFACE_(\w+) = r"""(.*?)"""', APP, re.S | re.M)
+    editor = [body for name, body in surfaces if 'id="gsf-editor-overlay-v220"' in body]
+    assert editor, "V220 editor overlay must be a persistent _GSF_SURFACE_* surface"
+    assert editor[0].lstrip().startswith('<div id="gsf-editor-overlay-v220"')
+    assert not [b for b in _markdown_blocks() if 'id="gsf-editor-overlay-v220"' in b], "overlay must not also be mounted through st.markdown"
 
 
 def test_overlay_exists_before_the_bridge_reads_it():

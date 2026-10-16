@@ -16458,7 +16458,20 @@ if GSF_WEB_MODE:
         }
       },{capture:true,signal:bridge.signal});
 
-      P.GSFNavigation.registerSurface('social',{open:data=>open(String(data.platform||'')),close});
+      // Crea Short: the canonical page starts the render when no final Short exists yet.
+      let lastShortRequest=0;
+      const notice=text=>{try{frame.contentWindow.postMessage({type:'GSF_SHARE_NOTICE',text:String(text||'')},location.origin)}catch(e){}};
+      const startShortIfNeeded=async requestedAt=>{
+        if(!requestedAt||requestedAt===lastShortRequest)return;
+        lastShortRequest=requestedAt;
+        try{const r=await P.fetch('/share/state',{cache:'no-store',credentials:'same-origin'});const j=await r.json();if(r.ok&&j&&j.ready)return}catch(e){}
+        let b=document.querySelector('.st-key-gsf-major-create-short button,.st-key-create_final_short_v54 button');
+        if(!b)b=[...document.querySelectorAll('button,[role="button"]')].find(x=>{if(x.closest('#gsf-social-overlay-v159,#gsf-global-gamebar,#gsf-global-header'))return false;const t=String(x.innerText||x.textContent||'').trim().toLowerCase();return t==='crea short'||t.includes('crea short finale')||t.includes('crea il tuo short')});
+        if(!b){setTimeout(()=>notice('Carica un gameplay prima di creare lo Short.'),400);return}
+        if(b.disabled||b.getAttribute('aria-disabled')==='true'){setTimeout(()=>notice('Il gameplay non è ancora pronto per il render.'),400);return}
+        b.click();setTimeout(()=>notice('Creazione Short avviata…'),400);
+      };
+      P.GSFNavigation.registerSurface('social',{open:data=>{open(String(data.platform||''));if(data.createShort)startShortIfNeeded(Number(data.requestedAt)||0)},close});
     })();
 
     })(window.parent);

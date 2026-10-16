@@ -31,6 +31,9 @@
   const normalize = data => {
     let target=String(data.target||'home'), section=String(data.section||'');
     if (target==='close') target='home';
+    // "Crea Short" always opens the canonical Crea Short page (/share-v156/);
+    // the social surface starts the render when no final Short is ready yet.
+    if (target==='short') return {target:'social',section:'',createShort:true,requestedAt:Date.now()};
     if (target==='profile'||target==='account') {target='hub';section='profile';}
     if (target==='projects'||target==='live') {section=target;target='hub';}
     if (target==='hub'&&!['dashboard','profile','projects','live','subscription','social'].includes(section)) section='dashboard';

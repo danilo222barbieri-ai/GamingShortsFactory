@@ -311,7 +311,7 @@ const toast=(msg)=>{const t=$('#toast');t.textContent=msg;t.classList.add('show'
 const nav=(target)=>{try{parent.postMessage({type:'GSF_SHELL_NAV',target},location.origin)}catch(_e){}};
 
 /* sheets */
-let openSheet=null,lastFocus=null;
+let openSheet=null,lastFocus=null,shortNotice='';
 function open(name){
   const s=$('#sheet-'+name);if(!s)return;
   if(openSheet&&openSheet!==s)close(false);
@@ -404,7 +404,7 @@ function renderCore(){
   btn.disabled=!server.ready||busy()||!n;
   let title,sub;
   if(busy()){const res=Object.values((server.publish_job||{}).results||{}).filter(r=>['queued','running','done','error'].includes(r.status));const done=res.filter(r=>r.status==='done'||r.status==='error').length;title='Pubblico…';sub=done+' di '+(res.length||n)+' completati'}
-  else if(!server.ready){title='In arrivo';sub='Lo Short finale sta arrivando'}
+  else if(!server.ready){title='In arrivo';sub=shortNotice||'Lo Short finale sta arrivando'}
   else if(!n){title='Scegli i social';sub='Tocca le bolle sull\'anello'}
   else{title=n>1?'Pubblica su '+n+' social':'Pubblica su '+NAMES[sel[0]];
     const needTitle=sel.includes('youtube')&&!String(effective('youtube').title||'').trim();
@@ -562,6 +562,11 @@ async function sync(){
 }
 function renderAll(){renderTexts();renderPlatforms();markTabs()}
 
+window.addEventListener('message',e=>{
+  if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHARE_NOTICE')return;
+  const t=String(e.data.text||'').slice(0,140);if(!t)return;
+  shortNotice=t;renderCore();toast(t);sync();
+});
 window.addEventListener('message',e=>{
   if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHARE_FOCUS')return;
   const b=$('.plat[data-platform="'+String(e.data.platform||'').replace(/[^a-z]/g,'')+'"]');
