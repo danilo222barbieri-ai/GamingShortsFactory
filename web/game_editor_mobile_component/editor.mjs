@@ -383,6 +383,30 @@ function renderMarkers() {
     });
     eventMarkers.append(marker);
   });
+  renderHeatStrip(duration);
+}
+
+// GSF_NIGHT_ARENA heat strip: where Game AI found the strongest moments, as a glow along the clip.
+function renderHeatStrip(duration) {
+  const events = context.event_map.slice(0, 40);
+  if (!events.length) { eventMarkers.style.removeProperty("--heat"); eventMarkers.classList.remove("has-heat"); return; }
+  const samples = 40, heat = new Array(samples + 1).fill(0);
+  events.forEach((event) => {
+    const time = clamp(event.time ?? event.start_time ?? event.start ?? 0, 0, duration);
+    const raw = Number(event.score ?? event.confidence ?? event.intensity ?? 0.7);
+    const weight = clamp(raw > 1 ? raw / 100 : raw, 0.15, 1);
+    for (let i = 0; i <= samples; i += 1) {
+      const t = (i / samples) * duration, d = (t - time) / Math.max(0.6, duration * 0.04);
+      heat[i] = Math.max(heat[i], weight * Math.exp(-d * d));
+    }
+  });
+  const stops = heat.map((h, i) => {
+    const pct = ((i / samples) * 100).toFixed(1);
+    const a = (0.08 + h * 0.85).toFixed(2);
+    return h > 0.6 ? `rgba(83,224,234,${a}) ${pct}%` : `rgba(157,130,255,${a}) ${pct}%`;
+  });
+  eventMarkers.style.setProperty("--heat", `linear-gradient(90deg, ${stops.join(", ")})`);
+  eventMarkers.classList.add("has-heat");
 }
 
 function renderAiContext() {

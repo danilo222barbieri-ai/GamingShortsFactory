@@ -73,6 +73,8 @@
       current=next;
       currentData={...data,...next};
       surfaces.get(next.target)?.open?.({...data,...next});
+      // GSF_NIGHT_ARENA shared-element reveal (CSS only, never delays the route).
+      try{const o=window.__gsfNavOrigin,el=D.getElementById(ids[next.target]);window.__gsfNavOrigin=null;if(el&&o&&Date.now()-o.t<1500&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const r=el.getBoundingClientRect();el.style.setProperty('--na-ox',(o.x-r.left)+'px');el.style.setProperty('--na-oy',(o.y-r.top)+'px');el.style.setProperty('--na-oc',o.color||'#27AEF3');el.classList.remove('na-reveal');void el.offsetWidth;el.classList.add('na-reveal');setTimeout(()=>el.classList.remove('na-reveal'),700)}}catch(_e){}
       reconcile();
       return true;
     } finally {transitioning=false;reconcile();}

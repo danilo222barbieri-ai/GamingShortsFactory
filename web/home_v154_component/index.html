@@ -1901,7 +1901,7 @@ button{appearance:none;-webkit-appearance:none}
 
 
 
-:root{color-scheme:light!important}
+:root{color-scheme:dark!important} /* GSF_NIGHT_ARENA */
 html,body{
   background:#FBFDFF!important;
 }
@@ -2954,6 +2954,183 @@ body.gsfDesktopPreview .feature{
 /* END V284 PROFILE AVATAR IN TOP LOGIN */
 
 
+/* GSF_NIGHT_ARENA:BEGIN */
+/* GSF Night Arena v1 — the single look of the whole app.
+   Canonical source. Every surface inlines this block verbatim between
+   GSF_NIGHT_ARENA:BEGIN / GSF_NIGHT_ARENA:END (tests/test_night_arena_theme.py).
+   Brand hues are the official kit (design/brand); only the surface/text
+   roles are re-mapped for the dark ground. */
+:root{
+ color-scheme:dark;
+ /* Ground */
+ --na-bg:#050D16;
+ --na-bg-2:#081827;
+ --na-deep:#0A1D2E;
+ /* Glass */
+ --na-glass:rgba(16,40,61,.55);
+ --na-glass-strong:rgba(16,40,61,.78);
+ --na-glass-hi:rgba(255,255,255,.06);
+ --na-edge:rgba(121,210,255,.18);
+ --na-edge-strong:rgba(121,210,255,.32);
+ --na-shine:inset 0 1px 0 rgba(255,255,255,.08);
+ --na-shadow:0 18px 40px rgba(0,0,0,.45);
+ /* Text */
+ --na-text:#EAF6FF;
+ --na-text-strong:#FFFFFF;
+ --na-text-muted:#9FB7CA;
+ --na-text-faint:#6F879A;
+ /* Area glows (official hues) */
+ --na-glow-primary:0 0 24px rgba(39,174,243,.45);
+ --na-glow-ai:0 0 24px rgba(157,130,255,.5);
+ --na-glow-short:0 0 24px rgba(94,214,160,.45);
+ --na-ring:conic-gradient(from 0deg,#27AEF3,#53E0EA,#5ED6A0,#9D82FF,#27AEF3);
+ --na-cta:linear-gradient(90deg,#27AEF3,#53E0EA);
+ --na-cta-ink:#052033;
+ --na-mural-font:"Caveat","Segoe Print","Bradley Hand",cursive;
+ /* One typeface everywhere: Avenir Next / SF on Apple, Nunito Sans (bundled via Google Fonts) elsewhere,
+    so Android and Windows never fall back to a different system font page by page. */
+ --na-font:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Nunito Sans","Segoe UI",sans-serif;
+ --gsf-font:var(--na-font);
+ /* Brand role tokens re-mapped onto the dark ground */
+ --gsf-surface:var(--na-glass);
+ --gsf-bg-soft:rgba(39,174,243,.10);
+ --gsf-line:var(--na-edge);
+ --gsf-ink:var(--na-text);
+ --gsf-muted:var(--na-text-muted);
+}
+html,body{background:var(--na-bg);color:var(--na-text);font-family:var(--na-font)}
+button,input,select,textarea{font-family:inherit}
+/* Retina / high-density quality: crisp type, vector-sharp icons, smooth media scaling. */
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+svg{shape-rendering:geometricPrecision}
+img,video{image-rendering:auto;-webkit-user-drag:none}
+time,output,.tc,.timecode,[data-num]{font-variant-numeric:tabular-nums}
+body{
+ background:
+  radial-gradient(60% 40% at 0% 18%,rgba(39,174,243,.20),transparent 70%),
+  radial-gradient(55% 38% at 100% 46%,rgba(157,130,255,.16),transparent 70%),
+  radial-gradient(60% 40% at 30% 100%,rgba(83,224,234,.10),transparent 70%),
+  var(--na-bg);
+ background-attachment:fixed;
+}
+::selection{background:rgba(39,174,243,.45);color:#fff}
+:focus-visible{outline:2px solid #79D2FF;outline-offset:2px}
+input,textarea,select{background:rgba(5,13,22,.55);color:var(--na-text);border-color:var(--na-edge)}
+input::placeholder,textarea::placeholder{color:var(--na-text-faint)}
+*{scrollbar-color:rgba(121,210,255,.25) transparent}
+.na-glass{background:var(--na-glass);border:1px solid var(--na-edge);box-shadow:var(--na-shine);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.na-cta{background:var(--na-cta);color:var(--na-cta-ink);border:0;box-shadow:0 8px 24px rgba(39,174,243,.4)}
+.na-mural{font-family:var(--na-mural-font);color:#79D2FF;font-weight:600}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+/* GSF_NIGHT_ARENA:END */
+/* GSF_NIGHT_ARENA_PAGE:BEGIN */
+/* Home on the Night Arena ground. Specificity (html body #home154#home154 …) and
+   !important on purpose: the Home carries many historical layers. */
+html body #home154#home154{background:transparent!important;border-radius:0!important}
+html body #home154#home154:before{display:none!important}
+html body #home154#home154 .brandOnly,html body #home154#home154 .accountEntry{color:var(--na-text)!important}
+/* Murals: one handwriting, glowing cyan */
+html body #home154#home154 .scribble,html body #home154#home154 .muralAmbient,html body #home154#home154 .guideText{font-family:var(--na-mural-font)!important;color:#79D2FF!important;font-weight:700!important;text-shadow:0 0 18px rgba(39,174,243,.35)!important}
+html body #home154#home154 .scribble svg,html body #home154#home154 .padSketch svg{stroke:#79D2FF!important}
+/* The living upload orb */
+@keyframes naSpin{to{transform:rotate(360deg)}}
+@keyframes naBreathe{50%{box-shadow:0 0 0 4px rgba(5,13,22,.9),0 0 0 6px rgba(83,224,234,.75),0 0 70px rgba(39,174,243,.65),0 0 140px rgba(157,130,255,.35)}}
+html body #home154#home154 .rings{
+ background:radial-gradient(circle at 50% 35%,#12314B 0%,#0A1D2E 60%,#071522 100%)!important;
+ border:0!important;
+ box-shadow:0 0 0 4px rgba(5,13,22,.9),0 0 0 6px rgba(39,174,243,.6),0 0 46px rgba(39,174,243,.45),0 0 110px rgba(157,130,255,.25),inset 0 1px 0 rgba(255,255,255,.12)!important;
+ animation:naBreathe 6s ease-in-out infinite;
+}
+html body #home154#home154 .rings:before{
+ inset:-22px!important;border:0!important;border-radius:50%!important;
+ background:conic-gradient(from 0deg,#27AEF3,#53E0EA,#5ED6A0,#9D82FF,#27AEF3)!important;
+ -webkit-mask:radial-gradient(circle,transparent calc(50% - 3px),#000 calc(50% - 2px),#000 50%,transparent calc(50% + 1px))!important;
+ mask:radial-gradient(circle,transparent calc(50% - 3px),#000 calc(50% - 2px),#000 50%,transparent calc(50% + 1px))!important;
+ box-shadow:none!important;opacity:.9!important;animation:naSpin 9s linear infinite;
+}
+html body #home154#home154 .rings:after{inset:-48px!important;border:1px dashed rgba(121,210,255,.22)!important;box-shadow:none!important}
+html body #home154#home154 .rings.uploading{box-shadow:0 0 0 4px rgba(5,13,22,.9),0 0 0 6px #5ED6A0,0 0 70px rgba(94,214,160,.6),0 0 140px rgba(39,174,243,.35)!important}
+html body #home154#home154 .rings.uploading:before{animation-duration:1.6s}
+html body #home154#home154 .circle{background:transparent!important;color:#fff!important}
+html body #home154#home154 .icon{color:#79D2FF!important;filter:drop-shadow(0 0 12px rgba(39,174,243,.55))}
+html body #home154#home154 .circle strong{color:#fff!important}
+html body #home154#home154 .status.error{background:var(--na-glass-strong)!important;color:#FF8A94!important;border:1px solid rgba(255,102,115,.45)!important}
+html body #home154#home154 .track{background:var(--na-edge)!important}
+html body #home154#home154 .bar{background:var(--na-cta)!important}
+html body #home154#home154 .replaceToast{background:var(--na-glass-strong)!important;border:1px solid var(--na-edge-strong)!important;color:var(--na-text)!important;box-shadow:var(--na-shadow)!important;-webkit-backdrop-filter:blur(24px)!important;backdrop-filter:blur(24px)!important}
+html body #home154#home154 .replaceToastBody{color:var(--na-text-muted)!important}
+html body #home154#home154 .replaceToastBtn{background:rgba(255,255,255,.06)!important;border:1px solid var(--na-edge)!important;color:var(--na-text)!important}
+html body #home154#home154 .replaceToastBtn.primary{background:var(--na-cta)!important;border:0!important;color:var(--na-cta-ink)!important}
+/* Area cards: each glows in its own colour */
+html body #home154#home154 .feature{background:linear-gradient(180deg,var(--na-area-tint),rgba(16,40,61,.5))!important;border:1px solid var(--na-area-edge)!important;box-shadow:var(--na-shine)!important;color:#fff!important;-webkit-backdrop-filter:blur(18px)!important;backdrop-filter:blur(18px)!important}
+html body #home154#home154 .fAi{--na-area:#9D82FF;--na-area-tint:rgba(157,130,255,.16);--na-area-edge:rgba(157,130,255,.38)}
+html body #home154#home154 .fEditor{--na-area:#27AEF3;--na-area-tint:rgba(39,174,243,.16);--na-area-edge:rgba(39,174,243,.4)}
+html body #home154#home154 .fShort{--na-area:#5ED6A0;--na-area-tint:rgba(94,214,160,.15);--na-area-edge:rgba(94,214,160,.4)}
+html body #home154#home154 .featureIcon{background:color-mix(in srgb,var(--na-area) 22%,transparent)!important;color:color-mix(in srgb,var(--na-area) 55%,#fff)!important;box-shadow:0 0 24px color-mix(in srgb,var(--na-area) 50%,transparent)!important;border:0!important}
+html body #home154#home154 .featureIcon svg{stroke:currentColor!important}
+html body #home154#home154 .feature b{color:#fff!important}
+html body #home154#home154 .feature small{color:var(--na-text-muted)!important}
+/* AI panel, moments, projects */
+html body #home154#home154 .aiPanel,html body #home154#home154 .momentCover,html body #home154#home154 .project{background:var(--na-glass)!important;border-color:var(--na-edge)!important;color:var(--na-text)!important;box-shadow:var(--na-shine)!important}
+html body #home154#home154 .kicker,html body #home154#home154 .momentTitle,html body #home154#home154 .meta{color:var(--na-text-muted)!important}
+html body #home154#home154 .engine,html body #home154#home154 .dur{background:rgba(255,255,255,.05)!important;border:1px solid var(--na-edge)!important;color:var(--na-text)!important}
+html body #home154#home154 .engine.active,html body #home154#home154 .dur.active{background:rgba(157,130,255,.22)!important;border-color:rgba(157,130,255,.55)!important;box-shadow:var(--na-glow-ai)!important;color:#fff!important}
+html body #home154#home154 .cta{background:linear-gradient(135deg,#27AEF3,#9D82FF)!important;color:#fff!important;border:0!important}
+html body #home154#home154 .momentPlay{background:rgba(5,13,22,.6)!important;color:#79D2FF!important}
+/* The shell has no footer any more: the Home stops reserving room for it. */
+html.gsf-v343-parent-ready body #home154#home154 .siteFooter{display:none!important}
+/* Old layers force a light page with !important: the ground wins back here. */
+html:root{background:var(--na-bg)!important}
+html:root body{background:radial-gradient(60% 40% at 0% 18%,rgba(39,174,243,.20),transparent 70%),radial-gradient(55% 38% at 100% 46%,rgba(157,130,255,.16),transparent 70%),radial-gradient(60% 40% at 30% 100%,rgba(83,224,234,.10),transparent 70%),var(--na-bg)!important}
+/* One mural per screen: the primary one tells the whole story (its copy follows the state). */
+html body #home154#home154 #muralUpload,html body #home154#home154 #muralAmbient{display:none!important}
+/* "Written with a marker" on entry and on every state change */
+@keyframes naPen{from{clip-path:inset(0 100% 0 0);opacity:.2}to{clip-path:inset(0 0 0 0);opacity:1}}
+html body #home154#home154 #muralPrimary .guideText{animation:naPen 1.1s cubic-bezier(.3,.7,.2,1) both}
+html body #home154#home154 #muralPrimary .guideText.muralIn{animation:naPen .9s cubic-bezier(.3,.7,.2,1) both}
+/* Living orb: progress ring, magnet, preview with AI scan */
+html body #home154#home154 .naProgress{position:absolute;inset:-28px;width:calc(100% + 56px);height:calc(100% + 56px);transform:rotate(-90deg);overflow:visible;pointer-events:none;opacity:0;transition:opacity .3s}
+html body #home154#home154 .rings.uploading .naProgress{opacity:1}
+html body #home154#home154 .rings.uploading:before{opacity:.25!important}
+html body #home154#home154 .naProgress circle{fill:none;stroke-width:5;stroke-linecap:round}
+html body #home154#home154 .naProgress .trackC{stroke:rgba(121,210,255,.15)}
+html body #home154#home154 .naProgress .valC{stroke:url(#naProgGrad);transition:stroke-dashoffset .25s linear}
+html body #home154#home154 .naPct{position:absolute;left:50%;bottom:7%;transform:translateX(-50%);font:800 14px/1 var(--gsf-font,system-ui);font-variant-numeric:tabular-nums;color:#A8F0CF;opacity:0;transition:opacity .3s}
+html body #home154#home154 .rings.uploading .naPct{opacity:1}
+html body #home154#home154 .rings{transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .3s!important}
+html body #home154#home154 .rings.naMagnet{transform:translate(var(--na-mx,0px),var(--na-my,0px)) scale(1.06)!important;box-shadow:0 0 0 4px rgba(5,13,22,.9),0 0 0 7px #53E0EA,0 0 80px rgba(83,224,234,.7),0 0 150px rgba(39,174,243,.4)!important}
+html body #home154#home154 .naPreview{position:absolute;inset:6px;border-radius:50%;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .6s}
+html body #home154#home154 .naPreview.on{opacity:1}
+html body #home154#home154 .naPreview video{width:100%;height:100%;object-fit:cover;filter:saturate(1.1)}
+html body #home154#home154 .naPreview:after{content:"";position:absolute;inset:0;background:radial-gradient(circle,transparent 45%,rgba(5,13,22,.75) 100%)}
+@keyframes naScan{from{top:-30%}to{top:110%}}
+html body #home154#home154 .naPreview .scan{position:absolute;left:0;right:0;height:30%;top:-30%;background:linear-gradient(180deg,transparent,rgba(157,130,255,.55) 70%,rgba(83,224,234,.95) 100%);mix-blend-mode:screen;animation:naScan 1.8s cubic-bezier(.4,.1,.3,1) 2}
+html body #home154#home154 .circle.loaded .icon{position:relative;z-index:2}
+html body #home154#home154 .naProgress .glowC{fill:none;stroke:#53E0EA;stroke-width:9;opacity:.35;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+/* Area icons come alive: AI twinkles, Editor wiggles, Short pulses (reduced motion disables all). */
+@keyframes naTwinkle{0%,100%{transform:scale(1) rotate(0)}40%{transform:scale(1.14) rotate(8deg)}60%{transform:scale(.96) rotate(-4deg)}}
+@keyframes naWiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-9deg)}40%{transform:rotate(7deg)}60%{transform:rotate(-4deg)}}
+@keyframes naPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.16)}}
+html body #home154#home154 .featureIcon svg{transform-origin:50% 50%}
+html body #home154#home154 .fAi .featureIcon svg{animation:naTwinkle 3.2s ease-in-out infinite}
+html body #home154#home154 .fEditor .featureIcon svg{animation:naWiggle 3.6s ease-in-out 1.2s infinite}
+html body #home154#home154 .fShort .featureIcon svg{animation:naPulse 2.4s ease-in-out .6s infinite}
+html body #home154#home154 .feature:active{transform:scale(.97)!important}
+/* Standalone Home (desktop preview / no parent shell): its own bar and header in the same look */
+html body #home154#home154 .brandOnly:before{display:none!important}
+html body #home154#home154 .brandOnly{color:#fff!important;letter-spacing:.2em!important}
+html body #home154#home154 .accountEntry{background:rgba(255,255,255,.06)!important;border:1px solid var(--na-edge-strong)!important;color:var(--na-text)!important;box-shadow:none!important}
+html body #home154#home154 .accountAvatar{background:linear-gradient(135deg,#27AEF3,#9D82FF)!important;color:#fff!important}
+html body #home154#home154 .bottomNav{background:rgba(16,40,61,.66)!important;border:1px solid var(--na-edge)!important;box-shadow:var(--na-shadow),var(--na-shine)!important;-webkit-backdrop-filter:blur(22px)!important;backdrop-filter:blur(22px)!important}
+html body #home154#home154 .navItem{color:var(--na-text-muted)!important;background:transparent!important}
+html body #home154#home154 .navItem svg{stroke:currentColor!important;background:none!important;border:0!important;box-shadow:none!important}
+html body #home154#home154 .navItem.active{color:#fff!important;background:rgba(39,174,243,.2)!important;box-shadow:var(--na-glow-primary)!important}
+html body #home154#home154 .navItem.active svg{color:#79D2FF!important}
+html body #home154#home154 .navItem span{font-size:11px!important;font-weight:700!important}
+html body #home154#home154 .siteFooter{background:transparent!important;border-color:var(--na-edge)!important;color:var(--na-text-muted)!important}
+html body #home154#home154 .footLinks button,html body #home154#home154 .footLinks span{color:var(--na-text-muted)!important}
+html body #home154#home154 .footerSocialLink{background:rgba(255,255,255,.06)!important;color:var(--na-text)!important;border:1px solid var(--na-edge)!important}
+/* GSF_NIGHT_ARENA_PAGE:END */
 </style>
 
 <style id="v315MobileHomeLowerFlow">
@@ -3034,6 +3211,7 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
 }
 </style>
 
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&amp;family=Nunito+Sans:opsz,wght@6..12,400..800&amp;display=swap" data-gsf-night-arena-font>
 </head>
 <body>
 <div id="home154"><div class="ui">
@@ -3737,5 +3915,53 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
 })();
 </script>
 
+<script id="gsfNightArenaHome">
+/* GSF_NIGHT_ARENA: living upload orb — progress ring, drag magnet, preview with AI scan. Pure presentation. */
+(()=>{
+ const rings=document.querySelector("#home154 .rings"),circle=document.getElementById("circle"),bar=document.getElementById("bar");
+ if(!rings||!circle||!bar)return;
+ const NS="http://www.w3.org/2000/svg",R=45,C=2*Math.PI*R;
+ const svg=document.createElementNS(NS,"svg");svg.setAttribute("class","naProgress");svg.setAttribute("viewBox","0 0 100 100");svg.setAttribute("aria-hidden","true");
+ svg.innerHTML='<defs><linearGradient id="naProgGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#27AEF3"/><stop offset=".6" stop-color="#53E0EA"/><stop offset="1" stop-color="#5ED6A0"/></linearGradient></defs><circle class="trackC" cx="50" cy="50" r="'+R+'"/><circle class="glowC" cx="50" cy="50" r="'+R+'" stroke-dasharray="'+C+'" stroke-dashoffset="'+C+'"/><circle class="valC" cx="50" cy="50" r="'+R+'" stroke-dasharray="'+C+'" stroke-dashoffset="'+C+'"/>';
+ rings.appendChild(svg);
+ const pct=document.createElement("span");pct.className="naPct";pct.setAttribute("aria-hidden","true");circle.appendChild(pct);
+ const vals=svg.querySelectorAll(".valC,.glowC");
+ const sync=()=>{const p=Math.max(0,Math.min(100,parseFloat(bar.style.width)||0));vals.forEach(c=>c.style.strokeDashoffset=String(C*(1-p/100)));pct.textContent=p?Math.round(p)+"%":""};
+ new MutationObserver(sync).observe(bar,{attributes:true,attributeFilter:["style"]});sync();
+ // Drag magnet: the orb leans toward the file being dragged.
+ let depth=0;
+ const lean=e=>{const r=rings.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),d=Math.hypot(dx,dy)||1,k=Math.min(18,d*.08);rings.style.setProperty("--na-mx",(dx/d*k).toFixed(1)+"px");rings.style.setProperty("--na-my",(dy/d*k).toFixed(1)+"px")};
+ const off=()=>{depth=0;rings.classList.remove("naMagnet")};
+ window.addEventListener("dragenter",e=>{if(e.dataTransfer&&[...(e.dataTransfer.types||[])].includes("Files")){depth++;rings.classList.add("naMagnet");lean(e)}});
+ window.addEventListener("dragover",e=>{if(rings.classList.contains("naMagnet"))lean(e)});
+ window.addEventListener("dragleave",()=>{if(--depth<=0)off()});
+ window.addEventListener("drop",off,true);
+ // Ready: the orb turns into the gameplay preview, crossed by an AI scan.
+ let prev=null;
+ const showPreview=()=>{
+  if(prev)return;prev=document.createElement("div");prev.className="naPreview";
+  const v=document.createElement("video");v.muted=true;v.loop=true;v.playsInline=true;v.autoplay=true;v.preload="metadata";v.setAttribute("aria-hidden","true");
+  v.src="/editor-media/current?na="+Date.now();
+  const scan=document.createElement("span");scan.className="scan";
+  prev.append(v,scan);circle.prepend(prev);
+  v.addEventListener("loadeddata",()=>{prev&&prev.classList.add("on");v.play&&v.play().catch(()=>{})},{once:true});
+  v.addEventListener("error",()=>{prev&&prev.remove();prev=null},{once:true});
+ };
+ const hidePreview=()=>{if(prev){prev.remove();prev=null}};
+ const onState=()=>circle.classList.contains("loaded")?showPreview():hidePreview();
+ new MutationObserver(onState).observe(circle,{attributes:true,attributeFilter:["class"]});onState();
+ try{if(navigator.vibrate)circle.addEventListener("click",()=>navigator.vibrate(12))}catch(_e){}
+ // Shared-element hand-off: tell the shell where the tapped card's circle is, so the page
+ // it opens grows out of that circle (see web/gsf_navigation_lifecycle.js). Light haptic on Android.
+ document.addEventListener("pointerdown",e=>{
+  const card=e.target.closest&&e.target.closest("#home154 .feature");if(!card)return;
+  try{
+   const ic=(card.querySelector(".featureIcon")||card).getBoundingClientRect(),fe=window.frameElement,off=fe?fe.getBoundingClientRect():{left:0,top:0};
+   window.parent.__gsfNavOrigin={x:Math.round(off.left+ic.left+ic.width/2),y:Math.round(off.top+ic.top+ic.height/2),color:getComputedStyle(card).getPropertyValue("--na-area").trim()||"#27AEF3",t:Date.now()};
+  }catch(_e){}
+  try{navigator.vibrate&&navigator.vibrate(10)}catch(_e){}
+ },{capture:true,passive:true});
+})();
+</script>
 </body>
 </html>

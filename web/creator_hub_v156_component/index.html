@@ -155,7 +155,157 @@ button{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:tran
  .sheetBox{margin:0}
 }
 @media(max-width:360px){.counter b{font-size:20px}.socialRow{gap:8px}}
+/* GSF_NIGHT_ARENA:BEGIN */
+/* GSF Night Arena v1 — the single look of the whole app.
+   Canonical source. Every surface inlines this block verbatim between
+   GSF_NIGHT_ARENA:BEGIN / GSF_NIGHT_ARENA:END (tests/test_night_arena_theme.py).
+   Brand hues are the official kit (design/brand); only the surface/text
+   roles are re-mapped for the dark ground. */
+:root{
+ color-scheme:dark;
+ /* Ground */
+ --na-bg:#050D16;
+ --na-bg-2:#081827;
+ --na-deep:#0A1D2E;
+ /* Glass */
+ --na-glass:rgba(16,40,61,.55);
+ --na-glass-strong:rgba(16,40,61,.78);
+ --na-glass-hi:rgba(255,255,255,.06);
+ --na-edge:rgba(121,210,255,.18);
+ --na-edge-strong:rgba(121,210,255,.32);
+ --na-shine:inset 0 1px 0 rgba(255,255,255,.08);
+ --na-shadow:0 18px 40px rgba(0,0,0,.45);
+ /* Text */
+ --na-text:#EAF6FF;
+ --na-text-strong:#FFFFFF;
+ --na-text-muted:#9FB7CA;
+ --na-text-faint:#6F879A;
+ /* Area glows (official hues) */
+ --na-glow-primary:0 0 24px rgba(39,174,243,.45);
+ --na-glow-ai:0 0 24px rgba(157,130,255,.5);
+ --na-glow-short:0 0 24px rgba(94,214,160,.45);
+ --na-ring:conic-gradient(from 0deg,#27AEF3,#53E0EA,#5ED6A0,#9D82FF,#27AEF3);
+ --na-cta:linear-gradient(90deg,#27AEF3,#53E0EA);
+ --na-cta-ink:#052033;
+ --na-mural-font:"Caveat","Segoe Print","Bradley Hand",cursive;
+ /* One typeface everywhere: Avenir Next / SF on Apple, Nunito Sans (bundled via Google Fonts) elsewhere,
+    so Android and Windows never fall back to a different system font page by page. */
+ --na-font:"Avenir Next","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Nunito Sans","Segoe UI",sans-serif;
+ --gsf-font:var(--na-font);
+ /* Brand role tokens re-mapped onto the dark ground */
+ --gsf-surface:var(--na-glass);
+ --gsf-bg-soft:rgba(39,174,243,.10);
+ --gsf-line:var(--na-edge);
+ --gsf-ink:var(--na-text);
+ --gsf-muted:var(--na-text-muted);
+}
+html,body{background:var(--na-bg);color:var(--na-text);font-family:var(--na-font)}
+button,input,select,textarea{font-family:inherit}
+/* Retina / high-density quality: crisp type, vector-sharp icons, smooth media scaling. */
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+svg{shape-rendering:geometricPrecision}
+img,video{image-rendering:auto;-webkit-user-drag:none}
+time,output,.tc,.timecode,[data-num]{font-variant-numeric:tabular-nums}
+body{
+ background:
+  radial-gradient(60% 40% at 0% 18%,rgba(39,174,243,.20),transparent 70%),
+  radial-gradient(55% 38% at 100% 46%,rgba(157,130,255,.16),transparent 70%),
+  radial-gradient(60% 40% at 30% 100%,rgba(83,224,234,.10),transparent 70%),
+  var(--na-bg);
+ background-attachment:fixed;
+}
+::selection{background:rgba(39,174,243,.45);color:#fff}
+:focus-visible{outline:2px solid #79D2FF;outline-offset:2px}
+input,textarea,select{background:rgba(5,13,22,.55);color:var(--na-text);border-color:var(--na-edge)}
+input::placeholder,textarea::placeholder{color:var(--na-text-faint)}
+*{scrollbar-color:rgba(121,210,255,.25) transparent}
+.na-glass{background:var(--na-glass);border:1px solid var(--na-edge);box-shadow:var(--na-shine);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.na-cta{background:var(--na-cta);color:var(--na-cta-ink);border:0;box-shadow:0 8px 24px rgba(39,174,243,.4)}
+.na-mural{font-family:var(--na-mural-font);color:#79D2FF;font-weight:600}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+/* GSF_NIGHT_ARENA:END */
+/* GSF_NIGHT_ARENA_PAGE:BEGIN */
+/* Creator Hub on the Night Arena ground */
+#hub{background:transparent}
+.card,.counter,.backBtn,.iconBtn{background:var(--na-glass);border-color:var(--na-edge);box-shadow:var(--na-shine);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.card{border-radius:24px}
+.iconBtn,.backBtn{color:var(--na-text)}
+.profileName,.detailHead h1,.sectionHead h2,.counter b{color:var(--na-text-strong)}
+.avatar{background:var(--na-deep);color:#79D2FF;border:0;box-shadow:0 0 0 3px var(--na-bg),0 0 0 5px #27AEF3,0 0 22px rgba(39,174,243,.45)}
+.pill.plan{background:rgba(255,216,77,.16);color:#FFE58A;box-shadow:inset 0 0 0 1px rgba(255,216,77,.45)}
+.linkBtn{color:#79D2FF}
+/* Social status rings: connected = full ring + glow, otherwise dashed + "+" */
+.socialRow{border-top-color:var(--na-edge)}
+.socialDot{border-radius:50%;background:rgba(5,13,22,.45);border:2px dashed rgba(159,183,202,.5)}
+.socialDot.connected{border:3px solid #5ED6A0;background:rgba(94,214,160,.12);box-shadow:var(--na-glow-short)}
+.socialDot:not(.connected) svg.logo{filter:grayscale(1) brightness(1.6);opacity:.55}
+.socialDot .tick{border-color:var(--na-bg);background:#27AEF3}
+.socialDot .tick svg{display:none}
+.socialDot .tick::before{content:"+";color:#fff;font-size:15px;font-weight:800;line-height:1}
+.socialDot.connected .tick{background:#5ED6A0}
+.socialDot.connected .tick svg{display:block;color:#052033}
+.socialDot.connected .tick::before{content:none}
+/* Counters with an area-coloured underline */
+.counter{position:relative;overflow:hidden;border-radius:20px}
+.counter::after{content:"";position:absolute;left:13px;right:13px;bottom:9px;height:3px;border-radius:3px;background:linear-gradient(90deg,#27AEF3,transparent)}
+.counter:nth-child(2)::after{background:linear-gradient(90deg,#9D82FF,transparent)}
+.counter:nth-child(3)::after{background:linear-gradient(90deg,#5ED6A0,transparent)}
+.counter span{color:var(--na-text-muted)}
+/* Project cards */
+.pcard .cover,.pcard.short .cover{background:radial-gradient(circle at 50% 30%,#12314B,#0A1D2E 70%);border-color:var(--na-edge)}
+.pcard .cover .glyph{background:rgba(39,174,243,.18);color:#79D2FF;box-shadow:var(--na-glow-primary)}
+.pcard.short .cover .glyph{background:rgba(94,214,160,.18);color:#A8F0CF;box-shadow:var(--na-glow-short)}
+.pcard .tag,.pcard .more{background:rgba(5,13,22,.72);color:var(--na-text)}
+.pcard .tag.pub{color:#A8F0CF}
+.pcard .ptitle{color:var(--na-text-strong)}
+/* Empty states with a way forward */
+.empty{display:flex;flex-direction:column;align-items:flex-start;gap:4px;background:linear-gradient(180deg,rgba(39,174,243,.10),rgba(16,40,61,.45));border:1px solid var(--na-edge);border-radius:20px;color:var(--na-text-muted)}
+.strip>.empty{grid-column:1/-1;min-width:min(100%,320px)}
+.grid>.empty{grid-column:1/-1}
+.empty b{color:var(--na-text-strong);font-size:15px}
+.empty .na-cta{margin-top:10px;height:44px;padding:0 18px;border-radius:999px;font-size:13.5px;font-weight:800;display:inline-flex;align-items:center;gap:8px}
+.empty .na-cta svg{width:17px;height:17px}
+/* Rows, segmented control, buttons */
+.row{border-bottom-color:var(--na-edge)}
+.row .ricon,.liveEmpty .ricon{background:rgba(39,174,243,.14);color:#79D2FF}
+.row .rtext b{color:var(--na-text)}
+.row .chev{color:var(--na-text-faint)}
+.row.danger .rtext b{color:#FF8A94}
+.row.danger .ricon{background:rgba(255,102,115,.14);color:#FF8A94}
+.seg{background:rgba(5,13,22,.55);box-shadow:inset 0 0 0 1px var(--na-edge)}
+.seg button.on{background:rgba(39,174,243,.22);color:#fff;box-shadow:var(--na-glow-primary)}
+.btn{background:rgba(39,174,243,.12);border-color:var(--na-edge-strong);color:#9FDCFF}
+.btn.primary{background:var(--na-cta);border:0;color:var(--na-cta-ink)}
+.btn.danger{background:rgba(255,102,115,.14);border-color:rgba(255,102,115,.45);color:#FF8A94}
+.nameField input,.sheetBox input{background:rgba(5,13,22,.55);border-color:var(--na-edge);color:var(--na-text)}
+.socialCard.connected .socialState{color:#A8F0CF}
+/* Sheet + toast */
+.sheet{background:rgba(2,6,12,.6)}
+.sheetBox{background:var(--na-glass-strong);border:1px solid var(--na-edge);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);box-shadow:var(--na-shadow)}
+.toastLocal{background:var(--na-glass-strong);border:1px solid var(--na-edge-strong);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+
+/* Info group (old footer) */
+a.row{color:inherit;text-decoration:none}
+.followRow .follow{display:flex;gap:6px}
+.followRow .follow a{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--na-edge);color:var(--na-text);text-decoration:none;font-size:10px;font-weight:800}
+.appVersion{margin:14px 4px 0;text-align:center;color:var(--na-text-faint);font-size:11.5px;font-weight:700}
+/* 7-day trend line in each counter (replaces the static underline when there is activity) */
+.counter .trend{position:absolute;left:13px;right:13px;bottom:8px;width:calc(100% - 26px);height:16px;color:#27AEF3;opacity:0}
+.counter:nth-child(2) .trend{color:#9D82FF}
+.counter:nth-child(3) .trend{color:#5ED6A0}
+.counter.has-trend .trend{opacity:1;filter:drop-shadow(0 0 4px currentColor)}
+.counter.has-trend::after{opacity:0}
+.counter{padding-bottom:28px}
+/* Empty-state illustration: a small Night Arena orb with a play mark */
+.empty:has(.na-cta)::before{content:"";width:52px;height:52px;margin-bottom:8px;border-radius:50%;
+ background:radial-gradient(circle at 50% 40%,#12314B,#0A1D2E 70%) padding-box,conic-gradient(#27AEF3,#53E0EA,#5ED6A0,#9D82FF,#27AEF3) border-box;
+ border:2px solid transparent;box-shadow:0 0 22px rgba(39,174,243,.45);
+ -webkit-mask:none}
+.empty:has(.na-cta){position:relative}
+.empty:has(.na-cta)::after{content:"";position:absolute;left:36px;top:36px;width:0;height:0;border-left:13px solid #79D2FF;border-top:8px solid transparent;border-bottom:8px solid transparent;filter:drop-shadow(0 0 6px rgba(121,210,255,.8))}
+/* GSF_NIGHT_ARENA_PAGE:END */
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&amp;family=Nunito+Sans:opsz,wght@6..12,400..800&amp;display=swap" data-gsf-night-arena-font>
 </head>
 <body>
 <main id="hub" data-v415="1">
@@ -234,6 +384,25 @@ button{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:tran
     <div class="row"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span><span class="rtext"><b>Lingua</b><small>Altre lingue in arrivo</small></span><span class="rval">Italiano</span></div>
     <button class="row" type="button" id="accountBtn"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg></span><span class="rtext"><b id="accountBtnLabel">Accedi</b><small id="accountBtnText">Salva bozze e Shorts nel tuo account</small></span><span class="chev">›</span></button>
    </div>
+
+   <!-- GSF_NIGHT_ARENA: the old app footer (legal links, GSF channels, bug report, version) lives here now. -->
+   <div class="groupLabel">Info</div>
+   <div class="card rows" id="infoRows">
+    <a class="row" href="/privacy" target="_blank" rel="noopener"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg></span><span class="rtext"><b>Privacy</b></span><span class="chev">›</span></a>
+    <a class="row" href="/terms" target="_blank" rel="noopener"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg></span><span class="rtext"><b>Termini</b></span><span class="chev">›</span></a>
+    <a class="row" href="/contact" target="_blank" rel="noopener"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 8l9 6 9-6"/></svg></span><span class="rtext"><b>Contatti</b></span><span class="chev">›</span></a>
+    <button class="row" type="button" id="bugReportBtn"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8a4 4 0 0 1 8 0v6a4 4 0 0 1-8 0z"/><path d="M4 12h4M16 12h4M5 6l3 2M19 6l-3 2M5 18l3-2M19 18l-3-2"/></svg></span><span class="rtext"><b>Segnala un bug</b><small>Aiutaci a migliorare GSF</small></span><span class="chev">›</span></button>
+    <div class="row followRow"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0"/><path d="M8 12h8M12 8v8"/></svg></span><span class="rtext"><b>Segui GSF</b></span>
+     <span class="follow">
+      <a href="https://www.youtube.com/@Dans222nrg" target="_blank" rel="noopener noreferrer" aria-label="YouTube">YT</a>
+      <a href="https://www.tiktok.com/@gamingshortsfactory" target="_blank" rel="noopener noreferrer" aria-label="TikTok">TT</a>
+      <a href="https://www.instagram.com/gamingshortsfactory/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">IG</a>
+      <a href="https://www.facebook.com/profile.php?id=61595124112318&amp;locale=it_IT" target="_blank" rel="noopener noreferrer" aria-label="Facebook">FB</a>
+      <a href="https://www.twitch.tv/dan222s86" target="_blank" rel="noopener noreferrer" aria-label="Twitch">TW</a>
+     </span>
+    </div>
+   </div>
+   <p class="appVersion" id="appVersion">Gaming Shorts Factory</p>
   </div>
  </section>
 
@@ -336,11 +505,23 @@ button{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:tran
   const mb=(Number(item.final_bytes)||0)>1048576?Math.max(1,Math.round(Number(item.final_bytes)/1048576))+" MB":"";
   return '<div class="pcard short" data-kind="short" data-id="'+id+'"><button class="cover" type="button" data-act="menu" aria-label="Azioni '+title+'"><span class="tag'+(pub.length?" pub":"")+'">'+(pub.length?"Pubblicato":"Short")+'</span><span class="glyph">'+PLAY+'</span></button><button class="more" type="button" data-act="menu" aria-label="Azioni Short">'+DOTS+'</button><div class="ptitle">'+title+'</div><div class="pmeta">'+esc(pub.length?pub.join(", "):(item.completed_at?ago(item.completed_at):"Salvato"))+(mb?" · "+mb:"")+'</div></div>';
  }
+ // GSF_NIGHT_ARENA: empty states always offer the next step.
+ const UPLOAD_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>';
  function emptyHtml(kind){
+  const cta='<button class="na-cta" type="button" data-empty-cta>'+UPLOAD_ICON+'Carica un gameplay</button>';
   return kind==="draft"
-   ?'<div class="empty"><b>Nessuna bozza</b>Le bozze salvate dal Game Editor compaiono qui.</div>'
-   :'<div class="empty"><b>Nessuno Short</b>Gli Short che crei compaiono qui, pronti da scaricare.</div>';
+   ?'<div class="empty"><b>Nessuna bozza</b>Le bozze salvate dal Game Editor compaiono qui.'+cta+'</div>'
+   :'<div class="empty"><b>Nessuno Short</b>Gli Short che crei compaiono qui, pronti da scaricare.'+cta+'</div>';
  }
+ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-empty-cta]");if(b)shell("home",{section:""});});
+ // GSF_NIGHT_ARENA: bug report reuses the app's own "Segnala bug" control; version comes from /healthz.
+ document.addEventListener("click",e=>{
+  if(!(e.target.closest&&e.target.closest("#bugReportBtn")))return;
+  try{const D=parent.document;const hit=[...D.querySelectorAll('button,a,[role="button"]')].find(x=>String(x.textContent||"").trim().toLowerCase().includes("segnala bug"));if(hit){hit.click();return}}catch(_e){}
+  location.href="/contact";
+ });
+ fetch("/healthz",{cache:"no-store",credentials:"same-origin"}).then(r=>r.json()).then(j=>{const rel=String((j&&(j.release||j.version))||"").slice(0,7);if(rel)$("#appVersion").textContent="Gaming Shorts Factory · build "+rel}).catch(()=>{});
+
  function bindCards(root){
   root.querySelectorAll(".pcard [data-act]").forEach(b=>b.onclick=()=>{
    const card=b.closest(".pcard");const kind=card.dataset.kind,id=card.dataset.id;
@@ -354,12 +535,28 @@ button{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:tran
   ss.innerHTML=shorts.length?shorts.slice(0,8).map(s=>cardHtml("short",s)).join(""):emptyHtml("short");
   ds.style.display=ss.style.display="";
   [ds,ss].forEach(el=>{el.classList.toggle("strip",!!el.querySelector(".pcard"));bindCards(el)});
+  renderTrends(drafts,shorts);
+ }
+ // GSF_NIGHT_ARENA: each counter carries a 7-day trend line built from the items' own timestamps.
+ function renderTrends(drafts,shorts){
+  const DAY=86400,now=Date.now()/1000,bins=()=>new Array(7).fill(0);
+  const ts=it=>Number(it.completed_at||it.updated_at||it.created_at||0);
+  const fill=(list,pick)=>{const b=bins();list.forEach(it=>{if(!pick(it))return;const t=ts(it);if(!t)return;const d=Math.floor((now-t)/DAY);if(d>=0&&d<7)b[6-d]++});return b};
+  const series={countDrafts:fill(drafts,()=>true),countShorts:fill(shorts,()=>true),countPublished:fill(shorts,it=>(it.published||[]).length>0)};
+  Object.entries(series).forEach(([id,b])=>{
+   const host=$("#"+id)?.parentElement;if(!host)return;
+   let svg=host.querySelector(".trend");
+   if(!svg){svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.setAttribute("class","trend");svg.setAttribute("viewBox","0 0 60 16");svg.setAttribute("preserveAspectRatio","none");svg.setAttribute("aria-hidden","true");host.appendChild(svg)}
+   const max=Math.max(1,...b),pts=b.map((v,i)=>(i*10).toFixed(1)+","+(14-v/max*12).toFixed(1)).join(" ");
+   svg.innerHTML='<polyline points="'+pts+'" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';
+   host.classList.toggle("has-trend",b.some(Boolean));
+  });
  }
  function renderProjects(){
   const grid=$("#projectGrid");if(!grid)return;
   const isDrafts=projectPane!=="shorts";
   const items=isDrafts?(state.drafts||[]):(state.shorts||[]);
-  $("#projectsViewTitle").textContent=isDrafts?"Bozze":"I miei Shorts";
+  $("#projectsViewTitle").textContent="Progetti"; // GSF_NIGHT_ARENA: same name as the Game Bar tab; Bozze/Shorts is the switch below
   $$(".seg [data-pane]").forEach(b=>b.classList.toggle("on",b.dataset.pane===projectPane));
   grid.innerHTML=items.length?items.map(it=>cardHtml(isDrafts?"draft":"short",it)).join(""):emptyHtml(isDrafts?"draft":"short");
   bindCards(grid);
