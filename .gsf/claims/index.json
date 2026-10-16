@@ -404,6 +404,11 @@
     {
       "branch": "chat/design-add-gsf-mini-design-system-v1-brand-token-409702",
       "created_at": "2026-10-15T09:08:12+02:00",
+      "evidence": {
+        "completion": "Verified 2026-10-16: brand CSS/JSON, both wordmark SVGs, README, audit and CLAUDE.md are integrated in main. Owner asked this chat to finish both remaining Claude tasks. No runtime deployment required for the brand kit.",
+        "merge_sha": "a1a67288e2f993cc0afff8beaf46bd8ef32d6313",
+        "pr": 134
+      },
       "id": "design-add-gsf-mini-design-system-v1-brand-token-409702",
       "owner": "claude-chat",
       "paths": [
@@ -411,12 +416,7 @@
         "design/brand/**"
       ],
       "scope": "design: add GSF mini design system v1 (brand tokens, wordmark, usage doc)",
-      "state": "completed",
-      "evidence": {
-        "pr": 134,
-        "merge_sha": "a1a67288e2f993cc0afff8beaf46bd8ef32d6313",
-        "completion": "Verified 2026-10-16: brand CSS/JSON, both wordmark SVGs, README, audit and CLAUDE.md are integrated in main. Owner asked this chat to finish both remaining Claude tasks. No runtime deployment required for the brand kit."
-      }
+      "state": "completed"
     },
     {
       "branch": "chat/ui-apply-gsf-brand-tokens-app-wide-colors-font-r-24fdf3",
@@ -486,7 +486,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -835,6 +835,14 @@
       "branch": "chat/stability-unified-navigation-and-mobile-resume-l-395391",
       "created_at": "2026-10-15T21:07:33+00:00",
       "evidence": {
+        "completion_handoff": {
+          "authorization": "Owner requested finish both remaining Claude tasks (Night Arena PR162 and brand kit) in integration chat 2026-10-16; narrow gate setup repair needed to complete PR162.",
+          "paths": [
+            "tests/visual/gsf_navigation_stress.py",
+            "PROJECT_STATUS.md"
+          ],
+          "to": "ui-night-arena-single-look-shared-theme-creator--1fc1b7"
+        },
         "editor_handoff": {
           "authorization": "Owner explicitly approved transfer of these two files in stability chat on 2026-10-16, preserving the integrated editor restyle.",
           "paths": [
@@ -842,14 +850,6 @@
             "tests/test_mobile_game_editor_2026.py"
           ],
           "to": "stability-unified-navigation-and-mobile-resume-l-395391"
-        },
-        "completion_handoff": {
-          "to": "ui-night-arena-single-look-shared-theme-creator--1fc1b7",
-          "paths": [
-            "tests/visual/gsf_navigation_stress.py",
-            "PROJECT_STATUS.md"
-          ],
-          "authorization": "Owner requested finish both remaining Claude tasks (Night Arena PR162 and brand kit) in integration chat 2026-10-16; narrow gate setup repair needed to complete PR162."
         }
       },
       "id": "stability-unified-navigation-and-mobile-resume-l-395391",
@@ -1017,6 +1017,18 @@
     {
       "branch": "chat/ui-night-arena-single-look-shared-theme-creator--1fc1b7",
       "created_at": "2026-10-16T10:03:49+02:00",
+      "evidence": {
+        "handback": {
+          "authorization": "Owner asked Claude to continue PR #162 itself (2026-10-16 ~20:00 local); no commits from the Codex handoff since fc93bba",
+          "to": "Claude"
+        },
+        "handoff": {
+          "authorization": "Owner explicitly requested finish both on 2026-10-16",
+          "baseline": "fc93bba8233da35b9d338ff4cd73d479ec346a23",
+          "from": "Claude",
+          "pr": 162
+        }
+      },
       "id": "ui-night-arena-single-look-shared-theme-creator--1fc1b7",
       "owner": "chat/ui-night-arena-single-look-shared-theme-creator--1fc1b7",
       "paths": [
@@ -1045,20 +1057,23 @@
         "web/publish_short_v405_component/**",
         "web/share_v156_component/**"
       ],
-      "scope": "ui: Night Arena single look — shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
-      "state": "active",
-      "evidence": {
-        "handoff": {
-          "from": "Claude",
-          "authorization": "Owner explicitly requested finish both on 2026-10-16",
-          "baseline": "fc93bba8233da35b9d338ff4cd73d479ec346a23",
-          "pr": 162
-        },
-        "handback": {
-          "to": "Claude",
-          "authorization": "Owner asked Claude to continue PR #162 itself (2026-10-16 ~20:00 local); no commits from the Codex handoff since fc93bba"
-        }
-      }
+      "scope": "ui: Night Arena single look \u2014 shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
+      "state": "active"
+    },
+    {
+      "branch": "chat/alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",
+      "created_at": "2026-10-16T21:18:27+02:00",
+      "id": "alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",
+      "owner": "chat/alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",
+      "paths": [
+        "docs/architecture/gsf-alive.md",
+        "tests/js/gsf_alive_v418*",
+        "tests/test_alive_runtime_v418.py",
+        "tools/gsf_alive_inline.py",
+        "web/gsf_alive_v418.js"
+      ],
+      "scope": "alive: app-wide Alive 2 runtime (heard/guided/carried) shared by every page; page integration after night-arena/#163 handoff",
+      "state": "active"
     }
   ],
   "version": 1

@@ -1,0 +1,15 @@
+{
+  "branch": "chat/alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",
+  "created_at": "2026-10-16T21:18:27+02:00",
+  "id": "alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",
+  "owner": "chat/alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",
+  "paths": [
+    "docs/architecture/gsf-alive.md",
+    "tests/js/gsf_alive_v418*",
+    "tests/test_alive_runtime_v418.py",
+    "tools/gsf_alive_inline.py",
+    "web/gsf_alive_v418.js"
+  ],
+  "scope": "alive: app-wide Alive 2 runtime (heard/guided/carried) shared by every page; page integration after night-arena/#163 handoff",
+  "state": "active"
+}
