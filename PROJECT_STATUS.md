@@ -239,6 +239,14 @@ No intentional destructive production rollback test was performed. Rollback exec
 - Railway frontend `6e36f303-a5f3-4fb6-8511-1ecded777754`: **SUCCESS** — `GSF UI manifest verify PASS digest=ed479e93…` (== repo digest at `7298444`), `release=7298444`; `/healthz`, `/creator-hub-v156/`, `/creator-hub/state` 200. Worker not redeployed (expected).
 - Unverified / follow-up: no real-device Safari pass; short rename/delete not exercised on production with real data; Shorts have no project link, so the menu offers Scarica instead of Riprendi; Twitch OAuth not implemented ("In arrivo"). Coordination commits pushed during a main gate run make its promotion skip (seen twice tonight); a gate change to tolerate coord-only commits was proposed but not made (owner chose to wait).
 
+### Crea con IA — fits between shell header and Game Bar on phones — 2026-10-16 (PR #160)
+
+- Claim `ui-crea-con-ia-fits-between-shell-header-and-gam-76ec0a` (took over the idle `ui-crea-con-ia-respects-the-shell-header-and-gam-10462c`, abandoned with no commits, at the owner's request). Squash `a4f9d86f1d82279700f435e740b8e3db8ac81a3f`.
+- Owner report: on phones the page did not respect the shell header and Game Bar, hiding elements. Fix in `web/ai_v221_component/index.html` only (`GSF_AI_SHELL_FIT`): the page measures from the parent how much of its frame the shell header and Game Bar/footer cover and pads content and the Cambia short sheet by that; 0 when already fitted. "CREA CON IA" label row removed (owner request). `app.py` untouched.
+- Tests: mock shell at 390×844, 375×667, 360×640 (full-screen and fitted frames): nothing under header/Game Bar, no scrolling; local V404/V412/V397/V410 PASS, `tests/` 73 passed; PR contracts + production-gate success.
+- Main Production Gate: **SUCCESS**; promotion `1e596cd`. Railway frontend `831d768f-e364-4a2e-bd79-574b2e449197`: **SUCCESS**. `GSF Production UI Verify` run `38865042951`: **SUCCESS** — digest `e32d92a6…` == repo.
+- Unverified: not checked on a real phone.
+
 ## Current user-facing verification priorities
 
 These are re-verification priorities, not claims that a feature is currently broken:
