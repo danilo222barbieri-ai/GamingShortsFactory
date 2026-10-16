@@ -23,7 +23,7 @@ checks = [
     ('Hub active state is dashboard-only', ("activeKey==='hub'" in app and "lastSection==='dashboard'" in app) or ("const selected=current.target==='hub'?" in lifecycle and "current.section" in lifecycle)),
     ('Hub focus fallback is dashboard, not profile', ("t==='profile'?'profile':'dashboard'" in app or ("if (target==='profile'||target==='account') {target='hub';section='profile';}" in lifecycle and "section='dashboard'" in lifecycle)) and "t==='profile'?'profile':'profile'" not in app),
     ('Repeated Hub messages cannot inherit profile fallback', ("lastSection=String(e.data.section||'dashboard')" in app or ("let target=String(data.target||'home'), section=String(data.section||'');" in lifecycle and "section='dashboard'" in lifecycle)) and "lastSection=String(e.data.section||'profile')" not in app),
-    ('Live icons retained in Home and parent shell', 'transform="rotate(-8 16 16)"' in home_nav and '<span class="v343Icon">◉</span><span>Live</span>' in page_nav),
+    ('Live icons retained in Home and parent shell', 'transform="rotate(-8 16 16)"' in home_nav and bool(re.search(r'<span class="v343Icon">(◉|<svg[^>]*>.*?</svg>)</span><span>Live</span>', page_nav))),
 ]
 failed = [name for name, ok in checks if not ok]
 for name, ok in checks:
