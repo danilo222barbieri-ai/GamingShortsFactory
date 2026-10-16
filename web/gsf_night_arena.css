@@ -43,6 +43,11 @@
 }
 html,body{background:var(--na-bg);color:var(--na-text);font-family:var(--na-font)}
 button,input,select,textarea{font-family:inherit}
+/* Retina / high-density quality: crisp type, vector-sharp icons, smooth media scaling. */
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+svg{shape-rendering:geometricPrecision}
+img,video{image-rendering:auto;-webkit-user-drag:none}
+time,output,.tc,.timecode,[data-num]{font-variant-numeric:tabular-nums}
 body{
  background:
   radial-gradient(60% 40% at 0% 18%,rgba(39,174,243,.20),transparent 70%),
