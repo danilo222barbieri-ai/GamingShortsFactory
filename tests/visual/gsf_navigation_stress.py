@@ -94,7 +94,12 @@ def browser_page(mobile=True):
                 state=page.evaluate("""()=>{const app=document.querySelector('[data-testid=stApp]');const home=[...document.querySelectorAll('iframe')].find(f=>{try{return f.contentWindow.__GSF_V333_CTA_TOUCH===true}catch(_){return false}});let h={};try{const d=home.contentDocument;h={rings:d.querySelector('.rings')?.className,circle:d.querySelector('#circle')?.className,status:d.querySelector('#statusText')?.textContent,frameSrc:home.getAttribute('src')?.slice(0,80),parentIsTop:home.contentWindow.parent===window}}catch(e){h={err:String(e)}};return {script:app?.getAttribute('data-test-script-state'),exceptions:[...document.querySelectorAll('[data-testid=stException],.stException')].map(e=>e.innerText.slice(0,400)),alerts:[...document.querySelectorAll('[data-testid=stAlert]')].map(e=>e.innerText.slice(0,200)),home:h,frames:[...document.querySelectorAll('iframe')].map(f=>(f.title||'')+'|'+String(f.getAttribute('src')||'').slice(0,60))}}""")
                 _MEDIA_SETUP_FAILURE=f"upload setup did not reach the loaded Home: {state} errors={errors[:8]}"
                 raise AssertionError(_MEDIA_SETUP_FAILURE) from exc
-            page.wait_for_function("()=>!!document.querySelector('.st-key-v81_new_video button')&&document.querySelector('[data-testid=stApp]')?.getAttribute('data-test-script-state')==='notRunning'",timeout=120000)
+            try:
+                page.wait_for_function("()=>!!document.querySelector('.st-key-v81_new_video button')&&document.querySelector('[data-testid=stApp]')?.getAttribute('data-test-script-state')==='notRunning'",timeout=120000)
+            except Exception as exc:
+                state=page.evaluate("""()=>({script:document.querySelector('[data-testid=stApp]')?.getAttribute('data-test-script-state'),newVideo:!!document.querySelector('.st-key-v81_new_video'),keys:[...document.querySelectorAll('[class*=st-key-]')].map(e=>[...e.classList].find(c=>c.startsWith('st-key-'))).slice(0,60),buttons:[...document.querySelectorAll('button')].map(b=>(b.innerText||'').trim()).filter(Boolean).slice(0,40),exceptions:[...document.querySelectorAll('[data-testid=stException]')].map(e=>e.innerText.slice(0,500)),alerts:[...document.querySelectorAll('[data-testid=stAlert]')].map(e=>e.innerText.slice(0,200))})""")
+                _MEDIA_SETUP_FAILURE=f"app did not settle on the loaded project after upload: {state} errors={errors[:8]}"
+                raise AssertionError(_MEDIA_SETUP_FAILURE) from exc
         try:
             yield page,errors,ctx
         except BaseException:
