@@ -35,9 +35,15 @@ INSTRUMENT = r"""
 })();
 """
 
+_MEDIA_SETUP_FAILURE=None
+
 @contextmanager
 def browser_page(mobile=True):
+    global _MEDIA_SETUP_FAILURE
     from playwright.sync_api import sync_playwright
+    # One broken media setup fails every later test at once instead of 2 minutes each.
+    if _MEDIA_SETUP_FAILURE and os.environ.get('GSF_TEST_MEDIA')=='1':
+        raise AssertionError('media setup already failed in this run: '+_MEDIA_SETUP_FAILURE)
     started=time.monotonic()
     with sync_playwright() as p:
         engine = os.environ.get('GSF_BROWSER','chromium')
@@ -86,7 +92,13 @@ def browser_page(mobile=True):
             home.evaluate("()=>window.parent.postMessage({isStreamlitMessage:true,type:'streamlit:setComponentValue',value:{event:'upload_complete',duration:2,engine:'auto'},dataType:'json'},'*')")
             # Upload completion triggers a real Streamlit rerun. Warm-up must
             # measure the loaded app, including its finite widget hotkeys.
-            page.wait_for_function("()=>[...document.querySelectorAll('iframe')].some(f=>{try{return f.contentWindow.__GSF_V333_CTA_TOUCH===true&&!!f.contentDocument.querySelector('.rings.uploaded')}catch(_){return false}})",timeout=120000)
+            try:
+                page.wait_for_function("()=>[...document.querySelectorAll('iframe')].some(f=>{try{return f.contentWindow.__GSF_V333_CTA_TOUCH===true&&!!f.contentDocument.querySelector('.rings.uploaded')}catch(_){return false}})",timeout=120000)
+            except Exception as exc:
+                # Make the setup failure diagnosable from the gate annotations.
+                state=page.evaluate("""()=>{const app=document.querySelector('[data-testid=stApp]');const home=[...document.querySelectorAll('iframe')].find(f=>{try{return f.contentWindow.__GSF_V333_CTA_TOUCH===true}catch(_){return false}});let h={};try{const d=home.contentDocument;h={rings:d.querySelector('.rings')?.className,circle:d.querySelector('#circle')?.className,status:d.querySelector('#statusText')?.textContent,frameSrc:home.getAttribute('src')?.slice(0,80),parentIsTop:home.contentWindow.parent===window}}catch(e){h={err:String(e)}};return {script:app?.getAttribute('data-test-script-state'),exceptions:[...document.querySelectorAll('[data-testid=stException],.stException')].map(e=>e.innerText.slice(0,400)),alerts:[...document.querySelectorAll('[data-testid=stAlert]')].map(e=>e.innerText.slice(0,200)),home:h,frames:[...document.querySelectorAll('iframe')].map(f=>(f.title||'')+'|'+String(f.getAttribute('src')||'').slice(0,60))}}""")
+                _MEDIA_SETUP_FAILURE=f"upload setup did not reach the loaded Home: {state} errors={errors[:8]}"
+                raise AssertionError(_MEDIA_SETUP_FAILURE) from exc
             page.wait_for_function("()=>!!document.querySelector('.st-key-v81_new_video button')&&document.querySelector('[data-testid=stApp]')?.getAttribute('data-test-script-state')==='notRunning'",timeout=120000)
         try:
             yield page,errors,ctx
