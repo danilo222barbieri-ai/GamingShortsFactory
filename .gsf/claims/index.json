@@ -842,6 +842,7 @@
       "id": "stability-unified-navigation-and-mobile-resume-l-395391",
       "owner": "chat/stability-unified-navigation-and-mobile-resume-l-395391",
       "paths": [
+        "PROJECT_STATUS.md",
         "app.py",
         "docs/architecture/gsf-navigation-lifecycle.md",
         "tests/test_canonical_ui_pipeline.py",
@@ -855,6 +856,7 @@
         "web/gsf_navigation_lifecycle.js",
         "web/home_v154_component/index.html",
         "web/install_adsense_bridge.py",
+        "web/test_v286_global_gamebar.py",
         "web/test_v302_global_live_gamebar.py"
       ],
       "scope": "stability: unified navigation and mobile resume lifecycle root cause; web/creator_hub_v156_component/index.html released by owner-authorized priority to the Creator Hub redesign (2026-10-16); rebase on it before touching the Hub again; web/game_editor_mobile_component/** and tests/test_mobile_game_editor_2026.py released by owner-authorized priority to the in-player Home-style editor restyle (2026-10-16); rebase on it before touching the mobile editor again",
@@ -957,6 +959,10 @@
     {
       "branch": "chat/ui-crea-con-ia-respects-the-shell-header-and-gam-10462c",
       "created_at": "2026-10-16T00:57:08+02:00",
+      "evidence": {
+        "branch_head": "0840757 (claim commit only)",
+        "reason": "no commits on branch after ~8h; owner asked another chat to do the same fix on 2026-10-16"
+      },
       "id": "ui-crea-con-ia-respects-the-shell-header-and-gam-10462c",
       "owner": "chat/ui-crea-con-ia-respects-the-shell-header-and-gam-10462c",
       "paths": [
@@ -965,7 +971,31 @@
         "web/test_v412_ai_engines.py"
       ],
       "scope": "ui: Crea con IA respects the shell header and Game Bar on phones",
-      "state": "active"
+      "state": "abandoned"
+    },
+    {
+      "branch": "chat/ui-crea-con-ia-fits-between-shell-header-and-gam-76ec0a",
+      "created_at": "2026-10-16T08:53:34+02:00",
+      "evidence": {
+        "gate": "success",
+        "merge_sha": "a4f9d86f1d82279700f435e740b8e3db8ac81a3f",
+        "pr": 160,
+        "promotion": "1e596cd8545ce08d45d110b2fc61c967f5ef2b4e",
+        "railway_frontend": "831d768f-e364-4a2e-bd79-574b2e449197 SUCCESS",
+        "tests": "mock shell 390x844/375x667/360x640 full-screen+fitted: no element under header/Game Bar, no scroll; local V404,V412,V397,V410 PASS; tests/ 73 passed; PR contracts + production-gate success",
+        "ui_verify": "release 1e596cd serves digest e32d92a6 == repo, pages byte-identical, Home 200, creator-hub/state 200 + CSRF",
+        "ui_verify_run": 38865042951,
+        "unverified": "not checked on a real phone"
+      },
+      "id": "ui-crea-con-ia-fits-between-shell-header-and-gam-76ec0a",
+      "owner": "chat/ui-crea-con-ia-fits-between-shell-header-and-gam-76ec0a",
+      "paths": [
+        "PROJECT_STATUS.md",
+        "web/ai_v221_component/index.html",
+        "web/test_v412_ai_engines.py"
+      ],
+      "scope": "ui: Crea con IA fits between shell header and Game Bar on phones; drop CREA CON IA label",
+      "state": "completed"
     }
   ],
   "version": 1

@@ -1,0 +1,24 @@
+{
+  "branch": "chat/ui-crea-con-ia-fits-between-shell-header-and-gam-76ec0a",
+  "created_at": "2026-10-16T08:53:34+02:00",
+  "evidence": {
+    "gate": "success",
+    "merge_sha": "a4f9d86f1d82279700f435e740b8e3db8ac81a3f",
+    "pr": 160,
+    "promotion": "1e596cd8545ce08d45d110b2fc61c967f5ef2b4e",
+    "railway_frontend": "831d768f-e364-4a2e-bd79-574b2e449197 SUCCESS",
+    "tests": "mock shell 390x844/375x667/360x640 full-screen+fitted: no element under header/Game Bar, no scroll; local V404,V412,V397,V410 PASS; tests/ 73 passed; PR contracts + production-gate success",
+    "ui_verify": "release 1e596cd serves digest e32d92a6 == repo, pages byte-identical, Home 200, creator-hub/state 200 + CSRF",
+    "ui_verify_run": 38865042951,
+    "unverified": "not checked on a real phone"
+  },
+  "id": "ui-crea-con-ia-fits-between-shell-header-and-gam-76ec0a",
+  "owner": "chat/ui-crea-con-ia-fits-between-shell-header-and-gam-76ec0a",
+  "paths": [
+    "PROJECT_STATUS.md",
+    "web/ai_v221_component/index.html",
+    "web/test_v412_ai_engines.py"
+  ],
+  "scope": "ui: Crea con IA fits between shell header and Game Bar on phones; drop CREA CON IA label",
+  "state": "completed"
+}

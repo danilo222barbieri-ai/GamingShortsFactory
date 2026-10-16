@@ -1,6 +1,10 @@
 {
   "branch": "chat/ui-crea-con-ia-respects-the-shell-header-and-gam-10462c",
   "created_at": "2026-10-16T00:57:08+02:00",
+  "evidence": {
+    "branch_head": "0840757 (claim commit only)",
+    "reason": "no commits on branch after ~8h; owner asked another chat to do the same fix on 2026-10-16"
+  },
   "id": "ui-crea-con-ia-respects-the-shell-header-and-gam-10462c",
   "owner": "chat/ui-crea-con-ia-respects-the-shell-header-and-gam-10462c",
   "paths": [
@@ -9,5 +13,5 @@
     "web/test_v412_ai_engines.py"
   ],
   "scope": "ui: Crea con IA respects the shell header and Game Bar on phones",
-  "state": "active"
+  "state": "abandoned"
 }
