@@ -411,7 +411,12 @@
         "design/brand/**"
       ],
       "scope": "design: add GSF mini design system v1 (brand tokens, wordmark, usage doc)",
-      "state": "active"
+      "state": "completed",
+      "evidence": {
+        "pr": 134,
+        "merge_sha": "a1a67288e2f993cc0afff8beaf46bd8ef32d6313",
+        "completion": "Verified 2026-10-16: brand CSS/JSON, both wordmark SVGs, README, audit and CLAUDE.md are integrated in main. Owner asked this chat to finish both remaining Claude tasks. No runtime deployment required for the brand kit."
+      }
     },
     {
       "branch": "chat/ui-apply-gsf-brand-tokens-app-wide-colors-font-r-24fdf3",
@@ -837,18 +842,24 @@
             "tests/test_mobile_game_editor_2026.py"
           ],
           "to": "stability-unified-navigation-and-mobile-resume-l-395391"
+        },
+        "completion_handoff": {
+          "to": "ui-night-arena-single-look-shared-theme-creator--1fc1b7",
+          "paths": [
+            "tests/visual/gsf_navigation_stress.py",
+            "PROJECT_STATUS.md"
+          ],
+          "authorization": "Owner requested finish both remaining Claude tasks (Night Arena PR162 and brand kit) in integration chat 2026-10-16; narrow gate setup repair needed to complete PR162."
         }
       },
       "id": "stability-unified-navigation-and-mobile-resume-l-395391",
       "owner": "chat/stability-unified-navigation-and-mobile-resume-l-395391",
       "paths": [
-        "PROJECT_STATUS.md",
         "docs/architecture/gsf-navigation-lifecycle.md",
         "tests/test_canonical_ui_pipeline.py",
         "tests/test_mobile_resume_stability.py",
         "tests/test_navigation_stability.py",
         "tests/test_runtime_import_stability.py",
-        "tests/visual/gsf_navigation_stress.py",
         "tests/visual/gsf_visual_check.py",
         "web/__init__.py",
         "web/editor_2027_component/index.html",
@@ -1007,7 +1018,7 @@
       "branch": "chat/ui-night-arena-single-look-shared-theme-creator--1fc1b7",
       "created_at": "2026-10-16T10:03:49+02:00",
       "id": "ui-night-arena-single-look-shared-theme-creator--1fc1b7",
-      "owner": "chat/ui-night-arena-single-look-shared-theme-creator--1fc1b7",
+      "owner": "codex/01a139d0-1e1d-7962-894c-708b29589241",
       "paths": [
         "app.py",
         "tests/test_gsf_editor_home_style.py",
@@ -1027,10 +1038,22 @@
         "web/home_v154_component/index.html",
         "web/legal/**",
         "web/publish_short_v405_component/**",
-        "web/share_v156_component/**"
+        "web/share_v156_component/**",
+        "tests/visual/gsf_navigation_stress.py",
+        "PROJECT_STATUS.md",
+        "tests/test_home_upload_handoff.py",
+        "docs/superpowers/plans/2026-10-16-night-arena-completion.md"
       ],
       "scope": "ui: Night Arena single look — shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
-      "state": "active"
+      "state": "active",
+      "evidence": {
+        "handoff": {
+          "from": "Claude",
+          "authorization": "Owner explicitly requested finish both on 2026-10-16",
+          "baseline": "fc93bba8233da35b9d338ff4cd73d479ec346a23",
+          "pr": 162
+        }
+      }
     }
   ],
   "version": 1
