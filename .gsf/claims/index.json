@@ -481,7 +481,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -843,11 +843,8 @@
       "owner": "chat/stability-unified-navigation-and-mobile-resume-l-395391",
       "paths": [
         "PROJECT_STATUS.md",
-        "app.py",
         "docs/architecture/gsf-navigation-lifecycle.md",
         "tests/test_canonical_ui_pipeline.py",
-        "tests/test_mobile_editor_in_app.py",
-        "tests/test_mobile_game_editor_2026.py",
         "tests/test_mobile_resume_stability.py",
         "tests/test_navigation_stability.py",
         "tests/test_runtime_import_stability.py",
@@ -855,14 +852,12 @@
         "tests/visual/gsf_visual_check.py",
         "web/__init__.py",
         "web/editor_2027_component/index.html",
-        "web/game_editor_mobile_component/editor.mjs",
         "web/gsf_navigation_lifecycle.js",
-        "web/home_v154_component/index.html",
         "web/install_adsense_bridge.py",
         "web/test_v286_global_gamebar.py",
         "web/test_v302_global_live_gamebar.py"
       ],
-      "scope": "stability: unified navigation and mobile resume lifecycle root cause; web/creator_hub_v156_component/index.html released by owner-authorized priority to the Creator Hub redesign (2026-10-16); rebase on it before touching the Hub again; web/game_editor_mobile_component/** and tests/test_mobile_game_editor_2026.py released by owner-authorized priority to the in-player Home-style editor restyle (2026-10-16); rebase on it before touching the mobile editor again",
+      "scope": "stability: unified navigation and mobile resume lifecycle root cause; web/creator_hub_v156_component/index.html released by owner-authorized priority to the Creator Hub redesign (2026-10-16); rebase on it before touching the Hub again; web/game_editor_mobile_component/** and tests/test_mobile_game_editor_2026.py released by owner-authorized priority to the in-player Home-style editor restyle (2026-10-16); rebase on it before touching the mobile editor again; app.py, web/home_v154_component/index.html, web/game_editor_mobile_component/editor.mjs and the mobile editor tests released by owner authorization (2026-10-16, stability chat idle) to the Night Arena single-look redesign; rebase on it before touching them again",
       "state": "active"
     },
     {
@@ -1014,14 +1009,26 @@
       "id": "ui-night-arena-single-look-shared-theme-creator--1fc1b7",
       "owner": "chat/ui-night-arena-single-look-shared-theme-creator--1fc1b7",
       "paths": [
+        "app.py",
+        "tests/test_gsf_editor_home_style.py",
+        "tests/test_mobile_editor_in_app.py",
+        "tests/test_mobile_game_editor_2026.py",
         "tests/test_night_arena_theme.py",
         "web/ai_v221_component/**",
         "web/creator_hub_v156_component/**",
+        "web/game_editor_mobile_component/editor.css",
+        "web/game_editor_mobile_component/editor.mjs",
+        "web/game_editor_mobile_component/editor_state.mjs",
+        "web/game_editor_mobile_component/home_style_v416.css",
+        "web/game_editor_mobile_component/index.html",
+        "web/game_editor_mobile_component/overlay_v414.css",
+        "web/game_editor_mobile_component/overlay_v414.mjs",
         "web/gsf_night_arena.css",
+        "web/home_v154_component/index.html",
         "web/publish_short_v405_component/**",
         "web/share_v156_component/**"
       ],
-      "scope": "ui: Night Arena single look \u2014 shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages",
+      "scope": "ui: Night Arena single look — shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
       "state": "active"
     }
   ],
