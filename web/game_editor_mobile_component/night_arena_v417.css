@@ -1,0 +1,260 @@
+/* Gaming Shorts Factory — V417 Night Arena skin for the in-player Game Editor.
+   Loaded after overlay_v414.css (which owns the layout). Two goals:
+   1. Mini player fills the space between the app header and the Game Bar,
+      framed by the Night Arena glow instead of empty margins.
+   2. Full editor keeps only what edits the clip: no "Game Editor" kicker,
+      status line, 9:16 badge or duplicate AI button over the gameplay; one slim
+      top bar (collapse · title · undo/redo · Salva/Fatto), icon rail, timeline. */
+
+:root {
+  --v417-glass: rgba(10, 26, 42, .62);
+  --v417-glass-strong: rgba(10, 26, 42, .86);
+  --v417-edge: rgba(121, 210, 255, .20);
+  --v417-text: #EAF6FF;
+  --v417-muted: #9FB7CA;
+  --v417-cyan: #79D2FF;
+  --v417-ai: #B9A7FF;
+  --v417-mint: #A8F0CF;
+  --v417-cta: linear-gradient(90deg, #27AEF3, #53E0EA);
+  --v417-cta-ink: #052033;
+}
+
+.editor-app { color: var(--v417-text); }
+
+/* ---------- shared dark glass ---------- */
+.v414-tool-rail,
+.v414-timeline,
+.v414-transport,
+.v414-tool-sheet,
+.enter-editor-button,
+.v414-center-play,
+.v414-editor-actions .draft-button,
+.v414-top-hud .icon-button {
+  border: 1px solid var(--v417-edge);
+  background: var(--v417-glass);
+  color: var(--v417-text);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .08);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+.v414-tool-sheet { background: var(--v417-glass-strong); }
+.gsf-ico { stroke: currentColor; }
+
+/* ---------- Mini player: fill the slot, glow instead of empty margins ---------- */
+.editor-app.is-mini {
+  min-height: 100dvh;
+  padding: 10px;
+  display: grid;
+  place-items: center;
+}
+.editor-app.is-mini .editor-workspace,
+.editor-app.is-mini .preview-card { display: grid; place-items: center; height: 100%; }
+.editor-app.is-mini .preview-stage {
+  width: min(calc(100vw - 20px), calc((100dvh - 20px) * 9 / 16));
+  max-width: none;
+  max-height: calc(100dvh - 20px);
+  border: 1px solid rgba(121, 210, 255, .45);
+  border-radius: 30px;
+  box-shadow:
+    0 0 0 1px rgba(5, 13, 22, .9),
+    0 0 26px rgba(39, 174, 243, .40),
+    0 0 64px rgba(157, 130, 255, .22);
+}
+/* In the mini player the top bar is just the title over the scrim. */
+.editor-app.is-mini .v414-top-hud {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  align-items: center;
+}
+.editor-app.is-mini .v414-top-hud .icon-button { width: 40px; min-width: 40px; min-height: 40px; border-radius: 50%; }
+.v414-top-hud h1 { color: #fff; }
+.editor-app.is-mini .v414-top-hud h1 { margin: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; font-weight: 800; text-shadow: 0 1px 8px rgba(0, 0, 0, .6); }
+
+/* ---------- Things that never belong over the gameplay ---------- */
+.v414-top-hud .editor-kicker,
+.ratio-badge,
+.v414-top-hud .ai-top-button { display: none !important; }
+/* Save state stays available to screen readers; only errors are shown. */
+.v414-top-hud #editorStatus {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.v414-top-hud #editorStatus[data-state="error"] {
+  position: static;
+  width: auto; height: auto;
+  clip: auto;
+  color: #FF8A94;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* ---------- Full editor: one slim top bar ---------- */
+.editor-app.is-expanded .v414-top-hud,
+.editor-app:fullscreen .v414-top-hud,
+.editor-app:-webkit-full-screen .v414-top-hud {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 calc(10px + var(--v417-actions-w, 148px)) 0 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.editor-app.is-expanded .v414-top-hud #backButton { display: none; }
+.editor-app.is-expanded .v414-top-hud .history-actions { display: contents; }
+.editor-app.is-expanded #fullscreenButton { order: 1; }
+.editor-app.is-expanded .v414-top-hud .project-identity { order: 2; flex: 1 1 auto; min-width: 0; }
+.editor-app.is-expanded #undoButton { order: 3; }
+.editor-app.is-expanded #redoButton { order: 4; }
+.editor-app.is-expanded .v414-top-hud h1 {
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, .6);
+}
+.v414-top-hud .icon-button { border-radius: 50%; }
+.v414-top-hud .icon-button:disabled { opacity: .38; }
+
+/* Salva / Fatto sit at the end of the same row. */
+.v414-editor-actions {
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  gap: 6px;
+}
+.v414-editor-actions button { min-height: 44px; padding: 0 14px; border-radius: 999px; font-size: 13px; font-weight: 800; }
+.v414-editor-actions .continue-button {
+  border: 0;
+  background: var(--v417-cta);
+  color: var(--v417-cta-ink);
+  box-shadow: 0 8px 22px rgba(39, 174, 243, .45);
+}
+
+/* ---------- Icon rail ---------- */
+.v414-tool-rail {
+  top: calc(max(10px, env(safe-area-inset-top)) + 58px);
+  width: 54px;
+  border-radius: 27px;
+  padding: 6px 4px;
+}
+.v414-tool-rail .tool-button { color: var(--v417-muted); font-size: 8px; font-weight: 800; border-radius: 18px; }
+.v414-tool-rail .tool-button span { color: var(--v417-text); }
+.v414-tool-rail .tool-button.is-active { border-color: rgba(39, 174, 243, .45); background: rgba(39, 174, 243, .20); color: #fff; box-shadow: 0 0 18px rgba(39, 174, 243, .35); }
+.v414-tool-rail .tool-button.is-active span { color: var(--v417-cyan); }
+.v414-tool-rail .ai-tool span { color: var(--v417-ai); }
+.v414-tool-rail .ai-tool.is-active { border-color: rgba(157, 130, 255, .5); background: rgba(157, 130, 255, .20); box-shadow: 0 0 18px rgba(157, 130, 255, .4); }
+.editor-app.is-playing .v414-tool-rail { background: rgba(10, 26, 42, .40); }
+
+/* ---------- Transport + timeline ---------- */
+.v414-transport { border-radius: 999px; }
+.v414-transport .timecode { color: var(--v417-text); font-size: 10px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.v414-transport input[type="range"] { accent-color: #27AEF3; }
+.v414-timeline { border-radius: 20px; }
+.v414-timeline .timeline-heading strong { color: var(--v417-text); font-size: 10px; }
+.v414-timeline .trim-readout { color: var(--v417-muted); font-size: 9px; font-weight: 800; }
+.v414-timeline .timeline-track { border-color: var(--v417-edge); background: rgba(5, 13, 22, .55); }
+.v414-timeline .clip-strip span { background: linear-gradient(145deg, rgba(39, 174, 243, .55), rgba(83, 224, 234, .35), rgba(94, 214, 160, .40)); }
+.v414-timeline .selected-range { border-color: #53E0EA; box-shadow: 0 0 14px rgba(83, 224, 234, .45); }
+
+/* ---------- Play + mini actions ---------- */
+.v414-center-play { width: 64px; height: 64px; min-height: 64px; color: #fff; box-shadow: 0 0 0 6px rgba(39, 174, 243, .14), 0 0 30px rgba(39, 174, 243, .45); }
+.enter-editor-button { color: #fff; font-size: 12px; font-weight: 800; }
+.enter-editor-button span { color: var(--v417-cyan); }
+.mini-short-button {
+  border: 0;
+  background: var(--v417-cta);
+  color: var(--v417-cta-ink);
+  box-shadow: 0 10px 26px rgba(39, 174, 243, .45);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* ---------- Tool sheet ---------- */
+.v414-tool-sheet .tool-dock-header strong { color: #fff; }
+.v414-tool-sheet .tool-dock-header .eyebrow { display: none; }
+.v414-tool-sheet .tool-panel label { color: var(--v417-muted); font-weight: 700; }
+.v414-tool-sheet .tool-panel output { color: var(--v417-cyan); font-weight: 800; }
+.v414-tool-sheet .secondary-button,
+.v414-tool-sheet .inline-action,
+.v414-tool-sheet .preset-row button,
+.v414-tool-sheet .segmented button,
+.v414-tool-sheet .camera-mode-grid button,
+.v414-tool-sheet .ai-quick-grid button,
+.choice-grid button {
+  border: 1px solid var(--v417-edge);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .05);
+  color: var(--v417-text);
+}
+.choice-grid button strong { color: #fff; }
+.choice-grid button span { color: var(--v417-muted); }
+.choice-grid button.is-selected,
+.v414-tool-sheet [aria-pressed="true"],
+.v414-tool-sheet .is-selected {
+  border-color: rgba(39, 174, 243, .55);
+  background: rgba(39, 174, 243, .18);
+  box-shadow: 0 0 16px rgba(39, 174, 243, .3);
+}
+.v414-tool-sheet input[type="text"],
+.v414-tool-sheet select,
+.ai-command input {
+  border: 1px solid var(--v417-edge);
+  background: rgba(5, 13, 22, .6);
+  color: var(--v417-text);
+}
+.v414-tool-sheet input[type="range"] { accent-color: #27AEF3; }
+.ai-quick-grid .ai-improve-all,
+.ai-command button,
+.ai-preview-apply { border: 0; background: linear-gradient(135deg, #27AEF3, #9D82FF); color: #fff; }
+.ai-suggestion-card { border: 1px solid var(--v417-edge); background: rgba(255, 255, 255, .04); }
+.ai-suggestion-card p, .panel-hint, .panel-empty { color: var(--v417-muted); }
+.ai-preview-bar { border: 1px solid rgba(157, 130, 255, .45); background: var(--v417-glass-strong); color: var(--v417-text); box-shadow: 0 0 24px rgba(157, 130, 255, .35); }
+.ai-preview-bar .ai-orb, .ai-intro .ai-orb { background: rgba(157, 130, 255, .22); color: var(--v417-ai); }
+.ai-preview-copy span { color: var(--v417-muted); }
+.ai-preview-cancel { border: 1px solid var(--v417-edge); background: rgba(255, 255, 255, .06); color: var(--v417-text); }
+.focus-status[data-state="ready"] { color: var(--v417-mint); }
+
+/* ---------- Empty / loading state ---------- */
+.media-empty {
+  background:
+    radial-gradient(circle at 25% 15%, rgba(39, 174, 243, .22), transparent 45%),
+    radial-gradient(circle at 80% 25%, rgba(157, 130, 255, .18), transparent 45%),
+    #081827;
+  color: var(--v417-text);
+}
+.media-empty span { color: var(--v417-muted); }
+.media-empty .empty-icon { color: var(--v417-cyan); }
+.media-empty button { border: 0; background: var(--v417-cta); color: var(--v417-cta-ink); border-radius: 999px; font-weight: 800; }
+
+@media (max-width: 360px) {
+  .editor-app.is-expanded .v414-top-hud .project-identity { display: none; }
+  .v414-editor-actions button { padding: 0 11px; }
+}
+
+/* Sliders: dark track with a brand-gradient fill and a glowing white thumb.
+   The trim handles over the clip strip are native ranges: never restyled. */
+.v414-transport input[type="range"]::-webkit-slider-runnable-track,
+.v414-tool-sheet input[type="range"]::-webkit-slider-runnable-track { background: rgba(121, 210, 255, .18); }
+.v414-transport input[type="range"]::-moz-range-track,
+.v414-tool-sheet input[type="range"]::-moz-range-track { background: rgba(121, 210, 255, .18); }
+.v414-transport input[type="range"]::-moz-range-progress,
+.v414-tool-sheet input[type="range"]::-moz-range-progress { background: linear-gradient(90deg, #27AEF3, #53E0EA); }
+.v414-transport input[type="range"]::-webkit-slider-thumb,
+.v414-tool-sheet input[type="range"]::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(39, 174, 243, .45), 0 0 14px rgba(39, 174, 243, .6); }
+.v414-transport input[type="range"]::-moz-range-thumb,
+.v414-tool-sheet input[type="range"]::-moz-range-thumb { box-shadow: 0 0 0 3px rgba(39, 174, 243, .45), 0 0 14px rgba(39, 174, 243, .6); }
