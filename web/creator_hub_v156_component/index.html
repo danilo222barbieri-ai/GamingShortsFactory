@@ -289,6 +289,20 @@ a.row{color:inherit;text-decoration:none}
 .followRow .follow{display:flex;gap:6px}
 .followRow .follow a{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--na-edge);color:var(--na-text);text-decoration:none;font-size:10px;font-weight:800}
 .appVersion{margin:14px 4px 0;text-align:center;color:var(--na-text-faint);font-size:11.5px;font-weight:700}
+/* 7-day trend line in each counter (replaces the static underline when there is activity) */
+.counter .trend{position:absolute;left:13px;right:13px;bottom:8px;width:calc(100% - 26px);height:16px;color:#27AEF3;opacity:0}
+.counter:nth-child(2) .trend{color:#9D82FF}
+.counter:nth-child(3) .trend{color:#5ED6A0}
+.counter.has-trend .trend{opacity:1;filter:drop-shadow(0 0 4px currentColor)}
+.counter.has-trend::after{opacity:0}
+.counter{padding-bottom:28px}
+/* Empty-state illustration: a small Night Arena orb with a play mark */
+.empty:has(.na-cta)::before{content:"";width:52px;height:52px;margin-bottom:8px;border-radius:50%;
+ background:radial-gradient(circle at 50% 40%,#12314B,#0A1D2E 70%) padding-box,conic-gradient(#27AEF3,#53E0EA,#5ED6A0,#9D82FF,#27AEF3) border-box;
+ border:2px solid transparent;box-shadow:0 0 22px rgba(39,174,243,.45);
+ -webkit-mask:none}
+.empty:has(.na-cta){position:relative}
+.empty:has(.na-cta)::after{content:"";position:absolute;left:36px;top:36px;width:0;height:0;border-left:13px solid #79D2FF;border-top:8px solid transparent;border-bottom:8px solid transparent;filter:drop-shadow(0 0 6px rgba(121,210,255,.8))}
 /* GSF_NIGHT_ARENA_PAGE:END */
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&amp;family=Nunito+Sans:opsz,wght@6..12,400..800&amp;display=swap" data-gsf-night-arena-font>
@@ -521,6 +535,22 @@ a.row{color:inherit;text-decoration:none}
   ss.innerHTML=shorts.length?shorts.slice(0,8).map(s=>cardHtml("short",s)).join(""):emptyHtml("short");
   ds.style.display=ss.style.display="";
   [ds,ss].forEach(el=>{el.classList.toggle("strip",!!el.querySelector(".pcard"));bindCards(el)});
+  renderTrends(drafts,shorts);
+ }
+ // GSF_NIGHT_ARENA: each counter carries a 7-day trend line built from the items' own timestamps.
+ function renderTrends(drafts,shorts){
+  const DAY=86400,now=Date.now()/1000,bins=()=>new Array(7).fill(0);
+  const ts=it=>Number(it.completed_at||it.updated_at||it.created_at||0);
+  const fill=(list,pick)=>{const b=bins();list.forEach(it=>{if(!pick(it))return;const t=ts(it);if(!t)return;const d=Math.floor((now-t)/DAY);if(d>=0&&d<7)b[6-d]++});return b};
+  const series={countDrafts:fill(drafts,()=>true),countShorts:fill(shorts,()=>true),countPublished:fill(shorts,it=>(it.published||[]).length>0)};
+  Object.entries(series).forEach(([id,b])=>{
+   const host=$("#"+id)?.parentElement;if(!host)return;
+   let svg=host.querySelector(".trend");
+   if(!svg){svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.setAttribute("class","trend");svg.setAttribute("viewBox","0 0 60 16");svg.setAttribute("preserveAspectRatio","none");svg.setAttribute("aria-hidden","true");host.appendChild(svg)}
+   const max=Math.max(1,...b),pts=b.map((v,i)=>(i*10).toFixed(1)+","+(14-v/max*12).toFixed(1)).join(" ");
+   svg.innerHTML='<polyline points="'+pts+'" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';
+   host.classList.toggle("has-trend",b.some(Boolean));
+  });
  }
  function renderProjects(){
   const grid=$("#projectGrid");if(!grid)return;
