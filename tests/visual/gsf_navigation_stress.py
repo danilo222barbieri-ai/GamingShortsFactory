@@ -80,16 +80,11 @@ def browser_page(mobile=True):
         print("APP READY",round(time.monotonic()-started,2),flush=True)
         assert not errors,errors
         if os.environ.get('GSF_TEST_MEDIA')=='1':
-            response=ctx.request.put(os.environ['GSF_BASE_URL'].rstrip('/')+'/direct-upload/chunk',data=MEDIA_FIXTURE,headers={
-                'X-GSF-Upload-ID':'stability'+uuid.uuid4().hex[:12],
-                'X-GSF-Filename':'stability.mp4','X-GSF-File-Size':str(len(MEDIA_FIXTURE)),
-                'X-GSF-Chunk-Start':'0','X-GSF-Chunk-Index':'0','X-GSF-Chunk-Count':'1',
-                'Content-Type':'application/octet-stream'})
-            assert response.ok and response.json().get('completed'),response.text()
-            # Like the real Home uploader: once the companion has the file, the Home
-            # component emits upload_complete and the app reruns to materialize it.
+            # Upload exactly like a user: choose the file in the Home uploader. The Home
+            # then uploads it (bucket or chunked companion), marks itself loaded and
+            # emits upload_complete so the app reruns and materializes the source.
             home=next(f for f in page.frames if f.evaluate("()=>{try{return window.__GSF_V333_CTA_TOUCH===true}catch(_){return false}}"))
-            home.evaluate("()=>window.parent.postMessage({isStreamlitMessage:true,type:'streamlit:setComponentValue',value:{event:'upload_complete',duration:2,engine:'auto'},dataType:'json'},'*')")
+            home.set_input_files('#pick',files=[{'name':'stability.mp4','mimeType':'video/mp4','buffer':MEDIA_FIXTURE}])
             # Upload completion triggers a real Streamlit rerun. Warm-up must
             # measure the loaded app, including its finite widget hotkeys.
             try:
