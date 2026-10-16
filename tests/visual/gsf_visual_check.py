@@ -248,3 +248,17 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # Exercise the parent app, including lifecycle cleanup, in the existing
+    # blocking Production Gate (the standalone Editor check cannot cover it).
+    import sys
+    import unittest
+    sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+    os.environ.setdefault("GSF_BASE_URL",BASE)
+    os.environ.setdefault("GSF_BROWSER","webkit")
+    os.environ.setdefault("GSF_TEST_MEDIA","1")
+    suite=unittest.TestSuite()
+    loader=unittest.TestLoader()
+    for module in ("test_navigation_stability","test_mobile_resume_stability"):
+        suite.addTests(loader.loadTestsFromName(module))
+    if not unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful():
+        raise SystemExit(1)

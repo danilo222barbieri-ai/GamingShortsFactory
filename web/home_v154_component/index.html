@@ -3317,10 +3317,16 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
      height(target); return target;
    }catch(e){height(720);return 720}
  }
+ // Parent resources outlive this component unless explicitly released on replacement.
+ const parentResources=new AbortController();
+ const parentObservers=[];
+ const disposeParentResources=()=>{parentResources.abort();parentObservers.forEach(o=>o.disconnect());clearTimeout(fitViewport.t)};
+ try{window.parent.__gsfHomeDispose?.();window.parent.__gsfHomeDispose=disposeParentResources}catch(_e){}
+ window.addEventListener("pagehide",event=>{if(!event.persisted)disposeParentResources()});
  const scheduleFit=()=>{clearTimeout(fitViewport.t);fitViewport.t=setTimeout(fitViewport,70)};
  window.addEventListener("resize",scheduleFit);
  try{if(window.visualViewport)window.visualViewport.addEventListener("resize",scheduleFit)}catch(_e){}
- try{window.parent.addEventListener("resize",scheduleFit)}catch(_e){}
+ try{window.parent.addEventListener("resize",scheduleFit,{signal:parentResources.signal})}catch(_e){}
  function purgeLegacySync(){
    try{
      const doc=window.parent.document;
@@ -3333,9 +3339,9 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
      });
    }catch(e){}
  }
- try{purgeLegacySync();new MutationObserver(purgeLegacySync).observe(window.parent.document.body,{childList:true,subtree:true});}catch(e){}
+ try{purgeLegacySync();const observer=new MutationObserver(purgeLegacySync);parentObservers.push(observer);observer.observe(window.parent.document.body,{childList:true,subtree:true});}catch(e){}
  function collapseParentHomeSpacers(){try{normalizeParentHomeShell()}catch(_e){}}
- try{new MutationObserver(()=>{collapseParentHomeSpacers();scheduleFit()}).observe(window.parent.document.body,{childList:true,subtree:true})}catch(_e){}
+ try{const observer=new MutationObserver(()=>{collapseParentHomeSpacers();scheduleFit()});parentObservers.push(observer);observer.observe(window.parent.document.body,{childList:true,subtree:true})}catch(_e){}
  function setLoaded(on){
    loaded=!!on;
    setMuralState(loaded?"ready":"idle"); view.classList.toggle("loadedView",loaded); circle.classList.toggle("loaded",loaded);

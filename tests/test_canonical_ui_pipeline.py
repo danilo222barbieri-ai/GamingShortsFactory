@@ -171,14 +171,13 @@ def test_every_editor_navigation_owner_selects_mobile_without_changing_desktop()
     app = (ROOT / "app.py").read_text(encoding="utf-8")
     mobile_owner_start = app.index("/* GSF_MOBILE_EDITOR_2026_BRIDGE */")
     mobile_open = app.index("const open=(remember=true)=>{", mobile_owner_start)
-    start = app.rindex("const ensureEditorSurface=()=>{")
-    end = app.index("const ensureHubSurface=()=>{", start)
-    global_owner = app[start:end].replace("\\'", "'")
-    assert mobile_owner_start < mobile_open < start, "canonical mobile owner must register before the global fallback"
-    assert "selectedEditorSource()" in app[mobile_open:start]
-    assert "frame.dataset.loaded='1'" in app[mobile_open:start]
-    assert "if(f&&f.dataset.loaded!=='1')" in global_owner, "global fallback must not overwrite the selected mobile source"
-    assert "'/editor-live/'" in global_owner, "desktop fallback must remain unchanged"
+    assert "selectedEditorSource()" in app[mobile_open:]
+    assert "frame.dataset.loaded='1'" in app[mobile_open:]
+    assert "const MOBILE_EDITOR_SRC='/game-editor-mobile/';" in app
+    assert "const DESKTOP_EDITOR_SRC='/editor-live/';" in app
+    assert "const ensureEditorSurface=()=>{" not in app, "a second source owner must not overwrite the mobile editor"
+    assert "registerSurface('editor'" in app
+    assert "const route=data=>P.GSFNavigation.navigate(data);" in app
 
 
 def test_ci_and_production_gate_execute_mobile_editor_contracts():

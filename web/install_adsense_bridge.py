@@ -1,3 +1,5 @@
+import ast
+import re
 from pathlib import Path
 import streamlit
 
@@ -8,6 +10,48 @@ if not index.is_file():
     raise RuntimeError(f"Streamlit index not found: {index}")
 
 s=index.read_text(encoding="utf-8")
+# Install lifecycle synchronously in the parent before React or any component
+# iframe. Component execution order is not a lifecycle/bootstrap guarantee.
+navigation_marker='id="gsf-navigation-lifecycle"'
+navigation=(Path(__file__).parent/"gsf_navigation_lifecycle.js").read_text(encoding="utf-8")
+# Canonical app literals are the controller source, copied verbatim into the
+# top realm. They are data in Streamlit, never transient component iframes.
+app_source=(Path(__file__).parent.parent/"app.py").read_text(encoding="utf-8")
+selectors={"SHELL":"body","SOCIAL":"#gsf-social-overlay-v159","EDITOR":"#gsf-editor-overlay-v220","AI":"#gsf-ai-overlay-v221","FOOTER348":"#gsf-global-footer","FOOTER350":"#gsf-global-footer","FOOTER351":"#gsf-global-footer","NOTIFICATIONS":"body"}
+controllers={}
+for node in ast.walk(ast.parse(app_source)):
+    if not isinstance(node,ast.Assign) or not isinstance(node.value,ast.Constant):continue
+    for target in node.targets:
+        if isinstance(target,ast.Name) and target.id.startswith("_GSF_PARENT_"):
+            controllers[target.id.removeprefix("_GSF_PARENT_")]=node.value.value
+if controllers.keys()!=selectors.keys():raise RuntimeError("incomplete parent controllers")
+mounts=[]
+for name,selector in selectors.items():
+    scripts=re.findall(r"<script[^>]*>([\s\S]*?)</script>",controllers[name])
+    if not scripts:raise RuntimeError("empty parent controller: "+name)
+    mounts.append("{selector:"+repr(selector)+",node:null,mount:()=>{"+"\n".join(scripts)+"}}")
+bootstrap="""
+(() => {
+ const controllers=[CONTROLLERS];
+ const mount=()=>{
+   for(const entry of controllers){
+     const node=document.querySelector(entry.selector);
+     if(node&&node!==entry.node){entry.node=node;entry.mount();}
+   }
+ };
+ new MutationObserver(mount).observe(document.documentElement,{childList:true,subtree:true});
+ mount();
+})();
+""".replace("CONTROLLERS",",\n".join(mounts))
+navigation_script='<script '+navigation_marker+'>'+navigation+bootstrap+'</script>'
+if navigation_marker in s:
+    start=s.index('<script '+navigation_marker)
+    end=s.index('</script>',start)+len('</script>')
+    s=s[:start]+navigation_script+s[end:]
+else:
+    s=s.replace("</head>",navigation_script+'\n</head>',1)
+index.write_text(s,encoding="utf-8")
+
 marker='id="gsf-adsense-bridge"'
 if marker in s:
     print("V105.7/V407 browser bridge already installed:",index)

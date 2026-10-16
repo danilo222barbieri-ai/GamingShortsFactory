@@ -67,7 +67,7 @@ def test_ai_actions_are_distinct_and_keep_selected_moment_payload() -> None:
         assert field in ai
 
     bridge = app[app.index("if(e.data.type==='GSF_AI_UI')") :]
-    bridge = bridge[: bridge.index("if(e.data.type!=='GSF_SHELL_NAV')")]
+    bridge = bridge[: bridge.index("if(e.data.type==='GSF_SHELL_NAV'&&e.data.target==='ai-state')")]
     for field in ("candidate_id", "video", "start_time", "end_time", "duration", "engine", "index"):
         assert re.search(rf"\b{field}\s*:\s*e\.data\.{field}\b", bridge), field
 
@@ -110,7 +110,7 @@ def test_mobile_actions_use_ordered_save_ack_and_explicit_destinations() -> None
     route_index = bridge.index("navigateMobileEditorToShort", save_index)
     assert save_index < route_index
     assert re.search(
-        r"if\(action==='close'\)\{\s*persistMobileEditorState\(message\).*?close\(\)",
+        r"if\(action==='close'\)\{\s*persistMobileEditorState\(message\).*?P\.GSFNavigation\.navigate\(\{target:'home'\}\)",
         bridge,
         re.S,
     ), "Back must persist the flushed editor state before closing"

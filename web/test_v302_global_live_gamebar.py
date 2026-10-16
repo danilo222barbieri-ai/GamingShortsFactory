@@ -6,6 +6,7 @@ import sys
 root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path('/app')
 home = (root / 'web/home_v154_component/index.html').read_text(encoding='utf-8')
 app = (root / 'GamingShortsFactory_V154_STRUCTURAL_HOME.py').read_text(encoding='utf-8')
+lifecycle = (root / 'web/gsf_navigation_lifecycle.js').read_text(encoding='utf-8') if (root / 'web/gsf_navigation_lifecycle.js').exists() else ''
 nav_match = re.search(r'<nav class="bottomNav".*?</nav>', home, flags=re.DOTALL)
 home_nav = nav_match.group(0) if nav_match else ''
 
@@ -17,9 +18,9 @@ checks = [
     ('Page Game Bar has canonical Hub', 'data-target="hub" data-section="dashboard" data-active="hub"' in app),
     ('Page Game Bar has canonical Projects', 'data-section="projects" data-active="projects"' in app and '<span>Progetti</span>' in app),
     ('Page Game Bar has canonical Live', 'data-section="live" data-active="live"' in app and '<span>Live</span>' in app),
-    ('Hub active state is dashboard-only', "activeKey==='hub'" in app and "lastSection==='dashboard'" in app),
-    ('Hub focus fallback is dashboard, not profile', "t==='profile'?'profile':'dashboard'" in app and "t==='profile'?'profile':'profile'" not in app),
-    ('Repeated Hub messages cannot inherit profile fallback', "lastSection=String(e.data.section||'dashboard')" in app and "lastSection=String(e.data.section||'profile')" not in app),
+    ('Hub active state is dashboard-only', ("activeKey==='hub'" in app and "lastSection==='dashboard'" in app) or ("const selected=current.target==='hub'?" in lifecycle and "current.section" in lifecycle)),
+    ('Hub focus fallback is dashboard, not profile', ("t==='profile'?'profile':'dashboard'" in app or ("if (target==='profile'||target==='account') {target='hub';section='profile';}" in lifecycle and "section='dashboard'" in lifecycle)) and "t==='profile'?'profile':'profile'" not in app),
+    ('Repeated Hub messages cannot inherit profile fallback', ("lastSection=String(e.data.section||'dashboard')" in app or ("let target=String(data.target||'home'), section=String(data.section||'');" in lifecycle and "section='dashboard'" in lifecycle)) and "lastSection=String(e.data.section||'profile')" not in app),
     ('Inclined Live icon present', 'transform="rotate(-8 16 16)"' in home_nav and 'transform="rotate(-8 16 16)"' in app),
 ]
 failed = [name for name, ok in checks if not ok]

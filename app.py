@@ -16418,57 +16418,7 @@ if GSF_WEB_MODE:
       }
     }
     </style>
-    <div class="gsf-script-guard" style="display:none!important"><script>
-    (()=>{
-      const KEY='gsf_creator_hub_open_v107';
-      const closeHub=()=>{
-        const panel=document.getElementById('gsf-creator-hub-live-v160')||document.getElementById('gsf-creator-hub-panel');
-        if(!panel)return;
-        panel.classList.remove('is-open');
-        panel.style.opacity='0';panel.style.visibility='hidden';panel.style.pointerEvents='none';
-        try{sessionStorage.setItem(KEY,'0')}catch(e){}
-        if(location.hash==='#gsf-creator-hub-panel') history.replaceState(null,'',location.pathname+location.search);
-      };
-      const clickTarget=(words)=>{
-        const nodes=[...document.querySelectorAll('button,a,[role=button]')].filter(x=>!x.closest('#gsf-creator-hub-portal-v107'));
-        const el=nodes.find(x=>words.some(w=>(x.innerText||x.textContent||'').toLowerCase().includes(w)));
-        if(el){el.click();return true}return false;
-      };
-      const sync=()=>{
-        const frame=document.querySelector('#gsf-creator-hub-portal-v107 .gsf-creator-hub-frame');
-        if(frame && frame.dataset.loaded==='1' && !String(frame.src||'').includes('/creator-hub-v156/')) frame.src='/creator-hub-v156/';
-      };
-      // V370_SINGLE_NAVIGATION_OWNER: never preload the legacy Hub portal.
-      // V343 owns the live Hub iframe; V158 remains only as a fallback router.
-      window.addEventListener('message',ev=>{
-        if(ev.origin!==location.origin || !ev.data || ev.data.type!=='GSF_SHELL_NAV')return;
-        if(window['__GSF_GLOBAL_'+'SHELL_V343'])return;
-        const t=String(ev.data.target||'');
-        if(t==='close' || t==='home'){
-          closeHub();
-          const so=document.getElementById('gsf-social-overlay-v159');
-          if(so){so.classList.remove('is-open');so.style.opacity='0';so.style.visibility='hidden';so.style.pointerEvents='none';}
-          return
-        }
-        if(t==='hub'){
-          const so=document.getElementById('gsf-social-overlay-v159');
-          if(so){so.classList.remove('is-open');so.style.opacity='0';so.style.visibility='hidden';so.style.pointerEvents='none';}
-          const hp=document.getElementById('gsf-creator-hub-live-v160');
-          if(hp){hp.classList.add('is-open');hp.style.opacity='1';hp.style.visibility='visible';hp.style.pointerEvents='auto';}
-          return
-        }
-        closeHub();
-        setTimeout(()=>{
-          if(t==='new') clickTarget(['nuovo video','carica il tuo gameplay']);
-          else if(t==='resume_draft') clickTarget(['apri game editor','game editor','manuale']);
-          else if(t==='social'){
-            const so=document.getElementById('gsf-social-overlay-v159');
-            if(so){so.classList.add('is-open');so.style.opacity='1';so.style.visibility='visible';so.style.pointerEvents='auto';}
-          }
-        },210);
-      });
-    })();
-    </script></div>
+    <!-- V158 router retired; GSFNavigation owns all destinations. -->
     """, unsafe_allow_html=True)
 
 if GSF_WEB_MODE:
@@ -16534,7 +16484,7 @@ if GSF_WEB_MODE:
     """, unsafe_allow_html=True)
 
     import streamlit.components.v1 as components
-    components.html(r"""<!doctype html><html><body style="margin:0;display:none">
+    _GSF_PARENT_SOCIAL = r"""<!doctype html><html><body style="margin:0;display:none">
     <script>
     ((P)=>{
       const window=P;
@@ -16543,6 +16493,7 @@ if GSF_WEB_MODE:
     (()=>{
       const o=document.getElementById('gsf-social-overlay-v159');
       if(!o)return;
+      const bridge=P.GSFNavigation.bridge('social',globalThis.frameElement);
       const frame=o.querySelector('iframe');
       const ensureFrame=()=>{
         if(frame.dataset.loaded==='1')return;
@@ -16561,8 +16512,8 @@ if GSF_WEB_MODE:
         o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';
         o.setAttribute('aria-hidden','true');
       };
-      o.querySelector('.gsf-social-close').onclick=close;
-      o.addEventListener('click',e=>{if(e.target===o)close()});
+      o.querySelector('.gsf-social-close').onclick=()=>P.GSFNavigation.navigate({target:'home'});
+      o.addEventListener('click',e=>{if(e.target===o)P.GSFNavigation.navigate({target:'home'})},{signal:bridge.signal});
 
       // Old Streamlit share controls route into the same app layer instead of causing a page change/rerun.
       document.addEventListener('click',e=>{
@@ -16570,21 +16521,16 @@ if GSF_WEB_MODE:
         if(!target||target.closest('#gsf-social-overlay-v159'))return;
         const label=(target.innerText||target.textContent||'').trim().toLowerCase();
         if(label.includes('condividi o scarica')||label.includes('apri share hub')){
-          e.preventDefault();e.stopPropagation();open();
+          e.preventDefault();e.stopPropagation();P.GSFNavigation.navigate({target:'social'});
         }
-      },true);
+      },{capture:true,signal:bridge.signal});
 
-      window.addEventListener('message',e=>{
-        if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
-        const t=String(e.data.target||'');
-        if(t==='social')open(String(e.data.platform||''));
-        if(t==='close'||t==='home'||t==='hub'||t==='editor'||t==='ai'||t==='account')close();
-      });
+      P.GSFNavigation.registerSurface('social',{open:data=>open(String(data.platform||'')),close});
     })();
 
     })(window.parent);
     </script>
-    </body></html>""", height=0, scrolling=False)
+    </body></html>"""
 
 if GSF_WEB_MODE:
     st.markdown(r"""
@@ -16633,53 +16579,7 @@ if GSF_WEB_MODE:
     """, unsafe_allow_html=True)
 
     import streamlit.components.v1 as components
-    components.html(r"""<!doctype html><html><body style="margin:0;display:none">
-    <script>
-    ((P)=>{
-      const window=P;
-      const document=P.document;
-      const location=P.location;
-
-    (()=>{
-      const o=document.getElementById('gsf-creator-hub-live-v160');if(!o)return;
-      const frame=o.querySelector('iframe');
-      const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true')};
-      const ensureFrame=()=>{
-        if(frame.dataset.loaded==='1')return false;
-        frame.src=frame.dataset.src||'/creator-hub-v156/';
-        frame.dataset.loaded='1';
-        return true;
-      };
-      const open=()=>{
-        const firstLoad=ensureFrame();
-        const so=document.getElementById('gsf-social-overlay-v159');if(so){so.classList.remove('is-open');so.style.opacity='0';so.style.visibility='hidden';so.style.pointerEvents='none'}
-        const ed=document.getElementById('gsf-editor-overlay-v220');if(ed){ed.classList.remove('is-open');ed.style.opacity='0';ed.style.visibility='hidden';ed.style.pointerEvents='none'}
-        const ai=document.getElementById('gsf-ai-overlay-v221');if(ai){ai.classList.remove('is-open');ai.style.opacity='0';ai.style.visibility='hidden';ai.style.pointerEvents='none'}
-        o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false')
-      };
-      o.querySelector('.gsf-hub-close-v160').onclick=close;
-      o.addEventListener('click',e=>{if(e.target===o)close()});
-      window.addEventListener('message',e=>{
-        if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
-        if(window['__GSF_GLOBAL_'+'SHELL_V343'])return;
-        const t=String(e.data.target||'');
-        if(t==='hub'||t==='profile'){
-          open();
-          const section=String(e.data.section||(t==='profile'?'profile':'dashboard'));
-          const focus=()=>{try{frame.contentWindow.postMessage({type:'GSF_HUB_FOCUS',section},location.origin)}catch(_e){}};
-          if(frame.dataset.loaded==='1' && frame.contentWindow){
-            if(frame.contentDocument && frame.contentDocument.readyState==='complete')setTimeout(focus,40);
-            else frame.addEventListener('load',focus,{once:true});
-          }
-          return
-        }
-        if(t==='home'||t==='close'||t==='editor'||t==='social'||t==='ai'||t==='account')close();
-      });
-    })();
-    
-    })(window.parent);
-    </script>
-    </body></html>""", height=0, scrolling=False)
+    components.html('<!-- Surface navigation is owned by GSFNavigation. -->', height=0, scrolling=False)
 
 if GSF_WEB_MODE:
     st.markdown(r"""
@@ -16703,32 +16603,7 @@ if GSF_WEB_MODE:
   .v393EditorChromeGone{display:none!important}
 }
 </style>
-<script id="v393EditorParentCleanup">
-(()=>{
-  const P=window.parent,D=P.document;if(!D||P.__GSF_V393_EDITOR_PARENT_CLEANUP)return;P.__GSF_V393_EDITOR_PARENT_CLEANUP=true;
-  const host=()=>D.getElementById('gsf-editor-overlay-v220');
-  const closeSelector='button,a,[role="button"],[onclick],[class*="close" i],[id*="close" i]';
-  const sync=()=>{
-    const h=host(),mobile=P.innerWidth<=760,active=!!(h&&h.classList.contains('is-open')&&h.getAttribute('aria-hidden')!=='true');
-    D.documentElement.classList.toggle('v393EditorActive',active&&mobile);
-    D.querySelectorAll('.v393EditorChromeGone').forEach(el=>el.classList.remove('v393EditorChromeGone'));
-    if(!active||!mobile)return;
-    const hr=h.getBoundingClientRect(),vw=P.innerWidth;
-    D.querySelectorAll(closeSelector).forEach(el=>{
-      if(el.closest('#gsf-global-header,#gsf-global-gamebar,#gsf-global-footer'))return;
-      let r;try{r=el.getBoundingClientRect()}catch(_e){return}
-      if(!r||r.width<10||r.height<10||r.width>90||r.height>90)return;
-      const vals=[el.textContent,el.getAttribute('aria-label'),el.getAttribute('title'),el.id,el.className].map(v=>String(v||'').trim().toLowerCase());
-      const semantic=vals.some(v=>v==='x'||v==='×'||v==='✕'||v==='✖'||v==='close'||v==='chiudi'||v.includes('editorclose')||v.includes('editor-close'));
-      const nearEditorTop=r.right>=Math.min(vw,hr.right)-92&&r.top>=hr.top-12&&r.top<=hr.top+108;
-      if(semantic&&nearEditorTop)el.classList.add('v393EditorChromeGone');
-    });
-  };
-  const schedule=()=>{P.requestAnimationFrame(sync);[80,220,520,1100].forEach(ms=>P.setTimeout(sync,ms))};
-  const h=host();if(h){try{new MutationObserver(schedule).observe(h,{attributes:true,attributeFilter:['class','aria-hidden'],childList:true,subtree:true})}catch(_e){}}
-  schedule();
-})();
-</script>
+<!-- v393EditorParentCleanup: lifecycle owned by GSFNavigation -->
 
 
 <!-- V394_MOBILE_EDITOR_FOOTER_RESTORE -->
@@ -16742,24 +16617,7 @@ if GSF_WEB_MODE:
   }
 }
 </style>
-<script id="v394EditorFooterRestoreRuntime">
-(()=>{
-  const P=window.parent,D=P.document;if(!D||P.__GSF_V394_EDITOR_FOOTER_RESTORE)return;
-  P.__GSF_V394_EDITOR_FOOTER_RESTORE=true;
-  const host=()=>D.getElementById('gsf-editor-overlay-v220');
-  const sync=()=>{
-    const h=host();
-    const active=!!(P.innerWidth<=760&&h&&h.classList.contains('is-open')&&h.getAttribute('aria-hidden')!=='true');
-    D.documentElement.classList.toggle('v394EditorActive',active);
-  };
-  sync();
-  [60,180,420,900,1600].forEach(ms=>P.setTimeout(sync,ms));
-  const h=host();
-  if(h){
-    try{new MutationObserver(sync).observe(h,{attributes:true,attributeFilter:['class','aria-hidden'],childList:true,subtree:true})}catch(_e){}
-  }
-})();
-</script>
+<!-- v394EditorFooterRestoreRuntime: lifecycle owned by GSFNavigation -->
 
 <style id="gsf-v220-editor-shell">
     #gsf-editor-overlay-v220{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483655;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(222,238,247,.46);-webkit-backdrop-filter:blur(5px) saturate(.98);backdrop-filter:blur(5px) saturate(.98);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
@@ -16797,7 +16655,7 @@ if GSF_WEB_MODE:
     """, unsafe_allow_html=True)
 
     import streamlit.components.v1 as components
-    components.html(r"""<!doctype html><html><body style="margin:0;display:none">
+    _GSF_PARENT_EDITOR = r"""<!doctype html><html><body style="margin:0;display:none">
     <script>
     ((P)=>{
       const window=P;
@@ -16806,14 +16664,18 @@ if GSF_WEB_MODE:
 
     (()=>{
       const o=document.getElementById('gsf-editor-overlay-v220'); if(!o)return;
+      const bridge=P.GSFNavigation.bridge('editor',globalThis.frameElement);
+      let openEpoch=0;
       const frame=o.querySelector('.gsf-editor-frame'),left=document.getElementById('gsf-editor-note-left'),right=document.getElementById('gsf-editor-note-right');
+      let metadataReady=frame.dataset.loaded==='1';
+      let mobileReady=frame.dataset.ready==='1';
       let seq=0;
       const copies={idle:['Qui modelli<br>la tua giocata','Tocca uno strumento<br>e guarda cosa cambia'],frame:['Trova il punto<br>giusto','Inquadra l’azione<br>senza perdere il gameplay'],cover:['Scegli il frame<br>che racconta tutto','La cover deve<br>fermarsi negli occhi'],look:['Dagli il tuo<br>look','Più pulito, più gaming<br>o più cinematico'],caption:['Fai parlare<br>il momento','Le parole entrano<br>dove serve'],audio:['Fallo sentire','Voce, gioco e impatto<br>devono respirare insieme'],ai:['Lascia leggere<br>la scena alla Game AI','Ti aiuta a seguire<br>ciò che conta davvero'],play:['Guardalo vivere','Controlla il risultato<br>prima di chiudere'],done:['Ci siamo','Quando ti convince<br>torna al tuo Short']};
       const morph=(el,html,s)=>{if(!el||el.innerHTML===html)return;el.classList.remove('in');el.classList.add('out');setTimeout(()=>{if(s!==seq)return;el.innerHTML=html;el.classList.remove('out');void el.offsetWidth;el.classList.add('in');setTimeout(()=>el.classList.remove('in'),1100)},420)};
       const guide=(key)=>{const c=copies[key]||copies.idle,s=++seq;morph(left,c[0],s);morph(right,c[1],s)};
       const wire=()=>{try{const d=frame.contentDocument;if(!d)return;d.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('button');if(!b)return;const t=(b.innerText||b.textContent||'').trim().toUpperCase();if(t.includes('FRAME'))guide('frame');else if(t.includes('COVER'))guide('cover');else if(t.includes('LOOK'))guide('look');else if(t.includes('CAPTION'))guide('caption');else if(t.includes('AUDIO'))guide('audio');else if(t.includes('GAME AI'))guide('ai');else if(t.includes('PLAY')||t.includes('PAUSE'))guide('play');else if(t.includes('DONE'))guide('done')},true)}catch(e){}};
       const KEY='gsf_editor_overlay_open_v223';
-      let editorMeta={video_url:'',initial_state:{}};
+      const editorMeta=P.GSFNavigation.surfaceState('editor',()=>({video_url:'',initial_state:{}}));
       let pendingSelection=null;
       /* GSF_MOBILE_EDITOR_2026_BRIDGE */
       const MOBILE_EDITOR_SRC='/game-editor-mobile/';
@@ -16828,18 +16690,22 @@ if GSF_WEB_MODE:
         document.head.appendChild(style);return style;
       };
       const sendMobileEditorInit=()=>{
-        if(!isMobileEditor())return;
+        if(!isMobileEditor()||!metadataReady||!mobileReady||bridge.signal.aborted)return;
         const initial=(editorMeta.initial_state&&typeof editorMeta.initial_state==='object')?editorMeta.initial_state:{};
-        try{frame.contentWindow.postMessage({
+        const payload={
           type:'GSF_GAME_EDITOR_INIT',
           session:(editorMeta.session&&typeof editorMeta.session==='object')?editorMeta.session:{},
           project:(editorMeta.project&&typeof editorMeta.project==='object')?editorMeta.project:{},
-          media:{url:String(editorMeta.video_url||'/editor-media/current')},
+          media:{url:editorMeta.ready===false?'':String(editorMeta.video_url||'/editor-media/current')},
           initial_state:initial,
           event_map:Array.isArray(editorMeta.event_map)?editorMeta.event_map:[],
           brain_context:(editorMeta.brain_context&&typeof editorMeta.brain_context==='object')?editorMeta.brain_context:{},
           ai_suggestions:Array.isArray(editorMeta.ai_suggestions)?editorMeta.ai_suggestions:[]
-        },location.origin)}catch(_e){}
+        };
+        const fingerprint=JSON.stringify(payload),child=frame.contentDocument;
+        if(frame.__gsfInitDocument===child&&frame.__gsfInitFingerprint===fingerprint)return;
+        frame.__gsfInitDocument=child;frame.__gsfInitFingerprint=fingerprint;frame.__gsfEditorInitialized=true;
+        frame.contentWindow.postMessage(payload,location.origin);
       };
       let mobileSaveChain=Promise.resolve();
       const postMobileEditorStatus=(message,ok,error='',extra={})=>{
@@ -16869,12 +16735,14 @@ if GSF_WEB_MODE:
         if(!response.ok||!payload.ok)throw new Error(payload.error||'Bozza non salvata');
         postMobileEditorStatus(message,true,'',{draft:true});
       });
+      const currentAction=epoch=>!bridge.signal.aborted&&P.GSFNavigation.snapshot().target==='editor'&&P.GSFNavigation.snapshot().epoch===epoch;
       const handleMobileEditorMessage=(event)=>{
         if(event.origin!==location.origin||event.source!==frame.contentWindow||!event.data)return false;
-        if(event.data.type==='GSF_GAME_EDITOR_READY'){sendMobileEditorInit();return true}
+        if(event.data.type==='GSF_GAME_EDITOR_READY'){mobileReady=true;sendMobileEditorInit();return true}
         if(event.data.type!=='GSF_GAME_EDITOR_UI')return false;
         const message=event.data;
         const action=String(message.action||'');
+        const actionEpoch=P.GSFNavigation.snapshot().epoch;
         if(action==='autosave'){
           persistMobileEditorState(message).then(()=>postMobileEditorStatus(message,true)).catch(error=>postMobileEditorStatus(message,false,error&&error.message||error));
           return true;
@@ -16884,15 +16752,15 @@ if GSF_WEB_MODE:
           return true;
         }
         if(action==='continue_to_short'){
-          persistMobileEditorState(message).then(()=>{postMobileEditorStatus(message,true);close();navigateMobileEditorToShort()}).catch(error=>postMobileEditorStatus(message,false,error&&error.message||error));
+          persistMobileEditorState(message).then(()=>{postMobileEditorStatus(message,true);if(currentAction(actionEpoch))navigateMobileEditorToShort()}).catch(error=>postMobileEditorStatus(message,false,error&&error.message||error));
           return true;
         }
         if(action==='close'){
-          persistMobileEditorState(message).then(()=>{postMobileEditorStatus(message,true);close()}).catch(error=>postMobileEditorStatus(message,false,error&&error.message||error));
+          persistMobileEditorState(message).then(()=>{postMobileEditorStatus(message,true);if(currentAction(actionEpoch))P.GSFNavigation.navigate({target:'home'})}).catch(error=>postMobileEditorStatus(message,false,error&&error.message||error));
           return true;
         }
         if(action==='fullscreen_changed'){
-          const active=message.active===true;
+          const active=message.active===true&&P.GSFNavigation.snapshot().target==='editor';
           ensureMobileEditorFullscreenStyle();
           o.classList.toggle('gsf-mobile-editor-fullscreen',active);
           document.documentElement.classList.toggle('gsf-mobile-editor-fullscreen',active);
@@ -16904,57 +16772,66 @@ if GSF_WEB_MODE:
       /* V326_HEADER_FULL_WIRE */
 setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326HeaderFull');if(b&&!b.dataset.wired){b.dataset.wired='1';b.addEventListener('click',()=>{try{frame.contentWindow.postMessage({type:'GSF_EDITOR_FULLSCREEN_V326'},location.origin)}catch(_e){}})}},0);
       const sendRender=()=>{
+        if(bridge.signal.aborted||!metadataReady||frame.dataset.ready!=='1')return;
         if(isMobileEditor()){sendMobileEditorInit();return}
         try{
           frame.contentWindow.postMessage({
             type:'streamlit:render',
             args:{
-              video_url:String(editorMeta.video_url||'/editor-media/current'),
+              video_url:editorMeta.ready===false?'':String(editorMeta.video_url||'/editor-media/current'),
               initial_state:(editorMeta.initial_state&&typeof editorMeta.initial_state==='object')?editorMeta.initial_state:{},
               event_map:[],
               event_duration:Number((editorMeta.initial_state||{}).sourceDuration)||15,
               vision_profile:'Auto',vision_zones:[],brain_context:{},height:720
             }
           },location.origin);
+          frame.__gsfEditorInitialized=true;
         }catch(e){}
       };
-      frame.addEventListener('load',()=>{if(!isMobileEditor())wire();setTimeout(sendRender,70)});
+      const scheduleRender=delay=>{const expected=openEpoch;bridge.timeout(()=>{if(expected===openEpoch&&P.GSFNavigation.snapshot().target==='editor')sendRender();},delay);};
+      frame.addEventListener('load',()=>{frame.dataset.ready='1';if(!isMobileEditor())wire();scheduleRender(0)},{signal:bridge.signal});
       const open=(remember=true)=>{
+        const requestEpoch=++openEpoch;
+        const routeEpoch=P.GSFNavigation.snapshot().epoch;
 
         const selection=pendingSelection;pendingSelection=null;
+        const forceReload=!!(editorMeta.needsReload||selection?.resume||selection?.draft_id||selection?.project_id);
+        editorMeta.needsReload=false;
+        if(forceReload){metadataReady=false;frame.__gsfInitFingerprint='';frame.__gsfEditorInitialized=false;}
         // V249: switch page immediately; refresh editor state after the surface is visible.
         o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false');
         if(remember)try{sessionStorage.setItem(KEY,'1')}catch(e){}
         guide('idle');
 
         const editorSource=selectedEditorSource();
-        if(frame.dataset.loaded!=='1'||frame.dataset.editorSource!==editorSource){
+        const reused=frame.dataset.loaded==='1'&&frame.dataset.editorSource===editorSource;
+        if(!reused){
+          metadataReady=false;mobileReady=false;frame.dataset.ready='0';frame.__gsfEditorInitialized=false;
           frame.dataset.editorSource=editorSource;
           frame.src=editorSource+'?v=2026';
           frame.dataset.loaded='1';
-        }else{
-          setTimeout(sendRender,16);
         }
 
 
         if(selection&&selection.video_url){
           const selectedDuration=Math.max(.5,Number(selection.duration)||15);
-          editorMeta.video_url=String(selection.video_url);
+          editorMeta.video_url=String(selection.video_url);editorMeta.ready=true;metadataReady=true;
           editorMeta.initial_state=Object.assign({},editorMeta.initial_state||{}, {inPoint:0,outPoint:selectedDuration,sourceDuration:selectedDuration,momentIndex:Number(selection.momentIndex)||0});
-          setTimeout(sendRender,18);
+          scheduleRender(0);
           return;
         }
         fetch('/editor/state',{cache:'no-store',credentials:'same-origin'})
           .then(r=>r.json().then(j=>({ok:r.ok,j})))
           .then(({ok,j})=>{
-            if(ok&&j&&j.ok){
-              editorMeta=j;
-              setTimeout(sendRender,0);
+            if(ok&&j&&j.ok&&!bridge.signal.aborted&&requestEpoch===openEpoch&&routeEpoch===P.GSFNavigation.snapshot().epoch&&P.GSFNavigation.snapshot().target==='editor'){
+              if(reused&&!forceReload&&metadataReady&&frame.__gsfEditorInitialized&&String(j.video_url||'')===String(editorMeta.video_url||'')&&j.ready===editorMeta.ready)return;
+              Object.assign(editorMeta,j,{video_url:String(j.video_url||'')});metadataReady=true;
+              scheduleRender(0);
             }
           })
           .catch(()=>{});
       };
-      const close=()=>{resetMobileEditorFullscreen();o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true');try{sessionStorage.setItem(KEY,'0')}catch(e){}};
+      const close=()=>{++openEpoch;resetMobileEditorFullscreen();o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true');try{sessionStorage.setItem(KEY,'0')}catch(e){}};
 
       /* V288 EDITOR JOURNEY BRIDGE */
       const triggerCreateShort=()=>{
@@ -16964,14 +16841,16 @@ setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326He
         if(el){close();el.click();return true}
         return false;
       };
-      o.querySelector('.gsf-editor-close').onclick=close;o.addEventListener('click',e=>{if(e.target===o)close()});
+      o.querySelector('.gsf-editor-close').onclick=()=>P.GSFNavigation.navigate({target:'home'});o.addEventListener('click',e=>{if(e.target===o)P.GSFNavigation.navigate({target:'home'})},{signal:bridge.signal});
       window.addEventListener('message',e=>{
+        if(e.origin===location.origin&&e.data?.type==='gsf-upload'&&e.data.state==='done'){editorMeta.needsReload=true;return;}
         if(handleMobileEditorMessage(e))return;
         if(e.source===frame.contentWindow&&e.data&&e.data.type==='streamlit:setComponentValue'){
           /* V323_EDITOR_ACTION_BRIDGE */
           const state=e.data.value;
           if(state&&typeof state==='object'){
             const action=String(state.editorAction||'');
+            const actionEpoch=P.GSFNavigation.snapshot().epoch;
             const cleanState={...state};
             delete cleanState.editorAction;delete cleanState.editorActionNonce;
             editorMeta.initial_state=cleanState;
@@ -16986,7 +16865,8 @@ setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326He
             }
             if(action==='create_short'){
               saveState.then(()=>{
-                close();
+                if(!currentAction(actionEpoch))return;
+                P.GSFNavigation.navigate({target:'home'});
                 try{sessionStorage.setItem(KEY,'0')}catch(_e){}
                 const target=document.querySelector('.st-key-gsf-major-create-short button,.st-key-create_final_short_v54 button');
                 if(target){target.click();return;}
@@ -17002,26 +16882,13 @@ setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326He
           }
           return;
         }
-        if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
-        const t=String(e.data.target||'');
-        if(t==='editor'){pendingSelection={video_url:String(e.data.video_url||''),duration:Number(e.data.duration)||15,momentIndex:Number(e.data.momentIndex)||0};open();return}
-        if(t==='close'||t==='home'||t==='social'||t==='hub'||t==='ai'||t==='account')close();
-      });
-      /* V326_BOOT_HOME_RESET */
-try{
-  if(!P.__GSF_BOOT_HOME_RESET_V326){
-    P.__GSF_BOOT_HOME_RESET_V326=true;
-    ['gsf_creator_hub_open_v107','gsf_editor_overlay_open_v220','gsf_editor_overlay_open_v223','gsf_ai_overlay_open_v221','gsf_social_overlay_open_v159','gsf_account_overlay_open_v223'].forEach(k=>{try{sessionStorage.setItem(k,'0')}catch(_e){}});
-    P.postMessage({type:'GSF_SHELL_NAV',target:'home',section:''},P.location.origin);
-  }else if(sessionStorage.getItem(KEY)==='1'){
-    setTimeout(()=>open(false),90);
-  }
-}catch(e){}
+      },{signal:bridge.signal});
+      P.GSFNavigation.registerSurface('editor',{adopt:()=>frame.dataset.loaded==='1',open:data=>{pendingSelection={video_url:String(data.video_url||''),duration:Number(data.duration)||15,momentIndex:Number(data.momentIndex)||0,resume:data.resume===true,draft_id:String(data.draft_id||''),project_id:String(data.project_id||'')};open()},close});
     })();
     
     })(window.parent);
     </script>
-    </body></html>""", height=0, scrolling=False)
+    </body></html>"""
 
 if GSF_WEB_MODE:
     st.markdown(r"""
@@ -17045,7 +16912,7 @@ if GSF_WEB_MODE:
     """, unsafe_allow_html=True)
 
     import streamlit.components.v1 as components
-    components.html(r"""<!doctype html><html><body style="margin:0;display:none">
+    _GSF_PARENT_AI = r"""<!doctype html><html><body style="margin:0;display:none">
     <script>
     ((P)=>{
       const window=P;
@@ -17055,6 +16922,7 @@ if GSF_WEB_MODE:
     (()=>{
       const KEY='gsf_ai_overlay_open_v221';
       const o=document.getElementById('gsf-ai-overlay-v221');if(!o)return;
+      const bridge=P.GSFNavigation.bridge('ai',globalThis.frameElement);
       const frame=o.querySelector('iframe');
       const broadcastHome=(payload)=>{
         document.querySelectorAll('iframe').forEach(f=>{
@@ -17078,7 +16946,7 @@ if GSF_WEB_MODE:
         setTimeout(()=>broadcastHome({type:'GSF_AI_COMMAND',action:'get_state'}),80);
       };
       const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true');try{sessionStorage.setItem(KEY,'0')}catch(e){}};
-      o.querySelector('.gsf-ai-close').onclick=close;o.addEventListener('click',e=>{if(e.target===o)close()});
+      o.querySelector('.gsf-ai-close').onclick=()=>P.GSFNavigation.navigate({target:'home'});o.addEventListener('click',e=>{if(e.target===o)P.GSFNavigation.navigate({target:'home'})},{signal:bridge.signal});
       window.addEventListener('message',e=>{
         if(e.origin!==location.origin||!e.data)return;
         if(e.data.type==='GSF_AI_UI'){
@@ -17094,18 +16962,14 @@ if GSF_WEB_MODE:
           broadcastHome({type:'GSF_AI_COMMAND',...selection});
           return;
         }
-        if(e.data.type!=='GSF_SHELL_NAV')return;
-        const t=String(e.data.target||'');
-        if(t==='ai'){open();return}
-        if(t==='ai-state'){forwardState(e.data);return}
-        if(t==='editor'||t==='social'||t==='hub'||t==='home'||t==='close'||t==='account')close();
-      });
-      try{if(sessionStorage.getItem(KEY)==='1')setTimeout(()=>open(false),90)}catch(e){}
+        if(e.data.type==='GSF_SHELL_NAV'&&e.data.target==='ai-state')forwardState(e.data);
+      },{signal:bridge.signal});
+      P.GSFNavigation.registerSurface('ai',{open:()=>open(),close});
     })();
     
     })(window.parent);
     </script>
-    </body></html>""", height=0, scrolling=False)
+    </body></html>"""
 
 if GSF_WEB_MODE:
     st.markdown(r"""
@@ -17129,31 +16993,7 @@ if GSF_WEB_MODE:
     """, unsafe_allow_html=True)
 
     import streamlit.components.v1 as components
-    components.html(r"""<!doctype html><html><body style="margin:0;display:none">
-    <script>
-    ((P)=>{
-      const window=P;
-      const document=P.document;
-      const location=P.location;
-
-    (()=>{
-      const o=document.getElementById('gsf-account-overlay-v223');if(!o)return;
-      const frame=o.querySelector('iframe');
-      const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true')};
-      const open=()=>{if(frame.dataset.loaded!=='1'){frame.src=(frame.dataset.src||'/account/')+'?v=224';frame.dataset.loaded='1'}o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false')};
-      o.querySelector('.gsf-account-close').onclick=close;
-      o.addEventListener('click',e=>{if(e.target===o)close()});
-      window.addEventListener('message',e=>{
-        if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
-        const t=String(e.data.target||'');
-        if(t==='account'){close();window.postMessage({type:'GSF_SHELL_NAV',target:'hub',section:'profile'},location.origin);return}
-        if(t==='home'||t==='close'||t==='hub'||t==='editor'||t==='social'||t==='ai')close();
-      });
-    })();
-    
-    })(window.parent);
-    </script>
-    </body></html>""", height=0, scrolling=False)
+    components.html('<!-- Surface navigation is owned by GSFNavigation. -->', height=0, scrolling=False)
 
 if GSF_WEB_MODE:
     st.markdown(r"""
@@ -17342,88 +17182,7 @@ if GSF_WEB_MODE:
     """, unsafe_allow_html=True)
 
     import streamlit.components.v1 as components
-    components.html(r"""<!doctype html><html><body style="margin:0;display:none"><script>
-    ((P)=>{
-      const document=P.document;
-      const nav=document.getElementById('gsf-page-nav-v249');
-      if(!nav)return;
-
-      const ids={
-        hub:'gsf-creator-hub-live-v160',
-        editor:'gsf-editor-overlay-v220',
-        social:'gsf-social-overlay-v159',
-        ai:'gsf-ai-overlay-v221',
-        account:'gsf-account-overlay-v223'
-      };
-
-      let lastTarget='home',lastSection='';
-
-      const anyOpen=()=>Object.values(ids).some(id=>{
-        const el=document.getElementById(id);
-        return !!(el&&el.classList.contains('is-open'));
-      });
-
-      const sync=()=>{
-        nav.classList.toggle('is-open',anyOpen());
-        nav.querySelectorAll('.gsf-page-nav-item').forEach(b=>{
-          const target=String(b.dataset.target||'');
-          const section=String(b.dataset.section||'');
-          const activeKey=String(b.dataset.active||target);
-          let active=false;
-          if(activeKey==='home') active=(lastTarget==='home');
-          else if(activeKey==='hub') active=(lastTarget==='hub'&&(lastSection==='dashboard'||!lastSection));
-          else if(activeKey==='projects') active=(lastTarget==='hub'&&lastSection==='projects');
-          else if(activeKey==='live') active=(lastTarget==='hub'&&lastSection==='live');
-          else active=false;
-          b.classList.toggle('active',active);
-        });
-      };
-
-      const go=(target,section='')=>{
-        lastTarget=target;
-        lastSection=section;
-        P.postMessage({type:'GSF_SHELL_NAV',target,section},P.location.origin);
-        sync();
-      };
-
-      nav.querySelectorAll('.gsf-page-nav-item').forEach(b=>{
-        b.addEventListener('click',()=>{
-          go(String(b.dataset.target||'home'),String(b.dataset.section||''));
-        });
-      });
-
-      P.addEventListener('message',e=>{
-        if(e.origin!==P.location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
-        const t=String(e.data.target||'');
-        if(t==='home'||t==='close'){
-          lastTarget='home';lastSection='';
-        }else if(t==='profile'){
-          lastTarget='hub';lastSection='profile';
-        }else if(t==='hub'){
-          lastTarget='hub';lastSection=String(e.data.section||'dashboard');
-        }else if(t==='editor'||t==='social'||t==='ai'||t==='account'){
-          lastTarget=t;lastSection='';
-        }
-        queueMicrotask(sync);
-      });
-
-      const obs=new P.MutationObserver(sync);
-      Object.values(ids).forEach(id=>{
-        const el=document.getElementById(id);
-        if(el)obs.observe(el,{attributes:true,attributeFilter:['class','style','aria-hidden']});
-      });
-
-      document.querySelectorAll(
-        '#gsf-social-overlay-v159 .gsf-social-close,'+
-        '#gsf-creator-hub-live-v160 .gsf-hub-close-v160,'+
-        '#gsf-editor-overlay-v220 .gsf-editor-close,'+
-        '#gsf-ai-overlay-v221 .gsf-ai-close,'+
-        '#gsf-account-overlay-v223 .gsf-account-close'
-      ).forEach(b=>b.addEventListener('click',()=>queueMicrotask(sync)));
-
-      sync();
-    })(window.parent);
-    </script></body></html>""", height=0, scrolling=False)
+    components.html(r"""<!-- V343 chrome and GSFNavigation replace the V249/V250 controllers. -->""", height=0, scrolling=False)
 
 if GSF_WEB_MODE:
     st.markdown(r"""
@@ -18058,159 +17817,18 @@ if GSF_WEB_MODE:
     """, unsafe_allow_html=True)
 
     import streamlit.components.v1 as components
-    components.html(r"""<!doctype html><html><body style="margin:0;display:none"><script>
-    ((P)=>{
-      const d=P.document;
-      const chrome=d.getElementById('gsf-page-chrome-v250');
-      const nav=d.getElementById('gsf-page-nav-v249');
-      if(!chrome)return;
-
-      const ids=[
-        'gsf-social-overlay-v159',
-        'gsf-creator-hub-live-v160',
-        'gsf-editor-overlay-v220',
-        'gsf-ai-overlay-v221',
-        'gsf-account-overlay-v223'
-      ];
-
-      const anyOpen=()=>ids.some(id=>{
-        const el=d.getElementById(id);
-        return !!(el&&el.classList.contains('is-open'));
-      });
-
-      const findHomeDoc=()=>{
-        for(const f of [...d.querySelectorAll('iframe')]){
-          try{
-            const fd=f.contentDocument;
-            if(fd&&fd.getElementById('home154'))return fd;
-          }catch(_e){}
-        }
-        return null;
-      };
-
-      const syncHomeHeader=(open)=>{
-        const hd=findHomeDoc();
-        if(!hd)return;
-        const top=hd.querySelector('#home154 .topbar');
-        if(!top)return;
-        if(open){
-          if(!top.dataset.gsfPageHidden){
-            top.dataset.gsfPageHidden='1';
-            top.dataset.gsfPrevVisibility=top.style.visibility||'';
-            top.dataset.gsfPrevOpacity=top.style.opacity||'';
-            top.dataset.gsfPrevPointerEvents=top.style.pointerEvents||'';
-          }
-          top.style.setProperty('visibility','hidden','important');
-          top.style.setProperty('opacity','0','important');
-          top.style.setProperty('pointer-events','none','important');
-        }else if(top.dataset.gsfPageHidden==='1'){
-          top.style.removeProperty('visibility');
-          top.style.removeProperty('opacity');
-          top.style.removeProperty('pointer-events');
-          if(top.dataset.gsfPrevVisibility)top.style.visibility=top.dataset.gsfPrevVisibility;
-          if(top.dataset.gsfPrevOpacity)top.style.opacity=top.dataset.gsfPrevOpacity;
-          if(top.dataset.gsfPrevPointerEvents)top.style.pointerEvents=top.dataset.gsfPrevPointerEvents;
-          delete top.dataset.gsfPageHidden;
-          delete top.dataset.gsfPrevVisibility;
-          delete top.dataset.gsfPrevOpacity;
-          delete top.dataset.gsfPrevPointerEvents;
-        }
-      };
-
-      const sync=()=>{
-        const open=anyOpen();
-        chrome.classList.toggle('is-open',open);
-        chrome.setAttribute('aria-hidden',open?'false':'true');
-        if(nav)nav.classList.toggle('is-open',open);
-        syncHomeHeader(open);
-      };
-
-      const account=chrome.querySelector('.gsf-page-account');
-      if(account){
-        account.addEventListener('click',()=>{
-          P.postMessage({type:'GSF_SHELL_NAV',target:'hub',section:'profile'},P.location.origin);
-        });
-        fetch('/creator-hub/state',{cache:'no-store',credentials:'same-origin'})
-          .then(r=>r.json())
-          .then(j=>{
-            const a=(j&&j.ok&&j.account)?j.account:{};
-            if(a.connected){
-              const name=String(a.display_name||a.nickname||a.name||'Creator').trim()||'Creator';
-              account.textContent=name;
-              account.setAttribute('aria-label',name+' · apri account');
-            }
-          })
-          .catch(()=>{});
-      }
-
-      const obs=new P.MutationObserver(sync);
-      ids.forEach(id=>{
-        const el=d.getElementById(id);
-        if(el)obs.observe(el,{attributes:true,attributeFilter:['class','style','aria-hidden']});
-      });
-      const pageShellObs=new P.MutationObserver(()=>queueMicrotask(sync));
-      pageShellObs.observe(d.body,{childList:true,subtree:true});
-
-      P.addEventListener('message',e=>{
-        if(e.origin!==P.location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
-        queueMicrotask(sync);
-      });
-
-      sync();
-    })(window.parent);
-    </script></body></html>""", height=0, scrolling=False)
+    components.html(r"""<!-- V343 chrome and GSFNavigation replace the V249/V250 controllers. -->""", height=0, scrolling=False)
 
 if GSF_WEB_MODE:
     import streamlit.components.v1 as components
-    components.html(r"""<!doctype html><html><body style="margin:0;display:none"><script>
-    ((P)=>{
-      const d=P.document;
-      const ids={
-        hub:'gsf-creator-hub-live-v160',
-        editor:'gsf-editor-overlay-v220',
-        social:'gsf-social-overlay-v159',
-        ai:'gsf-ai-overlay-v221',
-        account:'gsf-account-overlay-v223'
-      };
-      const hide=(el)=>{
-        if(!el)return;
-        el.classList.remove('is-open');
-        el.style.opacity='0';
-        el.style.visibility='hidden';
-        el.style.pointerEvents='none';
-        el.setAttribute('aria-hidden','true');
-      };
-      const show=(el)=>{
-        if(!el)return;
-        el.classList.add('is-open');
-        el.style.opacity='1';
-        el.style.visibility='visible';
-        el.style.pointerEvents='auto';
-        el.setAttribute('aria-hidden','false');
-      };
-      P.addEventListener('message',e=>{
-        if(e.origin!==P.location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV')return;
-        const t=String(e.data.target||'');
-        if(t==='ai-state')return;
-        if(t==='home'||t==='close'){
-          Object.values(ids).forEach(id=>hide(d.getElementById(id)));
-          return;
-        }
-        const key=(t==='profile'||t==='account')?'hub':t;
-        if(!ids[key])return;
-        Object.entries(ids).forEach(([name,id])=>{
-          const el=d.getElementById(id);
-          if(name===key)show(el); else hide(el);
-        });
-      },true);
-    })(window.parent);
-    </script></body></html>""",height=0,scrolling=False)
+    components.html('<!-- Retired competing surface router: GSFNavigation owns transitions. -->',height=0,scrolling=False)
 
 if GSF_WEB_MODE:
     import streamlit.components.v1 as components
-    components.html(r"""<!doctype html><html><body style="margin:0;display:none"><script>
+    _GSF_PARENT_NOTIFICATIONS = r"""<!doctype html><html><body style="margin:0;display:none"><script>
     ((P)=>{
       const d=P.document;
+      const bridge=P.GSFNavigation.bridge('notifications',null);
       const _gsfLifecycleCompat=['Upload completato']; // legacy build token; never rendered
 
       const ensurePush=()=>{
@@ -18244,14 +17862,14 @@ if GSF_WEB_MODE:
             String(data.kind||'success')
           );
         }
-      });
+      },{signal:bridge.signal});
 
       // Re-enable silent Web Push when permission already exists.
       ensurePush().then(()=>{
         try{P.GSFPush&&P.GSFPush.ensure&&P.GSFPush.ensure()}catch(_e){}
       });
     })(window.parent);
-    </script></body></html>""",height=0,scrolling=False)
+    </script></body></html>"""
 
 if GSF_WEB_MODE:
     st.markdown(r"""
@@ -18288,16 +17906,128 @@ if GSF_WEB_MODE:
 
 # GSF_GLOBAL_SHELL_V343 — the only parent-owned header, Game Bar, footer and shell router.
 if GSF_WEB_MODE:
-    _gsf_components_v343.html('    <div style="display:none!important"><script>\n    ((P)=>{\n      const D=P.document;\n      const SHELL_Z=2147483600;\n      const OVERLAY_Z=2147483400;\n      const OLD_IDS=[\'gsf-v328-global-footer\',\'gsf-v330-global-brand\',\'gsf-v330-global-footer\',\'gsf-page-nav-v249\',\'gsf-v334-header\',\'gsf-v334-gamebar\',\'gsf-v334-footer\'];\n      const SURFACES=[\'gsf-social-overlay-v159\',\'gsf-creator-hub-live-v160\',\'gsf-editor-overlay-v220\',\'gsf-ai-overlay-v221\',\'gsf-account-overlay-v223\',\'gsf-short-overlay-v343\'];\n\n      const ensureStyle=()=>{\n        let s=D.getElementById(\'gsf-global-shell-v343-style\');\n        if(s)return s;\n        s=D.createElement(\'style\');s.id=\'gsf-global-shell-v343-style\';\n        s.textContent=`\n          :root{\n            --gsf-shell-header-h:44px;\n            --gsf-shell-gamebar-h:62px;\n            --gsf-shell-footer-h:30px;\n            --gsf-shell-safe-top:max(0px,env(safe-area-inset-top));\n            --gsf-shell-safe-bottom:max(8px,env(safe-area-inset-bottom));\n            --gsf-shell-content-top:calc(var(--gsf-shell-header-h) + var(--gsf-shell-safe-top));\n            --gsf-shell-content-bottom:calc(var(--gsf-shell-gamebar-h) + var(--gsf-shell-footer-h) + var(--gsf-shell-safe-bottom) + 12px);\n            --gsf-shell-z:2147483600;\n            --gsf-shell-overlay-z:2147483400;\n          }\n          #gsf-v328-global-footer,#gsf-v330-global-brand,#gsf-v330-global-footer,#gsf-page-nav-v249,[id^="gsf-page-nav"],#gsf-v334-header,#gsf-v334-gamebar,#gsf-v334-footer{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}\n          #gsf-global-header{position:fixed!important;left:0!important;right:0!important;top:0!important;height:var(--gsf-shell-content-top)!important;z-index:var(--gsf-shell-z)!important;display:flex!important;align-items:flex-end!important;justify-content:space-between!important;padding:var(--gsf-shell-safe-top) max(16px,env(safe-area-inset-right)) 7px max(16px,env(safe-area-inset-left))!important;box-sizing:border-box!important;background:linear-gradient(180deg,rgba(250,253,255,.99),rgba(250,253,255,.91))!important;border-bottom:1px solid rgba(150,184,214,.16)!important;-webkit-backdrop-filter:blur(18px)!important;backdrop-filter:blur(18px)!important;color:#617b9f!important}\n          #gsf-global-header .v343Brand{display:flex;align-items:center;gap:7px;min-width:0;font:800 10px/1 "Avenir Next","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.22em;text-transform:uppercase;white-space:nowrap}\n          #gsf-global-header .v343Logo{width:18px;height:22px;object-fit:contain;display:block;flex:0 0 18px}\n          #gsf-global-header .v343Account{height:30px;min-width:64px;display:flex;align-items:center;gap:6px;padding:2px 9px 2px 4px;border:1px solid rgba(150,184,214,.28);border-radius:999px;background:rgba(255,255,255,.95);color:#60789c;font:800 9px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 7px 19px rgba(68,104,142,.08)}\n          #gsf-global-header .v343Avatar{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:linear-gradient(145deg,#e7f4ff,#e9f8f2);font-size:9px}\n          #gsf-global-header .v343Avatar img{width:100%;height:100%;display:block;object-fit:cover}\n          #gsf-global-gamebar{position:fixed!important;left:max(18px,env(safe-area-inset-left))!important;right:max(18px,env(safe-area-inset-right))!important;bottom:calc(var(--gsf-shell-footer-h) + var(--gsf-shell-safe-bottom) + 6px)!important;height:var(--gsf-shell-gamebar-h)!important;z-index:var(--gsf-shell-z)!important;display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:3px!important;padding:6px 8px!important;border:1px solid rgba(145,181,213,.28)!important;border-radius:999px!important;background:rgba(255,255,255,.96)!important;-webkit-backdrop-filter:blur(22px)!important;backdrop-filter:blur(22px)!important;box-shadow:0 12px 34px rgba(59,104,148,.12),inset 0 1px 0 #fff!important;box-sizing:border-box!important}\n          #gsf-global-gamebar button{border:0;background:transparent;border-radius:999px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#7f8fa8;font:800 7px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:2px;min-width:0}\n          #gsf-global-gamebar button.active{color:#4f93d7;background:rgba(219,241,255,.72)}\n          #gsf-global-gamebar .v343Icon{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#F9FCFF,#EDF5FC);border:1px solid rgba(150,184,215,.24);font-size:14px}\n          #gsf-global-footer{position:fixed!important;left:0!important;right:0!important;bottom:0!important;height:calc(var(--gsf-shell-footer-h) + var(--gsf-shell-safe-bottom))!important;z-index:var(--gsf-shell-z)!important;display:grid!important;grid-template-columns:1fr auto 1fr!important;align-items:start!important;padding:5px max(12px,env(safe-area-inset-right)) var(--gsf-shell-safe-bottom) max(12px,env(safe-area-inset-left))!important;box-sizing:border-box!important;border-top:1px solid rgba(150,184,214,.20)!important;background:rgba(250,253,255,.97)!important;-webkit-backdrop-filter:blur(18px)!important;backdrop-filter:blur(18px)!important;color:#6e88aa!important}\n          #gsf-global-footer .v343Socials{grid-column:2;display:flex;align-items:center;justify-content:center;gap:7px}\n          #gsf-global-footer .v343Socials a,#gsf-global-footer .v343Socials span{width:17px;height:17px;display:grid;place-items:center;border-radius:50%;text-decoration:none;border:1px solid rgba(150,183,213,.22);background:#fff;color:#7388a7;font:900 7px/1 sans-serif;overflow:hidden;box-sizing:border-box}\n          #gsf-global-footer .v343Bug{grid-column:3;justify-self:end;border:0;background:transparent;color:#6983a4;font:800 7px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:3px 0;white-space:nowrap}\n          #gsf-editor-overlay-v220,#gsf-short-overlay-v343,#gsf-creator-hub-live-v160,#gsf-ai-overlay-v221,#gsf-social-overlay-v159,#gsf-account-overlay-v223{position:fixed!important;left:0!important;right:0!important;top:var(--gsf-shell-content-top)!important;bottom:var(--gsf-shell-content-bottom)!important;height:auto!important;max-height:none!important;z-index:var(--gsf-shell-overlay-z)!important;box-sizing:border-box!important}\n          #gsf-editor-overlay-v220 .gsf-editor-shell,#gsf-creator-hub-live-v160 .gsf-hub-shell-v160,#gsf-ai-overlay-v221 .gsf-ai-shell,#gsf-social-overlay-v159 .gsf-social-shell,#gsf-account-overlay-v223 .gsf-account-shell{position:absolute!important;inset:0!important;min-height:0!important;max-height:none!important}\n          #gsf-short-overlay-v343{display:flex;align-items:center;justify-content:center;padding:8px;background:#FAFDFF;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease,visibility .18s ease}\n          #gsf-short-overlay-v343.is-open{opacity:1;visibility:visible;pointer-events:auto}\n          #gsf-short-overlay-v343 .v343ShortShell{position:relative;width:min(680px,calc(100vw - 20px));height:100%;min-height:0;display:grid;grid-template-rows:auto 1fr auto;gap:9px;border:1px solid rgba(150,184,214,.24);border-radius:22px;background:rgba(255,255,255,.90);box-shadow:0 22px 58px rgba(49,94,135,.12);overflow:hidden;padding:12px;box-sizing:border-box}\n          #gsf-short-overlay-v343 .v343ShortHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px} #gsf-short-overlay-v343 h2{margin:0;color:#0D2A66;font:900 21px/1.05 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif} #gsf-short-overlay-v343 p{margin:4px 0 0;color:#7185A6;font:700 10px/1.25 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}\n          #gsf-short-overlay-v343 .v343ShortStage{min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}.v343Preview{position:relative;height:min(100%,450px);aspect-ratio:9/16;max-width:76%;border-radius:20px;border:1px solid rgba(112,187,230,.30);overflow:hidden;background:linear-gradient(155deg,#EFF8FF,#F7FFFC);display:grid;place-items:center;color:#6F88A8;text-align:center;padding:18px}.v343Preview video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}.v343PreviewText{font:800 11px/1.25 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.v343Actions{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:7px}.v343Actions button,.v343ShortClose{min-height:42px;border-radius:13px;border:1px solid rgba(146,182,213,.26);background:#F7FBFF;color:#56718F;font:900 9px/1.1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.v343Actions .primary{background:#DDEFFF;color:#136FCF}.v343ShortClose{width:32px;min-height:32px;height:32px;font-size:20px}.v343Status{position:absolute;left:14px;right:14px;bottom:60px;text-align:center;color:#6E86A5;font:800 9px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;pointer-events:none}\n          @media(min-width:761px){#gsf-global-gamebar{left:50%!important;right:auto!important;width:min(560px,52vw)!important;transform:translateX(-50%)!important}}\n        `;\n        (D.head||D.documentElement).appendChild(s);return s;\n      };\n\n      const markup={\n        header:`<header id="gsf-global-header" aria-label="Gaming Shorts Factory"><div class="v343Brand"><img class="v343Logo" src="/app-icon.png" alt=""><span>GAMING SHORTS FACTORY</span></div><button class="v343Account" type="button"><span class="v343Avatar">D</span><span class="v343AccountName">Accedi</span></button></header>`,\n        gamebar:`<nav id="gsf-global-gamebar" aria-label="Game Bar"><button data-page="home" class="active" type="button"><span class="v343Icon">⌂</span><span>Home</span></button><button data-page="hub" type="button"><span class="v343Icon">▦</span><span>Hub</span></button><button data-page="projects" type="button"><span class="v343Icon">▱</span><span>Progetti</span></button><button data-page="live" type="button"><span class="v343Icon">◉</span><span>Live</span></button></nav>`,\n        footer:`<footer id="gsf-global-footer" aria-label="Footer"><div class="v343Socials"><a href="https://www.facebook.com/profile.php?id=61595124112318&locale=it_IT" target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a><a href="https://www.instagram.com/gamingshortsfactory/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">◎</a><a href="https://www.youtube.com/@Dans222nrg" target="_blank" rel="noopener noreferrer" aria-label="YouTube">▶</a><span aria-label="TikTok">♪</span><span aria-label="Twitch">◫</span></div><button class="v343Bug" type="button">Segnala bug</button></footer>`\n      };\n      const mount=(id,html)=>{let n=D.getElementById(id);if(n)return n;D.body.insertAdjacentHTML(\'beforeend\',html);return D.getElementById(id)};\n      const hide=(o)=>{if(!o)return;o.classList.remove(\'is-open\');o.style.opacity=\'0\';o.style.visibility=\'hidden\';o.style.pointerEvents=\'none\';o.setAttribute(\'aria-hidden\',\'true\')};\n      const show=(o)=>{if(!o)return false;o.classList.add(\'is-open\');o.style.opacity=\'1\';o.style.visibility=\'visible\';o.style.pointerEvents=\'auto\';o.setAttribute(\'aria-hidden\',\'false\');return true};\n      const closeCompeting=(keep=\'\')=>SURFACES.forEach(id=>{if(id!==keep)hide(D.getElementById(id))});\n      const active=(page)=>{const b=D.getElementById(\'gsf-global-gamebar\');if(!b)return;b.querySelectorAll(\'button\').forEach(x=>x.classList.toggle(\'active\',x.dataset.page===page))};\n\n      const ensureEditorSurface=()=>{\n        let o=D.getElementById(\'gsf-editor-overlay-v220\');\n        if(!o){o=D.createElement(\'section\');o.id=\'gsf-editor-overlay-v220\';o.setAttribute(\'aria-hidden\',\'true\');o.innerHTML=`<div class="gsf-editor-shell" role="dialog" aria-modal="false" aria-label="Game Editor"><button class="v343EditorClose" type="button" aria-label="Chiudi Game Editor" style="position:absolute;right:8px;top:8px;z-index:20;width:34px;height:34px;border:1px solid rgba(150,184,214,.30);border-radius:12px;background:rgba(255,255,255,.94);color:#60789c;font:700 22px/1 sans-serif">×</button><iframe class="gsf-editor-frame" title="Game Editor" data-src="/editor-live/" style="width:100%;height:100%;display:block;border:0;background:#FAFDFF" allow="autoplay; fullscreen; clipboard-read; clipboard-write" allowfullscreen></iframe></div>`;D.body.appendChild(o)}\n        const c=o.querySelector(\'.v343EditorClose\');if(c&&c.dataset.v343Bound!==\'1\'){c.dataset.v343Bound=\'1\';c.addEventListener(\'click\',()=>route({target:\'home\'}))}\n        return o;\n      };\n      const openEditor=()=>{const o=ensureEditorSurface();const f=o.querySelector(\'iframe.gsf-editor-frame,iframe[title="Game Editor"]\');if(f&&f.dataset.loaded!==\'1\'){f.src=\'/editor-live/?v=343\';f.dataset.src=\'/editor-live/\';f.dataset.loaded=\'1\'}closeCompeting(\'gsf-editor-overlay-v220\');show(o);try{P.sessionStorage.setItem(\'gsf_editor_overlay_open_v223\',\'1\')}catch(_e){};return true};\n\n      const ensureHubSurface=()=>{\n        let o=D.getElementById(\'gsf-creator-hub-live-v160\');\n        if(!o){o=D.createElement(\'section\');o.id=\'gsf-creator-hub-live-v160\';o.setAttribute(\'aria-hidden\',\'true\');o.innerHTML=`<div class="gsf-hub-shell-v160"><iframe class="gsf-hub-frame" title="Creator Hub" data-src="/creator-hub-v156/" style="width:100%;height:100%;display:block;border:0;background:#F8FCFF"></iframe></div>`;D.body.appendChild(o)}\n        const f=o.querySelector(\'iframe\');if(f&&f.dataset.loaded!==\'1\'){f.src=\'/creator-hub-v156/?v=343\';f.dataset.loaded=\'1\'}return o;\n      };\n      const focusHub=(section)=>{const o=ensureHubSurface();closeCompeting(\'gsf-creator-hub-live-v160\');show(o);const f=o.querySelector(\'iframe\');const send=()=>{try{f?.contentWindow?.postMessage({type:\'GSF_HUB_FOCUS\',section},P.location.origin)}catch(_e){}};send();if(f&&f.dataset.v343Focus!==\'1\'){f.dataset.v343Focus=\'1\';f.addEventListener(\'load\',send)}return true};\n\n      const ensureShortSurface=()=>{\n        let o=D.getElementById(\'gsf-short-overlay-v343\');if(o)return o;\n        o=D.createElement(\'section\');o.id=\'gsf-short-overlay-v343\';o.setAttribute(\'aria-hidden\',\'true\');o.innerHTML=`<div class="v343ShortShell" role="dialog" aria-modal="false" aria-label="Crea Short"><div class="v343ShortHead"><div><h2>Crea Short</h2><p>La tua scelta finale resta nel progetto finché non decidi di crearla.</p></div><button class="v343ShortClose" type="button" aria-label="Chiudi">×</button></div><div class="v343ShortStage"><div class="v343Preview"><div class="v343PreviewText">ANTEPRIMA 9:16</div><video playsinline controls preload="metadata" hidden></video></div></div><div class="v343Actions"><button class="primary v343Create" type="button">CREA SHORT</button><button class="v343Editor" type="button">GAME EDITOR</button><button class="v343Draft" type="button">SALVA BOZZA</button></div><div class="v343Status" aria-live="polite"></div></div>`;D.body.appendChild(o);\n        const status=o.querySelector(\'.v343Status\');const say=t=>{if(status)status.textContent=String(t||\'\')};\n        o.querySelector(\'.v343ShortClose\')?.addEventListener(\'click\',()=>route({target:\'home\'}));\n        o.querySelector(\'.v343Editor\')?.addEventListener(\'click\',()=>route({target:\'editor\'}));\n        o.querySelector(\'.v343Create\')?.addEventListener(\'click\',()=>{let b=D.querySelector(\'.st-key-gsf-major-create-short button,.st-key-create_final_short_v54 button\');if(!b)b=[...D.querySelectorAll(\'button,[role="button"]\')].find(x=>{const t=String(x.innerText||x.textContent||\'\').trim().toLowerCase();return t===\'crea short\'||t.includes(\'crea short finale\')||t.includes(\'crea il tuo short\')});if(!b){say(\'Carica un gameplay prima di creare lo Short.\');return}if(b.disabled||b.getAttribute(\'aria-disabled\')===\'true\'){say(\'Il gameplay non è ancora pronto per il render.\');return}say(\'Creazione Short…\');b.click()});\n        o.querySelector(\'.v343Draft\')?.addEventListener(\'click\',async()=>{say(\'Salvataggio…\');try{const r=await P.fetch(\'/drafts/save-current\',{method:\'POST\',credentials:\'same-origin\',headers:{\'Content-Type\':\'application/json\'},body:\'{}\'});const j=await r.json().catch(()=>({}));say(r.ok&&j&&j.ok?\'Bozza salvata.\':(j&&j.error)||\'Nessuna modifica da salvare.\')}catch(_e){say(\'Salvataggio non riuscito. Riprova.\')}});\n        const v=o.querySelector(\'video\');if(v){v.src=\'/editor-media/current?v=343\';v.addEventListener(\'loadedmetadata\',()=>{v.hidden=false;const t=o.querySelector(\'.v343PreviewText\');if(t)t.style.display=\'none\'},{once:true});v.addEventListener(\'error\',()=>{v.hidden=true},{once:true})}\n        return o;\n      };\n      const openShort=()=>{const o=ensureShortSurface();closeCompeting(\'gsf-short-overlay-v343\');show(o);return true};\n\n      const openExisting=(id)=>{const o=D.getElementById(id);if(!o)return false;closeCompeting(id);return show(o)};\n      function route(data={}){\n        const target=String(data.target||\'home\');const section=String(data.section||\'\');\n        if(target===\'home\'||target===\'close\'){closeCompeting();active(\'home\');return true}\n        if(target===\'hub\'){active(section===\'projects\'?\'projects\':section===\'live\'?\'live\':\'hub\');return focusHub(section||\'dashboard\')}\n        if(target===\'projects\'){active(\'projects\');return focusHub(\'projects\')}\n        if(target===\'live\'){active(\'live\');return focusHub(\'live\')}\n        if(target===\'editor\'){openEditor();return true}\n        if(target===\'short\'){openShort();return true}\n        if(target===\'ai\')return openExisting(\'gsf-ai-overlay-v221\');\n        if(target===\'social\')return openExisting(\'gsf-social-overlay-v159\');\n        if(target===\'account\')return openExisting(\'gsf-account-overlay-v223\');\n        return false;\n      }\n\n      const syncAccount=()=>P.fetch(\'/creator-hub/state?scope=header\',{cache:\'no-store\',credentials:\'same-origin\'}).then(r=>r.json()).then(j=>{const a=(j&&j.account)||{};const name=String(a.display_name||a.nickname||a.name||a.username||String(a.email||\'\').split(\'@\')[0]||\'Accedi\');const photo=String(a.photo||a.avatar||a.image||a.picture||\'\');const h=D.getElementById(\'gsf-global-header\');if(!h)return;h.querySelector(\'.v343AccountName\').textContent=name;const av=h.querySelector(\'.v343Avatar\');if(photo)av.innerHTML=\'<img alt="" src="\'+photo.replace(/"/g,\'&quot;\')+\'">\';else av.textContent=name===\'Accedi\'?\'D\':(name.slice(0,1).toUpperCase()||\'D\')}).catch(()=>{});\n      const syncSocials=()=>{const f=D.getElementById(\'gsf-global-footer\');const dst=f?.querySelector(\'.v343Socials\');if(!dst)return;try{const hf=[...D.querySelectorAll(\'iframe\')].find(x=>String(x.title||x.src||\'\').includes(\'home_v154\'));const src=hf?.contentDocument?.querySelector(\'.footerSocial\');if(src&&src.children.length)dst.innerHTML=src.innerHTML}catch(_e){}};\n      const suppressChildChrome=(doc)=>{try{if(!doc||!doc.documentElement)return;if(doc.getElementById(\'home154\')){doc.documentElement.classList.add(\'gsf-v343-parent-ready\');return}let s=doc.getElementById(\'gsf-v343-child-chrome-lock\');if(!s){s=doc.createElement(\'style\');s.id=\'gsf-v343-child-chrome-lock\';s.textContent=`.bottomNav,.siteFooter,[id^="gsf-page-nav"],[data-global-gamebar],.footerBrand{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}.brandOnly,.brandText{display:none!important}`;(doc.head||doc.documentElement).appendChild(s)}}catch(_e){}};\n      const syncChildren=()=>D.querySelectorAll(\'iframe\').forEach(f=>{const apply=()=>{try{suppressChildChrome(f.contentDocument)}catch(_e){}};apply();if(f.dataset.v343Chrome!==\'1\'){f.dataset.v343Chrome=\'1\';f.addEventListener(\'load\',apply,{passive:true})}});\n      const retireLegacyChrome=()=>OLD_IDS.forEach(id=>{const n=D.getElementById(id);if(n)n.remove()});\n\n      function keepGlobalShellMounted(){\n        ensureStyle();retireLegacyChrome();\n        const header=mount(\'gsf-global-header\',markup.header);const bar=mount(\'gsf-global-gamebar\',markup.gamebar);const footer=mount(\'gsf-global-footer\',markup.footer);\n        if(header&&header.dataset.v343Bound!==\'1\'){header.dataset.v343Bound=\'1\';header.querySelector(\'.v343Account\')?.addEventListener(\'click\',()=>route({target:\'hub\',section:\'profile\'}))}\n        if(bar&&bar.dataset.v343Bound!==\'1\'){bar.dataset.v343Bound=\'1\';bar.querySelectorAll(\'button\').forEach(b=>b.addEventListener(\'click\',()=>route({target:b.dataset.page,section:b.dataset.page===\'hub\'?\'dashboard\':\'\'})))}\n        if(footer&&footer.dataset.v343Bound!==\'1\'){footer.dataset.v343Bound=\'1\';footer.querySelector(\'.v343Bug\')?.addEventListener(\'click\',()=>{const hit=[...D.querySelectorAll(\'button,a,[role="button"]\')].find(x=>x!==footer.querySelector(\'.v343Bug\')&&String(x.textContent||\'\').trim().toLowerCase().includes(\'segnala bug\'));if(hit)hit.click()})}\n        syncChildren();return !!(header&&bar&&footer);\n      }\n\n      if(!P.__GSF_GLOBAL_SHELL_V343){\n        P.__GSF_GLOBAL_SHELL_V343=true;\n        keepGlobalShellMounted();syncAccount();syncSocials();\n        P.addEventListener(\'message\',e=>{if(e.origin!==P.location.origin||!e.data||e.data.type!==\'GSF_SHELL_NAV\')return;route(e.data)},true);\n        const observer=new P.MutationObserver(()=>keepGlobalShellMounted());observer.observe(D.documentElement,{childList:true,subtree:true});\n        try{if(P.sessionStorage.getItem(\'gsf_editor_overlay_open_v223\')===\'1\')P.setTimeout(()=>route({target:\'editor\'}),80)}catch(_e){}\n      }else keepGlobalShellMounted();\n      try{P.postMessage({type:\'GSF_V343_SHELL_READY\'},P.location.origin)}catch(_e){}\n    })(window.parent);\n    </script></div>\n', height=0)
+    _GSF_PARENT_SHELL = r"""    <div style="display:none!important"><script>
+    ((P)=>{
+      const D=P.document;
+      const SHELL_Z=2147483600;
+      const OVERLAY_Z=2147483400;
+      const OLD_IDS=['gsf-v328-global-footer','gsf-v330-global-brand','gsf-v330-global-footer','gsf-page-nav-v249','gsf-v334-header','gsf-v334-gamebar','gsf-v334-footer'];
+      const SURFACES=['gsf-social-overlay-v159','gsf-creator-hub-live-v160','gsf-editor-overlay-v220','gsf-ai-overlay-v221','gsf-account-overlay-v223','gsf-short-overlay-v343'];
+
+      const ensureStyle=()=>{
+        let s=D.getElementById('gsf-global-shell-v343-style');
+        if(s)return s;
+        s=D.createElement('style');s.id='gsf-global-shell-v343-style';
+        s.textContent=`
+          :root{
+            --gsf-shell-header-h:44px;
+            --gsf-shell-gamebar-h:62px;
+            --gsf-shell-footer-h:30px;
+            --gsf-shell-safe-top:max(0px,env(safe-area-inset-top));
+            --gsf-shell-safe-bottom:max(8px,env(safe-area-inset-bottom));
+            --gsf-shell-content-top:calc(var(--gsf-shell-header-h) + var(--gsf-shell-safe-top));
+            --gsf-shell-content-bottom:calc(var(--gsf-shell-gamebar-h) + var(--gsf-shell-footer-h) + var(--gsf-shell-safe-bottom) + 12px);
+            --gsf-shell-z:2147483600;
+            --gsf-shell-overlay-z:2147483400;
+          }
+          #gsf-v328-global-footer,#gsf-v330-global-brand,#gsf-v330-global-footer,#gsf-page-nav-v249,[id^="gsf-page-nav"],#gsf-v334-header,#gsf-v334-gamebar,#gsf-v334-footer{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+          #gsf-global-header{position:fixed!important;left:0!important;right:0!important;top:0!important;height:var(--gsf-shell-content-top)!important;z-index:var(--gsf-shell-z)!important;display:flex!important;align-items:flex-end!important;justify-content:space-between!important;padding:var(--gsf-shell-safe-top) max(16px,env(safe-area-inset-right)) 7px max(16px,env(safe-area-inset-left))!important;box-sizing:border-box!important;background:linear-gradient(180deg,rgba(250,253,255,.99),rgba(250,253,255,.91))!important;border-bottom:1px solid rgba(150,184,214,.16)!important;-webkit-backdrop-filter:blur(18px)!important;backdrop-filter:blur(18px)!important;color:#617b9f!important}
+          #gsf-global-header .v343Brand{display:flex;align-items:center;gap:7px;min-width:0;font:800 10px/1 "Avenir Next","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.22em;text-transform:uppercase;white-space:nowrap}
+          #gsf-global-header .v343Logo{width:18px;height:22px;object-fit:contain;display:block;flex:0 0 18px}
+          #gsf-global-header .v343Account{height:30px;min-width:64px;display:flex;align-items:center;gap:6px;padding:2px 9px 2px 4px;border:1px solid rgba(150,184,214,.28);border-radius:999px;background:rgba(255,255,255,.95);color:#60789c;font:800 9px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 7px 19px rgba(68,104,142,.08)}
+          #gsf-global-header .v343Avatar{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:linear-gradient(145deg,#e7f4ff,#e9f8f2);font-size:9px}
+          #gsf-global-header .v343Avatar img{width:100%;height:100%;display:block;object-fit:cover}
+          #gsf-global-gamebar{position:fixed!important;left:max(18px,env(safe-area-inset-left))!important;right:max(18px,env(safe-area-inset-right))!important;bottom:calc(var(--gsf-shell-footer-h) + var(--gsf-shell-safe-bottom) + 6px)!important;height:var(--gsf-shell-gamebar-h)!important;z-index:var(--gsf-shell-z)!important;display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:3px!important;padding:6px 8px!important;border:1px solid rgba(145,181,213,.28)!important;border-radius:999px!important;background:rgba(255,255,255,.96)!important;-webkit-backdrop-filter:blur(22px)!important;backdrop-filter:blur(22px)!important;box-shadow:0 12px 34px rgba(59,104,148,.12),inset 0 1px 0 #fff!important;box-sizing:border-box!important}
+          #gsf-global-gamebar button{border:0;background:transparent;border-radius:999px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#7f8fa8;font:800 7px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:2px;min-width:0}
+          #gsf-global-gamebar button.active{color:#4f93d7;background:rgba(219,241,255,.72)}
+          #gsf-global-gamebar .v343Icon{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#F9FCFF,#EDF5FC);border:1px solid rgba(150,184,215,.24);font-size:14px}
+          #gsf-global-footer{position:fixed!important;left:0!important;right:0!important;bottom:0!important;height:calc(var(--gsf-shell-footer-h) + var(--gsf-shell-safe-bottom))!important;z-index:var(--gsf-shell-z)!important;display:grid!important;grid-template-columns:1fr auto 1fr!important;align-items:start!important;padding:5px max(12px,env(safe-area-inset-right)) var(--gsf-shell-safe-bottom) max(12px,env(safe-area-inset-left))!important;box-sizing:border-box!important;border-top:1px solid rgba(150,184,214,.20)!important;background:rgba(250,253,255,.97)!important;-webkit-backdrop-filter:blur(18px)!important;backdrop-filter:blur(18px)!important;color:#6e88aa!important}
+          #gsf-global-footer .v343Socials{grid-column:2;display:flex;align-items:center;justify-content:center;gap:7px}
+          #gsf-global-footer .v343Socials a,#gsf-global-footer .v343Socials span{width:17px;height:17px;display:grid;place-items:center;border-radius:50%;text-decoration:none;border:1px solid rgba(150,183,213,.22);background:#fff;color:#7388a7;font:900 7px/1 sans-serif;overflow:hidden;box-sizing:border-box}
+          #gsf-global-footer .v343Bug{grid-column:3;justify-self:end;border:0;background:transparent;color:#6983a4;font:800 7px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:3px 0;white-space:nowrap}
+          #gsf-editor-overlay-v220,#gsf-short-overlay-v343,#gsf-creator-hub-live-v160,#gsf-ai-overlay-v221,#gsf-social-overlay-v159,#gsf-account-overlay-v223{position:fixed!important;left:0!important;right:0!important;top:var(--gsf-shell-content-top)!important;bottom:var(--gsf-shell-content-bottom)!important;height:auto!important;max-height:none!important;z-index:var(--gsf-shell-overlay-z)!important;box-sizing:border-box!important}
+          #gsf-editor-overlay-v220 .gsf-editor-shell,#gsf-creator-hub-live-v160 .gsf-hub-shell-v160,#gsf-ai-overlay-v221 .gsf-ai-shell,#gsf-social-overlay-v159 .gsf-social-shell,#gsf-account-overlay-v223 .gsf-account-shell{position:absolute!important;inset:0!important;min-height:0!important;max-height:none!important}
+          #gsf-short-overlay-v343{display:flex;align-items:center;justify-content:center;padding:8px;background:#FAFDFF;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease,visibility .18s ease}
+          #gsf-short-overlay-v343.is-open{opacity:1;visibility:visible;pointer-events:auto}
+          #gsf-short-overlay-v343 .v343ShortShell{position:relative;width:min(680px,calc(100vw - 20px));height:100%;min-height:0;display:grid;grid-template-rows:auto 1fr auto;gap:9px;border:1px solid rgba(150,184,214,.24);border-radius:22px;background:rgba(255,255,255,.90);box-shadow:0 22px 58px rgba(49,94,135,.12);overflow:hidden;padding:12px;box-sizing:border-box}
+          #gsf-short-overlay-v343 .v343ShortHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px} #gsf-short-overlay-v343 h2{margin:0;color:#0D2A66;font:900 21px/1.05 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif} #gsf-short-overlay-v343 p{margin:4px 0 0;color:#7185A6;font:700 10px/1.25 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+          #gsf-short-overlay-v343 .v343ShortStage{min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}.v343Preview{position:relative;height:min(100%,450px);aspect-ratio:9/16;max-width:76%;border-radius:20px;border:1px solid rgba(112,187,230,.30);overflow:hidden;background:linear-gradient(155deg,#EFF8FF,#F7FFFC);display:grid;place-items:center;color:#6F88A8;text-align:center;padding:18px}.v343Preview video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}.v343PreviewText{font:800 11px/1.25 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.v343Actions{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:7px}.v343Actions button,.v343ShortClose{min-height:42px;border-radius:13px;border:1px solid rgba(146,182,213,.26);background:#F7FBFF;color:#56718F;font:900 9px/1.1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.v343Actions .primary{background:#DDEFFF;color:#136FCF}.v343ShortClose{width:32px;min-height:32px;height:32px;font-size:20px}.v343Status{position:absolute;left:14px;right:14px;bottom:60px;text-align:center;color:#6E86A5;font:800 9px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;pointer-events:none}
+          @media(min-width:761px){#gsf-global-gamebar{left:50%!important;right:auto!important;width:min(560px,52vw)!important;transform:translateX(-50%)!important}}
+        `;
+        (D.head||D.documentElement).appendChild(s);return s;
+      };
+
+      const markup={
+        header:`<header id="gsf-global-header" aria-label="Gaming Shorts Factory"><div class="v343Brand"><img class="v343Logo" src="/app-icon.png" alt=""><span>GAMING SHORTS FACTORY</span></div><button class="v343Account" type="button"><span class="v343Avatar">D</span><span class="v343AccountName">Accedi</span></button></header>`,
+        gamebar:`<nav id="gsf-global-gamebar" aria-label="Game Bar"><button data-page="home" class="active" type="button"><span class="v343Icon">⌂</span><span>Home</span></button><button data-page="hub" type="button"><span class="v343Icon">▦</span><span>Hub</span></button><button data-page="projects" type="button"><span class="v343Icon">▱</span><span>Progetti</span></button><button data-page="live" type="button"><span class="v343Icon">◉</span><span>Live</span></button></nav>`,
+        footer:`<footer id="gsf-global-footer" aria-label="Footer"><div class="v343Socials"><a href="https://www.facebook.com/profile.php?id=61595124112318&locale=it_IT" target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a><a href="https://www.instagram.com/gamingshortsfactory/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">◎</a><a href="https://www.youtube.com/@Dans222nrg" target="_blank" rel="noopener noreferrer" aria-label="YouTube">▶</a><span aria-label="TikTok">♪</span><span aria-label="Twitch">◫</span></div><button class="v343Bug" type="button">Segnala bug</button></footer>`
+      };
+      const mount=(id,html)=>{let n=D.getElementById(id);if(n)return n;D.body.insertAdjacentHTML('beforeend',html);return D.getElementById(id)};
+      const hide=(o)=>{if(!o)return;o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true')};
+      const show=(o)=>{if(!o)return false;o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false');return true};
+      const closeCompeting=(keep='')=>SURFACES.forEach(id=>{if(id!==keep)hide(D.getElementById(id))});
+      const active=(page)=>{const b=D.getElementById('gsf-global-gamebar');if(!b)return;b.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x.dataset.page===page))};
+
+      const ensureHubSurface=()=>{
+        let o=D.getElementById('gsf-creator-hub-live-v160');
+        if(!o){o=D.createElement('section');o.id='gsf-creator-hub-live-v160';o.setAttribute('aria-hidden','true');o.innerHTML=`<div class="gsf-hub-shell-v160"><iframe class="gsf-hub-frame" title="Creator Hub" data-src="/creator-hub-v156/" style="width:100%;height:100%;display:block;border:0;background:#F8FCFF"></iframe></div>`;D.body.appendChild(o)}
+        const f=o.querySelector('iframe');if(f&&f.dataset.loaded!=='1'){f.src='/creator-hub-v156/?v=343';f.dataset.loaded='1'}return o;
+      };
+      const focusHub=(section)=>{const o=ensureHubSurface();show(o);const f=o.querySelector('iframe');f.dataset.gsfSection=section;const send=()=>{try{f?.contentWindow?.postMessage({type:'GSF_HUB_FOCUS',section:f.dataset.gsfSection||'dashboard'},P.location.origin)}catch(_e){}};send();if(f&&f.dataset.v343Focus!=='1'){f.dataset.v343Focus='1';f.addEventListener('load',send)}return true};
+
+      const ensureShortSurface=()=>{
+        let o=D.getElementById('gsf-short-overlay-v343');if(o)return o;
+        o=D.createElement('section');o.id='gsf-short-overlay-v343';o.setAttribute('aria-hidden','true');o.innerHTML=`<div class="v343ShortShell" role="dialog" aria-modal="false" aria-label="Crea Short"><div class="v343ShortHead"><div><h2>Crea Short</h2><p>La tua scelta finale resta nel progetto finché non decidi di crearla.</p></div><button class="v343ShortClose" type="button" aria-label="Chiudi">×</button></div><div class="v343ShortStage"><div class="v343Preview"><div class="v343PreviewText">ANTEPRIMA 9:16</div><video playsinline controls preload="metadata" hidden></video></div></div><div class="v343Actions"><button class="primary v343Create" type="button">CREA SHORT</button><button class="v343Editor" type="button">GAME EDITOR</button><button class="v343Draft" type="button">SALVA BOZZA</button></div><div class="v343Status" aria-live="polite"></div></div>`;D.body.appendChild(o);
+        const status=o.querySelector('.v343Status');const say=t=>{if(status)status.textContent=String(t||'')};
+        o.querySelector('.v343ShortClose')?.addEventListener('click',()=>route({target:'home'}));
+        o.querySelector('.v343Editor')?.addEventListener('click',()=>route({target:'editor'}));
+        o.querySelector('.v343Create')?.addEventListener('click',()=>{let b=D.querySelector('.st-key-gsf-major-create-short button,.st-key-create_final_short_v54 button');if(!b)b=[...D.querySelectorAll('button,[role="button"]')].find(x=>{const t=String(x.innerText||x.textContent||'').trim().toLowerCase();return t==='crea short'||t.includes('crea short finale')||t.includes('crea il tuo short')});if(!b){say('Carica un gameplay prima di creare lo Short.');return}if(b.disabled||b.getAttribute('aria-disabled')==='true'){say('Il gameplay non è ancora pronto per il render.');return}say('Creazione Short…');b.click()});
+        o.querySelector('.v343Draft')?.addEventListener('click',async()=>{say('Salvataggio…');try{const r=await P.fetch('/drafts/save-current',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'});const j=await r.json().catch(()=>({}));say(r.ok&&j&&j.ok?'Bozza salvata.':(j&&j.error)||'Nessuna modifica da salvare.')}catch(_e){say('Salvataggio non riuscito. Riprova.')}});
+        const v=o.querySelector('video');if(v){v.src='/editor-media/current?v=343';v.addEventListener('loadedmetadata',()=>{v.hidden=false;const t=o.querySelector('.v343PreviewText');if(t)t.style.display='none'},{once:true});v.addEventListener('error',()=>{v.hidden=true},{once:true})}
+        return o;
+      };
+      const openShort=()=>{const o=ensureShortSurface();show(o);return true};
+
+      const openExisting=(id)=>{const o=D.getElementById(id);if(!o)return false;closeCompeting(id);return show(o)};
+      const route=data=>P.GSFNavigation.navigate(data);
+
+      const syncAccount=()=>P.fetch('/creator-hub/state?scope=header',{cache:'no-store',credentials:'same-origin'}).then(r=>r.json()).then(j=>{const a=(j&&j.account)||{};const name=String(a.display_name||a.nickname||a.name||a.username||String(a.email||'').split('@')[0]||'Accedi');const photo=String(a.photo||a.avatar||a.image||a.picture||'');const h=D.getElementById('gsf-global-header');if(!h)return;h.querySelector('.v343AccountName').textContent=name;const av=h.querySelector('.v343Avatar');if(photo)av.innerHTML='<img alt="" src="'+photo.replace(/"/g,'&quot;')+'">';else av.textContent=name==='Accedi'?'D':(name.slice(0,1).toUpperCase()||'D')}).catch(()=>{});
+      const syncSocials=()=>{const f=D.getElementById('gsf-global-footer');const dst=f?.querySelector('.v343Socials');if(!dst)return;try{const hf=[...D.querySelectorAll('iframe')].find(x=>String(x.title||x.src||'').includes('home_v154'));const src=hf?.contentDocument?.querySelector('.footerSocial');if(src&&src.children.length)dst.innerHTML=src.innerHTML}catch(_e){}};
+      const suppressChildChrome=(doc)=>{try{if(!doc||!doc.documentElement)return;if(doc.getElementById('home154')){doc.documentElement.classList.add('gsf-v343-parent-ready');return}let s=doc.getElementById('gsf-v343-child-chrome-lock');if(!s){s=doc.createElement('style');s.id='gsf-v343-child-chrome-lock';s.textContent=`.bottomNav,.siteFooter,[id^="gsf-page-nav"],[data-global-gamebar],.footerBrand{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}.brandOnly,.brandText{display:none!important}`;(doc.head||doc.documentElement).appendChild(s)}}catch(_e){}};
+      const syncChildren=()=>D.querySelectorAll('iframe').forEach(f=>{const apply=()=>{try{suppressChildChrome(f.contentDocument)}catch(_e){}};apply();if(f.dataset.v343Chrome!=='1'){f.dataset.v343Chrome='1';f.addEventListener('load',apply,{passive:true})}});
+      const retireLegacyChrome=()=>OLD_IDS.forEach(id=>{const n=D.getElementById(id);if(n)n.remove()});
+
+      function keepGlobalShellMounted(){
+        ensureStyle();retireLegacyChrome();
+        const header=mount('gsf-global-header',markup.header);const bar=mount('gsf-global-gamebar',markup.gamebar);const footer=mount('gsf-global-footer',markup.footer);
+        if(header&&header.dataset.v343Bound!=='1'){header.dataset.v343Bound='1';header.querySelector('.v343Account')?.addEventListener('click',()=>route({target:'hub',section:'profile'}))}
+        if(bar&&bar.dataset.v343Bound!=='1'){bar.dataset.v343Bound='1';bar.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>route({target:b.dataset.page,section:b.dataset.page==='hub'?'dashboard':''})))}
+        if(footer&&footer.dataset.v343Bound!=='1'){footer.dataset.v343Bound='1';footer.querySelector('.v343Bug')?.addEventListener('click',()=>{const hit=[...D.querySelectorAll('button,a,[role="button"]')].find(x=>x!==footer.querySelector('.v343Bug')&&String(x.textContent||'').trim().toLowerCase().includes('segnala bug'));if(hit)hit.click()})}
+        syncChildren();P.GSFNavigation.reconcile();return !!(header&&bar&&footer);
+      }
+
+      if(!P.__GSF_GLOBAL_SHELL_V343){
+        P.__GSF_GLOBAL_SHELL_V343=true;
+        keepGlobalShellMounted();syncAccount();syncSocials();
+        P.GSFNavigation.registerSurface('hub',{open:data=>focusHub(data.section||'dashboard'),close:()=>hide(D.getElementById('gsf-creator-hub-live-v160'))});
+        P.GSFNavigation.registerSurface('short',{open:openShort,close:()=>hide(D.getElementById('gsf-short-overlay-v343'))});
+        const observer=new P.MutationObserver(()=>keepGlobalShellMounted());observer.observe(D.documentElement,{childList:true,subtree:true});
+
+      }else keepGlobalShellMounted();
+      try{P.postMessage({type:'GSF_V343_SHELL_READY'},P.location.origin)}catch(_e){}
+    })(window.parent);
+    </script></div>
+"""
 
 
 
 # GSF_V348_TRANSPARENT_LOGO_FOOTER
 import streamlit.components.v1 as _gsf_components_v348
-_gsf_components_v348.html(r"""
+_GSF_PARENT_FOOTER348 = r"""
 <script id="gsf-v348-logo-footer">
 (() => {
   const P=window.parent, D=P.document;
+  const lifecycle=P.GSFNavigation.bridge('footer348',globalThis.frameElement);
   const LOGO='data:image/png;base64,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';
 
   function ensureStyle(){
@@ -18363,15 +18093,15 @@ _gsf_components_v348.html(r"""
   }
 
   apply();
-  setTimeout(apply,80);
-  setTimeout(apply,300);
-  setTimeout(apply,900);
+  lifecycle.timeout(apply,80);
+  lifecycle.timeout(apply,300);
+  lifecycle.timeout(apply,900);
   try{
-    new MutationObserver(apply).observe(D.documentElement,{childList:true,subtree:true});
+    lifecycle.observe(D.documentElement,{childList:true,subtree:true},apply);
   }catch(_e){}
 })();
 </script>
-""", height=0)
+"""
 
 
 # GSF_V349_FOOTER_CONTRACT — V343 owns geometry; V348 only keeps footer visible.
@@ -18379,11 +18109,12 @@ _gsf_components_v348.html(r"""
 
 # GSF_V350_FOOTER_MOBILE_CENTER
 import streamlit.components.v1 as _gsf_components_v350
-_gsf_components_v350.html(r"""
+_GSF_PARENT_FOOTER350 = r"""
 <script id="gsf-v350-footer-mobile-center">
 (() => {
   const P = window.parent;
   const D = P.document;
+  const lifecycle=P.GSFNavigation.bridge('footer350',globalThis.frameElement);
 
   function ensureStyle(){
     let s = D.getElementById('gsf-v350-footer-style');
@@ -18505,18 +18236,18 @@ _gsf_components_v350.html(r"""
   }
 
   apply();
-  setTimeout(apply, 120);
-  setTimeout(apply, 500);
-  setTimeout(apply, 1200);
+  lifecycle.timeout(apply, 120);
+  lifecycle.timeout(apply, 500);
+  lifecycle.timeout(apply, 1200);
   try {
-    new MutationObserver(() => {
+    lifecycle.observe(D.documentElement,{childList:true,subtree:true},() => {
       const f = D.getElementById('gsf-global-footer');
       if (f && f.dataset.gsfV350 !== '1') apply();
     }).observe(D.documentElement, {childList:true, subtree:true});
   } catch(_e) {}
 })();
 </script>
-""", height=0)
+"""
 
 
 
@@ -18529,11 +18260,12 @@ _gsf_components_v350.html(r"""
 # GSF_V361_VISIBLE_VERSION
 # GSF_V395_FOOTER_STACK_CONTRACT
 import streamlit.components.v1 as _gsf_components_v351
-_gsf_components_v351.html(r"""
+_GSF_PARENT_FOOTER351 = r"""
 <script id="gsf-v351-footer-brand-glass">
 (() => {
   const P = window.parent;
   const D = P.document;
+  const lifecycle=P.GSFNavigation.bridge('footer351',globalThis.frameElement);
 
   function ensureStyle(){
     let s = D.getElementById('gsf-v351-footer-style');
@@ -18722,19 +18454,19 @@ _gsf_components_v351.html(r"""
   }
 
   build();
-  setTimeout(build, 80);
-  setTimeout(build, 300);
-  setTimeout(build, 900);
-  setTimeout(build, 1800);
+  lifecycle.timeout(build, 80);
+  lifecycle.timeout(build, 300);
+  lifecycle.timeout(build, 900);
+  lifecycle.timeout(build, 1800);
   try {
-    new MutationObserver(() => {
+    lifecycle.observe(D.documentElement,{childList:true,subtree:true},() => {
       const f = D.getElementById('gsf-global-footer');
       if (!f || f.dataset.gsfV361 !== '1' || !f.querySelector('.gsf-v351-socials')) build();
-    }).observe(D.documentElement,{childList:true,subtree:true});
+    });
   } catch(_e) {}
 })();
 </script>
-""", height=0)
+"""
 
 
 # GSF_V362_VISIBLE_VERSION
