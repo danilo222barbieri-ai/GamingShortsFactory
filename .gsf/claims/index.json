@@ -1025,6 +1025,7 @@
         "web/game_editor_mobile_component/overlay_v414.mjs",
         "web/gsf_night_arena.css",
         "web/home_v154_component/index.html",
+        "web/legal/**",
         "web/publish_short_v405_component/**",
         "web/share_v156_component/**"
       ],
