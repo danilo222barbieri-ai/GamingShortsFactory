@@ -112,7 +112,9 @@ def browser_page(mobile=True):
         except BaseException:
             print('CAPTURED ERRORS',errors,flush=True)
             try:
-                print('FAILURE STATE',page.evaluate("()=>({nav:window.GSFNavigation?.snapshot(),editor:[...document.querySelectorAll('#gsf-editor-overlay-v220')].map(e=>({cls:e.className,hidden:e.getAttribute('aria-hidden'),inert:e.inert,visibility:getComputedStyle(e).visibility,frame:e.querySelector('iframe')?.src})),errors:document.body.innerText.slice(-500)})"),flush=True)
+                state=page.evaluate("""()=>{const ed=document.querySelector('#gsf-editor-overlay-v220 iframe');let edState={};try{const d=ed?.contentDocument,app=d?.getElementById('gameEditorApp');const look=d?.querySelector('[data-tool=look]');const r=look?.getBoundingClientRect();edState={cls:app?.className,look:r?[Math.round(r.x),Math.round(r.y),Math.round(r.width),Math.round(r.height)]:null,lookVis:look?getComputedStyle(look).visibility:null,sheetOpen:app?.classList.contains('is-tool-open')}}catch(e){edState={err:String(e)}};const bar=document.getElementById('gsf-global-gamebar');const br=bar?.getBoundingClientRect();const so=document.querySelector('#gsf-social-overlay-v159 iframe');let share={};try{share={src:so?.getAttribute('src'),ready:so?.contentDocument?.readyState,crea:!!so?.contentDocument?.querySelector('#crea413')}}catch(e){share={err:String(e)}};return {nav:window.GSFNavigation?.snapshot(),html:document.documentElement.className,bar:br?[Math.round(br.x),Math.round(br.y),Math.round(br.width),Math.round(br.height),getComputedStyle(bar).display,getComputedStyle(bar).visibility]:null,editor:edState,share,render:window.__renderTriggered===true,toasts:[...document.querySelectorAll('.gsf-site-toast')].map(t=>t.innerText.slice(0,60)),tail:document.body.innerText.slice(-300)}}""")
+                print('FAILURE STATE',state,flush=True)
+                print('::error title=GSF nav failure state::'+str(state).replace('%','%25').replace('\n','%0A')[:3000],flush=True)
             except Exception:pass
             raise
         finally:
