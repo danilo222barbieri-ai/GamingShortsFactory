@@ -909,6 +909,8 @@
       "branch": "chat/ui-editor-home-style-light-glass-for-the-in-play-1d798f",
       "created_at": "2026-10-16T00:32:53+02:00",
       "evidence": {
+        "commit": "ae4245b70f204abf7c6cd4a4f8689ae8fa0af193",
+        "gate": "main Production Gate 38870351507 success; promoted ae4245b70f20 (e0e896a). #158 first promoted with a4f9d86 (1e596cd) after its own main run skipped promotion due to newer coord commits",
         "lifecycle_handoff": {
           "authorization": "Owner explicitly approved transfer of these two files in stability chat on 2026-10-16, preserving the integrated editor restyle.",
           "paths": [
@@ -916,6 +918,12 @@
             "tests/test_mobile_game_editor_2026.py"
           ],
           "to": "stability-unified-navigation-and-mobile-resume-l-395391"
+        },
+        "pr": "#158 (5c0d768), #159 (ae4245b)",
+        "railway": "frontend deployment 203797f5-e32e-4381-b06f-91897c17e1f8 SUCCESS, manifest verify PASS digest=0efca29fdeb9 == repo digest at ae4245b",
+        "tests": {
+          "local": "editor/pipeline tests 45-56 pass (direct run, no pytest in sandbox); node --test 16 pass; gsf_visual_check mobile editor pass",
+          "pr_ci": "contracts + production-gate success on #158 and #159"
         }
       },
       "id": "ui-editor-home-style-light-glass-for-the-in-play-1d798f",
@@ -930,7 +938,7 @@
         "web/game_editor_mobile_component/overlay_v414.mjs"
       ],
       "scope": "ui(editor): Home-style light glass for the in-player mobile Game Editor; Crea Short action in mini mode",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/notifications-event-driven-web-push-short-ready--e5303c",
