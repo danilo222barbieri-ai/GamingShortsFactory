@@ -15,6 +15,8 @@ SURFACES = [
     "web/creator_hub_v156_component/index.html",
     "web/ai_v221_component/index.html",
     "web/game_editor_mobile_component/index.html",
+    "web/share_v156_component/index.html",
+    "web/home_v154_component/index.html",
 ]
 BLOCK = re.compile(r"/\* GSF_NIGHT_ARENA:BEGIN \*/\n(.*?)\n/\* GSF_NIGHT_ARENA:END \*/", re.S)
 

@@ -2954,6 +2954,125 @@ body.gsfDesktopPreview .feature{
 /* END V284 PROFILE AVATAR IN TOP LOGIN */
 
 
+/* GSF_NIGHT_ARENA:BEGIN */
+/* GSF Night Arena v1 — the single look of the whole app.
+   Canonical source. Every surface inlines this block verbatim between
+   GSF_NIGHT_ARENA:BEGIN / GSF_NIGHT_ARENA:END (tests/test_night_arena_theme.py).
+   Brand hues are the official kit (design/brand); only the surface/text
+   roles are re-mapped for the dark ground. */
+:root{
+ color-scheme:dark;
+ /* Ground */
+ --na-bg:#050D16;
+ --na-bg-2:#081827;
+ --na-deep:#0A1D2E;
+ /* Glass */
+ --na-glass:rgba(16,40,61,.55);
+ --na-glass-strong:rgba(16,40,61,.78);
+ --na-glass-hi:rgba(255,255,255,.06);
+ --na-edge:rgba(121,210,255,.18);
+ --na-edge-strong:rgba(121,210,255,.32);
+ --na-shine:inset 0 1px 0 rgba(255,255,255,.08);
+ --na-shadow:0 18px 40px rgba(0,0,0,.45);
+ /* Text */
+ --na-text:#EAF6FF;
+ --na-text-strong:#FFFFFF;
+ --na-text-muted:#9FB7CA;
+ --na-text-faint:#6F879A;
+ /* Area glows (official hues) */
+ --na-glow-primary:0 0 24px rgba(39,174,243,.45);
+ --na-glow-ai:0 0 24px rgba(157,130,255,.5);
+ --na-glow-short:0 0 24px rgba(94,214,160,.45);
+ --na-ring:conic-gradient(from 0deg,#27AEF3,#53E0EA,#5ED6A0,#9D82FF,#27AEF3);
+ --na-cta:linear-gradient(90deg,#27AEF3,#53E0EA);
+ --na-cta-ink:#052033;
+ --na-mural-font:"Caveat","Segoe Print","Bradley Hand",cursive;
+ /* Brand role tokens re-mapped onto the dark ground */
+ --gsf-surface:var(--na-glass);
+ --gsf-bg-soft:rgba(39,174,243,.10);
+ --gsf-line:var(--na-edge);
+ --gsf-ink:var(--na-text);
+ --gsf-muted:var(--na-text-muted);
+}
+html,body{background:var(--na-bg);color:var(--na-text)}
+body{
+ background:
+  radial-gradient(60% 40% at 0% 18%,rgba(39,174,243,.20),transparent 70%),
+  radial-gradient(55% 38% at 100% 46%,rgba(157,130,255,.16),transparent 70%),
+  radial-gradient(60% 40% at 30% 100%,rgba(83,224,234,.10),transparent 70%),
+  var(--na-bg);
+ background-attachment:fixed;
+}
+::selection{background:rgba(39,174,243,.45);color:#fff}
+:focus-visible{outline:2px solid #79D2FF;outline-offset:2px}
+input,textarea,select{background:rgba(5,13,22,.55);color:var(--na-text);border-color:var(--na-edge)}
+input::placeholder,textarea::placeholder{color:var(--na-text-faint)}
+*{scrollbar-color:rgba(121,210,255,.25) transparent}
+.na-glass{background:var(--na-glass);border:1px solid var(--na-edge);box-shadow:var(--na-shine);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.na-cta{background:var(--na-cta);color:var(--na-cta-ink);border:0;box-shadow:0 8px 24px rgba(39,174,243,.4)}
+.na-mural{font-family:var(--na-mural-font);color:#79D2FF;font-weight:600}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+/* GSF_NIGHT_ARENA:END */
+/* GSF_NIGHT_ARENA_PAGE:BEGIN */
+/* Home on the Night Arena ground. Specificity (html body #home154#home154 …) and
+   !important on purpose: the Home carries many historical layers. */
+html body #home154#home154{background:transparent!important;border-radius:0!important}
+html body #home154#home154:before{display:none!important}
+html body #home154#home154 .brandOnly,html body #home154#home154 .accountEntry{color:var(--na-text)!important}
+/* Murals: one handwriting, glowing cyan */
+html body #home154#home154 .scribble,html body #home154#home154 .muralAmbient,html body #home154#home154 .guideText{font-family:var(--na-mural-font)!important;color:#79D2FF!important;font-weight:700!important;text-shadow:0 0 18px rgba(39,174,243,.35)!important}
+html body #home154#home154 .scribble svg,html body #home154#home154 .padSketch svg{stroke:#79D2FF!important}
+/* The living upload orb */
+@keyframes naSpin{to{transform:rotate(360deg)}}
+@keyframes naBreathe{50%{box-shadow:0 0 0 4px rgba(5,13,22,.9),0 0 0 6px rgba(83,224,234,.75),0 0 70px rgba(39,174,243,.65),0 0 140px rgba(157,130,255,.35)}}
+html body #home154#home154 .rings{
+ background:radial-gradient(circle at 50% 35%,#12314B 0%,#0A1D2E 60%,#071522 100%)!important;
+ border:0!important;
+ box-shadow:0 0 0 4px rgba(5,13,22,.9),0 0 0 6px rgba(39,174,243,.6),0 0 46px rgba(39,174,243,.45),0 0 110px rgba(157,130,255,.25),inset 0 1px 0 rgba(255,255,255,.12)!important;
+ animation:naBreathe 6s ease-in-out infinite;
+}
+html body #home154#home154 .rings:before{
+ inset:-22px!important;border:0!important;border-radius:50%!important;
+ background:conic-gradient(from 0deg,#27AEF3,#53E0EA,#5ED6A0,#9D82FF,#27AEF3)!important;
+ -webkit-mask:radial-gradient(circle,transparent calc(50% - 3px),#000 calc(50% - 2px),#000 50%,transparent calc(50% + 1px))!important;
+ mask:radial-gradient(circle,transparent calc(50% - 3px),#000 calc(50% - 2px),#000 50%,transparent calc(50% + 1px))!important;
+ box-shadow:none!important;opacity:.9!important;animation:naSpin 9s linear infinite;
+}
+html body #home154#home154 .rings:after{inset:-48px!important;border:1px dashed rgba(121,210,255,.22)!important;box-shadow:none!important}
+html body #home154#home154 .rings.uploading{box-shadow:0 0 0 4px rgba(5,13,22,.9),0 0 0 6px #5ED6A0,0 0 70px rgba(94,214,160,.6),0 0 140px rgba(39,174,243,.35)!important}
+html body #home154#home154 .rings.uploading:before{animation-duration:1.6s}
+html body #home154#home154 .circle{background:transparent!important;color:#fff!important}
+html body #home154#home154 .icon{color:#79D2FF!important;filter:drop-shadow(0 0 12px rgba(39,174,243,.55))}
+html body #home154#home154 .circle strong{color:#fff!important}
+html body #home154#home154 .status.error{background:var(--na-glass-strong)!important;color:#FF8A94!important;border:1px solid rgba(255,102,115,.45)!important}
+html body #home154#home154 .track{background:var(--na-edge)!important}
+html body #home154#home154 .bar{background:var(--na-cta)!important}
+html body #home154#home154 .replaceToast{background:var(--na-glass-strong)!important;border:1px solid var(--na-edge-strong)!important;color:var(--na-text)!important;box-shadow:var(--na-shadow)!important;-webkit-backdrop-filter:blur(24px)!important;backdrop-filter:blur(24px)!important}
+html body #home154#home154 .replaceToastBody{color:var(--na-text-muted)!important}
+html body #home154#home154 .replaceToastBtn{background:rgba(255,255,255,.06)!important;border:1px solid var(--na-edge)!important;color:var(--na-text)!important}
+html body #home154#home154 .replaceToastBtn.primary{background:var(--na-cta)!important;border:0!important;color:var(--na-cta-ink)!important}
+/* Area cards: each glows in its own colour */
+html body #home154#home154 .feature{background:linear-gradient(180deg,var(--na-area-tint),rgba(16,40,61,.5))!important;border:1px solid var(--na-area-edge)!important;box-shadow:var(--na-shine)!important;color:#fff!important;-webkit-backdrop-filter:blur(18px)!important;backdrop-filter:blur(18px)!important}
+html body #home154#home154 .fAi{--na-area:#9D82FF;--na-area-tint:rgba(157,130,255,.16);--na-area-edge:rgba(157,130,255,.38)}
+html body #home154#home154 .fEditor{--na-area:#27AEF3;--na-area-tint:rgba(39,174,243,.16);--na-area-edge:rgba(39,174,243,.4)}
+html body #home154#home154 .fShort{--na-area:#5ED6A0;--na-area-tint:rgba(94,214,160,.15);--na-area-edge:rgba(94,214,160,.4)}
+html body #home154#home154 .featureIcon{background:color-mix(in srgb,var(--na-area) 22%,transparent)!important;color:color-mix(in srgb,var(--na-area) 55%,#fff)!important;box-shadow:0 0 24px color-mix(in srgb,var(--na-area) 50%,transparent)!important;border:0!important}
+html body #home154#home154 .featureIcon svg{stroke:currentColor!important}
+html body #home154#home154 .feature b{color:#fff!important}
+html body #home154#home154 .feature small{color:var(--na-text-muted)!important}
+/* AI panel, moments, projects */
+html body #home154#home154 .aiPanel,html body #home154#home154 .momentCover,html body #home154#home154 .project{background:var(--na-glass)!important;border-color:var(--na-edge)!important;color:var(--na-text)!important;box-shadow:var(--na-shine)!important}
+html body #home154#home154 .kicker,html body #home154#home154 .momentTitle,html body #home154#home154 .meta{color:var(--na-text-muted)!important}
+html body #home154#home154 .engine,html body #home154#home154 .dur{background:rgba(255,255,255,.05)!important;border:1px solid var(--na-edge)!important;color:var(--na-text)!important}
+html body #home154#home154 .engine.active,html body #home154#home154 .dur.active{background:rgba(157,130,255,.22)!important;border-color:rgba(157,130,255,.55)!important;box-shadow:var(--na-glow-ai)!important;color:#fff!important}
+html body #home154#home154 .cta{background:linear-gradient(135deg,#27AEF3,#9D82FF)!important;color:#fff!important;border:0!important}
+html body #home154#home154 .momentPlay{background:rgba(5,13,22,.6)!important;color:#79D2FF!important}
+/* The shell has no footer any more: the Home stops reserving room for it. */
+html.gsf-v343-parent-ready body #home154#home154 .siteFooter{display:none!important}
+/* Old layers force a light page with !important: the ground wins back here. */
+html:root{background:var(--na-bg)!important}
+html:root body{background:radial-gradient(60% 40% at 0% 18%,rgba(39,174,243,.20),transparent 70%),radial-gradient(55% 38% at 100% 46%,rgba(157,130,255,.16),transparent 70%),radial-gradient(60% 40% at 30% 100%,rgba(83,224,234,.10),transparent 70%),var(--na-bg)!important}
+/* GSF_NIGHT_ARENA_PAGE:END */
 </style>
 
 <style id="v315MobileHomeLowerFlow">
@@ -3034,6 +3153,7 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
 }
 </style>
 
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&amp;display=swap" data-gsf-night-arena-font>
 </head>
 <body>
 <div id="home154"><div class="ui">
