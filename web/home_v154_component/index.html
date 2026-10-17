@@ -3212,6 +3212,10 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
 </style>
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&amp;family=Nunito+Sans:opsz,wght@6..12,400..800&amp;display=swap" data-gsf-night-arena-font>
+<style id="gsfHomeShellFit418">
+/* GSF_HOME_SHELL_FIT: the upload label stays inside the inner ring on every phone font. */
+@media(max-width:760px){html body #home154#home154 .circle strong{max-width:72%!important;font-size:clamp(14px,4.3vw,18px)!important;letter-spacing:.04em!important;line-height:1.15!important}}
+</style>
 </head>
 <body>
 <div id="home154"><div class="ui">
@@ -3963,6 +3967,31 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
   }catch(_e){}
   try{navigator.vibrate&&navigator.vibrate(10)}catch(_e){}
  },{capture:true,passive:true});
+})();
+</script>
+<script id="gsfHomeShellFit">
+/* GSF_HOME_SHELL_FIT: the action cards always end above the shell Game Bar.
+   Night Arena removed the hidden footer reserve, so the hidden in-page nav row now
+   takes exactly the height the shell Game Bar (plus the iOS safe area) covers in this frame. */
+(()=>{
+ const nav=document.querySelector("#home154 .bottomNav");if(!nav)return;
+ let last=-1;
+ const fit=()=>{
+  try{
+   const fe=window.frameElement,P=window.parent;if(!fe||!P||P===window)return;
+   if(!document.documentElement.classList.contains("gsf-v343-parent-ready"))return;
+   const bar=P.document.getElementById("gsf-global-gamebar");if(!bar)return;
+   const cs=P.getComputedStyle(bar);if(cs.display==="none"||cs.visibility==="hidden")return;
+   const fr=fe.getBoundingClientRect(),r=bar.getBoundingClientRect();if(!r.height)return;
+   const need=Math.max(68,Math.ceil(fr.bottom-r.top+12));
+   if(need===last)return;last=need;
+   for(const k of ["height","min-height","max-height","flex-basis"])nav.style.setProperty(k,need+"px","important");
+  }catch(_e){}
+ };
+ fit();
+ let n=0;const t=setInterval(()=>{fit();if(++n>24)clearInterval(t)},500);
+ window.addEventListener("resize",fit,{passive:true});
+ window.addEventListener("message",e=>{if(e.origin===location.origin&&e.data&&e.data.type==="GSF_APP_RESUME")setTimeout(fit,150)});
 })();
 </script>
 <script id="gsf-alive-v418">

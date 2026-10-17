@@ -16382,14 +16382,14 @@ if GSF_WEB_MODE:
       border:1px solid rgba(159,193,218,.34);
       border-radius:30px;
       overflow:hidden;
-      background:#FAFDFF;
+      background:#050D16;
       box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.92);
       transform:translateY(10px) scale(.975);
       opacity:0;
       transition:transform .32s cubic-bezier(.16,.84,.24,1),opacity .24s ease;
     }
     #gsf-social-overlay-v159.is-open .gsf-social-shell{transform:translateY(0) scale(1);opacity:1}
-    #gsf-social-overlay-v159 iframe{width:100%;height:100%;border:0;background:#FAFDFF}
+    #gsf-social-overlay-v159 iframe{width:100%;height:100%;border:0;background:#050D16}
     #gsf-social-overlay-v159 .gsf-social-close{
       position:absolute;z-index:5;right:13px;top:12px;width:34px;height:34px;
       border:1px solid rgba(158,190,216,.34);border-radius:12px;
@@ -16501,13 +16501,13 @@ if GSF_WEB_MODE:
     #gsf-creator-hub-live-v160.is-open{opacity:1;visibility:visible;pointer-events:auto}
     #gsf-creator-hub-live-v160 .gsf-hub-shell-v160{
       position:relative;width:min(1220px,calc(100vw - 30px));height:min(720px,calc(100dvh - 118px));
-      border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:#FAFDFF;
+      border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:#050D16;
       box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.94);
       transform:scale(.985);opacity:0;
       transition:transform .30s cubic-bezier(.16,.84,.24,1),opacity .24s ease
     }
     #gsf-creator-hub-live-v160.is-open .gsf-hub-shell-v160{transform:scale(1);opacity:1}
-    #gsf-creator-hub-live-v160 iframe{width:100%;height:100%;border:0;background:#FAFDFF}
+    #gsf-creator-hub-live-v160 iframe{width:100%;height:100%;border:0;background:#050D16}
     #gsf-creator-hub-live-v160 .gsf-hub-close-v160{
       position:absolute;z-index:7;right:13px;top:11px;width:34px;height:34px;
       border:1px solid rgba(158,190,216,.34);border-radius:12px;background:rgba(255,255,255,.94);
@@ -16557,7 +16557,7 @@ if GSF_WEB_MODE:
 
 <style id="v393EditorShellCleanup">
 @media(max-width:760px){
-  #gsf-editor-overlay-v220.is-open{overflow:hidden!important;background:#FAFDFF!important}
+  #gsf-editor-overlay-v220.is-open{overflow:hidden!important;background:#050D16!important}
   #gsf-editor-overlay-v220.is-open [class*="close" i],
   #gsf-editor-overlay-v220.is-open [id*="close" i],
   .v393EditorChromeGone{display:none!important}
@@ -16841,9 +16841,9 @@ if GSF_WEB_MODE:
     <style id="gsf-v221-ai-shell">
     #gsf-ai-overlay-v221{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483654;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(222,238,247,.46);-webkit-backdrop-filter:blur(5px) saturate(.98);backdrop-filter:blur(5px) saturate(.98);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
     #gsf-ai-overlay-v221.is-open{opacity:1;visibility:visible;pointer-events:auto}
-    #gsf-ai-overlay-v221 .gsf-ai-shell{position:relative;width:min(1240px,calc(100vw - 30px));height:min(730px,calc(100dvh - 118px));border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:#FAFDFF;box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.94);transform:translateY(10px) scale(.975);opacity:0;transition:transform .32s cubic-bezier(.16,.84,.24,1),opacity .24s ease}
+    #gsf-ai-overlay-v221 .gsf-ai-shell{position:relative;width:min(1240px,calc(100vw - 30px));height:min(730px,calc(100dvh - 118px));border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:#050D16;box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.94);transform:translateY(10px) scale(.975);opacity:0;transition:transform .32s cubic-bezier(.16,.84,.24,1),opacity .24s ease}
     #gsf-ai-overlay-v221.is-open .gsf-ai-shell{transform:translateY(0) scale(1);opacity:1}
-    #gsf-ai-overlay-v221 iframe{width:100%;height:100%;border:0;background:#FAFDFF}
+    #gsf-ai-overlay-v221 iframe{width:100%;height:100%;border:0;background:#050D16}
     #gsf-ai-overlay-v221 .gsf-ai-close{position:absolute;z-index:7;right:13px;top:11px;width:34px;height:34px;border-radius:12px;border:1px solid rgba(158,190,216,.34);background:rgba(255,255,255,.94);color:#617B9D;font-size:20px;cursor:pointer;box-shadow:0 7px 18px rgba(64,104,143,.09)}
     @media(max-width:760px){#gsf-ai-overlay-v221{bottom:70px;padding:8px 5px}#gsf-ai-overlay-v221 .gsf-ai-shell{width:calc(100vw - 10px);height:calc(100dvh - 84px);border-radius:22px}#gsf-ai-overlay-v221 .gsf-ai-close{right:8px;top:7px;width:31px;height:31px}}
     </style>
@@ -16917,9 +16917,9 @@ if GSF_WEB_MODE:
     <style id="gsf-v223-account-shell">
     #gsf-account-overlay-v223{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483662;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(222,238,247,.46);-webkit-backdrop-filter:blur(5px) saturate(.98);backdrop-filter:blur(5px) saturate(.98);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
     #gsf-account-overlay-v223.is-open{opacity:1;visibility:visible;pointer-events:auto}
-    #gsf-account-overlay-v223 .gsf-account-shell{position:relative;width:min(980px,calc(100vw - 30px));height:min(680px,calc(100dvh - 118px));border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:#FAFDFF;box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.94);transform:translateY(10px) scale(.975);opacity:0;transition:transform .30s cubic-bezier(.16,.84,.24,1),opacity .24s ease}
+    #gsf-account-overlay-v223 .gsf-account-shell{position:relative;width:min(980px,calc(100vw - 30px));height:min(680px,calc(100dvh - 118px));border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:#050D16;box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.94);transform:translateY(10px) scale(.975);opacity:0;transition:transform .30s cubic-bezier(.16,.84,.24,1),opacity .24s ease}
     #gsf-account-overlay-v223.is-open .gsf-account-shell{transform:translateY(0) scale(1);opacity:1}
-    #gsf-account-overlay-v223 iframe{width:100%;height:100%;border:0;background:#FAFDFF}
+    #gsf-account-overlay-v223 iframe{width:100%;height:100%;border:0;background:#050D16}
     #gsf-account-overlay-v223 .gsf-account-close{position:absolute;z-index:7;right:13px;top:11px;width:34px;height:34px;border:1px solid rgba(158,190,216,.34);border-radius:12px;background:rgba(255,255,255,.94);color:#617B9D;font-size:20px;cursor:pointer}
     @media(max-width:760px){#gsf-account-overlay-v223{bottom:70px;padding:8px 5px}#gsf-account-overlay-v223 .gsf-account-shell{width:calc(100vw - 10px);height:calc(100dvh - 84px);border-radius:22px}#gsf-account-overlay-v223 .gsf-account-close{right:8px;top:7px;width:31px;height:31px}}
     </style>
@@ -16953,7 +16953,7 @@ if GSF_WEB_MODE:
       display:flex!important;
       align-items:stretch!important;
       justify-content:stretch!important;
-      background:#FAFDFF!important;
+      background:#050D16!important;
       -webkit-backdrop-filter:none!important;
       backdrop-filter:none!important;
       opacity:0;
@@ -16986,7 +16986,7 @@ if GSF_WEB_MODE:
       margin:0!important;
       border:0!important;
       border-radius:0!important;
-      background:#FAFDFF!important;
+      background:#050D16!important;
       box-shadow:none!important;
       opacity:1!important;
       transform:translateX(10px)!important;
@@ -17008,7 +17008,7 @@ if GSF_WEB_MODE:
     #gsf-editor-overlay-v220 iframe,
     #gsf-ai-overlay-v221 iframe,
     #gsf-account-overlay-v223 iframe{
-      background:#FAFDFF!important;
+      background:#050D16!important;
     }
 
     /* One Game Bar owned by the active page, never the Home underneath. */
@@ -17130,7 +17130,7 @@ if GSF_WEB_MODE:
     #gsf-ai-overlay-v221,
     #gsf-account-overlay-v223{
       background:
-        #FAFDFF!important;
+        #050D16!important;
       overflow:hidden!important;
     }
 
@@ -17286,7 +17286,7 @@ if GSF_WEB_MODE:
       width:100%!important;
       height:100%!important;
       border:0!important;
-      background:#FAFDFF!important;
+      background:#050D16!important;
     }
 
     #gsf-page-nav-v249{
@@ -17881,7 +17881,7 @@ if GSF_WEB_MODE:
           #gsf-global-footer .v343Bug{grid-column:3;justify-self:end;border:0;background:transparent;color:#6983a4;font:800 7px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:3px 0;white-space:nowrap}
           #gsf-editor-overlay-v220,#gsf-short-overlay-v343,#gsf-creator-hub-live-v160,#gsf-ai-overlay-v221,#gsf-social-overlay-v159,#gsf-account-overlay-v223{position:fixed!important;left:0!important;right:0!important;top:var(--gsf-shell-content-top)!important;bottom:var(--gsf-shell-content-bottom)!important;height:auto!important;max-height:none!important;z-index:var(--gsf-shell-overlay-z)!important;box-sizing:border-box!important}
           #gsf-editor-overlay-v220 .gsf-editor-shell,#gsf-creator-hub-live-v160 .gsf-hub-shell-v160,#gsf-ai-overlay-v221 .gsf-ai-shell,#gsf-social-overlay-v159 .gsf-social-shell,#gsf-account-overlay-v223 .gsf-account-shell{position:absolute!important;inset:0!important;min-height:0!important;max-height:none!important}
-          #gsf-short-overlay-v343{display:flex;align-items:center;justify-content:center;padding:8px;background:#FAFDFF;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease,visibility .18s ease}
+          #gsf-short-overlay-v343{display:flex;align-items:center;justify-content:center;padding:8px;background:#050D16;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease,visibility .18s ease}
           #gsf-short-overlay-v343.is-open{opacity:1;visibility:visible;pointer-events:auto}
           #gsf-short-overlay-v343 .v343ShortShell{position:relative;width:min(680px,calc(100vw - 20px));height:100%;min-height:0;display:grid;grid-template-rows:auto 1fr auto;gap:9px;border:1px solid rgba(150,184,214,.24);border-radius:22px;background:rgba(255,255,255,.90);box-shadow:0 22px 58px rgba(49,94,135,.12);overflow:hidden;padding:12px;box-sizing:border-box}
           #gsf-short-overlay-v343 .v343ShortHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px} #gsf-short-overlay-v343 h2{margin:0;color:#0D2A66;font:900 21px/1.05 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif} #gsf-short-overlay-v343 p{margin:4px 0 0;color:#7185A6;font:700 10px/1.25 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
