@@ -55,7 +55,7 @@ def check_editor_uses_shared_header_and_dark_canvas_to_bottom(size):
         engine = getattr(p, os.environ.get('GSF_BROWSER', 'chromium'))
         executable = os.environ.get('GSF_CHROMIUM_EXECUTABLE') or shutil.which('chromium')
         options = {'executable_path': executable, 'args': ['--no-sandbox']} if engine.name == 'chromium' and executable else {}
-        if not executable and not Path(engine.executable_path).exists():
+        if not (engine.name == 'chromium' and executable) and not Path(engine.executable_path).exists():
             raise unittest.SkipTest('Install Playwright browser to run shell geometry checks')
         browser = engine.launch(**options)
         page = browser.new_page(viewport=dict(zip(('width', 'height'), size)),
@@ -66,6 +66,7 @@ def check_editor_uses_shared_header_and_dark_canvas_to_bottom(size):
         page.goto('http://gsf.test/')
         for script in scripts:
             page.evaluate(script)
+        page.wait_for_function('document.querySelector(".v343AccountName")?.textContent==="Creator"')
         page.evaluate('window.sharedHeader=document.getElementById("gsf-global-header"); window.sharedBar=document.getElementById("gsf-global-gamebar")')
         header = page.locator('#gsf-global-header').evaluate('(e)=>({html:e.innerHTML, height:e.offsetHeight, background:getComputedStyle(e).background, padding:getComputedStyle(e).padding, filter:getComputedStyle(e).backdropFilter})')
         for route in ('hub', 'editor', 'home', 'editor'):
