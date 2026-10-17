@@ -1076,10 +1076,15 @@
         "docs/architecture/gsf-alive.md",
         "tests/js/gsf_alive_v418*",
         "tests/test_alive_runtime_v418.py",
+        "tests/visual/gsf_alive_check.py",
         "tools/gsf_alive_inline.py",
-        "web/gsf_alive_v418.js"
+        "web/ai_v221_component/index.html",
+        "web/creator_hub_v156_component/index.html",
+        "web/gsf_alive_v418.js",
+        "web/home_v154_component/index.html",
+        "web/share_v156_component/index.html"
       ],
-      "scope": "alive: app-wide Alive 2 runtime (heard/guided/carried) shared by every page; page integration after night-arena/#163 handoff",
+      "scope": "alive: app-wide Alive 2 runtime (heard/guided/carried) integrated into Home, Crea con IA, Crea Short and Creator Hub (owner go-ahead 2026-10-17); mobile and desktop Game Editor follow when their claims release",
       "state": "active"
     },
     {
