@@ -22,8 +22,9 @@ class NavigationStability(unittest.TestCase):
             assert_gamebar(page)
             self.assertFalse(errors,errors)
 
-    def test_repeated_mobile_and_desktop_sequences(self):
-        for mobile in (True,False):
+    def test_repeated_mobile_sequences(self):
+        # GSF is phone-only (V419): desktop browsers get the mobile-only page instead.
+        for mobile in (True,):
             with self.subTest(mobile=mobile),browser_page(mobile) as (page,errors,_):
                 # Warm the finite lazy surfaces before comparing DOM counts.
                 for target in ('hub','ai','editor','short','home'):navigate(page,target)
@@ -67,19 +68,25 @@ class NavigationStability(unittest.TestCase):
             assert_gamebar(page)
             self.assertFalse(errors,errors)
 
-    def test_desktop_create_short_exits_editor_route(self):
-        with browser_page(False) as (page,errors,_):
-            navigate(page,'editor')
-            frame=page.frame_locator('#gsf-editor-overlay-v220 iframe')
-            frame.locator('body').wait_for()
-            # Observe the render trigger without performing an expensive render.
-            page.evaluate("""()=>{const host=document.createElement('div');host.className='st-key-gsf-major-create-short';const button=document.createElement('button');button.textContent='Render test sink';button.onclick=()=>window.__renderTriggered=true;host.appendChild(button);document.body.appendChild(host)}""")
-            frame.locator('body').evaluate("()=>parent.postMessage({type:'streamlit:setComponentValue',value:{zoom:1.3,editorAction:'create_short'}},location.origin)")
-            page.wait_for_function('()=>window.__renderTriggered===true')
-            self.assertEqual(page.evaluate("()=>window.GSFNavigation.snapshot().target"),'home')
-            page.evaluate("()=>window.dispatchEvent(new Event('focus'))")
-            self.assertEqual(page.locator('#gsf-editor-overlay-v220').get_attribute('aria-hidden'),'true')
-            assert_gamebar(page)
+    def test_desktop_gets_mobile_only_page(self):
+        # GSF_MOBILE_ONLY_V419: a desktop browser never loads the app, only the gate page.
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            engine=os.environ.get('GSF_BROWSER','chromium')
+            opts={'headless':True}
+            if engine=='chromium':opts.update(executable_path=os.environ.get('GSF_CHROMIUM','/usr/bin/chromium'),args=['--no-sandbox'])
+            browser=getattr(p,engine).launch(**opts)
+            try:
+                page=browser.new_context(viewport={'width':1440,'height':1000}).new_page()
+                errors=[]
+                page.on('pageerror',lambda e:errors.append(str(e)))
+                page.goto(os.environ['GSF_BASE_URL'],wait_until='load',timeout=60000)
+                self.assertIn('GSF_MOBILE_ONLY_GATE_V419',page.content())
+                self.assertEqual(page.locator('[data-testid=stApp]').count(),0)
+                self.assertEqual(page.locator('#qr svg').count(),1)
+                self.assertFalse(errors,errors)
+            finally:
+                browser.close()
 
     def test_editor_bridge_remount_adopts_dirty_state_and_history(self):
         with browser_page() as (page,errors,ctx):

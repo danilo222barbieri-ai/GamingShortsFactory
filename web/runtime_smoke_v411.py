@@ -44,8 +44,17 @@ def dump_generated_creator_hub_state():
 
 status,headers,body=request('/healthz')
 assert status==200 and json.loads(body)['ok'] is True
-status,headers,body=request('/',headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0 Safari/537.36'})
-assert status==200 and b'Streamlit' in body and b'GSF Mobile Only Gate' not in body
+# GSF_MOBILE_ONLY_V419: phones get the app, desktop and tablets get the mobile-only page.
+status,headers,body=request('/')
+assert status==200 and b'Streamlit' in body and b'GSF_MOBILE_ONLY_GATE_V419' not in body, ('phone root',status)
+for desktop_ua in ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36',
+                   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/19.0 Safari/605.1.15',
+                   'Mozilla/5.0 (iPad; CPU OS 19_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/19.0 Mobile/15E148 Safari/604.1'):
+    for gated in ('/','/?gsf_hub=social'):
+        status,headers,body=request(gated,headers={'User-Agent':desktop_ua})
+        assert status==200 and b'GSF_MOBILE_ONLY_GATE_V419' in body and b'Streamlit' not in body, ('desktop gate',gated,desktop_ua,status)
+        assert 'no-store' in str(headers.get('Cache-Control','')), ('desktop gate cache',headers.get('Cache-Control'))
+print('V419 mobile-only gate: PASS',flush=True)
 for path,marker in [('/creator-hub-v156/','V403_CREATOR_HUB_SIMPLIFIED'),('/ai-v221/','id="ai404"'),('/editor-live/','V395_MOBILE_EDITOR_ATOMIC_SKIN'),('/share-v156/','V413_CREA_SHORT')]:
     status,headers,body=request(path)
     assert status==200 and marker in body.decode('utf-8'), (path,status)

@@ -48,7 +48,7 @@ RUN python -c "import base64,pathlib,struct; p=pathlib.Path('/app/web/app_icons'
     python -c "import pathlib,struct; p=pathlib.Path('/app/web/app_icons'); dims={n:struct.unpack('>II',(p/n).read_bytes()[16:24]) for n in ('app-icon-192.png','app-icon-512.png')}; assert dims['app-icon-192.png']==(192,192); assert dims['app-icon-512.png']==(512,512); print('GSF PWA icons 192/512: PASS')"
 
 # Single explicit third-party bridge: Streamlit's own static index.html is not a
-# repository file, so the top-level browser bridge (AdSense + V407 desktop frame)
+# repository file, so the top-level browser bridge (navigation lifecycle + AdSense)
 # is installed into the Streamlit package here, exactly once and idempotently.
 RUN python /app/web/install_adsense_bridge.py && \
     python -c "import pathlib,streamlit; s=(pathlib.Path(streamlit.__file__).parent/'static'/'index.html').read_text(); assert s.count('id=\"gsf-adsense-bridge\"')==1; print('GSF Streamlit bridge: PASS')"
