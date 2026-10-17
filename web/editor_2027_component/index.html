@@ -1492,7 +1492,7 @@ html body #ng27#ng27 .createShortJourneyBtn *{color:var(--na-cta-ink)!important}
  fitEditorViewport();
  window.setTimeout(fitEditorViewport,120);
  window.setTimeout(()=>{
-   if(!hostVideoUrl){
+   if(!hostVideoUrl&&window.parent===window){
      hostVideoUrl='/editor-media/current';
      video.src=hostVideoUrl;
      video.preload='auto';

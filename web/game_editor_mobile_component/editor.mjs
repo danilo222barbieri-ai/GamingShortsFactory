@@ -540,6 +540,9 @@ window.addEventListener("message", (event) => {
   if (event.data.type === "GSF_GAME_EDITOR_INIT") receiveInit(event.data);
   if (event.data.type === "GSF_GAME_EDITOR_SAVE_STATUS") receiveSaveStatus(event.data);
   if (event.data.type === "GSF_GAME_EDITOR_SHELL_CLOSE") exitFullscreenForShellClose();
+  if (event.data.type === "GSF_APP_SUSPEND") suspendEditor();
+  if (event.data.type === "GSF_APP_RESUME") resumeEditor();
+  if (event.data.type === "GSF_APP_BLUR") finishGesture({ cancelled: true });
 });
 
 video.addEventListener("loadedmetadata", () => {
@@ -756,7 +759,25 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-window.addEventListener("pagehide", () => saveSequencer.dispose(), { once: true });
+// A BFCache pagehide is a suspension, not destruction. Never discard dirty edits.
+function suspendEditor() {
+  finishGesture({ cancelled: true });
+  video.pause();
+  saveSequencer.flush();
+  exitFullscreenForShellClose();
+}
+function resumeEditor() {
+  finishGesture({ cancelled: true });
+  fullscreenFallback = false;
+  notifyFullscreen(document.fullscreenElement === app);
+  renderState(history.value);
+}
+document.addEventListener("visibilitychange", () => document.hidden ? suspendEditor() : resumeEditor());
+window.addEventListener("pagehide", suspendEditor);
+window.addEventListener("pageshow", resumeEditor);
+window.addEventListener("blur", () => finishGesture({ cancelled: true }));
+document.addEventListener("freeze", suspendEditor);
+document.addEventListener("resume", resumeEditor);
 
 overlay = installOverlay({
   app,

@@ -246,5 +246,33 @@ def main():
           "active after cycles:", [c["active"] for c in metrics["cycles"]])
 
 
+def _annotate(title, text):
+    """Surface a failure as a GitHub annotation (readable through the API even when raw logs are not)."""
+    body = str(text or "").strip()[-3500:].replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+    print(f"::error title={title}::{body}", flush=True)
+
+
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BaseException as exc:  # report, then fail exactly as before
+        import traceback
+        _annotate("GSF visual check", traceback.format_exc())
+        raise
+    # Exercise the parent app, including lifecycle cleanup, in the existing
+    # blocking Production Gate (the standalone Editor check cannot cover it).
+    import sys
+    import unittest
+    sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+    os.environ.setdefault("GSF_BASE_URL",BASE)
+    os.environ.setdefault("GSF_BROWSER","webkit")
+    os.environ.setdefault("GSF_TEST_MEDIA","1")
+    suite=unittest.TestSuite()
+    loader=unittest.TestLoader()
+    for module in ("test_runtime_import_stability","test_navigation_stability","test_mobile_resume_stability"):
+        suite.addTests(loader.loadTestsFromName(module))
+    result=unittest.TextTestRunner(verbosity=2).run(suite)
+    for case,trace in list(result.failures)+list(result.errors):
+        _annotate(f"GSF nav: {case.id().split('.')[-1]}",trace)
+    if not result.wasSuccessful():
+        raise SystemExit(1)
