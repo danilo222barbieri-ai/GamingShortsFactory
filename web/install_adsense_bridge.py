@@ -4,7 +4,6 @@ import re
 from pathlib import Path
 import streamlit
 
-from gsf_desktop_shell_v407 import build_desktop_shell_html
 
 index=Path(streamlit.__file__).resolve().parent/"static"/"index.html"
 if not index.is_file():
@@ -65,17 +64,11 @@ index.write_text(s,encoding="utf-8")
 
 marker='id="gsf-adsense-bridge"'
 if marker in s:
-    print("V105.7/V407 browser bridge already installed:",index)
+    print("V105.7 browser bridge already installed:",index)
     raise SystemExit(0)
 
-# V407 reuses the same Streamlit top-level browser bridge as AdSense. This is
-# intentional: desktop is only a browser frame around the existing mobile app,
-# so no second Streamlit application or duplicated page tree is created.
-shell=build_desktop_shell_html()
-style_start=shell.index('<style id="gsf-desktop-mobile-shell-v407">')
-style_end=shell.index('</style>',style_start)+len('</style>')
-v407_style=shell[style_start:style_end]
-
+# GSF_MOBILE_ONLY_V419: GSF is phone-only (desktop gets /__gsf_mobile_gate at the
+# edge), so the old desktop frame and its two ad rails are no longer installed.
 script=r'''
 <script id="gsf-adsense-bridge">
 (function(){
@@ -142,101 +135,8 @@ script=r'''
     });
   }
 
-  function ensureRail(id,sideClass){
-    var rail=document.getElementById(id);
-    if(!rail){
-      rail=document.createElement("aside");
-      rail.id=id;
-      rail.className="gsf-desktop-ad-rail "+sideClass;
-      rail.setAttribute("aria-label",sideClass.indexOf("left")>=0?"Pubblicità sinistra":"Pubblicità destra");
-      var content=document.createElement("div");
-      content.className="gsf-desktop-ad-content";
-      rail.appendChild(content);
-      document.body.appendChild(rail);
-    }
-    return rail;
-  }
-
-  function createRail(id,sideClass,source){
-    if(!source) return null;
-    var client=source.dataset.adClient||"";
-    var slot=source.dataset.adSlot||"";
-    if(!validClient(client) || !validSlot(slot)) return null;
-
-    var rail=ensureRail(id,sideClass);
-    var content=rail.querySelector(".gsf-desktop-ad-content");
-    var ad=content && content.querySelector(".gsf-v407-rail-ad");
-    var changed=!ad || ad.dataset.adClient!==client || ad.dataset.adSlot!==slot;
-    if(changed){
-      ad=document.createElement("div");
-      ad.className="gsf-v1057-ad gsf-v1057-live gsf-v407-rail-ad";
-      ad.dataset.adClient=client;
-      ad.dataset.adSlot=slot;
-      ad.dataset.gsfPlacement=id;
-      var host=document.createElement("div");
-      host.className="gsf-v1057-ad-mount";
-      host.setAttribute("aria-label","Annuncio Google");
-      ad.appendChild(host);
-      content.replaceChildren(ad);
-    }
-    return ad;
-  }
-
-  function createPreviewRail(id,sideClass,label){
-    var rail=ensureRail(id,sideClass);
-    var content=rail.querySelector(".gsf-desktop-ad-content");
-    if(content.querySelector(".gsf-desktop-ad-placeholder")) return rail;
-
-    var placeholder=document.createElement("div");
-    placeholder.className="gsf-desktop-ad-placeholder";
-    var kicker=document.createElement("span");
-    kicker.className="gsf-desktop-ad-kicker";
-    kicker.textContent="AD";
-    var title=document.createElement("strong");
-    title.textContent="SPAZIO PUBBLICITARIO";
-    var side=document.createElement("small");
-    side.textContent="RAIL "+label;
-    placeholder.append(kicker,title,side);
-    content.replaceChildren(placeholder);
-    return rail;
-  }
-
-  function removeDesktopRails(){
-    ["gsf-desktop-ad-left","gsf-desktop-ad-right"].forEach(function(id){
-      var rail=document.getElementById(id);
-      if(rail) rail.remove();
-    });
-  }
-
-  function syncDesktopRails(){
-    var liveSources=Array.from(document.querySelectorAll(
-      ".gsf-v1057-live[data-ad-client][data-ad-slot]:not(.gsf-v407-rail-ad)"
-    ));
-    if(liveSources.length){
-      var left=createRail("gsf-desktop-ad-left","gsf-desktop-ad-left",liveSources[0]);
-      var right=createRail("gsf-desktop-ad-right","gsf-desktop-ad-right",liveSources[1]||liveSources[0]);
-      mount(left);
-      mount(right);
-      return;
-    }
-
-    var previewSources=Array.from(document.querySelectorAll(
-      ".gsf-v1057-ad:not(.gsf-v1057-live)"
-    )).filter(function(node){
-      return getComputedStyle(node).display!=="none";
-    });
-    if(previewSources.length){
-      createPreviewRail("gsf-desktop-ad-left","gsf-desktop-ad-left","SINISTRA");
-      createPreviewRail("gsf-desktop-ad-right","gsf-desktop-ad-right","DESTRA");
-      return;
-    }
-
-    removeDesktopRails();
-  }
-
   function scan(){
     document.querySelectorAll(".gsf-v1057-live[data-ad-client][data-ad-slot]").forEach(mount);
-    syncDesktopRails();
   }
 
   function boot(){
@@ -257,6 +157,6 @@ script=r'''
 needle="</head>"
 if needle not in s:
     raise RuntimeError("Streamlit </head> not found")
-s=s.replace(needle,v407_style+"\n"+script+"\n"+needle,1)
+s=s.replace(needle,script+"\n"+needle,1)
 index.write_text(s,encoding="utf-8")
-print("V105.7 AdSense + V407 desktop mobile shell bridge installed:",index)
+print("V105.7 AdSense bridge installed:",index)
