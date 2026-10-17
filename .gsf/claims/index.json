@@ -850,6 +850,13 @@
             "tests/test_mobile_game_editor_2026.py"
           ],
           "to": "stability-unified-navigation-and-mobile-resume-l-395391"
+        },
+        "owner_handoff_20261017": {
+          "authorization": "Owner asked on 2026-10-17 to close the desktop version (mobile-only app) and remove desktop-only weight. This claim's work merged in PR #163 (4f0e12a); its branch has been idle since 2026-10-16 12:12 UTC.",
+          "paths": [
+            "web/install_adsense_bridge.py"
+          ],
+          "to": "mobile-only (next claim)"
         }
       },
       "id": "stability-unified-navigation-and-mobile-resume-l-395391",
@@ -864,7 +871,6 @@
         "web/__init__.py",
         "web/editor_2027_component/index.html",
         "web/gsf_navigation_lifecycle.js",
-        "web/install_adsense_bridge.py",
         "web/test_v286_global_gamebar.py",
         "web/test_v302_global_live_gamebar.py"
       ],
