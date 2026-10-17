@@ -16566,18 +16566,7 @@ if GSF_WEB_MODE:
 <!-- v393EditorParentCleanup: lifecycle owned by GSFNavigation -->
 
 
-<!-- V394_MOBILE_EDITOR_FOOTER_RESTORE -->
-<style id="v394EditorFooterRestore">
-@media(max-width:760px){
-  html.v394EditorActive #gsf-global-footer{
-    display:block!important;
-    visibility:visible!important;
-    opacity:1!important;
-    pointer-events:auto!important;
-  }
-}
-</style>
-<!-- v394EditorFooterRestoreRuntime: lifecycle owned by GSFNavigation -->
+<!-- V394_MOBILE_EDITOR_FOOTER_RESTORE retired: the global shell owns footer visibility on every route. -->
 
 <style id="gsf-v220-editor-shell">
     #gsf-editor-overlay-v220{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483655;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(222,238,247,.46);-webkit-backdrop-filter:blur(5px) saturate(.98);backdrop-filter:blur(5px) saturate(.98);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
@@ -17852,6 +17841,14 @@ if GSF_WEB_MODE:
       const SURFACES=['gsf-social-overlay-v159','gsf-creator-hub-live-v160','gsf-editor-overlay-v220','gsf-ai-overlay-v221','gsf-account-overlay-v223','gsf-short-overlay-v343'];
 
       const ensureStyle=()=>{
+        // iOS must extend the shared dark document canvas into the safe areas.
+        // Preserve Streamlit's viewport settings and update the TOP document,
+        // since viewport-fit on the Editor iframe cannot affect the device.
+        let viewport=D.querySelector('meta[name="viewport"]');
+        if(!viewport){viewport=D.createElement('meta');viewport.name='viewport';viewport.content='width=device-width,initial-scale=1';D.head.appendChild(viewport)}
+        if(!/(?:^|,)\s*viewport-fit\s*=\s*cover\s*(?:,|$)/i.test(viewport.content)){
+          viewport.content=viewport.content.replace(/(?:^|,)\s*viewport-fit\s*=[^,]*/ig,'')+',viewport-fit=cover';
+        }
         let s=D.getElementById('gsf-global-shell-v343-style');
         if(s)return s;
         s=D.createElement('style');s.id='gsf-global-shell-v343-style';

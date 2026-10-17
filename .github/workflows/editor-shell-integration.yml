@@ -1,0 +1,33 @@
+name: Editor shell integration
+on:
+  pull_request:
+    paths:
+      - 'app.py'
+      - 'web/gsf_navigation_lifecycle.js'
+      - 'tests/test_editor_shell_integration.py'
+      - '.github/workflows/editor-shell-integration.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'app.py'
+      - 'web/gsf_navigation_lifecycle.js'
+      - 'tests/test_editor_shell_integration.py'
+      - '.github/workflows/editor-shell-integration.yml'
+permissions:
+  contents: read
+jobs:
+  browsers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install playwright
+      - run: python -m playwright install --with-deps chromium webkit
+      - name: iPhone and desktop shell geometry in Chromium
+        run: python tests/test_editor_shell_integration.py
+      - name: iPhone and desktop shell geometry in WebKit
+        run: python tests/test_editor_shell_integration.py
+        env:
+          GSF_BROWSER: webkit
