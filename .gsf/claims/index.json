@@ -486,7 +486,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -1070,7 +1070,7 @@
         "web/publish_short_v405_component/**",
         "web/share_v156_component/**"
       ],
-      "scope": "ui: Night Arena single look \u2014 shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
+      "scope": "ui: Night Arena single look — shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
       "state": "completed"
     },
     {
@@ -1127,11 +1127,14 @@
       "owner": "chat/mobile-only-close-the-desktop-version-behind-a-p-ee72b5",
       "paths": [
         ".github/workflows/gsf-ci.yml",
+        "Dockerfile",
+        "PROJECT_STATUS.md",
         "tests/test_mobile_only_gate.py",
         "web/gsf_desktop_shell_v407.py",
         "web/install_adsense_bridge.py",
         "web/mobile_only_gate.html",
         "web/nginx.conf.template",
+        "web/runtime_smoke_v411.py",
         "web/test_v267_global_desktop_polish.py",
         "web/test_v268_1_desktop_to_mobile_parity.py",
         "web/test_v268_desktop_aesthetic_calibration.py",
