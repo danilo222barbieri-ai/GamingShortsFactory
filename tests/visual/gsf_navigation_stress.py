@@ -69,6 +69,14 @@ def browser_page(mobile=True):
             ctx.add_init_script(Path(os.environ["GSF_DOM_DIAGNOSTICS"]).read_text())
         page = ctx.new_page()
         page.set_default_timeout(15000)
+        # Headless WebKit on the Linux runner can stop issuing rendering updates
+        # (requestAnimationFrame stalls in every frame while timers, visibility and
+        # focus stay normal). Playwright's default 'raf' polling would then never
+        # re-check a condition, so poll on a timer instead.
+        native_wait=page.wait_for_function
+        def wait_for_function(expression,arg=None,timeout=None,polling=100):
+            return native_wait(expression,arg=arg,timeout=timeout,polling=polling)
+        page.wait_for_function=wait_for_function
         errors=[]
         page.on('pageerror',lambda e:errors.append('pageerror: '+str(e)))
         def console_error(message):
@@ -126,9 +134,9 @@ def browser_page(mobile=True):
 
 def navigate(page,target,ready=True):
     if target in ('home','hub','projects','live'):
-        page.locator(f'#gsf-global-gamebar [data-page="{target}"]').click(no_wait_after=True)
+        tap(page.locator(f'#gsf-global-gamebar [data-page="{target}"]'))
     elif target=='profile':
-        page.locator('#gsf-global-header .v343Account').click(no_wait_after=True)
+        tap(page.locator('#gsf-global-header .v343Account'))
     else:
         # The public protocol used by Home CTAs, AI results and Editor actions.
         page.evaluate("t=>window.postMessage({type:'GSF_SHELL_NAV',target:t},location.origin)",target)
@@ -150,6 +158,21 @@ def navigate(page,target,ready=True):
         page.wait_for_function("()=>{const d=document.querySelector('#gsf-social-overlay-v159 iframe')?.contentDocument;return d?.readyState==='complete'&&!!d.querySelector('#crea413')}")
     assert_gamebar(page)
 
+def tap(locator):
+    """Click like a finger, without Playwright's rAF-based stability wait.
+
+    The control must be visible and be the element actually hit at its centre
+    (nothing covering it); then a real pointer click is sent at that point.
+    """
+    locator.wait_for(state='visible')
+    hit=None
+    for _ in range(50):
+        hit=locator.evaluate("e=>{const r=e.getBoundingClientRect();if(!r.width||!r.height)return 'zero-size';const h=e.ownerDocument.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return e.contains(h)?'ok':(h?h.outerHTML.slice(0,120):'nothing')}")
+        if hit=='ok':break
+        time.sleep(.1)
+    assert hit=='ok',f'control is covered or not hittable: {hit}'
+    locator.click(force=True,no_wait_after=True)
+
 def assert_gamebar(page):
     probes=page.locator('#gsf-global-gamebar button').evaluate_all("buttons=>buttons.map(b=>{const r=b.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {page:b.dataset.page,hit:hit?.outerHTML.slice(0,150),ok:r.width>0&&r.height>0&&b.contains(hit)}})")
     assert len(probes)==4 and all(p['ok'] for p in probes),probes
@@ -169,6 +192,6 @@ def force_fallback_fullscreen(page):
     frame=page.frame_locator('#gsf-editor-overlay-v220 iframe')
     frame.locator('#gameEditorApp').wait_for()
     frame.locator('#gameEditorApp').evaluate("e=>e.requestFullscreen=()=>Promise.reject(new Error('Fullscreen unavailable on this device'))")
-    frame.locator('#fullscreenButton').click(no_wait_after=True)
+    tap(frame.locator('#fullscreenButton'))
     page.wait_for_function("()=>document.documentElement.classList.contains('gsf-mobile-editor-fullscreen')")
     return frame

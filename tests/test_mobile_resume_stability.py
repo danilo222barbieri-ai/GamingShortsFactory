@@ -1,7 +1,7 @@
 import os
 import json
 import unittest
-from visual.gsf_navigation_stress import browser_page,navigate,force_fallback_fullscreen,assert_gamebar,metrics
+from visual.gsf_navigation_stress import browser_page,navigate,force_fallback_fullscreen,assert_gamebar,metrics,tap
 
 @unittest.skipUnless(os.environ.get('GSF_BASE_URL'),'requires running GSF_BASE_URL')
 class MobileResumeStability(unittest.TestCase):
@@ -40,9 +40,9 @@ class MobileResumeStability(unittest.TestCase):
                 if target=='editor':
                     self.assertAlmostEqual(frame.locator('#gameEditorApp').evaluate("()=>window.GSFGameEditor2026.getState().zoom"),1.7)
                     force_fallback_fullscreen(page)
-                    frame.locator('[data-tool="look"]').click()
-                    frame.locator('#closeToolSheetButton').click()
-                    frame.locator('#fullscreenButton').click()
+                    tap(frame.locator('[data-tool="look"]'))
+                    tap(frame.locator('#closeToolSheetButton'))
+                    tap(frame.locator('#fullscreenButton'))
                     page.wait_for_function("()=>!document.documentElement.classList.contains('gsf-mobile-editor-fullscreen')")
                 assert_gamebar(page)
                 navigate(page,'home');navigate(page,'hub')

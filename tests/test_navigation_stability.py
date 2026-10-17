@@ -60,7 +60,8 @@ class NavigationStability(unittest.TestCase):
             navigate(page,'projects')
             pending[0].fulfill(response=pending[0].fetch())
             frame.locator('#editorStatus').filter(has_text='Salvato').wait_for(state='attached')
-            page.evaluate("()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))")
+            # Two frames, or 250 ms if the headless engine stalls rendering updates.
+            page.evaluate("()=>new Promise(resolve=>{requestAnimationFrame(()=>requestAnimationFrame(resolve));setTimeout(resolve,250)})")
             self.assertEqual(page.evaluate("()=>window.GSFNavigation.snapshot().target"),'hub')
             self.assertEqual(page.evaluate("()=>window.GSFNavigation.snapshot().section"),'projects')
             assert_gamebar(page)
