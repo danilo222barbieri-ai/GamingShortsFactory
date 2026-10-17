@@ -108,3 +108,17 @@ The currently rebuilt Creator Hub, Crea con IA, Game Editor and Publish Short fl
 ## Verification
 
 Core behavior is covered by `tests/test_gsf_alive.py`. The deterministic patcher `scripts/apply_v405_alive.py` inserts the import/bootstrap into `app.py`, validates the resulting AST, and is idempotent.
+
+## Alive 2 (V418) — app-wide browser runtime
+
+`web/gsf_alive_v418.js` is the browser half of the nervous system. It is inlined verbatim in every surface between `GSF_ALIVE:BEGIN` / `GSF_ALIVE:END` (`python tools/gsf_alive_inline.py --write`; drift fails `tests/test_alive_runtime_v418.py`). Pages are served byte-identical from the repo; no build or startup step rewrites them.
+
+One state, shared by every page iframe through `BroadcastChannel("gsf-alive-v418")` + `localStorage`, reduced by the same pure rules as `gsf_alive.py` (`tests/js/gsf_alive_v418.test.mjs`).
+
+- **Heard** — an echo ring under every tap; each real event gives the orb (`[data-alive-orb]`) a heartbeat and a short handwritten whisper. The breath speed, scale and hue follow the mode (idle, active, working, celebrate, error).
+- **Guided** — `nextAction()` picks the real next step (upload, create_with_ai, choose_moment, create_short, publish, connect_social, retry, new_video). The visible element marked `data-alive-next~="<step>"` gets a breathing guide ring; after 9 quiet seconds one whisper points at it, once per state.
+- **Carried** — while upload, AI search, render or publish runs, every other page shows a companion bubble with the real progress or elapsed time; tapping it goes back. A finished Short celebrates (brand-colour burst, haptic on Android) and the bubble becomes "Short pronto · Pubblica". Returning after two minutes greets with where things stand.
+
+Facts only come from real signals: Home upload lifecycle, Crea con IA search/results/selection, `/share/state` (Short ready, connected socials), `/publish/status`, and `/job/status` for renders. A page that asks for a Short calls `GSFAlive.watchRender()`; the render is followed only if the server reports it running. One page (a `localStorage` leader) polls `/job/status`, and only while a render is tracked.
+
+Page API: `GSFAlive.mount({page, voiceAnchor, dock})`, `emit(type, data)`, `say(text)`, `watchRender()`, `state()`, `next()`. `prefers-reduced-motion` turns off echoes, bursts and breathing. Wired surfaces: Home, Crea con IA, Crea Short, Creator Hub; the mobile and desktop Game Editor join when their claims release.

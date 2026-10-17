@@ -22,10 +22,10 @@ SURFACES = [
     "web/ai_v221_component/index.html",
     "web/share_v156_component/index.html",
     "web/creator_hub_v156_component/index.html",
-    "web/game_editor_mobile_component/index.html",
-    "web/editor_2027_component/index.html",
+    # Next: web/game_editor_mobile_component/index.html and web/editor_2027_component/index.html
+    # once their claims release (2026-10-17 they belong to other chats).
 ]
-BLOCK = re.compile(r"/\* GSF_ALIVE:BEGIN \*/\n(.*?)\n/\* GSF_ALIVE:END \*/", re.S)
+BLOCK = re.compile(r"/\* GSF_ALIVE:BEGIN \*/\n(.*?)\n?/\* GSF_ALIVE:END \*/", re.S)
 
 
 def runtime() -> str:

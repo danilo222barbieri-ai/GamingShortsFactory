@@ -118,6 +118,17 @@
         s = Object.assign(s, { error: msg, error_job: d.job || s.active_job || null, active_job: null, progress: null, celebrate_until: 0, message: msg });
         break;
       }
+      case "sync": {
+        /* Silent facts a page already knows (a video restored after reload, a short ready on the server). */
+        const before = JSON.stringify([s.video_ready, s.short_ready, s.moments_count, s.published]);
+        if (typeof d.video_ready === "boolean") s.video_ready = d.video_ready;
+        if (typeof d.short_ready === "boolean" && !(d.short_ready && s.active_job === "render")) s.short_ready = d.short_ready;
+        if (typeof d.published === "boolean") s.published = d.published;
+        if (Number.isFinite(Number(d.moments_count)) && d.moments_count !== undefined) s.moments_count = Math.max(0, Number(d.moments_count));
+        if (!s.video_ready && !s.short_ready) { s.moments_count = 0; s.moment_selected = false; }
+        if (JSON.stringify([s.video_ready, s.short_ready, s.moments_count, s.published]) === before) return Object.assign({}, prev || BASE, { mode: calmMode(prev || BASE, now) });
+        break;
+      }
       case "recovered":
         s = Object.assign(s, { error: null, error_job: null, message: "Ci siamo." });
         break;
@@ -261,11 +272,11 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
 @keyframes gsfAliveEcho{to{transform:scale(6.5);opacity:0;border-width:1px}}
 #gsf-alive-guide{position:fixed;display:none;border:2px solid rgba(121,210,255,.8);border:2px solid color-mix(in srgb,var(--alive-hue) 75%,white 10%);box-shadow:0 0 22px color-mix(in srgb,var(--alive-hue) 50%,transparent);animation:gsfAliveGuide 2.4s ease-in-out infinite;transition:left .35s ease,top .35s ease,width .35s ease,height .35s ease}
 @keyframes gsfAliveGuide{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:1;transform:scale(1.025)}}
-#gsf-alive-whisper{position:fixed;left:50%;max-width:min(84vw,360px);transform:translate(-50%,6px);opacity:0;display:flex;align-items:center;gap:8px;padding:6px 14px 7px;border-radius:999px;background:rgba(5,13,22,.62);border:1px solid rgba(121,210,255,.3);border:1px solid color-mix(in srgb,var(--alive-hue) 35%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:#EAF6FF;font:600 19px/1.15 "Caveat","Segoe Print","Bradley Hand",cursive;letter-spacing:.2px;text-align:center;transition:opacity .45s ease,transform .45s cubic-bezier(.2,.8,.2,1);text-shadow:0 1px 10px rgba(0,0,0,.4)}
+#gsf-alive-whisper{position:fixed;left:50%;max-width:min(84vw,360px);transform:translate(-50%,6px);opacity:0;display:flex;align-items:center;gap:8px;padding:6px 14px 7px;border-radius:999px;background:rgba(5,13,22,.84);border:1px solid rgba(121,210,255,.3);border:1px solid color-mix(in srgb,var(--alive-hue) 35%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:#EAF6FF;font:600 18px/1.15 "Caveat","Segoe Print","Bradley Hand",cursive;letter-spacing:.2px;text-align:center;transition:opacity .45s ease,transform .45s cubic-bezier(.2,.8,.2,1);text-shadow:0 1px 10px rgba(0,0,0,.4)}
 #gsf-alive-whisper.on{opacity:1;transform:translate(-50%,0)}
 #gsf-alive-whisper i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--alive-hue);box-shadow:0 0 10px var(--alive-hue);animation:gsfAliveBreath var(--alive-dur) ease-in-out infinite}
-#gsf-alive-bubble{position:fixed;left:50%;transform:translate(-50%,-8px) scale(.96);opacity:0;pointer-events:none;display:flex;align-items:center;gap:9px;height:38px;padding:0 14px 0 5px;border-radius:999px;border:1px solid rgba(121,210,255,.35);border:1px solid color-mix(in srgb,var(--alive-hue) 40%,transparent);background:rgba(8,24,39,.82);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 10px 28px rgba(0,0,0,.45),0 0 18px color-mix(in srgb,var(--alive-hue) 25%,transparent);color:#EAF6FF;font:700 13px/1 "Avenir Next","SF Pro Text",-apple-system,"Nunito Sans","Segoe UI",sans-serif;white-space:nowrap;cursor:pointer;transition:opacity .35s ease,transform .35s cubic-bezier(.2,.8,.2,1);-webkit-tap-highlight-color:transparent}
-#gsf-alive-bubble.on{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
+#gsf-alive-bubble{position:fixed;right:12px;transform:translateY(-8px) scale(.96);transform-origin:right center;opacity:0;pointer-events:none;display:flex;align-items:center;gap:9px;height:38px;padding:0 14px 0 5px;border-radius:999px;border:1px solid rgba(121,210,255,.35);border:1px solid color-mix(in srgb,var(--alive-hue) 40%,transparent);background:rgba(8,24,39,.82);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 10px 28px rgba(0,0,0,.45),0 0 18px color-mix(in srgb,var(--alive-hue) 25%,transparent);color:#EAF6FF;font:700 13px/1 "Avenir Next","SF Pro Text",-apple-system,"Nunito Sans","Segoe UI",sans-serif;white-space:nowrap;cursor:pointer;transition:opacity .35s ease,transform .35s cubic-bezier(.2,.8,.2,1);-webkit-tap-highlight-color:transparent}
+#gsf-alive-bubble.on{opacity:1;transform:none;pointer-events:auto}
 #gsf-alive-bubble:focus-visible{outline:2px solid #79D2FF;outline-offset:2px}
 #gsf-alive-bubble svg{flex:none;width:28px;height:28px;transform:rotate(-90deg)}
 #gsf-alive-bubble .t{fill:none;stroke:rgba(255,255,255,.12);stroke-width:3}
@@ -317,7 +328,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     rs.setProperty("--alive-glow", String(m.glow));
     rs.setProperty("--alive-hue", hueOf(state));
     root.dataset.aliveMode = state.mode;
-    root.dataset.aliveNext = nextAction(state) || "";
+    root.dataset.aliveStep = nextAction(state) || "";
     root.dataset.aliveJob = state.active_job || "";
   }
   let celebrateTimer = 0;
@@ -353,7 +364,9 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     apply(prev, fromRemote);
   }
   function emit(type, data) {
-    commit(reduce(state, type, data, Date.now()), false);
+    const next = reduce(state, type, data, Date.now());
+    if (next.seq === state.seq && next.mode === state.mode) return state;
+    commit(next, false);
     return state;
   }
   if (channel) channel.onmessage = e => {
@@ -380,7 +393,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
         top = below + 40 < H - ins.bottom ? below : above > ins.top ? above : null;
       }
     }
-    if (top === null) top = Math.max(ins.top + 12, H - ins.bottom - 64);
+    if (top === null) top = Math.max(ins.top + 12, H - ins.bottom - 64 - (page.dock === "bottom" && bubbleEl && bubbleEl.classList.contains("on") ? 52 : 0));
     whisperEl.style.top = Math.round(top) + "px";
   }
   function say(text, opts) {
@@ -418,6 +431,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     if (!action) return null;
     const list = D.querySelectorAll('[data-alive-next~="' + action + '"]');
     for (const el of list) {
+      if (el === root || el === D.body) continue;
       if (el.disabled || el.closest("[hidden],[aria-hidden=true],[inert]")) continue;
       const r = el.getBoundingClientRect();
       if (r.width < 8 || r.height < 8) continue;
@@ -537,14 +551,17 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
       return false;
     } catch (_e) { return true; }
   }
-  let polling = false, probed = false;
+  let polling = false, probed = false, watchFrom = 0, watchUntil = 0;
+  /* A page asked for a Short: follow the render only if the server really starts one. */
+  function watchRender() { const now = Date.now(); watchFrom = now; watchUntil = now + 90e3; setTimeout(pollRender, 1500); }
   async function jobStatus() {
     try { const r = await fetch("/job/status?alive=1&_=" + Date.now(), { cache: "no-store", credentials: "same-origin" }); return r.ok ? await r.json() : null; } catch (_e) { return null; }
   }
   async function pollRender() {
     if (polling || !leader()) return;
     const tracking = state.active_job === "render";
-    if (!tracking && probed) return;
+    const watching = Date.now() < watchUntil;
+    if (!tracking && probed && !watching) return;
     polling = true;
     try {
       const j = await jobStatus();
@@ -552,7 +569,8 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
       const st = String(j.render_status || ""), started = Number(j.started_at) * 1000 || 0;
       if (!tracking) {
         probed = true;
-        if (st === "running" && started && Date.now() - started < 15 * 60e3) emit("render.started", { started_at: started });
+        const recent = watching ? started >= watchFrom - 10e3 : Date.now() - started < 15 * 60e3;
+        if (st === "running" && started && recent) { watchUntil = 0; emit("render.started", { started_at: started }); }
         return;
       }
       if (st === "running") return;
@@ -599,6 +617,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
       });
       setInterval(tick, 1000);
       setInterval(() => { pollRender(); scanOrbs(); }, 3000);
+      setInterval(() => { if (Date.now() < watchUntil) pollRender(); }, 2000);
       setTimeout(pollRender, 1200);
       renderBubble(); guide();
     };
@@ -607,7 +626,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   }
 
   W.GSFAlive = {
-    mount, emit, say, celebrate, beat, go,
+    mount, emit, say, celebrate, beat, go, watchRender,
     state: () => Object.assign({}, state),
     next: () => nextAction(state),
     on(fn) { listeners.add(fn); return () => listeners.delete(fn); },
