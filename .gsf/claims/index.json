@@ -1092,7 +1092,8 @@
         "web/game_editor_mobile_component/index.html",
         "web/game_editor_mobile_component/editor.css",
         "tests/test_editor_shell_integration.py",
-        "PROJECT_STATUS.md"
+        "PROJECT_STATUS.md",
+        ".github/workflows/editor-shell-integration.yml"
       ],
       "state": "active",
       "created_at": "2026-10-17T08:37:51.432Z"
