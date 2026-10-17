@@ -854,7 +854,8 @@
         "owner_handoff_20261017": {
           "authorization": "Owner asked on 2026-10-17 to close the desktop version (mobile-only app) and remove desktop-only weight. This claim's work merged in PR #163 (4f0e12a); its branch has been idle since 2026-10-16 12:12 UTC.",
           "paths": [
-            "web/install_adsense_bridge.py"
+            "web/install_adsense_bridge.py",
+            "tests/test_navigation_stability.py"
           ],
           "to": "mobile-only (next claim)"
         }
@@ -865,7 +866,6 @@
         "docs/architecture/gsf-navigation-lifecycle.md",
         "tests/test_canonical_ui_pipeline.py",
         "tests/test_mobile_resume_stability.py",
-        "tests/test_navigation_stability.py",
         "tests/test_runtime_import_stability.py",
         "tests/visual/gsf_visual_check.py",
         "web/__init__.py",
@@ -1130,6 +1130,7 @@
         "Dockerfile",
         "PROJECT_STATUS.md",
         "tests/test_mobile_only_gate.py",
+        "tests/test_navigation_stability.py",
         "web/gsf_desktop_shell_v407.py",
         "web/install_adsense_bridge.py",
         "web/mobile_only_gate.html",
