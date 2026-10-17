@@ -1,0 +1,20 @@
+{
+  "branch": "chat/mobile-only-close-the-desktop-version-behind-a-p-ee72b5",
+  "created_at": "2026-10-17T14:38:08+00:00",
+  "id": "mobile-only-close-the-desktop-version-behind-a-p-ee72b5",
+  "owner": "chat/mobile-only-close-the-desktop-version-behind-a-p-ee72b5",
+  "paths": [
+    ".github/workflows/gsf-ci.yml",
+    "tests/test_mobile_only_gate.py",
+    "web/gsf_desktop_shell_v407.py",
+    "web/install_adsense_bridge.py",
+    "web/mobile_only_gate.html",
+    "web/nginx.conf.template",
+    "web/test_v267_global_desktop_polish.py",
+    "web/test_v268_1_desktop_to_mobile_parity.py",
+    "web/test_v268_desktop_aesthetic_calibration.py",
+    "web/test_v407_desktop_mobile_shell.py"
+  ],
+  "scope": "mobile-only: close the desktop version behind a phone-only gate page with the app link, drop the V407 desktop frame/ad rails; app.py desktop editor removal follows when the alive claim releases app.py",
+  "state": "active"
+}
