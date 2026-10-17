@@ -162,12 +162,32 @@ def navigate(page,target,ready=True):
         page.wait_for_function("()=>{const d=document.querySelector('#gsf-social-overlay-v159 iframe')?.contentDocument;return d?.readyState==='complete'&&!!d.querySelector('#crea413')}")
     assert_gamebar(page)
 
+RAF_PROBE="""()=>new Promise(res=>{let n=0,done=false;const fin=v=>{if(!done){done=true;res(v)}};const f=()=>{if(++n>=3)fin(n);else requestAnimationFrame(f)};requestAnimationFrame(f);setTimeout(()=>fin(-n),700)})"""
+
+def ensure_rendering(page):
+    """Headless WebKit on the runner can stop rendering updates for the whole page
+    (rAF and CSS transitions frozen, input not dispatched) while timers, visibility
+    and focus stay normal. Detect it and nudge the compositor with a viewport change."""
+    if page.evaluate(RAF_PROBE)>0:return True
+    size=page.viewport_size
+    for attempt in range(3):
+        try:page.bring_to_front()
+        except Exception:pass
+        if size:
+            page.set_viewport_size({'width':size['width'],'height':size['height']+1})
+            page.set_viewport_size(size)
+        ok=page.evaluate(RAF_PROBE)>0
+        print(f'::warning title=WebKit render kick::attempt {attempt} resumed={ok}',flush=True)
+        if ok:return True
+    return False
+
 def tap(locator):
     """Click like a finger, without Playwright's rAF-based stability wait.
 
     The control must be visible and be the element actually hit at its centre
     (nothing covering it); then a real pointer click is sent at that point.
     """
+    ensure_rendering(locator.page)
     locator.wait_for(state='visible')
     hit=None
     for _ in range(50):
