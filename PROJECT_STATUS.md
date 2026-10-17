@@ -247,6 +247,14 @@ No intentional destructive production rollback test was performed. Rollback exec
 - Main Production Gate: **SUCCESS**; promotion `1e596cd`. Railway frontend `831d768f-e364-4a2e-bd79-574b2e449197`: **SUCCESS**. `GSF Production UI Verify` run `38865042951`: **SUCCESS** — digest `e32d92a6…` == repo.
 - Unverified: not checked on a real phone.
 
+### Night Arena single look — 2026-10-16 (PR #162)
+
+- Claim `ui-night-arena-single-look-shared-theme-creator--1fc1b7` (completed; took over the idle Home/shell/editor claims with the owner's OK). Squash `ed1e8bde44e5f244e8883035dbe2517ff229ec02`.
+- One look for the whole app: canonical theme `web/gsf_night_arena.css` inlined verbatim (between `GSF_NIGHT_ARENA:BEGIN/END`) in Home, Creator Hub, Crea con IA, Crea Short (`/share-v156/`), mobile Game Editor (`night_arena_v417.css`: no kicker/ratio badge over the player, mini player fills its slot, heat strip) and desktop Editor 2027; legal pages restyled; shell with wordmark header, vector Game Bar icons, no `GSF - V362` footer (version lives in Creator Hub > Info). Hub empty states with a next-step CTA, social rings (connected = solid green, otherwise dashed "+"). "Crea Short" from the old router opens the canonical Crea Short page and starts the render when needed.
+- Tests: new `tests/test_night_arena_theme.py`, updated `test_gsf_editor_home_style.py` and V302 gamebar test; PR and main Production Gate **SUCCESS** on `ed1e8bd`.
+- The main gate's promotion step skipped as stale because a coord commit (`69d2317`) landed during the run; promoted by marker commit `bdd2ed3` at the owner's request. Railway frontend deployment `68a34a7b-9bc2-4361-898b-3d8b7f2de4e7`: **SUCCESS**; `/healthz` ok, release `bdd2ed34068e…`, ui_digest `5c85b7e3…`.
+- Unverified: no live visual pass of production from the agent sandbox (egress blocked); no real-device Safari pass. Navigation lifecycle work continues separately in PR #163 (`chat/nav-ab-baseline-1fc1b7`).
+
 ## Current user-facing verification priorities
 
 These are re-verification priorities, not claims that a feature is currently broken:
