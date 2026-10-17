@@ -1027,7 +1027,14 @@
           "baseline": "fc93bba8233da35b9d338ff4cd73d479ec346a23",
           "from": "Claude",
           "pr": 162
-        }
+        },
+        "merge_commit": "ed1e8bde44e5f244e8883035dbe2517ff229ec02",
+        "pr": "#162",
+        "production_gate": "success on ed1e8bd (main); promotion step skipped as stale due to a concurrent coord commit",
+        "promotion": "bdd2ed3 deploy marker (owner asked to ship)",
+        "railway": "frontend deployment 68a34a7b SUCCESS 2026-10-16T19:09Z; /healthz ok, release bdd2ed34068e, ui_digest 5c85b7e3",
+        "tests": "tests/test_night_arena_theme.py, test_gsf_editor_home_style.py, V302 gamebar, full Production Gate",
+        "unverified": "live visual check of prod not possible from the agent sandbox"
       },
       "id": "ui-night-arena-single-look-shared-theme-creator--1fc1b7",
       "owner": "chat/ui-night-arena-single-look-shared-theme-creator--1fc1b7",
@@ -1058,7 +1065,7 @@
         "web/share_v156_component/**"
       ],
       "scope": "ui: Night Arena single look \u2014 shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",

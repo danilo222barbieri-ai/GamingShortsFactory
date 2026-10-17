@@ -1,16 +1,53 @@
 {
   "branch": "chat/ui-night-arena-single-look-shared-theme-creator--1fc1b7",
   "created_at": "2026-10-16T10:03:49+02:00",
+  "evidence": {
+    "handback": {
+      "authorization": "Owner asked Claude to continue PR #162 itself (2026-10-16 ~20:00 local); no commits from the Codex handoff since fc93bba",
+      "to": "Claude"
+    },
+    "handoff": {
+      "authorization": "Owner explicitly requested finish both on 2026-10-16",
+      "baseline": "fc93bba8233da35b9d338ff4cd73d479ec346a23",
+      "from": "Claude",
+      "pr": 162
+    },
+    "merge_commit": "ed1e8bde44e5f244e8883035dbe2517ff229ec02",
+    "pr": "#162",
+    "production_gate": "success on ed1e8bd (main); promotion step skipped as stale due to a concurrent coord commit",
+    "promotion": "bdd2ed3 deploy marker (owner asked to ship)",
+    "railway": "frontend deployment 68a34a7b SUCCESS 2026-10-16T19:09Z; /healthz ok, release bdd2ed34068e, ui_digest 5c85b7e3",
+    "tests": "tests/test_night_arena_theme.py, test_gsf_editor_home_style.py, V302 gamebar, full Production Gate",
+    "unverified": "live visual check of prod not possible from the agent sandbox"
+  },
   "id": "ui-night-arena-single-look-shared-theme-creator--1fc1b7",
   "owner": "chat/ui-night-arena-single-look-shared-theme-creator--1fc1b7",
   "paths": [
+    "PROJECT_STATUS.md",
+    "app.py",
+    "docs/superpowers/plans/2026-10-16-night-arena-completion.md",
+    "tests/test_gsf_editor_home_style.py",
+    "tests/test_home_upload_handoff.py",
+    "tests/test_mobile_editor_in_app.py",
+    "tests/test_mobile_game_editor_2026.py",
     "tests/test_night_arena_theme.py",
+    "tests/visual/gsf_navigation_stress.py",
     "web/ai_v221_component/**",
     "web/creator_hub_v156_component/**",
+    "web/direct_upload_server.py",
+    "web/game_editor_mobile_component/editor.css",
+    "web/game_editor_mobile_component/editor.mjs",
+    "web/game_editor_mobile_component/editor_state.mjs",
+    "web/game_editor_mobile_component/home_style_v416.css",
+    "web/game_editor_mobile_component/index.html",
+    "web/game_editor_mobile_component/overlay_v414.css",
+    "web/game_editor_mobile_component/overlay_v414.mjs",
     "web/gsf_night_arena.css",
+    "web/home_v154_component/index.html",
+    "web/legal/**",
     "web/publish_short_v405_component/**",
     "web/share_v156_component/**"
   ],
-  "scope": "ui: Night Arena single look \u2014 shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages",
-  "state": "active"
+  "scope": "ui: Night Arena single look \u2014 shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
+  "state": "completed"
 }
