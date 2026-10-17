@@ -52,6 +52,7 @@ test("errors are calm, keep the job and offer retry", () => {
   assert.equal(s.active_job, null);
   assert.equal(core.nextAction(s), "retry");
   assert.ok(core.motion(s).dur > 2, "error breathes slowly, never flashes");
+  assert.equal(core.calmMode(s, s.updated + 4 * 60_000), "active", "an old error stops colouring the app");
   s = run([["recovered"]], s);
   assert.equal(s.error, null);
 });

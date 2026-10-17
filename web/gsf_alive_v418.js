@@ -18,6 +18,8 @@
   const KEY = "gsf_alive_v418";
   const JOB_TTL_MS = { upload: 10 * 60e3, ai: 6 * 60e3, render: 16 * 60e3, publish: 10 * 60e3 };
   const CELEBRATE_MS = 2600;
+  const ERROR_CALM_MS = 3 * 60e3;   /* an error colours the app for 3 minutes, then calms */
+  const ERROR_BUBBLE_MS = 90e3;     /* the "Riprova" bubble follows the user for 90 seconds */
   const BASE = {
     mode: "idle", video_ready: false, active_job: null, progress: null, job_started: 0,
     moments_count: 0, moment_selected: false, short_ready: false, published: false,
@@ -32,7 +34,7 @@
   };
   function calmMode(s, now) {
     if (s.celebrate_until && now < s.celebrate_until) return "celebrate";
-    if (s.error) return "error";
+    if (s.error && now - (Number(s.updated) || 0) < ERROR_CALM_MS) return "error";
     if (s.active_job) return "working";
     if (s.video_ready || s.short_ready) return "active";
     return "idle";
@@ -264,9 +266,9 @@
 #gsf-alive-aura{position:fixed;inset:-10%;pointer-events:none;z-index:-1;opacity:.55;background:radial-gradient(42% 32% at 50% 38%,color-mix(in srgb,var(--alive-hue) 22%,transparent),transparent 72%);transition:background 1.2s ease,opacity 1.2s ease;animation:gsfAliveAura calc(var(--alive-dur)*1.6) ease-in-out infinite}
 html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
 @keyframes gsfAliveAura{0%,100%{transform:scale(1);opacity:.45}50%{transform:scale(1.06);opacity:.7}}
-.gsf-alive-halo{position:absolute;inset:-7%;border-radius:50%;pointer-events:none;z-index:0;border:1.5px solid rgba(121,210,255,.45);border:1.5px solid color-mix(in srgb,var(--alive-hue) 55%,transparent);box-shadow:0 0 calc(40px*var(--alive-glow)*3) color-mix(in srgb,var(--alive-hue) 45%,transparent);animation:gsfAliveBreath var(--alive-dur) ease-in-out infinite;transition:border-color .8s ease,box-shadow .8s ease}
+.gsf-alive-halo{position:absolute;inset:-7%;border-radius:50%;pointer-events:none;z-index:0;border:2px solid rgba(121,210,255,.55);border:2px solid color-mix(in srgb,var(--alive-hue) 70%,transparent);box-shadow:0 0 calc(56px*var(--alive-glow)*3) color-mix(in srgb,var(--alive-hue) 45%,transparent);animation:gsfAliveBreath var(--alive-dur) ease-in-out infinite;transition:border-color .8s ease,box-shadow .8s ease}
 .gsf-alive-halo.beat{animation:gsfAliveBeat .62s cubic-bezier(.2,.8,.2,1) 1,gsfAliveBreath var(--alive-dur) ease-in-out .62s infinite}
-@keyframes gsfAliveBreath{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(var(--alive-scale));opacity:1}}
+@keyframes gsfAliveBreath{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(var(--alive-scale));opacity:1}}
 @keyframes gsfAliveBeat{0%{transform:scale(1);opacity:.9}30%{transform:scale(1.09);opacity:1}55%{transform:scale(1.02)}75%{transform:scale(1.06)}100%{transform:scale(1);opacity:.8}}
 .gsf-alive-echo{position:fixed;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;border:2px solid var(--echo,#27AEF3);opacity:.85;animation:gsfAliveEcho .55s cubic-bezier(.2,.8,.2,1) forwards}
 @keyframes gsfAliveEcho{to{transform:scale(6.5);opacity:0;border-width:1px}}
@@ -477,7 +479,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
       const p = state.progress;
       return { kind: "work", label: JOB_LABEL[state.active_job] || "Ci sto lavorando", meta: p !== null && p !== undefined ? Math.round(p * 100) + "%" : fmt(now - state.job_started), progress: p, go: JOB_PAGE[state.active_job] };
     }
-    if (state.error && state.error_job) {
+    if (state.error && state.error_job && now - (Number(state.updated) || 0) < ERROR_BUBBLE_MS) {
       const where = JOB_PAGE[state.error_job] || "home";
       if (where === here) return null;
       return { kind: "error", label: "Si è fermato", meta: "Riprova ›", go: where };
@@ -575,7 +577,8 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
       }
       if (st === "running") return;
       if (st === "ready" && j.download_ready && (!started || started >= state.job_started - 120e3)) emit("render.completed");
-      else if (st === "failed" || st === "stale" || st === "missing") emit("failure", { job: "render", message: "Il montaggio si è fermato. Riproviamo." });
+      /* "missing" is a ready job whose file is still being restored: keep waiting, the TTL ends it. */
+      else if (st === "failed" || st === "stale") emit("failure", { job: "render", message: "Il montaggio si è fermato. Riproviamo." });
       else if (st === "cancelled") emit("render.cancelled");
       else if (!st && Date.now() - state.job_started > 120e3) emit("render.cancelled");
     } finally { polling = false; }
