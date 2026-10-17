@@ -1158,6 +1158,19 @@
       ],
       "scope": "mobile-only: close the desktop version behind a phone-only gate page with the app link, drop the V407 desktop frame/ad rails; app.py desktop editor removal follows when the alive claim releases app.py",
       "state": "active"
+    },
+    {
+      "branch": "chat/beta-readiness-creator-hub-profile-photo-name-wo-d657fc",
+      "created_at": "2026-10-17T19:56:33+00:00",
+      "id": "beta-readiness-creator-hub-profile-photo-name-wo-d657fc",
+      "owner": "chat/beta-readiness-creator-hub-profile-photo-name-wo-d657fc",
+      "paths": [
+        "tests/test_creator_hub_profile_v420.py",
+        "web/creator_hub_v156_component/index.html",
+        "web/direct_upload_server.py"
+      ],
+      "scope": "beta-readiness: Creator Hub profile (photo/name) works for every session, social connect also links the creator account, login keeps custom name/photo; button audit fixes",
+      "state": "active"
     }
   ],
   "version": 1
