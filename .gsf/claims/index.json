@@ -1073,6 +1073,7 @@
       "id": "alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",
       "owner": "chat/alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",
       "paths": [
+        "app.py",
         "docs/architecture/gsf-alive.md",
         "tests/js/gsf_alive_v418*",
         "tests/test_alive_runtime_v418.py",
@@ -1080,11 +1081,13 @@
         "tools/gsf_alive_inline.py",
         "web/ai_v221_component/index.html",
         "web/creator_hub_v156_component/index.html",
+        "web/game_editor_mobile_component/editor.css",
+        "web/game_editor_mobile_component/index.html",
         "web/gsf_alive_v418.js",
         "web/home_v154_component/index.html",
         "web/share_v156_component/index.html"
       ],
-      "scope": "alive: app-wide Alive 2 runtime (heard/guided/carried) integrated into Home, Crea con IA, Crea Short and Creator Hub (owner go-ahead 2026-10-17); mobile and desktop Game Editor follow when their claims release",
+      "scope": "alive: app-wide Alive 2 runtime (heard/guided/carried) integrated into Home, Crea con IA, Crea Short and Creator Hub (owner go-ahead 2026-10-17); mobile and desktop Game Editor follow when their claims release; plus mobile Editor dark shell fix (owner request 2026-10-17)",
       "state": "active"
     },
     {
@@ -1093,15 +1096,23 @@
       "owner": "chat/fix-mobile-editor-global-shell-20261017",
       "scope": "Restore mobile Editor shared global header and continuous Night Arena canvas through iPhone bottom safe area; preserve editor controls and global Game Bar",
       "paths": [
-        "app.py",
-        "web/game_editor_mobile_component/index.html",
-        "web/game_editor_mobile_component/editor.css",
         "tests/test_editor_shell_integration.py",
         "PROJECT_STATUS.md",
         ".github/workflows/editor-shell-integration.yml"
       ],
       "state": "active",
-      "created_at": "2026-10-17T08:37:51.432Z"
+      "created_at": "2026-10-17T08:37:51.432Z",
+      "evidence": {
+        "owner_handoff": {
+          "authorization": "Owner asked this chat on 2026-10-17 to fix the remaining white band under the Game Bar in the mobile Editor (still visible after PR #164 was merged as d12c5de and promoted in 01faeb7).",
+          "paths": [
+            "app.py",
+            "web/game_editor_mobile_component/index.html",
+            "web/game_editor_mobile_component/editor.css"
+          ],
+          "to": "alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe"
+        }
+      }
     }
   ],
   "version": 1
