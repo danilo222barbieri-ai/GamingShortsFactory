@@ -1,15 +1,38 @@
 {
   "branch": "chat/alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",
   "created_at": "2026-10-16T21:18:27+02:00",
+  "evidence": {
+    "follow_up": "Alive in mobile and desktop Game Editor not done; no real-device pass",
+    "gate": "PR #166 contracts/browsers/production-gate success; main gate run 39043610465 success (promotion skipped by coord-only af7fcc8)",
+    "merge_shas": [
+      "719ed2813846229a46650dba47596d3a9d20aa06",
+      "38c14589627e34ce0a5c6f7d8e46b1b211d6aaeb"
+    ],
+    "promotion": "bf452af (owner-requested)",
+    "prs": [
+      165,
+      166
+    ],
+    "railway_frontend": "1ab38740-7e8b-474e-aefc-e228e9157949 SUCCESS release=bf452af manifest PASS",
+    "tests": "tests/ suite, canonical UI pipeline, V397, V410, V404, V412, V413, V407, V403, JS tests locally"
+  },
   "id": "alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",
   "owner": "chat/alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",
   "paths": [
+    "app.py",
     "docs/architecture/gsf-alive.md",
     "tests/js/gsf_alive_v418*",
     "tests/test_alive_runtime_v418.py",
+    "tests/visual/gsf_alive_check.py",
     "tools/gsf_alive_inline.py",
-    "web/gsf_alive_v418.js"
+    "web/ai_v221_component/index.html",
+    "web/creator_hub_v156_component/index.html",
+    "web/game_editor_mobile_component/editor.css",
+    "web/game_editor_mobile_component/index.html",
+    "web/gsf_alive_v418.js",
+    "web/home_v154_component/index.html",
+    "web/share_v156_component/index.html"
   ],
-  "scope": "alive: app-wide Alive 2 runtime (heard/guided/carried) shared by every page; page integration after night-arena/#163 handoff",
-  "state": "active"
+  "scope": "alive: app-wide Alive 2 runtime (heard/guided/carried) integrated into Home, Crea con IA, Crea Short and Creator Hub (owner go-ahead 2026-10-17); mobile and desktop Game Editor follow when their claims release; plus mobile Editor dark shell fix (owner request 2026-10-17)",
+  "state": "completed"
 }

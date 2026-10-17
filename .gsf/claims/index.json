@@ -486,7 +486,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -1070,12 +1070,27 @@
         "web/publish_short_v405_component/**",
         "web/share_v156_component/**"
       ],
-      "scope": "ui: Night Arena single look — shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
+      "scope": "ui: Night Arena single look \u2014 shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
       "state": "completed"
     },
     {
       "branch": "chat/alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",
       "created_at": "2026-10-16T21:18:27+02:00",
+      "evidence": {
+        "follow_up": "Alive in mobile and desktop Game Editor not done; no real-device pass",
+        "gate": "PR #166 contracts/browsers/production-gate success; main gate run 39043610465 success (promotion skipped by coord-only af7fcc8)",
+        "merge_shas": [
+          "719ed2813846229a46650dba47596d3a9d20aa06",
+          "38c14589627e34ce0a5c6f7d8e46b1b211d6aaeb"
+        ],
+        "promotion": "bf452af (owner-requested)",
+        "prs": [
+          165,
+          166
+        ],
+        "railway_frontend": "1ab38740-7e8b-474e-aefc-e228e9157949 SUCCESS release=bf452af manifest PASS",
+        "tests": "tests/ suite, canonical UI pipeline, V397, V410, V404, V412, V413, V407, V403, JS tests locally"
+      },
       "id": "alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",
       "owner": "chat/alive-app-wide-alive-2-runtime-heard-guided-carr-1d6ebe",
       "paths": [
@@ -1094,7 +1109,7 @@
         "web/share_v156_component/index.html"
       ],
       "scope": "alive: app-wide Alive 2 runtime (heard/guided/carried) integrated into Home, Crea con IA, Crea Short and Creator Hub (owner go-ahead 2026-10-17); mobile and desktop Game Editor follow when their claims release; plus mobile Editor dark shell fix (owner request 2026-10-17)",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/fix-mobile-editor-global-shell-20261017",
