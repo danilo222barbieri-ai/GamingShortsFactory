@@ -486,7 +486,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -1064,7 +1064,7 @@
         "web/publish_short_v405_component/**",
         "web/share_v156_component/**"
       ],
-      "scope": "ui: Night Arena single look \u2014 shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
+      "scope": "ui: Night Arena single look — shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
       "state": "completed"
     },
     {
@@ -1081,6 +1081,21 @@
       ],
       "scope": "alive: app-wide Alive 2 runtime (heard/guided/carried) shared by every page; page integration after night-arena/#163 handoff",
       "state": "active"
+    },
+    {
+      "id": "fix-mobile-editor-global-shell-20261017",
+      "branch": "chat/fix-mobile-editor-global-shell-20261017",
+      "owner": "chat/fix-mobile-editor-global-shell-20261017",
+      "scope": "Restore mobile Editor shared global header and continuous Night Arena canvas through iPhone bottom safe area; preserve editor controls and global Game Bar",
+      "paths": [
+        "app.py",
+        "web/game_editor_mobile_component/index.html",
+        "web/game_editor_mobile_component/editor.css",
+        "tests/test_editor_shell_integration.py",
+        "PROJECT_STATUS.md"
+      ],
+      "state": "active",
+      "created_at": "2026-10-17T08:37:51.432Z"
     }
   ],
   "version": 1
