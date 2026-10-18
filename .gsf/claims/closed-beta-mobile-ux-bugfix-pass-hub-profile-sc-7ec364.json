@@ -20,6 +20,8 @@
     "web/creator_hub_v156_component/index.html",
     "web/direct_upload_server.py",
     "web/gsf_alive_v418.js",
+    "web/gsf_bucket_bridge.py",
+    "web/gsf_navigation_lifecycle.js",
     "web/gsf_perf.py",
     "web/home_v154_component/index.html",
     "web/nginx.conf.template",
