@@ -143,3 +143,25 @@ test("gesture projection keeps pinch and pan crop-safe", () => {
     { startDistance: 100, currentDistance: 100, deltaX: 30, deltaY: 30, width: 300, height: 500 },
   ), { zoom: 1, panX: 0, panY: 0 });
 });
+
+test("a replacement initialization cancels the previous clip's pending autosave", async () => {
+  const { readFileSync } = await import('node:fs');
+  const { runInNewContext } = await import('node:vm');
+  const source = readFileSync(new URL('../../web/game_editor_mobile_component/editor.mjs', import.meta.url), 'utf8');
+  const init = source.slice(source.indexOf('function receiveInit(message)'), source.indexOf('function receiveSaveStatus(message)'));
+  const sent = [];
+  const sequencer = createSaveSequencer(message => sent.push(message), 12);
+  const noop = () => {};
+  const scope = {saveSequencer:sequencer, normalizeEditorState, history:{reset:noop},
+    projectTitle:{}, renderMarkers:noop, renderAiContext:noop, overlay:{setFocusMap:noop},
+    renderState:noop, loadMedia:noop, app:{setAttribute:noop}, setStatus:noop};
+  runInNewContext(init, scope);
+  sequencer.schedule({zoom:1.7});
+  scope.receiveInit({initial_state:{sourceDuration:15},binding:{source_key:'replacement'}});
+  await delay(30);
+  assert.equal(sent.length, 0, 'old clip autosave must not dispatch after replacement initialization');
+  sequencer.schedule({zoom:1.2});
+  await delay(30);
+  assert.equal(sent.length, 1, 'new clip remains editable');
+  sequencer.dispose();
+});

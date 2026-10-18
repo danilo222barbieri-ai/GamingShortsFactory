@@ -16641,6 +16641,7 @@ if GSF_WEB_MODE:
         const initial=(editorMeta.initial_state&&typeof editorMeta.initial_state==='object')?editorMeta.initial_state:{};
         const payload={
           type:'GSF_GAME_EDITOR_INIT',
+          binding:{source_key:String(editorMeta.source_key||''),clip_start:Number(editorMeta.clip_start)||0,clip_duration:Number(editorMeta.clip_duration)||15},
           session:(editorMeta.session&&typeof editorMeta.session==='object')?editorMeta.session:{},
           project:(editorMeta.project&&typeof editorMeta.project==='object')?editorMeta.project:{},
           media:{url:editorMeta.ready===false?'':String(editorMeta.video_url||'/editor-media/current')},
@@ -16665,6 +16666,8 @@ if GSF_WEB_MODE:
       };
       const persistMobileEditorState=(message)=>{
         if(!metadataReady)return Promise.reject(new Error('Progetto ancora in caricamento. Riprova.'));
+        const binding=message.binding;
+        if(!binding||String(binding.source_key||'')!==String(editorMeta.source_key||'')||Math.abs((Number(binding.clip_start)||0)-(Number(editorMeta.clip_start)||0))>.1||Math.abs((Number(binding.clip_duration)||15)-(Number(editorMeta.clip_duration)||15))>.1)return Promise.reject(new Error('Il progetto Editor è cambiato. Riaprilo prima di salvare.'));
         const state={...((message.state&&typeof message.state==='object')?message.state:{})};
         const context={clip_start:Number(editorMeta.clip_start)||0,clip_duration:Number(editorMeta.clip_duration)||Number(state.sourceDuration)||15};
         const source_key=String(editorMeta.source_key||'');
@@ -16805,7 +16808,7 @@ setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326He
             delete cleanState.editorAction;delete cleanState.editorActionNonce;
             editorMeta.initial_state=cleanState;
             const notify=(title,msg='',kind='success')=>{try{window.GSFNotify&&window.GSFNotify.show(title,msg,kind)}catch(_e){}};
-            const saveState=fetch('/editor/state/save',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({state:cleanState})}).then(r=>{if(!r.ok)throw new Error('Stato Editor non salvato');return r});
+            const saveState=fetch('/editor/state/save',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({state:cleanState,source_key:String(editorMeta.source_key||''),context:{clip_start:Number(editorMeta.clip_start)||0,clip_duration:Number(editorMeta.clip_duration)||15}})}).then(r=>{if(!r.ok)throw new Error('Stato Editor non salvato');return r});
             if(action==='save_draft'){
               saveState.then(()=>fetch('/creator-hub/project/save-draft',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({})}))
                 .then(async r=>{let j={};try{j=await r.json()}catch(_e){};if(!r.ok||!j.ok)throw new Error(j.error||'Bozza non salvata');notify('Bozza salvata',String((j.draft||{}).title||''),'success')})
