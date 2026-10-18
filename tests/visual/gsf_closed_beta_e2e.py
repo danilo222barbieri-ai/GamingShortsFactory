@@ -50,6 +50,9 @@ def run(base, media, out, engine='chromium', ai_timeout=600, manual=False):
             page.wait_for_function("()=>[...document.querySelectorAll('iframe')].some(f=>{try{return !!f.contentDocument.querySelector('.rings.uploaded')}catch(_){return false}})", timeout=120000)
             page.wait_for_function("()=>document.querySelector('[data-testid=stApp]')?.getAttribute('data-test-script-state')==='notRunning'", timeout=60000)
             passed('upload')
+            # Upload triggers a Streamlit rerun that can replace the Home iframe.
+            # Resolve it for each action instead of retaining a detached Frame.
+            home=page.frame_locator('iframe[title*="gsf_home_v154"]')
             context.storage_state(path='/tmp/gsf-beta-active-session.json')
             if manual:
                 home.locator('.feature[data-action="editor"]').click()
