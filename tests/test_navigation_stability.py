@@ -160,6 +160,17 @@ class NavigationStability(unittest.TestCase):
             self.assertFalse(errors,errors)
 
 class ParentBundleContract(unittest.TestCase):
+    def test_only_cancelled_external_font_requests_are_noncritical(self):
+        from types import SimpleNamespace
+        from visual.gsf_navigation_stress import request_failure_is_critical
+        def request(url,kind='font',failure='Load request cancelled'):
+            return SimpleNamespace(url=url,resource_type=kind,failure=failure)
+        self.assertFalse(request_failure_is_critical(request('https://fonts.gstatic.com/s/caveat/font.woff2')))
+        self.assertTrue(request_failure_is_critical(request('https://gsf.test/fonts/font.woff2')))
+        self.assertTrue(request_failure_is_critical(request('https://fonts.gstatic.com/app.js','script')))
+        self.assertTrue(request_failure_is_critical(request('https://fonts.gstatic.com/s/font.woff2',failure='Connection failed')))
+        self.assertTrue(request_failure_is_critical(request('https://fonts.gstatic.com.attacker.test/font.woff2')))
+
     def test_completed_timeouts_release_abort_handlers(self):
         import subprocess
         root=Path(__file__).resolve().parents[1]
