@@ -1319,6 +1319,37 @@
       ],
       "scope": "Closed beta stabilization: production gate reliability and real upload AI editor render end-to-end verification",
       "state": "completed"
+    },
+    {
+      "branch": "chat/closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
+      "created_at": "2026-10-18T18:10:30+00:00",
+      "id": "closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
+      "owner": "chat/closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
+      "paths": [
+        ".github/workflows/v397-production-gate.yml",
+        "PROJECT_STATUS.md",
+        "app.py",
+        "docs/superpowers/plans/2026-10-18-closed-beta-bugfix-pass.md",
+        "docs/superpowers/specs/2026-10-18-closed-beta-bugfix-pass.md",
+        "tests/js/gsf_alive_v418.test.mjs",
+        "tests/test_alive_runtime_v418.py",
+        "tests/test_closed_beta_bugfix_pass.py",
+        "tests/visual/gsf_closed_beta_bugfix_pass.py",
+        "tools/gsf_alive_inline.py",
+        "web/ai_engines_v412.py",
+        "web/ai_v221_component/index.html",
+        "web/ai_worker_server.py",
+        "web/creator_hub_v156_component/index.html",
+        "web/direct_upload_server.py",
+        "web/gsf_alive_v418.js",
+        "web/gsf_perf.py",
+        "web/home_v154_component/index.html",
+        "web/nginx.conf.template",
+        "web/semantic_video_v114.py",
+        "web/share_v156_component/index.html"
+      ],
+      "scope": "closed beta mobile UX bugfix pass: Hub profile scroll preferences Alive lifecycle and measured AI latency",
+      "state": "active"
     }
   ],
   "version": 1
