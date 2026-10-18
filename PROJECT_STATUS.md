@@ -3,15 +3,17 @@
 > **CANONICAL SOURCE OF TRUTH FOR ALL TECHNICAL CHATS / AGENTS.**
 > Read this file before changing code. Refresh live GitHub/Railway evidence before changing production claims.
 
-## Closed beta stabilization — 2026-10-18, final release verification pending
+## Closed beta stabilization — 2026-10-18, public flow verified
 
-- Active claim: `closed-beta-stabilization-production-gate-reliab-bd6c6c`; explicit user handoff covers the necessary mobile/navigation/backend paths. Existing gaming/glass Editor, controls and intentional desktop mobile-only gate preserved.
-- PR [#168](https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/168) merged as `452209c7ce1904a1947e45ce0b4a8d794b038a32`; PR and main Production Gates **SUCCESS**. Automatic marker promotion succeeded despite a concurrent documentation-only main update: promotion `e108cff428d80e2ae45a9b379d6704fd1570733f`. Railway frontend `c60ac711-d830-449e-afae-f3ad6ae478ef` and worker `603fb67a-09b3-43de-aa3c-5fba9a539f2a` **SUCCESS**; public core health and digest verified.
-- PR168 fixed nested render-slot deadlock, saved Editor recipe/trim/caption handoff, manual Home CTA/rerun feedback, internal protocol navigation, draft HTTP405/CSRF routing, history/deep links, replaced-gameplay state/export, bounded health and coordination-safe promotion.
-- Further real verification found old exports reused after a second edit and intermittent cold Home failures: Railway logged static JS503; the real nginx template reproduced40 accepted/24 rejected out of64 asset requests. PR [#169](https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/169), merged as `c14796ded9ac95c0c7120a7be61a9fb070967bcd`, fixes upload/edit render validity and raises the bounded connection cap40→128, retaining upload16/API rate limits. Its blocking test accepts the first64 assets and still rejects excessive160-connection load.
-- Latest Python suite: **182 passed,18 skipped,3 subtests**. Actual nginx runtime routes/burst: **3 passed,5 subtests**. Targeted WebKit/recipe/server regressions: **28 passed**. PR169 Production Gate **SUCCESS**: https://github.com/danilo222barbieri-ai/GamingShortsFactory/actions/runs/39129693414. Canonical UI digest for PR169: `3b59cf96adc70d453a74a4506a4173c43db9c7cecd3d3184b2e2b2fb0d963282`.
-- Real local iPhone-viewport journey passed upload→manual Editor preview/edit→render→H2641080×1920/15s export→draft save→Hub/Shorts/Profile→resume preserving edits→refresh/back, without critical runtime errors. A second edit→render→download without refresh produced a new job and the new caption was verified in the exported frame. Header/background/Game Bar checked after styles loaded; desktop remains gated.
-- Final main Production Gate **IN PROGRESS**: https://github.com/danilo222barbieri-ai/GamingShortsFactory/actions/runs/39131056110. Railway still serves PR168 until this gate promotes PR169. Public cold-start and actual AI→selection→Editor→render/export journey must pass on the final deployment. **CLOSED BETA readiness is not yet asserted.**
+- Claim `closed-beta-stabilization-production-gate-reliab-bd6c6c`; explicit user handoff covered mobile/navigation/backend paths. Gaming/glass Editor and intentional desktop mobile-only gate preserved. No redesign or new features.
+- Merged PRs [#168](https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/168), [#169](https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/169), [#170](https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/170). Runtime source `c14796ded9ac95c0c7120a7be61a9fb070967bcd`; test-only integration `4631d980405e271f67e7bd45ec4e3cf46f7fd8b7` waits for asynchronously loaded Hub draft cards.
+- Fixed render semaphore deadlock; saved Editor recipe/trim/caption propagation; stale exports after upload/edit; Home event feedback/CTA; draft405/CSRF routing; history/deep links; bounded composite health/startup/WebKit; coordination-safe automatic promotion; public assets readable in production image. Cold Home asset503 was reproduced against real nginx: cap40 rejected24/64 requests; cap128 accepts initial64 while overload protection remains tested.
+- Tests: Python **182 passed,18 skipped,3 subtests**; actual nginx routes/burst **3 passed,5 subtests**; targeted WebKit/recipe/server **28 passed**. Independent code review found no blockers. Physical iPhone and authenticated social posting were not tested; iPhone viewport and WebKit were tested, plus actual export/draft save.
+- Runtime main Production Gate **SUCCESS**: https://github.com/danilo222barbieri-ai/GamingShortsFactory/actions/runs/39131056110. Automatic promotion `3de79fb52f92ef66da92b80de0ae0772de4e843a`; Railway frontend deployment `30e797c2-2882-49cc-bada-8cb171c537aa` **SUCCESS**. Worker deployment `603fb67a-09b3-43de-aa3c-5fba9a539f2a` reached SUCCESS and subsequently expected SLEEPING (idle sleep enabled).
+- Fresh public `/healthz`: ok/companion/Streamlit/bucket/worker all true; release `3de79fb52f92ef66da92b80de0ae0772de4e843a`; UI digest `3b59cf96adc70d453a74a4506a4173c43db9c7cecd3d3184b2e2b2fb0d963282`.
+- Actual public journey passed Home→upload→AI (3 moments)→selection→Editor preview/edit→render→1080×1920 H264 export→draft save→Hub/Bozze/Shorts/Profile/Social settings→resume preserving edits→Editor deep link/refresh→browser back; zero critical runtime errors. Synthetic32s video exercised real backend/AI/render without mocks. Three independent public cold starts also passed without5xx.
+- Public visual checks passed: identical global header Home/Editor; dark html/body and scrolled background; viewport-fit=cover; anchored Game Bar; desktop mobile-only gate with QR and no runtime errors.
+- Follow-up test-only main Gate https://github.com/danilo222barbieri-ai/GamingShortsFactory/actions/runs/39146798569 is still running. A subsequent edit invalidated the previous export; a new public render/download completed and its new fixed caption was verified in the actual video frame, with unchanged15.594s duration. Claim remains active until these checks close.
 
 ## Snapshot
 
@@ -19,9 +21,9 @@
 - **Production branch:** `main`
 - **Current product baseline:** **V411 UI on the canonical UI pipeline** (repo files == served files; see `docs/architecture/gsf-canonical-ui.md`)
 - **Cross-chat orchestration:** **LIVE**
-- **Last fully tested main source commit:** `452209c7ce1904a1947e45ce0b4a8d794b038a32` (PR `#168`; PR169 main gate pending)
-- **Last runtime promotion commit:** `e108cff428d80e2ae45a9b379d6704fd1570733f` — automatic promotion of tested PR168
-- **Served canonical UI digest:** `d9bb007f4e0fd5381b2f73b35da65232e4bfa42f9f3628e37b7a1a7ca16a47d7` (`/healthz`; PR169 deployment pending)
+- **Last fully tested main source commit:** `c14796ded9ac95c0c7120a7be61a9fb070967bcd` (PR `#169`; runtime main Gate SUCCESS)
+- **Last runtime promotion commit:** `3de79fb52f92ef66da92b80de0ae0772de4e843a` — automatic promotion of tested PR169
+- **Served canonical UI digest:** `3b59cf96adc70d453a74a4506a4173c43db9c7cecd3d3184b2e2b2fb0d963282` (fresh public `/healthz`)
 - **Current `main` HEAD:** always query GitHub live; coordination/status-only commits may advance `main` without changing production.
 
 ## Production state — verified 2026-10-15 08:15 UTC
