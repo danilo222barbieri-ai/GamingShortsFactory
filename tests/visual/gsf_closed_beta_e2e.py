@@ -147,6 +147,7 @@ def run(base, media, out, engine='chromium', ai_timeout=600, manual=False):
             passed('creator_hub')
             hub.locator('.counter[data-open="drafts"]').click()
             hub.locator('.view[data-view="projects"].active [data-pane="drafts"].on').wait_for()
+            hub.locator('.view.active .pcard.draft').first.wait_for(timeout=30000)
             assert hub.locator('.view.active .pcard.draft').count()>0, 'Saved draft missing in Creator Hub'
             passed('bozze')
             hub.locator('.view.active [data-pane="shorts"]').click()
