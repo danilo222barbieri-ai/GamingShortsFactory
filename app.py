@@ -16588,22 +16588,13 @@ _GSF_SURFACE_EDITOR = r"""<div id="gsf-editor-overlay-v220" aria-hidden="true">
       <div class="editor-note right"><span id="gsf-editor-note-right">Tocca uno strumento<br>e guarda cosa cambia</span></div>
     </div>
   </section>
-</div>"""
-
-if GSF_WEB_MODE:
-    st.markdown(r"""
-    <style id="v326EditorHeaderFullStyle">
+</div>
+<!-- Persistent Editor shell styles: mounted with the surface before React. -->
+<style id="v326EditorHeaderFullStyle">
 @media(max-width:760px){#gsf-editor-overlay-v220 .gsf-editor-head{padding-right:106px!important}#gsf-editor-overlay-v220 .v326HeaderFull{position:absolute;right:48px;top:7px;height:34px;min-width:66px;padding:0 10px;border-radius:13px;border:1px solid rgba(158,190,216,.30);background:rgba(255,255,255,.92);color:#48688d;font-size:10px;font-weight:950;letter-spacing:.035em;box-shadow:0 6px 16px rgba(64,104,143,.08)}}
 </style>
-
 <style id="v389EditorParentBounded">@media(max-width:760px){#gsf-editor-overlay-v220.is-open{overflow:hidden!important}#gsf-editor-overlay-v220 .gsf-editor-head{display:none!important}#gsf-editor-overlay-v220 iframe.gsf-editor-frame,#gsf-editor-overlay-v220 iframe[title="Game Editor"]{display:block!important;flex:1 1 auto!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;border:0!important;background:transparent!important;transform:translateZ(0)!important;transition:none!important;animation:none!important}}</style>
-<script id="V389_HIDE_OUTER_EDITOR_CTA">(()=>{const host=document.getElementById('gsf-editor-overlay-v220');if(!host)return;const clean=()=>host.querySelectorAll('button,a,[role="button"],div').forEach(el=>{const t=String(el.textContent||'').replace(/\s+/g,' ').trim().toUpperCase();if(t.length<90&&t.includes('HAI FINITO')&&t.includes('CREA IL TUO SHORT')){const x=el.closest('button,a,[role="button"]')||el;x.style.setProperty('display','none','important')}});clean();try{new MutationObserver(clean).observe(host,{childList:true,subtree:true})}catch(_e){}})();</script>
-
-
 <style id="v392EditorParentPremium">@media(max-width:760px){#gsf-editor-overlay-v220 .v392EditorCloseGone{display:none!important}}</style>
-<script id="v392EditorCloseCleanup">(()=>{const host=document.getElementById('gsf-editor-overlay-v220');if(!host)return;const norm=v=>String(v||'').trim().toLowerCase();const mark=()=>{host.querySelectorAll('button,[role="button"],a').forEach(el=>{const vals=[norm(el.textContent),norm(el.getAttribute('aria-label')),norm(el.getAttribute('title')),norm(el.className),norm(el.id)];const close=vals.some(v=>v==='×'||v==='✕'||v==='✖'||v==='x'||v==='close'||v==='chiudi'||v.includes('close')||v.includes('chiudi'));if(close)el.classList.add('v392EditorCloseGone')})};mark();try{new MutationObserver(mark).observe(host,{childList:true,subtree:true})}catch(_e){}})();</script>
-
-
 <style id="v393EditorShellCleanup">
 @media(max-width:760px){
   #gsf-editor-overlay-v220.is-open{overflow:hidden!important;background:#050D16!important}
@@ -16612,11 +16603,6 @@ if GSF_WEB_MODE:
   .v393EditorChromeGone{display:none!important}
 }
 </style>
-<!-- v393EditorParentCleanup: lifecycle owned by GSFNavigation -->
-
-
-<!-- V394_MOBILE_EDITOR_FOOTER_RESTORE retired: the global shell owns footer visibility on every route. -->
-
 <style id="gsf-v220-editor-shell">
     #gsf-editor-overlay-v220{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483655;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(222,238,247,.46);-webkit-backdrop-filter:blur(5px) saturate(.98);backdrop-filter:blur(5px) saturate(.98);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
     #gsf-editor-overlay-v220.is-open{opacity:1;visibility:visible;pointer-events:auto}
@@ -16636,6 +16622,19 @@ if GSF_WEB_MODE:
     #gsf-editor-overlay-v220 .editor-note span.in{animation:gsfEditorWrite 1.05s cubic-bezier(.18,.72,.2,1) 1}
     @media(max-width:900px){#gsf-editor-overlay-v220{bottom:70px;padding:8px 5px}#gsf-editor-overlay-v220 .gsf-editor-shell{width:calc(100vw - 10px);height:calc(100dvh - 84px);border-radius:22px}#gsf-editor-overlay-v220 .gsf-editor-body{grid-template-columns:1fr;top:48px}#gsf-editor-overlay-v220 .editor-note{display:none}#gsf-editor-overlay-v220 .gsf-editor-head{height:48px;padding-left:14px}#gsf-editor-overlay-v220 .gsf-editor-close{top:7px;right:8px;width:31px;height:31px}}
     </style>
+"""
+
+if GSF_WEB_MODE:
+    st.markdown(r"""
+
+<script id="V389_HIDE_OUTER_EDITOR_CTA">(()=>{const host=document.getElementById('gsf-editor-overlay-v220');if(!host)return;const clean=()=>host.querySelectorAll('button,a,[role="button"],div').forEach(el=>{const t=String(el.textContent||'').replace(/\s+/g,' ').trim().toUpperCase();if(t.length<90&&t.includes('HAI FINITO')&&t.includes('CREA IL TUO SHORT')){const x=el.closest('button,a,[role="button"]')||el;x.style.setProperty('display','none','important')}});clean();try{new MutationObserver(clean).observe(host,{childList:true,subtree:true})}catch(_e){}})();</script>
+
+<script id="v392EditorCloseCleanup">(()=>{const host=document.getElementById('gsf-editor-overlay-v220');if(!host)return;const norm=v=>String(v||'').trim().toLowerCase();const mark=()=>{host.querySelectorAll('button,[role="button"],a').forEach(el=>{const vals=[norm(el.textContent),norm(el.getAttribute('aria-label')),norm(el.getAttribute('title')),norm(el.className),norm(el.id)];const close=vals.some(v=>v==='×'||v==='✕'||v==='✖'||v==='x'||v==='close'||v==='chiudi'||v.includes('close')||v.includes('chiudi'));if(close)el.classList.add('v392EditorCloseGone')})};mark();try{new MutationObserver(mark).observe(host,{childList:true,subtree:true})}catch(_e){}})();</script>
+
+<!-- v393EditorParentCleanup: lifecycle owned by GSFNavigation -->
+
+<!-- V394_MOBILE_EDITOR_FOOTER_RESTORE retired: the global shell owns footer visibility on every route. -->
+
 <!-- GSF_EDITOR_OVERLAY_HTML: kept at column 0; 4-space indentation turns this markup into a Markdown code block. -->
     <!-- gsf-editor-overlay-v220: mounted once by the parent app. -->
 <div class="gsf-script-guard" style="display:none!important"></div>
