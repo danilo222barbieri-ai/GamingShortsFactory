@@ -92,7 +92,9 @@ class MobileResumeStability(unittest.TestCase):
                 # independently of Playwright's cached frame-target mapping.
                 page.evaluate("()=>{const w=document.querySelector('#gsf-editor-overlay-v220 iframe').contentWindow;w.document.querySelector('#gameEditorApp').requestFullscreen=()=>Promise.reject(new Error('fallback test'))}")
                 for expanded in (True,False):
-                    point=page.evaluate("()=>{const f=document.querySelector('#gsf-editor-overlay-v220 iframe'),r=f.getBoundingClientRect(),b=f.contentDocument.querySelector('#fullscreenButton').getBoundingClientRect();return {x:r.x+(b.x+b.width/2)*r.width/f.clientWidth,y:r.y+(b.y+b.height/2)*r.height/f.clientHeight}}")
+                    # A real pointer must wait for transient parent toasts as
+                    # well as the restored child control to stop covering it.
+                    point=page.wait_for_function("()=>{const f=document.querySelector('#gsf-editor-overlay-v220 iframe'),r=f.getBoundingClientRect(),d=f.contentDocument,b=d.querySelector('#fullscreenButton'),v=b.getBoundingClientRect(),cx=v.x+v.width/2,cy=v.y+v.height/2,x=r.x+cx*r.width/f.clientWidth,y=r.y+cy*r.height/f.clientHeight;return v.width>0&&v.height>0&&document.elementFromPoint(x,y)===f&&b.contains(d.elementFromPoint(cx,cy))?{x,y}:false}").json_value()
                     page.mouse.click(point['x'],point['y'])
                     page.wait_for_function("value=>document.documentElement.classList.contains('gsf-mobile-editor-fullscreen')===value",arg=expanded)
             for target in ('home','hub','editor','short','home'):navigate(page,target)
