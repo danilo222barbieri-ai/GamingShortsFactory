@@ -1,17 +1,117 @@
 {
   "branch": "chat/closed-beta-stabilization-production-gate-reliab-bd6c6c",
   "created_at": "2026-10-18T06:43:58+00:00",
+  "evidence": {
+    "commit": "b606861b9cdd7a271c1b6b60f7a34dbdcb4aefef",
+    "gate": {
+      "run": 39149112043,
+      "status": "SUCCESS",
+      "url": "https://github.com/danilo222barbieri-ai/GamingShortsFactory/actions/runs/39149112043"
+    },
+    "mandatory_checks": {
+      "ai": true,
+      "app_startup": true,
+      "crea_short": true,
+      "creator_hub": true,
+      "editor": true,
+      "gamebar": true,
+      "home": true,
+      "main_tests": true,
+      "moment_selection": true,
+      "no_critical_errors": true,
+      "production_gate": true,
+      "railway_deploy": true,
+      "railway_health": true,
+      "render": true,
+      "upload": true
+    },
+    "ownership_authorization": "User explicitly authorized transfer of the files necessary for mobile CLOSED BETA stabilization in this chat on 2026-10-18; preserve existing integrated and pending work.",
+    "pr": "https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/173",
+    "railway": {
+      "deployment": "c5001f0d-f24a-4d62-b1b9-9d36fcc9676d",
+      "expected_ui_digest": "a7b9924c82f3ababc0e059077dcc944cf8831e28af62c4d55f772a256d2cafb9",
+      "health": {
+        "bucket": true,
+        "companion": true,
+        "ok": true,
+        "release": "41e583b9558feb7622496bdbf035e3c099b5ee10",
+        "streamlit": true,
+        "ui_digest": "a7b9924c82f3ababc0e059077dcc944cf8831e28af62c4d55f772a256d2cafb9",
+        "worker": true
+      },
+      "release": "41e583b9558feb7622496bdbf035e3c099b5ee10",
+      "status": "SUCCESS",
+      "ui_digest": "a7b9924c82f3ababc0e059077dcc944cf8831e28af62c4d55f772a256d2cafb9"
+    },
+    "related_prs": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173
+    ],
+    "runtime_pr": "https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/171",
+    "terminal_status": "LIVE",
+    "tests": {
+      "chromium_bfcache": "Uploaded video; transient parent toast covered first touch; bounded real-hit wait corrected test; native pointer/fullscreen assertion passed7.4s",
+      "cold_editor_bootstrap": "RED304px default iframe before fix; GREEN after mounting unchanged CSS with persistent surface",
+      "final_cold_sessions": "3 fresh sessions on release41e583b: Home ready, zero5xx/runtime errors",
+      "independent_review": "no blockers; five CSS blocks byte-identical and relative order preserved",
+      "limitations": [
+        "Synthetic32s input; real backend/AI/render without mocks",
+        "Physical iPhone not tested; viewport and WebKit tested",
+        "Authenticated social posting not tested",
+        "Desktop intentionally remains mobile-only gated"
+      ],
+      "nginx_runtime": "3 passed,5 subtests; cold64 accepted,overload rejected",
+      "post_rollout_transport": "Initial ERR_FAILED before Home preserved separately; subsequent network probe,3cold sessions and complete final journey all passed; no app5xx/exception reproduced.",
+      "public_final": "PASS on release41e583b: complete real AI journey, full-size390x534 Editor/shared header/dark safe area, actual second render/download/new caption; no critical runtime errors",
+      "public_flow": "Home/upload/real AI/3 moments/Editor preview/edit/render1080x1920/export/draft/Hub/Shorts/Profile/Social settings/resume/deep link/refresh/back; zero critical runtime errors",
+      "public_second_edit": "new job and actual exported caption verified; duration15.594s preserved",
+      "python": "183 passed,18 skipped,3 subtests",
+      "webkit_local": "24passed plus isolated history passed; corrected optional external font cancellation classification. Local media browser crash not reproduced on official GitHub gate, which passed all WebKit checks.",
+      "webkit_pr171_gate": "SUCCESS39147496258 including real-media navigation/resume on official runner"
+    },
+    "updated_at": "2026-10-18T17:48:24.117086+00:00"
+  },
   "id": "closed-beta-stabilization-production-gate-reliab-bd6c6c",
   "owner": "chat/closed-beta-stabilization-production-gate-reliab-bd6c6c",
   "paths": [
+    ".github/workflows/gsf-ci.yml",
     ".github/workflows/v397-production-gate.yml",
+    "Dockerfile",
+    "PROJECT_STATUS.md",
+    "app.py",
     "docs/superpowers/plans/2026-10-18-closed-beta-stabilization.md",
+    "tests/js/mobile_game_editor_state.test.mjs",
+    "tests/test_closed_beta_navigation.py",
+    "tests/test_closed_beta_routes.py",
     "tests/test_gate_health.py",
     "tests/test_gate_promotion_reliability.py",
+    "tests/test_mobile_editor_recipe.py",
+    "tests/test_mobile_game_editor_state.py",
+    "tests/test_mobile_resume_stability.py",
+    "tests/test_navigation_stability.py",
+    "tests/test_render_gate_reliability.py",
     "tests/visual/gsf_closed_beta_e2e.py",
+    "tests/visual/gsf_navigation_stress.py",
+    "tests/visual/gsf_visual_check.py",
     "tools/gsf_gate_health.py",
-    "tools/gsf_gate_promote.py"
+    "tools/gsf_gate_promote.py",
+    "web/creator_hub_v156_component/index.html",
+    "web/direct_upload_server.py",
+    "web/game_editor_mobile_component/editor.mjs",
+    "web/gsf_navigation_lifecycle.js",
+    "web/home_v154_component/index.html",
+    "web/mobile_editor_recipe.py",
+    "web/nginx.conf.template",
+    "web/render_gate_v293.py",
+    "web/runtime_smoke_v411.py",
+    "web/share_v156_component/index.html",
+    "web/start_web.sh",
+    "web/start_web_fast.sh"
   ],
   "scope": "Closed beta stabilization: production gate reliability and real upload AI editor render end-to-end verification",
-  "state": "active"
+  "state": "completed"
 }
