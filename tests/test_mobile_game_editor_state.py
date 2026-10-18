@@ -227,3 +227,18 @@ def test_current_export_and_legacy_session_remain_restorable(tmp_path, monkeypat
     assert server._final_matches_current_upload('beta123',{'started_at':201})
     assert not server._final_matches_current_upload('beta123',{'started_at':100,'completed_at':250})
     assert not server._final_matches_current_upload('beta123',{})
+
+def test_editing_rendered_project_invalidates_export_until_new_render(tmp_path, monkeypatch):
+    import time
+    server=_load_server_module();monkeypatch.setattr(server,'ROOT',tmp_path)
+    root=tmp_path/'sessions'/'beta123';(root/'media').mkdir(parents=True)
+    (root/'media/.direct_upload_ready.json').write_text(json.dumps({'upload_id':'video','completed_at':100}))
+    stable=root/'media/gaming_short_finale_share.mp4';stable.write_bytes(b'x'*2048)
+    (root/'render_job.json').write_text(json.dumps({'started_at':200,'status':'ready'}))
+    server._editor_overlay_state_save('beta123',{'captionText':'second edit'},expected_source_key='video')
+    assert not server._final_matches_current_upload('beta123',{'started_at':200})
+    assert not stable.exists(), 'The session export must not survive a changed recipe'
+    payload=json.loads((root/'editor_overlay_state.json').read_text())
+    server._editor_overlay_state_save('beta123',{'captionText':'second edit'},expected_source_key='video')
+    assert json.loads((root/'editor_overlay_state.json').read_text())['updated_at']==payload['updated_at'], 'Unchanged autosaves must not invalidate a newer render'
+    assert server._final_matches_current_upload('beta123',{'started_at':time.time()+1})

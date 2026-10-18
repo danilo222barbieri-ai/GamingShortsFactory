@@ -71,6 +71,19 @@ class ClosedBetaNavigation(unittest.TestCase):
         self.page.evaluate('startShortIfNeeded(Date.now())')
         self.page.wait_for_function('renderClicks===1',timeout=1200)
 
+    def test_create_short_syncs_backend_after_an_export_was_invalidated(self):
+        self.load()
+        self.page.route('**/share/state',lambda r:r.fulfill(content_type='application/json',body='{"ok":true,"ready":false}'))
+        self.page.evaluate("GSFNavigation.navigate({target:'short'});window.renderClicks=0;window.syncClicks=0")
+        app=(ROOT/'app.py').read_text()
+        start=app.index('      const startShortIfNeeded=async requestedAt=>{')
+        end=app.index("      P.GSFNavigation.registerSurface('social'",start)
+        self.page.evaluate("const P=window,bridge={signal:{aborted:false}};let lastShortRequest=0;const notice=()=>{};"+app[start:end]+"window.startShortIfNeeded=startShortIfNeeded")
+        self.page.evaluate("document.body.insertAdjacentHTML('beforeend','<div class=st-key-gsf_final_ready_sync_v111><button>SYNC SHORT READY</button></div>');document.querySelector('.st-key-gsf_final_ready_sync_v111 button').onclick=()=>{syncClicks++;setTimeout(()=>{const box=document.createElement('div');box.className='st-key-gsf-major-create-short';const button=document.createElement('button');button.onclick=()=>renderClicks++;box.append(button);document.body.append(box)},100)};void 0")
+        self.page.evaluate('startShortIfNeeded(Date.now())')
+        self.page.wait_for_function('renderClicks===1',timeout=1500)
+        self.assertEqual(self.page.evaluate('syncClicks'),1)
+
     def test_internal_ai_state_message_does_not_navigate_away(self):
         self.load()
         self.page.evaluate("GSFNavigation.navigate({target:'editor'});window.postMessage({type:'GSF_SHELL_NAV',target:'ai-state',loaded:true},location.origin)")

@@ -14397,6 +14397,11 @@ if video:
     # V54 — BETA FLOW: ONE FINAL RENDER + MINIMAL SOCIAL
     # ==========================================================
     _final_recipe=st.session_state.get("gsf_final_recipe",{}) or {}
+    if GSF_WEB_MODE:
+        from web.mobile_editor_recipe import local_final_is_current as _gsf_final_is_current
+        if not _gsf_final_is_current(GSF_SESSION_ROOT):
+            for _key in ("publication_final_bytes","publication_ready","social_final_context_v53","social_final_context_v54"):
+                st.session_state.pop(_key,None)
     _final_video=st.session_state.get("publication_final_bytes")
 
     _show_final_flow=bool(
@@ -14577,6 +14582,7 @@ if video:
                     _gsf_restore_sid
                     and _gsf_restore_final.is_file()
                     and _gsf_restore_final.stat().st_size>1024
+                    and (not GSF_WEB_MODE or _gsf_final_is_current(GSF_SESSION_ROOT))
                     and (_gsf_restore_started<=0.0 or _gsf_restore_final.stat().st_mtime>=_gsf_restore_started-1.0)
                 ):
                     _gsf_restored_bytes=_gsf_restore_final.read_bytes()
@@ -16499,6 +16505,12 @@ if GSF_WEB_MODE:
         try{const r=await P.fetch('/share/state',{cache:'no-store',credentials:'same-origin'});const j=await r.json();if(r.ok&&j&&j.ready)return}catch(e){}
         const renderButton=()=>document.querySelector('.st-key-gsf-major-create-short button,.st-key-create_final_short_v54 button')||[...document.querySelectorAll('button,[role="button"]')].find(x=>{if(x.closest('#gsf-social-overlay-v159,#gsf-global-gamebar,#gsf-global-header'))return false;const t=String(x.innerText||x.textContent||'').trim().toLowerCase();return t==='crea short'||t.includes('crea short finale')||t.includes('crea il tuo short')});
         let b=renderButton();
+        if(!b){
+          // An edit can invalidate an already completed export without a
+          // Streamlit event. Reuse its existing sync widget to mount render.
+          const sync=document.querySelector('.st-key-gsf_final_ready_sync_v111 button');
+          if(sync&&!sync.disabled)sync.click();
+        }
         const deadline=Date.now()+15000;
         // Preparing the manual recipe and mounting its widget complete on a
         // Streamlit rerun. Wait for that existing button; leaving cancels it.
