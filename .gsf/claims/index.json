@@ -486,7 +486,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -1070,7 +1070,7 @@
         "web/publish_short_v405_component/**",
         "web/share_v156_component/**"
       ],
-      "scope": "ui: Night Arena single look — shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
+      "scope": "ui: Night Arena single look \u2014 shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
       "state": "completed"
     },
     {
@@ -1173,6 +1173,23 @@
         "web/share_v156_component/index.html"
       ],
       "scope": "beta-readiness: Creator Hub profile (photo/name) works for every session, social connect also links the creator account, login keeps custom name/photo; button audit fixes",
+      "state": "active"
+    },
+    {
+      "branch": "chat/closed-beta-stabilization-production-gate-reliab-bd6c6c",
+      "created_at": "2026-10-18T06:43:58+00:00",
+      "id": "closed-beta-stabilization-production-gate-reliab-bd6c6c",
+      "owner": "chat/closed-beta-stabilization-production-gate-reliab-bd6c6c",
+      "paths": [
+        ".github/workflows/v397-production-gate.yml",
+        "docs/superpowers/plans/2026-10-18-closed-beta-stabilization.md",
+        "tests/test_gate_health.py",
+        "tests/test_gate_promotion_reliability.py",
+        "tests/visual/gsf_closed_beta_e2e.py",
+        "tools/gsf_gate_health.py",
+        "tools/gsf_gate_promote.py"
+      ],
+      "scope": "Closed beta stabilization: production gate reliability and real upload AI editor render end-to-end verification",
       "state": "active"
     }
   ],
