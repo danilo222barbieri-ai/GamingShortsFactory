@@ -1,3 +1,0 @@
-source: approved GSF dark-glass icon
-size: 180x180
-purpose: saved-to-phone app icon
