@@ -3,6 +3,16 @@
 > **CANONICAL SOURCE OF TRUTH FOR ALL TECHNICAL CHATS / AGENTS.**
 > Read this file before changing code. Refresh live GitHub/Railway evidence before changing production claims.
 
+## Closed beta stabilization — 2026-10-18, release verification pending
+
+- Claim: `closed-beta-stabilization-production-gate-reliab-bd6c6c`; user explicitly transferred the necessary mobile/navigation/backend paths to this chat. Existing gaming/glass Editor and desktop mobile-only gate preserved.
+- PR [#168](https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/168) merged as `452209c7ce1904a1947e45ce0b4a8d794b038a32`.
+- Corrected nested render-slot deadlock, saved Editor recipe/trim/caption handoff, manual Home CTA and rerun feedback, stale protocol navigation, draft HTTP 405/CSRF routing, refresh/back/deep links, replacement gameplay inheriting old Editor/export, bounded composite health and coordination-safe marker promotion.
+- Verified: Python suite **179 passed, 17 skipped, 3 subtests**; JavaScript state contracts **7 passed**; PR Production Gate **SUCCESS**, including **23 WebKit tests**, image/repository equality and security/runtime checks. PR gate: https://github.com/danilo222barbieri-ai/GamingShortsFactory/actions/runs/39126370510.
+- Real local iPhone-viewport journey passed upload → manual Editor preview/edit → render → H.264 1080×1920/15s export → draft save → Hub/Shorts/Profile → resume preserving edits → refresh/back, without critical runtime errors. Burned fixed caption verified in exported frame. Replacement upload opens the new 7s video and Share stays unready until a new render. Header/background/Game Bar visually checked after styles loaded; desktop remains intentionally gated.
+- Main Production Gate **IN PROGRESS**: https://github.com/danilo222barbieri-ai/GamingShortsFactory/actions/runs/39127577320. Expected canonical UI digest `d9bb007f4e0fd5381b2f73b35da65232e4bfa42f9f3628e37b7a1a7ca16a47d7`.
+- Railway still on previously verified deployment `5e64a116-0865-4f22-b074-31dcbbfad647`; no manual deploy marker changes. Main gate, automatic promotion, fresh Railway health/digest and deployed AI→selection→Editor→render journey remain mandatory. **CLOSED BETA readiness is not yet asserted.**
+
 ## Snapshot
 
 - **Repository:** `danilo222barbieri-ai/GamingShortsFactory`
