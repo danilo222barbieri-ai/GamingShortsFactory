@@ -207,6 +207,29 @@ setTimeout(()=>{assert.equal(called,100);assert.equal(retained,0,'completed time
             javascript=Path(temporary)/'parent.js';javascript.write_text(script)
             result=subprocess.run(['node','--check',str(javascript)],capture_output=True,text=True)
             self.assertEqual(result.returncode,0,result.stderr)
+            # The production bootstrap runs before Streamlit supplies any CSS.
+            # Surface geometry must survive a cold route and React replacement.
+            try:
+                from playwright.sync_api import sync_playwright
+            except ImportError:
+                return  # Fast contracts lack browsers; Production Gate runs WebKit.
+            import shutil
+            with sync_playwright() as playwright:
+                engine=getattr(playwright,os.environ.get('GSF_BROWSER','chromium'))
+                executable=shutil.which('chromium') if engine.name=='chromium' else None
+                options={'executable_path':executable,'args':['--no-sandbox']} if executable else {}
+                browser=engine.launch(**options)
+                page=browser.new_page(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
+                page.route('**/*',lambda route:route.fulfill(status=200,json={'ok':False}))
+                page.set_content(first)
+                page.evaluate("GSFNavigation.navigate({target:'editor'})")
+                frame=page.locator('#gsf-editor-overlay-v220 iframe')
+                rect=frame.bounding_box()
+                self.assertGreaterEqual(rect['width'],375,'Cold Editor uses browser-default iframe width')
+                self.assertGreaterEqual(rect['height'],600,'Cold Editor loses its persistent shell stylesheet')
+                self.assertEqual(frame.evaluate("e=>getComputedStyle(e).borderTopWidth"),'0px')
+                self.assertEqual(page.locator('.editor-note.left').evaluate("e=>getComputedStyle(e).display"),'none')
+                browser.close()
 
     @unittest.skipUnless(os.environ.get('GSF_BASE_URL'),'requires running GSF_BASE_URL')
     def test_explicit_draft_resume_reinitializes_same_gameplay(self):
