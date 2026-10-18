@@ -34,6 +34,7 @@ class NavigationStability(unittest.TestCase):
                 for sequence in SEQUENCES:
                     for cycle in range(cycles):
                         for target in sequence:
+                            print('NAV STEP',sequence,cycle,target,flush=True)
                             navigate(page,target)
                             self.assertFalse(errors,{'target':target,'cycle':cycle,'errors':errors})
                     print('NAV SEQUENCE',mobile,sequence,f'passed {cycles} repetitions',flush=True)

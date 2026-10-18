@@ -11724,6 +11724,12 @@ if GSF_WEB_MODE:
             st.session_state.pop("gsf_v291_engine_profile",None)
             st.session_state.pop("gsf_v291_ai_request",None)
 
+        # Home's Editor CTA selects the existing manual renderer; opening an
+        # AI candidate (which carries an index) preserves its selected recipe.
+        if _v154_event=="open_editor" and _v154_engine=="manual" and "index" not in _gsf_v154_event:
+            st.session_state["modalita_gsf"]="✋ Manuale"
+            st.session_state.pop("gsf_pending_engine_switch_v75",None)
+
         # V412 AI ENGINES: the AI page drives selection, editor hand-off and
         # "Cambia short" on the real AI run (same session-state keys used by
         # preview, editor and final render).
@@ -14433,8 +14439,10 @@ if video:
 
         if not _has_final:
             def _gsf_v107_queue_final_render():
+                print("GSF_FINAL_QUEUE phase=enter",flush=True)
                 if st.session_state.get("gsf_v107_final_render_pending") or st.session_state.get("gsf_v107_final_render_running"):
                     return
+                print("GSF_FINAL_QUEUE phase=freeze",flush=True)
                 _recipe=st.session_state.get("gsf_final_recipe")
                 if isinstance(_recipe,dict) and _recipe:
                     _recipe=dict(_recipe)
@@ -14483,7 +14491,9 @@ if video:
                             st.session_state["gsf_final_recipe"]=_recipe
                     except Exception as _v125_recipe_exc:
                         print("GSF_V125_PLAN_RECIPE_WARN",repr(str(_v125_recipe_exc))[:220],flush=True)
+                    print("GSF_FINAL_QUEUE phase=mobile",flush=True)
                     _recipe=_gsf_saved_mobile_recipe(_recipe)
+                    print("GSF_FINAL_QUEUE phase=job",flush=True)
                     st.session_state["gsf_final_recipe"]=_recipe
                     st.session_state["gsf_v107_render_recipe_snapshot"]=dict(_recipe)
                 _src=""
@@ -14511,6 +14521,7 @@ if video:
                     __import__("os").replace(_job_tmp,_job_path)
                 except Exception as _job_exc:
                     print("GSF_FINAL_JOB_WRITE_WARN",repr(str(_job_exc)),flush=True)
+                print("GSF_FINAL_QUEUE phase=queued",flush=True)
 
             try:
                 _job_path=GSF_SESSION_ROOT/"render_job.json"
@@ -14756,7 +14767,8 @@ if video:
             if _gsf_v107_pending:
                 _snap=st.session_state.get("gsf_v107_render_recipe_snapshot")
                 if isinstance(_snap,dict) and _snap:
-                    st.session_state["gsf_final_recipe"]=dict(_snap)
+                    _final_recipe=dict(_snap)
+                    st.session_state["gsf_final_recipe"]=_final_recipe
                 _src_snap=str(st.session_state.get("gsf_v107_render_source_snapshot") or "")
                 if _src_snap:
                     st.session_state["gsf_source_path"]=_src_snap
@@ -16472,9 +16484,16 @@ if GSF_WEB_MODE:
       const startShortIfNeeded=async requestedAt=>{
         if(!requestedAt||requestedAt===lastShortRequest)return;
         lastShortRequest=requestedAt;
+        const routeEpoch=P.GSFNavigation.snapshot().epoch;
+        const active=()=>!bridge.signal.aborted&&lastShortRequest===requestedAt&&P.GSFNavigation.snapshot().target==='social'&&P.GSFNavigation.snapshot().epoch===routeEpoch;
         try{const r=await P.fetch('/share/state',{cache:'no-store',credentials:'same-origin'});const j=await r.json();if(r.ok&&j&&j.ready)return}catch(e){}
-        let b=document.querySelector('.st-key-gsf-major-create-short button,.st-key-create_final_short_v54 button');
-        if(!b)b=[...document.querySelectorAll('button,[role="button"]')].find(x=>{if(x.closest('#gsf-social-overlay-v159,#gsf-global-gamebar,#gsf-global-header'))return false;const t=String(x.innerText||x.textContent||'').trim().toLowerCase();return t==='crea short'||t.includes('crea short finale')||t.includes('crea il tuo short')});
+        const renderButton=()=>document.querySelector('.st-key-gsf-major-create-short button,.st-key-create_final_short_v54 button')||[...document.querySelectorAll('button,[role="button"]')].find(x=>{if(x.closest('#gsf-social-overlay-v159,#gsf-global-gamebar,#gsf-global-header'))return false;const t=String(x.innerText||x.textContent||'').trim().toLowerCase();return t==='crea short'||t.includes('crea short finale')||t.includes('crea il tuo short')});
+        let b=renderButton();
+        const deadline=Date.now()+15000;
+        // Preparing the manual recipe and mounting its widget complete on a
+        // Streamlit rerun. Wait for that existing button; leaving cancels it.
+        while(!b&&active()&&Date.now()<deadline){await new Promise(resolve=>setTimeout(resolve,100));b=renderButton();}
+        if(!active())return;
         if(!b){setTimeout(()=>notice('Carica un gameplay prima di creare lo Short.'),400);return}
         if(b.disabled||b.getAttribute('aria-disabled')==='true'){setTimeout(()=>notice('Il gameplay non è ancora pronto per il render.'),400);return}
         b.click();setTimeout(()=>notice('Creazione Short avviata…'),400);

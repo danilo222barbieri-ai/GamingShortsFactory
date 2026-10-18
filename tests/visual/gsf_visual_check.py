@@ -269,7 +269,7 @@ if __name__ == "__main__":
     os.environ.setdefault("GSF_TEST_MEDIA","1")
     suite=unittest.TestSuite()
     loader=unittest.TestLoader()
-    for module in ("test_runtime_import_stability","test_navigation_stability","test_mobile_resume_stability"):
+    for module in ("test_runtime_import_stability","test_navigation_stability","test_mobile_resume_stability","test_closed_beta_navigation"):
         suite.addTests(loader.loadTestsFromName(module))
     result=unittest.TextTestRunner(verbosity=2).run(suite)
     for case,trace in list(result.failures)+list(result.errors):

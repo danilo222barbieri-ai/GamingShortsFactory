@@ -37,13 +37,15 @@
     if (target==='profile'||target==='account') {target='hub';section='profile';}
     if (target==='projects'||target==='live') {section=target;target='hub';}
     if (target==='hub'&&!['dashboard','profile','projects','live','subscription','social'].includes(section)) section='dashboard';
-    if (target!=='home'&&!ids[target]) target='home';
     if (target!=='hub') section='';
     return {target,section};
   };
   const routeFromUrl=()=>{
     const q=new URL(location.href).searchParams;
-    return {target:q.get('gsf_page')||'home',section:q.get('gsf_section')||''};
+    const route={target:q.get('gsf_page')||'home',section:q.get('gsf_section')||''};
+    // Unknown URL routes recover to Home. Internal protocol messages (such
+    // as ai-state) must keep being ignored by navigate's allowlist.
+    return ['home','short','profile','account','projects','live'].includes(route.target)||ids[route.target]?route:{target:'home',section:''};
   };
   current=normalize(routeFromUrl());currentData={...current};
   const writeHistory=()=>{

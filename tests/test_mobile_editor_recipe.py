@@ -77,3 +77,40 @@ class FixedCaptionRender(unittest.TestCase):
             namespace['_gsf_render_core']('source.mp4','output.mp4',0,5,
                 subtitles_enabled=True,subtitle_mode='Manuale',subtitle_text='GSF beta verification')
         self.assertEqual(writer.call_args.kwargs['fallback_text'],'GSF beta verification')
+
+
+class HomeEditorHandoff(unittest.TestCase):
+    def apply_event(self, event):
+        import ast
+        from types import SimpleNamespace
+        tree=ast.parse((ROOT/'app.py').read_text())
+        node=next(n for n in ast.walk(tree) if isinstance(n,ast.If) and ast.unparse(n.test)=='isinstance(_gsf_v154_event, dict)')
+        state={'modalita_gsf':'🚀 AUTO TOTALE'}
+        namespace={'st':SimpleNamespace(session_state=state), '_gsf_v154_event':event,
+                   '_gsf_v154_duration':15,'_gsf_v154_engine':'','video':object()}
+        exec(compile(ast.Module(body=[node],type_ignores=[]),'app.py','exec'),namespace)
+        return state
+
+    def test_home_editor_cta_prepares_existing_manual_pipeline(self):
+        state=self.apply_event({'event':'open_editor','engine':'manual','duration':15})
+        self.assertEqual(state['modalita_gsf'],'✋ Manuale')
+
+    def test_selected_ai_moment_keeps_its_existing_pipeline(self):
+        state=self.apply_event({'event':'open_editor','engine':'auto','index':1,'start_time':10})
+        self.assertEqual(state['modalita_gsf'],'🚀 AUTO TOTALE')
+
+
+class QueuedRecipe(unittest.TestCase):
+    def test_frozen_recipe_is_the_one_passed_to_final_render(self):
+        import ast
+        from types import SimpleNamespace
+        tree=ast.parse((ROOT/'app.py').read_text())
+        node=next(n for n in ast.walk(tree) if isinstance(n,ast.If)
+                  and ast.unparse(n.test)=='_gsf_v107_pending'
+                  and any(isinstance(child,ast.Name) and child.id=='_snap' for child in ast.walk(n)))
+        frozen={'kind':'inline_editor','start':11,'duration':7,'render_kwargs':{'zoom':1.5}}
+        state={'gsf_v107_render_recipe_snapshot':frozen}
+        namespace={'st':SimpleNamespace(session_state=state),'_gsf_v107_pending':True,
+                   '_final_recipe':{'kind':'auto','start':10,'duration':15}}
+        exec(compile(ast.Module(body=[node],type_ignores=[]),'app.py','exec'),namespace)
+        self.assertEqual(namespace['_final_recipe'],frozen)
