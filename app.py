@@ -11453,6 +11453,15 @@ if GSF_WEB_MODE:
 _gsf_recovered_source=None
 video=None
 if _gsf_direct_source is not None:
+    _gsf_previous_source=str(st.session_state.get("gsf_source_path") or "")
+    if _gsf_previous_source and _gsf_previous_source!=str(_gsf_direct_source):
+        # A completed replacement upload starts a new video workflow. Reuse
+        # the existing reset, retaining the newly uploaded source and drafts.
+        _gsf_v75_reset_engine_workflow()
+        for _key in list(st.session_state.keys()):
+            if str(_key).startswith(("gsf_editor_","gsf_manual_","gsf_v107_")):
+                st.session_state.pop(_key,None)
+        (GSF_SESSION_ROOT/"editor2027_current.txt").unlink(missing_ok=True)
     _gsf_recovered_source=_gsf_direct_source
     video=_GSFRecoveredUpload(_gsf_direct_source,_gsf_direct_name or _gsf_direct_source.name)
     st.session_state["gsf_source_path"]=str(_gsf_direct_source)

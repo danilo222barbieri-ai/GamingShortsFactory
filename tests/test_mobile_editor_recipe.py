@@ -114,3 +114,26 @@ class QueuedRecipe(unittest.TestCase):
                    '_final_recipe':{'kind':'auto','start':10,'duration':15}}
         exec(compile(ast.Module(body=[node],type_ignores=[]),'app.py','exec'),namespace)
         self.assertEqual(namespace['_final_recipe'],frozen)
+
+class ReplacedGameplay(unittest.TestCase):
+    def test_new_direct_upload_discards_previous_editor_source_and_recipe(self):
+        import ast
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        tree=ast.parse((ROOT/'app.py').read_text())
+        node=next(n for n in tree.body if isinstance(n,ast.If) and ast.unparse(n.test)=='_gsf_direct_source is not None')
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);source=root/'new.mp4';source.write_bytes(b'video')
+            (root/'editor2027_current.txt').write_text(str(root/'old.mp4'))
+            state={'gsf_source_path':str(root/'old.mp4'),'gsf_editor_source_path':str(root/'old.mp4'),
+                   'gsf_final_recipe':{'source_path':'old.mp4'},'gsf_v107_render_recipe_snapshot':{'old':True}}
+            reset=Mock(side_effect=lambda:state.pop('gsf_final_recipe',None))
+            namespace={'st':SimpleNamespace(session_state=state),'_gsf_direct_source':source,
+                       '_gsf_direct_name':'new.mp4','_GSFRecoveredUpload':lambda *args:object(),
+                       '_gsf_v75_reset_engine_workflow':reset,'GSF_SESSION_ROOT':root}
+            exec(compile(ast.Module(body=[node],type_ignores=[]),'app.py','exec'),namespace)
+            self.assertNotIn('gsf_editor_source_path',state)
+            self.assertNotIn('gsf_final_recipe',state)
+            self.assertNotIn('gsf_v107_render_recipe_snapshot',state)
+            self.assertFalse((root/'editor2027_current.txt').exists())
+            self.assertEqual(state['gsf_source_path'],str(source))
