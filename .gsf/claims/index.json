@@ -1241,7 +1241,8 @@
         "web/start_web.sh",
         "web/start_web_fast.sh",
         "web/render_gate_v293.py",
-        "tests/test_render_gate_reliability.py"
+        "tests/test_render_gate_reliability.py",
+        "tests/test_mobile_game_editor_state.py"
       ],
       "scope": "Closed beta stabilization: production gate reliability and real upload AI editor render end-to-end verification",
       "state": "active"
