@@ -1310,7 +1310,7 @@ $$('[data-share]').forEach(b=>b.onclick=async()=>{
   finally{b.disabled=!server.ready}
 });
 $('#editBtn').onclick=()=>{close(false);nav('editor')};
-$('#draftBtn').onclick=async()=>{const b=$('#draftBtn');b.disabled=true;try{const r=await fetch('/drafts/save-current',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'});const j=await r.json().catch(()=>({}));toast(r.ok&&j.ok?'Salvato nei tuoi Progetti':(j.error||'Salvataggio non riuscito'))}catch(_e){toast('Salvataggio non riuscito')}finally{b.disabled=false}};
+$('#draftBtn').onclick=async()=>{const b=$('#draftBtn');b.disabled=true;try{const token=server.csrf_token||(await fetch('/creator-hub/state?scope=header',{credentials:'same-origin',cache:'no-store'}).then(r=>r.json())).csrf_token||'';const r=await fetch('/drafts/save-current',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-GSF-CSRF':token},body:'{}'});const j=await r.json().catch(()=>({}));toast(r.ok&&j.ok?'Salvato nei tuoi Progetti':(j.error||'Salvataggio non riuscito'))}catch(_e){toast('Salvataggio non riuscito')}finally{b.disabled=false}};
 $('#peekBtn').onclick=()=>{const v=$('#bigPreview');if(!v.getAttribute('src')&&server.ready)v.src='/share/final?revision='+encodeURIComponent(server.revision);open('preview');setTimeout(()=>{try{v.play()}catch(_e){}},300)};
 
 /* server state */

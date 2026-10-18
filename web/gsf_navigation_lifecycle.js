@@ -37,8 +37,21 @@
     if (target==='profile'||target==='account') {target='hub';section='profile';}
     if (target==='projects'||target==='live') {section=target;target='hub';}
     if (target==='hub'&&!['dashboard','profile','projects','live','subscription','social'].includes(section)) section='dashboard';
+    if (target!=='home'&&!ids[target]) target='home';
     if (target!=='hub') section='';
     return {target,section};
+  };
+  const routeFromUrl=()=>{
+    const q=new URL(location.href).searchParams;
+    return {target:q.get('gsf_page')||'home',section:q.get('gsf_section')||''};
+  };
+  current=normalize(routeFromUrl());currentData={...current};
+  const writeHistory=()=>{
+    const url=new URL(location.href);
+    const target=current.createShort?'short':current.target;
+    if(target==='home'){url.searchParams.delete('gsf_page');url.searchParams.delete('gsf_section');}
+    else {url.searchParams.set('gsf_page',target);if(current.section)url.searchParams.set('gsf_section',current.section);else url.searchParams.delete('gsf_section');}
+    if(url.href!==location.href)history.pushState(null,'',url);
   };
   const frameOf = key => D.getElementById(ids[key])?.querySelector('iframe');
   const post = (key, type) => frameOf(key)?.contentWindow?.postMessage({type},location.origin);
@@ -62,7 +75,7 @@
     }
     try {sessionStorage.setItem('gsf_editor_overlay_open_v220',current.target==='editor'?'1':'0');} catch (_) {}
   }
-  function navigate(data={}) {
+  function navigate(data={},options={}) {
     const next=normalize(data);
     if (next.target!=='home'&&!ids[next.target]) return false;
     const previous=current;
@@ -72,6 +85,7 @@
       if (previous.target!==next.target) post(previous.target,'GSF_APP_SUSPEND');
       current=next;
       currentData={...data,...next};
+      if(options.history!==false)writeHistory();
       surfaces.get(next.target)?.open?.({...data,...next});
       // GSF_NIGHT_ARENA shared-element reveal (CSS only, never delays the route).
       try{const o=window.__gsfNavOrigin,el=D.getElementById(ids[next.target]);window.__gsfNavOrigin=null;if(el&&o&&Date.now()-o.t<1500&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const r=el.getBoundingClientRect();el.style.setProperty('--na-ox',(o.x-r.left)+'px');el.style.setProperty('--na-oy',(o.y-r.top)+'px');el.style.setProperty('--na-oc',o.color||'#27AEF3');el.classList.remove('na-reveal');void el.offsetWidth;el.classList.add('na-reveal');setTimeout(()=>el.classList.remove('na-reveal'),700)}}catch(_e){}
@@ -118,6 +132,7 @@
       };
     },
   };
+  window.addEventListener('popstate',()=>navigate(routeFromUrl(),{history:false}));
   window.addEventListener('message',e=>{
     if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV') return;
     // Accept this document and its currently mounted frames, not removed frames.

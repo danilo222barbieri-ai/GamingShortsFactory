@@ -30,12 +30,13 @@ class NavigationStability(unittest.TestCase):
                 for target in ('hub','ai','editor','short','home'):navigate(page,target)
                 baseline=metrics(page)
                 print('NAV BASELINE',mobile,json.dumps(baseline),flush=True)
+                cycles=max(2,min(10,int(os.environ.get('GSF_NAV_CYCLES','10'))))
                 for sequence in SEQUENCES:
-                    for cycle in range(10):
+                    for cycle in range(cycles):
                         for target in sequence:
                             navigate(page,target)
                             self.assertFalse(errors,{'target':target,'cycle':cycle,'errors':errors})
-                    print('NAV SEQUENCE',mobile,sequence,'passed 10 repetitions',flush=True)
+                    print('NAV SEQUENCE',mobile,sequence,f'passed {cycles} repetitions',flush=True)
                 end=metrics(page)
                 print('NAV FINAL',mobile,json.dumps(end),flush=True)
                 self.maxDiff=None

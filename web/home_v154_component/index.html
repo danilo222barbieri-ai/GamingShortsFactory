@@ -3588,10 +3588,11 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    return false;
  }
  async function saveCurrentBeforeReplacement(){
+   const header=await fetch("/creator-hub/state?scope=header",{cache:"no-store",credentials:"same-origin"}).then(r=>r.json());
    const r=await fetch("/drafts/save-current",{
      method:"POST",
      credentials:"same-origin",
-     headers:{"Content-Type":"application/json"},
+     headers:{"Content-Type":"application/json","X-GSF-CSRF":header.csrf_token||""},
      body:"{}"
    });
    let j={};try{j=await r.json()}catch(_e){}

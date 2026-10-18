@@ -186,10 +186,21 @@ def test_editor_state_security_contract_remains_session_bound() -> None:
     assert "_editor_prepare_current(_social_sid(self))" in get_block
     post_block = server[server.index('if path=="/editor/state/save":') :]
     post_block = post_block[: post_block.index('if path=="/ai/feedback":')]
-    assert "_editor_overlay_state_save(sid,raw_state)" in post_block
+    assert 'expected_source_key=data.get("source_key","")' in post_block
     assert 'sid=_safe_id(self.headers.get("X-GSF-Session-ID"))' in server
 
     for route in ('location = /editor/state {', 'location = /editor/state/save {'):
         block = nginx[nginx.index(route) :]
         block = block[: block.index("\n    }")]
         assert "proxy_set_header X-GSF-Session-ID $gsf_session_cookie;" in block
+
+
+def test_stale_save_cannot_bind_to_replacement_upload(tmp_path):
+    SERVER.ROOT = tmp_path
+    root=tmp_path/'sessions'/'source-safe'
+    (root/'media').mkdir(parents=True)
+    (root/'media'/'.direct_upload_ready.json').write_text(json.dumps({'upload_id':'new-upload'}))
+    import pytest
+    with pytest.raises(ValueError, match='source changed'):
+        SERVER._editor_overlay_state_save('source-safe',{'zoom':1.5},{'clip_start':0},expected_source_key='old-upload')
+    assert not (root/'editor_overlay_state.json').exists()

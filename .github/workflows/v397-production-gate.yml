@@ -27,6 +27,9 @@ on:
       - 'constraints-web.txt'
       - 'tools/gsf_ui_manifest.py'
       - 'tests/test_canonical_ui_pipeline.py'
+      - 'tests/test_gate_promotion_reliability.py'
+      - 'tests/test_gate_health.py'
+      - 'tools/gsf_gate_health.py'
       - '.github/workflows/v397-production-gate.yml'
   workflow_dispatch:
 
@@ -54,7 +57,11 @@ jobs:
         run: python tests/test_canonical_ui_pipeline.py
 
       - name: Promotion diff contract
-        run: python tests/test_gate_promotion_diff.py
+        run: |
+          python tests/test_gate_promotion_diff.py
+          python tests/test_gate_promotion_reliability.py
+          python tests/test_gate_health.py
+          python -m unittest discover -s tests -p test_render_gate_reliability.py
 
       - name: Mobile Game Editor JavaScript contracts
         run: |
@@ -129,9 +136,11 @@ jobs:
             web/game_brain_v112.py
 
       - name: Build worker image
+        timeout-minutes: 15
         run: docker build --progress=plain -f web/Dockerfile.worker -t gsf-worker-gate:${{ github.sha }} .
 
       - name: Build production frontend image
+        timeout-minutes: 20
         run: |
           set -o pipefail
           if docker build --progress=plain -t gsf-production-gate:${{ github.sha }} . 2>&1 | tee /tmp/gsf-production-build.log; then
@@ -161,28 +170,11 @@ jobs:
             gsf-production-gate:${{ github.sha }}
 
       - name: Wait for composite health
-        run: |
-          set -eu
-          for i in $(seq 1 120); do
-            code=$(curl -sS -o /tmp/gsf-production-health.json -w '%{http_code}' http://127.0.0.1:18080/healthz || true)
-            if [ "$code" = "200" ]; then
-              python - <<'PY'
-          import json
-          p=json.load(open('/tmp/gsf-production-health.json',encoding='utf-8'))
-          assert p.get('ok') is True, p
-          assert p.get('companion') is True, p
-          assert p.get('streamlit') is True, p
-          print('GSF composite health: PASS',p)
-          PY
-              exit 0
-            fi
-            sleep 2
-          done
-          echo 'GSF composite health did not become ready'
-          cat /tmp/gsf-production-health.json 2>/dev/null || true
-          exit 1
+        timeout-minutes: 4
+        run: python tools/gsf_gate_health.py http://127.0.0.1:18080/healthz --container gsf-production-gate --deadline 180
 
       - name: Blocking runtime smoke
+        timeout-minutes: 3
         run: docker exec gsf-production-gate python /app/web/runtime_smoke_v107.py
 
       - name: Image serves exactly the repository UI
@@ -191,30 +183,35 @@ jobs:
           docker cp gsf-production-gate:/app/.gsf-ui-manifest.json /tmp/gsf-ui-manifest.json
           python tools/gsf_ui_manifest.py compare --repo . --image-json /tmp/gsf-ui-manifest.json
           repo_digest=$(python tools/gsf_ui_manifest.py digest --repo .)
-          served_digest=$(curl -sS http://127.0.0.1:18080/healthz | python -c 'import json,sys;print(json.load(sys.stdin).get("ui_digest",""))')
+          served_digest=$(curl --connect-timeout 3 --max-time 15 -sS http://127.0.0.1:18080/healthz | python -c 'import json,sys;print(json.load(sys.stdin).get("ui_digest",""))')
           test "$repo_digest" = "$served_digest" || { echo "::error title=Canonical UI::healthz digest $served_digest != repo $repo_digest"; exit 1; }
           for page in creator_hub_v156_component:/creator-hub-v156/ ai_v221_component:/ai-v221/ game_editor_mobile_component:/game-editor-mobile/ editor_2027_component:/editor-live/ share_v156_component:/share-v156/; do
             dir=${page%%:*}; url=${page#*:}
-            curl -sS -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 19_0 like Mac OS X) Mobile/15E148 Safari/605.1' -o /tmp/served.html "http://127.0.0.1:18080$url"
+            curl --connect-timeout 3 --max-time 15 -sS -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 19_0 like Mac OS X) Mobile/15E148 Safari/605.1' -o /tmp/served.html "http://127.0.0.1:18080$url"
             cmp -s /tmp/served.html "web/$dir/index.html" || { echo "::error title=Canonical UI::$url served bytes differ from web/$dir/index.html"; exit 1; }
             echo "served $url == web/$dir/index.html"
           done
           for asset in editor.css editor.mjs editor_state.mjs; do
-            curl -sS -o "/tmp/$asset" "http://127.0.0.1:18080/game-editor-mobile/$asset"
+            curl --connect-timeout 3 --max-time 15 -sS -o "/tmp/$asset" "http://127.0.0.1:18080/game-editor-mobile/$asset"
             cmp -s "/tmp/$asset" "web/game_editor_mobile_component/$asset" || { echo "::error title=Canonical UI::mobile editor $asset served bytes differ"; exit 1; }
           done
           echo "::notice title=Canonical UI::image == repo, digest $repo_digest"
 
       - name: Essential UI and security runtime
+        timeout-minutes: 3
         run: |
           docker exec gsf-production-gate python /app/web/runtime_smoke_v411.py
           # the running container must not have rewritten any canonical file
           docker exec gsf-production-gate python /app/gsf_ui_manifest.py verify
 
       - name: Mobile WebKit interaction gate
+        timeout-minutes: 25
         env:
           BASE: http://127.0.0.1:18080
           CYCLES: '2'
+          # Keep every route sequence and leak assertion; full stress defaults
+          # to ten cycles outside the blocking per-patch production gate.
+          GSF_NAV_CYCLES: '3'
           OUT_DIR: /tmp/gsf-mobile-webkit
         run: |
           python -m pip install --disable-pip-version-check playwright
@@ -238,11 +235,25 @@ jobs:
         run: |
           set -euo pipefail
 
-          remote_sha=$(git ls-remote origin refs/heads/main | awk '{print $1}')
-          if [ "$remote_sha" != "$TESTED_SHA" ]; then
-            echo "A newer main commit exists ($remote_sha); refusing to promote stale $TESTED_SHA."
+          # A claim/status update must not silently discard a passing runtime gate.
+          # Only these non-runtime paths may advance while we test; anything else
+          # waits for its own gate. Always base the marker commit on fresh main.
+          safe_tail() {
+            git merge-base --is-ancestor "$TESTED_SHA" "$1" || return 1
+            while IFS= read -r path; do
+              case "$path" in
+                .gsf/*|PROJECT_STATUS.md|AGENTS.md|docs/superpowers/*|docs/runbooks/*|.railway/frontend-deploy.txt|.railway/worker-deploy.txt) ;;
+                *) echo "Untested change: $path" >&2; return 1 ;;
+              esac
+            done < <(git diff --name-only "$TESTED_SHA" "$1")
+          }
+          git fetch --no-tags origin main
+          remote_sha=$(git rev-parse origin/main)
+          if ! safe_tail "$remote_sha"; then
+            echo "::notice::A newer runtime commit exists; its own gate must promote it."
             exit 0
           fi
+          git checkout --detach "$remote_sha"
 
           before="$BEFORE_SHA"
           if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
@@ -283,7 +294,7 @@ jobs:
           done < /tmp/gsf-frontend-files.txt
           while IFS= read -r path; do
             case "$path" in
-              src_payload/*|web/Dockerfile.worker|web/requirements-worker.txt|web/ai_worker_server.py|web/ffmpeg_lowmem.py|web/gsf_bucket_bridge.py|web/semantic_video_v114.py|web/test_v114_semantic_video.py|web/ai_director_v124.py|web/quality_control_v124.py|web/guardian_intelligence_v124.py|web/test_v124_ai_core.py|web/job_state_v401.py|web/fix_v401_worker_state.py|web/highlight_fusion_v402.py|web/auto_highlights/*|web/game_brain_v112.py|web/quality_supreme_v399.py|web/director_render_exec_v143.py|web/privacy_cleanup_v149.py|web/apply_v7*.py|web/apply_v8*.py|web/apply_v9*.py)
+              src_payload/*|web/Dockerfile.worker|web/requirements-worker.txt|web/ai_worker_server.py|web/ffmpeg_lowmem.py|web/gsf_bucket_bridge.py|web/semantic_video_v114.py|web/test_v114_semantic_video.py|web/ai_director_v124.py|web/quality_control_v124.py|web/guardian_intelligence_v124.py|web/test_v124_ai_core.py|web/job_state_v401.py|web/fix_v401_worker_state.py|web/highlight_fusion_v402.py|web/auto_highlights/*|web/game_brain_v112.py|web/quality_supreme_v399.py|web/director_render_exec_v143.py|web/render_gate_v293.py|web/privacy_cleanup_v149.py|web/apply_v7*.py|web/apply_v8*.py|web/apply_v9*.py)
                 worker=1
                 ;;
             esac
@@ -313,7 +324,20 @@ jobs:
           fi
 
           git commit -m "deploy: promote tested ${TESTED_SHA::12} [skip ci]"
-          git push origin HEAD:main
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch --no-tags origin main
+            remote_sha=$(git rev-parse origin/main)
+            if ! safe_tail "$remote_sha"; then
+              echo "::notice::Runtime advanced during promotion; leaving deployment to its gate."
+              exit 0
+            fi
+            # Rebase preserves concurrent coordination writes. Conflicts fail
+            # closed; never force-push or overwrite another gate's markers.
+            git rebase "$remote_sha"
+          done
+          echo '::error::Promotion push failed after three bounded attempts.'
+          exit 1
 
       - name: Capture structural diagnostics
         if: failure()
