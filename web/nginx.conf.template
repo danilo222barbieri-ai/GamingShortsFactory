@@ -38,6 +38,14 @@ map "$gsf_ch_mobile:$gsf_ua_mobile" $gsf_mobile_client {
     "1:1" 1;
 }
 
+# Public component URLs entered directly must retain the global app shell.
+# iframe requests keep the canonical bytes; embed=1 is the explicit standalone
+# component contract used by the interaction/byte checks.
+map "$http_sec_fetch_dest:$arg_embed" $gsf_component_document {
+    default 0;
+    "document:" 1;
+}
+
 server {
     listen ${PORT};
     server_name _;
@@ -621,6 +629,7 @@ server {
         return 302 /game-editor-mobile/;
     }
     location /game-editor-mobile/ {
+        if ($gsf_component_document) { return 302 /?gsf_page=editor; }
         alias /app/web/game_editor_mobile_component/;
         index index.html;
         try_files $uri $uri/ /game-editor-mobile/index.html;
@@ -650,6 +659,7 @@ server {
         return 302 /editor-live/;
     }
     location /editor-live/ {
+        if ($gsf_component_document) { return 302 /?gsf_page=editor; }
         # V411_LOCATION_SECURITY_HEADERS
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -756,6 +766,7 @@ server {
         return 302 /ai-v221/;
     }
     location /ai-v221/ {
+        if ($gsf_component_document) { return 302 /?gsf_page=ai; }
         # V411_LOCATION_SECURITY_HEADERS
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -791,6 +802,7 @@ server {
     }
 
     location /creator-hub-v156/ {
+        if ($gsf_component_document) { return 302 /?gsf_page=hub; }
         # V411_LOCATION_SECURITY_HEADERS
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -878,6 +890,7 @@ server {
     }
 
     location /share-v156/ {
+        if ($gsf_component_document) { return 302 /?gsf_page=short; }
         # V411_LOCATION_SECURITY_HEADERS
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-Frame-Options "SAMEORIGIN" always;

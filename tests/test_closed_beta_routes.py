@@ -16,5 +16,40 @@ class ClosedBetaRoutes(unittest.TestCase):
         self.assertIn('limit_except POST',match.group(1))
 
 
+class PublicComponentDeepLinks(unittest.TestCase):
+    def test_top_level_routes_keep_the_global_shell_and_iframes_keep_canonical_bytes(self):
+        import os
+        import urllib.request
+        import urllib.error
+        base=os.environ.get('GSF_BASE_URL')
+        if not base:
+            self.skipTest('requires running image GSF_BASE_URL')
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self,*args):
+                return None
+        client=urllib.request.build_opener(NoRedirect)
+        headers={'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile Safari/604.1'}
+        for path,target,component in (
+            ('/game-editor-mobile/','editor','game_editor_mobile_component'),
+            ('/editor-live/','editor','editor_2027_component'),
+            ('/creator-hub-v156/','hub','creator_hub_v156_component'),
+            ('/ai-v221/','ai','ai_v221_component'),
+            ('/share-v156/','short','share_v156_component')):
+            with self.subTest(path=path):
+                request=urllib.request.Request(base+path,headers={**headers,'Sec-Fetch-Dest':'document'})
+                try:
+                    response=client.open(request,timeout=5)
+                except urllib.error.HTTPError as exc:
+                    response=exc
+                with response:
+                    self.assertEqual(response.status,302)
+                    from urllib.parse import urlsplit
+                    location=urlsplit(response.headers['Location'])
+                    self.assertEqual(location.path+'?'+location.query,'/?gsf_page='+target)
+                request=urllib.request.Request(base+path,headers={**headers,'Sec-Fetch-Dest':'iframe'})
+                with client.open(request,timeout=5) as response:
+                    self.assertEqual(response.read(),(ROOT/'web'/component/'index.html').read_bytes())
+
+
 if __name__ == '__main__':
     unittest.main()

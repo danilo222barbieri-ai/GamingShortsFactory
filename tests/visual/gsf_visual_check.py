@@ -72,7 +72,7 @@ def check_mobile_editor(ctx, metrics):
     errors = []
     page.on("console", lambda message: message.type == "error" and errors.append(message.text[:300]))
     page.on("pageerror", lambda error: errors.append(("pageerror: " + str(error))[:300]))
-    page.goto(BASE + "/game-editor-mobile/", wait_until="load")
+    page.goto(BASE + "/game-editor-mobile/?embed=1", wait_until="load")
     page.wait_for_selector("#gameEditorApp")
     page.evaluate(
         """() => {
@@ -229,7 +229,7 @@ def main():
         for name, path in (("10-creator-hub-page", "/creator-hub-v156/"), ("11-crea-con-ia", "/ai-v221/"),
                            ("12-editor-page", "/editor-live/"), ("13-share", "/share-v156/")):
             q = ctx.new_page()
-            q.goto(BASE + path, wait_until="load")
+            q.goto(BASE + path + "?embed=1", wait_until="load")
             settle(q, 2500)
             q.screenshot(path=str(OUT / f"{name}.png"), full_page=False)
             q.close()
