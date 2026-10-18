@@ -52,6 +52,19 @@ class MobileEditorRecipe(unittest.TestCase):
         (self.root/'editor_overlay_state.json').unlink()
         self.assertEqual(self.apply(),self.recipe)
 
+    def test_late_old_render_and_different_draft_cannot_be_current(self):
+        import os
+        final=self.root/'media/gaming_short_finale_share.mp4'
+        final.write_bytes(b'x'*2048);os.utime(final,(300,300))
+        self.snapshot['updated_at']=200;self.save()
+        job=self.root/'render_job.json'
+        job.write_text(json.dumps({'started_at':150}))
+        self.assertFalse(self.module.local_final_is_current(self.root),'late output from a superseded recipe')
+        job.write_text(json.dumps({'started_at':201}))
+        self.assertTrue(self.module.local_final_is_current(self.root))
+        (self.root/'media/.direct_upload_ready.json').write_text(json.dumps({'upload_id':'resumedDraft','completed_at':400}))
+        self.assertFalse(self.module.local_final_is_current(self.root),'resuming another project must invalidate current export')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -56,3 +56,32 @@ def apply_saved_editor_recipe(recipe, session_root, render_kwargs_builder, sessi
                   editor_2027_state=state,
                   subtitles_enabled=kwargs.get('subtitles_enabled', True))
     return recipe
+
+
+def render_boundary(session_root):
+    """Earliest valid render start for this upload and its saved edits."""
+    root=Path(session_root)
+    try:
+        upload=json.loads((root/'media/.direct_upload_ready.json').read_text())
+        boundary=_number(upload.get('completed_at'),0)
+    except (OSError,ValueError,AttributeError):
+        boundary=0
+    saved=read_editor_snapshot(root)
+    return max(boundary,_number(saved.get('updated_at'),0))
+
+
+def local_final_is_current(session_root):
+    root=Path(session_root)
+    final=root/'media/gaming_short_finale_share.mp4'
+    try:
+        stat=final.stat()
+        if stat.st_size<=1024:
+            return False
+        try:
+            job=json.loads((root/'render_job.json').read_text())
+            started=_number(job.get('started_at'),0)
+        except (OSError,ValueError,AttributeError):
+            started=0
+        return stat.st_mtime>=started and (started or stat.st_mtime)>=render_boundary(root)
+    except OSError:
+        return False

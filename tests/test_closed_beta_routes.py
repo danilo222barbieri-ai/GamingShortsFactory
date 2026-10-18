@@ -51,5 +51,50 @@ class PublicComponentDeepLinks(unittest.TestCase):
                     self.assertEqual(response.read(),(ROOT/'web'/component/'index.html').read_bytes())
 
 
+class ColdBrowserAssetBurst(unittest.TestCase):
+    def test_real_nginx_accepts_browser_assets_and_still_limits_overload(self):
+        import os
+        import subprocess
+        if not os.environ.get('GSF_BASE_URL'):
+            self.skipTest('requires running production image')
+        import textwrap
+        probe=textwrap.dedent(r"""
+            import http.server,socket,threading,tempfile,subprocess,time
+            from pathlib import Path
+            release=threading.Event()
+            class Held(http.server.BaseHTTPRequestHandler):
+             protocol_version='HTTP/1.1'
+             def log_message(self,*args):pass
+             def do_GET(self):
+              self.send_response(200);self.send_header('Content-Length','2');self.end_headers();self.wfile.write(b'x');self.wfile.flush();release.wait(20);self.wfile.write(b'x')
+            up=http.server.ThreadingHTTPServer(('127.0.0.1',18501),Held);threading.Thread(target=up.serve_forever,daemon=True).start()
+            with tempfile.TemporaryDirectory() as td:
+             root=Path(td);template=Path('/app/web/nginx.conf.template').read_text().replace('${PORT}','18580').replace('127.0.0.1:8501','127.0.0.1:18501')
+             config=root/'nginx.conf';config.write_text('worker_processes 1;\npid '+str(root/'pid')+';\nerror_log '+str(root/'error.log')+' notice;\nevents {worker_connections 1024;}\nhttp {access_log off;\n'+template+'\n}')
+             nginx=subprocess.Popen(['nginx','-p',td,'-c',str(config),'-g','daemon off;'],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+             sockets=[]
+             try:
+              for _ in range(100):
+               try:s=socket.create_connection(('127.0.0.1',18580),timeout=1);s.close();break
+               except OSError:time.sleep(.02)
+              statuses=[]
+              for _ in range(160):
+               s=socket.create_connection(('127.0.0.1',18580),timeout=3);s.settimeout(3);s.sendall(b'GET /static/js/cold-load-test.js HTTP/1.1\r\nHost: localhost\r\nUser-Agent: iPhone Mobile Safari\r\nX-Real-IP: 10.10.10.10\r\nConnection: close\r\n\r\n');data=b''
+               while b'\r\n\r\n' not in data:data+=s.recv(4096)
+               statuses.append(int(data.split(b' ')[1]));sockets.append(s)
+              print({status:statuses.count(status) for status in set(statuses)},flush=True)
+              assert statuses[:64]==[200]*64, 'cold browser asset burst rejected'
+              assert 503 in statuses, 'connection flood protection must remain active'
+              errors=(root/'error.log').read_text();print('\n'.join(x for x in errors.splitlines() if 'limiting connections' in x)[-1200:],flush=True)
+             finally:
+              release.set()
+              for s in sockets:s.close()
+              nginx.terminate();nginx.wait(timeout=5);up.shutdown()
+        """)
+        result=subprocess.run(['docker','exec','-i',os.environ.get('GSF_GATE_CONTAINER','gsf-production-gate'),'python','-'],
+                              input=probe,text=True,capture_output=True,timeout=35)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+
+
 if __name__ == '__main__':
     unittest.main()

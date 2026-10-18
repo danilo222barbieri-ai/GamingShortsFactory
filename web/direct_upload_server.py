@@ -246,23 +246,23 @@ def _final_persist_to_bucket(sid,source_path,started_at=0.0):
 
 def _final_matches_current_upload(sid,meta):
     """A session's latest export must belong to its current gameplay."""
-    marker=ROOT/"sessions"/_safe_id(sid)/"media"/".direct_upload_ready.json"
-    if not marker.is_file():
-        return True  # Legacy session with no replacement boundary.
+    from web.mobile_editor_recipe import render_boundary
     try:
-        upload=json.loads(marker.read_text(encoding="utf-8"))
-        boundary=float(upload.get("completed_at") or 0.0)
         rendered=float(meta.get("started_at") or meta.get("completed_at") or 0.0)
-        return boundary<=0.0 or rendered>=boundary
-    except (OSError,ValueError,TypeError,AttributeError):
+        return rendered>=render_boundary(ROOT/"sessions"/_safe_id(sid))
+    except (ValueError,TypeError,AttributeError):
         return False
+
+def _local_final_is_current(sid):
+    from web.mobile_editor_recipe import local_final_is_current
+    return local_final_is_current(ROOT/"sessions"/_safe_id(sid))
 
 def _final_restore_from_bucket(sid):
     sid=_safe_id(sid)
     if not sid or not _bucket_enabled():
         return {}
     stable,job=_final_local_paths(sid)
-    if stable.is_file() and stable.stat().st_size>1024:
+    if _local_final_is_current(sid):
         return {}
     try:
         obj=_s3().get_object(Bucket=S3_BUCKET,Key=_final_meta_key(sid))
@@ -1229,8 +1229,21 @@ def _editor_overlay_state_save(sid,state,context=None,expected_source_key=None):
     raw_context=context if isinstance(context,dict) else {}
     clip_context={key:_editor_number(raw_context.get(key),fallback) for key,fallback in
                   (("clip_start",0.0),("clip_duration",_editor_number(clean.get("sourceDuration"),15.0)))}
+    previous={}
+    try:
+        previous=json.loads(path.read_text(encoding="utf-8"))
+    except (OSError,ValueError):
+        pass
+    if (isinstance(previous,dict) and previous.get("source_key")==source_key
+        and previous.get("state")==clean and previous.get("context")==clip_context):
+        return clean
     _write_json_atomic(path,{"version":223,"updated_at":time.time(),"state":clean,
                              "source_key":source_key,"context":clip_context})
+    # The library retains archived Shorts; only the mutable session export is
+    # invalid after an edit. The running job can finish, but its old start time
+    # cannot make that superseded result current again.
+    stable,_job=_final_local_paths(sid)
+    stable.unlink(missing_ok=True)
     return clean
 
 def _editor_session_state_load(sid):
@@ -4285,7 +4298,7 @@ class Handler(BaseHTTPRequestHandler):
                 if stable is not None and stable.is_file():
                     stable_bytes=int(stable.stat().st_size)
                     stable_mtime=float(stable.stat().st_mtime)
-                    stable_ready=stable_bytes>1024 and started>0 and stable_mtime>=started-1.0
+                    stable_ready=stable_bytes>1024 and started>0 and stable_mtime>=started and _final_matches_current_upload(sid,payload)
             except Exception:
                 stable_ready=False
             # Self-heal the browser-visible job state from the durable local
@@ -4403,7 +4416,7 @@ class Handler(BaseHTTPRequestHandler):
             providers=dict(profile.get("providers") or {}) if isinstance(profile,dict) else {}
             social_snapshot=_creator_social_snapshot(sid,providers)
             stable,_job=_final_local_paths(sid)
-            ready=bool(stable and stable.is_file() and stable.stat().st_size>1024)
+            ready=_local_final_is_current(sid)
             final_bytes=int(stable.stat().st_size) if ready else 0
             # V411_SHARE_REVISION
             revision=str(stable.stat().st_mtime_ns) if ready else ""
@@ -4449,9 +4462,9 @@ class Handler(BaseHTTPRequestHandler):
                 _html(self,400,"Sessione browser non valida.")
                 return
             stable,_job=_final_local_paths(sid)
-            if not (stable and stable.is_file() and stable.stat().st_size>1024):
+            if not _local_final_is_current(sid):
                 _final_restore_from_bucket(sid)
-            if stable and stable.is_file() and stable.stat().st_size>1024:
+            if _local_final_is_current(sid):
                 _redirect(self,f"/media/{sid}/media/gaming_short_finale_share.mp4")
             else:
                 _html(self,404,"Short finale non ancora disponibile.")
