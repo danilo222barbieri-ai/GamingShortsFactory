@@ -186,10 +186,44 @@ def test_editor_state_security_contract_remains_session_bound() -> None:
     assert "_editor_prepare_current(_social_sid(self))" in get_block
     post_block = server[server.index('if path=="/editor/state/save":') :]
     post_block = post_block[: post_block.index('if path=="/ai/feedback":')]
-    assert "_editor_overlay_state_save(sid,raw_state)" in post_block
+    assert 'expected_source_key=data.get("source_key","")' in post_block
     assert 'sid=_safe_id(self.headers.get("X-GSF-Session-ID"))' in server
 
     for route in ('location = /editor/state {', 'location = /editor/state/save {'):
         block = nginx[nginx.index(route) :]
         block = block[: block.index("\n    }")]
         assert "proxy_set_header X-GSF-Session-ID $gsf_session_cookie;" in block
+
+
+def test_stale_save_cannot_bind_to_replacement_upload(tmp_path):
+    SERVER.ROOT = tmp_path
+    root=tmp_path/'sessions'/'source-safe'
+    (root/'media').mkdir(parents=True)
+    (root/'media'/'.direct_upload_ready.json').write_text(json.dumps({'upload_id':'new-upload'}))
+    import pytest
+    with pytest.raises(ValueError, match='source changed'):
+        SERVER._editor_overlay_state_save('source-safe',{'zoom':1.5},{'clip_start':0},expected_source_key='old-upload')
+    assert not (root/'editor_overlay_state.json').exists()
+
+def test_previous_export_cannot_be_restored_after_replacement_upload(tmp_path, monkeypatch):
+    import io
+    from unittest.mock import Mock
+    server=_load_server_module()
+    monkeypatch.setattr(server,'ROOT',tmp_path)
+    monkeypatch.setattr(server,'_bucket_enabled',lambda:True)
+    root=tmp_path/'sessions'/'beta123';(root/'media').mkdir(parents=True)
+    (root/'media/.direct_upload_ready.json').write_text(json.dumps({'upload_id':'new','completed_at':200}))
+    bucket=Mock()
+    bucket.get_object.return_value={'Body':io.BytesIO(json.dumps({'started_at':100,'completed_at':120,'bucket_key':'old.mp4'}).encode())}
+    monkeypatch.setattr(server,'_s3',lambda:bucket)
+    assert server._final_restore_from_bucket('beta123')=={}
+    bucket.download_file.assert_not_called()
+
+def test_current_export_and_legacy_session_remain_restorable(tmp_path, monkeypatch):
+    server=_load_server_module();monkeypatch.setattr(server,'ROOT',tmp_path)
+    assert server._final_matches_current_upload('beta123',{})
+    root=tmp_path/'sessions'/'beta123'/'media';root.mkdir(parents=True)
+    (root/'.direct_upload_ready.json').write_text(json.dumps({'completed_at':200}))
+    assert server._final_matches_current_upload('beta123',{'started_at':201})
+    assert not server._final_matches_current_upload('beta123',{'started_at':100,'completed_at':250})
+    assert not server._final_matches_current_upload('beta123',{})

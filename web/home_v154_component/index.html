@@ -3560,7 +3560,7 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
  function setDuration(n,emit=true){
    duration=Number(n)===30?30:15;
  document.querySelectorAll(".dur").forEach(b=>b.classList.toggle("active",Number(b.dataset.duration)===duration));
-   parentClick(duration===15?["15s","15 s","15 sec","15 secondi"]:["30s","30 s","30 sec","30 secondi"],true);
+   if(emit)parentClick(duration===15?["15s","15 s","15 sec","15 secondi"]:["30s","30 s","30 sec","30 secondi"],true);
    if(emit)value({event:"duration",duration,engine});
  }
  function setEngine(name,emit=true){
@@ -3576,7 +3576,7 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
      reaction:["reazioni"],
      manual:["manuale","game editor"]
    };
-   parentClick(map[engine]||[],true);
+   if(emit)parentClick(map[engine]||[],true);
    if(emit)value({event:"engine",duration,engine});
  }
 
@@ -3588,10 +3588,11 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    return false;
  }
  async function saveCurrentBeforeReplacement(){
+   const header=await fetch("/creator-hub/state?scope=header",{cache:"no-store",credentials:"same-origin"}).then(r=>r.json());
    const r=await fetch("/drafts/save-current",{
      method:"POST",
      credentials:"same-origin",
-     headers:{"Content-Type":"application/json"},
+     headers:{"Content-Type":"application/json","X-GSF-CSRF":header.csrf_token||""},
      body:"{}"
    });
    let j={};try{j=await r.json()}catch(_e){}
@@ -3699,6 +3700,9 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    b.addEventListener("touchstart",()=>{if(loaded)setMuralState(state)},{passive:true});
  });
 
+ // The mobile touch owner suppresses the original click listener. Preserve
+ // its backend handoff before opening the global Editor surface.
+ window.addEventListener("GSF_HOME_MANUAL_EDITOR",()=>{setEngine("manual");value({event:"open_editor",duration,engine:"manual"});});
  document.querySelectorAll(".feature").forEach(b=>b.addEventListener("click",()=>{
    const action=b.dataset.action||"";
    if(action==="ai"){shellNav("ai");value({event:"open_ai",duration,engine});}
@@ -3876,6 +3880,7 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
 
   function GSF_V333_OPEN_EDITOR(){
     try{
+      window.dispatchEvent(new CustomEvent('GSF_HOME_MANUAL_EDITOR'));
       P.postMessage({type:'GSF_SHELL_NAV',target:'editor'},P.location.origin);
       return true;
     }catch(_e){return false}

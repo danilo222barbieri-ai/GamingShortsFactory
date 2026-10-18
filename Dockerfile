@@ -62,7 +62,10 @@ RUN ln -s /app/app.py /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py && \
 RUN python -m compileall -q /app/app.py /app/web /app/gsf_core
 
 # Record the manifest of what will be served, then prove the image equals it.
-RUN python /app/gsf_ui_manifest.py write && python /app/gsf_ui_manifest.py verify
+# The generated public icons must remain readable by nginx regardless of
+# the permissions of the source image in the checkout.
+RUN chmod 755 /app/web/app_icons && chmod 644 /app/web/app_icons/*.png && \
+    python /app/gsf_ui_manifest.py write && python /app/gsf_ui_manifest.py verify
 
 # Read-only contracts on the final canonical files (they must never write).
 RUN python -m py_compile /app/app.py /app/web/direct_upload_server.py /app/web/contact_server.py && \

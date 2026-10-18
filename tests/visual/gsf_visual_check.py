@@ -72,7 +72,7 @@ def check_mobile_editor(ctx, metrics):
     errors = []
     page.on("console", lambda message: message.type == "error" and errors.append(message.text[:300]))
     page.on("pageerror", lambda error: errors.append(("pageerror: " + str(error))[:300]))
-    page.goto(BASE + "/game-editor-mobile/", wait_until="load")
+    page.goto(BASE + "/game-editor-mobile/?embed=1", wait_until="load")
     page.wait_for_selector("#gameEditorApp")
     page.evaluate(
         """() => {
@@ -229,7 +229,7 @@ def main():
         for name, path in (("10-creator-hub-page", "/creator-hub-v156/"), ("11-crea-con-ia", "/ai-v221/"),
                            ("12-editor-page", "/editor-live/"), ("13-share", "/share-v156/")):
             q = ctx.new_page()
-            q.goto(BASE + path, wait_until="load")
+            q.goto(BASE + path + "?embed=1", wait_until="load")
             settle(q, 2500)
             q.screenshot(path=str(OUT / f"{name}.png"), full_page=False)
             q.close()
@@ -269,7 +269,7 @@ if __name__ == "__main__":
     os.environ.setdefault("GSF_TEST_MEDIA","1")
     suite=unittest.TestSuite()
     loader=unittest.TestLoader()
-    for module in ("test_runtime_import_stability","test_navigation_stability","test_mobile_resume_stability"):
+    for module in ("test_runtime_import_stability","test_navigation_stability","test_mobile_resume_stability","test_closed_beta_navigation"):
         suite.addTests(loader.loadTestsFromName(module))
     result=unittest.TextTestRunner(verbosity=2).run(suite)
     for case,trace in list(result.failures)+list(result.errors):

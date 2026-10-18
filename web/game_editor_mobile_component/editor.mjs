@@ -78,7 +78,7 @@ function postToShell(message) {
 
 const saveSequencer = createSaveSequencer((message) => {
   setStatus("Salvataggio…");
-  postToShell({ type: "GSF_GAME_EDITOR_UI", ...message });
+  postToShell({ type: "GSF_GAME_EDITOR_UI", ...message, binding: context.binding });
 });
 
 function formatTime(rawSeconds) {
@@ -506,7 +506,9 @@ function loadMedia(url = mediaUrl) {
 }
 
 function receiveInit(message) {
+  saveSequencer.dispose();
   context = {
+    binding: message.binding && typeof message.binding === "object" ? { ...message.binding } : {},
     session: message.session && typeof message.session === "object" ? message.session : {},
     project: message.project && typeof message.project === "object" ? message.project : {},
     media: message.media && typeof message.media === "object" ? message.media : {},

@@ -244,6 +244,19 @@ def _final_persist_to_bucket(sid,source_path,started_at=0.0):
     print("GSF_FINAL_BUCKET_READY",sid,meta["final_bytes"],meta["short_id"],flush=True)
     return meta
 
+def _final_matches_current_upload(sid,meta):
+    """A session's latest export must belong to its current gameplay."""
+    marker=ROOT/"sessions"/_safe_id(sid)/"media"/".direct_upload_ready.json"
+    if not marker.is_file():
+        return True  # Legacy session with no replacement boundary.
+    try:
+        upload=json.loads(marker.read_text(encoding="utf-8"))
+        boundary=float(upload.get("completed_at") or 0.0)
+        rendered=float(meta.get("started_at") or meta.get("completed_at") or 0.0)
+        return boundary<=0.0 or rendered>=boundary
+    except (OSError,ValueError,TypeError,AttributeError):
+        return False
+
 def _final_restore_from_bucket(sid):
     sid=_safe_id(sid)
     if not sid or not _bucket_enabled():
@@ -256,6 +269,8 @@ def _final_restore_from_bucket(sid):
         meta=json.loads(obj["Body"].read().decode("utf-8"))
         if not isinstance(meta,dict):
             meta={}
+        if not _final_matches_current_upload(sid,meta):
+            return {}
         key=str(meta.get("bucket_key") or _final_bucket_key(sid))
         tmp=stable.with_suffix(".restore.tmp")
         tmp.unlink(missing_ok=True)
@@ -1184,12 +1199,16 @@ def _editor_overlay_state_load(sid):
         return {}
     try:
         payload=json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(payload,dict) and payload.get("source_key"):
+            from web.mobile_editor_recipe import current_source_key
+            if payload["source_key"]!=current_source_key(ROOT/"sessions"/sid):
+                return {}
         state=payload.get("state") if isinstance(payload,dict) else {}
         return dict(state) if isinstance(state,dict) else {}
     except Exception:
         return {}
 
-def _editor_overlay_state_save(sid,state):
+def _editor_overlay_state_save(sid,state,context=None,expected_source_key=None):
     sid=_safe_id(sid)
     if not sid or not isinstance(state,dict):
         raise ValueError("invalid editor state")
@@ -1203,7 +1222,15 @@ def _editor_overlay_state_save(sid,state):
     if not clean:
         raise ValueError("empty editor state")
     path=_editor_overlay_state_path(sid)
-    _write_json_atomic(path,{"version":223,"updated_at":time.time(),"state":clean})
+    from web.mobile_editor_recipe import current_source_key
+    source_key=current_source_key(ROOT/"sessions"/sid)
+    if expected_source_key is not None and str(expected_source_key)!=source_key:
+        raise ValueError("editor source changed; reopen the current project")
+    raw_context=context if isinstance(context,dict) else {}
+    clip_context={key:_editor_number(raw_context.get(key),fallback) for key,fallback in
+                  (("clip_start",0.0),("clip_duration",_editor_number(clean.get("sourceDuration"),15.0)))}
+    _write_json_atomic(path,{"version":223,"updated_at":time.time(),"state":clean,
+                             "source_key":source_key,"context":clip_context})
     return clean
 
 def _editor_session_state_load(sid):
@@ -1221,16 +1248,22 @@ def _editor_session_state_load(sid):
         return {}
 
 def _editor_state_payload(sid,current):
+    from web.mobile_editor_recipe import current_source_key
     stat=current.stat()
     stamp=str(stat.st_size)+"-"+str(int(stat.st_mtime))
     initial_state=_editor_overlay_state_load(sid)
-    context=_editor_mobile_context(_editor_session_state_load(sid),initial_state)
+    session_state=_editor_session_state_load(sid)
+    context=_editor_mobile_context(session_state,initial_state)
+    recipe=session_state.get("gsf_final_recipe") or {}
     return {
         "ok":True,
         "ready":True,
         "name":current.name,
         "video_url":"/editor-media/current?v="+urllib.parse.quote(stamp,safe=""),
         "initial_state":initial_state,
+        "source_key":current_source_key(ROOT/"sessions"/sid),
+        "clip_start":_editor_number(recipe.get("mobile_editor_base_start",recipe.get("start")),0.0),
+        "clip_duration":_editor_number(initial_state.get("sourceDuration"),recipe.get("duration") or 15.0),
         **context,
     }
 
@@ -1929,7 +1962,11 @@ def _current_project_save_draft(sid,title=""):
     root,idx,pid,pdata=_current_project_record(sid)
     if not pid or not pdata:
         return {}
-    state=pdata.get("state") if isinstance(pdata.get("state"),dict) else {}
+    state=dict(pdata.get("state") or {})
+    from web.mobile_editor_recipe import read_editor_snapshot
+    snapshot=read_editor_snapshot(ROOT/"sessions"/sid)
+    if snapshot:
+        state["gsf_mobile_editor_snapshot"]=snapshot
     source_name=str(state.get("gsf_source_name") or state.get("source_name") or "Gameplay")[:160]
     desired=_v304_clean_title(title or pdata.get("title") or idx.get("active_project_title"),"Bozza · "+source_name)
     draft=_draft_save(sid,{"title":desired,"source_name":source_name,"state":state})
@@ -2213,6 +2250,13 @@ def _draft_prepare_resume(sid,draft):
         _write_json_atomic(marker,current)
     except Exception:
         pass
+    snapshot=state.get("gsf_mobile_editor_snapshot")
+    if isinstance(snapshot,dict) and isinstance(snapshot.get("state"),dict):
+        from web.mobile_editor_recipe import current_source_key
+        restored={**snapshot,"source_key":current_source_key(ROOT/"sessions"/sid)}
+        _write_json_atomic(ROOT/"sessions"/sid/"editor_overlay_state.json",restored)
+    else:
+        _editor_overlay_state_path(sid).unlink(missing_ok=True)
     print("GSF_DRAFT_RESUME_READY",sid,_safe_id(draft.get("id","")),str(candidate),flush=True)
     return state
 
@@ -4368,13 +4412,17 @@ class Handler(BaseHTTPRequestHandler):
                     obj=_s3().get_object(Bucket=S3_BUCKET,Key=_final_meta_key(sid))
                     meta=json.loads(obj["Body"].read().decode("utf-8"))
                     key=str((meta or {}).get("bucket_key") or "")
-                    if key:
+                    if key and _final_matches_current_upload(sid,meta):
                         head=_s3().head_object(Bucket=S3_BUCKET,Key=key)
                         revision=str(head.get("ETag") or head.get("LastModified") or "")
                         final_bytes=int(head.get("ContentLength") or 0)
                         ready=final_bytes>1024
                 except Exception:
                     try:
+                        # A legacy object without metadata has no proof that it
+                        # belongs to a newly uploaded gameplay.
+                        if not _final_matches_current_upload(sid,{}):
+                            raise ValueError("previous upload export")
                         head=_s3().head_object(Bucket=S3_BUCKET,Key=_final_bucket_key(sid))
                         revision=str(head.get("ETag") or head.get("LastModified") or "")
                         final_bytes=int(head.get("ContentLength") or 0)
@@ -4465,6 +4513,7 @@ class Handler(BaseHTTPRequestHandler):
                     avatar="/creator-hub/avatar"
                 _json(self,200,{
                     "ok":True,
+                    "csrf_token":_security_csrf_token(sid),
                     "account":{
                         "connected":bool(account_id),
                         "id":account_id,
@@ -4697,7 +4746,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 data=_read_json(self,max_bytes=128*1024)
                 raw_state=data.get("state") if isinstance(data,dict) else {}
-                state=_editor_overlay_state_save(sid,raw_state)
+                state=_editor_overlay_state_save(sid,raw_state,data.get("context"),expected_source_key=data.get("source_key",""))
                 _json(self,200,{"ok":True,"saved":True,"keys":len(state)})
             except Exception as exc:
                 _json(self,400,{"ok":False,"error":str(exc)[:180]})
@@ -4810,6 +4859,9 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path=="/drafts/save-current":
+            if not _security_csrf_valid(self,sid):
+                _json(self,403,{"ok":False,"error":"csrf validation failed"})
+                return
             try:
                 root=ROOT/"sessions"/sid
                 state={}
@@ -4827,6 +4879,10 @@ class Handler(BaseHTTPRequestHandler):
                 editor_state=_editor_overlay_state_load(sid)
                 if isinstance(editor_state,dict):
                     state.update(editor_state)
+                from web.mobile_editor_recipe import read_editor_snapshot
+                snapshot=read_editor_snapshot(root)
+                if snapshot:
+                    state["gsf_mobile_editor_snapshot"]=snapshot
 
                 # Bind the snapshot to the exact source currently loaded.
                 marker=root/"media"/".direct_upload_ready.json"

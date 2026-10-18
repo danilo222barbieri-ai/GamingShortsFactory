@@ -3635,7 +3635,7 @@ def _gsf_render_core(source_path, output_path, start, duration, fmt='9:16 Short'
     reframe_meta = {'enabled': False, 'reason': 'disattivato', 'track': [], 'confidence': 0.0, 'movement': 0.0, 'samples': 0}
     reframe_cache_hit = False
     try:
-        if subtitles_enabled and str(subtitle_mode) != 'Nessuno':
+        if subtitles_enabled and str(subtitle_mode) not in ('Nessuno', 'Manuale'):
             if subtitle_words:
                 origin = start if subtitle_time_origin is None else float(subtitle_time_origin)
                 used_words = _gsf_prepare_render_words(subtitle_words, origin, duration)
@@ -3644,7 +3644,7 @@ def _gsf_render_core(source_path, output_path, start, duration, fmt='9:16 Short'
         _hook_text = str(hook_text or '').strip()
         _hook_duration = float(hook_duration) if hook_duration is not None else min(2.0, max(1.15, float(duration) * 0.12))
         if subtitles_enabled and str(subtitle_mode) != 'Nessuno' or _hook_text:
-            _gsf_write_render_ass(ass_file, used_words, fallback_text=subtitle_text if subtitle_words and subtitles_enabled else '', font=subtitle_font, size=subtitle_size, x_pct=subtitle_x, y_pct=subtitle_y, text_color=text_color, active_color=active_color, outline_color=outline_color, fmt=fmt, hook_text=_hook_text, hook_duration=_hook_duration, hook_y_pct=15)
+            _gsf_write_render_ass(ass_file, used_words, fallback_text=subtitle_text if subtitles_enabled and str(subtitle_mode) == 'Manuale' else '', font=subtitle_font, size=subtitle_size, x_pct=subtitle_x, y_pct=subtitle_y, text_color=text_color, active_color=active_color, outline_color=outline_color, fmt=fmt, hook_text=_hook_text, hook_duration=_hook_duration, hook_y_pct=15)
         reframe_track = None
         if bool(smart_reframe) and fmt == '9:16 Short':
             reframe_meta, reframe_cache_hit = _gsf_smart_reframe_cached(source_path, start, duration, cache_token=reframe_cache_token)
@@ -3682,7 +3682,7 @@ def _gsf_render_core(source_path, output_path, start, duration, fmt='9:16 Short'
                 _diag_elapsed = time.perf_counter() - _diag_started
                 print('GSF_FINAL_RENDER_EXIT', f'encoder={encoder}', f'returncode={r.returncode}', f'elapsed={_diag_elapsed:.2f}', flush=True)
                 _gsf_perf_event('render_end', encoder=str(encoder), fmt=str(fmt), duration_seconds=round(float(duration), 3), elapsed_seconds=round(float(_diag_elapsed), 3), returncode=int(r.returncode))
-            except subprocess.TimeoutExpired:
+            except (subprocess.TimeoutExpired, TimeoutError):
                 _diag_elapsed = time.perf_counter() - _diag_started
                 _gsf_render_error = __import__('sys').exc_info()[1]
                 if isinstance(_gsf_render_error, subprocess.TimeoutExpired):
@@ -9872,12 +9872,18 @@ def _gsf_v93_release_analysis_memory():
 
 
 
+def _gsf_saved_mobile_recipe(recipe):
+    from web.mobile_editor_recipe import apply_saved_editor_recipe
+    from editor_2027_embed import editor_2027_render_kwargs
+    return apply_saved_editor_recipe(recipe,GSF_SESSION_ROOT,editor_2027_render_kwargs,st.session_state)
+
+
 def _gsf_render_final_recipe(recipe,output_path,video_obj=None):
     """
     The ONLY manual/editor final render path.
     Editor screens only save a recipe; this function renders once at the bottom.
     """
-    recipe=dict(recipe or {})
+    recipe=_gsf_saved_mobile_recipe(recipe)
     kind=str(recipe.get("kind","") or "")
 
     if kind=="auto":
@@ -11447,6 +11453,16 @@ if GSF_WEB_MODE:
 _gsf_recovered_source=None
 video=None
 if _gsf_direct_source is not None:
+    _gsf_previous_source=str(st.session_state.get("gsf_source_path") or "")
+    if _gsf_previous_source and _gsf_previous_source!=str(_gsf_direct_source):
+        # A completed replacement upload starts a new video workflow. Reuse
+        # the existing reset, retaining the newly uploaded source and drafts.
+        _gsf_v75_reset_engine_workflow()
+        for _key in list(st.session_state.keys()):
+            if str(_key).startswith(("gsf_editor_","gsf_manual_","gsf_v107_")):
+                st.session_state.pop(_key,None)
+        for _artifact in ("editor2027_current.txt","render_job.json","media/gaming_short_finale_share.mp4"):
+            (GSF_SESSION_ROOT/_artifact).unlink(missing_ok=True)
     _gsf_recovered_source=_gsf_direct_source
     video=_GSFRecoveredUpload(_gsf_direct_source,_gsf_direct_name or _gsf_direct_source.name)
     st.session_state["gsf_source_path"]=str(_gsf_direct_source)
@@ -11717,6 +11733,12 @@ if GSF_WEB_MODE:
         elif _v154_engine=="manual" or (_v154_event=="open_editor" and "index" not in _gsf_v154_event):
             st.session_state.pop("gsf_v291_engine_profile",None)
             st.session_state.pop("gsf_v291_ai_request",None)
+
+        # Home's Editor CTA selects the existing manual renderer; opening an
+        # AI candidate (which carries an index) preserves its selected recipe.
+        if _v154_event=="open_editor" and _v154_engine=="manual" and "index" not in _gsf_v154_event:
+            st.session_state["modalita_gsf"]="✋ Manuale"
+            st.session_state.pop("gsf_pending_engine_switch_v75",None)
 
         # V412 AI ENGINES: the AI page drives selection, editor hand-off and
         # "Cambia short" on the real AI run (same session-state keys used by
@@ -14427,8 +14449,10 @@ if video:
 
         if not _has_final:
             def _gsf_v107_queue_final_render():
+                print("GSF_FINAL_QUEUE phase=enter",flush=True)
                 if st.session_state.get("gsf_v107_final_render_pending") or st.session_state.get("gsf_v107_final_render_running"):
                     return
+                print("GSF_FINAL_QUEUE phase=freeze",flush=True)
                 _recipe=st.session_state.get("gsf_final_recipe")
                 if isinstance(_recipe,dict) and _recipe:
                     _recipe=dict(_recipe)
@@ -14477,6 +14501,10 @@ if video:
                             st.session_state["gsf_final_recipe"]=_recipe
                     except Exception as _v125_recipe_exc:
                         print("GSF_V125_PLAN_RECIPE_WARN",repr(str(_v125_recipe_exc))[:220],flush=True)
+                    print("GSF_FINAL_QUEUE phase=mobile",flush=True)
+                    _recipe=_gsf_saved_mobile_recipe(_recipe)
+                    print("GSF_FINAL_QUEUE phase=job",flush=True)
+                    st.session_state["gsf_final_recipe"]=_recipe
                     st.session_state["gsf_v107_render_recipe_snapshot"]=dict(_recipe)
                 _src=""
                 if isinstance(_recipe,dict):
@@ -14503,6 +14531,7 @@ if video:
                     __import__("os").replace(_job_tmp,_job_path)
                 except Exception as _job_exc:
                     print("GSF_FINAL_JOB_WRITE_WARN",repr(str(_job_exc)),flush=True)
+                print("GSF_FINAL_QUEUE phase=queued",flush=True)
 
             try:
                 _job_path=GSF_SESSION_ROOT/"render_job.json"
@@ -14748,7 +14777,8 @@ if video:
             if _gsf_v107_pending:
                 _snap=st.session_state.get("gsf_v107_render_recipe_snapshot")
                 if isinstance(_snap,dict) and _snap:
-                    st.session_state["gsf_final_recipe"]=dict(_snap)
+                    _final_recipe=dict(_snap)
+                    st.session_state["gsf_final_recipe"]=_final_recipe
                 _src_snap=str(st.session_state.get("gsf_v107_render_source_snapshot") or "")
                 if _src_snap:
                     st.session_state["gsf_source_path"]=_src_snap
@@ -16464,9 +16494,16 @@ if GSF_WEB_MODE:
       const startShortIfNeeded=async requestedAt=>{
         if(!requestedAt||requestedAt===lastShortRequest)return;
         lastShortRequest=requestedAt;
+        const routeEpoch=P.GSFNavigation.snapshot().epoch;
+        const active=()=>!bridge.signal.aborted&&lastShortRequest===requestedAt&&P.GSFNavigation.snapshot().target==='social'&&P.GSFNavigation.snapshot().epoch===routeEpoch;
         try{const r=await P.fetch('/share/state',{cache:'no-store',credentials:'same-origin'});const j=await r.json();if(r.ok&&j&&j.ready)return}catch(e){}
-        let b=document.querySelector('.st-key-gsf-major-create-short button,.st-key-create_final_short_v54 button');
-        if(!b)b=[...document.querySelectorAll('button,[role="button"]')].find(x=>{if(x.closest('#gsf-social-overlay-v159,#gsf-global-gamebar,#gsf-global-header'))return false;const t=String(x.innerText||x.textContent||'').trim().toLowerCase();return t==='crea short'||t.includes('crea short finale')||t.includes('crea il tuo short')});
+        const renderButton=()=>document.querySelector('.st-key-gsf-major-create-short button,.st-key-create_final_short_v54 button')||[...document.querySelectorAll('button,[role="button"]')].find(x=>{if(x.closest('#gsf-social-overlay-v159,#gsf-global-gamebar,#gsf-global-header'))return false;const t=String(x.innerText||x.textContent||'').trim().toLowerCase();return t==='crea short'||t.includes('crea short finale')||t.includes('crea il tuo short')});
+        let b=renderButton();
+        const deadline=Date.now()+15000;
+        // Preparing the manual recipe and mounting its widget complete on a
+        // Streamlit rerun. Wait for that existing button; leaving cancels it.
+        while(!b&&active()&&Date.now()<deadline){await new Promise(resolve=>setTimeout(resolve,100));b=renderButton();}
+        if(!active())return;
         if(!b){setTimeout(()=>notice('Carica un gameplay prima di creare lo Short.'),400);return}
         if(b.disabled||b.getAttribute('aria-disabled')==='true'){setTimeout(()=>notice('Il gameplay non è ancora pronto per il render.'),400);return}
         b.click();setTimeout(()=>notice('Creazione Short avviata…'),400);
@@ -16633,6 +16670,7 @@ if GSF_WEB_MODE:
         const initial=(editorMeta.initial_state&&typeof editorMeta.initial_state==='object')?editorMeta.initial_state:{};
         const payload={
           type:'GSF_GAME_EDITOR_INIT',
+          binding:{source_key:String(editorMeta.source_key||''),clip_start:Number(editorMeta.clip_start)||0,clip_duration:Number(editorMeta.clip_duration)||15},
           session:(editorMeta.session&&typeof editorMeta.session==='object')?editorMeta.session:{},
           project:(editorMeta.project&&typeof editorMeta.project==='object')?editorMeta.project:{},
           media:{url:editorMeta.ready===false?'':String(editorMeta.video_url||'/editor-media/current')},
@@ -16656,10 +16694,15 @@ if GSF_WEB_MODE:
         try{frame.contentWindow.postMessage({type:'GSF_GAME_EDITOR_SHELL_CLOSE'},location.origin)}catch(_e){}
       };
       const persistMobileEditorState=(message)=>{
-        const state=(message.state&&typeof message.state==='object')?message.state:{};
+        if(!metadataReady)return Promise.reject(new Error('Progetto ancora in caricamento. Riprova.'));
+        const binding=message.binding;
+        if(!binding||String(binding.source_key||'')!==String(editorMeta.source_key||'')||Math.abs((Number(binding.clip_start)||0)-(Number(editorMeta.clip_start)||0))>.1||Math.abs((Number(binding.clip_duration)||15)-(Number(editorMeta.clip_duration)||15))>.1)return Promise.reject(new Error('Il progetto Editor è cambiato. Riaprilo prima di salvare.'));
+        const state={...((message.state&&typeof message.state==='object')?message.state:{})};
+        const context={clip_start:Number(editorMeta.clip_start)||0,clip_duration:Number(editorMeta.clip_duration)||Number(state.sourceDuration)||15};
+        const source_key=String(editorMeta.source_key||'');
         editorMeta.initial_state={...state};
         const operation=mobileSaveChain.then(async()=>{
-          const response=await fetch('/editor/state/save',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({state})});
+          const response=await fetch('/editor/state/save',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({state,context,source_key})});
           const payload=await response.json().catch(()=>({}));
           if(!response.ok||!payload.ok)throw new Error(payload.error||'Stato Editor non salvato');
           return payload;
@@ -16752,19 +16795,19 @@ setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326He
         }
 
 
-        if(selection&&selection.video_url){
-          const selectedDuration=Math.max(.5,Number(selection.duration)||15);
-          editorMeta.video_url=String(selection.video_url);editorMeta.ready=true;metadataReady=true;
-          editorMeta.initial_state=Object.assign({},editorMeta.initial_state||{}, {inPoint:0,outPoint:selectedDuration,sourceDuration:selectedDuration,momentIndex:Number(selection.momentIndex)||0});
-          scheduleRender(0);
-          return;
-        }
+        if(selection&&selection.video_url)metadataReady=false;
         fetch('/editor/state',{cache:'no-store',credentials:'same-origin'})
           .then(r=>r.json().then(j=>({ok:r.ok,j})))
           .then(({ok,j})=>{
             if(ok&&j&&j.ok&&!bridge.signal.aborted&&requestEpoch===openEpoch&&routeEpoch===P.GSFNavigation.snapshot().epoch&&P.GSFNavigation.snapshot().target==='editor'){
               if(reused&&!forceReload&&metadataReady&&frame.__gsfEditorInitialized&&String(j.video_url||'')===String(editorMeta.video_url||'')&&j.ready===editorMeta.ready)return;
-              Object.assign(editorMeta,j,{video_url:String(j.video_url||'')});metadataReady=true;
+              Object.assign(editorMeta,j,{video_url:String(j.video_url||'')});
+              if(selection&&selection.video_url){
+                const selectedDuration=Math.max(.5,Number(selection.duration)||15);
+                Object.assign(editorMeta,{video_url:String(selection.video_url),clip_start:Number(selection.start_time)||0,clip_duration:selectedDuration,ready:true});
+                editorMeta.initial_state=Object.assign({},editorMeta.initial_state||{},{inPoint:0,outPoint:selectedDuration,sourceDuration:selectedDuration,momentIndex:Number(selection.momentIndex)||0});
+              }
+              metadataReady=true;
               scheduleRender(0);
             }
           })
@@ -16794,7 +16837,7 @@ setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326He
             delete cleanState.editorAction;delete cleanState.editorActionNonce;
             editorMeta.initial_state=cleanState;
             const notify=(title,msg='',kind='success')=>{try{window.GSFNotify&&window.GSFNotify.show(title,msg,kind)}catch(_e){}};
-            const saveState=fetch('/editor/state/save',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({state:cleanState})}).then(r=>{if(!r.ok)throw new Error('Stato Editor non salvato');return r});
+            const saveState=fetch('/editor/state/save',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({state:cleanState,source_key:String(editorMeta.source_key||''),context:{clip_start:Number(editorMeta.clip_start)||0,clip_duration:Number(editorMeta.clip_duration)||15}})}).then(r=>{if(!r.ok)throw new Error('Stato Editor non salvato');return r});
             if(action==='save_draft'){
               saveState.then(()=>fetch('/creator-hub/project/save-draft',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({})}))
                 .then(async r=>{let j={};try{j=await r.json()}catch(_e){};if(!r.ok||!j.ok)throw new Error(j.error||'Bozza non salvata');notify('Bozza salvata',String((j.draft||{}).title||''),'success')})
@@ -16822,7 +16865,7 @@ setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326He
           return;
         }
       },{signal:bridge.signal});
-      P.GSFNavigation.registerSurface('editor',{adopt:()=>frame.dataset.loaded==='1',open:data=>{pendingSelection={video_url:String(data.video_url||''),duration:Number(data.duration)||15,momentIndex:Number(data.momentIndex)||0,resume:data.resume===true,draft_id:String(data.draft_id||''),project_id:String(data.project_id||'')};open()},close});
+      P.GSFNavigation.registerSurface('editor',{adopt:()=>frame.dataset.loaded==='1',open:data=>{pendingSelection={video_url:String(data.video_url||''),duration:Number(data.duration)||15,start_time:Number(data.start_time)||0,momentIndex:Number(data.momentIndex)||0,resume:data.resume===true,draft_id:String(data.draft_id||''),project_id:String(data.project_id||'')};open()},close});
     })();
     
     })(window.parent);
@@ -17916,7 +17959,7 @@ if GSF_WEB_MODE:
         o.querySelector('.v343ShortClose')?.addEventListener('click',()=>route({target:'home'}));
         o.querySelector('.v343Editor')?.addEventListener('click',()=>route({target:'editor'}));
         o.querySelector('.v343Create')?.addEventListener('click',()=>{let b=D.querySelector('.st-key-gsf-major-create-short button,.st-key-create_final_short_v54 button');if(!b)b=[...D.querySelectorAll('button,[role="button"]')].find(x=>{const t=String(x.innerText||x.textContent||'').trim().toLowerCase();return t==='crea short'||t.includes('crea short finale')||t.includes('crea il tuo short')});if(!b){say('Carica un gameplay prima di creare lo Short.');return}if(b.disabled||b.getAttribute('aria-disabled')==='true'){say('Il gameplay non è ancora pronto per il render.');return}say('Creazione Short…');b.click()});
-        o.querySelector('.v343Draft')?.addEventListener('click',async()=>{say('Salvataggio…');try{const r=await P.fetch('/drafts/save-current',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'});const j=await r.json().catch(()=>({}));say(r.ok&&j&&j.ok?'Bozza salvata.':(j&&j.error)||'Nessuna modifica da salvare.')}catch(_e){say('Salvataggio non riuscito. Riprova.')}});
+        o.querySelector('.v343Draft')?.addEventListener('click',async()=>{say('Salvataggio…');try{const state=await P.fetch('/creator-hub/state?scope=header',{credentials:'same-origin'}).then(r=>r.json());const r=await P.fetch('/drafts/save-current',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-GSF-CSRF':String(state.csrf_token||'')},body:'{}'});const j=await r.json().catch(()=>({}));say(r.ok&&j&&j.ok?'Bozza salvata.':(j&&j.error)||'Nessuna modifica da salvare.')}catch(_e){say('Salvataggio non riuscito. Riprova.')}});
         const v=o.querySelector('video');if(v){v.src='/editor-media/current?v=343';v.addEventListener('loadedmetadata',()=>{v.hidden=false;const t=o.querySelector('.v343PreviewText');if(t)t.style.display='none'},{once:true});v.addEventListener('error',()=>{v.hidden=true},{once:true})}
         return o;
       };
