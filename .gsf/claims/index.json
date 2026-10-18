@@ -1239,7 +1239,9 @@
         "web/runtime_smoke_v411.py",
         "web/share_v156_component/index.html",
         "web/start_web.sh",
-        "web/start_web_fast.sh"
+        "web/start_web_fast.sh",
+        "web/render_gate_v293.py",
+        "tests/test_render_gate_reliability.py"
       ],
       "scope": "Closed beta stabilization: production gate reliability and real upload AI editor render end-to-end verification",
       "state": "active"
