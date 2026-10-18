@@ -835,6 +835,15 @@
       "branch": "chat/stability-unified-navigation-and-mobile-resume-l-395391",
       "created_at": "2026-10-15T21:07:33+00:00",
       "evidence": {
+        "closed_beta_handoff": {
+          "authorization": "User explicitly authorized transfer of the files necessary for mobile CLOSED BETA stabilization in this chat on 2026-10-18; preserve existing integrated and pending work.",
+          "paths": [
+            "tests/test_mobile_resume_stability.py",
+            "tests/visual/gsf_visual_check.py",
+            "web/gsf_navigation_lifecycle.js"
+          ],
+          "to": "closed-beta-stabilization-production-gate-reliab-bd6c6c"
+        },
         "completion_handoff": {
           "authorization": "Owner requested finish both remaining Claude tasks (Night Arena PR162 and brand kit) in integration chat 2026-10-16; narrow gate setup repair needed to complete PR162.",
           "paths": [
@@ -865,12 +874,9 @@
       "paths": [
         "docs/architecture/gsf-navigation-lifecycle.md",
         "tests/test_canonical_ui_pipeline.py",
-        "tests/test_mobile_resume_stability.py",
         "tests/test_runtime_import_stability.py",
-        "tests/visual/gsf_visual_check.py",
         "web/__init__.py",
         "web/editor_2027_component/index.html",
-        "web/gsf_navigation_lifecycle.js",
         "web/test_v286_global_gamebar.py",
         "web/test_v302_global_live_gamebar.py"
       ],
@@ -1115,6 +1121,13 @@
       "branch": "chat/fix-mobile-editor-global-shell-20261017",
       "created_at": "2026-10-17T08:37:51.432Z",
       "evidence": {
+        "closed_beta_handoff": {
+          "authorization": "User explicitly authorized transfer of the files necessary for mobile CLOSED BETA stabilization in this chat on 2026-10-18; preserve existing integrated and pending work.",
+          "paths": [
+            "PROJECT_STATUS.md"
+          ],
+          "to": "closed-beta-stabilization-production-gate-reliab-bd6c6c"
+        },
         "owner_handoff": {
           "authorization": "Owner asked this chat on 2026-10-17 to fix the remaining white band under the Game Bar in the mobile Editor (still visible after PR #164 was merged as d12c5de and promoted in 01faeb7).",
           "paths": [
@@ -1129,7 +1142,6 @@
       "owner": "chat/fix-mobile-editor-global-shell-20261017",
       "paths": [
         "tests/test_editor_shell_integration.py",
-        "PROJECT_STATUS.md",
         ".github/workflows/editor-shell-integration.yml"
       ],
       "scope": "Restore mobile Editor shared global header and continuous Night Arena canvas through iPhone bottom safe area; preserve editor controls and global Game Bar",
@@ -1138,19 +1150,27 @@
     {
       "branch": "chat/mobile-only-close-the-desktop-version-behind-a-p-ee72b5",
       "created_at": "2026-10-17T14:38:08+00:00",
+      "evidence": {
+        "closed_beta_handoff": {
+          "authorization": "User explicitly authorized transfer of the files necessary for mobile CLOSED BETA stabilization in this chat on 2026-10-18; preserve existing integrated and pending work.",
+          "paths": [
+            ".github/workflows/gsf-ci.yml",
+            "Dockerfile",
+            "PROJECT_STATUS.md",
+            "tests/test_navigation_stability.py",
+            "web/nginx.conf.template",
+            "web/runtime_smoke_v411.py"
+          ],
+          "to": "closed-beta-stabilization-production-gate-reliab-bd6c6c"
+        }
+      },
       "id": "mobile-only-close-the-desktop-version-behind-a-p-ee72b5",
       "owner": "chat/mobile-only-close-the-desktop-version-behind-a-p-ee72b5",
       "paths": [
-        ".github/workflows/gsf-ci.yml",
-        "Dockerfile",
-        "PROJECT_STATUS.md",
         "tests/test_mobile_only_gate.py",
-        "tests/test_navigation_stability.py",
         "web/gsf_desktop_shell_v407.py",
         "web/install_adsense_bridge.py",
         "web/mobile_only_gate.html",
-        "web/nginx.conf.template",
-        "web/runtime_smoke_v411.py",
         "web/test_v267_global_desktop_polish.py",
         "web/test_v268_1_desktop_to_mobile_parity.py",
         "web/test_v268_desktop_aesthetic_calibration.py",
@@ -1162,15 +1182,23 @@
     {
       "branch": "chat/beta-readiness-creator-hub-profile-photo-name-wo-d657fc",
       "created_at": "2026-10-17T19:56:33+00:00",
+      "evidence": {
+        "closed_beta_handoff": {
+          "authorization": "User explicitly authorized transfer of the files necessary for mobile CLOSED BETA stabilization in this chat on 2026-10-18; preserve existing integrated and pending work.",
+          "paths": [
+            "app.py",
+            "web/creator_hub_v156_component/index.html",
+            "web/direct_upload_server.py",
+            "web/share_v156_component/index.html"
+          ],
+          "to": "closed-beta-stabilization-production-gate-reliab-bd6c6c"
+        }
+      },
       "id": "beta-readiness-creator-hub-profile-photo-name-wo-d657fc",
       "owner": "chat/beta-readiness-creator-hub-profile-photo-name-wo-d657fc",
       "paths": [
-        "app.py",
         "tests/test_creator_hub_profile_v420.py",
-        "tests/test_social_return_v420.py",
-        "web/creator_hub_v156_component/index.html",
-        "web/direct_upload_server.py",
-        "web/share_v156_component/index.html"
+        "tests/test_social_return_v420.py"
       ],
       "scope": "beta-readiness: Creator Hub profile (photo/name) works for every session, social connect also links the creator account, login keeps custom name/photo; button audit fixes",
       "state": "active"
@@ -1178,16 +1206,38 @@
     {
       "branch": "chat/closed-beta-stabilization-production-gate-reliab-bd6c6c",
       "created_at": "2026-10-18T06:43:58+00:00",
+      "evidence": {
+        "ownership_authorization": "User explicitly authorized transfer of the files necessary for mobile CLOSED BETA stabilization in this chat on 2026-10-18; preserve existing integrated and pending work."
+      },
       "id": "closed-beta-stabilization-production-gate-reliab-bd6c6c",
       "owner": "chat/closed-beta-stabilization-production-gate-reliab-bd6c6c",
       "paths": [
+        ".github/workflows/gsf-ci.yml",
         ".github/workflows/v397-production-gate.yml",
+        "Dockerfile",
+        "PROJECT_STATUS.md",
+        "app.py",
         "docs/superpowers/plans/2026-10-18-closed-beta-stabilization.md",
+        "tests/test_closed_beta_navigation.py",
+        "tests/test_closed_beta_routes.py",
         "tests/test_gate_health.py",
         "tests/test_gate_promotion_reliability.py",
+        "tests/test_mobile_resume_stability.py",
+        "tests/test_navigation_stability.py",
         "tests/visual/gsf_closed_beta_e2e.py",
+        "tests/visual/gsf_navigation_stress.py",
+        "tests/visual/gsf_visual_check.py",
         "tools/gsf_gate_health.py",
-        "tools/gsf_gate_promote.py"
+        "tools/gsf_gate_promote.py",
+        "web/creator_hub_v156_component/index.html",
+        "web/direct_upload_server.py",
+        "web/gsf_navigation_lifecycle.js",
+        "web/home_v154_component/index.html",
+        "web/nginx.conf.template",
+        "web/runtime_smoke_v411.py",
+        "web/share_v156_component/index.html",
+        "web/start_web.sh",
+        "web/start_web_fast.sh"
       ],
       "scope": "Closed beta stabilization: production gate reliability and real upload AI editor render end-to-end verification",
       "state": "active"
