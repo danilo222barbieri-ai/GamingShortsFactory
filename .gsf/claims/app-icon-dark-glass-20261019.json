@@ -1,0 +1,10 @@
+{
+  "id": "app-icon-dark-glass-20261019",
+  "owner": "chat/app-icon-dark-glass-20261019",
+  "branch": "chat/app-icon-dark-glass-20261019",
+  "scope": "Replace the saved-to-phone GSF app icon with the approved dark-glass icon",
+  "paths": ["web/app_icons/app-icon.png"],
+  "state": "active",
+  "created_at": "2026-10-19T00:34:00+02:00",
+  "evidence": {}
+}
