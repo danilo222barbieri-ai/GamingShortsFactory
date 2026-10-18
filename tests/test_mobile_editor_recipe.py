@@ -125,6 +125,9 @@ class ReplacedGameplay(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);source=root/'new.mp4';source.write_bytes(b'video')
             (root/'editor2027_current.txt').write_text(str(root/'old.mp4'))
+            (root/'media').mkdir()
+            (root/'media/gaming_short_finale_share.mp4').write_bytes(b'old export')
+            (root/'render_job.json').write_text('{"status":"running"}')
             state={'gsf_source_path':str(root/'old.mp4'),'gsf_editor_source_path':str(root/'old.mp4'),
                    'gsf_final_recipe':{'source_path':'old.mp4'},'gsf_v107_render_recipe_snapshot':{'old':True}}
             reset=Mock(side_effect=lambda:state.pop('gsf_final_recipe',None))
@@ -136,4 +139,6 @@ class ReplacedGameplay(unittest.TestCase):
             self.assertNotIn('gsf_final_recipe',state)
             self.assertNotIn('gsf_v107_render_recipe_snapshot',state)
             self.assertFalse((root/'editor2027_current.txt').exists())
+            self.assertFalse((root/'render_job.json').exists())
+            self.assertFalse((root/'media/gaming_short_finale_share.mp4').exists())
             self.assertEqual(state['gsf_source_path'],str(source))

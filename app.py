@@ -11461,7 +11461,8 @@ if _gsf_direct_source is not None:
         for _key in list(st.session_state.keys()):
             if str(_key).startswith(("gsf_editor_","gsf_manual_","gsf_v107_")):
                 st.session_state.pop(_key,None)
-        (GSF_SESSION_ROOT/"editor2027_current.txt").unlink(missing_ok=True)
+        for _artifact in ("editor2027_current.txt","render_job.json","media/gaming_short_finale_share.mp4"):
+            (GSF_SESSION_ROOT/_artifact).unlink(missing_ok=True)
     _gsf_recovered_source=_gsf_direct_source
     video=_GSFRecoveredUpload(_gsf_direct_source,_gsf_direct_name or _gsf_direct_source.name)
     st.session_state["gsf_source_path"]=str(_gsf_direct_source)

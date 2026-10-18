@@ -244,6 +244,19 @@ def _final_persist_to_bucket(sid,source_path,started_at=0.0):
     print("GSF_FINAL_BUCKET_READY",sid,meta["final_bytes"],meta["short_id"],flush=True)
     return meta
 
+def _final_matches_current_upload(sid,meta):
+    """A session's latest export must belong to its current gameplay."""
+    marker=ROOT/"sessions"/_safe_id(sid)/"media"/".direct_upload_ready.json"
+    if not marker.is_file():
+        return True  # Legacy session with no replacement boundary.
+    try:
+        upload=json.loads(marker.read_text(encoding="utf-8"))
+        boundary=float(upload.get("completed_at") or 0.0)
+        rendered=float(meta.get("started_at") or meta.get("completed_at") or 0.0)
+        return boundary<=0.0 or rendered>=boundary
+    except (OSError,ValueError,TypeError,AttributeError):
+        return False
+
 def _final_restore_from_bucket(sid):
     sid=_safe_id(sid)
     if not sid or not _bucket_enabled():
@@ -256,6 +269,8 @@ def _final_restore_from_bucket(sid):
         meta=json.loads(obj["Body"].read().decode("utf-8"))
         if not isinstance(meta,dict):
             meta={}
+        if not _final_matches_current_upload(sid,meta):
+            return {}
         key=str(meta.get("bucket_key") or _final_bucket_key(sid))
         tmp=stable.with_suffix(".restore.tmp")
         tmp.unlink(missing_ok=True)
@@ -4397,13 +4412,17 @@ class Handler(BaseHTTPRequestHandler):
                     obj=_s3().get_object(Bucket=S3_BUCKET,Key=_final_meta_key(sid))
                     meta=json.loads(obj["Body"].read().decode("utf-8"))
                     key=str((meta or {}).get("bucket_key") or "")
-                    if key:
+                    if key and _final_matches_current_upload(sid,meta):
                         head=_s3().head_object(Bucket=S3_BUCKET,Key=key)
                         revision=str(head.get("ETag") or head.get("LastModified") or "")
                         final_bytes=int(head.get("ContentLength") or 0)
                         ready=final_bytes>1024
                 except Exception:
                     try:
+                        # A legacy object without metadata has no proof that it
+                        # belongs to a newly uploaded gameplay.
+                        if not _final_matches_current_upload(sid,{}):
+                            raise ValueError("previous upload export")
                         head=_s3().head_object(Bucket=S3_BUCKET,Key=_final_bucket_key(sid))
                         revision=str(head.get("ETag") or head.get("LastModified") or "")
                         final_bytes=int(head.get("ContentLength") or 0)
