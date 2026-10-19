@@ -34,6 +34,7 @@
   "id": "closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
   "owner": "chat/closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
   "paths": [
+    ".github/workflows/gsf-ci.yml",
     ".github/workflows/v397-production-gate.yml",
     "Dockerfile",
     "PROJECT_STATUS.md",
