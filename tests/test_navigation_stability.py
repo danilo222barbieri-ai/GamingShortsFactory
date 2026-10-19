@@ -254,7 +254,7 @@ setTimeout(()=>{assert.equal(called,100);assert.equal(retained,0,'completed time
             navigate(page,'editor',ready=False)
             frame=page.frame_locator('#gsf-editor-overlay-v220 iframe')
             frame.locator('#gameEditorApp').wait_for()
-            frame.locator('#gameEditorApp').evaluate("()=>window.GSFGameEditor2026.getState()")
+            # The HTML shell can appear before its deferred editor module is ready.
             page.wait_for_function("()=>document.querySelector('#gsf-editor-overlay-v220 iframe').contentWindow.GSFGameEditor2026?.getState().zoom===1.2")
             navigate(page,'home')
             page.evaluate("()=>window.postMessage({type:'GSF_SHELL_NAV',target:'editor',resume:true,draft_id:'different-draft'},location.origin)")
