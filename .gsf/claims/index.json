@@ -1327,6 +1327,7 @@
       "owner": "chat/closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
       "paths": [
         ".github/workflows/v397-production-gate.yml",
+        "Dockerfile",
         "PROJECT_STATUS.md",
         "app.py",
         "docs/superpowers/plans/2026-10-18-closed-beta-bugfix-pass.md",
@@ -1336,6 +1337,7 @@
         "tests/test_closed_beta_bugfix_pass.py",
         "tests/visual/gsf_closed_beta_bugfix_pass.py",
         "tools/gsf_alive_inline.py",
+        "tools/gsf_ui_manifest.py",
         "web/ai_engines_v412.py",
         "web/ai_v221_component/index.html",
         "web/ai_worker_server.py",
