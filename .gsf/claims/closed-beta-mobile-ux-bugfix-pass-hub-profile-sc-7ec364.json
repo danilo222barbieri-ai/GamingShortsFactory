@@ -22,6 +22,7 @@
     "web/ai_worker_server.py",
     "web/creator_hub_v156_component/index.html",
     "web/direct_upload_server.py",
+    "web/game_editor_mobile_component/editor.mjs",
     "web/gsf_alive_v418.js",
     "web/gsf_bucket_bridge.py",
     "web/gsf_navigation_lifecycle.js",
