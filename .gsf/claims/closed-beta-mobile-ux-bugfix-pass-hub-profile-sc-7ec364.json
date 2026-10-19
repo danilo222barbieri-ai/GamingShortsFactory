@@ -14,6 +14,7 @@
     "tests/test_alive_runtime_v418.py",
     "tests/test_closed_beta_bugfix_pass.py",
     "tests/visual/gsf_closed_beta_bugfix_pass.py",
+    "tests/visual/gsf_navigation_stress.py",
     "tools/gsf_alive_inline.py",
     "tools/gsf_ui_manifest.py",
     "web/ai_engines_v412.py",
