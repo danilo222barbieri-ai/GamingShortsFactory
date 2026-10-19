@@ -13,6 +13,7 @@
     "tests/js/gsf_alive_v418.test.mjs",
     "tests/test_alive_runtime_v418.py",
     "tests/test_closed_beta_bugfix_pass.py",
+    "tests/test_gate_promotion_reliability.py",
     "tests/test_navigation_stability.py",
     "tests/visual/gsf_closed_beta_bugfix_pass.py",
     "tests/visual/gsf_navigation_stress.py",
