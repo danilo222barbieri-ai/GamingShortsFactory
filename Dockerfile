@@ -42,10 +42,7 @@ COPY app.py /app/app.py
 COPY .streamlit /app/.streamlit
 COPY tools/gsf_ui_manifest.py /app/gsf_ui_manifest.py
 COPY web/ffmpeg_lowmem.py /usr/local/bin/ffmpeg
-RUN python -c "import base64,pathlib,struct; p=pathlib.Path('/app/web/app_icons'); raw=(p/'app-icon.png').read_bytes(); (p/'apple-touch-icon.png').write_bytes(raw); (p/'official_logo_180.valid.b64').write_text(base64.b64encode(raw).decode('ascii')); assert raw[:8]==b'\\x89PNG\\r\\n\\x1a\\n'; assert struct.unpack('>II',raw[16:24])==(180,180); print('GSF production app icon 180: PASS')" && \
-    /usr/bin/ffmpeg -hide_banner -loglevel error -y -i /app/web/app_icons/app-icon.png -vf scale=192:192 /app/web/app_icons/app-icon-192.png && \
-    /usr/bin/ffmpeg -hide_banner -loglevel error -y -i /app/web/app_icons/app-icon.png -vf scale=512:512 /app/web/app_icons/app-icon-512.png && \
-    python -c "import pathlib,struct; p=pathlib.Path('/app/web/app_icons'); dims={n:struct.unpack('>II',(p/n).read_bytes()[16:24]) for n in ('app-icon-192.png','app-icon-512.png')}; assert dims['app-icon-192.png']==(192,192); assert dims['app-icon-512.png']==(512,512); print('GSF PWA icons 192/512: PASS')"
+RUN python -c "import base64,pathlib,struct; from PIL import Image; p=pathlib.Path('/app/web/app_icons'); src=p/'app-icon.png'; raw=src.read_bytes(); assert raw[:8]==b'\\x89PNG\\r\\n\\x1a\\n'; assert struct.unpack('>II',raw[16:24])==(180,180); (p/'apple-touch-icon.png').write_bytes(raw); (p/'official_logo_180.valid.b64').write_text(base64.b64encode(raw).decode('ascii')); im=Image.open(src); im.load(); im.resize((192,192), Image.Resampling.LANCZOS).save(p/'app-icon-192.png', format='PNG'); im.resize((512,512), Image.Resampling.LANCZOS).save(p/'app-icon-512.png', format='PNG'); assert Image.open(p/'app-icon-192.png').size==(192,192); assert Image.open(p/'app-icon-512.png').size==(512,512); print('GSF production/PWA icons: PASS')"
 
 # Single explicit third-party bridge: Streamlit's own static index.html is not a
 # repository file, so the top-level browser bridge (navigation lifecycle + AdSense)
