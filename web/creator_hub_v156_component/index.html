@@ -31,7 +31,7 @@
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#FAFDFF;color:var(--gsf-ink);font-family:var(--gsf-font);-webkit-font-smoothing:antialiased}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-#hub{position:relative;width:100%;height:100dvh;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+#hub{position:relative;width:100%;height:100%;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
  padding:16px 16px 28px;
  /* GSF_HEADER_CANVAS: header colour fading into a soft glow */
  background:radial-gradient(120% 55% at 50% 100%,rgba(122,200,255,.10),transparent 72%),linear-gradient(180deg,#FAFDFF 0%,#F7FBFF 60%,#F2F8FE 100%);
@@ -627,6 +627,10 @@ a.row{color:inherit;text-decoration:none}
 
   /* ------------------------------------------------------------- runtime */
   const D = document, root = D.documentElement;
+  const pendingTimers=new Set(),pendingFrames=new Set();
+  let routeAbort=null,routeGeneration=0,whisperAnchor=null;
+  function later(fn,ms){if(!visible())return 0;const id=W.setTimeout(()=>{pendingTimers.delete(id);if(visible())fn()},ms);pendingTimers.add(id);return id}
+  function animate(fn){if(!visible())return 0;const id=W.requestAnimationFrame(t=>{pendingFrames.delete(id);if(visible())fn(t)});pendingFrames.add(id);return id}
   const ME = Math.random().toString(36).slice(2, 10);
   const reduced = () => { try { return W.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (_e) { return false; } };
   const store = {
@@ -687,7 +691,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
 @keyframes gsfAliveBeat{0%{transform:scale(1);opacity:.9}30%{transform:scale(1.09);opacity:1}55%{transform:scale(1.02)}75%{transform:scale(1.06)}100%{transform:scale(1);opacity:.8}}
 .gsf-alive-echo{position:fixed;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;border:2px solid var(--echo,#27AEF3);opacity:.85;animation:gsfAliveEcho .55s cubic-bezier(.2,.8,.2,1) forwards}
 @keyframes gsfAliveEcho{to{transform:scale(6.5);opacity:0;border-width:1px}}
-#gsf-alive-guide{position:fixed;display:none;border:2px solid rgba(121,210,255,.8);border:2px solid color-mix(in srgb,var(--alive-hue) 75%,white 10%);box-shadow:0 0 22px color-mix(in srgb,var(--alive-hue) 50%,transparent);animation:gsfAliveGuide 2.4s ease-in-out infinite;transition:left .35s ease,top .35s ease,width .35s ease,height .35s ease}
+#gsf-alive-guide{position:fixed;display:none;border:2px solid rgba(121,210,255,.8);border:2px solid color-mix(in srgb,var(--alive-hue) 75%,white 10%);box-shadow:0 0 22px color-mix(in srgb,var(--alive-hue) 50%,transparent);animation:gsfAliveGuide 2.4s ease-in-out infinite;transition:none}
 @keyframes gsfAliveGuide{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:1;transform:scale(1.025)}}
 #gsf-alive-whisper{position:fixed;left:50%;max-width:min(84vw,360px);transform:translate(-50%,6px);opacity:0;display:flex;align-items:center;gap:8px;padding:6px 14px 7px;border-radius:999px;background:rgba(5,13,22,.84);border:1px solid rgba(121,210,255,.3);border:1px solid color-mix(in srgb,var(--alive-hue) 35%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:#EAF6FF;font:600 18px/1.15 "Caveat","Segoe Print","Bradley Hand",cursive;letter-spacing:.2px;text-align:center;transition:opacity .45s ease,transform .45s cubic-bezier(.2,.8,.2,1);text-shadow:0 1px 10px rgba(0,0,0,.4)}
 #gsf-alive-whisper.on{opacity:1;transform:translate(-50%,0)}
@@ -734,7 +738,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   function scanOrbs() { D.querySelectorAll("[data-alive-orb]").forEach(attachHalo); }
   function beat() {
     D.querySelectorAll(".gsf-alive-halo").forEach(h => { h.classList.remove("beat"); void h.offsetWidth; h.classList.add("beat"); });
-    setTimeout(() => D.querySelectorAll(".gsf-alive-halo.beat").forEach(h => h.classList.remove("beat")), 700);
+    later(() => D.querySelectorAll(".gsf-alive-halo.beat").forEach(h => h.classList.remove("beat")), 700);
   }
 
   /* ----- apply state to the page ----- */
@@ -752,7 +756,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   function apply(prev, fromRemote) {
     paint();
     clearTimeout(celebrateTimer);
-    if (state.celebrate_until > Date.now()) celebrateTimer = setTimeout(() => { state.mode = calmMode(state, Date.now()); paint(); renderBubble(); }, state.celebrate_until - Date.now() + 30);
+    if (visible() && state.celebrate_until > Date.now()) celebrateTimer = later(() => { state.mode = calmMode(state, Date.now()); paint(); renderBubble(); }, state.celebrate_until - Date.now() + 30);
     const fresh = state.seq !== (prev && prev.seq);
     if (fresh && mounted && visible()) {
       if (state.last && SPOKEN.has(state.last) && state.seq !== lastSpokenSeq) {
@@ -820,17 +824,18 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     liveEl.textContent = text;
     if (!visible()) return;
     whisperEl.querySelector("span").textContent = text;
-    placeWhisper(o.anchor || page.voiceAnchor);
+    whisperAnchor=o.anchor || page.voiceAnchor;
+    placeWhisper(whisperAnchor);
     whisperEl.classList.add("on");
     clearTimeout(whisperTimer);
-    whisperTimer = setTimeout(() => whisperEl.classList.remove("on"), Math.max(2200, Math.min(6000, 900 + text.length * 70)));
+    whisperTimer = later(() => whisperEl.classList.remove("on"), Math.max(2200, Math.min(6000, 900 + text.length * 70)));
   }
 
   /* ----- heard: an echo under every finger ----- */
   const TAPPABLE = "button,a[href],label,[role=button],[data-alive-next],input[type=file],select,summary";
   function echo(e) {
     lastActivity = Date.now();
-    if (!layer || reduced()) return;
+    if (!layer || reduced() || !visible()) return;
     const t = e.target && e.target.closest ? e.target.closest(TAPPABLE) : null;
     if (!t || t.disabled || t.closest("[data-alive-quiet]")) return;
     const r = D.createElement("span"); r.className = "gsf-alive-echo";
@@ -839,7 +844,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     r.style.setProperty("--echo", c || getComputedStyle(root).getPropertyValue("--alive-hue").trim() || "#27AEF3");
     r.style.left = e.clientX + "px"; r.style.top = e.clientY + "px";
     layer.appendChild(r);
-    setTimeout(() => r.remove(), 620);
+    later(() => r.remove(), 620);
   }
 
   /* ----- guided: the next real step glows, a quiet moment brings a whisper ----- */
@@ -854,7 +859,9 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
       if (r.width < 8 || r.height < 8) continue;
       const cs = getComputedStyle(el);
       if (cs.visibility === "hidden" || Number(cs.opacity) < 0.2) continue;
-      if (r.bottom < 0 || r.top > (W.innerHeight || 0)) continue;
+      const ins=insets();let top=ins.top,bottom=(W.innerHeight||0)-ins.bottom;
+      for(let parent=el.parentElement;parent&&parent!==D.body;parent=parent.parentElement){const css=getComputedStyle(parent);if(/auto|scroll|hidden|clip/.test(css.overflowY)){const clip=parent.getBoundingClientRect();top=Math.max(top,clip.top);bottom=Math.min(bottom,clip.bottom)}}
+      if (r.bottom <= top || r.top >= bottom) continue;
       return el;
     }
     return null;
@@ -865,7 +872,8 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     const el = visible() ? targetFor(action) : null;
     guided = el;
     if (!el) { guideEl.style.display = "none"; return; }
-    const r = el.getBoundingClientRect(), pad = 6;
+    const r = el.getBoundingClientRect(), pad = 6,ins=insets();
+    guideEl.style.clipPath=`inset(${Math.max(0,ins.top-r.top+pad)}px 0 ${Math.max(0,r.bottom+pad-((W.innerHeight||0)-ins.bottom))}px 0)`;
     let radius = 14;
     try { const br = parseFloat(getComputedStyle(el).borderTopLeftRadius); if (Number.isFinite(br)) radius = Math.min(br + pad, Math.max(r.width, r.height)); } catch (_e) {}
     if (el.hasAttribute("data-alive-round")) radius = 9999;
@@ -954,9 +962,9 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (p.ring ? 1.8 : 1), 0, Math.PI * 2);
         if (p.ring) { ctx.strokeStyle = p.c; ctx.stroke(); } else { ctx.fillStyle = p.c; ctx.fill(); }
       }
-      requestAnimationFrame(frame);
+      animate(frame);
     };
-    requestAnimationFrame(frame);
+    animate(frame);
   }
 
   /* ----- real render tracking: one page (the leader) asks the server ----- */
@@ -970,9 +978,9 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   }
   let polling = false, probed = false, watchFrom = 0, watchUntil = 0;
   /* A page asked for a Short: follow the render only if the server really starts one. */
-  function watchRender() { const now = Date.now(); watchFrom = now; watchUntil = now + 90e3; setTimeout(pollRender, 1500); }
+  function watchRender() { const now = Date.now(); watchFrom = now; watchUntil = now + 90e3; later(pollRender, 1500); }
   async function jobStatus() {
-    try { const r = await fetch("/job/status?alive=1&_=" + Date.now(), { cache: "no-store", credentials: "same-origin" }); return r.ok ? await r.json() : null; } catch (_e) { return null; }
+    try { const r = await fetch("/job/status?alive=1&_=" + Date.now(), { cache: "no-store", credentials: "same-origin", signal:routeAbort?.signal }); return r.ok ? await r.json() : null; } catch (_e) { return null; }
   }
   async function pollRender() {
     if (polling || !leader()) return;
@@ -980,8 +988,10 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     const watching = Date.now() < watchUntil;
     if (!tracking && probed && !watching) return;
     polling = true;
+    const generation=routeGeneration;
     try {
       const j = await jobStatus();
+      if(generation!==routeGeneration||!visible())return;
       if (!j || !j.ok) return;
       const st = String(j.render_status || ""), started = Number(j.started_at) * 1000 || 0;
       if (!tracking) {
@@ -1013,33 +1023,53 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     hiddenAt = 0;
     const fresh = store.get();
     if (fresh && (Number(fresh.updated) || 0) > (Number(state.updated) || 0)) commit(Object.assign({}, BASE, fresh), true);
-    if (away > 120e3 && mounted && visible()) setTimeout(() => say(welcome(state), { anchor: page.voiceAnchor }), 500);
+    if (away > 120e3 && mounted && visible()) later(() => say(welcome(state), { anchor: page.voiceAnchor }), 500);
     paint(); renderBubble(); guide();
   }
+  function suspendRoute(){
+    ++routeGeneration;
+    if(routeAbort){routeAbort.abort();routeAbort=null}
+    for(const timer of pendingTimers)W.clearTimeout(timer);pendingTimers.clear();
+    for(const frame of pendingFrames)W.cancelAnimationFrame(frame);pendingFrames.clear();
+    clearTimeout(whisperTimer);clearTimeout(celebrateTimer);
+    if(layer){layer.style.display="none";layer.querySelectorAll(".gsf-alive-echo,canvas").forEach(el=>el.remove())}
+    if(whisperEl)whisperEl.classList.remove("on");
+    if(guideEl)guideEl.style.display="none";
+    D.querySelectorAll(".gsf-alive-halo.beat").forEach(el=>el.classList.remove("beat"));
+    if(liveEl)liveEl.textContent="";
+    whisperAnchor=null;guided=null;lastSpokenSeq=state.seq;renderBubble();
+  }
+  function syncRoute(){
+    if(!visible()){suspendRoute();return}
+    if(routeAbort)return;
+    routeAbort=new AbortController();const signal=routeAbort.signal;
+    if(layer)layer.style.display="";
+    const fresh=store.get();if(fresh&&(Number(fresh.updated)||0)>(Number(state.updated)||0))state=Object.assign({},BASE,fresh);
+    lastSpokenSeq=state.seq;
+    D.addEventListener("pointerdown",echo,{capture:true,passive:true,signal});
+    D.addEventListener("keydown",()=>{lastActivity=Date.now()},{capture:true,passive:true,signal});
+    const position=()=>{guide();renderBubble();if(whisperEl.classList.contains("on"))placeWhisper(whisperAnchor)};
+    W.addEventListener("resize",position,{passive:true,signal});
+    W.addEventListener("scroll",()=>{lastActivity=Date.now();position()},{capture:true,passive:true,signal});
+    const intervals=[W.setInterval(tick,1000),W.setInterval(()=>{pollRender();scanOrbs()},3000),W.setInterval(()=>{if(Date.now()<watchUntil)pollRender()},2000)];
+    signal.addEventListener("abort",()=>intervals.forEach(id=>W.clearInterval(id)),{once:true});
+    scanOrbs();paint();renderBubble();guide();later(pollRender,1200);
+  }
   function mount(opts) {
-    const o = opts || {};
-    page = { name: String(o.page || "page"), target: TARGET[o.page] || o.target || null, voiceAnchor: o.voiceAnchor || null, dock: o.dock === "bottom" ? "bottom" : "top" };
-    root.dataset.alivePage = page.name;
-    const start = () => {
-      build(); scanOrbs(); paint();
-      if (mounted) return;
-      mounted = true;
-      D.addEventListener("pointerdown", echo, { capture: true, passive: true });
-      D.addEventListener("keydown", () => { lastActivity = Date.now(); }, { capture: true, passive: true });
-      D.addEventListener("visibilitychange", onVisible);
-      W.addEventListener("resize", () => { guide(); renderBubble(); }, { passive: true });
-      W.addEventListener("scroll", () => { lastActivity = Date.now(); guide(); }, { capture: true, passive: true });
-      W.addEventListener("message", e => {
-        if (e.origin !== location.origin || !e.data) return;
-        if (e.data.type === "GSF_APP_RESUME") setTimeout(() => { paint(); renderBubble(); guide(); }, 200);
-      });
-      setInterval(tick, 1000);
-      setInterval(() => { pollRender(); scanOrbs(); }, 3000);
-      setInterval(() => { if (Date.now() < watchUntil) pollRender(); }, 2000);
-      setTimeout(pollRender, 1200);
-      renderBubble(); guide();
+    const o=opts||{};
+    page={name:String(o.page||"page"),target:TARGET[o.page]||o.target||null,voiceAnchor:o.voiceAnchor||null,dock:o.dock==="bottom"?"bottom":"top"};
+    root.dataset.alivePage=page.name;
+    const start=()=>{
+      build();if(mounted){syncRoute();return}mounted=true;
+      // Only these lifetime observers survive a route: shared facts stay intact,
+      // while per-route listeners, timers, fetches and animation are cancelled.
+      try{W.parent.addEventListener("gsf:surfacechange",syncRoute)}catch(_e){}
+      D.addEventListener("visibilitychange",()=>{syncRoute();if(!D.hidden)onVisible()});
+      W.addEventListener("message",e=>{if(e.origin!==location.origin||!e.data)return;if(e.data.type==="GSF_APP_SUSPEND"&&!visible())suspendRoute();if(e.data.type==="GSF_APP_RESUME")syncRoute()});
+      W.addEventListener("pagehide",()=>{suspendRoute();try{W.parent.removeEventListener("gsf:surfacechange",syncRoute)}catch(_e){}});W.addEventListener("pageshow",()=>{try{W.parent.addEventListener("gsf:surfacechange",syncRoute)}catch(_e){}syncRoute()});
+      syncRoute();
     };
-    if (D.body) start(); else D.addEventListener("DOMContentLoaded", start, { once: true });
+    if(D.body)start();else D.addEventListener("DOMContentLoaded",start,{once:true});
     return W.GSFAlive;
   }
 
@@ -1083,7 +1113,14 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
  }
 
  // Same-origin parent repair: keep the Hub frame tappable after shell navigation (V368 behaviour).
+ function fitHub(){
+  try{const frame=window.frameElement;if(!frame)return;const r=frame.getBoundingClientRect(),bar=parent.document.getElementById("gsf-global-gamebar"),header=parent.document.getElementById("gsf-global-header");
+   const bottom=bar?Math.max(0,r.bottom-bar.getBoundingClientRect().top):0,top=header?Math.max(0,header.getBoundingClientRect().bottom-r.top):0;
+   hub.style.paddingBottom=(28+bottom)+"px";hub.style.paddingTop=(16+top)+"px";
+  }catch(_e){}
+ }
  function repairFrame(){
+  fitHub();
   try{const frame=window.frameElement;if(!frame)return;frame.style.pointerEvents="auto";frame.style.visibility="visible";
    const overlay=frame.closest("#gsf-creator-hub-live-v160");
    if(overlay&&overlay.classList.contains("is-open")){overlay.style.pointerEvents="auto";overlay.style.visibility="visible";overlay.style.opacity="1";overlay.setAttribute("aria-hidden","false")}}catch(_e){}
@@ -1099,7 +1136,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   $$("[data-view]").forEach(s=>s.classList.toggle("active",s.dataset.view===v));
   if(v==="projects")renderProjects();
   closeSheet();
-  hub.scrollTop=0;
+  hub.scrollTop=0;fitHub();
  }
 
  function socialIsOn(key){return !!(state.social||{})[key]}
@@ -1218,11 +1255,13 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   const meta=$("#profileMeta");meta.textContent=a.connected?"Account collegato":"Sessione locale";meta.dataset.retry="";
   const nameInput=$("#profileNameInput");if(nameInput&&document.activeElement!==nameInput){nameInput.value=name;nameInput.dataset.saved=name}
   syncSaveBtn();
-  const canEdit=!!a.connected;
+  const canEdit=!!state.csrf_token;
   $("#profileHint").hidden=canEdit;
   $("#changePhotoBtn").disabled=!canEdit;
   if(nameInput)nameInput.disabled=!canEdit;
-  $("#accountBtnLabel").textContent=canEdit?"Esci":"Accedi";
+  $("#accountBtn").hidden=!a.connected;
+  $("#accountBtn").style.display=a.connected?"":"none";
+  $("#accountBtnLabel").textContent="Esci";
   $("#accountBtnText").textContent=canEdit?"Disconnetti questo dispositivo dal tuo account":"Salva bozze e Shorts nel tuo account";
   $("#accountBtn").classList.toggle("danger",canEdit);
   const drafts=Number(u.drafts||0),shorts=Number(u.shorts||0);
@@ -1360,17 +1399,22 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
  async function saveProfile(extra){
   const input=$("#profileNameInput");
   const payload=Object.assign({display_name:String(input&&input.value||"").trim()||String(input&&input.dataset.saved||"")},extra||{});
-  await postJson("/creator-hub/profile",payload);
+  const saved=await postJson("/creator-hub/profile",payload);
+  state.account=Object.assign({},state.account,payload,{updated_at:saved.updated_at});
+  if(input){input.dataset.saved=payload.display_name;input.value=payload.display_name}render();
+  try{parent.dispatchEvent(new parent.CustomEvent("gsf:profile-updated"))}catch(_e){}
+  return saved;
  }
  function shrinkImage(file){
   return new Promise((resolve,reject)=>{
    const url=URL.createObjectURL(file),img=new Image();
-   img.onload=()=>{try{const max=512,scale=Math.min(1,max/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.round(img.width*scale);c.height=Math.round(img.height*scale);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL("image/jpeg",.86))}catch(e){reject(e)}};
+   img.onload=()=>{try{const max=512,scale=Math.min(1,max/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL("image/jpeg",.86))}catch(e){reject(e)}};
    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Immagine non valida"))};
    img.src=url;
   });
  }
  $("#changePhotoBtn").onclick=()=>$("#profilePhotoInput").click();
+ ["#avatar","#profileAvatar"].forEach(selector=>{const avatar=$(selector);avatar.tabIndex=0;avatar.setAttribute("role","button");avatar.setAttribute("aria-label","Cambia foto profilo");const choose=()=>{if(!state.csrf_token)return;openView("settings");$("#profilePhotoInput").click()};avatar.onclick=choose;avatar.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();choose()}}});
  $("#profilePhotoInput").onchange=async()=>{
   const f=$("#profilePhotoInput").files&&$("#profilePhotoInput").files[0];if(!f)return;
   try{
@@ -1390,15 +1434,17 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
 
  // Notifications (push lives in the parent app)
  function pushApi(){try{return parent!==window&&parent.GSFPush?parent.GSFPush:null}catch(_e){return null}}
- function syncNotify(){
-  const b=$("#notifyBtn"),t=$("#notifyText");if(!b||!t)return;
-  const perm=("Notification" in window)?Notification.permission:"unsupported";
-  if(!pushApi()||perm==="unsupported"){b.textContent="Non disponibile";b.disabled=true;t.textContent="Non supportate su questo dispositivo";return}
-  if(perm==="granted"){b.textContent="Attive";b.disabled=true;t.textContent="Avvisi quando uno Short è pronto";return}
-  if(perm==="denied"){b.textContent="Bloccate";b.disabled=true;t.textContent="Riattivale dalle impostazioni del browser";return}
-  b.textContent="Attiva";b.disabled=false;t.textContent="Avvisi quando uno Short è pronto";
+ let notifyEnabled=false;
+ async function syncNotify(){
+  const b=$("#notifyBtn"),t=$("#notifyText"),api=pushApi();if(!b||!t)return;
+  if(!api||!api.status){b.textContent="Non disponibile";b.disabled=true;t.textContent="Notifiche non disponibili";return}
+  try{const state=await api.status();notifyEnabled=!!state.enabled;b.disabled=false;
+   b.textContent=notifyEnabled?"Disattiva":"Attiva";
+   t.textContent=state.permission==="denied"?"Bloccate dal browser: riattivale nelle impostazioni":notifyEnabled?"Avvisi quando uno Short è pronto":"Notifiche disattivate";
+   if(!notifyEnabled&&["denied","unsupported"].includes(state.permission)){b.textContent=state.permission==="denied"?"Bloccate":"Non disponibile";b.disabled=true}
+  }catch(e){b.disabled=true;b.textContent="Riprova";t.textContent=String(e.message||e)}
  }
- $("#notifyBtn").onclick=async()=>{const api=pushApi();if(!api)return;try{const ok=await api.enable();toast(ok?"Notifiche attive":"Notifiche non attivate",ok?"success":"error")}catch(_e){toast("Notifiche non attivate","error")}syncNotify()};
+ $("#notifyBtn").onclick=async()=>{const api=pushApi();if(!api)return;const b=$("#notifyBtn");b.disabled=true;try{const off=notifyEnabled,ok=await(off?api.disable():api.enable());toast(ok?(off?"Notifiche disattivate":"Notifiche attive"):"Notifiche non attivate",ok?"success":"error")}catch(e){toast(String(e.message||e),"error")}await syncNotify()};
 
  // Account: login / logout
  $("#accountBtn").onclick=()=>{
@@ -1413,20 +1459,25 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
  $$("[data-back]").forEach(b=>b.onclick=()=>openView("dashboard"));
  $$(".seg [data-pane]").forEach(b=>b.onclick=()=>{projectPane=b.dataset.pane;renderProjects()});
  $("#profileMeta").onclick=()=>{if($("#profileMeta").dataset.retry==="1")loadState()};
+ let focusEpoch=-1;
  window.addEventListener("message",e=>{
   if(e.origin!==location.origin||!e.data||e.data.type!=="GSF_HUB_FOCUS")return;
+  if(Number.isFinite(e.data.epoch)){if(e.data.epoch<=focusEpoch)return;focusEpoch=e.data.epoch}
   const raw=String(e.data.section||"dashboard");
   openView(raw);
   repairFrame();
   loadState();
  });
+ window.addEventListener("resize",fitHub);
+ try{const observer=new ResizeObserver(fitHub);[window.frameElement,parent.document.getElementById("gsf-global-gamebar"),parent.document.getElementById("gsf-global-header")].filter(Boolean).forEach(el=>observer.observe(el));window.addEventListener("pagehide",()=>observer.disconnect(),{once:true})}catch(_e){}
  window.addEventListener("pageshow",repairFrame);
  window.addEventListener("focus",repairFrame);
  window.GSFHubV304={openView,loadState,resumeDraft,shell};
  window.GSFHubV415={openView,loadState,getState:()=>state};
 
  buildSocial();
- openView("dashboard");
+ let initialView="dashboard";try{const route=parent.GSFNavigation?.snapshot();if(route?.target==="hub"){initialView=route.section||"dashboard";focusEpoch=Number(route.epoch)||0}}catch(_e){}
+ openView(initialView);
  repairFrame();
  loadState();
 })();
