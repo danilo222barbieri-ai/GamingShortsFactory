@@ -1291,6 +1291,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
  }
 
  let stateLoadPromise=null;
+ let profileSaveEpoch=0;
  function reportHubError(stage,err){
   try{
    const payload=JSON.stringify({stage:String(stage||"unknown").slice(0,80),message:String(err&&err.message||err||"unknown").slice(0,300),stack:String(err&&err.stack||"").slice(0,1200),view:String(current||"").slice(0,40)});
@@ -1300,11 +1301,21 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
  }
  async function loadState(){
   if(stateLoadPromise)return stateLoadPromise;
+  const profileEpochAtRequest=profileSaveEpoch;
   stateLoadPromise=(async()=>{
    try{
     const r=await fetch("/creator-hub/state",{cache:"no-store",credentials:"same-origin"}),j=await r.json();
     if(!r.ok||!j.ok)throw new Error(j.error||"Hub non disponibile");
+    const savedPresentation=state.account;
     state=j;
+    // A response started before a confirmed save cannot undo that presentation.
+    // Keep identity/provider state authoritative from the server response.
+    if(profileEpochAtRequest!==profileSaveEpoch){
+     state.account=Object.assign({},j.account);
+     for(const key of ["display_name","avatar","updated_at"]){
+      if(savedPresentation&&Object.prototype.hasOwnProperty.call(savedPresentation,key))state.account[key]=savedPresentation[key];
+     }
+    }
     try{window.GSFAlive&&window.GSFAlive.emit("social.status",{connected:["youtube","tiktok"].filter(socialIsOn).length})}catch(_e){}
     try{render()}catch(renderError){reportHubError("render",renderError);throw renderError}
     return state;
@@ -1414,6 +1425,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   const input=$("#profileNameInput");
   const payload=Object.assign({display_name:String(input&&input.value||"").trim()||String(input&&input.dataset.saved||"")},extra||{});
   const saved=await postJson("/creator-hub/profile",payload);
+  ++profileSaveEpoch;
   state.account=Object.assign({},state.account,payload,{updated_at:saved.updated_at});
   if(input){input.dataset.saved=payload.display_name;input.value=payload.display_name}render();
   try{parent.dispatchEvent(new parent.CustomEvent("gsf:profile-updated"))}catch(_e){}
