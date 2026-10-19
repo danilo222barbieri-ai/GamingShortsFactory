@@ -266,15 +266,29 @@ jobs:
           # not only against the previous push: a push that touches no runtime
           # file must still promote runtime commits that were never promoted
           # (e.g. a merge whose gate run was skipped).
+          valid_marker_commit() {
+            printf '%s' "$1" | grep -Eq '^[0-9a-f]{40}$' \
+              && git cat-file -e "${1}^{commit}" 2>/dev/null \
+              && git merge-base --is-ancestor "$1" "$TESTED_SHA"
+          }
           base_for() {
-            marker=$(tr -d '[:space:]' < "$1" 2>/dev/null || true)
-            if printf '%s' "$marker" | grep -Eq '^[0-9a-f]{40}$' \
-               && git cat-file -e "${marker}^{commit}" 2>/dev/null \
-               && git merge-base --is-ancestor "$marker" "$TESTED_SHA"; then
+            local marker_path="$1" marker marker_commit
+            marker=$(git show "HEAD:$marker_path" 2>/dev/null | tr -d '[:space:]' || true)
+            if valid_marker_commit "$marker"; then
               echo "$marker"
-            else
-              echo "$before"
+              return
             fi
+            # Manual/non-SHA or deleted markers must not hide an earlier
+            # runtime merge whose gate failed. Recover the last valid marker.
+            while IFS= read -r marker_commit; do
+              marker=$(git show "${marker_commit}:${marker_path}" 2>/dev/null | tr -d '[:space:]' || true)
+              if valid_marker_commit "$marker"; then
+                echo "$marker"
+                return
+              fi
+            done < <(git log --format=%H -- "$marker_path")
+            # No trusted deployment history: conservatively diff the whole tree.
+            git hash-object -w -t tree --stdin < /dev/null
           }
           frontend_base=$(base_for .railway/frontend-deploy.txt)
           worker_base=$(base_for .railway/worker-deploy.txt)
