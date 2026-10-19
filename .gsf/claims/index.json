@@ -1323,6 +1323,9 @@
     {
       "branch": "chat/closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
       "created_at": "2026-10-18T18:10:30+00:00",
+      "evidence": {
+        "icon_source_requirement": "User requested distinct original with black outer margin cropped to glass; actual binary unavailable in cloud, only preview and client-local Windows path; do not substitute old icon or synthesize missing pixels."
+      },
       "id": "closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
       "owner": "chat/closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
       "paths": [
@@ -1344,6 +1347,7 @@
         "web/ai_engines_v412.py",
         "web/ai_v221_component/index.html",
         "web/ai_worker_server.py",
+        "web/app_icons/app-icon.png",
         "web/creator_hub_v156_component/index.html",
         "web/direct_upload_server.py",
         "web/game_editor_mobile_component/editor.mjs",
