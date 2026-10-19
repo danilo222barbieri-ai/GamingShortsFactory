@@ -1330,9 +1330,15 @@
           "best": 39.2,
           "reaction": 39.1
         },
-        "blocker": "Different original icon binary unavailable in cloud; user preview/client-local path only; both new rebuilds failed on truncated PNG. Deployed runtime remains healthy.",
+        "alive_local_commit": "68c3fac",
+        "alive_tests": "14 core;205passed19skipped7subtests WebKit; independent review clear",
+        "blocker": "No missing-source blocker; waiting required Gate and deployments.",
         "final_public": "4 mobile viewports, desktop gate, 4 engines and 21 actual services E2E checks passed; zero critical runtime errors",
-        "icon_source_requirement": "User requested distinct original with black outer margin cropped to glass; actual binary unavailable in cloud, only preview and client-local Windows path; do not substitute old icon or synthesize missing pixels.",
+        "icon_original_sha256": "cd87f55b557b275da9b98f86a2973aae24459f54f3c2f706bb27f08b48f13ede",
+        "icon_pr": 179,
+        "icon_source_requirement": "Original ZIP received and decoded; preserve source appearance with user-requested outer black padding crop only.",
+        "icon_status": "CI SUCCESS; Production Gate same-commit retry after external Hugging Face429; deploy pending",
+        "responsive_audit": "No confirmed stretching; physical-device limitations retained",
         "runtime_gate": {
           "run": 39281638597,
           "status": "SUCCESS"
@@ -1351,11 +1357,12 @@
           "status": "SUCCESS"
         },
         "runtime_release": "c2259515edd7c5714d05051d161eaa129d994771",
-        "terminal_status": "BLOCKED"
+        "terminal_status": "GATE"
       },
       "id": "closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
       "owner": "chat/closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
       "paths": [
+        ".github/workflows/gsf-ci.yml",
         ".github/workflows/v397-production-gate.yml",
         "Dockerfile",
         "PROJECT_STATUS.md",
