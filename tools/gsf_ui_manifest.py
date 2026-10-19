@@ -41,7 +41,7 @@ CANONICAL_MAP = (
 )
 
 # Files the Docker build legitimately *adds* (never modifies) under canonical dirs.
-# web/app_icons/app-icon.png is tracked: the build regenerates identical bytes.
+# web/app_icons/app-icon.png is tracked and must remain byte-identical.
 BUILD_GENERATED = frozenset({
     "web/app_icons/app-icon-192.png",
     "web/app_icons/app-icon-512.png",

@@ -334,4 +334,19 @@ class PortraitAppContract(unittest.TestCase):
                 page.set_viewport_size({'width':390,'height':300});self.assertFalse(guard.is_visible())
             finally:browser.close()
 
+class CanonicalIconBuildContract(unittest.TestCase):
+    def test_image_build_preserves_the_approved_tracked_icon_bytes(self):
+        import shlex,subprocess,sys
+        docker=(ROOT/'Dockerfile').read_text()
+        line=next(line for line in docker.splitlines() if line.startswith('RUN python -c ') and 'app_icons' in line)
+        code=shlex.split(line.split(' && ')[0])[3]
+        with tempfile.TemporaryDirectory() as directory:
+            icons=Path(directory)
+            for path in (ROOT/'web/app_icons').glob('*'):
+                if path.is_file():(icons/path.name).write_bytes(path.read_bytes())
+            before=(icons/'app-icon.png').read_bytes()
+            subprocess.run([sys.executable,'-c',code.replace("'/app/web/app_icons'",repr(directory))],check=True,capture_output=True,text=True)
+            self.assertEqual((icons/'app-icon.png').read_bytes(),before,'Build must preserve the approved repository icon')
+            self.assertEqual((icons/'apple-touch-icon.png').read_bytes(),before)
+
 if __name__=='__main__':unittest.main()
