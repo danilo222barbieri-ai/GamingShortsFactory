@@ -34,7 +34,7 @@ def audit(base, out, engine='chromium'):
                     page.wait_for_function("()=>document.querySelector('[data-testid=stApp]')?.getAttribute('data-test-script-state')==='notRunning'",timeout=60000)
                     views=[]
                     for extra_safe_area in (0,24):
-                        if extra_safe_area:page.locator('#gsf-global-gamebar').evaluate("e=>e.style.setProperty('padding-bottom','24px','important')")
+                        if extra_safe_area:page.locator('#gsf-global-gamebar').evaluate("e=>e.style.setProperty('bottom',((parseFloat(getComputedStyle(e).bottom)||0)+24)+'px','important')")
                         for view in ('dashboard','projects','live','settings'):
                             hub.locator('#hub').evaluate('(e,v)=>GSFHubV415.openView(v)',view)
                             hub.locator('#hub').evaluate('e=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{e.scrollTop=e.scrollHeight;resolve()})))');page.wait_for_timeout(120)
@@ -42,7 +42,7 @@ def audit(base, out, engine='chromium'):
                             assert geometry['lastBottom']<=geometry['barTop']-8,(label,extra_safe_area,geometry)
                             assert geometry['outerScroll']==0,geometry
                             views.append({**geometry,'extra_safe_area':extra_safe_area})
-                    page.locator('#gsf-global-gamebar').evaluate("e=>e.style.removeProperty('padding-bottom')")
+                    page.locator('#gsf-global-gamebar').evaluate("e=>e.style.removeProperty('bottom')")
                     page.locator('#gsf-global-header .v343Account').click()
                     hub.locator('#profileNameInput').wait_for()
                     assert not hub.locator('#accountBtn').is_visible(),'Guest Accedi row remains'
