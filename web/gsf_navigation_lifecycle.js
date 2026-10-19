@@ -164,6 +164,9 @@
     try{await window.screen.orientation.lock('portrait')}catch(_e){}finally{orientationRequest=false}
   }
   D.addEventListener('pointerdown',requestPortrait,{passive:true});
+  // WebKit can update the media query after its resize/orientation event.
+  if(portraitMedia.addEventListener)portraitMedia.addEventListener('change',portraitGuard);
+  else portraitMedia.addListener?.(portraitGuard);
   window.addEventListener('orientationchange',portraitGuard);
   window.addEventListener('resize',portraitGuard,{passive:true});
   if(D.body)portraitGuard();else D.addEventListener('DOMContentLoaded',portraitGuard,{once:true});
