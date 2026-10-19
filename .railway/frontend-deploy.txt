@@ -1,1 +1,1 @@
-c562f4e72643f3a42b02e26b733dadb320c8ec45
+deploy-app-icon-decoder-fix-2026-10-19
