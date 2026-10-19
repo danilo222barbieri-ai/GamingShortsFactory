@@ -2,7 +2,34 @@
   "branch": "chat/closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
   "created_at": "2026-10-18T18:10:30+00:00",
   "evidence": {
-    "icon_source_requirement": "User requested distinct original with black outer margin cropped to glass; actual binary unavailable in cloud, only preview and client-local Windows path; do not substitute old icon or synthesize missing pixels."
+    "ai_seconds": {
+      "action": 39.1,
+      "auto": 4.4,
+      "best": 39.2,
+      "reaction": 39.1
+    },
+    "blocker": "Different original icon binary unavailable in cloud; user preview/client-local path only; both new rebuilds failed on truncated PNG. Deployed runtime remains healthy.",
+    "final_public": "4 mobile viewports, desktop gate, 4 engines and 21 actual services E2E checks passed; zero critical runtime errors",
+    "icon_source_requirement": "User requested distinct original with black outer margin cropped to glass; actual binary unavailable in cloud, only preview and client-local Windows path; do not substitute old icon or synthesize missing pixels.",
+    "runtime_gate": {
+      "run": 39281638597,
+      "status": "SUCCESS"
+    },
+    "runtime_railway": {
+      "deployment": "7260dd5e-196e-40d2-8a84-3b489979fc0a",
+      "health": {
+        "bucket": true,
+        "companion": true,
+        "ok": true,
+        "release": "c2259515edd7c5714d05051d161eaa129d994771",
+        "streamlit": true,
+        "ui_digest": "ef33273a88ced5e77f8352703a727d62233f32b455ba4a22be3ec1c934e134e1",
+        "worker": true
+      },
+      "status": "SUCCESS"
+    },
+    "runtime_release": "c2259515edd7c5714d05051d161eaa129d994771",
+    "terminal_status": "BLOCKED"
   },
   "id": "closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
   "owner": "chat/closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
