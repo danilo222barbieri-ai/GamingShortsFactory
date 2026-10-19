@@ -349,4 +349,15 @@ class CanonicalIconBuildContract(unittest.TestCase):
             self.assertEqual((icons/'app-icon.png').read_bytes(),before,'Build must preserve the approved repository icon')
             self.assertEqual((icons/'apple-touch-icon.png').read_bytes(),before)
 
+class AliveRenderHandoff(unittest.TestCase):
+    def test_pending_render_intent_follows_route_before_server_start(self):
+        import subprocess,shutil
+        if not shutil.which('node'):self.skipTest('Node required')
+        source=(ROOT/'web/gsf_alive_v418.js').read_text()
+        watch=source[source.index('  let polling = false, probed = false'):source.index('  async function jobStatus()')]
+        poll=source[source.index('  async function pollRender()'):source.index('  /* ----- lifecycle ----- */')]
+        script="""const vm=require('node:vm'),assert=require('node:assert/strict');const values=new Map();const localStorage={getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};function page(){const events=[];const ctx={Date,JSON,localStorage,events,later(){},leader:()=>true,routeGeneration:1,visible:()=>true,state:{active_job:null},jobStatus:async()=>({ok:true,render_status:'running',started_at:Date.now()/1000}),emit:(...args)=>events.push(args)};vm.createContext(ctx);vm.runInContext(SOURCE,ctx);vm.runInContext('probed=true',ctx);return ctx;}(async()=>{const oldPage=page(),newPage=page();vm.runInContext('watchRender()',oldPage);assert.equal(oldPage.events.length,0,'Intent must never fake a running render');await vm.runInContext('pollRender()',newPage);assert.equal(newPage.events[0]?.[0],'render.started','New route must pick up pending render from shared state');values.clear();const waiting=page();vm.runInContext('watchRender()',waiting);let finish;waiting.jobStatus=()=>new Promise(resolve=>finish=resolve);const response=vm.runInContext('pollRender()',waiting);vm.runInContext('watchRender()',waiting);const latest=vm.runInContext('watchFrom',waiting);finish({ok:true,render_status:'running',started_at:Date.now()/1000});await response;assert.equal(JSON.parse(values.get('gsf_alive_render_watch_v418')||'null')?.from,latest,'Old response must preserve newer render intent');assert.ok(vm.runInContext('watchUntil',waiting)>0,'Old response must preserve newer deadline');values.set('gsf_alive_render_watch_v418',JSON.stringify({from:Date.now()-100000,until:Date.now()-10000}));const reload=page();vm.runInContext('probed=false',reload);await vm.runInContext('pollRender()',reload);assert.equal(reload.events[0]?.[0],'render.started','Expired intent must not block detection after reload')})().catch(error=>{console.error(error);process.exitCode=1});""".replace('SOURCE',json.dumps(watch+poll))
+        result=subprocess.run(['node','-e',script],capture_output=True,text=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+
 if __name__=='__main__':unittest.main()

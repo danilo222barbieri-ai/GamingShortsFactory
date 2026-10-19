@@ -4565,27 +4565,41 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     } catch (_e) { return true; }
   }
   let polling = false, probed = false, watchFrom = 0, watchUntil = 0;
-  /* A page asked for a Short: follow the render only if the server really starts one. */
-  function watchRender() { const now = Date.now(); watchFrom = now; watchUntil = now + 90e3; later(pollRender, 1500); }
+  const RENDER_WATCH="gsf_alive_render_watch_v418";
+  function sharedRenderWatch(){try{const value=JSON.parse(localStorage.getItem(RENDER_WATCH)||"null");return value&&Number.isFinite(Number(value.from))&&Number.isFinite(Number(value.until))?{from:Number(value.from),until:Number(value.until)}:null}catch(_e){return null}}
+  /* The pending intent survives route suspension; only server state starts a job. */
+  function watchRender() {
+    const now=Math.max(Date.now(),watchFrom+1,Number(sharedRenderWatch()?.from||0)+1);watchFrom=now;watchUntil=now+90e3;
+    try{localStorage.setItem(RENDER_WATCH,JSON.stringify({from:watchFrom,until:watchUntil}))}catch(_e){}
+    later(pollRender,1500);
+  }
   async function jobStatus() {
     try { const r = await fetch("/job/status?alive=1&_=" + Date.now(), { cache: "no-store", credentials: "same-origin", signal:routeAbort?.signal }); return r.ok ? await r.json() : null; } catch (_e) { return null; }
   }
   async function pollRender() {
     if (polling || !leader()) return;
+    const shared=sharedRenderWatch();
+    if(shared&&Number(shared.until)>Date.now()&&Number(shared.from)>watchFrom){watchFrom=Number(shared.from);watchUntil=Number(shared.until)}
     const tracking = state.active_job === "render";
+    const watchedFrom=watchFrom;
     const watching = Date.now() < watchUntil;
     if (!tracking && probed && !watching) return;
     polling = true;
     const generation=routeGeneration;
     try {
       const j = await jobStatus();
-      if(generation!==routeGeneration||!visible())return;
+      const latestWatch=sharedRenderWatch();
+      if(generation!==routeGeneration||!visible()||watchFrom!==watchedFrom||(latestWatch&&latestWatch.until>Date.now()&&latestWatch.from>watchedFrom))return;
       if (!j || !j.ok) return;
       const st = String(j.render_status || ""), started = Number(j.started_at) * 1000 || 0;
       if (!tracking) {
         probed = true;
-        const recent = watching ? started >= watchFrom - 10e3 : Date.now() - started < 15 * 60e3;
-        if (st === "running" && started && recent) { watchUntil = 0; emit("render.started", { started_at: started }); }
+        const recent = watching ? started >= watchedFrom - 10e3 : Date.now() - started < 15 * 60e3;
+        if (st === "running" && started && recent) {
+          watchUntil=0;
+          try{const pending=sharedRenderWatch();if(pending&&Number(pending.from)<=watchedFrom)localStorage.removeItem(RENDER_WATCH)}catch(_e){}
+          emit("render.started",{started_at:started});
+        }
         return;
       }
       if (st === "running") return;
