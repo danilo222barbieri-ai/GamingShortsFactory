@@ -3,6 +3,15 @@
 > **CANONICAL SOURCE OF TRUTH FOR ALL TECHNICAL CHATS / AGENTS.**
 > Read this file before changing code. Refresh live GitHub/Railway evidence before changing production claims.
 
+## Mobile closed beta bugfix pass — 2026-10-18, release verification pending
+
+- Claim `closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364`: no features/redesign. Hub CSS now mounts with the persistent surface and reserves measured header/Game Bar overlap; duplicate parent focus epochs preserve scroll. Local Creator name/photo saves persist without assigning authenticated identity; connected profiles retain account/provider ownership. Header avatar is no longer hidden or rewritten as a legacy logo. Guest Accedi row removed; logout preserved.
+- Notifications have a durable, CSRF-protected preference separate from browser permission; default/OFF prevents background registration/subscription and delivery. Failed activation rolls back newly enabled preference, guarded against newer intent. Alive retains shared facts/effects while cancelling per-route timers/listeners/fetches/frames and old transients; its ring follows DOM coordinates without geometry interpolation.
+- Reproduced the reported 20-second AI failure: backend returned one valid moment but UI required three, waited 180 seconds and failed. Results now wait for all *expected* previews (one/two/three), still reject stale request IDs. No analysis settings/quality reduced. Safe per-stage timings survive reruns and are included in the results sheet.
+- Local real E2E completed: 20s upload → AI result in3.3s → selection → Editor preview/edit/save → Crea Short → render/export1080×1920 → draft save/resume preserving edits → Hub/Shorts/settings → deep link/refresh/back, no critical runtime errors. WebKit suite before orientation addition:194passed,18skipped,7subtests; refreshed Chromium suite including portrait:196passed,18skipped,7subtests. Partial-results, stale-request and portrait/tastiera regressions passed. Independent review found one push activation issue, fixed and regression-verified; follow-up found no further P0/P1/P2.
+- Added explicit user-requested portrait behavior on2026-10-19: PWA manifest orientation, supported standalone/fullscreen API lock, and a minimal Safari landscape guard that preserves route/project state and excludes virtual-keyboard resizing.
+- New mobile regressions run in Production Gate WebKit. Main Gate, Railway and Production UI Verify for this change are still pending; previous live deployment below remains the verified production baseline until fresh release evidence replaces this entry.
+
 ## Closed beta stabilization — 2026-10-18, verified LIVE
 
 - Claim `closed-beta-stabilization-production-gate-reliab-bd6c6c` completed after explicit user handoff of the necessary mobile/navigation/backend files. No new features or redesign; gaming/glass Editor preserved. Desktop intentionally remains mobile-only gated.

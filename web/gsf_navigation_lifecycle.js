@@ -86,6 +86,7 @@
       for (const [key,controller] of surfaces) if(key!==next.target) controller.close?.();
       if (previous.target!==next.target) post(previous.target,'GSF_APP_SUSPEND');
       current=next;
+      window.dispatchEvent(new CustomEvent("gsf:surfacechange",{detail:{...current}}));
       currentData={...data,...next};
       if(options.history!==false)writeHistory();
       surfaces.get(next.target)?.open?.({...data,...next});
@@ -134,6 +135,42 @@
       };
     },
   };
+  (()=>{
+  if(typeof navigator==='undefined'||!window.matchMedia)return;
+  // GSF is a portrait phone app. Manifest/API lock where supported; Safari
+  // tabs cannot lock the OS, so cover landscape without reloading any surface.
+  const phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent);
+  const portraitMedia=window.matchMedia('(orientation: landscape)');
+  let portraitBlocked=false;
+  function portraitGuard(){
+    if(!phone||!D.body)return;
+    let guard=D.getElementById('gsf-portrait-guard');
+    if(!guard){
+      const style=D.createElement('style');style.id='gsf-portrait-style';
+      style.textContent='#gsf-portrait-guard{position:fixed;inset:0;z-index:2147483647;display:none;place-content:center;gap:12px;padding:24px max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));box-sizing:border-box;text-align:center;background:#050D16;color:#EAF6FF;font:600 16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:none}#gsf-portrait-guard:not([hidden]){display:grid}#gsf-portrait-guard b{font-size:24px;color:#79D2FF}';
+      D.head.appendChild(style);guard=D.createElement('div');guard.id='gsf-portrait-guard';guard.hidden=true;guard.setAttribute('role','status');guard.setAttribute('aria-live','polite');guard.innerHTML='<b>Ruota il telefono</b><span>GSF si usa in verticale.</span>';D.body.appendChild(guard);
+    }
+    const angle=window.screen.orientation?.angle??window.orientation;
+    const physicallyLandscape=Number.isFinite(angle)?Math.abs(angle)%180===90:portraitMedia.matches;
+    const landscape=physicallyLandscape&&portraitMedia.matches;
+    guard.hidden=!landscape;
+    if(landscape!==portraitBlocked){portraitBlocked=landscape;if(landscape)suspend();else resume()}
+  }
+  let orientationRequest=false;
+  async function requestPortrait(){
+    if(!phone||orientationRequest||!window.screen.orientation?.lock)return;
+    if(!window.matchMedia('(display-mode: standalone)').matches&&!D.fullscreenElement)return;
+    orientationRequest=true;
+    try{await window.screen.orientation.lock('portrait')}catch(_e){}finally{orientationRequest=false}
+  }
+  D.addEventListener('pointerdown',requestPortrait,{passive:true});
+  // WebKit can update the media query after its resize/orientation event.
+  if(portraitMedia.addEventListener)portraitMedia.addEventListener('change',portraitGuard);
+  else portraitMedia.addListener?.(portraitGuard);
+  window.addEventListener('orientationchange',portraitGuard);
+  window.addEventListener('resize',portraitGuard,{passive:true});
+  if(D.body)portraitGuard();else D.addEventListener('DOMContentLoaded',portraitGuard,{once:true});
+  })();
   window.addEventListener('popstate',()=>navigate(routeFromUrl(),{history:false}));
   window.addEventListener('message',e=>{
     if(e.origin!==location.origin||!e.data||e.data.type!=='GSF_SHELL_NAV') return;

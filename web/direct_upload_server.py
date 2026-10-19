@@ -410,6 +410,7 @@ def _app_manifest_bytes():
         "start_url":"/",
         "scope":"/",
         "display":"standalone",
+        "orientation":"portrait",
         "background_color":"#f4fbff",
         "theme_color":"#a9dcff",
         "icons":[
@@ -436,6 +437,36 @@ def _push_subscription_path(sid):
     root=ROOT/"sessions"/sid
     root.mkdir(parents=True,exist_ok=True)
     return root/".push_subscription.json"
+
+def _push_preferences_load(sid):
+    path=_push_subscription_path(sid)
+    if path is None:raise ValueError("invalid session")
+    path=path.with_name(".push_preferences.json")
+    if path.is_file():
+        return json.loads(path.read_text(encoding="utf-8"))
+    if _bucket_enabled():
+        try:
+            data=json.loads(_s3().get_object(Bucket=S3_BUCKET,Key=f"push-preferences/{sid}.json")["Body"].read())
+        except Exception as exc:
+            code=str(getattr(exc,"response",{}).get("Error",{}).get("Code",""))
+            if not isinstance(exc,KeyError) and code not in ("NoSuchKey","404"):raise
+        else:
+            _write_json_atomic(path,data)
+            return data
+    return {"enabled":False,"revision":0}
+
+
+def _push_preferences_save(sid,payload):
+    if not isinstance(payload.get("enabled"),bool):raise ValueError("invalid preference")
+    current=_push_preferences_load(sid)
+    revision=int(payload.get("revision",0))
+    if revision<=int(current.get("revision",0)):return current
+    data={"enabled":payload["enabled"],"revision":revision}
+    if _bucket_enabled():
+        _s3().put_object(Bucket=S3_BUCKET,Key=f"push-preferences/{sid}.json",Body=json.dumps(data).encode(),ContentType="application/json",CacheControl="no-store")
+    _write_json_atomic(_push_subscription_path(sid).with_name(".push_preferences.json"),data)
+    return data
+
 
 def _push_save_subscription(sid,payload):
     path=_push_subscription_path(sid)
@@ -466,6 +497,9 @@ def _push_private_key_path():
 
 def _push_notify_sid(sid,title="Short pronto",body="Il tuo Short è pronto da condividere.",url="/",tag="gsf-short-ready"):
     sid=_safe_id(sid)
+    try:
+        if not _push_preferences_load(sid).get("enabled"):return False
+    except Exception:return False
     sub_path=_push_subscription_path(sid)
     key_path=_push_private_key_path()
     if not sid or sub_path is None or not sub_path.is_file() or not key_path or webpush is None:
@@ -532,7 +566,29 @@ def _push_client_bytes():
   if(window.__GSF_GLOBAL_NOTIFICATIONS_V2__)return;
   window.__GSF_GLOBAL_NOTIFICATIONS_V2__=true;
   const toU8=(s)=>{const pad="=".repeat((4-s.length%4)%4);const raw=atob((s+pad).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));};
-  const subscribe=async(promptUser)=>{if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window))return false;const reg=await navigator.serviceWorker.register("/gsf-sw.js?v=1",{scope:"/"});let permission=Notification.permission;if(permission==="default"&&promptUser)permission=await Notification.requestPermission();if(permission!=="granted")return false;const key=await fetch("/push/public-key",{cache:"no-store"}).then(r=>r.json()).then(x=>x.public_key||"");if(!key)return false;let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:toU8(key)});await fetch("/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sub.toJSON())});return true;};
+  let intent=0,preference=null;
+  const json=async(url,options={})=>{const response=await fetch(url,{cache:"no-store",...options});const value=await response.json();if(!response.ok||value.ok===false)throw new Error(value.error||"Notifiche non disponibili");return value};
+  const status=async()=>{preference=await json("/push/preferences");return {...preference,permission:("Notification" in window)?Notification.permission:"unsupported"}};
+  const setPreference=async(enabled,token)=>{const current=await status();if(token!==intent)return false;const revision=Math.max(Date.now(),Number(current.revision||0)+1);preference=await json("/push/preferences",{method:"POST",headers:{"Content-Type":"application/json","X-GSF-CSRF":current.csrf_token},body:JSON.stringify({enabled,revision})});preference.csrf_token=current.csrf_token;return preference.enabled===enabled};
+  const subscribe=async(promptUser)=>{
+    const token=promptUser?++intent:intent;
+    if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window))return false;
+    // Request permission within the user's gesture, never from background ensure.
+    let permission=Notification.permission;if(permission==="default"&&promptUser)permission=await Notification.requestPermission();
+    if(permission!=="granted"||token!==intent)return false;
+    const current=await status();if(token!==intent||(!promptUser&&!current.enabled))return false;
+    const newlyEnabled=promptUser&&!current.enabled;
+    try{
+    if(promptUser&&!await setPreference(true,token))return false;
+    const reg=await navigator.serviceWorker.register("/gsf-sw.js?v=1",{scope:"/"});
+    const key=await json("/push/public-key").then(x=>x.public_key||"");if(!key)throw new Error("Configurazione notifiche non disponibile");if(token!==intent)return false;
+    let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:toU8(key)});
+    if(token!==intent){if(sub)await sub.unsubscribe();return false}
+    await json("/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json","X-GSF-CSRF":preference.csrf_token},body:JSON.stringify(sub.toJSON())});return true;
+    }catch(error){if(newlyEnabled&&token===intent)await setPreference(false,token);throw error}
+  };
+  const disable=async()=>{const token=++intent;if(!await setPreference(false,token))return false;try{const reg=await navigator.serviceWorker.getRegistration("/");const sub=reg&&await reg.pushManager.getSubscription();if(sub)await sub.unsubscribe()}catch(_e){}return true};
+
 
   const ensureToastUi=()=>{
     let host=document.getElementById("gsf-site-toast-stack");
@@ -570,7 +626,7 @@ def _push_client_bytes():
     requestAnimationFrame(()=>el.classList.add("gsf-show"));setTimeout(remove,String(body||"").trim()?4800:3000);return true;
   };
 
-  window.GSFPush={enable:()=>subscribe(true),ensure:()=>subscribe(false)};
+  window.GSFPush={enable:()=>subscribe(true),disable,status,ensure:()=>subscribe(false).catch(()=>false)};
   window.GSFNotify={
     show:(title,body,kind)=>showToast(title,body,kind||"success"),
     confirm:(title,body,opts={})=>{
@@ -637,7 +693,7 @@ def _push_client_bytes():
   setInterval(pollJob,1500);pollJob();
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){pollJob();subscribe(false).catch(()=>{});}});
   window.addEventListener("pageshow",()=>{pollJob();subscribe(false).catch(()=>{});});
-  document.addEventListener("click",(event)=>{const b=event.target&&event.target.closest?event.target.closest("button"):null;if(!b)return;const label=(b.innerText||b.textContent||"").toUpperCase();if(label.includes("CREA SHORT"))subscribe(true).catch(()=>{});},true);
+  document.addEventListener("click",(event)=>{const b=event.target&&event.target.closest?event.target.closest("button"):null;if(!b)return;const label=(b.innerText||b.textContent||"").toUpperCase();if(label.includes("CREA SHORT"))subscribe(false).catch(()=>{});},true);
   window.addEventListener("load",()=>subscribe(false).catch(()=>{}),{once:true});
 })();'''.encode("utf-8")
 
@@ -1555,7 +1611,7 @@ def _creator_account_load(sid):
     local=ROOT/"sessions"/sid/"account.json"
     try:
         payload=json.loads(local.read_text(encoding="utf-8"))
-        if isinstance(payload,dict) and payload.get("account_id"):
+        if isinstance(payload,dict) and (payload.get("account_id") or payload.get("display_name") or payload.get("avatar")):
             return payload
     except Exception:
         pass
@@ -1566,9 +1622,12 @@ def _creator_account_load(sid):
         session_payload=json.loads(obj["Body"].read().decode("utf-8"))
         account_id=_safe_id(session_payload.get("account_id",""))
         if not account_id:
-            return {}
-        obj=_s3().get_object(Bucket=S3_BUCKET,Key=_creator_profile_key(account_id))
-        profile=json.loads(obj["Body"].read().decode("utf-8"))
+            profile={key:session_payload[key] for key in ("display_name","avatar","updated_at") if key in session_payload}
+            if not profile:
+                return {}
+        else:
+            obj=_s3().get_object(Bucket=S3_BUCKET,Key=_creator_profile_key(account_id))
+            profile=json.loads(obj["Body"].read().decode("utf-8"))
         if isinstance(profile,dict):
             local.parent.mkdir(parents=True,exist_ok=True)
             _write_json_atomic(local,profile)
@@ -1582,26 +1641,29 @@ def _creator_account_save(sid,profile):
     sid=_safe_id(sid)
     profile=dict(profile or {})
     account_id=_safe_id(profile.get("account_id",""))
-    if not sid or not account_id:
-        raise RuntimeError("account/session non validi")
+    if not sid:
+        raise RuntimeError("sessione browser non valida")
+    # A local Creator may edit presentation data without becoming a logged-in
+    # account. Identity/storage ownership still depends exclusively on account_id.
+    if not account_id:
+        profile={key:profile[key] for key in ("display_name","avatar","updated_at") if key in profile}
+    if _bucket_enabled():
+        if account_id:
+            _s3().put_object(
+                Bucket=S3_BUCKET,Key=_creator_profile_key(account_id),
+                Body=json.dumps(profile,ensure_ascii=False).encode("utf-8"),
+                ContentType="application/json",CacheControl="no-store",
+            )
+        session={"account_id":account_id,"updated_at":time.time()} if account_id else profile
+        _s3().put_object(
+            Bucket=S3_BUCKET,Key=_creator_session_key(sid),
+            Body=json.dumps(session,ensure_ascii=False).encode("utf-8"),
+            ContentType="application/json",CacheControl="no-store",
+        )
+    # Publish the local cache only after durable persistence acknowledged success.
     local=ROOT/"sessions"/sid/"account.json"
     local.parent.mkdir(parents=True,exist_ok=True)
     _write_json_atomic(local,profile)
-    if _bucket_enabled():
-        _s3().put_object(
-            Bucket=S3_BUCKET,
-            Key=_creator_profile_key(account_id),
-            Body=json.dumps(profile,ensure_ascii=False).encode("utf-8"),
-            ContentType="application/json",
-            CacheControl="no-store",
-        )
-        _s3().put_object(
-            Bucket=S3_BUCKET,
-            Key=_creator_session_key(sid),
-            Body=json.dumps({"account_id":account_id,"updated_at":time.time()}).encode("utf-8"),
-            ContentType="application/json",
-            CacheControl="no-store",
-        )
 
 
 def _storage_owner_id(sid):
@@ -4228,6 +4290,12 @@ class Handler(BaseHTTPRequestHandler):
         if clean=="/gsf-push.js":
             _send_bytes(self,200,_push_client_bytes(),"application/javascript; charset=utf-8","no-cache")
             return
+        if clean=="/push/preferences":
+            try:
+                sid=_social_sid(self)
+                _json(self,200,{"ok":True,**_push_preferences_load(sid),"csrf_token":_security_csrf_token(sid)})
+            except Exception:_json(self,503,{"ok":False,"error":"Preferenze non disponibili"})
+            return
         if clean=="/push/public-key":
             _json(self,200,{"ok":bool(VAPID_PUBLIC_KEY),"public_key":VAPID_PUBLIC_KEY})
             return
@@ -4523,7 +4591,7 @@ class Handler(BaseHTTPRequestHandler):
                 account_id=_safe_id(profile.get("account_id","")) if isinstance(profile,dict) else ""
                 avatar=str(profile.get("avatar") or "") if isinstance(profile,dict) else ""
                 if avatar.startswith("data:image/"):
-                    avatar="/creator-hub/avatar"
+                    avatar="/creator-hub/avatar?v="+str(int(float(profile.get("updated_at") or 0)*1000))
                 _json(self,200,{
                     "ok":True,
                     "csrf_token":_security_csrf_token(sid),
@@ -4837,15 +4905,13 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 data=_read_json(self,max_bytes=2*1024*1024)
                 profile=_creator_account_load(sid) or {}
-                if not _safe_id(profile.get("account_id","")):
-                    _json(self,409,{"ok":False,"error":"Collega prima un account al Creator Hub."}); return
                 name=str(data.get("display_name") or profile.get("display_name") or "Creator").strip()[:80] or "Creator"
                 avatar=str(data.get("avatar") or "").strip()
                 if avatar:
                     if len(avatar)>1800000 or not (avatar.startswith("data:image/jpeg;base64,") or avatar.startswith("data:image/png;base64,") or avatar.startswith("data:image/webp;base64,") or avatar.startswith("https://") or avatar.startswith("http://")): raise ValueError("Immagine profilo non valida")
                     profile["avatar"]=avatar
                 profile["display_name"]=name; profile["updated_at"]=time.time(); _creator_account_save(sid,profile)
-                _json(self,200,{"ok":True,"display_name":name})
+                _json(self,200,{"ok":True,"display_name":name,"updated_at":profile["updated_at"]})
             except Exception as exc: _json(self,400,{"ok":False,"error":str(exc)[:180]})
             return
         if path=="/creator-hub/social/disconnect":
@@ -5024,8 +5090,22 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,400,{"ok":False,"error":str(exc)[:180]})
             return
 
+        if path=="/push/preferences":
+            if not _security_csrf_valid(self,sid):
+                _json(self,403,{"ok":False,"error":"csrf validation failed"})
+                return
+            try:
+                data=_read_json(self,max_bytes=4096)
+                with _state_lock(sid,"push"):
+                    saved=_push_preferences_save(sid,data)
+                _json(self,200,{"ok":True,**saved})
+            except Exception:_json(self,503,{"ok":False,"error":"Salvataggio notifiche non disponibile"})
+            return
         if path=="/push/subscribe":
             try:
+                if not _security_csrf_valid(self,sid) or not _push_preferences_load(sid).get("enabled"):
+                    _json(self,403,{"ok":False,"error":"Notifiche disattivate"})
+                    return
                 _push_save_subscription(sid,_read_json(self,max_bytes=64*1024))
                 _json(self,200,{"ok":True})
             except Exception as exc:

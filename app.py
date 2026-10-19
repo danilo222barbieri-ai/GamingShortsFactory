@@ -4593,6 +4593,7 @@ def _gsf_ai_scan_cached(input_file, cache_token=None):
         return cache[key], True
 
     scan = None
+    _prescan_t0=time.perf_counter()
     try:
         from gsf_bucket_bridge import load_prescan_from_marker as _gsf_load_prescan
         scan = _gsf_load_prescan(
@@ -4602,6 +4603,8 @@ def _gsf_ai_scan_cached(input_file, cache_token=None):
     except Exception:
         scan = None
 
+    _prescan_wait=round(time.perf_counter()-_prescan_t0,3)
+    _prescan_hit=isinstance(scan,dict)
     if scan is None:
         _gsf_local_scan_t0=time.perf_counter()
         _gsf_perf_event(
@@ -4617,6 +4620,7 @@ def _gsf_ai_scan_cached(input_file, cache_token=None):
             elapsed_seconds=round(time.perf_counter()-_gsf_local_scan_t0,3),
         )
 
+    scan.setdefault("meta",{}).update({"prescan_wait_seconds":_prescan_wait,"prescan_hit":_prescan_hit})
     cache[key] = scan
     _gsf_ai_cache_trim(cache, 2)
     return scan, False
@@ -5925,9 +5929,11 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3, cache
     _analysis_t0=time.perf_counter()
     profile=_gsf_profile_from_mode(modalita)
     duration=max(10.0,float(clip_duration))
+    _scan_t0=time.perf_counter()
     scan,scan_cache_hit=_gsf_ai_scan_cached(
         input_file,cache_token=cache_token
     )
+    scan_request_seconds=time.perf_counter()-_scan_t0
     scan_meta=scan.get("meta",{}) or {}
     adaptive_scan=bool(scan_meta.get("adaptive",False))
     voice_cache_hits=0
@@ -5999,6 +6005,7 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3, cache
         if len(shortlist)>=coarse_target:
             break
 
+    _refine_t0=time.perf_counter()
     # Long gameplay: restore dense visual detail ONLY on the shortlist.
     # This keeps the full-video pass cheap without throwing away local accuracy.
     if adaptive_scan and shortlist:
@@ -6045,6 +6052,8 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3, cache
     else:
         shortlist=shortlist[:shortlist_target]
 
+    refine_seconds=time.perf_counter()-_refine_t0
+    voice_seconds=0.0
     # Voice/reaction/event detection SOLO sulla shortlist.
     enriched=[]
     diagnostics={}
@@ -6059,11 +6068,13 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3, cache
         _force_reaction_voice=bool(
             profile=="reaction" and len(enriched)<4
         )
+        _voice_t0=time.perf_counter()
         _voice_result,_voice_hit=_gsf_ai_voice_cached(
             input_file,start,duration,
             cache_token=cache_token,
             force=_force_reaction_voice
         )
+        voice_seconds+=time.perf_counter()-_voice_t0
         if _force_reaction_voice:
             forced_voice_checks+=1
         speech,reaction,transcript,event=_voice_result
@@ -6186,7 +6197,12 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3, cache
     diagnostics["__meta__"]={
         "engine":GSF_AI_ENGINE_VERSION,
         "analysis_seconds":round(time.perf_counter()-_analysis_t0,3),
+        "scan_request_seconds":round(scan_request_seconds,3),
+        "motion_refine_seconds":round(refine_seconds,3),
+        "voice_seconds":round(voice_seconds,3),
         "scan_cache_hit":bool(scan_cache_hit),
+        "prescan_wait_seconds":float(scan_meta.get("prescan_wait_seconds",0) or 0),
+        "prescan_hit":bool(scan_meta.get("prescan_hit",False)),
         "voice_cache_hits":int(voice_cache_hits),
         "voice_checks":int(voice_checks),
         "forced_voice_checks":int(forced_voice_checks),
@@ -13462,6 +13478,8 @@ if video:
             )
         if _gsf_create_ai_clicked:
             _gsf_save_persistent_state()
+            st.session_state["gsf_ai_timing_start"]=time.perf_counter()
+            st.session_state.pop("gsf_ai_result_timings",None)
             with _gsf_session_tempdir("gsf_analysis_") as analisi_temp:
                 analisi_input = str(_source_path)
 
@@ -13483,6 +13501,7 @@ if video:
                     __import__("web.ai_engines_v412",fromlist=["cache_profile"]).cache_profile(_gsf_v291_profile),
                 )
                 cached_ai = st.session_state.get("gsf_fast_ai_cache", {}).get(cache_key_ai)
+                st.session_state["gsf_ai_ranking_cache_hit"]=cached_ai is not None
 
                 with st.spinner(messaggio):
                     if cached_ai is not None:
@@ -13601,6 +13620,7 @@ if video:
                     "gsf_ai_preview_cache_v71", {}
                 )
                 _mini_preview_bytes = {}
+                _gsf_preview_t0=time.perf_counter()
                 with st.spinner("Preparo le tre anteprime leggere..."):
                     for _card in _short_cards:
                         _mini_key = (
@@ -13640,6 +13660,11 @@ if video:
                 try:
                     from web.ai_engines_v412 import build_results_meta as _gsf_v412_meta
                     from web.ai_engines_v412 import write_results_meta as _gsf_v412_write
+                    if "gsf_ai_result_timings" not in st.session_state:
+                        st.session_state["gsf_ai_result_timings"]={**(st.session_state.get("gsf_ai_v3_diagnostics",{}).get("__meta__",{})),
+                            "preview_seconds":round(time.perf_counter()-_gsf_preview_t0,3),
+                            "request_seconds":round(time.perf_counter()-float(st.session_state.get("gsf_ai_timing_start",time.perf_counter())),3),
+                            "ranking_cache_hit":bool(st.session_state.get("gsf_ai_ranking_cache_hit",False))}
                     _gsf_v412_write(GSF_PREVIEW_DIR,_gsf_v412_meta(
                         [float(_c["start"]) for _c in _short_cards],
                         st.session_state.get("gsf_v112_brain_context") or {},
@@ -13647,6 +13672,7 @@ if video:
                         profile=str(st.session_state.get("gsf_v291_engine_profile") or ""),
                         request_id=str(st.session_state.get("gsf_v412_request_id") or ""),
                         durations={round(float(_c["start"]),3):float(_c["preview_duration"]) for _c in _short_cards},
+                        timings=st.session_state.get("gsf_ai_result_timings",{}),
                     ))
                 except Exception as _gsf_v412_meta_exc:
                     print("GSF_V412_META_WARN",repr(str(_gsf_v412_meta_exc))[:220],flush=True)
@@ -16532,11 +16558,8 @@ _GSF_SURFACE_HUB = r"""<div id="gsf-creator-hub-live-v160" aria-hidden="true">
         <button class="gsf-hub-close-v160" type="button" aria-label="Chiudi">×</button>
         <iframe src="about:blank" data-src="/creator-hub-v156/" data-loaded="0" title="Creator Hub"></iframe>
       </section>
-    </div>"""
-
-if GSF_WEB_MODE:
-    st.markdown(r"""
-    <style id="gsf-v160-hub-shell">
+    </div>
+<style id="gsf-v160-hub-shell">
     #gsf-creator-hub-live-v160{
       position:fixed;left:0;right:0;top:0;bottom:78px;
       z-index:2147483660;display:flex;align-items:center;justify-content:center;
@@ -16570,6 +16593,11 @@ if GSF_WEB_MODE:
       #gsf-creator-hub-live-v160 .gsf-hub-close-v160{right:8px;top:7px;width:31px;height:31px}
     }
     </style>
+"""
+
+if GSF_WEB_MODE:
+    st.markdown(r"""
+
         <!-- gsf-creator-hub-live-v160: mounted once by the parent app. -->
     <div class="gsf-script-guard" style="display:none!important"></div>
 
@@ -17847,7 +17875,7 @@ if GSF_WEB_MODE:
 
       // Re-enable silent Web Push when permission already exists.
       ensurePush().then(()=>{
-        try{P.GSFPush&&P.GSFPush.ensure&&P.GSFPush.ensure()}catch(_e){}
+        try{P.GSFPush&&P.GSFPush.ensure&&P.GSFPush.ensure().catch(()=>{})}catch(_e){}
       });
     })(window.parent);
     </script></body></html>"""
@@ -17961,7 +17989,7 @@ if GSF_WEB_MODE:
         if(!o){o=D.createElement('section');o.id='gsf-creator-hub-live-v160';o.setAttribute('aria-hidden','true');o.innerHTML=`<div class="gsf-hub-shell-v160"><iframe class="gsf-hub-frame" title="Creator Hub" data-src="/creator-hub-v156/" style="width:100%;height:100%;display:block;border:0;background:#F8FCFF"></iframe></div>`;D.body.appendChild(o)}
         const f=o.querySelector('iframe');if(f&&f.dataset.loaded!=='1'){f.src='/creator-hub-v156/?v=343';f.dataset.loaded='1'}return o;
       };
-      const focusHub=(section)=>{const o=ensureHubSurface();show(o);const f=o.querySelector('iframe');f.dataset.gsfSection=section;const send=()=>{try{f?.contentWindow?.postMessage({type:'GSF_HUB_FOCUS',section:f.dataset.gsfSection||'dashboard'},P.location.origin)}catch(_e){}};send();if(f&&f.dataset.v343Focus!=='1'){f.dataset.v343Focus='1';f.addEventListener('load',send)}return true};
+      const focusHub=(section)=>{const o=ensureHubSurface();show(o);const f=o.querySelector('iframe');f.dataset.gsfSection=section;const send=()=>{try{f?.contentWindow?.postMessage({type:'GSF_HUB_FOCUS',section:f.dataset.gsfSection||'dashboard',epoch:P.GSFNavigation.snapshot().epoch},P.location.origin)}catch(_e){}};send();if(f&&f.dataset.v343Focus!=='1'){f.dataset.v343Focus='1';f.addEventListener('load',send)}return true};
 
       const ensureShortSurface=()=>{
         let o=D.getElementById('gsf-short-overlay-v343');if(o)return o;
@@ -17984,7 +18012,7 @@ if GSF_WEB_MODE:
       const suppressChildChrome=(doc)=>{try{if(!doc||!doc.documentElement)return;if(doc.getElementById('home154')){doc.documentElement.classList.add('gsf-v343-parent-ready');return}let s=doc.getElementById('gsf-v343-child-chrome-lock');if(!s){s=doc.createElement('style');s.id='gsf-v343-child-chrome-lock';s.textContent=`.bottomNav,.siteFooter,[id^="gsf-page-nav"],[data-global-gamebar],.footerBrand{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}.brandOnly,.brandText{display:none!important}`;(doc.head||doc.documentElement).appendChild(s)}}catch(_e){}};
       const syncChildren=()=>D.querySelectorAll('iframe').forEach(f=>{const apply=()=>{try{suppressChildChrome(f.contentDocument)}catch(_e){}};apply();if(f.dataset.v343Chrome!=='1'){f.dataset.v343Chrome='1';f.addEventListener('load',apply,{passive:true})}});
 
-      const NA_SHELL_CSS='/* GSF_NIGHT_ARENA_SHELL — header, Game Bar and surfaces on the single Night Arena look.\n   The old footer is gone (its links live in Creator Hub › Impostazioni › Info). */\nhtml:root{--gsf-shell-footer-h:0px;--gsf-shell-gamebar-h:66px;color-scheme:dark}\nhtml:root,html:root body{background:#050D16!important}\nhtml body .stApp,html body [data-testid="stAppViewContainer"],html body [data-testid="stHeader"]{background:#050D16!important}\nhtml body #gsf-global-footer{display:none!important}\nhtml body #gsf-global-header{\n background:linear-gradient(180deg,rgba(5,13,22,.92),rgba(5,13,22,.72))!important;\n border-bottom:1px solid rgba(121,210,255,.14)!important;color:#EAF6FF!important;\n}\nhtml body #gsf-global-header .v343Brand{color:#FFFFFF!important;letter-spacing:.2em!important}\nhtml body #gsf-global-header .v343Account{background:rgba(255,255,255,.06)!important;border:1px solid rgba(121,210,255,.25)!important;color:#EAF6FF!important}\nhtml body #gsf-global-header .v343Avatar{background:linear-gradient(135deg,#27AEF3,#9D82FF)!important;color:#fff!important}\nhtml body #gsf-global-gamebar{\n bottom:calc(var(--gsf-shell-safe-bottom) + 10px)!important;\n border:1px solid rgba(121,210,255,.22)!important;border-radius:30px!important;\n background:rgba(16,40,61,.66)!important;\n box-shadow:0 18px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08)!important;\n -webkit-backdrop-filter:blur(22px) saturate(1.2)!important;backdrop-filter:blur(22px) saturate(1.2)!important;\n}\nhtml body #gsf-global-gamebar button{color:#9FB7CA!important;background:transparent!important;border:0!important;border-radius:22px!important;font-weight:700!important;font-size:11px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important}\nhtml body #gsf-global-gamebar button.active{color:#FFFFFF!important;background:rgba(39,174,243,.2)!important;box-shadow:0 0 22px rgba(39,174,243,.35)!important;font-weight:800!important}\nhtml body #gsf-global-gamebar .v343Icon{display:grid!important;place-items:center!important;width:24px!important;height:24px!important;background:none!important;border:0!important;box-shadow:none!important}\nhtml body #gsf-global-gamebar .v343Icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}\nhtml body #gsf-global-gamebar button.active .v343Icon{color:#79D2FF!important}\nhtml body #gsf-social-overlay-v159,html body #gsf-creator-hub-live-v160,html body #gsf-editor-overlay-v220,html body #gsf-ai-overlay-v221,html body #gsf-account-overlay-v223{background:#050D16!important}\nhtml body #gsf-social-overlay-v159 iframe,html body #gsf-creator-hub-live-v160 iframe,html body #gsf-editor-overlay-v220 iframe,html body #gsf-ai-overlay-v221 iframe{background:#050D16!important}\nhtml body #gsf-global-header img{display:none!important}\nhtml body #gsf-global-header .naWordmark{font-weight:800!important;font-size:12px!important;letter-spacing:.24em!important;color:#FFFFFF!important;white-space:nowrap}\nhtml body #gsf-global-header .naWordmark b{font-weight:800;color:#79D2FF}\n@keyframes naReveal{from{clip-path:circle(0 at var(--na-ox,50%) var(--na-oy,50%))}to{clip-path:circle(150% at var(--na-ox,50%) var(--na-oy,50%))}}\n@keyframes naRevealRing{0%{opacity:.9;box-shadow:inset 0 0 0 2px var(--na-oc,#27AEF3)}100%{opacity:0;box-shadow:inset 0 0 0 0 transparent}}\nhtml body .na-reveal{animation:naReveal .55s cubic-bezier(.22,1.2,.36,1) both!important}';
+      const NA_SHELL_CSS='/* GSF_NIGHT_ARENA_SHELL — header, Game Bar and surfaces on the single Night Arena look.\n   The old footer is gone (its links live in Creator Hub › Impostazioni › Info). */\nhtml:root{--gsf-shell-footer-h:0px;--gsf-shell-gamebar-h:66px;color-scheme:dark}\nhtml:root,html:root body{background:#050D16!important}\nhtml body .stApp,html body [data-testid="stAppViewContainer"],html body [data-testid="stHeader"]{background:#050D16!important}\nhtml body #gsf-global-footer{display:none!important}\nhtml body #gsf-global-header{\n background:linear-gradient(180deg,rgba(5,13,22,.92),rgba(5,13,22,.72))!important;\n border-bottom:1px solid rgba(121,210,255,.14)!important;color:#EAF6FF!important;\n}\nhtml body #gsf-global-header .v343Brand{color:#FFFFFF!important;letter-spacing:.2em!important}\nhtml body #gsf-global-header .v343Account{background:rgba(255,255,255,.06)!important;border:1px solid rgba(121,210,255,.25)!important;color:#EAF6FF!important}\nhtml body #gsf-global-header .v343Avatar{background:linear-gradient(135deg,#27AEF3,#9D82FF)!important;color:#fff!important}\nhtml body #gsf-global-gamebar{\n bottom:calc(var(--gsf-shell-safe-bottom) + 10px)!important;\n border:1px solid rgba(121,210,255,.22)!important;border-radius:30px!important;\n background:rgba(16,40,61,.66)!important;\n box-shadow:0 18px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08)!important;\n -webkit-backdrop-filter:blur(22px) saturate(1.2)!important;backdrop-filter:blur(22px) saturate(1.2)!important;\n}\nhtml body #gsf-global-gamebar button{color:#9FB7CA!important;background:transparent!important;border:0!important;border-radius:22px!important;font-weight:700!important;font-size:11px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important}\nhtml body #gsf-global-gamebar button.active{color:#FFFFFF!important;background:rgba(39,174,243,.2)!important;box-shadow:0 0 22px rgba(39,174,243,.35)!important;font-weight:800!important}\nhtml body #gsf-global-gamebar .v343Icon{display:grid!important;place-items:center!important;width:24px!important;height:24px!important;background:none!important;border:0!important;box-shadow:none!important}\nhtml body #gsf-global-gamebar .v343Icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}\nhtml body #gsf-global-gamebar button.active .v343Icon{color:#79D2FF!important}\nhtml body #gsf-social-overlay-v159,html body #gsf-creator-hub-live-v160,html body #gsf-editor-overlay-v220,html body #gsf-ai-overlay-v221,html body #gsf-account-overlay-v223{background:#050D16!important}\nhtml body #gsf-social-overlay-v159 iframe,html body #gsf-creator-hub-live-v160 iframe,html body #gsf-editor-overlay-v220 iframe,html body #gsf-ai-overlay-v221 iframe{background:#050D16!important}\nhtml body #gsf-global-header .v343Brand img{display:none!important}\nhtml body #gsf-global-header .naWordmark{font-weight:800!important;font-size:12px!important;letter-spacing:.24em!important;color:#FFFFFF!important;white-space:nowrap}\nhtml body #gsf-global-header .naWordmark b{font-weight:800;color:#79D2FF}\n@keyframes naReveal{from{clip-path:circle(0 at var(--na-ox,50%) var(--na-oy,50%))}to{clip-path:circle(150% at var(--na-ox,50%) var(--na-oy,50%))}}\n@keyframes naRevealRing{0%{opacity:.9;box-shadow:inset 0 0 0 2px var(--na-oc,#27AEF3)}100%{opacity:0;box-shadow:inset 0 0 0 0 transparent}}\nhtml body .na-reveal{animation:naReveal .55s cubic-bezier(.22,1.2,.36,1) both!important}';
       const ensureNightArena=()=>{let n=D.getElementById('gsf-night-arena-shell');if(!n){n=D.createElement('style');n.id='gsf-night-arena-shell';n.textContent=NA_SHELL_CSS}if(D.head.lastElementChild!==n)D.head.appendChild(n);D.documentElement.style.colorScheme='dark';return n};
       function keepGlobalShellMounted(){
         ensureStyle();ensureNightArena();
@@ -17998,6 +18026,7 @@ if GSF_WEB_MODE:
       if(!P.__GSF_GLOBAL_SHELL_V343){
         P.__GSF_GLOBAL_SHELL_V343=true;
         keepGlobalShellMounted();syncAccount();syncSocials();
+        P.addEventListener('gsf:profile-updated',syncAccount);
         P.GSFNavigation.registerSurface('hub',{open:data=>focusHub(data.section||'dashboard'),close:()=>hide(D.getElementById('gsf-creator-hub-live-v160'))});
         P.GSFNavigation.registerSurface('short',{open:openShort,close:()=>hide(D.getElementById('gsf-short-overlay-v343'))});
         const observer=new P.MutationObserver(()=>keepGlobalShellMounted());observer.observe(D.documentElement,{childList:true,subtree:true});
@@ -18052,7 +18081,7 @@ _GSF_PARENT_FOOTER348 = r"""
     ensureStyle();
     const h=D.getElementById('gsf-global-header');
     if(h){
-      const imgs=[...h.querySelectorAll('img')];
+      const imgs=[...h.querySelectorAll('.v343Brand img')];
       let logo=imgs.find(img=>{
         const r=img.getBoundingClientRect();
         return r.left < (P.innerWidth||1000)*0.5 && r.width<=90 && r.height<=90;

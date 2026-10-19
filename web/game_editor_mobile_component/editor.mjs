@@ -770,8 +770,9 @@ function suspendEditor() {
 }
 function resumeEditor() {
   finishGesture({ cancelled: true });
-  fullscreenFallback = false;
-  notifyFullscreen(document.fullscreenElement === app);
+  // A real suspension already exits fullscreen. A duplicate focus/resume
+  // must preserve the current fallback instead of collapsing an active Editor.
+  notifyFullscreen(document.fullscreenElement === app || fullscreenFallback);
   renderState(history.value);
 }
 document.addEventListener("visibilitychange", () => document.hidden ? suspendEditor() : resumeEditor());

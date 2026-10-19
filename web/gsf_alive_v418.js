@@ -212,6 +212,10 @@
 
   /* ------------------------------------------------------------- runtime */
   const D = document, root = D.documentElement;
+  const pendingTimers=new Set(),pendingFrames=new Set();
+  let routeAbort=null,routeGeneration=0,whisperAnchor=null;
+  function later(fn,ms){if(!visible())return 0;const id=W.setTimeout(()=>{pendingTimers.delete(id);if(visible())fn()},ms);pendingTimers.add(id);return id}
+  function animate(fn){if(!visible())return 0;const id=W.requestAnimationFrame(t=>{pendingFrames.delete(id);if(visible())fn(t)});pendingFrames.add(id);return id}
   const ME = Math.random().toString(36).slice(2, 10);
   const reduced = () => { try { return W.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (_e) { return false; } };
   const store = {
@@ -272,7 +276,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
 @keyframes gsfAliveBeat{0%{transform:scale(1);opacity:.9}30%{transform:scale(1.09);opacity:1}55%{transform:scale(1.02)}75%{transform:scale(1.06)}100%{transform:scale(1);opacity:.8}}
 .gsf-alive-echo{position:fixed;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;border:2px solid var(--echo,#27AEF3);opacity:.85;animation:gsfAliveEcho .55s cubic-bezier(.2,.8,.2,1) forwards}
 @keyframes gsfAliveEcho{to{transform:scale(6.5);opacity:0;border-width:1px}}
-#gsf-alive-guide{position:fixed;display:none;border:2px solid rgba(121,210,255,.8);border:2px solid color-mix(in srgb,var(--alive-hue) 75%,white 10%);box-shadow:0 0 22px color-mix(in srgb,var(--alive-hue) 50%,transparent);animation:gsfAliveGuide 2.4s ease-in-out infinite;transition:left .35s ease,top .35s ease,width .35s ease,height .35s ease}
+#gsf-alive-guide{position:fixed;display:none;border:2px solid rgba(121,210,255,.8);border:2px solid color-mix(in srgb,var(--alive-hue) 75%,white 10%);box-shadow:0 0 22px color-mix(in srgb,var(--alive-hue) 50%,transparent);animation:gsfAliveGuide 2.4s ease-in-out infinite;transition:none}
 @keyframes gsfAliveGuide{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:1;transform:scale(1.025)}}
 #gsf-alive-whisper{position:fixed;left:50%;max-width:min(84vw,360px);transform:translate(-50%,6px);opacity:0;display:flex;align-items:center;gap:8px;padding:6px 14px 7px;border-radius:999px;background:rgba(5,13,22,.84);border:1px solid rgba(121,210,255,.3);border:1px solid color-mix(in srgb,var(--alive-hue) 35%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:#EAF6FF;font:600 18px/1.15 "Caveat","Segoe Print","Bradley Hand",cursive;letter-spacing:.2px;text-align:center;transition:opacity .45s ease,transform .45s cubic-bezier(.2,.8,.2,1);text-shadow:0 1px 10px rgba(0,0,0,.4)}
 #gsf-alive-whisper.on{opacity:1;transform:translate(-50%,0)}
@@ -319,7 +323,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   function scanOrbs() { D.querySelectorAll("[data-alive-orb]").forEach(attachHalo); }
   function beat() {
     D.querySelectorAll(".gsf-alive-halo").forEach(h => { h.classList.remove("beat"); void h.offsetWidth; h.classList.add("beat"); });
-    setTimeout(() => D.querySelectorAll(".gsf-alive-halo.beat").forEach(h => h.classList.remove("beat")), 700);
+    later(() => D.querySelectorAll(".gsf-alive-halo.beat").forEach(h => h.classList.remove("beat")), 700);
   }
 
   /* ----- apply state to the page ----- */
@@ -337,7 +341,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   function apply(prev, fromRemote) {
     paint();
     clearTimeout(celebrateTimer);
-    if (state.celebrate_until > Date.now()) celebrateTimer = setTimeout(() => { state.mode = calmMode(state, Date.now()); paint(); renderBubble(); }, state.celebrate_until - Date.now() + 30);
+    if (visible() && state.celebrate_until > Date.now()) celebrateTimer = later(() => { state.mode = calmMode(state, Date.now()); paint(); renderBubble(); }, state.celebrate_until - Date.now() + 30);
     const fresh = state.seq !== (prev && prev.seq);
     if (fresh && mounted && visible()) {
       if (state.last && SPOKEN.has(state.last) && state.seq !== lastSpokenSeq) {
@@ -405,17 +409,18 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     liveEl.textContent = text;
     if (!visible()) return;
     whisperEl.querySelector("span").textContent = text;
-    placeWhisper(o.anchor || page.voiceAnchor);
+    whisperAnchor=o.anchor || page.voiceAnchor;
+    placeWhisper(whisperAnchor);
     whisperEl.classList.add("on");
     clearTimeout(whisperTimer);
-    whisperTimer = setTimeout(() => whisperEl.classList.remove("on"), Math.max(2200, Math.min(6000, 900 + text.length * 70)));
+    whisperTimer = later(() => whisperEl.classList.remove("on"), Math.max(2200, Math.min(6000, 900 + text.length * 70)));
   }
 
   /* ----- heard: an echo under every finger ----- */
   const TAPPABLE = "button,a[href],label,[role=button],[data-alive-next],input[type=file],select,summary";
   function echo(e) {
     lastActivity = Date.now();
-    if (!layer || reduced()) return;
+    if (!layer || reduced() || !visible()) return;
     const t = e.target && e.target.closest ? e.target.closest(TAPPABLE) : null;
     if (!t || t.disabled || t.closest("[data-alive-quiet]")) return;
     const r = D.createElement("span"); r.className = "gsf-alive-echo";
@@ -424,7 +429,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     r.style.setProperty("--echo", c || getComputedStyle(root).getPropertyValue("--alive-hue").trim() || "#27AEF3");
     r.style.left = e.clientX + "px"; r.style.top = e.clientY + "px";
     layer.appendChild(r);
-    setTimeout(() => r.remove(), 620);
+    later(() => r.remove(), 620);
   }
 
   /* ----- guided: the next real step glows, a quiet moment brings a whisper ----- */
@@ -439,7 +444,9 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
       if (r.width < 8 || r.height < 8) continue;
       const cs = getComputedStyle(el);
       if (cs.visibility === "hidden" || Number(cs.opacity) < 0.2) continue;
-      if (r.bottom < 0 || r.top > (W.innerHeight || 0)) continue;
+      const ins=insets();let top=ins.top,bottom=(W.innerHeight||0)-ins.bottom;
+      for(let parent=el.parentElement;parent&&parent!==D.body;parent=parent.parentElement){const css=getComputedStyle(parent);if(/auto|scroll|hidden|clip/.test(css.overflowY)){const clip=parent.getBoundingClientRect();top=Math.max(top,clip.top);bottom=Math.min(bottom,clip.bottom)}}
+      if (r.bottom <= top || r.top >= bottom) continue;
       return el;
     }
     return null;
@@ -450,7 +457,8 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     const el = visible() ? targetFor(action) : null;
     guided = el;
     if (!el) { guideEl.style.display = "none"; return; }
-    const r = el.getBoundingClientRect(), pad = 6;
+    const r = el.getBoundingClientRect(), pad = 6,ins=insets();
+    guideEl.style.clipPath=`inset(${Math.max(0,ins.top-r.top+pad)}px 0 ${Math.max(0,r.bottom+pad-((W.innerHeight||0)-ins.bottom))}px 0)`;
     let radius = 14;
     try { const br = parseFloat(getComputedStyle(el).borderTopLeftRadius); if (Number.isFinite(br)) radius = Math.min(br + pad, Math.max(r.width, r.height)); } catch (_e) {}
     if (el.hasAttribute("data-alive-round")) radius = 9999;
@@ -539,9 +547,9 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (p.ring ? 1.8 : 1), 0, Math.PI * 2);
         if (p.ring) { ctx.strokeStyle = p.c; ctx.stroke(); } else { ctx.fillStyle = p.c; ctx.fill(); }
       }
-      requestAnimationFrame(frame);
+      animate(frame);
     };
-    requestAnimationFrame(frame);
+    animate(frame);
   }
 
   /* ----- real render tracking: one page (the leader) asks the server ----- */
@@ -554,25 +562,41 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     } catch (_e) { return true; }
   }
   let polling = false, probed = false, watchFrom = 0, watchUntil = 0;
-  /* A page asked for a Short: follow the render only if the server really starts one. */
-  function watchRender() { const now = Date.now(); watchFrom = now; watchUntil = now + 90e3; setTimeout(pollRender, 1500); }
+  const RENDER_WATCH="gsf_alive_render_watch_v418";
+  function sharedRenderWatch(){try{const value=JSON.parse(localStorage.getItem(RENDER_WATCH)||"null");return value&&Number.isFinite(Number(value.from))&&Number.isFinite(Number(value.until))?{from:Number(value.from),until:Number(value.until)}:null}catch(_e){return null}}
+  /* The pending intent survives route suspension; only server state starts a job. */
+  function watchRender() {
+    const now=Math.max(Date.now(),watchFrom+1,Number(sharedRenderWatch()?.from||0)+1);watchFrom=now;watchUntil=now+90e3;
+    try{localStorage.setItem(RENDER_WATCH,JSON.stringify({from:watchFrom,until:watchUntil}))}catch(_e){}
+    later(pollRender,1500);
+  }
   async function jobStatus() {
-    try { const r = await fetch("/job/status?alive=1&_=" + Date.now(), { cache: "no-store", credentials: "same-origin" }); return r.ok ? await r.json() : null; } catch (_e) { return null; }
+    try { const r = await fetch("/job/status?alive=1&_=" + Date.now(), { cache: "no-store", credentials: "same-origin", signal:routeAbort?.signal }); return r.ok ? await r.json() : null; } catch (_e) { return null; }
   }
   async function pollRender() {
     if (polling || !leader()) return;
+    const shared=sharedRenderWatch();
+    if(shared&&Number(shared.until)>Date.now()&&Number(shared.from)>watchFrom){watchFrom=Number(shared.from);watchUntil=Number(shared.until)}
     const tracking = state.active_job === "render";
+    const watchedFrom=watchFrom;
     const watching = Date.now() < watchUntil;
     if (!tracking && probed && !watching) return;
     polling = true;
+    const generation=routeGeneration;
     try {
       const j = await jobStatus();
+      const latestWatch=sharedRenderWatch();
+      if(generation!==routeGeneration||!visible()||watchFrom!==watchedFrom||(latestWatch&&latestWatch.until>Date.now()&&latestWatch.from>watchedFrom))return;
       if (!j || !j.ok) return;
       const st = String(j.render_status || ""), started = Number(j.started_at) * 1000 || 0;
       if (!tracking) {
         probed = true;
-        const recent = watching ? started >= watchFrom - 10e3 : Date.now() - started < 15 * 60e3;
-        if (st === "running" && started && recent) { watchUntil = 0; emit("render.started", { started_at: started }); }
+        const recent = watching ? started >= watchedFrom - 10e3 : Date.now() - started < 15 * 60e3;
+        if (st === "running" && started && recent) {
+          watchUntil=0;
+          try{const pending=sharedRenderWatch();if(pending&&Number(pending.from)<=watchedFrom)localStorage.removeItem(RENDER_WATCH)}catch(_e){}
+          emit("render.started",{started_at:started});
+        }
         return;
       }
       if (st === "running") return;
@@ -598,33 +622,53 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     hiddenAt = 0;
     const fresh = store.get();
     if (fresh && (Number(fresh.updated) || 0) > (Number(state.updated) || 0)) commit(Object.assign({}, BASE, fresh), true);
-    if (away > 120e3 && mounted && visible()) setTimeout(() => say(welcome(state), { anchor: page.voiceAnchor }), 500);
+    if (away > 120e3 && mounted && visible()) later(() => say(welcome(state), { anchor: page.voiceAnchor }), 500);
     paint(); renderBubble(); guide();
   }
+  function suspendRoute(){
+    ++routeGeneration;
+    if(routeAbort){routeAbort.abort();routeAbort=null}
+    for(const timer of pendingTimers)W.clearTimeout(timer);pendingTimers.clear();
+    for(const frame of pendingFrames)W.cancelAnimationFrame(frame);pendingFrames.clear();
+    clearTimeout(whisperTimer);clearTimeout(celebrateTimer);
+    if(layer){layer.style.display="none";layer.querySelectorAll(".gsf-alive-echo,canvas").forEach(el=>el.remove())}
+    if(whisperEl)whisperEl.classList.remove("on");
+    if(guideEl)guideEl.style.display="none";
+    D.querySelectorAll(".gsf-alive-halo.beat").forEach(el=>el.classList.remove("beat"));
+    if(liveEl)liveEl.textContent="";
+    whisperAnchor=null;guided=null;lastSpokenSeq=state.seq;renderBubble();
+  }
+  function syncRoute(){
+    if(!visible()){suspendRoute();return}
+    if(routeAbort)return;
+    routeAbort=new AbortController();const signal=routeAbort.signal;
+    if(layer)layer.style.display="";
+    const fresh=store.get();if(fresh&&(Number(fresh.updated)||0)>(Number(state.updated)||0))state=Object.assign({},BASE,fresh);
+    lastSpokenSeq=state.seq;
+    D.addEventListener("pointerdown",echo,{capture:true,passive:true,signal});
+    D.addEventListener("keydown",()=>{lastActivity=Date.now()},{capture:true,passive:true,signal});
+    const position=()=>{guide();renderBubble();if(whisperEl.classList.contains("on"))placeWhisper(whisperAnchor)};
+    W.addEventListener("resize",position,{passive:true,signal});
+    W.addEventListener("scroll",()=>{lastActivity=Date.now();position()},{capture:true,passive:true,signal});
+    const intervals=[W.setInterval(tick,1000),W.setInterval(()=>{pollRender();scanOrbs()},3000),W.setInterval(()=>{if(Date.now()<watchUntil)pollRender()},2000)];
+    signal.addEventListener("abort",()=>intervals.forEach(id=>W.clearInterval(id)),{once:true});
+    scanOrbs();paint();renderBubble();guide();later(pollRender,1200);
+  }
   function mount(opts) {
-    const o = opts || {};
-    page = { name: String(o.page || "page"), target: TARGET[o.page] || o.target || null, voiceAnchor: o.voiceAnchor || null, dock: o.dock === "bottom" ? "bottom" : "top" };
-    root.dataset.alivePage = page.name;
-    const start = () => {
-      build(); scanOrbs(); paint();
-      if (mounted) return;
-      mounted = true;
-      D.addEventListener("pointerdown", echo, { capture: true, passive: true });
-      D.addEventListener("keydown", () => { lastActivity = Date.now(); }, { capture: true, passive: true });
-      D.addEventListener("visibilitychange", onVisible);
-      W.addEventListener("resize", () => { guide(); renderBubble(); }, { passive: true });
-      W.addEventListener("scroll", () => { lastActivity = Date.now(); guide(); }, { capture: true, passive: true });
-      W.addEventListener("message", e => {
-        if (e.origin !== location.origin || !e.data) return;
-        if (e.data.type === "GSF_APP_RESUME") setTimeout(() => { paint(); renderBubble(); guide(); }, 200);
-      });
-      setInterval(tick, 1000);
-      setInterval(() => { pollRender(); scanOrbs(); }, 3000);
-      setInterval(() => { if (Date.now() < watchUntil) pollRender(); }, 2000);
-      setTimeout(pollRender, 1200);
-      renderBubble(); guide();
+    const o=opts||{};
+    page={name:String(o.page||"page"),target:TARGET[o.page]||o.target||null,voiceAnchor:o.voiceAnchor||null,dock:o.dock==="bottom"?"bottom":"top"};
+    root.dataset.alivePage=page.name;
+    const start=()=>{
+      build();if(mounted){syncRoute();return}mounted=true;
+      // Only these lifetime observers survive a route: shared facts stay intact,
+      // while per-route listeners, timers, fetches and animation are cancelled.
+      try{W.parent.addEventListener("gsf:surfacechange",syncRoute)}catch(_e){}
+      D.addEventListener("visibilitychange",()=>{syncRoute();if(!D.hidden)onVisible()});
+      W.addEventListener("message",e=>{if(e.origin!==location.origin||!e.data)return;if(e.data.type==="GSF_APP_SUSPEND"&&!visible())suspendRoute();if(e.data.type==="GSF_APP_RESUME")syncRoute()});
+      W.addEventListener("pagehide",()=>{suspendRoute();try{W.parent.removeEventListener("gsf:surfacechange",syncRoute)}catch(_e){}});W.addEventListener("pageshow",()=>{try{W.parent.addEventListener("gsf:surfacechange",syncRoute)}catch(_e){}syncRoute()});
+      syncRoute();
     };
-    if (D.body) start(); else D.addEventListener("DOMContentLoaded", start, { once: true });
+    if(D.body)start();else D.addEventListener("DOMContentLoaded",start,{once:true});
     return W.GSFAlive;
   }
 

@@ -128,6 +128,7 @@ def build_results_meta(
     profile: str = "",
     request_id: str = "",
     durations: Mapping[float, float] | None = None,
+    timings: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Describe the three shorts on screen (and their alternates) for the AI page."""
     brain = brain if isinstance(brain, Mapping) else {}
@@ -163,6 +164,7 @@ def build_results_meta(
         "duration": duration,
         "updated_at": time.time(),
         "items": items,
+        "timings": dict(timings or {}),
     }
 
 
@@ -233,6 +235,7 @@ def merge_results(meta: Mapping[str, Any] | None, files: Iterable[tuple[int, flo
         "pool_size": int(_num(meta.get("pool_size"), 0)),
         "previews": previews[:3],
         "count": len(ready[:3]),
+        "timings": dict(meta.get("timings") or {}),
     }
 
 
