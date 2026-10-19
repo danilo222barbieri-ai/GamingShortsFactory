@@ -141,6 +141,7 @@
   // tabs cannot lock the OS, so cover landscape without reloading any surface.
   const phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent);
   const portraitMedia=window.matchMedia('(orientation: landscape)');
+  let portraitBlocked=false;
   function portraitGuard(){
     if(!phone||!D.body)return;
     let guard=D.getElementById('gsf-portrait-guard');
@@ -153,7 +154,7 @@
     const physicallyLandscape=Number.isFinite(angle)?Math.abs(angle)%180===90:portraitMedia.matches;
     const landscape=physicallyLandscape&&portraitMedia.matches;
     guard.hidden=!landscape;
-    if(landscape)suspend();else resume();
+    if(landscape!==portraitBlocked){portraitBlocked=landscape;if(landscape)suspend();else resume()}
   }
   let orientationRequest=false;
   async function requestPortrait(){

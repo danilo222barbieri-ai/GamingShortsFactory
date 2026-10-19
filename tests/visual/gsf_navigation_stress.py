@@ -11,15 +11,25 @@ from contextlib import contextmanager
 from urllib.parse import urlsplit
 
 
-def request_failure_is_critical(request):
-    # Leaving a document can cancel an optional external font still in flight.
-    # Keep real network failures and every first-party/JS cancellation blocking.
-    optional_font_cancel=(
-        request.resource_type=='font'
-        and urlsplit(request.url).hostname=='fonts.gstatic.com'
-        and request.failure in ('Load request cancelled','net::ERR_ABORTED')
-    )
-    return not optional_font_cancel
+def request_failure_is_critical(request,*,inactive_media=False,base_url=''):
+    cancelled=request.failure in ('Load request cancelled','net::ERR_ABORTED')
+    url=urlsplit(request.url);base=urlsplit(base_url)
+    optional_font_cancel=(request.resource_type=='font' and url.hostname=='fonts.gstatic.com' and cancelled)
+    # A suspended surface can legitimately abandon its in-flight video range.
+    # Active media, scripts, HTTP failures and real transport failures still block.
+    inactive_media_cancel=(inactive_media and cancelled and request.resource_type=='media'
+        and bool(base.netloc) and (url.scheme.lower(),url.netloc.lower())==(base.scheme.lower(),base.netloc.lower())
+        and url.path.startswith('/media/'))
+    return not (optional_font_cancel or inactive_media_cancel)
+
+
+def media_surface_is_inactive(request):
+    if request.resource_type!='media':return False
+    try:
+        frame=request.frame
+        if frame.is_detached():return True
+        return frame.evaluate("()=>{const f=window.frameElement;if(!f)return document.hidden;const css=parent.getComputedStyle(f);return document.hidden||parent.document.hidden||!!f.closest('[inert],[aria-hidden=true]')||css.display==='none'||css.visibility==='hidden'}")
+    except Exception:return False
 
 # A real, generated 2-second H.264 fixture. No provider or AI calls are needed.
 MEDIA_FIXTURE=base64.b64decode('AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAQhbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAA0x0cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAEAAAABAAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAIAAABAAAAAALEbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAAAoAAAAUABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAACb21pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAi9zdGJsAAAAv3N0c2QAAAAAAAAAAQAAAK9hdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAEAAQABIAAAASAAAAAAAAAABFUxhdmM2MS4xOS4xMDEgbGlieDI2NAAAAAAAAAAAAAAAGP//AAAANWF2Y0MBZAAK/+EAGGdkAAqs2UQmwEQAAAMABAAAAwBQPEiWWAEABmjr48siwP34+AAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAPrAAAAAAAAAAYc3R0cwAAAAAAAAABAAAAFAAABAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAAKhjdHRzAAAAAAAAABMAAAABAAAIAAAAAAEAABQAAAAAAQAACAAAAAABAAAAAAAAAAEAAAQAAAAAAQAAFAAAAAABAAAIAAAAAAEAAAAAAAAAAQAABAAAAAABAAAUAAAAAAEAAAgAAAAAAQAAAAAAAAABAAAEAAAAAAEAABQAAAAAAQAACAAAAAABAAAAAAAAAAEAAAQAAAAAAQAAEAAAAAACAAAEAAAAABxzdHNjAAAAAAAAAAEAAAABAAAAFAAAAAEAAABkc3RzegAAAAAAAAAAAAAAFAAAAt0AAAAOAAAADAAAAAwAAAAMAAAAFAAAAA4AAAAMAAAADAAAABQAAAAOAAAADAAAAAwAAAAUAAAADgAAAAwAAAAMAAAAFAAAAA4AAAAMAAAAFHN0Y28AAAAAAAAAAQAABFEAAABhdWR0YQAAAFltZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAACxpbHN0AAAAJKl0b28AAAAcZGF0YQAAAAEAAAAATGF2ZjYxLjcuMTAzAAAACGZyZWUAAAPzbWRhdAAAAq4GBf//qtxF6b3m2Ui3lizYINkj7u94MjY0IC0gY29yZSAxNjQgcjMxMDggMzFlMTlmOSAtIEguMjY0L01QRUctNCBBVkMgY29kZWMgLSBDb3B5bGVmdCAyMDAzLTIwMjMgLSBodHRwOi8vd3d3LnZpZGVvbGFuLm9yZy94MjY0Lmh0bWwgLSBvcHRpb25zOiBjYWJhYz0xIHJlZj0zIGRlYmxvY2s9MTowOjAgYW5hbHlzZT0weDM6MHgxMTMgbWU9aGV4IHN1Ym1lPTcgcHN5PTEgcHN5X3JkPTEuMDA6MC4wMCBtaXhlZF9yZWY9MSBtZV9yYW5nZT0xNiBjaHJvbWFfbWU9MSB0cmVsbGlzPTEgOHg4ZGN0PTEgY3FtPTAgZGVhZHpvbmU9MjEsMTEgZmFzdF9wc2tpcD0xIGNocm9tYV9xcF9vZmZzZXQ9LTIgdGhyZWFkcz0yIGxvb2thaGVhZF90aHJlYWRzPTEgc2xpY2VkX3RocmVhZHM9MCBucj0wIGRlY2ltYXRlPTEgaW50ZXJsYWNlZD0wIGJsdXJheV9jb21wYXQ9MCBjb25zdHJhaW5lZF9pbnRyYT0wIGJmcmFtZXM9MyBiX3B5cmFtaWQ9MiBiX2FkYXB0PTEgYl9iaWFzPTAgZGlyZWN0PTEgd2VpZ2h0Yj0xIG9wZW5fZ29wPTAgd2VpZ2h0cD0yIGtleWludD0yNTAga2V5aW50X21pbj0xMCBzY2VuZWN1dD00MCBpbnRyYV9yZWZyZXNoPTAgcmNfbG9va2FoZWFkPTQwIHJjPWNyZiBtYnRyZWU9MSBjcmY9MjMuMCBxY29tcD0wLjYwIHFwbWluPTAgcXBtYXg9NjkgcXBzdGVwPTQgaXBfcmF0aW89MS40MCBhcT0xOjEuMDAAgAAAACdliIQAEf/+5+P8Cm2u/3E0oGO1rW13Ki6Nce2KM2pLx924Q9sRn8EAAAAKQZokbEEf/rUr7wAAAAhBnkJ4h38FvQAAAAgBnmF0Q38HfAAAAAgBnmNqQ38HfQAAABBBmmhJqEFomUwII//+tSvvAAAACkGehkURLDv/Bb0AAAAIAZ6ldEN/B30AAAAIAZ6nakN/B3wAAAAQQZqsSahBbJlMCCH//qpX3gAAAApBnspFFSw7/wW9AAAACAGe6XRDfwd8AAAACAGe62pDfwd8AAAAEEGa8EmoQWyZTAh///6pnTUAAAAKQZ8ORRUsO/8FvQAAAAgBny10Q38HfQAAAAgBny9qQ38HfAAAABBBmzNJqEFsmUwIb//+p4+IAAAACkGfUUUVLDf/B30AAAAIAZ9yakN/B3w=')
@@ -96,7 +106,12 @@ def browser_page(mobile=True):
             errors.append('console: '+message.text+' '+str(message.location))
             if os.environ.get('GSF_DOM_DIAGNOSTICS'):print('BROWSER ERROR',message.text,flush=True)
         page.on('console',console_error)
-        page.on('requestfailed',lambda r:errors.append('network: '+r.url+' '+str(r.failure)) if request_failure_is_critical(r) else print('OPTIONAL FONT CANCELLED during document navigation',flush=True))
+        def request_failed(request):
+            inactive=media_surface_is_inactive(request)
+            if request_failure_is_critical(request,inactive_media=inactive,base_url=base):
+                errors.append('network: '+request.url+' '+str(request.failure))
+            else:print('EXPECTED REQUEST CANCELLED',request.resource_type,'inactive_media='+str(inactive),flush=True)
+        page.on('requestfailed',request_failed)
         page.on('response',lambda r:errors.append('http: '+str(r.status)+' '+r.url) if r.status>=400 else None)
         page.goto(os.environ['GSF_BASE_URL'],wait_until='domcontentloaded',timeout=120000)
         print('DOCUMENT READY',round(time.monotonic()-started,2),flush=True)
@@ -203,7 +218,7 @@ def tap(locator):
     locator.wait_for(state='visible')
     hit=None
     for _ in range(50):
-        hit=locator.evaluate("e=>{const r=e.getBoundingClientRect();if(!r.width||!r.height)return 'zero-size';const h=e.ownerDocument.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return e.contains(h)?'ok':(h?h.outerHTML.slice(0,120):'nothing')}")
+        hit=locator.evaluate("e=>{const r=e.getBoundingClientRect();if(!r.width||!r.height)return 'zero-size';let x=r.x+r.width/2,y=r.y+r.height/2,w=e.ownerDocument.defaultView,expected=e;for(;;){const h=w.document.elementFromPoint(x,y);if(!expected.contains(h))return h?h.outerHTML.slice(0,120):'nothing';const f=w.frameElement;if(!f)return 'ok';const b=f.getBoundingClientRect();x=b.x+x*b.width/f.clientWidth;y=b.y+y*b.height/f.clientHeight;expected=f;w=w.parent;}}")
         if hit=='ok':break
         time.sleep(.1)
     assert hit=='ok',f'control is covered or not hittable: {hit}'

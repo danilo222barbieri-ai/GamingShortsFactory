@@ -332,6 +332,9 @@ class PortraitAppContract(unittest.TestCase):
                 self.assertEqual(page.evaluate('GSFNavigation.snapshot().section'),'profile')
                 # A virtual keyboard can shrink the viewport without rotating the device.
                 page.set_viewport_size({'width':390,'height':300});self.assertFalse(guard.is_visible())
+                page.wait_for_function("()=>{const f=document.querySelector('#gsf-creator-hub-live-v160 iframe');return f.contentDocument?.readyState==='complete'&&f.contentWindow.location.pathname.startsWith('/creator-hub-v156')}")
+                page.evaluate("()=>{const f=document.querySelector('#gsf-creator-hub-live-v160 iframe'),post=f.contentWindow.postMessage;window.resizeResumeCount=0;f.contentWindow.postMessage=function(data,...args){if(data?.type==='GSF_APP_RESUME')window.resizeResumeCount++;return post.call(this,data,...args)};dispatchEvent(new Event('resize'))}")
+                self.assertEqual(page.evaluate('resizeResumeCount'),0,'Ordinary resize must not reset an expanded Editor as a document resume')
             finally:browser.close()
 
 class CanonicalIconBuildContract(unittest.TestCase):
@@ -359,5 +362,25 @@ class AliveRenderHandoff(unittest.TestCase):
         script="""const vm=require('node:vm'),assert=require('node:assert/strict');const values=new Map();const localStorage={getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};function page(){const events=[];const ctx={Date,JSON,localStorage,events,later(){},leader:()=>true,routeGeneration:1,visible:()=>true,state:{active_job:null},jobStatus:async()=>({ok:true,render_status:'running',started_at:Date.now()/1000}),emit:(...args)=>events.push(args)};vm.createContext(ctx);vm.runInContext(SOURCE,ctx);vm.runInContext('probed=true',ctx);return ctx;}(async()=>{const oldPage=page(),newPage=page();vm.runInContext('watchRender()',oldPage);assert.equal(oldPage.events.length,0,'Intent must never fake a running render');await vm.runInContext('pollRender()',newPage);assert.equal(newPage.events[0]?.[0],'render.started','New route must pick up pending render from shared state');values.clear();const waiting=page();vm.runInContext('watchRender()',waiting);let finish;waiting.jobStatus=()=>new Promise(resolve=>finish=resolve);const response=vm.runInContext('pollRender()',waiting);vm.runInContext('watchRender()',waiting);const latest=vm.runInContext('watchFrom',waiting);finish({ok:true,render_status:'running',started_at:Date.now()/1000});await response;assert.equal(JSON.parse(values.get('gsf_alive_render_watch_v418')||'null')?.from,latest,'Old response must preserve newer render intent');assert.ok(vm.runInContext('watchUntil',waiting)>0,'Old response must preserve newer deadline');values.set('gsf_alive_render_watch_v418',JSON.stringify({from:Date.now()-100000,until:Date.now()-10000}));const reload=page();vm.runInContext('probed=false',reload);await vm.runInContext('pollRender()',reload);assert.equal(reload.events[0]?.[0],'render.started','Expired intent must not block detection after reload')})().catch(error=>{console.error(error);process.exitCode=1});""".replace('SOURCE',json.dumps(watch+poll))
         result=subprocess.run(['node','-e',script],capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)
+
+class MediaCancellationContract(unittest.TestCase):
+    def test_only_cancelled_first_party_media_of_suspended_surface_is_expected(self):
+        from types import SimpleNamespace
+        from visual.gsf_navigation_stress import request_failure_is_critical
+        media=SimpleNamespace(resource_type='media',url='http://gsf.test/media/sid/source.mp4',failure='Load request cancelled')
+        self.assertFalse(request_failure_is_critical(media,inactive_media=True,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(media,inactive_media=False,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(media,inactive_media=True,base_url='http://different.test'))
+        self.assertTrue(request_failure_is_critical(SimpleNamespace(**{**vars(media),'failure':'Connection failed'}),inactive_media=True,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(SimpleNamespace(**{**vars(media),'resource_type':'script'}),inactive_media=True,base_url='http://gsf.test'))
+
+class EditorResumeIdempotence(unittest.TestCase):
+    def test_duplicate_resume_preserves_active_fallback_but_real_suspend_stays_mini(self):
+        import subprocess,shutil
+        if not shutil.which('node'):self.skipTest('Node required')
+        source=(ROOT/'web/game_editor_mobile_component/editor.mjs').read_text()
+        function=source[source.index('function resumeEditor()'):source.index('document.addEventListener("visibilitychange", () => document.hidden ? suspendEditor()')]
+        script="const vm=require('node:vm'),assert=require('node:assert/strict');const states=[];const context={fullscreenFallback:true,document:{fullscreenElement:null},app:{},history:{value:{zoom:1.7}},finishGesture(){},notifyFullscreen:active=>states.push(active),renderState(){}};vm.createContext(context);vm.runInContext(SOURCE,context);vm.runInContext('resumeEditor()',context);assert.equal(states.pop(),true,'Duplicate focus/resume must preserve current fallback fullscreen');context.fullscreenFallback=false;vm.runInContext('resumeEditor()',context);assert.equal(states.pop(),false,'Actual suspension already exited fullscreen and must stay mini');assert.equal(context.history.value.zoom,1.7);".replace('SOURCE',json.dumps(function))
+        result=subprocess.run(['node','-e',script],capture_output=True,text=True);self.assertEqual(result.returncode,0,result.stderr)
 
 if __name__=='__main__':unittest.main()
