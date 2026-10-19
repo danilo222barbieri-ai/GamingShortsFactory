@@ -359,7 +359,10 @@ class PortraitAppContract(unittest.TestCase):
 
 class AliveSubviewGeometry(unittest.TestCase):
     def test_hub_view_change_clears_guidance_for_hidden_controls_immediately(self):
-        from playwright.sync_api import sync_playwright
+        try:from playwright.sync_api import sync_playwright
+        except ImportError:
+            if os.environ.get('GSF_BROWSER'):raise
+            self.skipTest('Real geometry runs in the blocking WebKit Production Gate')
         import shutil
         parent=installed_parent_html();html=(ROOT/'web/creator_hub_v156_component/index.html').read_text()
         with sync_playwright() as p:

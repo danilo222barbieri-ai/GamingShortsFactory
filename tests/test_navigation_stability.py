@@ -193,6 +193,7 @@ class ParentBundleContract(unittest.TestCase):
         try:
             from playwright.sync_api import sync_playwright
         except ImportError:
+            if os.environ.get('GSF_BROWSER'):raise
             self.skipTest('Playwright runs in the blocking WebKit gate')
         with sync_playwright() as playwright:
             engine=getattr(playwright,os.environ.get('GSF_BROWSER','chromium'))
