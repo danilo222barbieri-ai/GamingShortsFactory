@@ -186,6 +186,56 @@ class NavigationStability(unittest.TestCase):
             self.assertFalse(errors,errors)
 
 class ParentBundleContract(unittest.TestCase):
+    def test_retired_preview_decodes_replacement_before_cancellation_is_accepted(self):
+        from urllib.parse import urlsplit,parse_qs
+        from types import SimpleNamespace
+        from visual.gsf_navigation_stress import MEDIA_FIXTURE,request_media_has_playable_replacement
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            self.skipTest('Playwright runs in the blocking WebKit gate')
+        with sync_playwright() as playwright:
+            engine=getattr(playwright,os.environ.get('GSF_BROWSER','chromium'))
+            options={'executable_path':'/usr/bin/chromium','args':['--no-sandbox']} if engine.name=='chromium' else {}
+            browser=engine.launch(**options)
+            try:
+                page=browser.new_page();held=[];failed=[]
+                def serve(route):
+                    url=urlsplit(route.request.url)
+                    if url.path=='/':route.fulfill(content_type='text/html',body="<iframe src='/frame?gen=1'></iframe>")
+                    elif url.path=='/frame':
+                        gen=parse_qs(url.query)['gen'][0]
+                        route.fulfill(content_type='text/html',body=f"<div id='home154'><div id='circle'><div class='naPreview'><video muted autoplay preload='auto' src='/editor-media/current?na={gen}'></video></div></div></div>")
+                    elif parse_qs(url.query).get('na')==['1']:held.append(route)
+                    else:route.fulfill(content_type='video/mp4',body=MEDIA_FIXTURE)
+                page.route('**/*',serve)
+                page.on('requestfailed',lambda request:failed.append(request))
+                page.goto('http://gsf.test/',wait_until='domcontentloaded')
+                for _ in range(100):
+                    if held:break
+                    page.wait_for_timeout(30)
+                self.assertTrue(held)
+                page.evaluate("document.querySelector('iframe').src='/frame?gen=2'")
+                page.wait_for_function("()=>document.querySelector('iframe').contentDocument?.querySelector('video')?.readyState>=2",polling=50)
+                for route in held:route.continue_()
+                for _ in range(100):
+                    if failed:break
+                    page.wait_for_timeout(30)
+                self.assertTrue(failed,'Browser must cancel the actual retired media request')
+                request=failed[0]
+                self.assertTrue(request_media_has_playable_replacement(request,'http://gsf.test'),(request.url,request.resource_type,request.failure))
+                self.assertFalse(request_media_has_playable_replacement(request,'http://other.test'))
+                broken=SimpleNamespace(url=request.url,resource_type='media',failure='Connection failed')
+                self.assertFalse(request_media_has_playable_replacement(broken,'http://gsf.test'))
+                # An active source cancellation and an undecodable replacement remain errors.
+                video=page.frame_locator('iframe').locator('video')
+                video.evaluate("(v,url)=>{v.src=url;v.load()}",request.url)
+                self.assertFalse(request_media_has_playable_replacement(request,'http://gsf.test'))
+                video.evaluate("v=>{v.src='/editor-media/current?na=3';v.load();v.removeAttribute('src');v.load()}")
+                self.assertFalse(request_media_has_playable_replacement(request,'http://gsf.test'))
+            finally:
+                browser.close()
+
     def test_only_cancelled_external_font_requests_are_noncritical(self):
         from types import SimpleNamespace
         from visual.gsf_navigation_stress import request_failure_is_critical

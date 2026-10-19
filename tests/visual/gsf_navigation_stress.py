@@ -42,6 +42,31 @@ def request_signal_was_aborted(request):
         return request.frame.evaluate("url=>window.__gsfFetchSignals?.get(url)?.aborted===true",request.url)
     except Exception:return False
 
+
+def request_media_has_playable_replacement(request,base_url):
+    """Prove a cancelled Home preview belongs to a retired document/source.
+
+    Streamlit can replace a document while Playwright retains its Frame object.
+    Cancellation alone is insufficient: the replacement must actually decode.
+    """
+    url=urlsplit(request.url);base=urlsplit(base_url)
+    nonce=parse_qs(url.query).get('na',[])
+    # WebKit reports a video cancelled before headers as other.
+    if (request.resource_type not in ('media','other') or request.failure not in ('Load request cancelled','net::ERR_ABORTED')
+        or not base.netloc or (url.scheme,url.netloc)!=(base.scheme,base.netloc)
+        or url.path!='/editor-media/current' or len(nonce)!=1 or not nonce[0].isdigit()):return False
+    try:
+        request.frame.wait_for_function("""old=>{
+            if([...document.querySelectorAll('video')].some(v=>v.currentSrc===old||v.src===old))return false;
+            const video=document.querySelector('#home154 #circle .naPreview video');
+            if(!video||video.error||video.readyState<2)return false;
+            const before=new URL(old),after=new URL(video.currentSrc||video.src,location.href);
+            return after.origin===before.origin&&after.pathname===before.pathname&&after.href!==old
+                &&after.searchParams.getAll('na').length===1&&/^[0-9]+$/.test(after.searchParams.get('na')||'');
+        }""",arg=request.url,polling=50,timeout=1500)
+        return True
+    except Exception:return False
+
 # A real, generated 2-second H.264 fixture. No provider or AI calls are needed.
 MEDIA_FIXTURE=base64.b64decode('AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAQhbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAA0x0cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAEAAAABAAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAIAAABAAAAAALEbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAAAoAAAAUABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAACb21pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAi9zdGJsAAAAv3N0c2QAAAAAAAAAAQAAAK9hdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAEAAQABIAAAASAAAAAAAAAABFUxhdmM2MS4xOS4xMDEgbGlieDI2NAAAAAAAAAAAAAAAGP//AAAANWF2Y0MBZAAK/+EAGGdkAAqs2UQmwEQAAAMABAAAAwBQPEiWWAEABmjr48siwP34+AAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAPrAAAAAAAAAAYc3R0cwAAAAAAAAABAAAAFAAABAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAAKhjdHRzAAAAAAAAABMAAAABAAAIAAAAAAEAABQAAAAAAQAACAAAAAABAAAAAAAAAAEAAAQAAAAAAQAAFAAAAAABAAAIAAAAAAEAAAAAAAAAAQAABAAAAAABAAAUAAAAAAEAAAgAAAAAAQAAAAAAAAABAAAEAAAAAAEAABQAAAAAAQAACAAAAAABAAAAAAAAAAEAAAQAAAAAAQAAEAAAAAACAAAEAAAAABxzdHNjAAAAAAAAAAEAAAABAAAAFAAAAAEAAABkc3RzegAAAAAAAAAAAAAAFAAAAt0AAAAOAAAADAAAAAwAAAAMAAAAFAAAAA4AAAAMAAAADAAAABQAAAAOAAAADAAAAAwAAAAUAAAADgAAAAwAAAAMAAAAFAAAAA4AAAAMAAAAFHN0Y28AAAAAAAAAAQAABFEAAABhdWR0YQAAAFltZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAACxpbHN0AAAAJKl0b28AAAAcZGF0YQAAAAEAAAAATGF2ZjYxLjcuMTAzAAAACGZyZWUAAAPzbWRhdAAAAq4GBf//qtxF6b3m2Ui3lizYINkj7u94MjY0IC0gY29yZSAxNjQgcjMxMDggMzFlMTlmOSAtIEguMjY0L01QRUctNCBBVkMgY29kZWMgLSBDb3B5bGVmdCAyMDAzLTIwMjMgLSBodHRwOi8vd3d3LnZpZGVvbGFuLm9yZy94MjY0Lmh0bWwgLSBvcHRpb25zOiBjYWJhYz0xIHJlZj0zIGRlYmxvY2s9MTowOjAgYW5hbHlzZT0weDM6MHgxMTMgbWU9aGV4IHN1Ym1lPTcgcHN5PTEgcHN5X3JkPTEuMDA6MC4wMCBtaXhlZF9yZWY9MSBtZV9yYW5nZT0xNiBjaHJvbWFfbWU9MSB0cmVsbGlzPTEgOHg4ZGN0PTEgY3FtPTAgZGVhZHpvbmU9MjEsMTEgZmFzdF9wc2tpcD0xIGNocm9tYV9xcF9vZmZzZXQ9LTIgdGhyZWFkcz0yIGxvb2thaGVhZF90aHJlYWRzPTEgc2xpY2VkX3RocmVhZHM9MCBucj0wIGRlY2ltYXRlPTEgaW50ZXJsYWNlZD0wIGJsdXJheV9jb21wYXQ9MCBjb25zdHJhaW5lZF9pbnRyYT0wIGJmcmFtZXM9MyBiX3B5cmFtaWQ9MiBiX2FkYXB0PTEgYl9iaWFzPTAgZGlyZWN0PTEgd2VpZ2h0Yj0xIG9wZW5fZ29wPTAgd2VpZ2h0cD0yIGtleWludD0yNTAga2V5aW50X21pbj0xMCBzY2VuZWN1dD00MCBpbnRyYV9yZWZyZXNoPTAgcmNfbG9va2FoZWFkPTQwIHJjPWNyZiBtYnRyZWU9MSBjcmY9MjMuMCBxY29tcD0wLjYwIHFwbWluPTAgcXBtYXg9NjkgcXBzdGVwPTQgaXBfcmF0aW89MS40MCBhcT0xOjEuMDAAgAAAACdliIQAEf/+5+P8Cm2u/3E0oGO1rW13Ki6Nce2KM2pLx924Q9sRn8EAAAAKQZokbEEf/rUr7wAAAAhBnkJ4h38FvQAAAAgBnmF0Q38HfAAAAAgBnmNqQ38HfQAAABBBmmhJqEFomUwII//+tSvvAAAACkGehkURLDv/Bb0AAAAIAZ6ldEN/B30AAAAIAZ6nakN/B3wAAAAQQZqsSahBbJlMCCH//qpX3gAAAApBnspFFSw7/wW9AAAACAGe6XRDfwd8AAAACAGe62pDfwd8AAAAEEGa8EmoQWyZTAh///6pnTUAAAAKQZ8ORRUsO/8FvQAAAAgBny10Q38HfQAAAAgBny9qQ38HfAAAABBBmzNJqEFsmUwIb//+p4+IAAAACkGfUUUVLDf/B30AAAAIAZ9yakN/B3w=')
 
@@ -129,7 +154,7 @@ def browser_page(mobile=True):
         def request_failed(request):
             inactive=request_surface_is_inactive(request)
             signal_aborted=request_signal_was_aborted(request)
-            if request_failure_is_critical(request,inactive_surface=inactive,signal_aborted=signal_aborted,base_url=base):
+            if request_failure_is_critical(request,inactive_surface=inactive,signal_aborted=signal_aborted,base_url=base) and not request_media_has_playable_replacement(request,base):
                 errors.append('network: '+request.url+' '+str(request.failure))
             else:print('EXPECTED REQUEST CANCELLED',request.resource_type,'inactive_surface='+str(inactive),'signal_aborted='+str(signal_aborted),flush=True)
         page.on('requestfailed',request_failed)
