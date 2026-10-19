@@ -261,6 +261,8 @@ setTimeout(()=>{assert.equal(called,100);assert.equal(retained,0,'completed time
                 page.set_content(first)
                 page.evaluate("GSFNavigation.navigate({target:'editor'})")
                 frame=page.locator('#gsf-editor-overlay-v220 iframe')
+                # Measure after finite opening animations, retaining the cold-size assertions.
+                frame.evaluate("""async el=>{for(let node=el;node;node=node.parentElement){await Promise.all(node.getAnimations().filter(a=>Number.isFinite(a.effect.getTiming().iterations)).map(a=>a.finished.catch(()=>{})))}}""")
                 rect=frame.bounding_box()
                 self.assertGreaterEqual(rect['width'],375,'Cold Editor uses browser-default iframe width')
                 self.assertGreaterEqual(rect['height'],600,'Cold Editor loses its persistent shell stylesheet')

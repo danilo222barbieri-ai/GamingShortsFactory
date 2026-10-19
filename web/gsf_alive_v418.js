@@ -21,9 +21,9 @@
   const ERROR_CALM_MS = 3 * 60e3;   /* an error colours the app for 3 minutes, then calms */
   const ERROR_BUBBLE_MS = 90e3;     /* the "Riprova" bubble follows the user for 90 seconds */
   const BASE = {
-    mode: "idle", video_ready: false, active_job: null, progress: null, job_started: 0,
+    mode: "idle", video_ready: false, active_job: null, progress: null, job_started: 0, job_updated: 0,
     moments_count: 0, moment_selected: false, short_ready: false, published: false,
-    ready_at: 0, error: null, error_job: null, message: "Pronto quando vuoi.",
+    ready_at: 0, error: null, error_job: null, error_at: 0, message: "Pronto quando vuoi.",
     social_connected: null, celebrate_until: 0, updated: 0, seq: 0, last: "",
   };
   const clamp01 = v => {
@@ -34,14 +34,14 @@
   };
   function calmMode(s, now) {
     if (s.celebrate_until && now < s.celebrate_until) return "celebrate";
-    if (s.error && now - (Number(s.updated) || 0) < ERROR_CALM_MS) return "error";
+    if (s.error && now - (Number(s.error_at) || Number(s.updated) || 0) < ERROR_CALM_MS) return "error";
     if (s.active_job) return "working";
     if (s.video_ready || s.short_ready) return "active";
     return "idle";
   }
   function startJob(s, job, now, extra) {
     const keep = s.active_job === job && s.job_started ? s.job_started : now;
-    return Object.assign({}, s, { active_job: job, job_started: keep, progress: null, error: null, error_job: null }, extra || {});
+    return Object.assign({}, s, { active_job: job, job_started: keep, job_updated: now, progress: null, error: null, error_job: null, error_at: 0 }, extra || {});
   }
   function reduce(prev, type, data, now) {
     const d = data || {};
@@ -54,7 +54,7 @@
       case "upload.progress": {
         if (s.active_job !== "upload") s = startJob(s, "upload", now, { short_ready: false, published: false, moments_count: 0, moment_selected: false, video_ready: false, message: "Carico il gameplay." });
         const p = clamp01(d.progress);
-        if (p !== null) s.progress = p;
+        if (p !== null) { s.progress = p; s.job_updated = now; }
         break;
       }
       case "upload.completed":
@@ -87,7 +87,7 @@
         break;
       case "render.progress": {
         const p = clamp01(d.progress);
-        if (s.active_job === "render" && p !== null) s.progress = p;
+        if (s.active_job === "render" && p !== null) { s.progress = p; s.job_updated = now; }
         break;
       }
       case "render.completed":
@@ -107,17 +107,18 @@
           s.celebrate_until = now + CELEBRATE_MS;
           s.message = ko ? ok + " pubblicati, " + ko + " da riprovare." : "Pubblicato. Grande!";
         } else {
-          s.error = "La pubblicazione non è riuscita."; s.error_job = "publish";
+          s.error = "La pubblicazione non è riuscita."; s.error_job = "publish"; s.error_at = now;
           s.message = "La pubblicazione non è riuscita. Riproviamo.";
         }
         break;
       }
       case "social.status":
+        if (s.social_connected === (Number(d.connected) > 0)) return Object.assign({}, s, { mode: calmMode(s, now) });
         s.social_connected = Number(d.connected) > 0;
         break;
       case "failure": {
         const msg = String(d.message || "Qualcosa si è fermato. Riproviamo.").slice(0, 140);
-        s = Object.assign(s, { error: msg, error_job: d.job || s.active_job || null, active_job: null, progress: null, celebrate_until: 0, message: msg });
+        s = Object.assign(s, { error: msg, error_job: d.job || s.active_job || null, error_at: now, active_job: null, progress: null, celebrate_until: 0, message: msg });
         break;
       }
       case "sync": {
@@ -145,13 +146,18 @@
   }
   /* Drop jobs that outlived any real run (a page closed mid-upload, a lost worker). */
   function expire(s, now) {
-    if (!s || !s.active_job) return s;
-    const ttl = JOB_TTL_MS[s.active_job] || 10 * 60e3;
-    const since = Math.max(Number(s.updated) || 0, Number(s.job_started) || 0);
-    if (now - since <= ttl) return s;
-    const out = Object.assign({}, s, { active_job: null, progress: null });
-    out.mode = calmMode(out, now);
-    return out;
+    if (!s) return s;
+    let out = s;
+    if (s.active_job) {
+      const ttl = JOB_TTL_MS[s.active_job] || 10 * 60e3;
+      const since = Number(s.job_updated) || Math.max(Number(s.job_started) || 0, Number(s.updated) || 0);
+      if (now - since > ttl) out = Object.assign({}, out, { active_job: null, progress: null });
+    }
+    if (s.error && now - (Number(s.error_at) || Number(s.updated) || 0) >= ERROR_CALM_MS) {
+      out = Object.assign({}, out, { error: null, error_job: null, error_at: 0 });
+    }
+    const mode = calmMode(out, now);
+    return mode === out.mode ? out : Object.assign({}, out, { mode });
   }
   function nextAction(s) {
     s = s || BASE;
@@ -487,7 +493,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
       const p = state.progress;
       return { kind: "work", label: JOB_LABEL[state.active_job] || "Ci sto lavorando", meta: p !== null && p !== undefined ? Math.round(p * 100) + "%" : fmt(now - state.job_started), progress: p, go: JOB_PAGE[state.active_job] };
     }
-    if (state.error && state.error_job && now - (Number(state.updated) || 0) < ERROR_BUBBLE_MS) {
+    if (state.error && state.error_job && now - (Number(state.error_at) || Number(state.updated) || 0) < ERROR_BUBBLE_MS) {
       const where = JOB_PAGE[state.error_job] || "home";
       if (where === here) return null;
       return { kind: "error", label: "Si è fermato", meta: "Riprova ›", go: where };
@@ -677,7 +683,17 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     state: () => Object.assign({}, state),
     next: () => nextAction(state),
     on(fn) { listeners.add(fn); return () => listeners.delete(fn); },
-    refresh() { scanOrbs(); paint(); guide(); renderBubble(); },
+    refresh() {
+      scanOrbs(); paint(); guide(); renderBubble();
+      if (whisperEl && whisperEl.classList.contains("on") && whisperAnchor) {
+        const anchor = typeof whisperAnchor === "string" ? D.querySelector(whisperAnchor) : whisperAnchor;
+        const rect = anchor && anchor.getBoundingClientRect();
+        if (!rect || !rect.width || !rect.height) {
+          clearTimeout(whisperTimer); whisperEl.classList.remove("on"); whisperAnchor = null;
+          if (liveEl) liveEl.textContent = "";
+        }
+      }
+    },
     _core: core,
   };
 })();

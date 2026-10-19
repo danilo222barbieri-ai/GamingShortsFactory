@@ -94,3 +94,45 @@ test("every guided action has a whisper and copy stays short", () => {
   }
   assert.match(core.welcome({ ...core.BASE, short_ready: true }), /pronto/);
 });
+
+test("unchanged social facts do not retrigger the same idle guidance", () => {
+  const first=core.reduce(core.BASE,"social.status",{connected:0},T0);
+  const repeated=core.reduce(first,"social.status",{connected:0},T0+10000);
+  assert.equal(repeated.seq,first.seq);
+  assert.equal(repeated.updated,first.updated);
+});
+
+test("expired errors stop forcing retry guidance without forgetting the video", () => {
+  const uploaded=core.reduce(core.BASE,"upload.completed",{},T0);
+  const failed=core.reduce(uploaded,"failure",{job:"ai",message:"Analisi interrotta"},T0+1000);
+  assert.equal(core.nextAction(core.expire(failed,T0+2000)),"retry");
+  const calm=core.expire(failed,T0+4*60000);
+  assert.equal(calm.mode,"active");
+  assert.equal(core.nextAction(calm),"create_with_ai");
+  assert.equal(calm.video_ready,true);
+});
+
+test("unrelated facts cannot keep a stale analysis spinning", () => {
+  let s=core.reduce(core.BASE,"ai.started",{},T0);
+  s=core.reduce(s,"social.status",{connected:1},T0+7*60000);
+  assert.equal(core.expire(s,T0+7*60000).active_job,null);
+});
+
+test("real upload progress still refreshes its inactivity deadline", () => {
+  let s=core.reduce(core.BASE,"upload.started",{},T0);
+  s=core.reduce(s,"upload.progress",{progress:0.8},T0+9*60000);
+  assert.equal(core.expire(s,T0+11*60000).active_job,"upload");
+});
+
+test("unrelated facts cannot extend an old error", () => {
+  let s=core.reduce(core.BASE,"failure",{job:"ai"},T0);
+  s=core.reduce(s,"social.status",{connected:1},T0+4*60000);
+  assert.equal(core.nextAction(core.expire(s,T0+4*60000)),"upload");
+});
+
+test("restored legacy jobs retain their recent real progress", () => {
+  const legacy={...core.BASE,active_job:"upload",job_started:T0,updated:T0+9*60000,progress:0.8};
+  delete legacy.job_updated;
+  assert.equal(core.expire(legacy,T0+11*60000).active_job,"upload");
+  assert.equal(core.expire(legacy,T0+25*60000).active_job,null);
+});

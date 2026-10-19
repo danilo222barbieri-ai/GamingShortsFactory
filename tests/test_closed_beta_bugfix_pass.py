@@ -349,6 +349,39 @@ class PortraitAppContract(unittest.TestCase):
                 self.assertEqual(page.evaluate('resizeResumeCount'),0,'Ordinary resize must not reset an expanded Editor as a document resume')
             finally:browser.close()
 
+class AliveSubviewGeometry(unittest.TestCase):
+    def test_hub_view_change_clears_guidance_for_hidden_controls_immediately(self):
+        from playwright.sync_api import sync_playwright
+        import shutil
+        parent=installed_parent_html();html=(ROOT/'web/creator_hub_v156_component/index.html').read_text()
+        with sync_playwright() as p:
+            engine=getattr(p,os.environ.get('GSF_BROWSER','chromium'));executable=shutil.which('chromium') if engine.name=='chromium' else None
+            browser=engine.launch(**({'executable_path':executable,'args':['--no-sandbox']} if executable else {}))
+            try:
+                page=browser.new_page(viewport={'width':390,'height':844})
+                def route(r):
+                    if r.request.url=='http://gsf.test/':r.fulfill(content_type='text/html',body=parent)
+                    elif '/creator-hub-v156/' in r.request.url:r.fulfill(content_type='text/html',body=html)
+                    else:r.fulfill(json={'ok':True,'csrf_token':'test','account':{'display_name':'Creator'},'social':{},'drafts':[],'shorts':[]})
+                page.route('**/*',route);page.goto('http://gsf.test/')
+                page.wait_for_function('()=>GSFNavigation?.snapshot().surfaces===5')
+                page.evaluate("GSFNavigation.navigate({target:'hub'})")
+                hub=page.frame_locator('#gsf-creator-hub-live-v160 iframe')
+                hub.locator('#hub').wait_for()
+                page.wait_for_function("()=>document.querySelector('#gsf-creator-hub-live-v160 iframe').contentWindow.GSFHubV415?.getState().csrf_token")
+                result=hub.locator('#hub').evaluate("""()=>{
+                    GSFHubV415.openView('dashboard');GSFAlive.emit('video.cleared');GSFAlive.refresh();
+                    const target=[...document.querySelectorAll('[data-alive-next~=upload]')].find(e=>e.getBoundingClientRect().height>0);
+                    GSFAlive.say('Scegli un video',{anchor:target});
+                    const before=document.querySelector('#gsf-alive-guide').style.display;
+                    GSFHubV415.openView('settings');
+                    return {before,after:document.querySelector('#gsf-alive-guide').style.display,voice:document.querySelector('#gsf-alive-whisper').classList.contains('on')};
+                }""")
+                self.assertEqual(result['before'],'block')
+                self.assertEqual(result['after'],'none','Hidden dashboard control must immediately lose its guidance ring')
+                self.assertFalse(result['voice'],'Guidance for the previous view must disappear with its control')
+            finally:browser.close()
+
 class CanonicalIconBuildContract(unittest.TestCase):
     def test_image_build_preserves_the_approved_tracked_icon_bytes(self):
         import shlex,subprocess,sys
