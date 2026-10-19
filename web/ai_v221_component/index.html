@@ -1200,9 +1200,10 @@ function autosave(reason){
 
 /* ---------- selection & actions ---------- */
 function selectedPayload(){const r=rows(),index=Math.max(0,Math.min(Number(state.selectedMoment)||0,Math.max(r.length-1,0))),item=r[index]||{};return{index,candidate_id:item.candidate_id||"",video:item.video||"",start_time:item.start_time??item.start,end_time:item.end_time??item.end}}
-function selectMoment(index){if(index===state.selectedMoment)return;state.selectedMoment=index;alive("moment.selected",{index});stopPlayback();renderMoments();renderDetail();send("select_moment",{index});autosave("select")}
+function confirmSelectedMoment(index){try{if(window.GSFAlive&&!window.GSFAlive.state().moment_selected)alive("moment.selected",{index})}catch(_e){}}
+function selectMoment(index){if(index===state.selectedMoment){confirmSelectedMoment(index);return;}state.selectedMoment=index;alive("moment.selected",{index});stopPlayback();renderMoments();renderDetail();send("select_moment",{index});autosave("select")}
 function createSelectedShort(){const payload=selectedPayload();alive("moment.selected",{index:payload.index});try{window.GSFAlive&&window.GSFAlive.watchRender()}catch(_e){}send("preview",{...payload,intent:"create_short"});send("create_short",payload)}
-function editSelectedMoment(){const payload=selectedPayload();send("preview",{...payload,intent:"edit"});send("open_editor",payload)}
+function editSelectedMoment(){const payload=selectedPayload();confirmSelectedMoment(payload.index);send("preview",{...payload,intent:"edit"});send("open_editor",payload)}
 
 function ring(score,big){const r=46,c=2*Math.PI*r,v=Math.max(0,Math.min(100,score||0));return `<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="${r}" fill="none" stroke="#E3F1FA" stroke-width="${big?3:2.4}"/><circle cx="50" cy="50" r="${r}" fill="none" stroke="url(#gsfRing)" stroke-width="${big?3:2.4}" stroke-linecap="round" stroke-dasharray="${(c*v/100).toFixed(1)} ${c.toFixed(1)}"/><defs><linearGradient id="gsfRing"><stop offset="0" stop-color="#9D82FF"/><stop offset="1" stop-color="#53E0EA"/></linearGradient></defs></svg>`}
 

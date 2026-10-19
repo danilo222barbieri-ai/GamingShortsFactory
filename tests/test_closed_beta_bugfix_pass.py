@@ -247,6 +247,14 @@ class ShortGameplayResults(unittest.TestCase):
         script="const assert=require('node:assert/strict');let requestId='current',baseline='old';const signature=list=>list.map(d=>String(d.video||'')+'@'+String(d.mtime||'')).join('|');\n"+function+"\nfor(const count of [1,2,3]){const previews=Array.from({length:count},(_,index)=>({video:'clip'+index}));assert.equal(freshRows({request_id:'current',previews}).length,count);assert.equal(freshRows({request_id:'stale',previews}),null)};assert.equal(freshRows({request_id:'current',previews:[]}),null);assert.equal(freshRows({request_id:'current',previews:[{video:'ready'},{video:''}]}),null,'Wait for every expected preview');"
         subprocess.run(['node','-e',script],check=True,capture_output=True,text=True)
 
+    def test_default_moment_and_direct_editor_entry_confirm_alive_selection(self):
+        import subprocess
+        html=(ROOT/'web/ai_v221_component/index.html').read_text()
+        actions=html[html.index('function selectedPayload()'):html.index('function ring(')]
+        runtime=(ROOT/'web/gsf_alive_v418.js').read_text()
+        script="""const vm=require('node:vm'),assert=require('node:assert/strict');const pure={window:{}};vm.runInNewContext(RUNTIME,pure);const core=pure.window.GSFAlive._core;let fact=core.reduce(core.BASE,'ai.found',{count:1},1000000);const events=[],sent=[];const ctx={state:{selectedMoment:0},rows:()=>[{video:'clip',candidate_id:'first'}],window:{GSFAlive:{state:()=>fact}},alive:(type,data)=>{events.push(type);fact=core.reduce(fact,type,data,1001000)},send:(type,data)=>sent.push(type),stopPlayback(){},renderMoments(){},renderDetail(){},autosave(){}};vm.createContext(ctx);vm.runInContext(ACTIONS,ctx);vm.runInContext('selectMoment(0)',ctx);assert.equal(fact.moment_selected,true,'Clicking the sole/default result must confirm selection');const count=events.length;vm.runInContext('selectMoment(0)',ctx);assert.equal(events.length,count,'The same confirmed card must not repeat guidance');fact=core.reduce(core.BASE,'ai.found',{count:1},1000000);vm.runInContext('editSelectedMoment()',ctx);assert.equal(fact.moment_selected,true,'Direct Editor CTA confirms the displayed moment');assert.deepEqual(sent,['preview','open_editor'],'Keep the existing video handoff');""".replace('RUNTIME',json.dumps(runtime)).replace('ACTIONS',json.dumps(actions))
+        subprocess.run(['node','-e',script],check=True,capture_output=True,text=True)
+
 class AliveRouteGeometry(unittest.TestCase):
     def test_ring_tracks_internal_scroll_and_old_voice_never_reappears(self):
         try:from playwright.sync_api import sync_playwright
