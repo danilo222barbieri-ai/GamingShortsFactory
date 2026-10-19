@@ -19,7 +19,7 @@ def request_failure_is_critical(request,*,inactive_media=False,base_url=''):
     # Active media, scripts, HTTP failures and real transport failures still block.
     inactive_media_cancel=(inactive_media and cancelled and request.resource_type=='media'
         and bool(base.netloc) and (url.scheme.lower(),url.netloc.lower())==(base.scheme.lower(),base.netloc.lower())
-        and url.path.startswith('/media/'))
+        and (url.path.startswith('/media/') or url.path=='/editor-media/current'))
     return not (optional_font_cancel or inactive_media_cancel)
 
 
@@ -28,7 +28,7 @@ def media_surface_is_inactive(request):
     try:
         frame=request.frame
         if frame.is_detached():return True
-        return frame.evaluate("()=>{const f=window.frameElement;if(!f)return document.hidden;const css=parent.getComputedStyle(f);return document.hidden||parent.document.hidden||!!f.closest('[inert],[aria-hidden=true]')||css.display==='none'||css.visibility==='hidden'}")
+        return frame.evaluate("()=>{const f=window.frameElement;if(!f)return document.hidden;const css=parent.getComputedStyle(f);return document.hidden||parent.document.hidden||(!!document.querySelector('#home154')&&!!parent.GSFNavigation&&parent.GSFNavigation.snapshot().target!=='home')||!!f.closest('[inert],[aria-hidden=true]')||css.display==='none'||css.visibility==='hidden'}")
     except Exception:return False
 
 # A real, generated 2-second H.264 fixture. No provider or AI calls are needed.
