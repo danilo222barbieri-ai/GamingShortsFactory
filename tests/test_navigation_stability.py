@@ -22,6 +22,32 @@ class NavigationStability(unittest.TestCase):
             assert_gamebar(page)
             self.assertFalse(errors,errors)
 
+    def test_route_abort_preserves_navigation_without_false_alive_network_failure(self):
+        from visual.gsf_navigation_stress import request_signal_was_aborted,request_surface_is_inactive
+        with browser_page() as (page,errors,_):
+            pending=[];cancelled=[]
+            # Delay the real request, then release it unchanged after navigation.
+            # No response or AbortSignal is fabricated by this regression.
+            page.route('**/job/status?alive=1**',lambda route:pending.append(route))
+            page.on('requestfailed',lambda request:cancelled.append(request) if '/job/status?alive=1' in request.url else None)
+            page.evaluate("()=>{const f=[...document.querySelectorAll('iframe')].find(f=>{try{return f.contentDocument?.querySelector('#home154')&&f.contentWindow.GSFAlive}catch(_){return false}});if(!f)throw new Error('Home Alive missing');f.contentWindow.GSFAlive.watchRender()}")
+            for _ in range(100):
+                if pending:break
+                page.wait_for_timeout(50)
+            self.assertTrue(pending,'The real Alive poll must be in flight')
+            navigate(page,'editor')
+            for route in pending:route.continue_()
+            for _ in range(100):
+                if cancelled:break
+                page.wait_for_timeout(50)
+            self.assertTrue(cancelled,'The browser must observe the route cancellation')
+            for request in cancelled:
+                self.assertTrue(request_signal_was_aborted(request))
+                self.assertTrue(request_surface_is_inactive(request))
+            self.assertEqual(page.evaluate('GSFNavigation.snapshot().target'),'editor')
+            assert_gamebar(page)
+            self.assertFalse(errors,errors)
+
     def test_repeated_mobile_sequences(self):
         # GSF is phone-only (V419): desktop browsers get the mobile-only page instead.
         for mobile in (True,):

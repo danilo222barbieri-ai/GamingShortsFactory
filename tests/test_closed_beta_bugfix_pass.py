@@ -368,14 +368,27 @@ class MediaCancellationContract(unittest.TestCase):
         from types import SimpleNamespace
         from visual.gsf_navigation_stress import request_failure_is_critical
         media=SimpleNamespace(resource_type='media',url='http://gsf.test/media/sid/source.mp4',failure='Load request cancelled')
-        self.assertFalse(request_failure_is_critical(media,inactive_media=True,base_url='http://gsf.test'))
-        self.assertTrue(request_failure_is_critical(media,inactive_media=False,base_url='http://gsf.test'))
+        self.assertFalse(request_failure_is_critical(media,inactive_surface=True,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(media,inactive_surface=False,base_url='http://gsf.test'))
         alias=SimpleNamespace(**{**vars(media),'url':'http://gsf.test/editor-media/current?na=1'})
-        self.assertFalse(request_failure_is_critical(alias,inactive_media=True,base_url='http://gsf.test'))
-        self.assertTrue(request_failure_is_critical(alias,inactive_media=False,base_url='http://gsf.test'))
-        self.assertTrue(request_failure_is_critical(media,inactive_media=True,base_url='http://different.test'))
-        self.assertTrue(request_failure_is_critical(SimpleNamespace(**{**vars(media),'failure':'Connection failed'}),inactive_media=True,base_url='http://gsf.test'))
-        self.assertTrue(request_failure_is_critical(SimpleNamespace(**{**vars(media),'resource_type':'script'}),inactive_media=True,base_url='http://gsf.test'))
+        self.assertFalse(request_failure_is_critical(alias,inactive_surface=True,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(alias,inactive_surface=False,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(media,inactive_surface=True,base_url='http://different.test'))
+        self.assertTrue(request_failure_is_critical(SimpleNamespace(**{**vars(media),'failure':'Connection failed'}),inactive_surface=True,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(SimpleNamespace(**{**vars(media),'resource_type':'script'}),inactive_surface=True,base_url='http://gsf.test'))
+
+class AlivePollCancellationContract(unittest.TestCase):
+    def test_cancelled_poll_requires_observed_signal_and_inactive_surface(self):
+        from types import SimpleNamespace
+        from visual.gsf_navigation_stress import request_failure_is_critical
+        poll=SimpleNamespace(resource_type='fetch',url='http://gsf.test/job/status?alive=1&_=123',failure='Load request cancelled')
+        self.assertTrue(request_failure_is_critical(poll,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(poll,inactive_surface=True,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(poll,signal_aborted=True,base_url='http://gsf.test'))
+        self.assertFalse(request_failure_is_critical(poll,inactive_surface=True,signal_aborted=True,base_url='http://gsf.test'))
+        for changed in ({'failure':'Connection failed'},{'url':'http://gsf.test/job/status'},{'url':'http://gsf.test/editor/state'},{'url':'http://other.test/job/status?alive=1'},{'resource_type':'script'}):
+            request=SimpleNamespace(**{**vars(poll),**changed})
+            self.assertTrue(request_failure_is_critical(request,inactive_surface=True,signal_aborted=True,base_url='http://gsf.test'),changed)
 
 class EditorResumeIdempotence(unittest.TestCase):
     def test_duplicate_resume_preserves_active_fallback_but_real_suspend_stays_mini(self):

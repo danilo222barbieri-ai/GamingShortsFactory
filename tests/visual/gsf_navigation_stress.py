@@ -8,27 +8,38 @@ import base64
 import uuid
 import time
 from contextlib import contextmanager
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit,parse_qs
 
 
-def request_failure_is_critical(request,*,inactive_media=False,base_url=''):
+def request_failure_is_critical(request,*,inactive_surface=False,signal_aborted=False,base_url=''):
     cancelled=request.failure in ('Load request cancelled','net::ERR_ABORTED')
     url=urlsplit(request.url);base=urlsplit(base_url)
     optional_font_cancel=(request.resource_type=='font' and url.hostname=='fonts.gstatic.com' and cancelled)
     # A suspended surface can legitimately abandon its in-flight video range.
     # Active media, scripts, HTTP failures and real transport failures still block.
-    inactive_media_cancel=(inactive_media and cancelled and request.resource_type=='media'
+    inactive_media_cancel=(inactive_surface and cancelled and request.resource_type=='media'
         and bool(base.netloc) and (url.scheme.lower(),url.netloc.lower())==(base.scheme.lower(),base.netloc.lower())
         and (url.path.startswith('/media/') or url.path=='/editor-media/current'))
-    return not (optional_font_cancel or inactive_media_cancel)
+    # Alive deliberately aborts its route-owned poll when the surface closes.
+    # Require the associated AbortSignal to be aborted; a cancellation/error alone is not proof.
+    inactive_alive_cancel=(inactive_surface and signal_aborted and cancelled and request.resource_type=='fetch'
+        and bool(base.netloc) and (url.scheme.lower(),url.netloc.lower())==(base.scheme.lower(),base.netloc.lower())
+        and url.path=='/job/status' and parse_qs(url.query).get('alive')==['1'])
+    return not (optional_font_cancel or inactive_media_cancel or inactive_alive_cancel)
 
 
-def media_surface_is_inactive(request):
-    if request.resource_type!='media':return False
+def request_surface_is_inactive(request):
+    if request.resource_type not in ('media','fetch'):return False
     try:
         frame=request.frame
         if frame.is_detached():return True
         return frame.evaluate("()=>{const f=window.frameElement;if(!f)return document.hidden;const css=parent.getComputedStyle(f);return document.hidden||parent.document.hidden||(!!document.querySelector('#home154')&&!!parent.GSFNavigation&&parent.GSFNavigation.snapshot().target!=='home')||!!f.closest('[inert],[aria-hidden=true]')||css.display==='none'||css.visibility==='hidden'}")
+    except Exception:return False
+
+def request_signal_was_aborted(request):
+    if request.resource_type!='fetch':return False
+    try:
+        return request.frame.evaluate("url=>window.__gsfFetchSignals?.get(url)?.aborted===true",request.url)
     except Exception:return False
 
 # A real, generated 2-second H.264 fixture. No provider or AI calls are needed.
@@ -45,6 +56,15 @@ SEQUENCES = [('home','hub','home','hub'),('home','ai','home','ai'),
 INSTRUMENT = r"""
 (() => {
  let top;try {top=window.top;void top.document;} catch (_) {return;}
+ // Retain the actual signal through response-body consumption, without wrapping
+ // promises or adding listeners. Bound the diagnostic map for stress runs.
+ const nativeFetch=window.fetch,signals=window.__gsfFetchSignals=new Map();
+ window.fetch=function(input,options){
+  const url=new URL(input?.url||String(input),location.href).href;
+  signals.set(url,options?.signal??input?.signal);
+  if(signals.size>32)signals.delete(signals.keys().next().value);
+  return nativeFetch.apply(this,arguments);
+ };
  const state=top.__gsfStability||(top.__gsfStability={mutation:0,resize:0,callbacks:0,callbackMs:0});
  for(const [name,key] of [['MutationObserver','mutation'],['ResizeObserver','resize']]) {
   const Native=window[name];if(!Native)continue;
@@ -107,10 +127,11 @@ def browser_page(mobile=True):
             if os.environ.get('GSF_DOM_DIAGNOSTICS'):print('BROWSER ERROR',message.text,flush=True)
         page.on('console',console_error)
         def request_failed(request):
-            inactive=media_surface_is_inactive(request)
-            if request_failure_is_critical(request,inactive_media=inactive,base_url=base):
+            inactive=request_surface_is_inactive(request)
+            signal_aborted=request_signal_was_aborted(request)
+            if request_failure_is_critical(request,inactive_surface=inactive,signal_aborted=signal_aborted,base_url=base):
                 errors.append('network: '+request.url+' '+str(request.failure))
-            else:print('EXPECTED REQUEST CANCELLED',request.resource_type,'inactive_media='+str(inactive),flush=True)
+            else:print('EXPECTED REQUEST CANCELLED',request.resource_type,'inactive_surface='+str(inactive),'signal_aborted='+str(signal_aborted),flush=True)
         page.on('requestfailed',request_failed)
         page.on('response',lambda r:errors.append('http: '+str(r.status)+' '+r.url) if r.status>=400 else None)
         page.goto(os.environ['GSF_BASE_URL'],wait_until='domcontentloaded',timeout=120000)
