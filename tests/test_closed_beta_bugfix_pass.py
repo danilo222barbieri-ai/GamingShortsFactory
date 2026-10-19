@@ -124,14 +124,26 @@ class HubColdGeometry(unittest.TestCase):
                     elif path=='/creator-hub/profile':
                         if fail[0]:request.fulfill(status=503,json={'ok':False,'error':'Salvataggio non disponibile'})
                         else:
-                            saved=request.request.post_data_json;state['account'].update(saved);request.fulfill(json={'ok':True,'display_name':saved['display_name'],'updated_at':time.time()})
+                            saved=request.request.post_data_json;state['account'].update(saved);request.fulfill(json={'ok':True,'display_name':state['account']['display_name'],'updated_at':time.time()})
                     elif path=='/creator-hub/state':request.fulfill(json=state)
                     else:request.fulfill(content_type='application/javascript',body='')
                 page.route('**/*',route);page.goto('http://gsf.test/?gsf_page=hub');page.wait_for_function('()=>window.GSFNavigation?.snapshot().surfaces===5');page.evaluate("GSFNavigation.navigate({target:'hub',section:'profile'})")
                 child=page.frame_locator('#gsf-creator-hub-live-v160 iframe');child.locator('#profileMeta').wait_for(state='attached');child.locator('#hub').evaluate("()=>new Promise((resolve,reject)=>{setTimeout(()=>reject(new Error('State did not settle')),10000);const tick=()=>window.GSFHubV415?.getState().csrf_token?resolve():setTimeout(tick,10);tick()})")
                 self.assertFalse(child.locator('#profileNameInput').is_disabled(),'Local Creator editing must not require an unrelated social login')
+                # A slow state response captured before the save must not overwrite it.
+                snapshot=json.loads(json.dumps(state));pending_state=[]
+                page.route('**/creator-hub/state',lambda route:pending_state.append(route))
+                child.locator('#hub').evaluate("()=>{window.profileLoadTest=GSFHubV415.loadState()}")
+                for _ in range(100):
+                    if pending_state:break
+                    page.wait_for_timeout(20)
+                self.assertTrue(pending_state,'A stale state request must be in flight')
                 child.locator('#profileNameInput').fill('Beta creator');child.locator('#saveProfileBtn').click()
                 page.wait_for_function("()=>document.querySelector('#gsf-global-header .v343AccountName').textContent==='Beta creator'")
+                pending_state[0].fulfill(json=snapshot)
+                child.locator('#hub').evaluate('()=>window.profileLoadTest')
+                page.unroute('**/creator-hub/state')
+                self.assertEqual(child.locator('#profileNameInput').input_value(),'Beta creator','A stale Hub response must not undo the saved name')
                 self.assertFalse(child.locator('#accountBtn').is_visible(),'Remove Accedi from settings without removing connected logout')
                 with page.expect_file_chooser() as chooser:child.locator('#profileAvatar').click()
                 chooser.value.set_files({'name':'profile.png','mimeType':'image/png','buffer':png})
