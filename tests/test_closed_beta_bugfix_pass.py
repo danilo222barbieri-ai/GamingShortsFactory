@@ -282,6 +282,63 @@ class AliveRouteGeometry(unittest.TestCase):
             finally:browser.close()
 
 class PushBrowserPreference(unittest.TestCase):
+    def test_render_monitor_aborts_on_pagehide_and_resumes_once(self):
+        from visual.gsf_navigation_stress import INSTRUMENT,install_request_ownership,request_signal_was_aborted,request_surface_is_inactive,request_failure_is_critical
+        try:from playwright.sync_api import sync_playwright
+        except ImportError:
+            if os.environ.get('GSF_BROWSER'):raise
+            self.skipTest('Browser lifecycle runs in the blocking WebKit gate')
+        import shutil
+        script=companion_functions({'_push_client_bytes'},Path('/tmp'))['_push_client_bytes']().decode()
+        with sync_playwright() as playwright:
+            engine=getattr(playwright,os.environ.get('GSF_BROWSER','chromium'))
+            executable=shutil.which('chromium') if engine.name=='chromium' else None
+            browser=engine.launch(**({'executable_path':executable,'args':['--no-sandbox']} if executable else {}))
+            try:
+                page=browser.new_page();pending=[];errors=[];cancelled=[]
+                install_request_ownership(page)
+                page.on('pageerror',lambda error:errors.append(str(error)))
+                page.on('requestfailed',lambda request:cancelled.append(request) if request.url.endswith('/job/status') else None)
+                page.add_init_script(INSTRUMENT+"\nconst originalFetch=window.fetch;window.pollSignals=[];window.fetch=function(url,options){if(String(url)==='/job/status')pollSignals.push(options?.signal);return originalFetch.apply(this,arguments)}")
+                def route(request):
+                    if request.request.url=='http://gsf.test/':request.fulfill(content_type='text/html',body='<html><body><script>'+script+'</script></body></html>')
+                    elif request.request.url.endswith('/job/status'):pending.append(request)
+                    else:request.fulfill(json={'ok':True,'enabled':False,'revision':0,'csrf_token':'test'})
+                page.route('**/*',route);page.goto('http://gsf.test/',wait_until='domcontentloaded')
+                page.wait_for_function('()=>pollSignals.length===1')
+                self.assertTrue(page.evaluate('()=>pollSignals[0] instanceof AbortSignal'),'The monitor must own its in-flight request')
+                page.evaluate("dispatchEvent(new PageTransitionEvent('pagehide'));dispatchEvent(new PageTransitionEvent('pageshow'));dispatchEvent(new PageTransitionEvent('pageshow'))")
+                self.assertTrue(page.evaluate('()=>pollSignals[0].aborted'))
+                page.wait_for_function('()=>pollSignals.length===2')
+                self.assertFalse(page.evaluate('()=>pollSignals[1].aborted'))
+                pending[0].continue_()
+                for _ in range(100):
+                    if cancelled:break
+                    page.wait_for_timeout(20)
+                self.assertTrue(cancelled)
+                old=cancelled[0]
+                self.assertTrue(request_signal_was_aborted(old),'Old request must retain its own aborted signal after resume')
+                self.assertTrue(request_surface_is_inactive(old),'Old request must retain its actual suspension evidence')
+                self.assertFalse(request_failure_is_critical(old,inactive_surface=request_surface_is_inactive(old),signal_aborted=request_signal_was_aborted(old),base_url='http://gsf.test'))
+                self.assertFalse(request_signal_was_aborted(pending[-1].request),'New active request must not inherit the old abort')
+                # A stale URL-only lookup must never override the actual request owner.
+                page.evaluate("()=>{const stale=new AbortController();stale.abort();__gsfFetchSignals.set(location.origin+'/job/status',stale.signal)}")
+                self.assertFalse(request_signal_was_aborted(pending[-1].request),'An unrelated aborted signal must not exempt an active request')
+                page.wait_for_timeout(1700)
+                self.assertEqual(page.evaluate('pollSignals.length'),2,'Repeated resume/timer ticks must not overlap requests')
+                page.evaluate("dispatchEvent(new PageTransitionEvent('pagehide'))")
+                for request in pending[1:]:request.continue_()
+                pending.clear();page.wait_for_timeout(1700)
+                self.assertEqual(page.evaluate('pollSignals.length'),2,'Hidden documents must stop polling')
+                page.evaluate("dispatchEvent(new PageTransitionEvent('pageshow'));dispatchEvent(new PageTransitionEvent('pageshow'))")
+                page.wait_for_function('()=>pollSignals.length===3')
+                self.assertFalse(page.evaluate('()=>pollSignals[2].aborted'))
+                page.evaluate("dispatchEvent(new PageTransitionEvent('pagehide'))")
+                for request in pending:request.continue_()
+                pending.clear()
+                self.assertFalse(errors,errors)
+            finally:browser.close()
+
     def test_off_never_registers_and_off_survives_reload_with_permission_granted(self):
         try:from playwright.sync_api import sync_playwright
         except ImportError:self.skipTest('Browser checks run in Production Gate')
@@ -459,7 +516,11 @@ class AlivePollCancellationContract(unittest.TestCase):
         self.assertTrue(request_failure_is_critical(poll,inactive_surface=True,base_url='http://gsf.test'))
         self.assertTrue(request_failure_is_critical(poll,signal_aborted=True,base_url='http://gsf.test'))
         self.assertFalse(request_failure_is_critical(poll,inactive_surface=True,signal_aborted=True,base_url='http://gsf.test'))
-        for changed in ({'failure':'Connection failed'},{'url':'http://gsf.test/job/status'},{'url':'http://gsf.test/editor/state'},{'url':'http://other.test/job/status?alive=1'},{'resource_type':'script'}):
+        global_poll=SimpleNamespace(**{**vars(poll),'url':'http://gsf.test/job/status'})
+        self.assertTrue(request_failure_is_critical(global_poll,inactive_surface=True,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(global_poll,signal_aborted=True,base_url='http://gsf.test'))
+        self.assertFalse(request_failure_is_critical(global_poll,inactive_surface=True,signal_aborted=True,base_url='http://gsf.test'))
+        for changed in ({'failure':'Connection failed'},{'url':'http://gsf.test/job/status?unexpected=1'},{'url':'http://gsf.test/editor/state'},{'url':'http://other.test/job/status?alive=1'},{'resource_type':'script'}):
             request=SimpleNamespace(**{**vars(poll),**changed})
             self.assertTrue(request_failure_is_critical(request,inactive_surface=True,signal_aborted=True,base_url='http://gsf.test'),changed)
 

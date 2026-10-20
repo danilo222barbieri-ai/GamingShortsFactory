@@ -20,16 +20,23 @@ def request_failure_is_critical(request,*,inactive_surface=False,signal_aborted=
     inactive_media_cancel=(inactive_surface and cancelled and request.resource_type in ('media','other')
         and bool(base.netloc) and (url.scheme.lower(),url.netloc.lower())==(base.scheme.lower(),base.netloc.lower())
         and (url.path.startswith('/media/') or url.path=='/editor-media/current'))
-    # Alive deliberately aborts its route-owned poll when the surface closes.
+    # Alive and the global render monitor abort their owned polls on suspension.
     # Require the associated AbortSignal to be aborted; a cancellation/error alone is not proof.
-    inactive_alive_cancel=(inactive_surface and signal_aborted and cancelled and request.resource_type=='fetch'
+    inactive_poll_cancel=(inactive_surface and signal_aborted and cancelled and request.resource_type=='fetch'
         and bool(base.netloc) and (url.scheme.lower(),url.netloc.lower())==(base.scheme.lower(),base.netloc.lower())
-        and url.path=='/job/status' and parse_qs(url.query).get('alive')==['1'])
-    return not (optional_font_cancel or inactive_media_cancel or inactive_alive_cancel)
+        and url.path=='/job/status' and (not url.query or parse_qs(url.query).get('alive')==['1']))
+    return not (optional_font_cancel or inactive_media_cancel or inactive_poll_cancel)
 
 
 def request_surface_is_inactive(request):
     if request.resource_type not in ('media','other','fetch'):return False
+    owner=getattr(request,'_gsf_fetch_owner',None) or getattr(request,'_gsf_media_owner',None)
+    if owner and owner[0] in owner[1]:return True
+    if owner and request.resource_type in ('media','other') and request.failure in ('Load request cancelled','net::ERR_ABORTED'):
+        for _ in range(5):
+            try:request.frame.page.wait_for_timeout(20)
+            except Exception:break
+            if owner[0] in owner[1]:return True
     try:
         frame=request.frame
         if frame.is_detached():return True
@@ -38,9 +45,22 @@ def request_surface_is_inactive(request):
 
 def request_signal_was_aborted(request):
     if request.resource_type!='fetch':return False
+    owner=getattr(request,'_gsf_fetch_owner',None)
+    if owner and owner[0] in owner[1]:return True
     try:
-        return request.frame.evaluate("url=>window.__gsfFetchSignals?.get(url)?.aborted===true",request.url)
-    except Exception:return False
+        if owner:
+            aborted=request.frame.evaluate("token=>[...window.__gsfFetchOwners.values()].flat().find(row=>row.token===token)?.signal?.aborted===true",owner[0])
+        else:
+            aborted=request.frame.evaluate("url=>window.__gsfFetchSignals?.get(url)?.aborted===true",request.url)
+        if aborted:return True
+    except Exception:pass
+    if owner and request.failure in ('Load request cancelled','net::ERR_ABORTED'):
+        # The pagehide binding can arrive just after the network event.
+        for _ in range(5):
+            try:request.frame.page.wait_for_timeout(20)
+            except Exception:break
+            if owner[0] in owner[1]:return True
+    return False
 
 
 def request_media_has_playable_replacement(request,base_url):
@@ -81,15 +101,25 @@ SEQUENCES = [('home','hub','home','hub'),('home','ai','home','ai'),
 INSTRUMENT = r"""
 (() => {
  let top;try {top=window.top;void top.document;} catch (_) {return;}
- // Retain the actual signal through response-body consumption, without wrapping
- // promises or adding listeners. Bound the diagnostic map for stress runs.
- const nativeFetch=window.fetch,signals=window.__gsfFetchSignals=new Map();
+ // Retain the actual signal through response-body consumption without wrapping
+ // promises or modifying signals. Bound request evidence for stress runs.
+ const nativeFetch=window.fetch,signals=window.__gsfFetchSignals=new Map(),owners=window.__gsfFetchOwners=new Map();
+ let fetchSequence=0;const fetchDocument=window.__gsfDocumentToken=performance.timeOrigin+':'+Math.random();
  window.fetch=function(input,options){
   const url=new URL(input?.url||String(input),location.href).href;
-  signals.set(url,options?.signal??input?.signal);
+  const signal=options?.signal??input?.signal;signals.set(url,signal);
+  {const rows=owners.get(url)||[];rows.push({token:fetchDocument+':'+(++fetchSequence),signal,claimed:false});if(rows.length>4)rows.shift();owners.set(url,rows);if(owners.size>32)owners.delete(owners.keys().next().value);}
   if(signals.size>32)signals.delete(signals.keys().next().value);
   return nativeFetch.apply(this,arguments);
  };
+ // Keep per-request proof across native Back and immediate resume. Read the
+ // actual signals after all pagehide handlers have run; never fabricate aborts.
+ const recordSuspended=()=>{
+  const rows=[...owners.values()].flat();
+  queueMicrotask(()=>{const aborted=rows.filter(row=>row.signal?.aborted).map(row=>row.token);if(aborted.length&&window.__gsfRecordSuspendedFetch)window.__gsfRecordSuspendedFetch(aborted).catch(()=>{});});
+ };
+ window.addEventListener('pagehide',recordSuspended);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)recordSuspended();});
  const state=top.__gsfStability||(top.__gsfStability={mutation:0,resize:0,callbacks:0,callbackMs:0});
  for(const [name,key] of [['MutationObserver','mutation'],['ResizeObserver','resize']]) {
   const Native=window[name];if(!Native)continue;
@@ -103,6 +133,49 @@ INSTRUMENT = r"""
 """
 
 _MEDIA_SETUP_FAILURE=None
+
+
+def install_request_ownership(page):
+    from collections import deque
+    from itertools import count
+    suspended=set();retired=set();recent=deque();frame_documents={};media_sequence=count()
+    def remember(kind,token):
+        target=suspended if kind=='fetch' else retired
+        if token not in target:recent.append((kind,token));target.add(token)
+        while len(recent)>512:
+            old_kind,old_token=recent.popleft()
+            (suspended if old_kind=='fetch' else retired).discard(old_token)
+    def record(_source,tokens):
+        for token in tokens:remember('fetch',token)
+    page.expose_binding('__gsfRecordSuspendedFetch',record)
+    def started(request):
+        try:
+            if request.resource_type=='fetch':
+                token=request.frame.evaluate("url=>{const row=window.__gsfFetchOwners?.get(url)?.find(row=>!row.claimed);if(!row)return null;row.claimed=true;return row.token}",request.url)
+                if token:request._gsf_fetch_owner=(token,suspended)
+            elif request.resource_type in ('media','other'):
+                token=request.frame.evaluate("url=>[...document.querySelectorAll('video')].some(v=>v.src===url||v.currentSrc===url)?window.__gsfDocumentToken:null",request.url)
+                if token:
+                    retire_changed_document(request.frame,token)
+                    identity=token+':media:'+str(next(media_sequence))
+                    request._gsf_media_owner=(identity,retired)
+                    documents=frame_documents.setdefault(request.frame,{})
+                    documents[identity]=token
+                    while len(documents)>128:documents.pop(next(iter(documents)))
+        except Exception:pass  # Missing evidence never exempts a failure.
+    def retire_changed_document(frame,current):
+        if not current:return
+        documents=frame_documents.get(frame,{})
+        for identity,document in list(documents.items()):
+            if document!=current:remember('media',identity);documents.pop(identity)
+    def navigated_frame(frame):
+        try:retire_changed_document(frame,frame.evaluate('window.__gsfDocumentToken'))
+        except Exception:pass  # A same-document URL change is not retirement.
+    def retired_frame(frame):
+        for identity in frame_documents.pop(frame,{}):remember('media',identity)
+    page.on('request',started)
+    page.on('framenavigated',navigated_frame)
+    page.on('framedetached',retired_frame)
 
 @contextmanager
 def browser_page(mobile=True):
@@ -135,6 +208,7 @@ def browser_page(mobile=True):
             from pathlib import Path
             ctx.add_init_script(Path(os.environ["GSF_DOM_DIAGNOSTICS"]).read_text())
         page = ctx.new_page()
+        install_request_ownership(page)
         page.set_default_timeout(15000)
         # Headless WebKit on the Linux runner can stop issuing rendering updates
         # (requestAnimationFrame stalls in every frame while timers, visibility and
@@ -152,8 +226,8 @@ def browser_page(mobile=True):
             if os.environ.get('GSF_DOM_DIAGNOSTICS'):print('BROWSER ERROR',message.text,flush=True)
         page.on('console',console_error)
         def request_failed(request):
-            inactive=request_surface_is_inactive(request)
             signal_aborted=request_signal_was_aborted(request)
+            inactive=request_surface_is_inactive(request)
             if request_failure_is_critical(request,inactive_surface=inactive,signal_aborted=signal_aborted,base_url=base) and not request_media_has_playable_replacement(request,base):
                 errors.append('network: '+request.url+' '+str(request.failure))
             else:print('EXPECTED REQUEST CANCELLED',request.resource_type,'inactive_surface='+str(inactive),'signal_aborted='+str(signal_aborted),flush=True)

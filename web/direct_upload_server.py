@@ -673,26 +673,32 @@ def _push_client_bytes():
     return true;
   };
 
+  let pollController=null,pollTimer=0,monitorSuspended=false;
   const pollJob=async()=>{
+    if(monitorSuspended||document.hidden||pollController)return;
+    const controller=new AbortController();pollController=controller;
     try{
-      const j=await fetch("/job/status",{cache:"no-store"}).then(r=>r.json()),status=String(j.render_status||"");
+      const j=await fetch("/job/status",{cache:"no-store",signal:controller.signal}).then(r=>r.json()),status=String(j.render_status||"");
+      if(controller.signal.aborted||monitorSuspended||document.hidden)return;
       if(status==="ready"){
         const token=String(j.completed_at||j.started_at||"ready");
         showToast("Short completato","","success",{token:"short-ready-"+token,persistent:true,onClick:()=>openShareHub()});
         if(lastRenderStatus!=="ready"){
-          if(!syncReadyResult())setTimeout(syncReadyResult,250);
+            if(!syncReadyResult())setTimeout(()=>{if(!monitorSuspended&&!document.hidden)syncReadyResult();},250);
         }
       }else if(status==="failed"){
         const token=String(j.failed_at||j.started_at||"failed");
         showToast("Creazione Short non riuscita","Il rendering si è fermato. Il progetto e la bozza restano disponibili.","error",{token:"short-failed-"+token,persistent:true});
       }
       lastRenderStatus=status;
-    }catch(e){}
+    }catch(e){}finally{if(pollController===controller)pollController=null;}
   };
-
-  setInterval(pollJob,1500);pollJob();
-  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){pollJob();subscribe(false).catch(()=>{});}});
-  window.addEventListener("pageshow",()=>{pollJob();subscribe(false).catch(()=>{});});
+  const stopMonitor=()=>{monitorSuspended=true;clearInterval(pollTimer);pollTimer=0;if(pollController)pollController.abort();pollController=null;};
+  const startMonitor=()=>{if(document.hidden)return;monitorSuspended=false;if(!pollTimer)pollTimer=setInterval(pollJob,1500);pollJob();};
+  startMonitor();
+  window.addEventListener("pagehide",stopMonitor);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){startMonitor();subscribe(false).catch(()=>{});}else stopMonitor();});
+  window.addEventListener("pageshow",()=>{startMonitor();subscribe(false).catch(()=>{});});
   document.addEventListener("click",(event)=>{const b=event.target&&event.target.closest?event.target.closest("button"):null;if(!b)return;const label=(b.innerText||b.textContent||"").toUpperCase();if(label.includes("CREA SHORT"))subscribe(false).catch(()=>{});},true);
   window.addEventListener("load",()=>subscribe(false).catch(()=>{}),{once:true});
 })();'''.encode("utf-8")

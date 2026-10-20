@@ -189,7 +189,7 @@ class ParentBundleContract(unittest.TestCase):
     def test_retired_preview_decodes_replacement_before_cancellation_is_accepted(self):
         from urllib.parse import urlsplit,parse_qs
         from types import SimpleNamespace
-        from visual.gsf_navigation_stress import MEDIA_FIXTURE,request_media_has_playable_replacement,request_surface_is_inactive,request_failure_is_critical
+        from visual.gsf_navigation_stress import MEDIA_FIXTURE,INSTRUMENT,install_request_ownership,request_media_has_playable_replacement,request_surface_is_inactive,request_failure_is_critical
         try:
             from playwright.sync_api import sync_playwright
         except ImportError:
@@ -201,6 +201,7 @@ class ParentBundleContract(unittest.TestCase):
             browser=engine.launch(**options)
             try:
                 page=browser.new_page();held=[];failed=[]
+                page.add_init_script(INSTRUMENT);install_request_ownership(page)
                 def serve(route):
                     url=urlsplit(route.request.url)
                     if url.path=='/':route.fulfill(content_type='text/html',body="<iframe src='/frame?gen=1'></iframe>")
@@ -227,12 +228,20 @@ class ParentBundleContract(unittest.TestCase):
                 self.assertTrue(failed,'Browser must cancel the actual retired media request')
                 request=failed[0]
                 self.assertTrue(request_media_has_playable_replacement(request,'http://gsf.test'),(request.url,request.resource_type,request.failure))
+                self.assertTrue(request_surface_is_inactive(request),'A reused Frame must preserve retirement of the old media document')
                 self.assertFalse(request_media_has_playable_replacement(request,'http://other.test'))
                 broken=SimpleNamespace(url=request.url,resource_type='media',failure='Connection failed')
                 self.assertFalse(request_media_has_playable_replacement(broken,'http://gsf.test'))
                 # An active source cancellation and an undecodable replacement remain errors.
                 video=page.frame_locator('iframe').locator('video')
                 video.evaluate("(v,url)=>{v.src=url;v.load()}",request.url)
+                for _ in range(100):
+                    if held:break
+                    page.wait_for_timeout(20)
+                self.assertTrue(held)
+                self.assertFalse(request_surface_is_inactive(held[-1].request),'New active media must not inherit a retired document')
+                video.evaluate("()=>history.pushState({},'',location.pathname+location.search+'#same-document')")
+                self.assertFalse(request_surface_is_inactive(held[-1].request),'pushState must not retire the current video document')
                 self.assertFalse(request_media_has_playable_replacement(request,'http://gsf.test'))
                 video.evaluate("v=>{v.src='/editor-media/current?na=3';v.load();v.removeAttribute('src');v.load()}")
                 for route in held:route.continue_()
