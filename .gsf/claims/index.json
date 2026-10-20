@@ -1338,6 +1338,7 @@
         "blocker": "PR183 Gate/main/Railway and final unmodified public verification pending; all social tasks explicitly queued until current completion",
         "final_public": "4 mobile viewports, desktop gate, 4 engines and 21 actual services E2E checks passed; zero critical runtime errors",
         "final_public_e2e": "30checksPASS;4ChromiumviewportsPASS;Alive/darkcanvas/iconsPASS; runtimeerrors[]",
+        "handoff_20261020_social_oauth": "Owner-authorized handoff of web/creator_hub_v156_component/index.html, web/direct_upload_server.py, web/nginx.conf.template to the master social/OAuth task (PR183 already LIVE).",
         "icon_original_sha256": "cd87f55b557b275da9b98f86a2973aae24459f54f3c2f706bb27f08b48f13ede",
         "icon_pr": 179,
         "icon_release": "0d876814f97fe1755f772b8900ed33dec03d3372",
@@ -1395,19 +1396,36 @@
         "web/ai_v221_component/index.html",
         "web/ai_worker_server.py",
         "web/app_icons/app-icon.png",
-        "web/creator_hub_v156_component/index.html",
-        "web/direct_upload_server.py",
         "web/game_editor_mobile_component/editor.mjs",
         "web/gsf_alive_v418.js",
         "web/gsf_bucket_bridge.py",
         "web/gsf_navigation_lifecycle.js",
         "web/gsf_perf.py",
         "web/home_v154_component/index.html",
-        "web/nginx.conf.template",
         "web/semantic_video_v114.py",
         "web/share_v156_component/index.html"
       ],
       "scope": "closed beta mobile UX bugfix pass: Hub profile scroll preferences Alive lifecycle and measured AI latency",
+      "state": "active",
+      "updated_at": "2026-10-20T15:30:00+00:00"
+    },
+    {
+      "branch": "chat/social-oauth-master-youtube-tiktok-meta-fb-ig-tw-cdbf69",
+      "created_at": "2026-10-20T14:46:04+00:00",
+      "id": "social-oauth-master-youtube-tiktok-meta-fb-ig-tw-cdbf69",
+      "owner": "chat/social-oauth-master-youtube-tiktok-meta-fb-ig-tw-cdbf69",
+      "paths": [
+        ".env.example",
+        "tests/test_social_oauth_v421.py",
+        "web/creator_hub_v156_component/index.html",
+        "web/direct_upload_server.py",
+        "web/gsf_social_oauth_v421.py",
+        "web/legal/privacy.html",
+        "web/nginx.conf.template",
+        "web/publish_multi_v413.py",
+        "web/test_v413_publish_multi.py"
+      ],
+      "scope": "social OAuth master: YouTube/TikTok/Meta FB+IG/Twitch connect, tokens, revoke, Meta deauth/data deletion, publishing",
       "state": "active"
     }
   ],
