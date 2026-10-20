@@ -1446,6 +1446,26 @@
       ],
       "scope": "social OAuth master: YouTube/TikTok/Meta FB+IG/Twitch connect, tokens, revoke, Meta deauth/data deletion, publishing",
       "state": "abandoned"
+    },
+    {
+      "branch": "chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
+      "created_at": "2026-10-20T18:20:25+00:00",
+      "id": "complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
+      "owner": "chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
+      "paths": [
+        ".env.example",
+        "PROJECT_STATUS.md",
+        "tests/test_social_oauth_v421.py",
+        "web/creator_hub_v156_component/index.html",
+        "web/direct_upload_server.py",
+        "web/gsf_social_oauth_v421.py",
+        "web/legal/privacy.html",
+        "web/nginx.conf.template",
+        "web/publish_multi_v413.py",
+        "web/test_v413_publish_multi.py"
+      ],
+      "scope": "Complete existing social OAuth Meta TikTok Twitch and signed Meta callbacks",
+      "state": "active"
     }
   ],
   "version": 1
