@@ -53,3 +53,32 @@ class SourceOwnerTests(unittest.TestCase):
   self.ns['_creator_account_save']('browserA',{'account_id':'accountA'});self.bucket.fail=True
   self.assertTrue(callable(self.ns.get('_source_owner')),'Source ownership resolver missing')
   with self.assertRaises(OSError):self.ns['_source_owner']('browserA')
+
+class TwitchDiscoveryTests(SourceOwnerTests):
+ def setUp(self):
+  super().setUp();self.ns['_twitch_access']=lambda *a,**kw:{'user_id':'creator'};self.calls=[]
+ def api(self,path,data):
+  def call(sid,endpoint,params=None):
+   self.calls.append((endpoint,params))
+   if endpoint==path:return {'data':data}
+   if endpoint=='games':return {'data':[{'id':'game1','name':'Fortnite'}]}
+   raise AssertionError(endpoint)
+  self.ns['_twitch_api']=call
+ def test_offline_is_real_empty_live_state(self):
+  self.api('streams',[]);self.assertEqual(self.ns['_twitch_content']('browserA','live')['data'],[])
+  self.assertEqual(self.calls[0][1]['user_id'],'creator')
+ def test_live_has_no_import_capability(self):
+  self.api('streams',[{'id':'stream1','user_id':'creator','title':'Ranked','game_name':'Fortnite','thumbnail_url':'https://static-cdn.jtvnw.net/live/{width}x{height}.jpg','started_at':'2026-10-20T20:00:00Z','type':'live'}])
+  row=self.ns['_twitch_content']('browserA','live')['data'][0];self.assertFalse(row['importable']);self.assertTrue(row['is_live']);self.assertIn('640x360',row['thumbnail']);self.assertTrue(row['import_reason'])
+ def test_own_clip_has_thumbnail_category_and_duration(self):
+  self.api('clips',[{'id':'clip1','broadcaster_id':'creator','title':'Win','game_id':'game1','duration':12.5,'thumbnail_url':'https://static-cdn.jtvnw.net/clip.jpg'}])
+  row=self.ns['_twitch_content']('browserA','clips')['data'][0];self.assertEqual(row['game_name'],'Fortnite');self.assertEqual(row['duration'],12.5);self.assertTrue(row['thumbnail']);self.assertTrue(row['importable']);self.assertEqual(len(row['source_id']),32)
+ def test_long_vod_has_no_media_import(self):
+  self.api('videos',[{'id':'vod1','user_id':'creator','duration':'24h2m3s','type':'highlight','title':'Long highlight'}])
+  row=self.ns['_twitch_content']('browserA','videos')['data'][0];self.assertEqual(row['duration'],86523);self.assertEqual(row['video_type'],'highlight');self.assertFalse(row['importable']);self.assertTrue(row['import_reason'])
+ def test_missing_category_is_not_api_failure(self):
+  self.api('clips',[{'id':'clip1','broadcaster_id':'creator','game_id':'game1'}]);original=self.ns['_twitch_api']
+  self.ns['_twitch_api']=lambda sid,path,params=None:(_ for _ in ()).throw(OSError()) if path=='games' else original(sid,path,params)
+  self.assertEqual(self.ns['_twitch_content']('browserA','clips')['data'][0]['game_name'],'')
+ def test_foreign_broadcaster_is_excluded(self):
+  self.api('streams',[{'id':'other','user_id':'foreign'}]);self.assertEqual(self.ns['_twitch_content']('browserA','live')['data'],[])

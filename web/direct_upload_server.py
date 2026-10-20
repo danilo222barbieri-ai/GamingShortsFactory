@@ -3006,7 +3006,7 @@ def _source_save(sid,record):
 
 
 def _twitch_api(sid,path,params=None):
-    if path not in ("clips","clips/downloads","videos"):raise ValueError("Unsupported Twitch API")
+    if path not in ("clips","clips/downloads","videos","streams","games"):raise ValueError("Unsupported Twitch API")
     token=_twitch_access(sid)
     url="https://api.twitch.tv/helix/"+path
     if params:url+="?"+urllib.parse.urlencode(params,doseq=True)
@@ -3020,18 +3020,37 @@ def _twitch_api(sid,path,params=None):
 
 
 def _twitch_content(sid,kind,after=""):
-    if kind not in ("clips","videos"):raise ValueError("Tipo di contenuto non valido")
-    token=_twitch_access(sid)
+    from web.gsf_sources_v422 import source_id,public_source
+    if kind not in ("clips","videos","live"):raise ValueError("Tipo di contenuto non valido")
+    token=_twitch_access(sid);owner=_source_owner(sid)
+    endpoint="streams" if kind=="live" else kind
     params={"broadcaster_id" if kind=="clips" else "user_id":token["user_id"],"first":20}
     if after:
         if len(after)>512:raise ValueError("Pagina non valida")
         params["after"]=after
-    payload=_twitch_api(sid,kind,params)
+    payload=_twitch_api(sid,endpoint,params)
+    owned=[row for row in payload.get("data",[]) if isinstance(row,dict) and str(row.get("broadcaster_id" if kind=="clips" else "user_id") or "")==token["user_id"]]
+    games={}
+    game_ids=sorted({str(row.get("game_id")) for row in owned if row.get("game_id")})
+    if game_ids and kind=="clips":
+        try:games={str(row.get("id")):str(row.get("name") or "") for row in _twitch_api(sid,"games",{"id":game_ids}).get("data",[]) if isinstance(row,dict)}
+        except Exception:pass  # Optional labels never break the actual media listing.
     rows=[]
-    for row in payload.get("data",[]):
-        if str(row.get("broadcaster_id" if kind=="clips" else "user_id") or "")!=token["user_id"]:continue
-        rows.append({"id":str(row.get("id") or ""),"title":str(row.get("title") or "")[:200],"duration":row.get("duration"),"url":str(row.get("url") or ""),"created_at":str(row.get("created_at") or ""),"importable":kind=="clips","import_reason":"" if kind=="clips" else "Le API ufficiali Twitch espongono i metadati VOD, non il file video da importare."})
+    source_kind={"clips":"twitch_clip","videos":"twitch_vod","live":"twitch_live"}[kind]
+    for row in owned:
+        external=str(row.get("id") or "")
+        if not external:continue
+        identity=source_id(owner,source_kind,token["user_id"],external)
+        thumb=str(row.get("thumbnail_url") or "").replace("%{width}","640").replace("%{height}","360").replace("{width}","640").replace("{height}","360")
+        url=str(row.get("url") or "")
+        if kind=="live" and re.fullmatch(r"[A-Za-z0-9_]{1,30}",str(row.get("user_login") or "")):url="https://www.twitch.tv/"+row["user_login"]
+        record={"id":identity,"kind":source_kind,"provider":"twitch","external_id":external,"title":str(row.get("title") or "")[:200],"thumbnail":thumb,"game_name":row.get("game_name") if kind=="live" else games.get(str(row.get("game_id")),""),"created_at":row.get("created_at"),"started_at":row.get("started_at"),"duration":row.get("duration"),"url":url,"status":"discovered","is_live":kind=="live"}
+        item=public_source(record)
+        # Keep the existing content API's external ID contract for old Hub clients.
+        item.update(id=external,source_id=identity,importable=kind=="clips",video_type=str(row.get("type") or "") if kind=="videos" else "")
+        rows.append(item)
     return {"data":rows,"cursor":str((payload.get("pagination") or {}).get("cursor") or ""),"type":kind}
+
 
 
 def _twitch_clip_source(sid,clip_id):
