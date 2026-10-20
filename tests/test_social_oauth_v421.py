@@ -227,7 +227,7 @@ class MetaOAuth(unittest.TestCase):
 class TikTokOAuth(unittest.TestCase):
     # Inherit storage/session cases too: providers share the same GSF boundary.
     def setUp(self):
-        MetaOAuth.setUp(self);self.ns.update(TIKTOK_CLIENT_KEY='tt-key',TIKTOK_CLIENT_SECRET='tt-secret',TIKTOK_REDIRECT_URI='https://gsf.test/auth/tiktok/callback',TIKTOK_SCOPE='user.info.basic,video.publish,video.list')
+        MetaOAuth.setUp(self);self.ns.update(TIKTOK_CLIENT_KEY='tt-key',TIKTOK_CLIENT_SECRET='tt-secret',TIKTOK_REDIRECT_URI='https://gsf.test/auth/tiktok/callback',TIKTOK_SCOPE='user.info.basic,video.publish')
     def test_tiktok_start_uses_dedicated_callback_and_exact_session_state(self):
         reply=Reply();self.ns['_tiktok_oauth_start'](reply,'browserA');q=urllib.parse.parse_qs(urllib.parse.urlsplit(reply.response['Location']).query)
         self.assertEqual(q['redirect_uri'],['https://gsf.test/auth/tiktok/callback']);self.assertIn('video.publish',q['scope'][0]);self.assertNotIn('video.upload',q['scope'][0])
@@ -241,7 +241,7 @@ class TikTokOAuth(unittest.TestCase):
         calls=[]
         def official(url,**kwargs):
             calls.append((url,kwargs))
-            if '/oauth/token/' in url:return {'access_token':'tt-access','refresh_token':'tt-refresh','open_id':'owner','scope':'user.info.basic,video.publish,video.list','expires_in':3600}
+            if '/oauth/token/' in url:return {'access_token':'tt-access','refresh_token':'tt-refresh','open_id':'owner','scope':'user.info.basic,video.publish','expires_in':3600}
             if '/user/info/' in url:return {'data':{'user':{'open_id':'owner','display_name':'Creator'}}}
             if '/oauth/revoke/' in url:return {}
             raise AssertionError('Unexpected provider endpoint')
