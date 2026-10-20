@@ -384,6 +384,9 @@ def _write_json_atomic(path,payload):
     tmp=Path(str(path)+".tmp")
     tmp.write_text(json.dumps(payload,ensure_ascii=False),encoding="utf-8")
     os.replace(tmp,path)
+    if Path(path).name==".direct_upload_ready.json":
+        try:_source_register_marker(Path(path).parent.parent.name,payload)
+        except Exception as exc:print("GSF_SOURCE_CATALOG_REGISTER_WARN",type(exc).__name__,flush=True)
 
 def _safe_id(value):
     value=str(value or "")
@@ -679,7 +682,27 @@ def _push_client_bytes():
       const onClick=target&&UI.GSFNavigation?()=>UI.GSFNavigation.navigate({target}):null;
       aliveJobs.add(job);upsert('alive:'+job,{title:String(state.message||'GSF'),body:'',kind,progress:kind==='working'?state.progress:1,onClick,actionLabel:kind==='error'?'Riapri':'Apri'});return true;
     };
-    const service={continuityVersion:1,show,upsert,alive,handles:job=>aliveJobs.has(job),update:(id,patch)=>records.has(String(id))?upsert(id,patch):false,dismiss,attachDocument,layout,confirm:(title,body,opts={})=>upsert(opts.id||'confirm:'+String(++serial),{...opts,title,body,kind:'confirm'})};
+    const sourceJobs=new Map();
+    const trackSource=job=>{
+      const id=String(job?.upload_id||'');if(!/^[A-Za-z0-9_-]{1,80}$/.test(id))return Promise.resolve({error:'Importazione non valida.'});
+      if(sourceJobs.has(id))return sourceJobs.get(id).promise;
+      if(sourceJobs.size>=2)return Promise.resolve({error:'Attendi il completamento dell’importazione corrente.'});
+      let finish;const promise=new Promise(resolve=>finish=resolve);
+      sourceJobs.set(id,{id,promise,finish,started:Date.now()});aliveJobs.add('upload');upsert('alive:upload',{title:'Importazione gameplay',body:'Puoi continuare a navigare.',kind:'working',onClick:null});return promise;
+    };
+    const pollSources=async signal=>{
+      for(const job of sourceJobs.values()){
+        let status={};const timedOut=Date.now()-job.started>600000;
+        if(!timedOut)try{const response=await UI.fetch('/direct-upload/bucket/status?upload_id='+encodeURIComponent(job.id),{cache:'no-store',credentials:'same-origin',signal});if(!response.ok)continue;status=await response.json()}catch(_e){continue}
+        if(signal.aborted)return;
+        if(!status.ready&&!status.error&&!timedOut)continue;
+        sourceJobs.delete(job.id);uploadActive=false;
+        const kind=status.ready?'success':status.error?'error':'warning';
+        upsert('alive:upload',{title:status.ready?'Gameplay importato':status.error?'Importazione non riuscita':'Importazione da verificare',body:status.ready?'Disponibile nella Libreria.':'Il progetto precedente resta disponibile.',kind,progress:status.ready?1:null,onClick:UI.GSFNavigation?()=>UI.GSFNavigation.navigate({target:'hub',section:'live'}):null,actionLabel:'Apri Libreria'});
+        job.finish(status.ready?status:{error:status.error?'Importazione non riuscita.':'Verifica lo stato nella Libreria prima di riprovare.'});
+      }
+    };
+    const service={continuityVersion:1,show,upsert,alive,trackSource,pollSources,handles:job=>aliveJobs.has(job),update:(id,patch)=>records.has(String(id))?upsert(id,patch):false,dismiss,attachDocument,layout,confirm:(title,body,opts={})=>upsert(opts.id||'confirm:'+String(++serial),{...opts,title,body,kind:'confirm'})};
     UI.addEventListener('message',event=>{if(event.origin===UI.location.origin&&event.data?.type==='GSF_GAME_EDITOR_UI')layout()});
     UI.addEventListener('resize',layout,{passive:true});UI.visualViewport?.addEventListener('resize',layout,{passive:true});UI.visualViewport?.addEventListener('scroll',layout,{passive:true});
     UI.addEventListener('gsf:surfacechange',()=>{layout();for(const r of records.values())if(r.data.route&&r.data.kind!=='working'&&r.data.route!==UI.GSFNavigation?.snapshot().target)dismiss(r.id)});
@@ -689,6 +712,7 @@ def _push_client_bytes():
   };
   window.GSFPush={enable:()=>subscribe(true),disable,status,ensure:()=>subscribe(false).catch(()=>false)};
   window.GSFNotify=installNotify();
+  if(window!==UI)return; // Embedded surfaces share the parent monitor, not another polling loop.
   const showToast=(title,body,kind='success',opts={})=>window.GSFNotify.show(title,body,kind,opts);
 
   let uploadActive=false,uploadCycle=0,uploadDoneCycle=0,lastRenderStatus="";
@@ -717,7 +741,10 @@ def _push_client_bytes():
   const pollJob=async()=>{
     if(monitorSuspended||document.hidden||pollController)return;
     const controller=new AbortController();pollController=controller;
+    const deadline=setTimeout(()=>controller.abort(),12000);
     try{
+      await window.GSFNotify.pollSources(controller.signal);
+      if(controller.signal.aborted)return;
       const j=await fetch("/job/status",{cache:"no-store",signal:controller.signal}).then(r=>r.json()),status=String(j.render_status||"");
       if(controller.signal.aborted||monitorSuspended||document.hidden)return;
       if(status==="ready"){
@@ -731,7 +758,7 @@ def _push_client_bytes():
         if(!window.GSFNotify.handles("render"))showToast("Creazione Short non riuscita","Il rendering si è fermato. Il progetto e la bozza restano disponibili.","error",{token:"short-failed-"+token,persistent:true});
       }
       lastRenderStatus=status;
-    }catch(e){}finally{if(pollController===controller)pollController=null;}
+    }catch(e){}finally{clearTimeout(deadline);if(pollController===controller)pollController=null;}
   };
   const stopMonitor=()=>{monitorSuspended=true;clearInterval(pollTimer);pollTimer=0;if(pollController)pollController.abort();pollController=null;};
   const startMonitor=()=>{if(document.hidden)return;monitorSuspended=false;if(!pollTimer)pollTimer=setInterval(pollJob,1500);pollJob();};
@@ -823,7 +850,7 @@ def _trigger_prescan(payload):
         )
         print(f"GSF worker prescan warning: {str(exc)[:180]}",flush=True)
 
-def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,total,analysis_key):
+def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,total,analysis_key,before_publish=None,source_id=""):
     _materialize_t0=time.perf_counter()
     perf_event(
         "materialize_start",
@@ -852,7 +879,9 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
         _security_validate_media(tmp,ext)
         os.replace(tmp,final)
         marker=media/".direct_upload_ready.json"
+        if before_publish:before_publish()
         _write_json_atomic(marker,{
+            **({"source_id":source_id} if source_id else {}),
             "path":str(final),
             "name":original_name,
             "size":total,
@@ -3038,6 +3067,78 @@ def _source_save(sid,record):
     return _source_catalog(sid).save(record)
 
 
+def _source_checked(record):
+    row=dict(record)
+    if row.get('status')=='importing' and time.time()-float(row.get('import_started_at') or 0)>600:row['status']='failed'
+    if row.get('status')!='ready':return row
+    sid=_safe_id(row.get('origin_sid'));upload=_safe_id(row.get('upload_id'))
+    key=str(row.get('bucket_key') or '')
+    if not sid or not upload or not key.startswith('uploads/'+sid+'/'+upload+'/'):
+        row['status']='unavailable';return row
+    try:
+        info=_s3().head_object(Bucket=S3_BUCKET,Key=key)
+        if int(info.get('ContentLength',0))!=int(row.get('size',0)) or int(row.get('size',0))<=0:row['status']='unavailable'
+    except Exception as exc:
+        code=str(getattr(exc,'response',{}).get('Error',{}).get('Code',''))
+        if isinstance(exc,FileNotFoundError) or code in ('NoSuchKey','404','NotFound'):row['status']='unavailable'
+        else:raise
+    return row
+
+
+def _source_list(sid,provider='upload',folder='imported',after=''):
+    from web.gsf_sources_v422 import public_source
+    if provider not in ('upload','twitch','youtube') or folder!='imported':raise ValueError('Invalid source folder')
+    catalog=_source_catalog(sid);result=catalog.list(provider,folder,after)
+    result['data']=[public_source(_source_checked(catalog.load(row['id']))) for row in result['data']]
+    return result
+
+
+def _source_activate(sid,identity,target='ai'):
+    if target not in ('ai','editor'):raise ValueError('Invalid source target')
+    catalog=_source_catalog(sid);row=catalog.load(identity)
+    if not row:raise LookupError('Sorgente non disponibile per questo account')
+    row=_source_checked(row)
+    if row.get('status')!='ready' or row.get('kind') not in ('local_upload','twitch_clip'):raise LookupError('Il video non è disponibile')
+    owner=catalog.owner;media=ROOT/'sessions'/_safe_id(sid)/'media';media.mkdir(parents=True,exist_ok=True)
+    marker=media/'.direct_upload_ready.json';fence=marker.read_bytes() if marker.exists() else None
+    def guard():
+        if _source_owner(sid)!=owner:raise PermissionError('Account sorgente cambiato')
+        if (marker.read_bytes() if marker.exists() else None)!=fence:raise RuntimeError('Il progetto corrente è cambiato')
+    path=Path(str(row.get('local_path') or ''))
+    local=path.is_file() and path.resolve().is_relative_to(media.resolve()) and path.stat().st_size==int(row['size'])
+    upload_id=str(row['upload_id'])
+    if local:
+        guard()
+        _write_json_atomic(marker,{'path':str(path),'name':str(row.get('title') or path.name),'size':row['size'],'upload_id':upload_id,'source_id':identity,'completed_at':time.time(),'storage':'railway_bucket','bucket_key':row['bucket_key'],'analysis_key':row.get('analysis_key','')})
+        return {'ready':True,'reused':True,'upload_id':upload_id,'source_id':identity,'target':target}
+    # Cold replicas use exactly the upload materializer and ready marker consumed by AI/Editor.
+    name,stem,ext=_safe_filename(Path(row['bucket_key']).name)
+    threading.Thread(target=_materialize_bucket_object,args=(sid,upload_id,row['bucket_key'],name,stem,ext,int(row['size']),row.get('analysis_key','')),kwargs={'before_publish':guard,'source_id':identity},name='gsf-source-restore',daemon=True).start()
+    return {'preparing':True,'reused':True,'upload_id':upload_id,'source_id':identity,'target':target}
+
+
+def _source_capture_upload(sid,upload_id):
+    sid=_safe_id(sid);upload_id=_safe_id(upload_id)
+    if not sid or not upload_id:raise ValueError('Invalid upload provenance')
+    key='source-upload-owners/'+sid+'/'+upload_id+'.json'
+    previous=_oauth_object_read(key)
+    if previous:return previous
+    receipt={'owner_id':_source_owner(sid),'sid':sid,'upload_id':upload_id}
+    _oauth_object_save(key,receipt);return receipt
+
+
+def _source_register_marker(sid,marker):
+    from web.gsf_sources_v422 import source_id
+    if marker.get('source_id'):return
+    sid=_safe_id(sid);upload=_safe_id(marker.get('upload_id'))
+    if not sid or not upload:return
+    receipt=_oauth_object_read('source-upload-owners/'+sid+'/'+upload+'.json')
+    owner=_source_owner(sid)
+    if receipt.get('owner_id')!=owner or receipt.get('sid')!=sid or receipt.get('upload_id')!=upload:return
+    row={'id':source_id(owner,'local_upload','',upload),'owner_id':owner,'kind':'local_upload','provider':'upload','provider_user_id':'','external_id':upload,'upload_id':upload,'origin_sid':sid,'title':str(marker.get('name') or 'Gameplay'),'status':'ready','bucket_key':marker.get('bucket_key',''),'analysis_key':marker.get('analysis_key',''),'size':marker.get('size',0),'local_path':marker.get('path','')}
+    if _source_checked(row).get('status')=='ready':_source_save(sid,row)
+
+
 def _twitch_api(sid,path,params=None):
     if path not in ("clips","clips/downloads","videos","streams","games"):raise ValueError("Unsupported Twitch API")
     token=_twitch_access(sid)
@@ -3078,10 +3179,18 @@ def _twitch_content(sid,kind,after=""):
         url=str(row.get("url") or "")
         if kind=="live" and re.fullmatch(r"[A-Za-z0-9_]{1,30}",str(row.get("user_login") or "")):url="https://www.twitch.tv/"+row["user_login"]
         record={"id":identity,"kind":source_kind,"provider":"twitch","external_id":external,"title":str(row.get("title") or "")[:200],"thumbnail":thumb,"game_name":row.get("game_name") if kind=="live" else games.get(str(row.get("game_id")),""),"created_at":row.get("created_at"),"started_at":row.get("started_at"),"duration":row.get("duration"),"url":url,"status":"discovered","is_live":kind=="live"}
+        previous=_source_load(sid,identity)
+        original_receipt=dict(previous)
+        if previous:
+            previous=_source_checked(previous)
+            record={**record,**{key:previous[key] for key in ('status','bucket_key','analysis_key','upload_id','origin_sid','size','local_path','import_started_at','completed_at') if key in previous}}
+        try:_source_catalog(sid).save_if_unchanged({**record,'owner_id':owner,'provider_user_id':token['user_id']},original_receipt)
+        except ValueError:record=_source_load(sid,identity) or record
         item=public_source(record)
         # Keep the existing content API's external ID contract for old Hub clients.
-        item.update(id=external,source_id=identity,importable=kind=="clips",video_type=str(row.get("type") or "") if kind=="videos" else "")
+        item.update(id=external,source_id=identity,importable=item["can_import"],video_type=str(row.get("type") or "") if kind=="videos" else "")
         rows.append(item)
+    if _source_owner(sid)!=owner:raise PermissionError("Source account changed")
     return {"data":rows,"cursor":str((payload.get("pagination") or {}).get("cursor") or ""),"type":kind}
 
 
@@ -3097,18 +3206,27 @@ def _twitch_clip_source(sid,clip_id):
     found=next((row for row in urls if row.get("clip_id")==clip_id),{})
     url=str(found.get("landscape_download_url") or found.get("portrait_download_url") or "")
     if not url:raise LookupError("Twitch non rende disponibile il file di questa clip")
-    return {"url":url,"clip_id":clip_id,"owner_id":_storage_owner_id(sid),"twitch_user_id":token["user_id"]}
+    from web.gsf_sources_v422 import twitch_url,duration_seconds
+    return {"url":url,"clip_id":clip_id,"owner_id":_storage_owner_id(sid),"catalog_owner":_source_owner(sid),"twitch_user_id":token["user_id"],"metadata":{"title":str(clip.get("title") or "Clip Twitch")[:300],"thumbnail":twitch_url(clip.get("thumbnail_url"),True),"duration":duration_seconds(clip.get("duration")),"created_at":str(clip.get("created_at") or ""),"url":twitch_url(clip.get("url"))}}
 
 
 def _twitch_import_start(sid,clip_id):
     lock=_state_lock("twitch-import",sid)
     if not lock.acquire(blocking=False):raise ValueError("Un'importazione Twitch è già in corso.")
     try:
+        from web.gsf_sources_v422 import source_id
+        owner=_source_owner(sid);token=_twitch_access(sid)
+        identity=source_id(owner,'twitch_clip',token['user_id'],clip_id)
+        previous=_source_load(sid,identity)
+        if previous.get('status')=='importing' and _source_checked(previous).get('status')=='importing':raise ValueError('Importazione già in corso per questa clip.')
+        if previous and _source_checked(previous).get('status')=='ready':
+            result=_source_activate(sid,identity,'ai');lock.release();return result
         source=_twitch_clip_source(sid,clip_id)
         media=ROOT/"sessions"/_safe_id(sid)/"media";media.mkdir(parents=True,exist_ok=True)
         marker=media/".direct_upload_ready.json"
         fence=marker.read_bytes() if marker.exists() else None
         upload_id=uuid.uuid4().hex[:20]
+        _source_catalog(sid).save_if_unchanged({**source.get('metadata',{}),'id':identity,'owner_id':owner,'kind':'twitch_clip','provider':'twitch','provider_user_id':token['user_id'],'external_id':clip_id,'status':'importing','upload_id':upload_id,'origin_sid':sid,'import_started_at':time.time()},previous)
         threading.Thread(target=_twitch_import_run,args=(sid,upload_id,source,fence,lock),name="gsf-twitch-import",daemon=True).start()
         return {"upload_id":upload_id,"preparing":True}
     except Exception:
@@ -3128,10 +3246,33 @@ def _twitch_import_run(sid,upload_id,source,fence,lock):
         if str(token.get("user_id") or "")!=source["twitch_user_id"] or _storage_owner_id(sid)!=source["owner_id"]:raise RuntimeError("Import owner changed")
         marker=media/".direct_upload_ready.json"
         if (marker.read_bytes() if marker.exists() else None)!=fence:raise RuntimeError("Another upload replaced the source")
+        from web.gsf_sources_v422 import source_id
+        owner=source['catalog_owner']
+        if _source_owner(sid)!=owner:raise RuntimeError("Import catalog owner changed")
+        identity=source_id(owner,'twitch_clip',source['twitch_user_id'],source['clip_id'])
+        for attempt in range(3):
+            previous=_source_load(sid,identity)
+            if previous and previous.get('upload_id')!=upload_id:raise RuntimeError('Import superseded')
+            if _source_owner(sid)!=owner:raise RuntimeError('Import catalog owner changed')
+            ready={**source.get('metadata',{}),**previous,'id':identity,'owner_id':owner,'kind':'twitch_clip','provider':'twitch','provider_user_id':source['twitch_user_id'],'external_id':source['clip_id'],'status':'ready','upload_id':upload_id,'origin_sid':sid,'local_path':str(final),'size':size,'completed_at':time.time(),**persisted}
+            try:
+                _source_catalog(sid).save_if_unchanged(ready,previous)
+                break
+            except ValueError:
+                if attempt==2:raise RuntimeError('Import receipt changed repeatedly') from None
+
+        if (marker.read_bytes() if marker.exists() else None)!=fence or _source_owner(sid)!=owner:raise RuntimeError("Import project changed")
         # Same marker and persistence helper used by upload: existing AI/Editor pipeline owns the rest.
-        _write_json_atomic(marker,{"path":str(final),"name":name,"size":size,"upload_id":upload_id,"completed_at":time.time(),"storage":"direct_fallback_bucket",**persisted})
+        _write_json_atomic(marker,{"source_id":identity,"path":str(final),"name":name,"size":size,"upload_id":upload_id,"completed_at":time.time(),"storage":"direct_fallback_bucket",**persisted})
     except Exception:
         pending.unlink(missing_ok=True);final.unlink(missing_ok=True)
+        try:
+            from web.gsf_sources_v422 import SourceCatalog,source_id
+            catalog=SourceCatalog(_s3(),S3_BUCKET,source['catalog_owner'])
+            identity=source_id(catalog.owner,'twitch_clip',source['twitch_user_id'],source['clip_id'])
+            failed=catalog.load(identity)
+            if failed.get('status')=='importing' and failed.get('upload_id')==upload_id:catalog.save_if_unchanged({**failed,'status':'failed'},failed)
+        except Exception as exc:print("GSF_SOURCE_IMPORT_RECEIPT_WARN",type(exc).__name__,flush=True)
         _write_json_atomic(media/".direct_upload_error.json",{"upload_id":upload_id,"error":"Importazione Twitch non riuscita. Il progetto precedente è conservato."})
     finally:lock.release()
 
@@ -5084,6 +5225,14 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 _json(self,404,{"ok":False,"error":"Avatar non disponibile"})
             return
+        if clean=="/creator-hub/sources":
+            sid=_social_sid(self)
+            if not sid:_json(self,400,{"ok":False,"error":"Sessione browser non valida."});return
+            query=parse_qs(path.query)
+            try:_json(self,200,{"ok":True,**_source_list(sid,str(query.get('provider',['upload'])[0]),'imported',str(query.get('after',[''])[0]))})
+            except ValueError:_json(self,400,{"ok":False,"error":"Cartella sorgenti non valida."})
+            except Exception:_json(self,503,{"ok":False,"error":"Libreria temporaneamente non disponibile."})
+            return
         if clean=="/creator-hub/state":
             sid=_social_sid(self)
             if not sid:
@@ -5290,6 +5439,15 @@ class Handler(BaseHTTPRequestHandler):
             _json(self,400,{"ok":False,"error":"invalid session"})
             return
 
+        if path=="/creator-hub/sources/activate":
+            if not _security_csrf_valid(self,sid):_json(self,403,{"ok":False,"error":"csrf validation failed"});return
+            try:
+                data=_read_json(self,max_bytes=16384)
+                _json(self,200,{"ok":True,**_source_activate(sid,str(data.get('source_id') or ''),str(data.get('target') or 'ai'))})
+            except (LookupError,PermissionError):_json(self,404,{"ok":False,"error":"Sorgente non disponibile per questo account."})
+            except ValueError:_json(self,400,{"ok":False,"error":"Richiesta sorgente non valida."})
+            except Exception:_json(self,503,{"ok":False,"error":"Impossibile aprire la sorgente. Il progetto precedente è conservato."})
+            return
         if path=="/social-connect/twitch/import":
             if not _security_csrf_valid(self,sid):_json(self,403,{"ok":False,"error":"csrf validation failed"});return
             try:
@@ -5737,6 +5895,8 @@ class Handler(BaseHTTPRequestHandler):
                 if total<=0 or total>MAX_FILE_BYTES:
                     raise ValueError("file size not allowed")
                 upload_id=uuid.uuid4().hex[:20]
+                try:_source_capture_upload(sid,upload_id)
+                except Exception as exc:print("GSF_SOURCE_PROVENANCE_WARN",type(exc).__name__,flush=True)
                 key=f"uploads/{sid}/{upload_id}/{safe_stem}{ext}"
                 analysis_key=f"analysis/{sid}/{upload_id}/v52-keyframe-turbo.json"
                 created=_s3().create_multipart_upload(
@@ -5904,6 +6064,8 @@ class Handler(BaseHTTPRequestHandler):
                         _json(self,409,{"ok":False,"error":"upload metadata changed"})
                         return
                 else:
+                    try:_source_capture_upload(sid,upload_id)
+                    except Exception as exc:print("GSF_SOURCE_PROVENANCE_WARN",type(exc).__name__,flush=True)
                     state={
                         "total":total,
                         "count":count,

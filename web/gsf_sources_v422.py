@@ -55,16 +55,36 @@ class SourceCatalog:
         row=json.loads(raw)
         if not isinstance(row,dict) or row.get('owner_id')!=self.owner or row.get('id')!=identity:raise ValueError('Invalid source record')
         return row
-    def save(self,record):
+    def save(self,record,conditions=None):
         row=dict(record)
         if row.get('owner_id',self.owner)!=self.owner:raise ValueError('Invalid source owner')
         expected=source_id(self.owner,row.get('kind'),row.get('provider_user_id',''),row.get('external_id'))
         if row.get('id',expected)!=expected or row.get('status','discovered') not in STATES:raise ValueError('Invalid source record')
         # OAuth credentials and temporary media URLs never belong to the catalog.
-        allowed=('kind','provider','provider_user_id','external_id','title','thumbnail','game_name','created_at','started_at','duration','status','is_live','bucket_key','analysis_key','upload_id','origin_sid','size','local_path','import_started_at','completed_at','intent')
+        allowed=('kind','provider','provider_user_id','external_id','title','thumbnail','url','game_name','created_at','started_at','duration','status','is_live','bucket_key','analysis_key','upload_id','origin_sid','size','local_path','import_started_at','completed_at','intent')
         row={key:row[key] for key in allowed if key in row};row.update(id=expected,owner_id=self.owner,schema=1)
-        self.client.put_object(Bucket=self.bucket,Key=self.key(expected),Body=json.dumps(row).encode(),ContentType='application/json',CacheControl='no-store')
+        self.client.put_object(Bucket=self.bucket,Key=self.key(expected),Body=json.dumps(row).encode(),ContentType='application/json',CacheControl='no-store',**(conditions or {}))
         return row
+    def save_if_unchanged(self,record,previous):
+        # Conditional S3 writes serialize the same source across browser sessions/replicas.
+        try:response=self.client.get_object(Bucket=self.bucket,Key=self.key(record['id']))
+        except Exception as exc:
+            code=str(getattr(exc,'response',{}).get('Error',{}).get('Code',''))
+            if not isinstance(exc,FileNotFoundError) and code not in ('NoSuchKey','404','NotFound'):raise
+            if previous:raise ValueError('Source changed; reload the library')
+            conditions={'IfNoneMatch':'*'}
+        else:
+            current=json.loads(response['Body'].read())
+            if current!=previous:raise ValueError('Source import already changed')
+            etag=response.get('ETag')
+            if not etag:raise RuntimeError('Conditional source storage unavailable')
+            conditions={'IfMatch':etag}
+        try:return self.save(record,conditions)
+        except Exception as exc:
+            code=str(getattr(exc,'response',{}).get('Error',{}).get('Code',''))
+            if code in ('PreconditionFailed','ConditionalRequestConflict','412','409'):raise ValueError('Source import already in progress') from None
+            raise
+
     def list(self,provider='upload',folder='imported',after=''):
         args={'Bucket':self.bucket,'Prefix':self.prefix,'MaxKeys':21}
         if after:args['StartAfter']=self.key(after)

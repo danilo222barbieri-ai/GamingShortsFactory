@@ -42,6 +42,18 @@ class NotificationContinuity(unittest.TestCase):
   self.assertIn('un momento',self.page.locator('.gsf-site-toast').inner_text())
   self.assertEqual(self.page.locator('.gsf-site-toast').get_attribute('data-kind'),'success')
   self.assertFalse(self.errors,self.errors)
+ def test_source_process_uses_shared_monitor_and_completes_in_place(self):
+  self.page.route('**/direct-upload/bucket/status?*',lambda r:r.fulfill(json={'ok':True,'ready':True}))
+  self.page.evaluate("()=>{window.sourceDone=false;GSFNotify.trackSource({upload_id:'clipimport1'}).then(()=>sourceDone=true);window.trackedNotice=document.querySelector('.gsf-site-toast')}")
+  self.page.wait_for_function('sourceDone',timeout=4000)
+  self.assertTrue(self.page.evaluate("trackedNotice===document.querySelector('.gsf-site-toast')"))
+  self.assertEqual(self.page.locator('.gsf-site-toast').get_attribute('data-kind'),'success')
+ def test_source_monitor_timeout_also_cleans_up_network_failures(self):
+  self.page.route('**/direct-upload/bucket/status?*',lambda r:r.fulfill(status=503,json={'error':'outage'}))
+  self.page.clock.install();self.page.evaluate("()=>{window.expiredSource=false;GSFNotify.trackSource({upload_id:'offlineimport'}).then(()=>expiredSource=true)}")
+  self.page.clock.fast_forward(601000)
+  self.page.wait_for_function('expiredSource',timeout=4000)
+  self.assertEqual(self.page.locator('.gsf-site-toast').get_attribute('data-kind'),'warning')
  def test_legacy_show_deduplicates_same_operation(self):
   self.page.evaluate("()=>{GSFNotify.show('Analisi','Avvio','working',{id:'same'});GSFNotify.show('Analisi','Avvio','working',{id:'same'})}")
   self.assertEqual(self.page.locator('.gsf-site-toast').count(),1)
@@ -75,8 +87,11 @@ class NotificationContinuity(unittest.TestCase):
  def test_child_frame_reuses_parent_notification_service(self):
   self.page.evaluate("()=>{const f=document.createElement('iframe');f.id='child';f.srcdoc='<html><body></body></html>';document.body.append(f)}")
   frame=self.page.frame_locator('#child');frame.locator('body').wait_for(state='attached')
+  self.page.frames[1].evaluate("()=>{window.childJobPolls=0;const original=fetch;window.fetch=(url,opts)=>{if(String(url)==='/job/status')childJobPolls++;return original(url,opts)}}")
   self.page.frames[1].evaluate(push_code())
   self.assertTrue(self.page.evaluate("document.querySelector('#child').contentWindow.GSFNotify===GSFNotify"))
+  self.page.wait_for_timeout(100)
+  self.assertEqual(self.page.frames[1].evaluate('childJobPolls'),0,'Only the parent owns the process monitor')
  def test_reduced_motion_has_no_notification_animation(self):
   self.page.emulate_media(reduced_motion='reduce');self.page.evaluate("GSFNotify.show('Salvato','Progetto pronto','success')")
   result=self.page.locator('.gsf-site-toast').evaluate("e=>({transition:getComputedStyle(e).transitionDuration,animation:getComputedStyle(e.querySelector('.gsf-site-toast-bar')).animationName})")
@@ -102,4 +117,45 @@ class ColdSurfaceGeometry(unittest.TestCase):
     page.evaluate("GSFNavigation.navigate({target:'ai'})");page.locator('#gsf-ai-overlay-v221 iframe').wait_for(state='visible')
     rect=page.locator('#gsf-ai-overlay-v221 iframe').bounding_box();self.assertGreaterEqual(rect['width'],388);self.assertGreater(rect['height'],500)
     self.assertEqual(page.evaluate('document.documentElement.scrollWidth'),390)
+   finally:browser.close()
+
+@unittest.skipUnless(os.environ.get('GSF_BROWSER'),'Runs in actual browser gate')
+class PlayerContinuity(unittest.TestCase):
+ def test_fullscreen_transition_keeps_real_video_and_playback(self):
+  from playwright.sync_api import sync_playwright
+  from visual.gsf_navigation_stress import MEDIA_FIXTURE
+  from urllib.parse import urlsplit
+  with sync_playwright() as p:
+   engine=getattr(p,os.environ['GSF_BROWSER']);options={'headless':True}
+   if engine.name=='chromium':options.update(executable_path=shutil.which('chromium'),args=['--no-sandbox'])
+   browser=engine.launch(**options)
+   try:
+    page=browser.new_page(viewport={'width':390,'height':844});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+    def route(r):
+     path=urlsplit(r.request.url).path
+     if path=='/clip.mp4':r.fulfill(content_type='video/mp4',body=MEDIA_FIXTURE)
+     else:
+      file=ROOT/'web/game_editor_mobile_component'/('index.html' if path=='/' else path.lstrip('/'))
+      if file.is_file():r.fulfill(content_type='text/css' if file.suffix=='.css' else 'text/javascript' if file.suffix=='.mjs' else 'text/html',body=file.read_text())
+      else:r.fulfill(status=404,body='')
+    page.route('**/*',route);page.goto('http://gsf.test/')
+    page.wait_for_function('window.GSFGameEditor2026')
+    page.evaluate("()=>{window.originalVideo=document.querySelector('video');document.querySelector('#gameEditorApp').requestFullscreen=()=>Promise.reject(new Error('iOS fallback'));window.postMessage({type:'GSF_GAME_EDITOR_INIT',media:{url:'/clip.mp4',duration:2}},location.origin)}")
+    page.wait_for_function('document.querySelector("video").readyState>=2')
+    page.locator('#playButton').click();page.wait_for_function('document.querySelector("video").currentTime>.1')
+    page.locator('video').evaluate("v=>{Object.defineProperty(v,'readyState',{value:1,configurable:true});v.dispatchEvent(new Event('waiting'))}")
+    page.locator('.player-buffering').wait_for(state='visible',timeout=2000)
+    page.locator('video').evaluate("v=>{delete v.readyState;v.dispatchEvent(new Event('playing'))}")
+    page.locator('.player-buffering').wait_for(state='hidden')
+    before=page.locator('video').evaluate('v=>v.currentTime')
+    page.locator('#enterEditorButton').click()
+    self.assertTrue(page.evaluate('originalVideo===document.querySelector("video")'))
+    self.assertGreaterEqual(page.locator('video').evaluate('v=>v.currentTime'),before)
+    self.assertFalse(page.locator('video').evaluate('v=>v.paused'))
+    self.assertTrue(page.locator('#previewStage').evaluate("e=>e.getAnimations().some(a=>a.effect.getKeyframes().some(k=>k.transform&&k.transform!=='none'))"),'The existing player should transition with transform')
+    page.wait_for_timeout(280);page.locator('#fullscreenButton').click()
+    self.assertTrue(page.evaluate('originalVideo===document.querySelector("video")'))
+    self.assertEqual(page.locator('video').count(),1);self.assertFalse(errors,errors)
+    page.wait_for_timeout(280);page.emulate_media(reduced_motion='reduce');page.locator('#enterEditorButton').click()
+    self.assertEqual(page.locator('#previewStage').evaluate('e=>e.getAnimations().length'),0)
    finally:browser.close()

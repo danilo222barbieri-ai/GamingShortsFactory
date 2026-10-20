@@ -66,6 +66,8 @@ let history = createEditorHistory(normalizeEditorState({}, 15), 50);
 let previewState = null;
 let isMediaReady = false;
 let fullscreenFallback = false;
+let playerTransition = null;
+let fullscreenOrigin = null;
 let activeSuggestionId = "";
 const activePointers = new Map();
 let gestureStart = null;
@@ -255,6 +257,9 @@ function selectTool(tool, { toggle = false } = {}) {
 
 function notifyFullscreen(active) {
   const expanded = Boolean(active);
+  const changed = app.classList.contains("is-expanded") !== expanded;
+  const before = fullscreenOrigin || previewStage.getBoundingClientRect();
+  fullscreenOrigin = null;
   fullscreenButton.setAttribute("aria-pressed", String(expanded));
   fullscreenButton.setAttribute("aria-label", expanded ? "Esci da schermo intero" : "Schermo intero");
   app.classList.toggle("is-fullscreen", expanded);
@@ -265,10 +270,22 @@ function notifyFullscreen(active) {
     overlay?.cancelAiPreview();
   }
   overlay?.wake();
+  if (changed) {
+    playerTransition?.cancel();
+    const after = previewStage.getBoundingClientRect();
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches && before.width > 0 && before.height > 0 && after.width > 0 && after.height > 0 && previewStage.animate) {
+      // FLIP only the existing player: source, clock, controls and edit state stay intact.
+      playerTransition = previewStage.animate([
+        { transformOrigin: "top left", transform: `translate(${before.left-after.left}px,${before.top-after.top}px) scale(${before.width/after.width},${before.height/after.height})` },
+        { transformOrigin: "top left", transform: "none" },
+      ], { duration: 240, easing: "cubic-bezier(.2,.8,.2,1)" });
+    }
+  }
   postToShell({ type: "GSF_GAME_EDITOR_UI", action: "fullscreen_changed", active: expanded });
 }
 
 async function toggleFullscreen() {
+  fullscreenOrigin = previewStage.getBoundingClientRect();
   const nativeActive = document.fullscreenElement === app;
   if (nativeActive) {
     await document.exitFullscreen();
@@ -570,6 +587,27 @@ video.addEventListener("timeupdate", () => {
   }
   renderTransport(state);
 });
+// Buffering belongs to the current player; it never replaces or reloads the video.
+const bufferingStatus = document.createElement("div");
+bufferingStatus.className = "player-buffering";
+bufferingStatus.setAttribute("role", "status");
+bufferingStatus.textContent = "Carico l’anteprima…";
+previewStage.append(bufferingStatus);
+let bufferingTimer = 0;
+function clearBuffering() {
+  clearTimeout(bufferingTimer);bufferingTimer = 0;
+  app.classList.remove("is-buffering");
+}
+function showBuffering() {
+  clearBuffering();
+  if (!video.currentSrc || video.paused || video.ended || video.readyState >= 3) return;
+  bufferingTimer = setTimeout(() => {
+    if (!video.paused && !video.ended && video.readyState < 3) app.classList.add("is-buffering");
+  }, 180);
+}
+for (const type of ["waiting", "stalled"]) video.addEventListener(type, showBuffering);
+for (const type of ["playing", "canplay", "pause", "ended", "emptied", "error"]) video.addEventListener(type, clearBuffering);
+
 video.addEventListener("play", () => {
   playButton.textContent = "Ⅱ";
   playButton.setAttribute("aria-label", "Pausa");

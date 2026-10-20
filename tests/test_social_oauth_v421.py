@@ -11,12 +11,16 @@ class Bucket:
     def __init__(self):self.objects={};self.fail=False
     def put_object(self,**kw):
         if self.fail:raise OSError('storage unavailable')
+        current=self.objects.get(kw['Key'])
+        etag='"'+hashlib.md5(current).hexdigest()+'"' if current is not None else None
+        if (kw.get('IfNoneMatch')=='*' and current is not None) or ('IfMatch' in kw and kw['IfMatch']!=etag):
+            error=OSError('conditional conflict');error.response={'Error':{'Code':'PreconditionFailed'}};raise error
         self.objects[kw['Key']]=kw['Body']
     def get_object(self,**kw):
         if self.fail:raise OSError('storage unavailable')
         if kw['Key'] not in self.objects:
             e=FileNotFoundError();e.response={'Error':{'Code':'NoSuchKey'}};raise e
-        return {'Body':io.BytesIO(self.objects[kw['Key']])}
+        return {'Body':io.BytesIO(self.objects[kw['Key']]),'ETag':'"'+hashlib.md5(self.objects[kw['Key']]).hexdigest()+'"'}
     def delete_object(self,**kw):
         if self.fail:raise OSError('storage unavailable')
         self.objects.pop(kw['Key'],None)
@@ -414,7 +418,7 @@ class PublicOAuthRouting(unittest.TestCase):
             with response:self.assertEqual(response.status,400)
 
 class TwitchHubBrowser(unittest.TestCase):
-    def test_connected_twitch_clip_import_and_vod_limit_use_existing_hub_sheet(self):
+    def test_connected_twitch_clip_import_and_vod_limit_use_source_library(self):
         if not os.environ.get('GSF_BROWSER'):self.skipTest('Runs in the blocking real WebKit gate')
         from playwright.sync_api import sync_playwright
         import shutil
@@ -430,14 +434,14 @@ class TwitchHubBrowser(unittest.TestCase):
                     if url.path=='/':r.fulfill(content_type='text/html',body='<p>Imported into existing AI route</p>' if url.query else html)
                     elif url.path=='/creator-hub/state':r.fulfill(json={'ok':True,'csrf_token':'csrf','account':{'display_name':'Creator'},'social':{'twitch':True},'drafts':[],'shorts':[]})
                     elif url.path=='/social-connect/twitch/content':
-                        vod='type=videos' in url.query;r.fulfill(json={'ok':True,'data':[{'id':'vod1' if vod else 'clip1','title':'My VOD' if vod else 'My Clip','importable':not vod,'import_reason':'Le API ufficiali Twitch non espongono il file VOD.' if vod else ''}]})
+                        vod='type=videos' in url.query;r.fulfill(json={'ok':True,'data':[{'id':'vod1' if vod else 'clip1','title':'My VOD' if vod else 'My Clip','importable':not vod,'can_import':not vod,'external_id':'clip1' if not vod else 'vod1','import_reason':'Le API ufficiali Twitch non espongono il file VOD.' if vod else ''}]})
                     elif url.path=='/social-connect/twitch/import':posts.append(r.request.post_data_json);self.assertEqual(r.request.headers.get('x-gsf-csrf'),'csrf');r.fulfill(status=202,json={'ok':True,'upload_id':'import1'})
                     elif url.path=='/direct-upload/bucket/status':r.fulfill(json={'ok':True,'ready':True})
                     else:r.fulfill(json={'ok':True})
                 page.route('**/*',route);page.goto('http://gsf.test/')
                 page.locator('.socialDot[data-social="twitch"].connected').wait_for();page.locator('.socialDot[data-social="twitch"]').click()
-                page.locator('[data-tw-tab="videos"]').click();page.get_by_text('My VOD',exact=True).wait_for();self.assertEqual(page.locator('[data-tw-import]').count(),0)
-                page.locator('[data-tw-tab="clips"]').click();page.locator('[data-tw-import="clip1"]').click();page.wait_for_url('**/?gsf_page=ai')
+                page.locator('[data-source-folder="videos"]').click();page.get_by_text('My VOD',exact=True).wait_for();self.assertEqual(page.locator('[data-source-import]').count(),0)
+                page.locator('[data-source-folder="clips"]').click();page.locator('[data-source-import="clip1"]').click();page.wait_for_url('**/?gsf_page=ai')
                 self.assertEqual(posts,[{'type':'clips','clip_id':'clip1'}]);self.assertFalse(errors,errors)
             finally:browser.close()
 
