@@ -486,7 +486,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -1076,7 +1076,7 @@
         "web/publish_short_v405_component/**",
         "web/share_v156_component/**"
       ],
-      "scope": "ui: Night Arena single look \u2014 shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
+      "scope": "ui: Night Arena single look — shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
       "state": "completed"
     },
     {
@@ -1370,7 +1370,8 @@
           },
           "status": "SUCCESS"
         },
-        "runtime_release": "c2259515edd7c5714d05051d161eaa129d994771"
+        "runtime_release": "c2259515edd7c5714d05051d161eaa129d994771",
+        "handoff_20261020_social_oauth": "Owner-authorized handoff of web/creator_hub_v156_component/index.html, web/direct_upload_server.py, web/nginx.conf.template to the master social/OAuth task (PR183 already LIVE)."
       },
       "id": "closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
       "owner": "chat/closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
@@ -1395,20 +1396,18 @@
         "web/ai_v221_component/index.html",
         "web/ai_worker_server.py",
         "web/app_icons/app-icon.png",
-        "web/creator_hub_v156_component/index.html",
-        "web/direct_upload_server.py",
         "web/game_editor_mobile_component/editor.mjs",
         "web/gsf_alive_v418.js",
         "web/gsf_bucket_bridge.py",
         "web/gsf_navigation_lifecycle.js",
         "web/gsf_perf.py",
         "web/home_v154_component/index.html",
-        "web/nginx.conf.template",
         "web/semantic_video_v114.py",
         "web/share_v156_component/index.html"
       ],
       "scope": "closed beta mobile UX bugfix pass: Hub profile scroll preferences Alive lifecycle and measured AI latency",
-      "state": "active"
+      "state": "active",
+      "updated_at": "2026-10-20T15:30:00+00:00"
     }
   ],
   "version": 1
