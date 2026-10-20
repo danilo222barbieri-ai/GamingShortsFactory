@@ -247,6 +247,14 @@ class ShortGameplayResults(unittest.TestCase):
         script="const assert=require('node:assert/strict');let requestId='current',baseline='old';const signature=list=>list.map(d=>String(d.video||'')+'@'+String(d.mtime||'')).join('|');\n"+function+"\nfor(const count of [1,2,3]){const previews=Array.from({length:count},(_,index)=>({video:'clip'+index}));assert.equal(freshRows({request_id:'current',previews}).length,count);assert.equal(freshRows({request_id:'stale',previews}),null)};assert.equal(freshRows({request_id:'current',previews:[]}),null);assert.equal(freshRows({request_id:'current',previews:[{video:'ready'},{video:''}]}),null,'Wait for every expected preview');"
         subprocess.run(['node','-e',script],check=True,capture_output=True,text=True)
 
+    def test_default_moment_and_direct_editor_entry_confirm_alive_selection(self):
+        import subprocess
+        html=(ROOT/'web/ai_v221_component/index.html').read_text()
+        actions=html[html.index('function selectedPayload()'):html.index('function ring(')]
+        runtime=(ROOT/'web/gsf_alive_v418.js').read_text()
+        script="""const vm=require('node:vm'),assert=require('node:assert/strict');const pure={window:{}};vm.runInNewContext(RUNTIME,pure);const core=pure.window.GSFAlive._core;let fact=core.reduce(core.BASE,'ai.found',{count:1},1000000);const events=[],sent=[];const ctx={state:{selectedMoment:0},rows:()=>[{video:'clip',candidate_id:'first'}],window:{GSFAlive:{state:()=>fact}},alive:(type,data)=>{events.push(type);fact=core.reduce(fact,type,data,1001000)},send:(type,data)=>sent.push(type),stopPlayback(){},renderMoments(){},renderDetail(){},autosave(){}};vm.createContext(ctx);vm.runInContext(ACTIONS,ctx);vm.runInContext('selectMoment(0)',ctx);assert.equal(fact.moment_selected,true,'Clicking the sole/default result must confirm selection');const count=events.length;vm.runInContext('selectMoment(0)',ctx);assert.equal(events.length,count,'The same confirmed card must not repeat guidance');fact=core.reduce(core.BASE,'ai.found',{count:1},1000000);vm.runInContext('editSelectedMoment()',ctx);assert.equal(fact.moment_selected,true,'Direct Editor CTA confirms the displayed moment');assert.deepEqual(sent,['preview','open_editor'],'Keep the existing video handoff');""".replace('RUNTIME',json.dumps(runtime)).replace('ACTIONS',json.dumps(actions))
+        subprocess.run(['node','-e',script],check=True,capture_output=True,text=True)
+
 class AliveRouteGeometry(unittest.TestCase):
     def test_ring_tracks_internal_scroll_and_old_voice_never_reappears(self):
         try:from playwright.sync_api import sync_playwright
@@ -274,6 +282,63 @@ class AliveRouteGeometry(unittest.TestCase):
             finally:browser.close()
 
 class PushBrowserPreference(unittest.TestCase):
+    def test_render_monitor_aborts_on_pagehide_and_resumes_once(self):
+        from visual.gsf_navigation_stress import INSTRUMENT,install_request_ownership,request_signal_was_aborted,request_surface_is_inactive,request_failure_is_critical
+        try:from playwright.sync_api import sync_playwright
+        except ImportError:
+            if os.environ.get('GSF_BROWSER'):raise
+            self.skipTest('Browser lifecycle runs in the blocking WebKit gate')
+        import shutil
+        script=companion_functions({'_push_client_bytes'},Path('/tmp'))['_push_client_bytes']().decode()
+        with sync_playwright() as playwright:
+            engine=getattr(playwright,os.environ.get('GSF_BROWSER','chromium'))
+            executable=shutil.which('chromium') if engine.name=='chromium' else None
+            browser=engine.launch(**({'executable_path':executable,'args':['--no-sandbox']} if executable else {}))
+            try:
+                page=browser.new_page();pending=[];errors=[];cancelled=[]
+                install_request_ownership(page)
+                page.on('pageerror',lambda error:errors.append(str(error)))
+                page.on('requestfailed',lambda request:cancelled.append(request) if request.url.endswith('/job/status') else None)
+                page.add_init_script(INSTRUMENT+"\nconst originalFetch=window.fetch;window.pollSignals=[];window.fetch=function(url,options){if(String(url)==='/job/status')pollSignals.push(options?.signal);return originalFetch.apply(this,arguments)}")
+                def route(request):
+                    if request.request.url=='http://gsf.test/':request.fulfill(content_type='text/html',body='<html><body><script>'+script+'</script></body></html>')
+                    elif request.request.url.endswith('/job/status'):pending.append(request)
+                    else:request.fulfill(json={'ok':True,'enabled':False,'revision':0,'csrf_token':'test'})
+                page.route('**/*',route);page.goto('http://gsf.test/',wait_until='domcontentloaded')
+                page.wait_for_function('()=>pollSignals.length===1')
+                self.assertTrue(page.evaluate('()=>pollSignals[0] instanceof AbortSignal'),'The monitor must own its in-flight request')
+                page.evaluate("dispatchEvent(new PageTransitionEvent('pagehide'));dispatchEvent(new PageTransitionEvent('pageshow'));dispatchEvent(new PageTransitionEvent('pageshow'))")
+                self.assertTrue(page.evaluate('()=>pollSignals[0].aborted'))
+                page.wait_for_function('()=>pollSignals.length===2')
+                self.assertFalse(page.evaluate('()=>pollSignals[1].aborted'))
+                pending[0].continue_()
+                for _ in range(100):
+                    if cancelled:break
+                    page.wait_for_timeout(20)
+                self.assertTrue(cancelled)
+                old=cancelled[0]
+                self.assertTrue(request_signal_was_aborted(old),'Old request must retain its own aborted signal after resume')
+                self.assertTrue(request_surface_is_inactive(old),'Old request must retain its actual suspension evidence')
+                self.assertFalse(request_failure_is_critical(old,inactive_surface=request_surface_is_inactive(old),signal_aborted=request_signal_was_aborted(old),base_url='http://gsf.test'))
+                self.assertFalse(request_signal_was_aborted(pending[-1].request),'New active request must not inherit the old abort')
+                # A stale URL-only lookup must never override the actual request owner.
+                page.evaluate("()=>{const stale=new AbortController();stale.abort();__gsfFetchSignals.set(location.origin+'/job/status',stale.signal)}")
+                self.assertFalse(request_signal_was_aborted(pending[-1].request),'An unrelated aborted signal must not exempt an active request')
+                page.wait_for_timeout(1700)
+                self.assertEqual(page.evaluate('pollSignals.length'),2,'Repeated resume/timer ticks must not overlap requests')
+                page.evaluate("dispatchEvent(new PageTransitionEvent('pagehide'))")
+                for request in pending[1:]:request.continue_()
+                pending.clear();page.wait_for_timeout(1700)
+                self.assertEqual(page.evaluate('pollSignals.length'),2,'Hidden documents must stop polling')
+                page.evaluate("dispatchEvent(new PageTransitionEvent('pageshow'));dispatchEvent(new PageTransitionEvent('pageshow'))")
+                page.wait_for_function('()=>pollSignals.length===3')
+                self.assertFalse(page.evaluate('()=>pollSignals[2].aborted'))
+                page.evaluate("dispatchEvent(new PageTransitionEvent('pagehide'))")
+                for request in pending:request.continue_()
+                pending.clear()
+                self.assertFalse(errors,errors)
+            finally:browser.close()
+
     def test_off_never_registers_and_off_survives_reload_with_permission_granted(self):
         try:from playwright.sync_api import sync_playwright
         except ImportError:self.skipTest('Browser checks run in Production Gate')
@@ -312,6 +377,16 @@ class PushBrowserPreference(unittest.TestCase):
             finally:browser.close()
 
 class PortraitAppContract(unittest.TestCase):
+    def test_install_and_browser_chrome_match_the_existing_dark_shell(self):
+        import re
+        ns=companion_functions({'_app_manifest_bytes'},Path('/tmp'))
+        manifest=json.loads(ns['_app_manifest_bytes']())
+        self.assertEqual(manifest['background_color'],'#050D16')
+        self.assertEqual(manifest['theme_color'],'#050D16')
+        colors=re.findall(r'<meta name="theme-color" content="([^"]+)"',(ROOT/'web/nginx.conf.template').read_text())
+        self.assertGreaterEqual(len(colors),2)
+        self.assertEqual(set(colors),{'#050D16'})
+
     def test_pwa_requests_portrait_orientation(self):
         ns=companion_functions({'_app_manifest_bytes'},Path('/tmp'))
         self.assertEqual(json.loads(ns['_app_manifest_bytes']())['orientation'],'portrait')
@@ -347,6 +422,42 @@ class PortraitAppContract(unittest.TestCase):
                 page.wait_for_function("()=>{const f=document.querySelector('#gsf-creator-hub-live-v160 iframe');return f.contentDocument?.readyState==='complete'&&f.contentWindow.location.pathname.startsWith('/creator-hub-v156')}")
                 page.evaluate("()=>{const f=document.querySelector('#gsf-creator-hub-live-v160 iframe'),post=f.contentWindow.postMessage;window.resizeResumeCount=0;f.contentWindow.postMessage=function(data,...args){if(data?.type==='GSF_APP_RESUME')window.resizeResumeCount++;return post.call(this,data,...args)};dispatchEvent(new Event('resize'))}")
                 self.assertEqual(page.evaluate('resizeResumeCount'),0,'Ordinary resize must not reset an expanded Editor as a document resume')
+            finally:browser.close()
+
+class AliveSubviewGeometry(unittest.TestCase):
+    def test_hub_view_change_clears_guidance_for_hidden_controls_immediately(self):
+        try:from playwright.sync_api import sync_playwright
+        except ImportError:
+            if os.environ.get('GSF_BROWSER'):raise
+            self.skipTest('Real geometry runs in the blocking WebKit Production Gate')
+        import shutil
+        parent=installed_parent_html();html=(ROOT/'web/creator_hub_v156_component/index.html').read_text()
+        with sync_playwright() as p:
+            engine=getattr(p,os.environ.get('GSF_BROWSER','chromium'));executable=shutil.which('chromium') if engine.name=='chromium' else None
+            browser=engine.launch(**({'executable_path':executable,'args':['--no-sandbox']} if executable else {}))
+            try:
+                page=browser.new_page(viewport={'width':390,'height':844})
+                def route(r):
+                    if r.request.url=='http://gsf.test/':r.fulfill(content_type='text/html',body=parent)
+                    elif '/creator-hub-v156/' in r.request.url:r.fulfill(content_type='text/html',body=html)
+                    else:r.fulfill(json={'ok':True,'csrf_token':'test','account':{'display_name':'Creator'},'social':{},'drafts':[],'shorts':[]})
+                page.route('**/*',route);page.goto('http://gsf.test/')
+                page.wait_for_function('()=>GSFNavigation?.snapshot().surfaces===5')
+                page.evaluate("GSFNavigation.navigate({target:'hub'})")
+                hub=page.frame_locator('#gsf-creator-hub-live-v160 iframe')
+                hub.locator('#hub').wait_for()
+                page.wait_for_function("()=>document.querySelector('#gsf-creator-hub-live-v160 iframe').contentWindow.GSFHubV415?.getState().csrf_token")
+                result=hub.locator('#hub').evaluate("""()=>{
+                    GSFHubV415.openView('dashboard');GSFAlive.emit('video.cleared');GSFAlive.refresh();
+                    const target=[...document.querySelectorAll('[data-alive-next~=upload]')].find(e=>e.getBoundingClientRect().height>0);
+                    GSFAlive.say('Scegli un video',{anchor:target});
+                    const before=document.querySelector('#gsf-alive-guide').style.display;
+                    GSFHubV415.openView('settings');
+                    return {before,after:document.querySelector('#gsf-alive-guide').style.display,voice:document.querySelector('#gsf-alive-whisper').classList.contains('on')};
+                }""")
+                self.assertEqual(result['before'],'block')
+                self.assertEqual(result['after'],'none','Hidden dashboard control must immediately lose its guidance ring')
+                self.assertFalse(result['voice'],'Guidance for the previous view must disappear with its control')
             finally:browser.close()
 
 class CanonicalIconBuildContract(unittest.TestCase):
@@ -388,6 +499,13 @@ class MediaCancellationContract(unittest.TestCase):
         self.assertTrue(request_failure_is_critical(media,inactive_surface=True,base_url='http://different.test'))
         self.assertTrue(request_failure_is_critical(SimpleNamespace(**{**vars(media),'failure':'Connection failed'}),inactive_surface=True,base_url='http://gsf.test'))
         self.assertTrue(request_failure_is_critical(SimpleNamespace(**{**vars(media),'resource_type':'script'}),inactive_surface=True,base_url='http://gsf.test'))
+        # WebKit can cancel a video before headers establish its resource type.
+        other=SimpleNamespace(**{**vars(media),'resource_type':'other'})
+        self.assertFalse(request_failure_is_critical(other,inactive_surface=True,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(other,inactive_surface=False,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(other,inactive_surface=True,base_url='http://other.test'))
+        self.assertTrue(request_failure_is_critical(SimpleNamespace(**{**vars(other),'url':'http://gsf.test/app.js'}),inactive_surface=True,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(SimpleNamespace(**{**vars(other),'failure':'Connection failed'}),inactive_surface=True,base_url='http://gsf.test'))
 
 class AlivePollCancellationContract(unittest.TestCase):
     def test_cancelled_poll_requires_observed_signal_and_inactive_surface(self):
@@ -398,7 +516,11 @@ class AlivePollCancellationContract(unittest.TestCase):
         self.assertTrue(request_failure_is_critical(poll,inactive_surface=True,base_url='http://gsf.test'))
         self.assertTrue(request_failure_is_critical(poll,signal_aborted=True,base_url='http://gsf.test'))
         self.assertFalse(request_failure_is_critical(poll,inactive_surface=True,signal_aborted=True,base_url='http://gsf.test'))
-        for changed in ({'failure':'Connection failed'},{'url':'http://gsf.test/job/status'},{'url':'http://gsf.test/editor/state'},{'url':'http://other.test/job/status?alive=1'},{'resource_type':'script'}):
+        global_poll=SimpleNamespace(**{**vars(poll),'url':'http://gsf.test/job/status'})
+        self.assertTrue(request_failure_is_critical(global_poll,inactive_surface=True,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(global_poll,signal_aborted=True,base_url='http://gsf.test'))
+        self.assertFalse(request_failure_is_critical(global_poll,inactive_surface=True,signal_aborted=True,base_url='http://gsf.test'))
+        for changed in ({'failure':'Connection failed'},{'url':'http://gsf.test/job/status?unexpected=1'},{'url':'http://gsf.test/editor/state'},{'url':'http://other.test/job/status?alive=1'},{'resource_type':'script'}):
             request=SimpleNamespace(**{**vars(poll),**changed})
             self.assertTrue(request_failure_is_critical(request,inactive_surface=True,signal_aborted=True,base_url='http://gsf.test'),changed)
 
