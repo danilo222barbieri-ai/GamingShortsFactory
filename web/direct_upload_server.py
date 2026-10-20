@@ -2983,6 +2983,28 @@ def _twitch_disconnect(sid):
     _twitch_forget(sid)
 
 
+def _source_owner(sid):
+    sid=_safe_id(sid)
+    if not sid:raise ValueError("Invalid source session")
+    # Read the durable association; a provider/storage outage must not become guest access.
+    session=_oauth_object_read(_creator_session_key(sid))
+    account=_safe_id(session.get("account_id") or "")
+    return "account-"+account if account else "guest-"+sid
+
+
+def _source_catalog(sid):
+    from web.gsf_sources_v422 import SourceCatalog
+    return SourceCatalog(_s3(),S3_BUCKET,_source_owner(sid))
+
+
+def _source_load(sid,source_id):
+    return _source_catalog(sid).load(source_id)
+
+
+def _source_save(sid,record):
+    return _source_catalog(sid).save(record)
+
+
 def _twitch_api(sid,path,params=None):
     if path not in ("clips","clips/downloads","videos"):raise ValueError("Unsupported Twitch API")
     token=_twitch_access(sid)
