@@ -367,7 +367,8 @@ class TwitchImport(unittest.TestCase):
         with self.assertRaises(social421.TwitchError):social421.download_twitch_clip(url,other,2,opener=lambda *a,**kw:oversized)
         self.assertFalse(other.exists())
     def run_import(self,fail=False,replace=False):
-        import subprocess
+        import subprocess,shutil
+        self.assertIsNotNone(shutil.which("ffprobe"),"Import contracts require the real FFprobe media validator")
         from visual.gsf_navigation_stress import MEDIA_FIXTURE
         self.connected();media=self.root/'sessions/browserA/media';media.mkdir(parents=True,exist_ok=True)
         marker=media/'.direct_upload_ready.json';old=b'{"upload_id":"old","path":"old-project.mp4"}';marker.write_bytes(old)
