@@ -320,6 +320,16 @@ class PushBrowserPreference(unittest.TestCase):
             finally:browser.close()
 
 class PortraitAppContract(unittest.TestCase):
+    def test_install_and_browser_chrome_match_the_existing_dark_shell(self):
+        import re
+        ns=companion_functions({'_app_manifest_bytes'},Path('/tmp'))
+        manifest=json.loads(ns['_app_manifest_bytes']())
+        self.assertEqual(manifest['background_color'],'#050D16')
+        self.assertEqual(manifest['theme_color'],'#050D16')
+        colors=re.findall(r'<meta name="theme-color" content="([^"]+)"',(ROOT/'web/nginx.conf.template').read_text())
+        self.assertGreaterEqual(len(colors),2)
+        self.assertEqual(set(colors),{'#050D16'})
+
     def test_pwa_requests_portrait_orientation(self):
         ns=companion_functions({'_app_manifest_bytes'},Path('/tmp'))
         self.assertEqual(json.loads(ns['_app_manifest_bytes']())['orientation'],'portrait')

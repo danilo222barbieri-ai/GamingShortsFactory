@@ -411,8 +411,8 @@ def _app_manifest_bytes():
         "scope":"/",
         "display":"standalone",
         "orientation":"portrait",
-        "background_color":"#f4fbff",
-        "theme_color":"#a9dcff",
+        "background_color":"#050D16",
+        "theme_color":"#050D16",
         "icons":[
             {
                 "src":"/app-icon-192.png?v=4",
