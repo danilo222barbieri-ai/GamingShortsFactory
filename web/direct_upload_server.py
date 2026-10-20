@@ -38,6 +38,7 @@ from feedback_learning_v127 import (
 from content_memory_v145 import inspect_memory as _content_memory_inspect, upsert_memory as _content_memory_upsert
 from social_analytics_v148 import collect as _social_analytics_collect, dynamic_performance_score as _social_dynamic_score
 import publish_multi_v413 as _pm413
+import gsf_social_oauth_v421 as _social421
 
 try:
     from gsf_editor_v403 import game_director_suggestions, normalize_editor_state, normalize_timeline_markers
@@ -93,8 +94,14 @@ PUBLIC_APP_URL=_env_first("GSF_PUBLIC_APP_URL",default="").rstrip("/")
 VAPID_PRIVATE_KEY=_env_first("GSF_VAPID_PRIVATE_KEY",default="")
 VAPID_PUBLIC_KEY=_env_first("GSF_VAPID_PUBLIC_KEY",default="")
 VAPID_SUBJECT=_env_first("GSF_VAPID_SUBJECT",default="mailto:notifications@gamingshortsfactory.app")
+TWITCH_CLIENT_ID=_env_first("GSF_TWITCH_CLIENT_ID","TWITCH_CLIENT_ID",default="")
+TWITCH_CLIENT_SECRET=_env_first("GSF_TWITCH_CLIENT_SECRET","TWITCH_CLIENT_SECRET",default="")
+TWITCH_REDIRECT_URI=(PUBLIC_APP_URL+"/auth/twitch/callback") if PUBLIC_APP_URL else ""
+TWITCH_SCOPES="channel:manage:clips"
 TIKTOK_CLIENT_KEY=_env_first("GSF_TIKTOK_CLIENT_KEY",default="")
 TIKTOK_CLIENT_SECRET=_env_first("GSF_TIKTOK_CLIENT_SECRET",default="")
+TIKTOK_REDIRECT_URI=(PUBLIC_APP_URL+"/auth/tiktok/callback") if PUBLIC_APP_URL else ""
+TIKTOK_SCOPE="user.info.basic,video.publish,video.list"
 YOUTUBE_CLIENT_ID=_env_first("GSF_YOUTUBE_CLIENT_ID",default="")
 YOUTUBE_CLIENT_SECRET=_env_first("GSF_YOUTUBE_CLIENT_SECRET",default="")
 YOUTUBE_SCOPE="https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/yt-analytics.readonly"
@@ -104,6 +111,9 @@ INSTAGRAM_SCOPES="instagram_business_basic,instagram_business_content_publish,in
 INSTAGRAM_REDIRECT_URI=(PUBLIC_APP_URL+"/auth/instagram/callback") if PUBLIC_APP_URL else ""
 META_APP_ID=_env_first("GSF_META_APP_ID",default="")
 META_APP_SECRET=_env_first("GSF_META_APP_SECRET",default="")
+META_GRAPH_VERSION=_env_first("GSF_META_GRAPH_VERSION",default="v24.0")
+FACEBOOK_REDIRECT_URI=(PUBLIC_APP_URL+"/auth/facebook/callback") if PUBLIC_APP_URL else ""
+FACEBOOK_SCOPES="public_profile,pages_show_list"
 META_SCOPES="pages_show_list,instagram_basic,instagram_content_publish,pages_read_engagement"
 # V263 Creator Hub return compatibility tokens for legacy V104.6 build contract only:
 # _redirect(handler,"/social-connect")
@@ -1427,7 +1437,7 @@ def _tiktok_user_load(sid):
     local=ROOT/"sessions"/sid/"social"/"tiktok_token.json"
     try:
         payload=_security_read_json(local)
-        if isinstance(payload,dict) and payload.get("access_token"):
+        if isinstance(payload,dict) and payload.get("access_token") and _social_owner_matches(sid,"tiktok",payload):
             return payload
     except Exception:
         pass
@@ -1436,7 +1446,7 @@ def _tiktok_user_load(sid):
     try:
         obj=_s3().get_object(Bucket=S3_BUCKET,Key=_tiktok_user_key(sid))
         payload=_security_decrypt_json(obj["Body"].read())
-        if isinstance(payload,dict):
+        if isinstance(payload,dict) and _social_owner_matches(sid,"tiktok",payload):
             _tiktok_user_write_local(sid,payload)
             return payload
     except Exception:
@@ -1463,6 +1473,7 @@ def _tiktok_user_save(sid,payload):
     sid=_safe_id(sid)
     if not sid:
         raise RuntimeError("sessione browser non valida")
+    payload={**payload,"owner_id":_storage_owner_id(sid)}
     _tiktok_user_write_local(sid,payload)
     if not _bucket_enabled():
         raise RuntimeError("storage persistente non disponibile")
@@ -1545,7 +1556,7 @@ def _instagram_user_load(sid):
     local=ROOT/"sessions"/sid/"social"/"instagram_config.json"
     try:
         payload=_security_read_json(local)
-        if isinstance(payload,dict) and payload.get("ig_user_id") and payload.get("access_token"):
+        if isinstance(payload,dict) and payload.get("ig_user_id") and payload.get("access_token") and _social_owner_matches(sid,"instagram",payload):
             return payload
     except Exception:
         pass
@@ -1554,7 +1565,7 @@ def _instagram_user_load(sid):
     try:
         obj=_s3().get_object(Bucket=S3_BUCKET,Key=_instagram_user_key(sid))
         payload=_security_decrypt_json(obj["Body"].read())
-        if isinstance(payload,dict):
+        if isinstance(payload,dict) and _social_owner_matches(sid,"instagram",payload):
             _instagram_user_write_local(sid,payload)
             return payload
     except Exception:
@@ -1575,6 +1586,7 @@ def _instagram_user_save(sid,payload):
     sid=_safe_id(sid)
     if not sid:
         raise RuntimeError("sessione browser non valida")
+    payload={**payload,"owner_id":_storage_owner_id(sid)}
     _instagram_user_write_local(sid,payload)
     if not _bucket_enabled():
         raise RuntimeError("storage persistente non disponibile")
@@ -2509,7 +2521,8 @@ def _oauth_json(url,method="GET",data=None,headers=None,timeout=45):
         method=method,
     )
     with urllib.request.urlopen(req,timeout=timeout) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+        raw=resp.read().decode("utf-8")
+        return json.loads(raw) if raw.strip() else {}
 
 
 def _creator_google_start(handler,sid):
@@ -2581,6 +2594,476 @@ def _creator_google_callback(handler,query):
         _html(handler,500,_creator_page(sid,"Accesso Google fallito: "+str(exc)[:220]))
 
 
+def _social_state_finish(handler,state,prefix,provider):
+    # Match exact state bytes; never sanitize an attacker-supplied state into a valid one.
+    state=str(state or "")
+    if not re.fullmatch(re.escape(prefix)+r"[A-Za-z0-9_-]{20,100}",state):return {}
+    sid=_social_sid(handler)
+    if not sid:return {}
+    path=ROOT/"social_oauth"/(state+".json")
+    with _STATE_LOCKS_GUARD:
+        try:pending=json.loads(path.read_text(encoding="utf-8"))
+        except (OSError,ValueError):return {}
+        if not isinstance(pending,dict):return {}
+        try:age=time.time()-float(pending.get("created",0))
+        except (TypeError,ValueError):return {}
+        if not 0<=age<=900 or not hmac.compare_digest(str(pending.get("sid") or ""),sid):return {}
+        # Legacy Instagram states used platform/mode instead of provider.
+        if pending.get("provider") not in (provider,None):return {}
+        if pending.get("provider") is None and not (provider=="instagram" or (provider=="tiktok" and prefix=="gsfsc_")):return {}
+        path.unlink()
+        return pending
+
+
+def _oauth_object_read(key,encrypted=False,kind=dict):
+    if not _bucket_enabled():raise RuntimeError("Persistent social storage unavailable")
+    try:raw=_s3().get_object(Bucket=S3_BUCKET,Key=key)["Body"].read()
+    except Exception as exc:
+        code=str(getattr(exc,"response",{}).get("Error",{}).get("Code",""))
+        if isinstance(exc,FileNotFoundError) or code in ("NoSuchKey","404","NotFound"):return kind()
+        raise
+    data=_security_decrypt_json(raw) if encrypted else json.loads(raw.decode())
+    if not isinstance(data,kind):raise ValueError("Invalid persisted social data")
+    return data
+
+
+def _oauth_object_save(key,payload,encrypted=False):
+    if not _bucket_enabled():raise RuntimeError("Persistent social storage unavailable")
+    raw=_security_encrypt_json(payload) if encrypted else json.dumps(payload).encode()
+    _s3().put_object(Bucket=S3_BUCKET,Key=key,Body=raw,ContentType="application/octet-stream" if encrypted else "application/json",CacheControl="no-store")
+
+
+def _oauth_bucket_keys(prefix):
+    token=""
+    while True:
+        args={"Bucket":S3_BUCKET,"Prefix":prefix}
+        if token:args["ContinuationToken"]=token
+        page=_s3().list_objects_v2(**args)
+        for row in page.get("Contents",[]):yield row["Key"]
+        if not page.get("IsTruncated"):break
+        token=page["NextContinuationToken"]
+
+
+def _social_owner_matches(sid,provider,token):
+    owner=str(token.get("owner_id") or "")
+    if owner:return hmac.compare_digest(owner,_storage_owner_id(sid))
+    # Legacy browser-only credentials need consent again once an account is logged in.
+    return not bool((_creator_account_load(sid) or {}).get("account_id"))
+
+
+def _social_connection_load(sid,provider):
+    sid=_safe_id(sid)
+    if not sid or provider not in ("facebook","twitch"):return {}
+    key=f"social-connections/{sid}/{provider}.json"
+    # Storage is authoritative: a failed disconnect must never be resurrected by a cache.
+    token=_oauth_object_read(key,True)
+    return token if _social_owner_matches(sid,provider,token) else {}
+
+
+def _social_connection_save(sid,provider,payload):
+    sid=_safe_id(sid)
+    if not sid or provider not in ("facebook","twitch"):raise ValueError("Invalid social connection")
+    payload={**payload,"owner_id":_storage_owner_id(sid)}
+    _oauth_object_save(f"social-connections/{sid}/{provider}.json",payload,True)
+    _security_write_json(ROOT/"sessions"/sid/"social"/(provider+"_config.json"),payload)
+
+
+def _meta_index_key(provider,uid):
+    digest=hashlib.sha256((provider+":"+str(uid)).encode()).hexdigest()
+    return "social-meta-identities/"+digest+".json"
+
+
+def _meta_index_add(provider,uid,sid):
+    if not uid:return
+    key=_meta_index_key(provider,uid)
+    with _state_lock("meta",hashlib.sha256(key.encode()).hexdigest()):
+        row=_oauth_object_read(key,True)
+        sessions=set(row.get("sessions") or []);sessions.add(_safe_id(sid))
+        _oauth_object_save(key,{**row,"provider":provider,"sessions":sorted(sessions)},True)
+
+
+def _meta_find_sessions(provider,uid):
+    indexed=_oauth_object_read(_meta_index_key(provider,uid),True)
+    sessions=set(indexed.get("sessions") or [])
+    # Include legacy login identity and all browser sessions for that account.
+    identity=_oauth_object_read(_creator_identity_key(provider,uid))
+    account=_safe_id(identity.get("account_id",""))
+    local=ROOT/"sessions"
+    if local.exists():
+        for path in local.glob("*/account.json"):
+            profile=json.loads(path.read_text())
+            if str((profile.get("providers",{}).get(provider) or {}).get("id") or "")==uid or (account and profile.get("account_id")==account):sessions.add(path.parent.name)
+    if account:
+        for key in _oauth_bucket_keys("creator-sessions/"):
+            row=_oauth_object_read(key)
+            if row.get("account_id")==account:sessions.add(Path(key).stem)
+    # Legacy Instagram connections have no reverse index. Match stored IDs only.
+    for key in _oauth_bucket_keys("social-connections/"):
+        if not key.endswith(("/instagram.json","/facebook.json")):continue
+        row=_oauth_object_read(key,True)
+        field="ig_user_id" if provider=="instagram" else "facebook_user_id"
+        if str(row.get(field) or "")==uid:sessions.add(key.split("/")[1])
+    return {_safe_id(s) for s in sessions if _safe_id(s)}
+
+
+def _meta_remove_data(provider,uid):
+    sessions=_meta_find_sessions(provider,uid)
+    journal_key=_meta_index_key(provider,uid)
+    journal=_oauth_object_read(journal_key,True)
+    for sid in sessions:
+        # Authoritative reads must distinguish missing data from an unavailable store.
+        session=_oauth_object_read(_creator_session_key(sid))
+        account=_safe_id(session.get("account_id",""))
+        profile=_oauth_object_read(_creator_profile_key(account)) if account else {}
+        if not profile:
+            local=ROOT/"sessions"/sid/"account.json"
+            profile=json.loads(local.read_text()) if local.exists() else {}
+        providers=dict(profile.get("providers") or {})
+        fb=_oauth_object_read(f"social-connections/{sid}/facebook.json",True)
+        ig=_oauth_object_read(f"social-connections/{sid}/instagram.json",True)
+        targets=[]
+        if provider=="facebook":
+            fbuid=str(fb.get("facebook_user_id") or "")
+            profile_uid=str((providers.get("facebook") or {}).get("id") or "")
+            if fbuid and profile_uid and fbuid!=profile_uid and uid in (fbuid,profile_uid):raise RuntimeError("Inconsistent Meta association")
+            fbmatch=fbuid==uid or (not fbuid and profile_uid==uid)
+            if fbmatch:targets.append("facebook")
+            if str(ig.get("facebook_user_id") or "")==uid or (fbmatch and ig.get("oauth_mode")=="facebook_login" and not ig.get("facebook_user_id")):targets.append("instagram")
+        elif str(ig.get("ig_user_id") or "")==uid or str((providers.get("instagram") or {}).get("id") or "")==uid:
+            targets.append("instagram")
+        prior=(journal.get("cleanup") or {}).get(sid) or {}
+        current_owner=str(profile.get("account_id") or sid)
+        if not targets and prior.get("owner_id")==current_owner:
+            # The previous attempt may already have removed tokens/profile fields.
+            # A different provider account in the same browser is never deletion authority.
+            conflict=(fb.get("facebook_user_id") and str(fb["facebook_user_id"])!=str(prior.get("facebook_user_id") or "")) or (ig.get("ig_user_id") and str(ig["ig_user_id"])!=str(prior.get("ig_user_id") or ""))
+            if conflict:raise RuntimeError("Meta connection changed during cleanup")
+            targets=list(prior.get("targets") or [])
+        if not targets:continue
+        cleanup=dict(journal.get("cleanup") or {})
+        cleanup[sid]={"owner_id":current_owner,"targets":targets,"facebook_user_id":fb.get("facebook_user_id") or prior.get("facebook_user_id") or "","ig_user_id":ig.get("ig_user_id") or prior.get("ig_user_id") or ""}
+        journal={**journal,"provider":provider,"sessions":sorted(sessions),"cleanup":cleanup}
+        _oauth_object_save(journal_key,journal,True)
+        for platform in targets:
+            providers.pop(platform,None)
+            _s3().delete_object(Bucket=S3_BUCKET,Key=f"social-connections/{sid}/{platform}.json")
+            for name in (platform+"_config.json",platform+"_token.json"):
+                (ROOT/"sessions"/sid/"social"/name).unlink(missing_ok=True)
+        matched=[v for p,v in (profile.get("providers") or {}).items() if p in targets and isinstance(v,dict)]
+        for field in ("display_name","email","avatar"):
+            if any(profile.get(field) and profile.get(field)==v.get(field) for v in matched):profile.pop(field,None)
+        profile["providers"]=providers
+        if _safe_id(profile.get("account_id","")):_creator_account_save(sid,profile)
+        with _ANALYTICS_LOCK, _CONTENT_MEMORY_LOCK:
+            epoch=ROOT/"sessions"/sid/".meta_analytics_epoch.json"
+            epoch.parent.mkdir(parents=True,exist_ok=True)
+            _write_json_atomic(epoch,{"epoch":uuid.uuid4().hex})
+            path=ROOT/"sessions"/sid/"social_analytics_v148.json"
+            analytics=_oauth_object_read(f"social-analytics/{sid}/analytics_v148.json")
+            if not analytics and path.exists():analytics=json.loads(path.read_text())
+            if analytics:
+                analytics["records"]=[r for r in analytics.get("records",[]) if str(r.get("platform","")).lower() not in targets]
+                _oauth_object_save(f"social-analytics/{sid}/analytics_v148.json",analytics)
+                _write_json_atomic(path,analytics)
+            memory_path=ROOT/"sessions"/sid/"content_memory_v145.json"
+            memory_key=f"content-memory/{sid}/memory_v145.json"
+            memory=_oauth_object_read(memory_key,kind=list)
+            if not memory and memory_path.exists():memory=json.loads(memory_path.read_text())
+            if memory:
+                for row in memory:
+                    if str(row.get("platform") or "").lower() in targets:
+                        for field in ("platform","performance_score","analytics_updated_at"):row.pop(field,None)
+                _oauth_object_save(memory_key,memory)
+                _write_json_atomic(memory_path,memory)
+        # Erase reverse associations for removed connections, preserving other owners.
+        for key in list(_oauth_bucket_keys("social-meta-identities/")):
+            row=_oauth_object_read(key,True)
+            if row.get("provider") not in targets:continue
+            remaining=set(row.get("sessions") or [])-{sid}
+            if remaining:_oauth_object_save(key,{**row,"sessions":sorted(remaining)},True)
+            else:_s3().delete_object(Bucket=S3_BUCKET,Key=key)
+    # Login mapping is data derived from the revoked provider, too.
+    _s3().delete_object(Bucket=S3_BUCKET,Key=_creator_identity_key(provider,uid))
+    _s3().delete_object(Bucket=S3_BUCKET,Key=_meta_index_key(provider,uid))
+
+
+def _meta_disconnect(sid,platform):
+    token=_social_connection_load(sid,"facebook") if platform=="facebook" else _instagram_user_load(sid)
+    uid=str(token.get("facebook_user_id" if platform=="facebook" else "ig_user_id") or "")
+    if not uid:
+        uid=str((((_creator_account_load(sid) or {}).get("providers") or {}).get(platform) or {}).get("id") or "")
+    access=str(token.get("access_token") or "")
+    if access:
+        host="https://graph.facebook.com/"+META_GRAPH_VERSION if platform=="facebook" or token.get("oauth_mode")=="facebook_login" else "https://graph.instagram.com"
+        try:
+            result=_oauth_json(host+"/me/permissions",method="DELETE",headers={"Authorization":"Bearer "+access})
+            if result.get("success") is False:raise RuntimeError("Revocation refused")
+        except urllib.error.HTTPError as exc:
+            if exc.code!=401:raise
+    if uid:_meta_remove_data(platform,uid)
+    else:
+        _s3().delete_object(Bucket=S3_BUCKET,Key=f"social-connections/{_safe_id(sid)}/{platform}.json")
+        for name in (platform+"_config.json",platform+"_token.json"):
+            (ROOT/"sessions"/_safe_id(sid)/"social"/name).unlink(missing_ok=True)
+
+
+def _meta_signed_callback(handler,kind):
+    try:
+        length=int(handler.headers.get("Content-Length","0"))
+        if not 0<length<=16384:raise ValueError("Invalid request")
+        raw=handler.rfile.read(length)
+        if handler.headers.get("Content-Type","").split(";")[0].strip()=="application/json":
+            payload=json.loads(raw)
+            if not isinstance(payload,dict):raise ValueError("Invalid request")
+            signed=payload.get("signed_request","")
+        else:
+            form=urllib.parse.parse_qs(raw.decode(),keep_blank_values=True)
+            if len(form.get("signed_request",[]))!=1:raise ValueError("Invalid request")
+            signed=form["signed_request"][0]
+        if not (META_APP_SECRET or INSTAGRAM_APP_SECRET):
+            _json(handler,503,{"error":"Meta callbacks are not configured"});return
+        matches=[]
+        for provider,secret in (("facebook",META_APP_SECRET),("instagram",INSTAGRAM_APP_SECRET)):
+            if not secret:continue
+            try:matches.append((provider,_social421.verify_meta_signed_request(signed,secret)))
+            except ValueError:pass
+        if len(matches)!=1:raise ValueError("Invalid request")
+        provider,uid=matches[0]
+    except (ValueError,TypeError,UnicodeError):
+        _json(handler,400,{"error":"Invalid signed request"});return
+    try:
+        if not PUBLIC_APP_URL.startswith("https://"):raise RuntimeError("Public callback origin unavailable")
+        _meta_remove_data(provider,uid)
+        if kind=="deauthorize":_json(handler,200,{"ok":True});return
+        code=secrets.token_urlsafe(24)
+        _oauth_object_save("social-meta-deletions/"+hashlib.sha256(code.encode()).hexdigest()+".json",{"status":"completed","completed_at":int(time.time())})
+        _json(handler,200,{"url":PUBLIC_APP_URL+"/auth/meta/data-deletion/status?code="+code,"confirmation_code":code})
+    except Exception:
+        # Meta retries a non-2xx callback. Never claim successful deletion on storage failure.
+        _json(handler,503,{"error":"Meta request could not be completed; retry later"})
+
+
+def _meta_deletion_status(handler,query):
+    code=str((query.get("code") or [""])[0])
+    if not re.fullmatch(r"[A-Za-z0-9_-]{32}",code):_json(handler,404,{"error":"Request not found"});return
+    try:status=_oauth_object_read("social-meta-deletions/"+hashlib.sha256(code.encode()).hexdigest()+".json")
+    except Exception:_json(handler,503,{"error":"Status temporarily unavailable"});return
+    if not status:_json(handler,404,{"error":"Request not found"});return
+    _json(handler,200,status)
+
+
+def _facebook_connect_callback(handler,query):
+    state=str((query.get("state") or [""])[0]);pending=_social_state_finish(handler,state,"gsfacf_","facebook")
+    sid=_safe_id(pending.get("sid",""))
+    if not sid:_html(handler,400,"Stato OAuth Facebook non valido o scaduto.");return
+    if query.get("error") or not query.get("code"):_html(handler,400,"Autorizzazione Facebook non completata.");return
+    try:
+        token=_oauth_json("https://graph.facebook.com/"+META_GRAPH_VERSION+"/oauth/access_token",method="POST",data=urllib.parse.urlencode({"client_id":META_APP_ID,"client_secret":META_APP_SECRET,"redirect_uri":FACEBOOK_REDIRECT_URI,"code":query["code"][0]}).encode(),headers={"Content-Type":"application/x-www-form-urlencoded"})
+        access=str(token.get("access_token") or "")
+        if not access:raise ValueError("Invalid token response")
+        headers={"Authorization":"Bearer "+access}
+        info=_oauth_json("https://graph.facebook.com/"+META_GRAPH_VERSION+"/me?fields=id,name,picture",headers=headers)
+        uid=str(info.get("id") or "")
+        if not re.fullmatch(r"[0-9]{1,128}",uid):raise ValueError("Invalid identity")
+        pages=_oauth_json("https://graph.facebook.com/"+META_GRAPH_VERSION+"/me/accounts?fields=id,name,access_token,tasks",headers=headers).get("data",[])
+        # Do not silently switch an already logged-in GSF account to another identity owner.
+        mapped=_oauth_object_read(_creator_identity_key("facebook",uid))
+        current=_creator_account_load(sid) or {}
+        if current.get("account_id") and mapped.get("account_id") and current["account_id"]!=mapped["account_id"]:raise ValueError("Account already linked")
+        _meta_index_add("facebook",uid,sid)
+        _creator_login(sid,"facebook",uid,display_name=info.get("name",""),avatar=((info.get("picture") or {}).get("data") or {}).get("url",""))
+        now=time.time()
+        _social_connection_save(sid,"facebook",{"access_token":access,"facebook_user_id":uid,"pages":pages,"saved_at":now,"expires_at":now+int(token.get("expires_in") or 0)})
+        _redirect(handler,"/?gsf_hub=social")
+    except Exception:_html(handler,502,"Collegamento Facebook non riuscito. Riprova dal Creator Hub.")
+
+
+def _twitch_oauth_start(handler,sid):
+    if not _safe_id(sid):_html(handler,400,"Sessione browser non valida.");return
+    if not (PUBLIC_APP_URL.startswith("https://") and TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET):_html(handler,503,"Twitch non è ancora configurato sul server.");return
+    state=_creator_state_begin(sid,"twitch","gsftw_")
+    _redirect(handler,"https://id.twitch.tv/oauth2/authorize?"+urllib.parse.urlencode({"client_id":TWITCH_CLIENT_ID,"redirect_uri":TWITCH_REDIRECT_URI,"response_type":"code","scope":TWITCH_SCOPES,"state":state}))
+
+
+def _twitch_validate(token):
+    info=_oauth_json("https://id.twitch.tv/oauth2/validate",headers={"Authorization":"OAuth "+str(token.get("access_token") or "")},timeout=15)
+    if str(info.get("client_id") or "")!=TWITCH_CLIENT_ID or not str(info.get("user_id") or ""):raise _social421.TwitchError("Identità Twitch non valida. Ricollega l'account.",401)
+    if token.get("user_id") and str(info["user_id"])!=str(token["user_id"]):raise _social421.TwitchError("Identità Twitch non valida. Ricollega l'account.",401)
+    if not set(TWITCH_SCOPES.split())<=set(info.get("scopes") or []):raise _social421.TwitchError("Permesso Twitch per le clip non concesso. Ricollega l'account.",403)
+    if int(info.get("expires_in") or 0)<=0:raise _social421.TwitchError("Accesso Twitch scaduto.",401)
+    return {**token,"user_id":str(info["user_id"]),"scopes":list(info.get("scopes") or []),"expires_at":time.time()+int(info["expires_in"]),"validated_at":time.time()}
+
+
+def _twitch_refresh(token):
+    if not token.get("refresh_token"):raise _social421.TwitchError("Accesso Twitch scaduto. Ricollega l'account.",401)
+    payload=_oauth_json("https://id.twitch.tv/oauth2/token",method="POST",data=urllib.parse.urlencode({"client_id":TWITCH_CLIENT_ID,"client_secret":TWITCH_CLIENT_SECRET,"grant_type":"refresh_token","refresh_token":token["refresh_token"]}).encode(),headers={"Content-Type":"application/x-www-form-urlencoded"},timeout=15)
+    if not payload.get("access_token") or int(payload.get("expires_in") or 0)<=0:raise _social421.TwitchError("Accesso Twitch scaduto. Ricollega l'account.",401)
+    return {**token,**payload,"refresh_token":payload.get("refresh_token") or token["refresh_token"],"expires_at":time.time()+int(payload["expires_in"])}
+
+
+def _twitch_forget(sid):
+    _s3().delete_object(Bucket=S3_BUCKET,Key=f"social-connections/{_safe_id(sid)}/twitch.json")
+    (ROOT/"sessions"/_safe_id(sid)/"social"/"twitch_config.json").unlink(missing_ok=True)
+
+
+def _twitch_access(sid,force_validate=False,background=False):
+    with _state_lock("twitch-token",sid):
+        token=_oauth_object_read(f"social-connections/{_safe_id(sid)}/twitch.json",True) if background else _social_connection_load(sid,"twitch")
+        if not token.get("access_token"):raise _social421.TwitchError("Collega il tuo account Twitch.",401)
+        try:
+            refreshed=False
+            if float(token.get("expires_at") or 0)<=time.time()+60:
+                token=_twitch_refresh(token);refreshed=True
+            if force_validate or refreshed or time.time()-float(token.get("validated_at") or 0)>=3600:
+                try:token=_twitch_validate(token)
+                except urllib.error.HTTPError as exc:
+                    if exc.code!=401 or refreshed:raise
+                    token=_twitch_validate(_twitch_refresh(token))
+                if background:_oauth_object_save(f"social-connections/{_safe_id(sid)}/twitch.json",token,True)
+                else:_social_connection_save(sid,"twitch",token)
+            return token
+        except urllib.error.HTTPError as exc:
+            if exc.code in (400,401):
+                _twitch_forget(sid)
+                raise _social421.TwitchError("Accesso Twitch revocato o scaduto. Ricollega l'account.",401) from None
+            raise _social421.TwitchError("Twitch temporaneamente non disponibile.") from None
+        except _social421.TwitchError as exc:
+            if exc.status in (401,403):_twitch_forget(sid)
+            raise
+        except Exception:raise _social421.TwitchError("Twitch temporaneamente non disponibile.") from None
+
+
+def _twitch_oauth_callback(handler,query):
+    state=str((query.get("state") or [""])[0]);pending=_social_state_finish(handler,state,"gsftw_","twitch")
+    sid=_safe_id(pending.get("sid",""))
+    if not sid:_html(handler,400,"Stato OAuth Twitch non valido o scaduto.");return
+    if query.get("error") or not query.get("code"):_html(handler,400,"Autorizzazione Twitch non completata.");return
+    try:
+        token=_oauth_json("https://id.twitch.tv/oauth2/token",method="POST",data=urllib.parse.urlencode({"client_id":TWITCH_CLIENT_ID,"client_secret":TWITCH_CLIENT_SECRET,"code":query["code"][0],"grant_type":"authorization_code","redirect_uri":TWITCH_REDIRECT_URI}).encode(),headers={"Content-Type":"application/x-www-form-urlencoded"},timeout=15)
+        if not token.get("access_token") or not token.get("refresh_token"):raise ValueError("Invalid token response")
+        token=_twitch_validate(token)
+        rows=_oauth_json("https://api.twitch.tv/helix/users",headers={"Authorization":"Bearer "+token["access_token"],"Client-Id":TWITCH_CLIENT_ID},timeout=15).get("data",[])
+        if len(rows)!=1 or str(rows[0].get("id") or "")!=token["user_id"]:raise ValueError("Invalid Twitch identity")
+        token.update(display_name=str(rows[0].get("display_name") or "")[:120],login=str(rows[0].get("login") or "")[:80],saved_at=time.time())
+        _social_connection_save(sid,"twitch",token)
+        _redirect(handler,"/?gsf_hub=social")
+    except Exception:_html(handler,502,"Collegamento Twitch non riuscito. Riprova dal Creator Hub.")
+
+
+def _twitch_disconnect(sid):
+    token=_social_connection_load(sid,"twitch")
+    if token.get("access_token"):
+        try:_oauth_json("https://id.twitch.tv/oauth2/revoke",method="POST",data=urllib.parse.urlencode({"client_id":TWITCH_CLIENT_ID,"token":token["access_token"]}).encode(),headers={"Content-Type":"application/x-www-form-urlencoded"},timeout=15)
+        except urllib.error.HTTPError as exc:
+            if exc.code!=401:raise
+    _twitch_forget(sid)
+
+
+def _twitch_api(sid,path,params=None):
+    if path not in ("clips","clips/downloads","videos"):raise ValueError("Unsupported Twitch API")
+    token=_twitch_access(sid)
+    url="https://api.twitch.tv/helix/"+path
+    if params:url+="?"+urllib.parse.urlencode(params,doseq=True)
+    try:
+        try:return _oauth_json(url,headers={"Authorization":"Bearer "+token["access_token"],"Client-Id":TWITCH_CLIENT_ID},timeout=15)
+        except urllib.error.HTTPError as exc:
+            if exc.code!=401:raise
+            token=_twitch_access(sid,force_validate=True)
+            return _oauth_json(url,headers={"Authorization":"Bearer "+token["access_token"],"Client-Id":TWITCH_CLIENT_ID},timeout=15)
+    except Exception:raise _social421.TwitchError("Impossibile recuperare i contenuti Twitch. Riprova più tardi.") from None
+
+
+def _twitch_content(sid,kind,after=""):
+    if kind not in ("clips","videos"):raise ValueError("Tipo di contenuto non valido")
+    token=_twitch_access(sid)
+    params={"broadcaster_id" if kind=="clips" else "user_id":token["user_id"],"first":20}
+    if after:
+        if len(after)>512:raise ValueError("Pagina non valida")
+        params["after"]=after
+    payload=_twitch_api(sid,kind,params)
+    rows=[]
+    for row in payload.get("data",[]):
+        if str(row.get("broadcaster_id" if kind=="clips" else "user_id") or "")!=token["user_id"]:continue
+        rows.append({"id":str(row.get("id") or ""),"title":str(row.get("title") or "")[:200],"duration":row.get("duration"),"url":str(row.get("url") or ""),"created_at":str(row.get("created_at") or ""),"importable":kind=="clips","import_reason":"" if kind=="clips" else "Le API ufficiali Twitch espongono i metadati VOD, non il file video da importare."})
+    return {"data":rows,"cursor":str((payload.get("pagination") or {}).get("cursor") or ""),"type":kind}
+
+
+def _twitch_clip_source(sid,clip_id):
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,200}",clip_id):raise ValueError("Clip non valida")
+    token=_twitch_access(sid)
+    rows=_twitch_api(sid,"clips",{"id":clip_id}).get("data",[])
+    if not rows:raise LookupError("Clip Twitch eliminata o non disponibile")
+    clip=rows[0]
+    if str(clip.get("id") or "")!=clip_id or str(clip.get("broadcaster_id") or "")!=token["user_id"]:raise PermissionError("Puoi importare solo clip del tuo canale Twitch")
+    urls=_twitch_api(sid,"clips/downloads",{"broadcaster_id":token["user_id"],"editor_id":token["user_id"],"clip_id":clip_id}).get("data",[])
+    found=next((row for row in urls if row.get("clip_id")==clip_id),{})
+    url=str(found.get("landscape_download_url") or found.get("portrait_download_url") or "")
+    if not url:raise LookupError("Twitch non rende disponibile il file di questa clip")
+    return {"url":url,"clip_id":clip_id,"owner_id":_storage_owner_id(sid),"twitch_user_id":token["user_id"]}
+
+
+def _twitch_import_start(sid,clip_id):
+    lock=_state_lock("twitch-import",sid)
+    if not lock.acquire(blocking=False):raise ValueError("Un'importazione Twitch è già in corso.")
+    try:
+        source=_twitch_clip_source(sid,clip_id)
+        media=ROOT/"sessions"/_safe_id(sid)/"media";media.mkdir(parents=True,exist_ok=True)
+        marker=media/".direct_upload_ready.json"
+        fence=marker.read_bytes() if marker.exists() else None
+        upload_id=uuid.uuid4().hex[:20]
+        threading.Thread(target=_twitch_import_run,args=(sid,upload_id,source,fence,lock),name="gsf-twitch-import",daemon=True).start()
+        return {"upload_id":upload_id,"preparing":True}
+    except Exception:
+        lock.release();raise
+
+
+def _twitch_import_run(sid,upload_id,source,fence,lock):
+    media=ROOT/"sessions"/sid/"media";name="twitch-"+source["clip_id"][:80]+".mp4"
+    pending=media/(".twitch-"+upload_id+".tmp");final=media/("source_twitch_"+upload_id+".mp4")
+    try:
+        size=_social421.download_twitch_clip(source["url"],pending,min(MAX_FILE_BYTES,512*1024*1024))
+        _security_validate_media(pending,".mp4")
+        os.replace(pending,final)
+        persisted=_persist_fallback_source_to_bucket(sid,upload_id,final,name,size)
+        if not persisted.get("bucket_key"):raise RuntimeError("Persistent import failed")
+        token=_social_connection_load(sid,"twitch")
+        if str(token.get("user_id") or "")!=source["twitch_user_id"] or _storage_owner_id(sid)!=source["owner_id"]:raise RuntimeError("Import owner changed")
+        marker=media/".direct_upload_ready.json"
+        if (marker.read_bytes() if marker.exists() else None)!=fence:raise RuntimeError("Another upload replaced the source")
+        # Same marker and persistence helper used by upload: existing AI/Editor pipeline owns the rest.
+        _write_json_atomic(marker,{"path":str(final),"name":name,"size":size,"upload_id":upload_id,"completed_at":time.time(),"storage":"direct_fallback_bucket",**persisted})
+    except Exception:
+        pending.unlink(missing_ok=True);final.unlink(missing_ok=True)
+        _write_json_atomic(media/".direct_upload_error.json",{"upload_id":upload_id,"error":"Importazione Twitch non riuscita. Il progetto precedente è conservato."})
+    finally:lock.release()
+
+
+def _twitch_validate_saved_connections():
+    for key in _oauth_bucket_keys("social-connections/"):
+        if not key.endswith("/twitch.json"):continue
+        sid=_safe_id(key.split("/")[1])
+        if not sid:continue
+        try:_twitch_access(sid,force_validate=True,background=True)
+        except Exception:pass  # Provider errors never stop app startup or other accounts.
+
+
+def _start_twitch_token_validation():
+    def run():
+        while True:
+            try:_twitch_validate_saved_connections()
+            except Exception:pass
+            time.sleep(3600)
+    if TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET:
+        threading.Thread(target=run,name="gsf-twitch-validation",daemon=True).start()
+
+
+def _social_connected(sid,provider):
+    try:
+        token=_social_connection_load(sid,provider)
+        return bool(token.get("access_token") and (provider=="twitch" or float(token.get("expires_at") or 0)>time.time()))
+    except Exception:return False
+
+
 def _creator_facebook_start(handler,sid):
     if not (PUBLIC_APP_URL and META_APP_ID and META_APP_SECRET):
         _html(handler,503,_creator_page(sid,"Accesso Facebook non ancora configurato sul server."))
@@ -2592,125 +3075,24 @@ def _creator_facebook_start(handler,sid):
         return
     params={
         "client_id":META_APP_ID,
-        "redirect_uri":PUBLIC_APP_URL,
+        "redirect_uri":FACEBOOK_REDIRECT_URI,
         "state":state,
         "response_type":"code",
-        "scope":"public_profile,email",
+        "scope":FACEBOOK_SCOPES,
     }
     _redirect(handler,"https://www.facebook.com/dialog/oauth?"+urllib.parse.urlencode(params))
 
 
 def _creator_facebook_callback(handler,query):
-    code=str((query.get("code") or [""])[0] or "")
-    state=str((query.get("state") or [""])[0] or "")
-    pending=_creator_state_finish(state,"gsfacf_")
-    sid=_safe_id(pending.get("sid",""))
-    if not sid:
-        _html(handler,400,"Accesso Facebook scaduto o non valido.")
-        return
-    err=str((query.get("error_description") or query.get("error") or [""])[0] or "")
-    if err or not code:
-        _html(handler,400,_creator_page(sid,"Facebook: "+(err or "autorizzazione non completata")))
-        return
-    try:
-        token_url="https://graph.facebook.com/oauth/access_token?"+urllib.parse.urlencode({
-            "client_id":META_APP_ID,
-            "client_secret":META_APP_SECRET,
-            "redirect_uri":PUBLIC_APP_URL,
-            "code":code,
-        })
-        token=_oauth_json(token_url)
-        access=str(token.get("access_token","") or "")
-        if not access:
-            raise RuntimeError("Facebook non ha restituito un access token")
-        info_url="https://graph.facebook.com/me?"+urllib.parse.urlencode({
-            "fields":"id,name,email,picture",
-            "access_token":access,
-        })
-        info=_oauth_json(info_url)
-        uid=str(info.get("id","") or "")
-        if not uid:
-            raise RuntimeError("Profilo Facebook non disponibile")
-        picture=((info.get("picture") or {}).get("data") or {}).get("url","") if isinstance(info.get("picture"),dict) else ""
-        _creator_login(
-            sid,"facebook",uid,
-            display_name=info.get("name",""),
-            email=info.get("email",""),
-            avatar=picture,
-        )
-        _redirect(handler,"/?gsf_hub=social")
-    except Exception as exc:
-        _html(handler,500,_creator_page(sid,"Accesso Facebook fallito: "+str(exc)[:220]))
+    return _facebook_connect_callback(handler,query)
 
 
 def _creator_tiktok_start(handler,sid):
-    if not (PUBLIC_APP_URL and TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET):
-        _html(handler,503,_creator_page(sid,"Accesso TikTok non ancora configurato sul server."))
-        return
-    try:
-        state=_creator_state_begin(sid,"tiktok","gsfact_")
-    except Exception as exc:
-        _html(handler,400,str(exc))
-        return
-    params={
-        "client_key":TIKTOK_CLIENT_KEY,
-        "response_type":"code",
-        "scope":"user.info.basic",
-        "redirect_uri":PUBLIC_APP_URL,
-        "state":state,
-    }
-    _redirect(handler,"https://www.tiktok.com/v2/auth/authorize/?"+urllib.parse.urlencode(params))
+    return _tiktok_code_flow_start(handler,sid,login=True)
 
 
 def _creator_tiktok_callback(handler,query):
-    code=str((query.get("code") or [""])[0] or "")
-    state=str((query.get("state") or [""])[0] or "")
-    pending=_creator_state_finish(state,"gsfact_")
-    sid=_safe_id(pending.get("sid",""))
-    if not sid:
-        _html(handler,400,"Accesso TikTok scaduto o non valido.")
-        return
-    err=str((query.get("error_description") or query.get("error") or [""])[0] or "")
-    if err or not code:
-        _html(handler,400,_creator_page(sid,"TikTok: "+(err or "autorizzazione non completata")))
-        return
-    try:
-        form=urllib.parse.urlencode({
-            "client_key":TIKTOK_CLIENT_KEY,
-            "client_secret":TIKTOK_CLIENT_SECRET,
-            "code":code,
-            "grant_type":"authorization_code",
-            "redirect_uri":PUBLIC_APP_URL,
-        }).encode("utf-8")
-        token=_oauth_json(
-            "https://open.tiktokapis.com/v2/oauth/token/",
-            method="POST",
-            data=form,
-            headers={"Content-Type":"application/x-www-form-urlencoded"},
-        )
-        access=str(token.get("access_token","") or "")
-        uid=str(token.get("open_id","") or "")
-        name=""
-        avatar=""
-        if access:
-            try:
-                info=_oauth_json(
-                    "https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url",
-                    headers={"Authorization":"Bearer "+access},
-                )
-                user=((info.get("data") or {}).get("user") or {}) if isinstance(info,dict) else {}
-                uid=str(user.get("open_id","") or uid)
-                name=str(user.get("display_name","") or "")
-                avatar=str(user.get("avatar_url","") or "")
-            except Exception:
-                pass
-        if not access or not uid:
-            raise RuntimeError("Profilo TikTok non disponibile")
-        _creator_login(sid,"tiktok",uid,display_name=name or "TikTok Creator",avatar=avatar)
-        _redirect(handler,"/account")
-    except Exception as exc:
-        _html(handler,500,_creator_page(sid,"Accesso TikTok fallito: "+str(exc)[:220]))
-
+    return _tiktok_oauth_callback(handler,query)
 
 
 def _auto_highlights_rows_for_account(account_id,limit=12):
@@ -2944,88 +3326,63 @@ border-radius:14px;margin-top:22px;cursor:pointer;font-size:15px}}
 </div></main></body></html>"""
 
 
-def _tiktok_oauth_start(handler,sid):
-    sid=_safe_id(sid)
-    if not sid:
-        _html(handler,400,"Sessione browser non valida. Riapri /social-connect.")
-        return
-    if not (PUBLIC_APP_URL and TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET):
-        _html(handler,503,"Configurazione TikTok incompleta")
-        return
-    state="gsfsc_"+secrets.token_urlsafe(28)
-    state_dir=ROOT/"social_oauth"
-    state_dir.mkdir(parents=True,exist_ok=True)
-    _write_json_atomic(state_dir/(state+".json"),{
-        "created":time.time(),
-        "sid":sid,
-    })
-    # Keep the already-registered root redirect URI. Nginx intercepts only
-    # our gsfsc_ OAuth states and routes them back to this helper.
-    redirect_uri=PUBLIC_APP_URL
-    params={
-        "client_key":TIKTOK_CLIENT_KEY,
-        "response_type":"code",
-        "scope":"user.info.basic,video.publish,video.list",
-        "redirect_uri":redirect_uri,
-        "state":state,
-    }
+def _tiktok_code_flow_start(handler,sid,login=False):
+    if not _safe_id(sid):_html(handler,400,"Sessione browser non valida.");return
+    if not (PUBLIC_APP_URL and TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET):_html(handler,503,"Configurazione TikTok incompleta.");return
+    state=_creator_state_begin(sid,"tiktok","gsfact_" if login else "gsfsc_")
+    pending={"sid":sid,"provider":"tiktok","created":time.time(),"login":bool(login),"redirect_uri":TIKTOK_REDIRECT_URI}
+    _write_json_atomic(ROOT/"social_oauth"/(state+".json"),pending)
+    params={"client_key":TIKTOK_CLIENT_KEY,"response_type":"code","scope":"user.info.basic" if login else TIKTOK_SCOPE,"redirect_uri":TIKTOK_REDIRECT_URI,"state":state}
     _redirect(handler,"https://www.tiktok.com/v2/auth/authorize/?"+urllib.parse.urlencode(params))
 
 
-def _tiktok_oauth_callback(handler,query):
-    code=str((query.get("code") or [""])[0] or "")
-    state=re.sub(r"[^A-Za-z0-9_-]+","",str((query.get("state") or [""])[0] or ""))[:160]
-    err=str((query.get("error_description") or query.get("error") or [""])[0] or "")
-    state_file=ROOT/"social_oauth"/(state+".json")
-    try:
-        pending=json.loads(state_file.read_text(encoding="utf-8"))
-    except Exception:
-        pending={}
-    try:
-        state_file.unlink(missing_ok=True)
-    except Exception:
-        pass
-    created=float(pending.get("created",0) or 0)
-    sid=_safe_id(pending.get("sid",""))
-    if not state or not sid or not created or time.time()-created>900:
-        _html(handler,400,"Stato OAuth scaduto o non valido. Riapri /social-connect.")
-        return
-    if err:
-        _html(handler,400,_social_page(sid,"TikTok: "+err))
-        return
-    if not code:
-        _html(handler,400,_social_page(sid,"TikTok non ha restituito il codice di autorizzazione."))
-        return
+def _tiktok_oauth_start(handler,sid):
+    return _tiktok_code_flow_start(handler,sid)
 
-    redirect_uri=PUBLIC_APP_URL
-    form=urllib.parse.urlencode({
-        "client_key":TIKTOK_CLIENT_KEY,
-        "client_secret":TIKTOK_CLIENT_SECRET,
-        "code":code,
-        "grant_type":"authorization_code",
-        "redirect_uri":redirect_uri,
-    }).encode("utf-8")
-    req=urllib.request.Request(
-        "https://open.tiktokapis.com/v2/oauth/token/",
-        data=form,
-        headers={"Content-Type":"application/x-www-form-urlencoded"},
-        method="POST",
-    )
+
+def _tiktok_oauth_callback(handler,query):
+    state=str((query.get("state") or [""])[0] or "")
+    prefix="gsfact_" if state.startswith("gsfact_") else "gsfsc_"
+    pending=_social_state_finish(handler,state,prefix,"tiktok")
+    sid=_safe_id(pending.get("sid",""))
+    if not sid:_html(handler,400,"Stato OAuth TikTok non valido o scaduto.");return
+    if query.get("error") or not query.get("code"):_html(handler,400,"Autorizzazione TikTok non completata.");return
     try:
-        with urllib.request.urlopen(req,timeout=45) as resp:
-            payload=json.loads(resp.read().decode("utf-8"))
-        token=dict(payload or {})
-        if not token.get("access_token"):
-            raise RuntimeError(str(payload))
-        now=time.time()
-        token["_saved_at"]=now
-        token["saved_at"]=now
-        token["expires_at"]=now+int(token.get("expires_in",0) or 0)
-        token["refresh_expires_at"]=now+int(token.get("refresh_expires_in",0) or 0)
-        _tiktok_user_save(sid,token)
+        form={"client_key":TIKTOK_CLIENT_KEY,"client_secret":TIKTOK_CLIENT_SECRET,"code":query["code"][0],"grant_type":"authorization_code","redirect_uri":pending.get("redirect_uri") or PUBLIC_APP_URL}
+        token=_oauth_json("https://open.tiktokapis.com/v2/oauth/token/",method="POST",data=urllib.parse.urlencode(form).encode(),headers={"Content-Type":"application/x-www-form-urlencoded"})
+        access=str(token.get("access_token") or "");uid=str(token.get("open_id") or "")
+        if not access or not uid or token.get("error"):raise ValueError("Invalid token response")
+        info=_oauth_json("https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url",headers={"Authorization":"Bearer "+access})
+        user=(info.get("data") or {}).get("user") or {}
+        if str(user.get("open_id") or "")!=uid:raise ValueError("Invalid account identity")
+        login=pending.get("login") or prefix=="gsfact_"
+        if login:
+            mapped=_oauth_object_read(_creator_identity_key("tiktok",uid));current=_creator_account_load(sid) or {}
+            if mapped.get("account_id") and current.get("account_id") and mapped["account_id"]!=current["account_id"]:raise ValueError("Account already linked")
+            _creator_login(sid,"tiktok",uid,display_name=user.get("display_name") or "TikTok Creator",avatar=user.get("avatar_url") or "")
+        else:
+            granted=set(str(token.get("scope") or "").split(","))
+            if not {"user.info.basic","video.publish","video.list"}<=granted:raise ValueError("Required permissions were not granted")
+            now=time.time();expiry=int(token.get("expires_in") or 0)
+            if expiry<=0:raise ValueError("Invalid token expiry")
+            token.update(saved_at=now,_saved_at=now,expires_at=now+expiry,refresh_expires_at=now+int(token.get("refresh_expires_in") or 0))
+            _tiktok_user_save(sid,token)
         _redirect(handler,"/?gsf_hub=social")
-    except Exception as exc:
-        _html(handler,500,_social_page(sid,"Collegamento TikTok fallito: "+str(exc)[:220]))
+    except Exception:_html(handler,502,"Collegamento TikTok non riuscito. Riprova dal Creator Hub.")
+
+
+def _tiktok_disconnect(sid):
+    token=_tiktok_user_load(sid) or {}
+    if token.get("access_token"):
+        try:
+            out=_oauth_json("https://open.tiktokapis.com/v2/oauth/revoke/",method="POST",data=urllib.parse.urlencode({"client_key":TIKTOK_CLIENT_KEY,"client_secret":TIKTOK_CLIENT_SECRET,"token":token["access_token"]}).encode(),headers={"Content-Type":"application/x-www-form-urlencoded"})
+            if out.get("error"):raise ValueError("Revocation failed")
+        except urllib.error.HTTPError as exc:
+            if exc.code!=401:raise
+    _s3().delete_object(Bucket=S3_BUCKET,Key=_tiktok_user_key(sid))
+    for name in ("tiktok_token.json","tiktok_config.json"):(ROOT/"sessions"/_safe_id(sid)/"social"/name).unlink(missing_ok=True)
+
+
 
 
 def _youtube_oauth_start(handler,sid):
@@ -3059,7 +3416,7 @@ def _youtube_oauth_start(handler,sid):
 
 def _youtube_oauth_callback(handler,query):
     code=str((query.get("code") or [""])[0] or "")
-    state=re.sub(r"[^A-Za-z0-9_-]+","",str((query.get("state") or [""])[0] or ""))[:160]
+    state=str((query.get("state") or [""])[0] or "")
     err=str((query.get("error_description") or query.get("error") or [""])[0] or "")
     state_file=ROOT/"social_oauth"/(state+".json")
     try:
@@ -3182,25 +3539,16 @@ def _instagram_oauth_start(handler,sid):
 
 def _instagram_oauth_callback(handler,query):
     code=str((query.get("code") or [""])[0] or "")
-    state=re.sub(r"[^A-Za-z0-9_-]+","",str((query.get("state") or [""])[0] or ""))[:160]
+    state=str((query.get("state") or [""])[0] or "")
     err=str((query.get("error_description") or query.get("error_message") or query.get("error") or [""])[0] or "")
-    state_file=ROOT/"social_oauth"/(state+".json")
-    try:
-        pending=json.loads(state_file.read_text(encoding="utf-8"))
-    except Exception:
-        pending={}
-    try:
-        state_file.unlink(missing_ok=True)
-    except Exception:
-        pass
-    created=float(pending.get("created",0) or 0)
+    pending=_social_state_finish(handler,state,"gsfig_","instagram")
     sid=_safe_id(pending.get("sid",""))
     mode=str(pending.get("mode","") or "")
-    if not state.startswith("gsfig_") or not sid or not created or time.time()-created>900:
-        _html(handler,400,"Stato OAuth Instagram scaduto o non valido. Riapri /social-connect.")
+    if not sid:
+        _html(handler,400,"Stato OAuth Instagram scaduto o non valido.")
         return
     if err:
-        _html(handler,400,_social_page(sid,"Instagram: "+err))
+        _html(handler,400,_social_page(sid,"Autorizzazione Instagram non completata."))
         return
     if not code:
         _html(handler,400,_social_page(sid,"Instagram non ha restituito il codice di autorizzazione."))
@@ -3274,6 +3622,7 @@ def _instagram_oauth_callback(handler,query):
                 raise RuntimeError("Instagram non ha restituito l'ID dell'account professionale.")
 
             now=time.time()
+            _meta_index_add("instagram",ig_id,sid)
             _instagram_user_save(sid,{
                 "ig_user_id":ig_id,
                 "access_token":access_token,
@@ -3286,7 +3635,7 @@ def _instagram_oauth_callback(handler,query):
             })
             _redirect(handler,"/?gsf_hub=social")
         except Exception as exc:
-            _html(handler,500,_social_page(sid,"Collegamento Instagram fallito: "+str(exc)[:220]))
+            _html(handler,500,_social_page(sid,"Collegamento Instagram non riuscito. Riprova dal Creator Hub."))
         return
 
     # Legacy Facebook Login callback.
@@ -3294,7 +3643,7 @@ def _instagram_oauth_callback(handler,query):
         token_url="https://graph.facebook.com/oauth/access_token?"+urllib.parse.urlencode({
             "client_id":META_APP_ID,
             "client_secret":META_APP_SECRET,
-            "redirect_uri":PUBLIC_APP_URL,
+            "redirect_uri":INSTAGRAM_REDIRECT_URI,
             "code":code,
         })
         with urllib.request.urlopen(token_url,timeout=45) as resp:
@@ -3353,7 +3702,13 @@ def _instagram_oauth_callback(handler,query):
         except Exception:
             pass
 
+        fbinfo=_oauth_json("https://graph.facebook.com/"+META_GRAPH_VERSION+"/me?fields=id",headers={"Authorization":"Bearer "+user_token})
+        fbuid=str(fbinfo.get("id") or "")
+        if not fbuid:raise ValueError("Missing Facebook identity")
+        _meta_index_add("facebook",fbuid,sid)
+        _meta_index_add("instagram",ig_id,sid)
         _instagram_user_save(sid,{
+            "facebook_user_id":fbuid,
             "ig_user_id":ig_id,
             "access_token":page_token,
             "username":username,
@@ -3363,7 +3718,7 @@ def _instagram_oauth_callback(handler,query):
         })
         _redirect(handler,"/?gsf_hub=social")
     except Exception as exc:
-        _html(handler,500,_social_page(sid,"Collegamento Instagram fallito: "+str(exc)[:220]))
+        _html(handler,500,_social_page(sid,"Collegamento Instagram non riuscito. Riprova dal Creator Hub."))
 
 
 def _ai_learning_restore():
@@ -3640,38 +3995,24 @@ def _youtube_analytics_token(sid):
 
 def _tiktok_analytics_token(sid):
     token=dict(_tiktok_user_load(sid) or {})
+    now=time.time();expiry=float(token.get("expires_at") or 0)
+    if not token.get("access_token"):raise ValueError("TikTok non collegato. Ricollega l'account.")
+    if expiry>now+60:return token
     refresh=str(token.get("refresh_token") or "")
-    expiry=float(token.get("expires_at") or 0.0)
-    if not refresh or not TIKTOK_CLIENT_KEY or not TIKTOK_CLIENT_SECRET:
-        return token
-    if expiry and expiry-time.time()>600:
-        return token
+    if not refresh or not TIKTOK_CLIENT_KEY or not TIKTOK_CLIENT_SECRET:raise ValueError("Accesso TikTok scaduto. Ricollega l'account.")
+    if token.get("refresh_expires_at") and float(token["refresh_expires_at"])<=now:raise ValueError("Accesso TikTok scaduto. Ricollega l'account.")
     try:
-        form=urllib.parse.urlencode({
-            "client_key":TIKTOK_CLIENT_KEY,
-            "client_secret":TIKTOK_CLIENT_SECRET,
-            "grant_type":"refresh_token",
-            "refresh_token":refresh,
-        }).encode("utf-8")
-        req=urllib.request.Request(
-            "https://open.tiktokapis.com/v2/oauth/token/",
-            data=form,
-            headers={"Content-Type":"application/x-www-form-urlencoded"},
-            method="POST",
-        )
-        with urllib.request.urlopen(req,timeout=30) as resp:
-            payload=json.loads(resp.read().decode("utf-8"))
-        if payload.get("access_token"):
-            now=time.time()
-            token.update(dict(payload))
-            token["expires_at"]=now+int(payload.get("expires_in",0) or 0)
-            token["refresh_expires_at"]=now+int(payload.get("refresh_expires_in",0) or 0)
-            token["_analytics_refreshed_at"]=now
-            try:_tiktok_user_save(sid,token)
-            except Exception:pass
-    except Exception as exc:
-        print("GSF_V148_TIKTOK_REFRESH_WARN",sid,repr(str(exc))[:180],flush=True)
-    return token
+        payload=_oauth_json("https://open.tiktokapis.com/v2/oauth/token/",method="POST",data=urllib.parse.urlencode({"client_key":TIKTOK_CLIENT_KEY,"client_secret":TIKTOK_CLIENT_SECRET,"grant_type":"refresh_token","refresh_token":refresh}).encode(),headers={"Content-Type":"application/x-www-form-urlencoded"},timeout=20)
+        if not payload.get("access_token") or int(payload.get("expires_in") or 0)<=0 or payload.get("error"):raise ValueError("Invalid refresh")
+        if payload.get("open_id") and token.get("open_id") and payload["open_id"]!=token["open_id"]:raise ValueError("Invalid account")
+        token.update(payload)
+        token["refresh_token"]=str(payload.get("refresh_token") or refresh)
+        token["expires_at"]=now+int(payload["expires_in"])
+        if payload.get("refresh_expires_in"):token["refresh_expires_at"]=now+int(payload["refresh_expires_in"])
+        _tiktok_user_save(sid,token)
+        return token
+    except Exception:raise ValueError("Accesso TikTok non disponibile. Ricollega l'account.") from None
+
 
 def _analytics_token_for(sid,platform):
     p=str(platform or "").lower()
@@ -3720,7 +4061,14 @@ def _analytics_register(sid,record):
         _analytics_save(sid,data)
     return {"ok":True,"record":payload}
 
+def _meta_analytics_epoch(sid):
+    path=ROOT/"sessions"/_safe_id(sid)/".meta_analytics_epoch.json"
+    try:return str(json.loads(path.read_text()).get("epoch") or "")
+    except FileNotFoundError:return ""
+
+
 def _analytics_collect_one(sid,row):
+    meta_epoch=_meta_analytics_epoch(sid)
     token=_analytics_token_for(sid,row.get("platform"))
     if not token:
         return {**dict(row),"status":"needs_connection","last_error":"account not connected","updated_at":time.time()}
@@ -3737,6 +4085,7 @@ def _analytics_collect_one(sid,row):
         fp=str(out.get("content_fingerprint") or "")
         if fp:
             with _CONTENT_MEMORY_LOCK:
+                if str(row.get("platform") or "").lower() in ("facebook","instagram") and meta_epoch!=_meta_analytics_epoch(sid):return out
                 memory_rows=_content_memory_load(sid)
                 changed=False
                 for item in memory_rows:
@@ -3761,10 +4110,12 @@ def _analytics_collect_all(sid,force=False):
         data=_analytics_load(sid)
         return {"ok":True,"records":list(data.get("records") or []),"cached":True}
     with _ANALYTICS_LOCK:
+        meta_epoch=_meta_analytics_epoch(sid)
         data=_analytics_load(sid)
         rows=[dict(x) for x in (data.get("records") or []) if isinstance(x,dict)]
     refreshed=[_analytics_collect_one(sid,row) for row in rows]
     with _ANALYTICS_LOCK:
+        if meta_epoch!=_meta_analytics_epoch(sid):refreshed=[r for r in refreshed if str(r.get("platform") or "").lower() not in ("facebook","instagram")]
         data["records"]=refreshed
         data["updated_at"]=now
         _analytics_save(sid,data)
@@ -3965,8 +4316,8 @@ def _creator_social_snapshot(sid,providers=None):
         "youtube":bool(_youtube_user_load(sid)),
         "tiktok":bool(_tiktok_user_load(sid)),
         "instagram":bool(_instagram_user_load(sid)),
-        "facebook":bool(providers.get("facebook")),
-        "twitch":bool(providers.get("twitch")),
+        "facebook":_social_connected(sid,"facebook"),
+        "twitch":_social_connected(sid,"twitch"),
     }
 
 def _guardian_tick(sid,force=False):
@@ -4180,15 +4531,34 @@ def _publish_run(sid,job,request,video_path):
             print("GSF_V413_PUBLISH_OK",sid,platform,flush=True)
         except Exception as exc:
             message=str(exc)[:220] or "Pubblicazione non riuscita."
-            _publish_update(sid,job,platform,status="error",error=message)
+            extra={"confirmation_pending":True,"content_id":exc.publish_id} if isinstance(exc,_pm413.PublishUnconfirmed) else {}
+            _publish_update(sid,job,platform,status="error",error=message,**extra)
             print("GSF_V413_PUBLISH_FAIL",sid,platform,type(exc).__name__,flush=True)
     done=all(r.get("status") in ("done","error","manual","needs_connection") for r in job["results"].values())
     if done:
         _publish_update(sid,job,state="finished")
 
+def _publish_reconcile_tiktok(sid):
+    with _state_lock("publish-confirm",sid):
+        job=_publish_job_load(sid)
+        row=(job.get("results") or {}).get("tiktok") or {}
+        if not row.get("confirmation_pending") or time.time()-float(row.get("checked_at") or 0)<10:return job
+        _publish_update(sid,job,"tiktok",checked_at=time.time())
+        try:
+            token=_tiktok_analytics_token(sid)
+            state=_pm413.tiktok_post_status(str(token.get("access_token") or ""),str(row.get("content_id") or ""))
+            if state=="PUBLISH_COMPLETE":
+                _publish_update(sid,job,"tiktok",status="done",confirmation_pending=False,error="")
+                _analytics_register(sid,{"platform":"TikTok","content_id":row.get("content_id"),"id_type":"publish_id","metadata":{"source":"crea_short_v413"}})
+            elif state=="FAILED":_publish_update(sid,job,"tiktok",status="error",confirmation_pending=False,error="TikTok non ha pubblicato il video. Puoi riprovare.")
+        except Exception:pass  # Keep an explicit unconfirmed result and its ID; never report success.
+        return _publish_job_load(sid)
+
+
 def _publish_start(sid,payload):
     request=_pm413.normalize_request(payload)
-    current=_publish_job_load(sid)
+    current=_publish_reconcile_tiktok(sid)
+    if any(r.get("confirmation_pending") for r in (current.get("results") or {}).values()):raise ValueError("Pubblicazione TikTok ancora da confermare. Controlla TikTok prima di riprovare.")
     if current.get("state")=="running" and time.time()-float(current.get("updated_at") or 0)<900:
         raise ValueError("Una pubblicazione è già in corso.")
     video_path=_publish_final_path(sid)
@@ -4264,6 +4634,26 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path=urlparse(self.path)
         clean=path.path.rstrip("/")
+        if clean=="/auth/meta/data-deletion/status":
+            _meta_deletion_status(self,parse_qs(path.query));return
+        if clean=="/social-connect/twitch/start":
+            _twitch_oauth_start(self,_social_sid(self));return
+        if clean=="/auth/twitch/callback":
+            _twitch_oauth_callback(self,parse_qs(path.query));return
+        if clean=="/social-connect/twitch/content":
+            try:
+                query=parse_qs(path.query)
+                _json(self,200,{"ok":True,**_twitch_content(_social_sid(self),str((query.get("type") or ["clips"])[0]),str((query.get("after") or [""])[0]))})
+            except _social421.TwitchError as exc:_json(self,exc.status,{"ok":False,"error":str(exc)})
+            except ValueError:_json(self,400,{"ok":False,"error":"Richiesta Twitch non valida"})
+            except Exception:_json(self,503,{"ok":False,"error":"Contenuti Twitch temporaneamente non disponibili"})
+            return
+        if clean=="/auth/tiktok/callback":
+            _tiktok_oauth_callback(self,parse_qs(path.query));return
+        if clean=="/auth/facebook/callback":
+            _creator_facebook_callback(self,parse_qs(path.query));return
+        if clean=="/social-connect/facebook/start":
+            _creator_facebook_start(self,_social_sid(self));return
         if clean=="/healthz":
             health=_composite_health()
             _json(self,200 if health.get("ok") else 503,health)
@@ -4479,7 +4869,7 @@ class Handler(BaseHTTPRequestHandler):
             if not sid:
                 _json(self,400,{"ok":False,"error":"Sessione browser non valida."})
                 return
-            _json(self,200,{"ok":True,"job":_publish_job_load(sid)})
+            _json(self,200,{"ok":True,"job":_publish_reconcile_tiktok(sid)})
             return
         if clean.startswith("/share/public/"):
             _share_public_stream(self,clean[len("/share/public/"):])
@@ -4787,9 +5177,25 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path=urlparse(self.path).path.rstrip("/")
+        if path in ("/auth/meta/deauthorize","/auth/meta/data-deletion"):
+            _meta_signed_callback(self,"deauthorize" if path.endswith("deauthorize") else "data-deletion")
+            return
         sid=_safe_id(self.headers.get("X-GSF-Session-ID"))
         if not sid:
             _json(self,400,{"ok":False,"error":"invalid session"})
+            return
+
+        if path=="/social-connect/twitch/import":
+            if not _security_csrf_valid(self,sid):_json(self,403,{"ok":False,"error":"csrf validation failed"});return
+            try:
+                data=_read_json(self,max_bytes=16384)
+                if data.get("type","clips")!="clips":raise ValueError("Le API Twitch non consentono l'importazione diretta dei VOD.")
+                _json(self,202,{"ok":True,**_twitch_import_start(sid,str(data.get("clip_id") or ""))})
+            except _social421.TwitchError as exc:_json(self,exc.status,{"ok":False,"error":str(exc)})
+            except PermissionError:_json(self,403,{"ok":False,"error":"Puoi importare solo clip del tuo canale."})
+            except LookupError:_json(self,404,{"ok":False,"error":"Clip Twitch non disponibile."})
+            except ValueError:_json(self,400,{"ok":False,"error":"Contenuto Twitch non importabile o importazione già in corso."})
+            except Exception:_json(self,503,{"ok":False,"error":"Importazione Twitch temporaneamente non disponibile."})
             return
 
         if path in ("/publish/multi","/share/link"):
@@ -4924,9 +5330,20 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc: _json(self,400,{"ok":False,"error":str(exc)[:180]})
             return
         if path=="/creator-hub/social/disconnect":
+            if not _security_csrf_valid(self,sid):
+                _json(self,403,{"ok":False,"error":"csrf validation failed"});return
             try:
                 data=_read_json(self,max_bytes=16*1024); platform=re.sub(r"[^a-z0-9_-]+","",str(data.get("platform") or "").lower())[:24]
                 if platform not in ("youtube","tiktok","instagram","facebook","twitch"): raise ValueError("Social non valido")
+                if platform=="twitch":
+                    _twitch_disconnect(sid)
+                    _json(self,200,{"ok":True,"platform":platform});return
+                if platform=="tiktok":
+                    _tiktok_disconnect(sid)
+                    _json(self,200,{"ok":True,"platform":platform});return
+                if platform in ("facebook","instagram"):
+                    _meta_disconnect(sid,platform)
+                    _json(self,200,{"ok":True,"platform":platform});return
                 social_dir=ROOT/"sessions"/sid/"social"; local_files={"youtube":["youtube_token.json"],"tiktok":["tiktok_token.json","tiktok_config.json"],"instagram":["instagram_config.json"]}
                 for name in local_files.get(platform,[]):
                     try:(social_dir/name).unlink(missing_ok=True)
@@ -5532,6 +5949,7 @@ if __name__=="__main__":
     _ai_learning_restore()
     _start_proactive_guardian()
     _start_social_analytics_worker()
+    _start_twitch_token_validation()
     server=ThreadingHTTPServer(("127.0.0.1",PORT),Handler)
     print(
         f"GSF direct upload server listening on 127.0.0.1:{PORT} "

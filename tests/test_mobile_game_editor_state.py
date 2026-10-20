@@ -31,6 +31,11 @@ def _stub_optional_server_dependencies() -> None:
         botocore_config.Config = lambda *args, **kwargs: object()
         botocore.config = botocore_config
         sys.modules.update({"botocore": botocore, "botocore.config": botocore_config})
+    # Prefer the real installed encryption library; a global stub breaks OAuth tests.
+    try:
+        import cryptography.fernet
+    except ModuleNotFoundError:
+        pass
     if "cryptography.fernet" not in sys.modules:
         cryptography = types.ModuleType("cryptography")
         fernet = types.ModuleType("cryptography.fernet")

@@ -30,7 +30,7 @@ jobs:
           cache-dependency-path: requirements-web.txt
 
       - name: Tools
-        run: python -m pip install --disable-pip-version-check pytest bandit pillow
+        run: python -m pip install --disable-pip-version-check pytest bandit pillow cryptography==50.0.1
 
       - name: Canonical UI pipeline guard
         run: python tests/test_canonical_ui_pipeline.py
