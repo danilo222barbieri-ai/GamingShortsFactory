@@ -54,7 +54,7 @@ def request_surface_is_inactive(request):
     if request.resource_type not in ('media','other','fetch'):return False
     owner=getattr(request,'_gsf_fetch_owner',None) or getattr(request,'_gsf_media_owner',None)
     if owner and owner[0] in owner[1]:return True
-    if owner and request.resource_type in ('media','other') and request.failure in ('Load request cancelled','net::ERR_ABORTED'):
+    if owner and request.resource_type in ('media','other','fetch') and request.failure in ('Load request cancelled','net::ERR_ABORTED'):
         for _ in range(5):
             try:request.frame.page.wait_for_timeout(20)
             except Exception:break
@@ -135,11 +135,15 @@ INSTRUMENT = r"""
   return nativeFetch.apply(this,arguments);
  };
  // Keep per-request proof across native Back and immediate resume. Read the
- // actual signals after all pagehide handlers have run; never fabricate aborts.
- const recordSuspended=()=>{
+ // actual signals after all departure handlers have run; never fabricate aborts.
+ const recordSuspended=event=>{
   const rows=[...owners.values()].flat();
-  queueMicrotask(()=>{const aborted=rows.filter(row=>row.signal?.aborted).map(row=>row.token);if(aborted.length&&window.__gsfRecordSuspendedFetch)window.__gsfRecordSuspendedFetch(aborted).catch(()=>{});});
+  const record=()=>{if(event?.type==="beforeunload"&&event.defaultPrevented)return;const aborted=rows.filter(row=>row.signal?.aborted).map(row=>row.token);if(aborted.length&&window.__gsfRecordSuspendedFetch)window.__gsfRecordSuspendedFetch(aborted).catch(()=>{});};
+  // WebKit checkpoints microtasks between native beforeunload listeners.
+  // A task observes the final upload guard; pagehide remains the fallback.
+  if(event?.type==="beforeunload")setTimeout(record,0);else queueMicrotask(record);
  };
+ window.addEventListener('beforeunload',recordSuspended);
  window.addEventListener('pagehide',recordSuspended);
  document.addEventListener('visibilitychange',()=>{if(document.hidden)recordSuspended();});
  const state=top.__gsfStability||(top.__gsfStability={mutation:0,resize:0,callbacks:0,callbackMs:0});
