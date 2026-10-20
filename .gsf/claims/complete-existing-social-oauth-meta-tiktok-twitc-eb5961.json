@@ -8,6 +8,7 @@
     "gate": "PR39481339130 SUCCESS; CI39481339171 SUCCESS; main39483685079 SUCCESS.",
     "pr": "https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/185",
     "railway": "Deploys paused by platform; previous frontend SUCCESS/live release28af3c6; fresh compositehealthalltrue. New OAuth release not online.",
+    "source_library": "Repository/API investigation; architectural design preparation, implementation pending design review",
     "terminal_status": "HANDOFF_REQUIRED",
     "tests": "Local full suite 259 passed,20 skipped,26 subtests; final OAuth49 tests/2skip; real WebKit and canonical/security/publish/Hub/Editor contracts PASS. Independent security review final fixes verified.",
     "updated_at": "2026-10-20"
@@ -19,6 +20,7 @@
     ".github/workflows/gsf-ci.yml",
     ".github/workflows/v397-production-gate.yml",
     "PROJECT_STATUS.md",
+    "docs/superpowers/specs/2026-10-20-source-library-twitch-design.md",
     "tests/test_mobile_game_editor_state.py",
     "tests/test_social_oauth_v421.py",
     "web/creator_hub_v156_component/index.html",
@@ -29,6 +31,6 @@
     "web/publish_multi_v413.py",
     "web/test_v413_publish_multi.py"
   ],
-  "scope": "Complete existing social OAuth Meta TikTok Twitch and signed Meta callbacks",
-  "state": "handoff"
+  "scope": "Complete existing social OAuth Meta TikTok Twitch and signed Meta callbacks; user-requested Twitch source library design, no deployment while Railway paused",
+  "state": "active"
 }
