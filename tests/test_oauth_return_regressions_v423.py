@@ -52,11 +52,11 @@ class OAuthReturnRegressionContracts(unittest.TestCase):
     def test_oauth_navigation_failure_does_not_poison_restored_hub(self):
         self.assertIn("oauthNavigating", self.hub)
         connect_start = self.hub.index("function connectSocial")
-        connect_end = self.hub.index("async function disconnectSocial", connect_start)
+        connect_end = self.hub.index("// Profile:", connect_start)
         self.assertIn("oauthNavigating=true", self.hub[connect_start:connect_end].replace(" ", ""))
 
         load_start = self.hub.index("async function loadState")
-        load_end = self.hub.index("function openSection", load_start)
+        load_end = self.hub.index("function csrfHeaders", load_start)
         load_block = self.hub[load_start:load_end]
         self.assertRegex(load_block, r'catch\s*\([^)]*\)\s*\{[^}]*oauthNavigating')
 
@@ -64,11 +64,11 @@ class OAuthReturnRegressionContracts(unittest.TestCase):
         self.assertIsNotNone(pageshow, "Creator Hub must repair BFCache restores after OAuth")
         self.assertIn("loadState", pageshow.group(0))
 
-    def test_render_strips_restores_layout_after_transient_load_failure(self):
+    def test_render_strips_can_restore_layout_after_transient_load_failure(self):
         start = self.hub.index("function renderStrips")
-        end = self.hub.index("function renderShorts", start)
+        end = self.hub.index("function renderTrends", start)
         block = self.hub[start:end]
-        self.assertIn('classList.add("strip")', block)
+        self.assertIn('classList.toggle("strip"', block)
 
 
 if __name__ == "__main__":
