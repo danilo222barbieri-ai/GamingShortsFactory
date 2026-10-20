@@ -393,3 +393,19 @@ class InspectorCancellationAttribution(unittest.TestCase):
         for stack in (error['stack'].replace('web-inspector://bootstrap.js','https://gsf.test/app.js'),error['stack'].replace('/gsf-push.js','/other.js'),error['stack'].replace(url,base+'/upload')):
             self.assertFalse(inspector_error_is_owned_monitor_cancel({**error,'stack':stack},[failed],base))
         self.assertFalse(inspector_error_is_owned_monitor_cancel({**error,'message':'Uncaught TypeError'},[failed],base))
+
+
+class FetchSuspensionDelivery(unittest.TestCase):
+    def test_owned_fetch_suspension_proof_may_arrive_after_failure_event(self):
+        from types import SimpleNamespace
+        from visual.gsf_navigation_stress import request_surface_is_inactive
+        proof=set()
+        frame=SimpleNamespace(is_detached=lambda:False,evaluate=lambda _:False)
+        frame.page=SimpleNamespace(wait_for_timeout=lambda _:proof.add('departing-request'))
+        request=SimpleNamespace(resource_type='fetch',failure='Load request cancelled',frame=frame,
+                                _gsf_fetch_owner=('departing-request',proof))
+        self.assertTrue(request_surface_is_inactive(request),'Read the actual delayed lifecycle binding rather than sampling once')
+        active=set()
+        frame.page=SimpleNamespace(wait_for_timeout=lambda _:None)
+        request._gsf_fetch_owner=('active-request',active)
+        self.assertFalse(request_surface_is_inactive(request),'Waiting cannot invent suspension evidence for an active request')

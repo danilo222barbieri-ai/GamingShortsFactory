@@ -271,7 +271,8 @@ class AliveRouteGeometry(unittest.TestCase):
                 page.route('**/*',lambda r:r.fulfill(content_type='text/html',body=parent))
                 page.goto('http://gsf.test/');page.locator('iframe').evaluate('(f,html)=>f.srcdoc=html',child)
                 frame=page.frame_locator('iframe');frame.locator('#gsf-alive-guide').wait_for()
-                frame.locator('#scroll').evaluate('e=>e.scrollTop=100');page.wait_for_timeout(30)
+                frame.locator('#scroll').evaluate('e=>e.scrollTop=100')
+                page.frames[1].wait_for_function("()=>{const a=document.querySelector('#gsf-alive-guide').getBoundingClientRect(),b=document.querySelector('button').getBoundingClientRect();return Math.abs(a.top-b.top+6)<5}",timeout=2000)
                 offset=frame.locator('#gsf-alive-guide').evaluate("e=>e.getBoundingClientRect().top-document.querySelector('button').getBoundingClientRect().top")
                 self.assertLess(abs(offset+6),5,'A guide must follow the DOM during scroll, without interpolating old coordinates')
                 frame.locator('#scroll').evaluate("()=>GSFAlive.say('Old route message')")
@@ -299,9 +300,9 @@ class PushBrowserPreference(unittest.TestCase):
                 install_request_ownership(page)
                 page.on('pageerror',lambda error:errors.append(str(error)))
                 page.on('requestfailed',lambda request:cancelled.append(request) if request.url.endswith('/job/status') else None)
-                page.add_init_script(INSTRUMENT+"\nconst originalFetch=window.fetch;window.pollSignals=[];window.fetch=function(url,options){if(String(url)==='/job/status')pollSignals.push(options?.signal);return originalFetch.apply(this,arguments)}")
+                page.add_init_script(INSTRUMENT+"\nconst originalFetch=window.fetch;window.pollSignals=[];window.fetch=function(url,options){if(String(url)==='/job/status')pollSignals.push(options?.signal);return originalFetch.apply(this,arguments)};window.manualStatusFetch=signal=>originalFetch('/job/status',{signal}).catch(()=>{});")
                 def route(request):
-                    if request.request.url=='http://gsf.test/':request.fulfill(content_type='text/html',body='<html><body><script>'+script+'</script></body></html>')
+                    if request.request.url=='http://gsf.test/':request.fulfill(content_type='text/html',body='<html><body><button id=reload onclick=location.reload()>Reload</button><script>'+script+'</script></body></html>')
                     elif request.request.url.endswith('/job/status'):pending.append(request)
                     else:request.fulfill(json={'ok':True,'enabled':False,'revision':0,'csrf_token':'test'})
                 page.route('**/*',route);page.goto('http://gsf.test/',wait_until='domcontentloaded')
@@ -342,14 +343,38 @@ class PushBrowserPreference(unittest.TestCase):
                 page.wait_for_function('()=>pollSignals.length===4')
                 page.evaluate("dispatchEvent(new Event('beforeunload',{cancelable:true}))")
                 self.assertTrue(page.evaluate('()=>pollSignals[3].aborted'),'A normal navigation must suspend the monitor before the document retires')
+                departing=pending[-1].request
                 for request in pending:request.continue_()
                 pending.clear();page.wait_for_timeout(1700)
+                self.assertTrue(request_signal_was_aborted(departing))
+                self.assertTrue(request_surface_is_inactive(departing),'Diagnostics must retain the real beforeunload suspension before pagehide')
+                self.assertFalse(request_failure_is_critical(departing,inactive_surface=request_surface_is_inactive(departing),signal_aborted=request_signal_was_aborted(departing),base_url='http://gsf.test'))
                 self.assertEqual(page.evaluate('pollSignals.length'),4,'No poll may start during document departure')
                 page.evaluate("dispatchEvent(new PageTransitionEvent('pageshow'))")
                 page.wait_for_function('()=>pollSignals.length===5')
                 guarded=page.evaluate("""()=>{dispatchEvent(new MessageEvent('message',{data:{type:'gsf-upload',state:'running'}}));const event=new Event('beforeunload',{cancelable:true});dispatchEvent(event);return event.defaultPrevented}""")
                 self.assertTrue(guarded,'Keep the existing upload departure warning')
                 self.assertFalse(page.evaluate('()=>pollSignals[4].aborted'),'A cancelled upload departure must leave the active monitor usable')
+                self.assertFalse(request_surface_is_inactive(pending[-1].request),'A guarded departure must not give the active request suspension proof')
+                # An unrelated active abort must not acquire departure proof
+                # when the upload guard prevents navigation.
+                page.evaluate("()=>{window.manualController=new AbortController();manualStatusFetch(manualController.signal)}")
+                for _ in range(100):
+                    if len(pending)==2:break
+                    page.wait_for_timeout(20)
+                self.assertEqual(len(pending),2)
+                manual=pending.pop();active=manual.request
+                page.on('dialog',lambda dialog:dialog.dismiss())
+                page.evaluate("manualController.abort()")
+                page.click('#reload',no_wait_after=True)
+                manual.continue_()
+                for _ in range(100):
+                    if active in cancelled:break
+                    page.wait_for_timeout(20)
+                self.assertIn(active,cancelled,'Exercise the actual cancelled request, not a still-pending transport')
+                self.assertTrue(request_signal_was_aborted(active))
+                self.assertFalse(request_surface_is_inactive(active),'Cancelled departure cannot excuse an unrelated active abort')
+                self.assertTrue(request_failure_is_critical(active,inactive_surface=request_surface_is_inactive(active),signal_aborted=request_signal_was_aborted(active),base_url='http://gsf.test'))
                 page.evaluate("dispatchEvent(new MessageEvent('message',{data:{type:'gsf-upload',state:'done'}}));dispatchEvent(new PageTransitionEvent('pagehide'))")
                 for request in pending:request.continue_()
                 pending.clear()
