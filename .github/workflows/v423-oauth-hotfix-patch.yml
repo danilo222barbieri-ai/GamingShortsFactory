@@ -1,0 +1,119 @@
+name: V423 OAuth hotfix patch
+
+on:
+  push:
+    branches:
+      - chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961
+    paths:
+      - .github/workflows/v423-oauth-hotfix-patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961
+          fetch-depth: 0
+
+      - name: Apply exact OAuth hotfix
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding="utf-8")
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected exactly one match, got {count}: {old[:100]!r}")
+              p.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          server = "web/direct_upload_server.py"
+          replace_once(
+              server,
+              'TIKTOK_SCOPE="user.info.basic,video.publish,video.list"',
+              'TIKTOK_SCOPE="user.info.basic,video.publish"',
+          )
+          replace_once(
+              server,
+              'if not {"user.info.basic","video.publish","video.list"}<=granted:raise ValueError("Required permissions were not granted")',
+              'if not {"user.info.basic","video.publish"}<=granted:raise ValueError("Required permissions were not granted")',
+          )
+          replace_once(
+              server,
+              '''                "social":{
+                    "youtube":bool(youtube_state),
+                    "tiktok":bool(tiktok_state),
+                    "instagram":bool(instagram_state),
+                    "facebook":bool(providers.get("facebook")),
+                    "twitch":bool(providers.get("twitch")),
+                },''',
+              '''                "social":{
+                    "youtube":bool(social_snapshot.get("youtube")),
+                    "tiktok":bool(social_snapshot.get("tiktok")),
+                    "instagram":bool(social_snapshot.get("instagram")),
+                    "facebook":bool(social_snapshot.get("facebook")),
+                    "twitch":bool(social_snapshot.get("twitch")),
+                },''',
+          )
+
+          hub = "web/creator_hub_v156_component/index.html"
+          replace_once(
+              hub,
+              ' let current="dashboard", projectPane="drafts";',
+              ' let current="dashboard", projectPane="drafts";\n let oauthNavigating=false;',
+          )
+          replace_once(
+              hub,
+              ''' function connectSocial(key){
+  if(socialIsOn(key)){''',
+              ''' function connectSocial(key){
+  if(socialIsOn(key)){''',
+          )
+          replace_once(
+              hub,
+              '''  }
+  if(key==="youtube")top.location.href="/social-connect/youtube/start";''',
+              '''  }
+  oauthNavigating=true;
+  if(key==="youtube")top.location.href="/social-connect/youtube/start";''',
+          )
+          replace_once(
+              hub,
+              '''   }catch(e){
+    reportHubError("loadState",e);''',
+              '''   }catch(e){
+    if(oauthNavigating||document.visibilityState==="hidden")return null;
+    reportHubError("loadState",e);''',
+          )
+          replace_once(
+              hub,
+              ' window.addEventListener("pageshow",repairFrame);',
+              ' window.addEventListener("pageshow",()=>{oauthNavigating=false;repairFrame();loadState()});',
+          )
+
+          test = "tests/test_social_oauth_v421.py"
+          p = Path(test)
+          text = p.read_text(encoding="utf-8")
+          old = "user.info.basic,video.publish,video.list"
+          if old not in text:
+              raise SystemExit(f"{test}: expected TikTok test scope not found")
+          p.write_text(text.replace(old, "user.info.basic,video.publish"), encoding="utf-8")
+
+      - name: Run focused regressions
+        run: |
+          python -m unittest tests.test_oauth_return_regressions_v423
+          python -m unittest tests.test_social_oauth_v421
+
+      - name: Commit canonical hotfix and remove one-shot workflow
+        run: |
+          git config user.name "GSF Coordinator"
+          git config user.email "gsf-coordinator@users.noreply.github.com"
+          git rm .github/workflows/v423-oauth-hotfix-patch.yml
+          git add web/direct_upload_server.py web/creator_hub_v156_component/index.html tests/test_social_oauth_v421.py tests/test_oauth_return_regressions_v423.py
+          git commit -m "fix: stabilize live social OAuth return state"
+          git push origin HEAD:chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961
