@@ -16,12 +16,15 @@
     "blocker": "No current runtime blocker. Physical Safari/PWA and real-gameplay quality unverified; social scope belongs to separate active master claim",
     "final_public": "4 mobile viewports, desktop gate, 4 engines and 21 actual services E2E checks passed; zero critical runtime errors",
     "final_public_e2e": "30checksPASS;4ChromiumviewportsPASS;Alive/darkcanvas/iconsPASS; runtimeerrors[]",
+    "handoff": "Meta/TikTok/Twitch paths already transferred to active social-oauth-master-youtube-tiktok-meta-fb-ig-tw-cdbf69; do not implement overlapping social changes here",
     "handoff_20261020_social_oauth": "Owner-authorized handoff of web/creator_hub_v156_component/index.html, web/direct_upload_server.py, web/nginx.conf.template to the master social/OAuth task (PR183 already LIVE).",
     "icon_original_sha256": "cd87f55b557b275da9b98f86a2973aae24459f54f3c2f706bb27f08b48f13ede",
     "icon_pr": 179,
     "icon_release": "0d876814f97fe1755f772b8900ed33dec03d3372",
     "icon_source_requirement": "Original ZIP received and decoded; preserve source appearance with user-requested outer black padding crop only.",
     "icon_status": "LIVE: main Gate39331281499 SUCCESS; Railway56a5d085 SUCCESS; exact public PNG180/192/512 and health verified",
+    "limitations": "Physical iPhone Safari and installed PWA unverified; real-gameplay semantic accuracy unverified; desktop and iPad retain existing phone-only gate; broader beta hardening remains separate",
+    "online_release": "28af3c6bd610bdee44828e77a7ea17b66bbc9b4c",
     "pr181": "https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/181 merged af360f80be41b9a63aff05a368fc17716942151a",
     "pr181_gate": "39422951850 SUCCESS",
     "pr181_railway": "785a10dd-91d5-461b-bfbb-7b9c4b588d64 SUCCESS release d25963d2e986ba214efccbc7f3195eeaaddd1c3f",
@@ -31,14 +34,19 @@
     "pr183_gate": "39432052107 SUCCESS; Production UI Verify 39434485854 SUCCESS",
     "pr183_tests": "44 passed, 10 skipped, 13 subtests; actual WebKit RED/GREEN; controlled native reload A/B; four candidate public WebKit viewport cases PASS without exemptions",
     "pr184": "tests only; https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/184; merged d3cc447e42719a89276d06019abb76d9f24b4d34; CI 39470402408 and main Gate 39470650331 SUCCESS",
+    "production_gate": "39432052107 SUCCESS; tests-only main Gate 39470650331 SUCCESS",
+    "production_ui_verify": "39434485854 SUCCESS",
+    "promotion": "PR184 tests-only; no runtime file changes, no deployment marker needed",
     "public_final": "30-check actual E2E PASS; four Chromium and four WebKit phone viewports PASS; Alive/dark safe area/icons/health PASS",
+    "public_mobile": "Four Chromium and four WebKit viewports PASS; Alive/dark safe area/icons PASS",
     "queued_next": "After current completion only: scoped MetaFacebook/InstagramOAuth+mandatorysignedcallbacks; then separateTikTokWebOAuth/ContentPosting; broaderPREBETA/WOW staysqueued",
-    "railway": "ce1eda10-5611-4b0b-8d17-e80adc40eea1 SUCCESS; release 28af3c6bd610bdee44828e77a7ea17b66bbc9b4c",
+    "railway": "ce1eda10-5611-4b0b-8d17-e80adc40eea1 SUCCESS; composite health verified after final Gate",
     "responsive_audit": "No confirmed stretching; physical-device limitations retained",
     "runtime_gate": {
       "run": 39281638597,
       "status": "SUCCESS"
     },
+    "runtime_pr": "https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/183",
     "runtime_railway": {
       "deployment": "7260dd5e-196e-40d2-8a84-3b489979fc0a",
       "health": {
@@ -52,7 +60,12 @@
       },
       "status": "SUCCESS"
     },
-    "runtime_release": "c2259515edd7c5714d05051d161eaa129d994771"
+    "runtime_release": "c2259515edd7c5714d05051d161eaa129d994771",
+    "runtime_source": "1f175d4c26a942ffe7ec007ebfab96d263bb3941",
+    "status": "LIVE",
+    "tests": "Local WebKit 45 passed, 10 skipped, 13 subtests; Chromium 2 targeted passed; Gate 29 navigation plus 23 mobile tests PASS; unmodified public 30-check E2E PASS, no critical runtime errors",
+    "tests_merge": "d3cc447e42719a89276d06019abb76d9f24b4d34",
+    "tests_pr": "https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/184"
   },
   "id": "closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
   "owner": "chat/closed-beta-mobile-ux-bugfix-pass-hub-profile-sc-7ec364",
@@ -87,5 +100,5 @@
     "web/share_v156_component/index.html"
   ],
   "scope": "closed beta mobile UX bugfix pass: Hub profile scroll preferences Alive lifecycle and measured AI latency",
-  "state": "active"
+  "state": "completed"
 }
