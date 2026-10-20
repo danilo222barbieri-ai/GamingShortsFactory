@@ -336,6 +336,23 @@ class PushBrowserPreference(unittest.TestCase):
                 page.evaluate("dispatchEvent(new PageTransitionEvent('pagehide'))")
                 for request in pending:request.continue_()
                 pending.clear()
+                # Navigation can disable fetch before pagehide is delivered.
+                # Stop at an unguarded beforeunload, not one tick later.
+                page.evaluate("dispatchEvent(new PageTransitionEvent('pageshow'))")
+                page.wait_for_function('()=>pollSignals.length===4')
+                page.evaluate("dispatchEvent(new Event('beforeunload',{cancelable:true}))")
+                self.assertTrue(page.evaluate('()=>pollSignals[3].aborted'),'A normal navigation must suspend the monitor before the document retires')
+                for request in pending:request.continue_()
+                pending.clear();page.wait_for_timeout(1700)
+                self.assertEqual(page.evaluate('pollSignals.length'),4,'No poll may start during document departure')
+                page.evaluate("dispatchEvent(new PageTransitionEvent('pageshow'))")
+                page.wait_for_function('()=>pollSignals.length===5')
+                guarded=page.evaluate("""()=>{dispatchEvent(new MessageEvent('message',{data:{type:'gsf-upload',state:'running'}}));const event=new Event('beforeunload',{cancelable:true});dispatchEvent(event);return event.defaultPrevented}""")
+                self.assertTrue(guarded,'Keep the existing upload departure warning')
+                self.assertFalse(page.evaluate('()=>pollSignals[4].aborted'),'A cancelled upload departure must leave the active monitor usable')
+                page.evaluate("dispatchEvent(new MessageEvent('message',{data:{type:'gsf-upload',state:'done'}}));dispatchEvent(new PageTransitionEvent('pagehide'))")
+                for request in pending:request.continue_()
+                pending.clear()
                 self.assertFalse(errors,errors)
             finally:browser.close()
 
