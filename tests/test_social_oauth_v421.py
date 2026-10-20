@@ -71,7 +71,7 @@ class MetaOAuth(unittest.TestCase):
     def test_unknown_user_deletion_returns_durable_private_status(self):
         reply=self.call_signed();self.assertEqual(reply.status,200);body=json.loads(reply.wfile.getvalue());code=body['confirmation_code'];self.assertIn('/auth/meta/data-deletion/status?code='+code,body['url'])
         status=Reply('');self.ns['_meta_deletion_status'](status,{'code':[code]});self.assertEqual(status.status,200);self.assertEqual(json.loads(status.wfile.getvalue())['status'],'completed')
-        self.assertNotIn('42',status.wfile.getvalue().decode())
+        self.assertEqual(set(json.loads(status.wfile.getvalue())),{'status','completed_at'})
         missing=Reply('');self.ns['_meta_deletion_status'](missing,{'code':['x'*32]});self.assertEqual(missing.status,404)
     def test_wrong_signature_does_not_touch_storage(self):
         reply=self.call_signed(signed=self.signed(secret='wrong'));self.assertEqual(reply.status,400);self.assertFalse(self.bucket.objects)
