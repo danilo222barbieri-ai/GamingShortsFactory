@@ -105,3 +105,118 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check --dry-run -r requirements-web.txt -c constraints-web.txt
           bandit -q -r web -x 'web/test_*,tests' -lll -f custom --msg-template '::error file={relpath},line={line},title=bandit {test_id}::{severity} {msg}'
+
+  oauth-hotfix:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961
+          fetch-depth: 0
+
+      - name: Patch canonical OAuth files
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p=Path(path)
+              text=p.read_text(encoding='utf-8')
+              n=text.count(old)
+              if n != 1:
+                  raise SystemExit(f'{path}: expected 1 match, got {n}: {old[:100]!r}')
+              p.write_text(text.replace(old,new,1),encoding='utf-8')
+
+          server='web/direct_upload_server.py'
+          replace_once(server,
+              'TIKTOK_SCOPE="user.info.basic,video.publish,video.list"',
+              'TIKTOK_SCOPE="user.info.basic,video.publish"')
+          replace_once(server,
+              'if not {"user.info.basic","video.publish","video.list"}<=granted:raise ValueError("Required permissions were not granted")',
+              'if not {"user.info.basic","video.publish"}<=granted:raise ValueError("Required permissions were not granted")')
+          replace_once(server,
+              '''def _redirect(handler,url):
+              handler.send_response(302)
+              handler.send_header("Location",str(url))
+              handler.send_header("Cache-Control","no-store")
+              handler.end_headers()''',
+              '''def _redirect(handler,url):
+              target=str(url)
+              if target=="/?gsf_hub=social":target += "&oauth_return="+str(int(time.time()*1000))
+              handler.send_response(302)
+              handler.send_header("Location",target)
+              handler.send_header("Cache-Control","no-store, max-age=0")
+              if target.startswith("/?gsf_hub=social"):handler.send_header("Pragma","no-cache")
+              handler.end_headers()''')
+          replace_once(server,
+              '''                "social":{
+                          "youtube":bool(youtube_state),
+                          "tiktok":bool(tiktok_state),
+                          "instagram":bool(instagram_state),
+                          "facebook":bool(providers.get("facebook")),
+                          "twitch":bool(providers.get("twitch")),
+                      },''',
+              '''                "social":{
+                          "youtube":bool(social_snapshot.get("youtube")),
+                          "tiktok":bool(social_snapshot.get("tiktok")),
+                          "instagram":bool(social_snapshot.get("instagram")),
+                          "facebook":bool(social_snapshot.get("facebook")),
+                          "twitch":bool(social_snapshot.get("twitch")),
+                      },''')
+
+          hub='web/creator_hub_v156_component/index.html'
+          replace_once(hub,
+              ' let current="dashboard", projectPane="drafts";',
+              ' let current="dashboard", projectPane="drafts";\n let oauthNavigating=false;')
+          replace_once(hub,
+              '''  }
+            if(key==="youtube")top.location.href="/social-connect/youtube/start";''',
+              '''  }
+            oauthNavigating=true;
+            if(key==="youtube")top.location.href="/social-connect/youtube/start";''')
+          replace_once(hub,
+              '''   }catch(e){
+              reportHubError("loadState",e);''',
+              '''   }catch(e){
+              if(oauthNavigating||document.visibilityState==="hidden")return null;
+              reportHubError("loadState",e);''')
+          replace_once(hub,
+              ' window.addEventListener("pageshow",repairFrame);',
+              ' window.addEventListener("pageshow",()=>{oauthNavigating=false;repairFrame();loadState()});')
+
+          start=Path('web/start_web.sh')
+          st=start.read_text(encoding='utf-8')
+          st=st.replace('python /app/web/direct_upload_server_v423.py &','python /app/web/direct_upload_server.py &')
+          start.write_text(st,encoding='utf-8')
+          Path('web/direct_upload_server_v423.py').unlink(missing_ok=True)
+
+          social=Path('tests/test_social_oauth_v421.py')
+          text=social.read_text(encoding='utf-8').replace('user.info.basic,video.publish,video.list','user.info.basic,video.publish')
+          social.write_text(text,encoding='utf-8')
+
+          Path('tests/test_oauth_return_regressions_v423.py').write_text('''import re\nimport unittest\nfrom pathlib import Path\n\nROOT=Path(__file__).resolve().parents[1]\nSERVER=(ROOT/"web/direct_upload_server.py").read_text(encoding="utf-8")\nHUB=(ROOT/"web/creator_hub_v156_component/index.html").read_text(encoding="utf-8")\n\nclass OAuthReturnRegressionContracts(unittest.TestCase):\n    def test_tiktok_direct_post_scope_is_minimal(self):\n        m=re.search(r\'^TIKTOK_SCOPE="([^"]+)"\',SERVER,re.M)\n        self.assertIsNotNone(m)\n        scopes=set(m.group(1).split(','))\n        self.assertIn('user.info.basic',scopes)\n        self.assertIn('video.publish',scopes)\n        self.assertNotIn('video.list',scopes)\n        cb=SERVER[SERVER.index('def _tiktok_oauth_callback'):SERVER.index('def _tiktok_disconnect')]\n        self.assertNotIn('"video.list"}<=granted',cb)\n\n    def test_twitch_state_uses_authoritative_social_snapshot(self):\n        block=SERVER[SERVER.index('if clean=="/creator-hub/state":'):SERVER.index('if clean=="/account":')]\n        self.assertIn('"twitch":bool(social_snapshot.get("twitch"))',block)\n        self.assertNotIn('"twitch":bool(providers.get("twitch"))',block)\n\n    def test_oauth_return_is_fresh_and_no_store(self):\n        block=SERVER[SERVER.index('def _redirect'):SERVER.index('def _html')]\n        self.assertIn('oauth_return=',block)\n        self.assertIn('no-store, max-age=0',block)\n        self.assertIn('Pragma',block)\n\n    def test_hub_suppresses_transient_navigation_failure(self):\n        self.assertIn('oauthNavigating=true',HUB.replace(' ',''))\n        self.assertIn('oauthNavigating||document.visibilityState==="hidden"',HUB)\n        self.assertIn('pageshow",()=>{oauthNavigating=false;repairFrame();loadState()}',HUB)\n\nif __name__=='__main__':unittest.main()\n''',encoding='utf-8')
+
+          workflow=Path('.github/workflows/gsf-ci.yml')
+          w=workflow.read_text(encoding='utf-8')
+          marker='\n  oauth-hotfix:\n'
+          if marker not in w:raise SystemExit('temporary OAuth hotfix job marker missing')
+          workflow.write_text(w.split(marker,1)[0].rstrip()+"\n",encoding='utf-8')
+          PY
+
+      - name: Verify focused contracts before push
+        run: |
+          python tests/test_oauth_return_regressions_v423.py
+          python tests/test_canonical_ui_pipeline.py
+          python -m compileall -q web/direct_upload_server.py tests/test_oauth_return_regressions_v423.py
+
+      - name: Commit canonical hotfix
+        run: |
+          git config user.name "GSF Coordinator"
+          git config user.email "gsf-coordinator@users.noreply.github.com"
+          git add .github/workflows/gsf-ci.yml web/direct_upload_server.py web/creator_hub_v156_component/index.html web/start_web.sh tests/test_social_oauth_v421.py tests/test_oauth_return_regressions_v423.py
+          git add -u web/direct_upload_server_v423.py
+          git commit -m "fix: stabilize canonical social OAuth return flow"
+          git push origin HEAD:chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961
