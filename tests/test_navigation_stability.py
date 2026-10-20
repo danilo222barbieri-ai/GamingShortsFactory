@@ -372,3 +372,24 @@ def test_crea_short_opens_the_canonical_page_and_starts_the_render():
     # The page shows why nothing is rendering yet.
     assert "e.data.type!=='GSF_SHARE_NOTICE'" in share
     assert "sub=shortNotice||'Lo Short finale sta arrivando'" in share
+
+
+class InspectorCancellationAttribution(unittest.TestCase):
+    def test_only_unique_owned_retired_monitor_cancellation_explains_inspector_error(self):
+        from visual.gsf_navigation_stress import inspector_error_is_owned_monitor_cancel
+        base='https://gsf.test';url=base+'/job/status'
+        error={'at':100,'message':'/gsf.test/job/status due to access control checks.',
+               'stack':'Fetch API cannot load '+url+' due to access control checks.\n    at unknown (web-inspector://bootstrap.js:371:27)\n    at unknown ('+base+'/gsf-push.js?v=3:117:26)'}
+        failed={'at':100.434,'url':url,'failure':'Load request cancelled','resource_type':'fetch',
+                'owner':'document:request11','aborted':True,'inactive':True}
+        self.assertTrue(inspector_error_is_owned_monitor_cancel(error,[failed],base))
+        for key,value in (('owner',None),('aborted',False),('inactive',False),('resource_type','script'),
+                          ('failure','Access control check failed'),('url','https://other.test/job/status'),('at',102)):
+            with self.subTest(key=key):
+                self.assertFalse(inspector_error_is_owned_monitor_cancel(error,[{**failed,key:value}],base))
+        self.assertFalse(inspector_error_is_owned_monitor_cancel(error,[],base))
+        self.assertFalse(inspector_error_is_owned_monitor_cancel(error,[failed,failed],base),'Ambiguous concurrent requests must fail closed')
+        self.assertFalse(inspector_error_is_owned_monitor_cancel(error,[failed,{**failed,'failure':'Connection failed'}],base))
+        for stack in (error['stack'].replace('web-inspector://bootstrap.js','https://gsf.test/app.js'),error['stack'].replace('/gsf-push.js','/other.js'),error['stack'].replace(url,base+'/upload')):
+            self.assertFalse(inspector_error_is_owned_monitor_cancel({**error,'stack':stack},[failed],base))
+        self.assertFalse(inspector_error_is_owned_monitor_cancel({**error,'message':'Uncaught TypeError'},[failed],base))

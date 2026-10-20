@@ -7,8 +7,10 @@ import argparse
 import base64
 import json
 import os
+import time
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+from gsf_navigation_stress import INSTRUMENT,install_request_ownership,request_signal_was_aborted,request_surface_is_inactive,inspector_error_is_owned_monitor_cancel
 
 
 def audit(base, out, engine='chromium'):
@@ -23,7 +25,16 @@ def audit(base, out, engine='chromium'):
             for label,width,height in [('iphone-small',375,667),('iphone-standard',390,844),('iphone-large',430,932),('android-chrome',412,915)]:
                 device=playwright.devices['Pixel 7' if label=='android-chrome' else 'iPhone 13']
                 context=browser.new_context(**{**device,'viewport':{'width':width,'height':height}})
-                page=context.new_page();errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
+                context.add_init_script(INSTRUMENT)
+                page=context.new_page();install_request_ownership(page)
+                errors=[];failed=[]
+                page.on('pageerror',lambda error,sink=errors:sink.append({'at':time.monotonic(),'message':str(error),'stack':getattr(error,'stack','')}))
+                def request_failed(request,sink=failed):
+                    at=time.monotonic()
+                    sink.append({'at':at,'url':request.url,'failure':request.failure,'resource_type':request.resource_type,
+                                 'owner':getattr(request,'_gsf_fetch_owner',(None,))[0],
+                                 'aborted':request_signal_was_aborted(request),'inactive':request_surface_is_inactive(request)})
+                page.on('requestfailed',request_failed)
                 try:
                     page.goto(base,wait_until='domcontentloaded',timeout=60000)
                     page.wait_for_function('()=>GSFNavigation?.snapshot().surfaces===5',timeout=60000)
@@ -97,9 +108,14 @@ def audit(base, out, engine='chromium'):
                     page.locator('#gsf-global-gamebar [data-page=home]').click()
                     page.locator('#gsf-global-gamebar [data-page=hub]').click()
                     assert not hub.locator('#gsf-alive-whisper').evaluate("e=>e.classList.contains('on')"),'Old voice returned'
-                    assert not errors,errors
+                    # WebKit may report the inspector abort before requestfailed;
+                    # let the matching owned signal proof arrive, never infer it.
+                    if errors:page.wait_for_timeout(1100)
+                    expected=[e for e in errors if inspector_error_is_owned_monitor_cancel(e,failed,base)]
+                    critical=[e for e in errors if e not in expected]
+                    assert not critical,critical
                     page.screenshot(path=str(out/(label+'.png')))
-                    result={'device':label,'views':views,'profile_saved':True,'photo_dimensions':dimensions,'notifications_off_persistent':True,'ring':ring,'runtime_errors':errors}
+                    result={'device':label,'views':views,'profile_saved':True,'photo_dimensions':dimensions,'notifications_off_persistent':True,'ring':ring,'runtime_errors':critical,'inspector_owned_cancellations':len(expected)}
                     results.append(result);print(json.dumps(result),flush=True)
                     (out/'evidence.json').write_text(json.dumps(results,indent=2))
                 except Exception:

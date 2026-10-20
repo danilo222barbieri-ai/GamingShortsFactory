@@ -28,6 +28,28 @@ def request_failure_is_critical(request,*,inactive_surface=False,signal_aborted=
     return not (optional_font_cancel or inactive_media_cancel or inactive_poll_cancel)
 
 
+def inspector_error_is_owned_monitor_cancel(error,failed,base_url):
+    """Attribute WebKit inspector's duplicate fetch-abort diagnostic fail-closed.
+
+    This is not an application error exemption: require its exact inspector
+    stack and a unique same-origin monitor request with actual owner/abort proof.
+    Ambiguous, active, unowned and real network/CORS failures remain critical.
+    """
+    import re
+    base=urlsplit(base_url);url=base_url.rstrip('/')+'/job/status'
+    message=error.get('message','');stack=error.get('stack','')
+    header='Fetch API cannot load '+url+' due to access control checks.'
+    if message not in (header,'/'+base.netloc+'/job/status due to access control checks.'):return False
+    if not stack.startswith(header+'\n'):return False
+    if not re.search(r'\(web-inspector://bootstrap\.js:\d+:\d+\)',stack):return False
+    if not re.search(r'\('+re.escape(base_url.rstrip('/'))+r'/gsf-push\.js\?v=3:\d+:\d+\)',stack):return False
+    nearby=[row for row in failed if row.get('url')==url and abs(row.get('at',-100)-error.get('at',100))<=1]
+    if len(nearby)!=1:return False
+    row=nearby[0]
+    return bool(row.get('owner') and row.get('aborted') is True and row.get('inactive') is True
+                and row.get('resource_type')=='fetch' and row.get('failure') in ('Load request cancelled','net::ERR_ABORTED'))
+
+
 def request_surface_is_inactive(request):
     if request.resource_type not in ('media','other','fetch'):return False
     owner=getattr(request,'_gsf_fetch_owner',None) or getattr(request,'_gsf_media_owner',None)
