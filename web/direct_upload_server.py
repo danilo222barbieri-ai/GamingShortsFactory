@@ -101,7 +101,7 @@ TWITCH_SCOPES="channel:manage:clips"
 TIKTOK_CLIENT_KEY=_env_first("GSF_TIKTOK_CLIENT_KEY",default="")
 TIKTOK_CLIENT_SECRET=_env_first("GSF_TIKTOK_CLIENT_SECRET",default="")
 TIKTOK_REDIRECT_URI=(PUBLIC_APP_URL+"/auth/tiktok/callback") if PUBLIC_APP_URL else ""
-TIKTOK_SCOPE="user.info.basic,video.publish,video.list"
+TIKTOK_SCOPE="user.info.basic,video.publish"
 YOUTUBE_CLIENT_ID=_env_first("GSF_YOUTUBE_CLIENT_ID",default="")
 YOUTUBE_CLIENT_SECRET=_env_first("GSF_YOUTUBE_CLIENT_SECRET",default="")
 YOUTUBE_SCOPE="https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/yt-analytics.readonly"
@@ -1025,9 +1025,12 @@ def _html(handler,status,body):
     handler.wfile.write(raw)
 
 def _redirect(handler,url):
+    target=str(url)
+    if target=="/?gsf_hub=social":target += "&oauth_return="+str(int(time.time()*1000))
     handler.send_response(302)
-    handler.send_header("Location",str(url))
-    handler.send_header("Cache-Control","no-store")
+    handler.send_header("Location",target)
+    handler.send_header("Cache-Control","no-store, max-age=0")
+    if target.startswith("/?gsf_hub=social"):handler.send_header("Pragma","no-cache")
     handler.end_headers()
 
 def _social_sid(handler):
@@ -3427,7 +3430,7 @@ def _tiktok_oauth_callback(handler,query):
             _creator_login(sid,"tiktok",uid,display_name=user.get("display_name") or "TikTok Creator",avatar=user.get("avatar_url") or "")
         else:
             granted=set(str(token.get("scope") or "").split(","))
-            if not {"user.info.basic","video.publish","video.list"}<=granted:raise ValueError("Required permissions were not granted")
+            if not {"user.info.basic","video.publish"}<=granted:raise ValueError("Required permissions were not granted")
             now=time.time();expiry=int(token.get("expires_in") or 0)
             if expiry<=0:raise ValueError("Invalid token expiry")
             token.update(saved_at=now,_saved_at=now,expires_at=now+expiry,refresh_expires_at=now+int(token.get("refresh_expires_in") or 0))
@@ -5128,7 +5131,7 @@ class Handler(BaseHTTPRequestHandler):
                     "tiktok":bool(tiktok_state),
                     "instagram":bool(instagram_state),
                     "facebook":bool(providers.get("facebook")),
-                    "twitch":bool(providers.get("twitch")),
+                    "twitch":bool(social_snapshot.get("twitch")),
                 },
                 "stats":{
                     "shorts_created":len(all_shorts),
