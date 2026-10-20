@@ -460,6 +460,52 @@ class AliveSubviewGeometry(unittest.TestCase):
                 self.assertFalse(result['voice'],'Guidance for the previous view must disappear with its control')
             finally:browser.close()
 
+class HubDialogShellGeometry(unittest.TestCase):
+    def test_rename_and_delete_actions_stay_above_global_gamebar(self):
+        try:from playwright.sync_api import sync_playwright
+        except ImportError:
+            if os.environ.get('GSF_BROWSER'):raise
+            self.skipTest('Dialog interaction runs in the blocking WebKit Production Gate')
+        import shutil
+        parent=installed_parent_html();html=(ROOT/'web/creator_hub_v156_component/index.html').read_text()
+        with sync_playwright() as p:
+            engine=getattr(p,os.environ.get('GSF_BROWSER','chromium'));executable=shutil.which('chromium') if engine.name=='chromium' else None
+            browser=engine.launch(**({'executable_path':executable,'args':['--no-sandbox']} if executable else {}))
+            try:
+                for width,height in ((375,667),(390,844)):
+                    with self.subTest(viewport=(width,height)):
+                        context=browser.new_context(**{**p.devices['iPhone 13'],'viewport':{'width':width,'height':height}})
+                        page=context.new_page();renamed=[]
+                        def route(r):
+                            if r.request.url=='http://gsf.test/':r.fulfill(content_type='text/html',body=parent)
+                            elif '/creator-hub-v156/' in r.request.url:r.fulfill(content_type='text/html',body=html)
+                            elif r.request.url.endswith('/creator-hub/draft/rename'):
+                                renamed.append(r.request.post_data_json);r.fulfill(json={'ok':True})
+                            else:r.fulfill(json={'ok':True,'csrf_token':'test','account':{'display_name':'Creator'},'social':{},'drafts':[{'id':'own-test','title':'Own draft'}],'shorts':[]})
+                        page.route('**/*',route);page.goto('http://gsf.test/')
+                        page.wait_for_function('()=>GSFNavigation?.snapshot().surfaces===5')
+                        page.evaluate("GSFNavigation.navigate({target:'hub',section:'drafts'})")
+                        hub=page.frame_locator('#gsf-creator-hub-live-v160 iframe')
+                        hub.locator('.view.active .pcard.draft .more').wait_for()
+                        page.locator('#gsf-global-gamebar').evaluate("e=>e.style.setProperty('bottom','34px','important')")
+                        page.evaluate("dispatchEvent(new Event('resize'))")
+                        hub.locator('#hub').evaluate("()=>dispatchEvent(new Event('resize'))")
+                        hub.locator('.view.active .pcard.draft .more').click()
+                        hub.locator('#sheet.open [data-m=rename]').click()
+                        hub.locator('#renameInput').fill('Renamed draft')
+                        geometry=page.locator('#gsf-creator-hub-live-v160 iframe').evaluate("""f=>{const b=f.contentDocument.querySelector('#sheet [data-m=save]').getBoundingClientRect(),r=f.getBoundingClientRect(),bar=document.querySelector('#gsf-global-gamebar').getBoundingClientRect();return {buttonBottom:r.top+b.bottom,barTop:bar.top}}""")
+                        self.assertLessEqual(geometry['buttonBottom'],geometry['barTop']-8,'Dialog actions must remain outside the global Game Bar')
+                        with page.expect_response('**/creator-hub/draft/rename'):
+                            hub.locator('#sheet.open [data-m=save]').click()
+                        self.assertEqual(renamed,[{'id':'own-test','title':'Renamed draft'}])
+                        hub.locator('#sheet.open').wait_for(state='hidden')
+                        hub.locator('.view.active .pcard.draft .more').click()
+                        hub.locator('#sheet.open [data-m=delete]').click()
+                        hub.locator('#sheet.open [data-m=close]').click()
+                        self.assertTrue(hub.locator('.view.active .pcard.draft').is_visible())
+                        context.close()
+            finally:browser.close()
+
 class CanonicalIconBuildContract(unittest.TestCase):
     def test_image_build_preserves_the_approved_tracked_icon_bytes(self):
         import shlex,subprocess,sys
