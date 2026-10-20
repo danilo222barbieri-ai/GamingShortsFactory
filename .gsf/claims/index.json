@@ -1454,6 +1454,8 @@
       "owner": "chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
       "paths": [
         ".env.example",
+        ".github/workflows/gsf-ci.yml",
+        ".github/workflows/v397-production-gate.yml",
         "PROJECT_STATUS.md",
         "tests/test_social_oauth_v421.py",
         "web/creator_hub_v156_component/index.html",
