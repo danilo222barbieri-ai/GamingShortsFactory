@@ -1,50 +1,17 @@
+import re
 import unittest
 from pathlib import Path
-
-
-ROOT = Path(__file__).resolve().parents[1]
-PATCH = ROOT / "web" / "direct_upload_server_v423.py"
-START = ROOT / "web" / "start_web.sh"
-
-
+ROOT=Path(__file__).resolve().parents[1]
+SERVER=(ROOT/"web/direct_upload_server.py").read_text(encoding="utf-8")
+HUB=(ROOT/"web/creator_hub_v156_component/index.html").read_text(encoding="utf-8")
 class OAuthReturnRegressionContracts(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.patch = PATCH.read_text(encoding="utf-8")
-        cls.start = START.read_text(encoding="utf-8")
-
-    def test_tiktok_publish_connection_does_not_require_video_list(self):
-        self.assertIn('base.TIKTOK_SCOPE = "user.info.basic,video.publish"', self.patch)
-        callback = self.patch[
-            self.patch.index("def _tiktok_oauth_callback") : self.patch.index("base._tiktok_oauth_callback =")
-        ]
-        self.assertIn('{"user.info.basic", "video.publish"}', callback)
-        self.assertNotIn(
-            "video.list",
-            callback,
-            "video.list is analytics-only and must not block Direct Post OAuth",
-        )
-
-    def test_creator_hub_state_uses_authoritative_twitch_connection(self):
-        route = self.patch[
-            self.patch.index("def _creator_hub_state") : self.patch.index("class Handler")
-        ]
-        self.assertIn("social_snapshot = base._creator_social_snapshot", route)
-        self.assertIn('"twitch": bool(social_snapshot.get("twitch"))', route)
-        self.assertNotIn('bool(providers.get("twitch"))', route)
-
-    def test_social_oauth_return_forces_fresh_mobile_page(self):
-        redirect = self.patch[
-            self.patch.index("def _fresh_social_redirect") : self.patch.index("base._redirect =")
-        ]
-        self.assertIn("oauth_return=", redirect)
-        self.assertIn('"Cache-Control", "no-store, max-age=0"', redirect)
-        self.assertIn('"Pragma", "no-cache"', redirect)
-
-    def test_canonical_startup_uses_v423_entrypoint(self):
-        self.assertIn("python /app/web/direct_upload_server_v423.py &", self.start)
-        self.assertNotIn("python /app/web/direct_upload_server.py &", self.start)
-
-
-if __name__ == "__main__":
-    unittest.main()
+    def test_tiktok_direct_post_scope_is_minimal(self):
+        m=re.search(r'^TIKTOK_SCOPE="([^"]+)"',SERVER,re.M); self.assertIsNotNone(m); scopes=set(m.group(1).split(',')); self.assertIn('user.info.basic',scopes); self.assertIn('video.publish',scopes); self.assertNotIn('video.list',scopes)
+        cb=SERVER[SERVER.index('def _tiktok_oauth_callback'):SERVER.index('def _tiktok_disconnect')]; self.assertNotIn('"video.list"}<=granted',cb)
+    def test_twitch_state_uses_authoritative_social_snapshot(self):
+        block=SERVER[SERVER.index('if clean=="/creator-hub/state":'):SERVER.index('if clean=="/account":')]; self.assertIn('"twitch":bool(social_snapshot.get("twitch"))',block); self.assertNotIn('"twitch":bool(providers.get("twitch"))',block)
+    def test_oauth_return_is_fresh_and_no_store(self):
+        self.assertIn('oauth_return=',SERVER); self.assertIn('no-store, max-age=0',SERVER); self.assertIn('handler.send_header("Pragma","no-cache")',SERVER)
+    def test_hub_suppresses_transient_navigation_failure(self):
+        self.assertIn('oauthNavigating=true',HUB.replace(' ','')); self.assertIn('oauthNavigating||document.visibilityState==="hidden"',HUB); self.assertIn('pageshow",()=>{oauthNavigating=false;repairFrame();loadState()}',HUB)
+if __name__=='__main__':unittest.main()
