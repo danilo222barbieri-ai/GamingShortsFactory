@@ -45,7 +45,9 @@ PY
 rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 envsubst '${PORT}' < /app/web/nginx.conf.template > /etc/nginx/conf.d/default.conf
 
-python /app/web/direct_upload_server.py &
+# V423 keeps the stable upload server as the implementation module and applies
+# only the production-verified OAuth compatibility layer at the entrypoint.
+python /app/web/direct_upload_server_v423.py &
 python /app/web/contact_server.py &
 nginx
 
