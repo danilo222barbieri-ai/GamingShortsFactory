@@ -10,7 +10,7 @@
     "railway": "Frontend deployment 89a2402d-e9d7-480e-9282-312da4bb15ca SUCCESS after Meta/Instagram/Twitch credentials were added. Live callbacks now reach GSF.",
     "source_library": "Twitch source library design remains on this branch; OAuth hotfix is limited to connection state, TikTok scopes, and return-screen recovery.",
     "terminal_status": "ACTIVE_HOTFIX",
-    "tests": "Add focused OAuth return-state regression coverage before implementation; run fresh CI/gate before claiming completion.",
+    "tests": "Focused OAuth return-state regression coverage added before implementation; run fresh CI/gate before claiming completion.",
     "updated_at": "2026-10-20"
   },
   "id": "complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
@@ -19,6 +19,7 @@
     ".env.example",
     ".github/workflows/gsf-ci.yml",
     ".github/workflows/v397-production-gate.yml",
+    ".github/workflows/v423-oauth-hotfix-patch.yml",
     "PROJECT_STATUS.md",
     "docs/superpowers/plans/2026-10-20-source-library-twitch.md",
     "docs/superpowers/specs/2026-10-20-source-library-twitch-design.md",
