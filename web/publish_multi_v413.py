@@ -140,6 +140,19 @@ class PublishError(RuntimeError):
     pass
 
 
+class PublishUnconfirmed(PublishError):
+    def __init__(self,publish_id):
+        self.publish_id=publish_id
+        super().__init__("TikTok sta ancora elaborando il video: pubblicazione non confermata. Controlla lo stato prima di riprovare.")
+
+
+def tiktok_post_status(access_token,publish_id,opener=None):
+    data=_json_call(opener,"https://open.tiktokapis.com/v2/post/publish/status/fetch/",access_token,{"publish_id":publish_id},timeout=10)
+    code,_message=_api_error(data)
+    if code:raise PublishError("Stato TikTok non disponibile. Ricollega l'account se necessario.")
+    return str((data.get("data") or {}).get("status") or "")
+
+
 def _open(opener, req, timeout):
     return (opener or urllib.request.urlopen)(req, timeout=timeout)
 
@@ -352,10 +365,23 @@ def tiktok_direct_post(access_token, video_path, plan, privacy="public", opener=
                 with _open(opener, req, 300) as resp:
                     status = int(getattr(resp, "status", 200) or 200)
             except urllib.error.HTTPError as exc:
+                if exc.code>=500:raise PublishUnconfirmed(publish_id) from None
                 raise PublishError(f"TikTok upload HTTP {exc.code}") from None
+            except (OSError,TimeoutError):
+                # The transport can accept bytes before its response is lost.
+                raise PublishUnconfirmed(publish_id) from None
+            if status>=500:raise PublishUnconfirmed(publish_id)
             if status not in (200, 201, 206):
                 raise PublishError(f"TikTok upload HTTP {status}")
             sent += len(blob)
+    # TikTok accepting bytes does not mean the post was published.
+    for attempt in range(30):
+        try:state=tiktok_post_status(access_token,publish_id,opener)
+        except Exception:raise PublishUnconfirmed(publish_id) from None
+        if state=="PUBLISH_COMPLETE":break
+        if state=="FAILED":raise PublishError("TikTok non ha pubblicato il video. Verifica l'account e riprova.")
+        if attempt<29:time.sleep(2)
+    else:raise PublishUnconfirmed(publish_id)
     return {
         "ok": True,
         "id": publish_id,

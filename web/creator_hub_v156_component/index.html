@@ -1180,12 +1180,12 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
    card.classList.toggle("connected",yes);
    const st=card.querySelector(".socialState"),btn=card.querySelector("[data-connect]");
    if(!st||!btn)return;
-   if(key==="twitch"&&!yes){st.textContent="In arrivo";btn.textContent="In arrivo";btn.disabled=true;return}
    st.textContent=yes?"Collegato":"Non collegato";
    btn.textContent=yes?"Scollega":"Collega";
    btn.disabled=false;
    btn.className=yes?"btn danger":"btn";
   });
+  $$("[data-twitch-content]").forEach(b=>b.hidden=!socialIsOn("twitch"));
   const n=PLATFORMS.filter(p=>socialIsOn(p.key)).length;
   const so=$("#profileOverviewSocial");if(so)so.textContent=n+" di "+PLATFORMS.length;
  }
@@ -1195,15 +1195,16 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   const row=$("#socialRow");
   if(row)row.innerHTML=PLATFORMS.map(p=>'<button class="socialDot" type="button" data-social="'+p.key+'" aria-label="'+p.name+'">'+logo(p)+'<span class="tick">'+TICK+'</span></button>').join("");
   const list=$("#socialSettings");
-  if(list)list.innerHTML=PLATFORMS.map(p=>'<div class="row socialCard" data-platform="'+p.key+'"><span class="logoBox">'+logo(p)+'</span><span class="rtext"><b>'+p.name+'</b><small class="socialState">…</small></span><button class="btn" type="button" data-connect="'+p.key+'">Collega</button></div>').join("");
+  if(list)list.innerHTML=PLATFORMS.map(p=>'<div class="row socialCard" data-platform="'+p.key+'"><span class="logoBox">'+logo(p)+'</span><span class="rtext"><b>'+p.name+'</b><small class="socialState">…</small></span><button class="btn" type="button" data-connect="'+p.key+'">Collega</button>'+ (p.key==="twitch"?'<button class="btn ghost" type="button" data-twitch-content hidden>Contenuti</button>':'')+'</div>').join("");
   $$(".socialDot").forEach(b=>b.onclick=()=>{
    const key=b.dataset.social;
-   if(!socialIsOn(key)&&key!=="twitch"){connectSocial(key);return}
-   if(key==="twitch"&&!socialIsOn(key)){toast("Twitch in arrivo","success");return}
+   if(!socialIsOn(key)){connectSocial(key);return}
+   if(key==="twitch"){openTwitchContent();return}
    openView("settings");
    setTimeout(()=>{const c=document.querySelector('.socialCard[data-platform="'+key+'"]');if(c){c.scrollIntoView({block:"center"});c.animate&&c.animate([{background:"#EEF9FF"},{background:"transparent"}],{duration:900})}},30);
   });
   $$("[data-connect]").forEach(b=>b.onclick=()=>connectSocial(b.dataset.connect));
+  $$("[data-twitch-content]").forEach(b=>b.onclick=()=>openTwitchContent());
  }
 
  function cardHtml(kind,item){
@@ -1417,6 +1418,53 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
    shell("editor",{draft_id:id,resume:true});
   }catch(e){toast("Bozza non disponibile","error")}
  }
+ let twitchImportAbort=null;
+ async function openTwitchContent(kind="clips",cursor=""){
+  openSheet('<h3>Twitch</h3><div class="sheetActions"><button class="btn ghost" data-tw-tab="clips">Clip</button><button class="btn ghost" data-tw-tab="videos">VOD</button><button class="btn ghost" data-tw-close>Chiudi</button></div><div id="twitchItems"><p>Caricamento contenuti…</p></div>');
+  sheetBox.querySelector('[data-tw-close]').onclick=closeSheet;
+  sheetBox.querySelectorAll('[data-tw-tab]').forEach(b=>b.onclick=()=>openTwitchContent(b.dataset.twTab));
+  const items=sheetBox.querySelector('#twitchItems');
+  try{
+   const response=await fetch('/social-connect/twitch/content?type='+encodeURIComponent(kind)+'&after='+encodeURIComponent(cursor),{cache:'no-store',credentials:'same-origin'}),data=await response.json();
+   if(!response.ok||!data.ok)throw new Error(data.error||'Contenuti Twitch non disponibili.');
+   if(!items.isConnected)return;
+   items.innerHTML=(data.data||[]).map(row=>'<div class="row"><span class="rtext"><b>'+esc(row.title||row.id)+'</b>'+(!row.importable?'<small>'+esc(row.import_reason)+'</small>':'')+'</span>'+(row.importable?'<button class="btn" data-tw-import="'+esc(row.id)+'">Importa</button>':'<a class="btn ghost" target="_blank" rel="noopener noreferrer" href="https://www.twitch.tv/videos/'+encodeURIComponent(row.id)+'">Apri Twitch</a>')+'</div>').join('')||'<p>Nessun contenuto disponibile.</p>';
+   items.querySelectorAll('[data-tw-import]').forEach(b=>b.onclick=()=>importTwitchClip(b.dataset.twImport));
+   if(data.cursor){const more=document.createElement('button');more.className='btn ghost';more.textContent='Altri contenuti';more.onclick=()=>openTwitchContent(kind,data.cursor);items.append(more)}
+  }catch(error){if(items.isConnected)items.textContent=String(error.message||'Twitch non disponibile.')}
+ }
+ async function importTwitchClip(clipId){
+  if(twitchImportAbort)return;
+  const controller=twitchImportAbort=new AbortController(),signal=controller.signal;
+  let epoch=null;try{epoch=parent.GSFNavigation.snapshot().epoch}catch(_e){}
+  openSheet('<h3>Importazione clip Twitch</h3><p>Il progetto corrente rimane disponibile fino al completamento.</p><p id="twitchImportStatus">Importazione in corso…</p>');
+  const progress=sheetBox.querySelector('#twitchImportStatus');
+  try{parent.postMessage({type:'gsf-upload',state:'running'},location.origin)}catch(_e){}
+  try{
+   const job=await postJson('/social-connect/twitch/import',{type:'clips',clip_id:clipId});
+   const deadline=Date.now()+180000;
+   while(Date.now()<deadline){
+    if(signal.aborted)throw new DOMException('Aborted','AbortError');
+    const response=await fetch('/direct-upload/bucket/status?upload_id='+encodeURIComponent(job.upload_id),{cache:'no-store',credentials:'same-origin',signal}),status=await response.json();
+    if(!response.ok)throw new Error(status.error||'Importazione non riuscita.');
+    if(status.ready){
+     try{parent.postMessage({type:'gsf-upload',state:'done'},location.origin)}catch(_e){}
+     if(progress.isConnected)progress.textContent='Clip importata. Puoi creare lo Short con IA.';
+     let stillHere=true;try{const route=parent.GSFNavigation.snapshot();stillHere=route.target==='hub'&&route.epoch===epoch}catch(_e){}
+     if(stillHere&&!document.hidden)top.location.href='/?gsf_page=ai';
+     else toast('Clip Twitch importata: apri Crea con IA.');
+     return;
+    }
+    await new Promise(resolve=>setTimeout(resolve,1000));
+   }
+   throw new Error('Importazione ancora da confermare. Controlla Home prima di riprovare.');
+  }catch(error){
+   try{parent.postMessage({type:'gsf-upload',state:'error'},location.origin)}catch(_e){}
+   if(error.name!=='AbortError'&&progress.isConnected)progress.textContent=String(error.message||'Importazione non riuscita.');
+  }finally{if(twitchImportAbort===controller)twitchImportAbort=null}
+ }
+ window.addEventListener('pagehide',()=>twitchImportAbort?.abort());
+
  async function disconnectSocial(key){
   try{
    await postJson("/creator-hub/social/disconnect",{platform:key});
@@ -1424,7 +1472,6 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   }catch(e){toast(String(e.message||e),"error")}
  }
  function connectSocial(key){
-  if(key==="twitch"&&!socialIsOn(key)){toast("Twitch in arrivo");return}
   if(socialIsOn(key)){
    openSheet('<h3>Scollegare '+esc(PLATFORM_NAMES[key]||key)+'?</h3><p>Potrai ricollegarlo quando vuoi.</p><div class="sheetActions"><button class="btn ghost" type="button" data-m="close">Annulla</button><button class="btn danger" type="button" data-m="ok">Scollega</button></div>');
    sheetBox.querySelector('[data-m="close"]').onclick=closeSheet;
@@ -1434,7 +1481,8 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   if(key==="youtube")top.location.href="/social-connect/youtube/start";
   else if(key==="tiktok")top.location.href="/social-connect/tiktok/start";
   else if(key==="instagram")top.location.href="/social-connect/instagram/start";
-  else if(key==="facebook")top.location.href="/account/facebook/start";
+  else if(key==="facebook")top.location.href="/social-connect/facebook/start";
+  else if(key==="twitch")top.location.href="/social-connect/twitch/start";
  }
 
  // Profile: photo (auto-resized) and name

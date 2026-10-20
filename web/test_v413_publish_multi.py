@@ -128,7 +128,7 @@ except pm.PublishError:
 creator = {"data": {"privacy_level_options": ["PUBLIC_TO_EVERYONE", "SELF_ONLY"]}, "error": {"code": "ok"}}
 refused = {"error": {"code": "unaudited_client_can_only_post_to_private_accounts", "message": "no"}}
 accepted = {"data": {"upload_url": "https://up.tiktok/x", "publish_id": "p_1"}, "error": {"code": "ok"}}
-op = Opener([Resp(json.dumps(creator).encode()), Resp(json.dumps(refused).encode()), Resp(json.dumps(accepted).encode()), Resp(status=201)])
+op = Opener([Resp(json.dumps(creator).encode()), Resp(json.dumps(refused).encode()), Resp(json.dumps(accepted).encode()), Resp(status=201), Resp(json.dumps({"data":{"status":"PUBLISH_COMPLETE"},"error":{"code":"ok"}}).encode())])
 out = pm.tiktok_direct_post("tok", str(tmp), plan["tiktok"], "public", opener=op)
 check(out["ok"] and out["id"] == "p_1" and out["privacy"] == "SELF_ONLY" and out["private_only"], out)
 init = json.loads(op.calls[2][3])

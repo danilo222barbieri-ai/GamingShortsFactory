@@ -135,6 +135,14 @@ jobs:
             web/auto_highlights/engine_v129.py \
             web/game_brain_v112.py
 
+      - name: OAuth session, signature and isolation contracts
+        timeout-minutes: 3
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          python -m pip install --disable-pip-version-check cryptography==50.0.1
+          python -m unittest discover -s tests -p test_social_oauth_v421.py
+
       - name: Build worker image
         timeout-minutes: 15
         run: docker build --progress=plain -f web/Dockerfile.worker -t gsf-worker-gate:${{ github.sha }} .
@@ -202,6 +210,7 @@ jobs:
         run: |
           docker exec gsf-production-gate python /app/web/runtime_smoke_v411.py
           GSF_BASE_URL=http://127.0.0.1:18080 python -m unittest discover -s tests -p test_closed_beta_routes.py
+          GSF_BASE_URL=http://127.0.0.1:18080 python -m unittest discover -s tests -p test_social_oauth_v421.py
           # the running container must not have rewritten any canonical file
           docker exec gsf-production-gate python /app/gsf_ui_manifest.py verify
 
@@ -219,6 +228,7 @@ jobs:
           python -m playwright install --with-deps webkit
           python tests/visual/gsf_visual_check.py
           GSF_BROWSER=webkit python -m unittest discover -s tests -p test_closed_beta_bugfix_pass.py
+          GSF_BROWSER=webkit python -m unittest discover -s tests -p test_social_oauth_v421.py
 
       - name: Upload mobile WebKit evidence
         if: always()
