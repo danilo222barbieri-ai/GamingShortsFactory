@@ -696,6 +696,9 @@ def _push_client_bytes():
   const stopMonitor=()=>{monitorSuspended=true;clearInterval(pollTimer);pollTimer=0;if(pollController)pollController.abort();pollController=null;};
   const startMonitor=()=>{if(document.hidden)return;monitorSuspended=false;if(!pollTimer)pollTimer=setInterval(pollJob,1500);pollJob();};
   startMonitor();
+  // WebKit can reject a new fetch between beforeunload and pagehide.
+  // Keep polling when the existing upload guard cancels the departure.
+  window.addEventListener("beforeunload",(event)=>{if(!event.defaultPrevented&&!uploadActive)stopMonitor();});
   window.addEventListener("pagehide",stopMonitor);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){startMonitor();subscribe(false).catch(()=>{});}else stopMonitor();});
   window.addEventListener("pageshow",()=>{startMonitor();subscribe(false).catch(()=>{});});
