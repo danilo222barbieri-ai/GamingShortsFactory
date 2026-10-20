@@ -1,0 +1,31 @@
+# GSF — audit continuità Alive, notifiche, player e mobile
+
+Data:2026-10-21, fuso Europe/Rome. Baseline pubblica letta: release2cde19c1c1076326a2c02e1dbc93d60e73023ae5, healthok, digestUI1acd47d2c98529f9d3af831f210e91acd535819a20512da1248d6d06e7b6d9ca. Non si cambiano provider, credenziali, callback o scope; preservare il recente hotfix OAuth su main.
+
+## Riferimento e metodo
+
+Video utente12.2secondi: un unico supporto visivo evolve da anello/testo di lavoro alla conferma. È un riferimento di comportamento, non di grafica. Contact sheet locale `/workspace/scratch/gsf-alive-reference-contact.jpg`.
+
+Audit WebKit reale pubblico su375×667,390×844,393×852,430×932, più standalone emulato per ogni viewport. Due percorsi distinti: navigazione prima del bootstrap Home, poi navigazione dopo il controllo reale __GSF_V333_CTA_TOUCH. Screenshot/JSON in `/workspace/scratch/gsf-alive-ui-audit-20261021/` e `/workspace/scratch/gsf-alive-ui-audit-ready-20261021/`. Standalone emulato non prova un iPhone fisico installato. Nessun consenso provider reale è simulato come prova di OAuth riuscito.
+
+## Cause trovate → file interessati → intervento previsto
+
+1. **Geometria incompleta nella navigazione a freddo.** Prima che Home sia pronta, l'apertura IA può rendere visibile un iframe300×150. Il successivo probe con bootstrap reale in WebKit si completa in16.68secondi e IA diventa390×812, larghezza interna390. Non è provata una compressione permanente di tutte le pagine: il difetto riprodotto è la preparazione/reveal delle superfici durante cold navigation. La shell persistente imposta i contenitori; le regole comuni degli iframe restano in CSS Streamlit transitorio che arriva separatamente. File `app.py`: consolidare geometria, riserva dello spazio e readiness nel montaggio canonico esistente; niente scale/zoom globale e nessun router aggiuntivo. Testare anche assenza di CSS transitorio, apertura rapida e resize/return.
+2. **Notifiche non aggiornabili e graficamente scollegate.** Due fasi dello stesso processo producono due elementi `.gsf-site-toast`; `GSFNotify.update`/`upsert` risultano assenti. Computed backgroundrgba255,255,255,.94; posizionamento topenv+56px invece della geometria reale di header/controlli. File `web/direct_upload_server.py`, funzione `_push_client_bytes`: consolidare l'attuale GSFNotify con ID stabili, aggiornamenti in-place, coda limitata, ciclo working→success/error→dismiss e safe zone misurata. Conservare GSFPush/consenso, API show/confirm e protezioni server attuali.
+3. **Linguaggi di stato sovrapposti.** Alive ha già reducer, fatti condivisi e componente persistente; la bolla e il toast lavorano separatamente. Sono presenti letture offsetWidth per riavviare animazioni. File `web/gsf_alive_v418.js` e blocchi canonici in Home/IA/Hub/Crea Short: collegare gli eventi al medesimo GSFNotify, evitare doppie notifiche della stessa operazione e riavvii inutili. Non inventare percentuali, completamenti o tre momenti se ne esistono uno/due. Rigenerare gli inline canonici con il tool esistente, senza patch di startup.
+4. **Player esistente da preservare, transizione discreta.** `editor.mjs` conserva il video e cambia classi mini/expanded/fullscreen; non risulta necessario costruire un secondo player. File `editor.mjs`, `overlay_v414.mjs` e CSS canonici: animare la transizione dello stesso elemento con transform/opacity, mantenere controlli contestuali e integrare buffering Alive. Misurare prima e dopo; non dichiarare effetto WOW o60fps sulla sola base di test DOM. Preservare timestamp/playback/ricetta/overlay, undo, scrubbing e back. Native iOS fullscreen ha limiti del browser da verificare separatamente.
+
+## Confini e verifiche
+
+- Una sola shell, una sola Game Bar, un solo video corrente e un solo notification engine. Nessuna modifica a IA, encoding, qualità video o pubblicazione.
+- Notifiche: successo/errore/warning/info/processo e azioni soltanto reali; identità stabile, deduplica, coda limitata, cleanup e continuità tra route. Conferme non devono perdere le azioni esistenti.
+- Safe zone: header e Game Bar reali, safe-area, visualViewport, fullscreen nello stesso documento/iframe dove consentito. Nessun layout shift o overlay invisibile che blocca tocchi. prefers-reduced-motion riduce il movimento.
+- Test RED/GREEN su installazione parent reale senza CSS transitorio, API reale delle notifiche estratta dal server, WebKit/Chromium e geometrie delle quattro viewport. Sequenze con video reale per timestamp/playback e fullscreen/back; audit performance senza sacrificare qualità o funzioni.
+- Twitch: commitd369842/8489b22 mantengono catalogo e metadati già avviati. Task3 riuso/import attualmente non implementato; nuovi test RED presenti nel relativo worktree. Non dichiarare completata la Libreria o l'E2E Twitch. Integrare le notifiche import con lo stesso sistema dopo il completamento della sorgente.
+- L'utente ha preso in carico il monitoraggio del deploy OAuth. Questo audit legge il sito come baseline; non riprende quel monitoraggio né altera le configurazioni OAuth ora dichiarate configurate dall'utente.
+
+## Checkpoint implementazione — notifiche e geometria
+
+Consolidato GSFNotify parent-owned: ID stabili, aggiornamenti in-place, massimo due elementi visibili e otto in coda totale, dark/glass, safe zone misurata, fullscreen host, reduced motion e azioni su navigazione esistente. Alive usa lo stesso servizio e sopprime bolla/whisper duplicati per gli eventi gestiti; consenso/preferenze push restano invariati. Corretto anche il contatore eventi dopo video.cleared: il reset ripeteva seq=1 e poteva impedire il cleanup del processo precedente. CSS iframe canonico reso persistente nella shell.
+
+Evidenze locali: test notifiche/core WebKit18pass e4sottocasi sulle quattro viewport; precedente regressione beta WebKit40pass e10sottocasi; backend/Editor/OAuth61pass,2skip,10sottocasi; core Node15pass. I test browser controllano il backend, non provano consenso OAuth reale o deploy. Test nuovi notifiche aggiunti al blocco WebKit del Production Gate. Gate GitHub e produzione non ancora eseguiti per questo checkpoint. Player e Libreria Twitch restano aperti; nessuna dichiarazione di completamento E2E.

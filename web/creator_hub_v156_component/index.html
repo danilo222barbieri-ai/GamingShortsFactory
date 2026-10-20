@@ -554,7 +554,7 @@ a.row{color:inherit;text-decoration:none}
         return Object.assign({}, s, { mode: calmMode(s, now) });
     }
     s.last = String(type);
-    s.seq = (Number(s.seq) || 0) + 1;
+    s.seq = (Number(prev && prev.seq) || 0) + 1;
     s.updated = now;
     s.mode = calmMode(s, now);
     return s;
@@ -764,10 +764,12 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     clearTimeout(celebrateTimer);
     if (visible() && state.celebrate_until > Date.now()) celebrateTimer = later(() => { state.mode = calmMode(state, Date.now()); paint(); renderBubble(); }, state.celebrate_until - Date.now() + 30);
     const fresh = state.seq !== (prev && prev.seq);
+    let notificationHandled = false;
+    if (fresh) try { const notify = W.top.GSFNotify || W.GSFNotify; if (notify && notify.alive) notificationHandled = notify.alive(state); } catch (_e) {}
     if (fresh && mounted && visible()) {
       if (state.last && SPOKEN.has(state.last) && state.seq !== lastSpokenSeq) {
         lastSpokenSeq = state.seq;
-        say(state.message, { anchor: page.voiceAnchor });
+        if (!notificationHandled) say(state.message, { anchor: page.voiceAnchor });
         beat();
         if (state.last === "render.completed" || (state.last === "publish.completed" && state.published)) { celebrate(); haptic([14, 50, 22]); }
         else if (/\.started$/.test(state.last) && !fromRemote) haptic(10);
@@ -921,7 +923,9 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   let bubbleGo = null, bubbleKind = "";
   function renderBubble() {
     if (!bubbleEl) return;
-    const m = mounted && visible() ? bubbleModel() : null;
+    let shared = false;
+    try { shared = !!(W.top.GSFNotify && W.top.GSFNotify.alive); } catch (_e) {}
+    const m = mounted && visible() && !shared ? bubbleModel() : null;
     bubbleGo = m ? m.go : null;
     if (!m) { bubbleEl.classList.remove("on", "spin", "done"); bubbleEl.tabIndex = -1; bubbleKind = ""; return; }
     const ins = insets();
