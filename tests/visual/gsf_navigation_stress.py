@@ -17,7 +17,7 @@ def request_failure_is_critical(request,*,inactive_surface=False,signal_aborted=
     optional_font_cancel=(request.resource_type=='font' and url.hostname=='fonts.gstatic.com' and cancelled)
     # A suspended surface can legitimately abandon its in-flight video range.
     # Active media, scripts, HTTP failures and real transport failures still block.
-    inactive_media_cancel=(inactive_surface and cancelled and request.resource_type=='media'
+    inactive_media_cancel=(inactive_surface and cancelled and request.resource_type in ('media','other')
         and bool(base.netloc) and (url.scheme.lower(),url.netloc.lower())==(base.scheme.lower(),base.netloc.lower())
         and (url.path.startswith('/media/') or url.path=='/editor-media/current'))
     # Alive deliberately aborts its route-owned poll when the surface closes.
@@ -29,7 +29,7 @@ def request_failure_is_critical(request,*,inactive_surface=False,signal_aborted=
 
 
 def request_surface_is_inactive(request):
-    if request.resource_type not in ('media','fetch'):return False
+    if request.resource_type not in ('media','other','fetch'):return False
     try:
         frame=request.frame
         if frame.is_detached():return True

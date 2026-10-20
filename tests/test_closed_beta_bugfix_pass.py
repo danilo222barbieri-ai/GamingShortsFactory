@@ -432,6 +432,13 @@ class MediaCancellationContract(unittest.TestCase):
         self.assertTrue(request_failure_is_critical(media,inactive_surface=True,base_url='http://different.test'))
         self.assertTrue(request_failure_is_critical(SimpleNamespace(**{**vars(media),'failure':'Connection failed'}),inactive_surface=True,base_url='http://gsf.test'))
         self.assertTrue(request_failure_is_critical(SimpleNamespace(**{**vars(media),'resource_type':'script'}),inactive_surface=True,base_url='http://gsf.test'))
+        # WebKit can cancel a video before headers establish its resource type.
+        other=SimpleNamespace(**{**vars(media),'resource_type':'other'})
+        self.assertFalse(request_failure_is_critical(other,inactive_surface=True,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(other,inactive_surface=False,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(other,inactive_surface=True,base_url='http://other.test'))
+        self.assertTrue(request_failure_is_critical(SimpleNamespace(**{**vars(other),'url':'http://gsf.test/app.js'}),inactive_surface=True,base_url='http://gsf.test'))
+        self.assertTrue(request_failure_is_critical(SimpleNamespace(**{**vars(other),'failure':'Connection failed'}),inactive_surface=True,base_url='http://gsf.test'))
 
 class AlivePollCancellationContract(unittest.TestCase):
     def test_cancelled_poll_requires_observed_signal_and_inactive_surface(self):

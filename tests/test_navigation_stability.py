@@ -189,7 +189,7 @@ class ParentBundleContract(unittest.TestCase):
     def test_retired_preview_decodes_replacement_before_cancellation_is_accepted(self):
         from urllib.parse import urlsplit,parse_qs
         from types import SimpleNamespace
-        from visual.gsf_navigation_stress import MEDIA_FIXTURE,request_media_has_playable_replacement
+        from visual.gsf_navigation_stress import MEDIA_FIXTURE,request_media_has_playable_replacement,request_surface_is_inactive,request_failure_is_critical
         try:
             from playwright.sync_api import sync_playwright
         except ImportError:
@@ -204,6 +204,7 @@ class ParentBundleContract(unittest.TestCase):
                 def serve(route):
                     url=urlsplit(route.request.url)
                     if url.path=='/':route.fulfill(content_type='text/html',body="<iframe src='/frame?gen=1'></iframe>")
+                    elif url.path=='/away':route.fulfill(content_type='text/html',body='<p>Left the app</p>')
                     elif url.path=='/frame':
                         gen=parse_qs(url.query)['gen'][0]
                         route.fulfill(content_type='text/html',body=f"<div id='home154'><div id='circle'><div class='naPreview'><video muted autoplay preload='auto' src='/editor-media/current?na={gen}'></video></div></div></div>")
@@ -219,6 +220,7 @@ class ParentBundleContract(unittest.TestCase):
                 page.evaluate("document.querySelector('iframe').src='/frame?gen=2'")
                 page.wait_for_function("()=>document.querySelector('iframe').contentDocument?.querySelector('video')?.readyState>=2",polling=50)
                 for route in held:route.continue_()
+                held.clear()
                 for _ in range(100):
                     if failed:break
                     page.wait_for_timeout(30)
@@ -233,7 +235,13 @@ class ParentBundleContract(unittest.TestCase):
                 video.evaluate("(v,url)=>{v.src=url;v.load()}",request.url)
                 self.assertFalse(request_media_has_playable_replacement(request,'http://gsf.test'))
                 video.evaluate("v=>{v.src='/editor-media/current?na=3';v.load();v.removeAttribute('src');v.load()}")
+                for route in held:route.continue_()
+                held.clear()
                 self.assertFalse(request_media_has_playable_replacement(request,'http://gsf.test'))
+                # Leaving the document retires its Frame even if WebKit calls media "other".
+                page.goto('http://gsf.test/away',wait_until='domcontentloaded')
+                self.assertTrue(request_surface_is_inactive(request))
+                self.assertFalse(request_failure_is_critical(request,inactive_surface=request_surface_is_inactive(request),base_url='http://gsf.test'))
             finally:
                 browser.close()
 
