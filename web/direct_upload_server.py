@@ -1474,7 +1474,6 @@ def _tiktok_user_save(sid,payload):
     if not sid:
         raise RuntimeError("sessione browser non valida")
     payload={**payload,"owner_id":_storage_owner_id(sid)}
-    _tiktok_user_write_local(sid,payload)
     if not _bucket_enabled():
         raise RuntimeError("storage persistente non disponibile")
     _s3().put_object(
@@ -1484,6 +1483,7 @@ def _tiktok_user_save(sid,payload):
         ContentType="application/octet-stream",
         CacheControl="no-store",
     )
+    _tiktok_user_write_local(sid,payload)
 
 
 
@@ -1566,8 +1566,7 @@ def _instagram_user_load(sid):
         obj=_s3().get_object(Bucket=S3_BUCKET,Key=_instagram_user_key(sid))
         payload=_security_decrypt_json(obj["Body"].read())
         if isinstance(payload,dict) and _social_owner_matches(sid,"instagram",payload):
-            _instagram_user_write_local(sid,payload)
-            return payload
+                    return payload
     except Exception:
         pass
     return {}
@@ -1587,7 +1586,6 @@ def _instagram_user_save(sid,payload):
     if not sid:
         raise RuntimeError("sessione browser non valida")
     payload={**payload,"owner_id":_storage_owner_id(sid)}
-    _instagram_user_write_local(sid,payload)
     if not _bucket_enabled():
         raise RuntimeError("storage persistente non disponibile")
     _s3().put_object(
@@ -1597,6 +1595,7 @@ def _instagram_user_save(sid,payload):
         ContentType="application/octet-stream",
         CacheControl="no-store",
     )
+    _instagram_user_write_local(sid,payload)
 
 
 
@@ -1609,6 +1608,7 @@ def _instagram_user_save(sid,payload):
 def _creator_session_key(sid):
     sid=_safe_id(sid)
     return f"creator-sessions/{sid}.json" if sid else ""
+
 
 
 def _creator_profile_key(account_id):
@@ -2706,85 +2706,102 @@ def _meta_find_sessions(provider,uid):
     return {_safe_id(s) for s in sessions if _safe_id(s)}
 
 
+def _meta_profile_without_identities(profile,target_ids):
+    profile=dict(profile);providers=dict(profile.get("providers") or {});removed=[]
+    for platform,ids in target_ids.items():
+        row=providers.get(platform) or {}
+        if str(row.get("id") or "") in ids:removed.append(row);providers.pop(platform,None)
+    if not removed:return profile
+    for field in ("display_name","email","avatar"):
+        if any(profile.get(field) and profile.get(field)==row.get(field) for row in removed):profile.pop(field,None)
+    profile["providers"]=providers
+    return profile
+
+
 def _meta_remove_data(provider,uid):
     sessions=_meta_find_sessions(provider,uid)
-    journal_key=_meta_index_key(provider,uid)
-    journal=_oauth_object_read(journal_key,True)
+    journal_key=_meta_index_key(provider,uid);journal=_oauth_object_read(journal_key,True)
     for sid in sessions:
-        # Authoritative reads must distinguish missing data from an unavailable store.
-        session=_oauth_object_read(_creator_session_key(sid))
-        account=_safe_id(session.get("account_id",""))
+        session=_oauth_object_read(_creator_session_key(sid));account=_safe_id(session.get("account_id",""))
         profile=_oauth_object_read(_creator_profile_key(account)) if account else {}
         if not profile:
-            local=ROOT/"sessions"/sid/"account.json"
-            profile=json.loads(local.read_text()) if local.exists() else {}
-        providers=dict(profile.get("providers") or {})
-        fb=_oauth_object_read(f"social-connections/{sid}/facebook.json",True)
-        ig=_oauth_object_read(f"social-connections/{sid}/instagram.json",True)
-        targets=[]
-        if provider=="facebook":
-            fbuid=str(fb.get("facebook_user_id") or "")
-            profile_uid=str((providers.get("facebook") or {}).get("id") or "")
-            if fbuid and profile_uid and fbuid!=profile_uid and uid in (fbuid,profile_uid):raise RuntimeError("Inconsistent Meta association")
-            fbmatch=fbuid==uid or (not fbuid and profile_uid==uid)
-            if fbmatch:targets.append("facebook")
-            if str(ig.get("facebook_user_id") or "")==uid or (fbmatch and ig.get("oauth_mode")=="facebook_login" and not ig.get("facebook_user_id")):targets.append("instagram")
-        elif str(ig.get("ig_user_id") or "")==uid or str((providers.get("instagram") or {}).get("id") or "")==uid:
-            targets.append("instagram")
-        prior=(journal.get("cleanup") or {}).get(sid) or {}
+            local=ROOT/"sessions"/sid/"account.json";profile=json.loads(local.read_text()) if local.exists() else {}
         current_owner=str(profile.get("account_id") or sid)
-        if not targets and prior.get("owner_id")==current_owner:
-            # The previous attempt may already have removed tokens/profile fields.
-            # A different provider account in the same browser is never deletion authority.
-            conflict=(fb.get("facebook_user_id") and str(fb["facebook_user_id"])!=str(prior.get("facebook_user_id") or "")) or (ig.get("ig_user_id") and str(ig["ig_user_id"])!=str(prior.get("ig_user_id") or ""))
-            if conflict:raise RuntimeError("Meta connection changed during cleanup")
-            targets=list(prior.get("targets") or [])
-        if not targets:continue
+        providers=profile.get("providers") or {}
+        tokens={p:_oauth_object_read(f"social-connections/{sid}/{p}.json",True) for p in ("facebook","instagram")}
+        id_field={"facebook":"facebook_user_id","instagram":"ig_user_id"}
+        prior=(journal.get("cleanup") or {}).get(sid) or {}
+        target_ids={p:set(ids) for p,ids in (prior.get("target_ids") or {}).items()}
+        owners={p:set(ids) for p,ids in (prior.get("owners") or {}).items()}
+        def include(platform,identity,owner=""):
+            if not identity:return
+            target_ids.setdefault(platform,set()).add(str(identity))
+            if owner:owners.setdefault(platform,set()).add(str(owner))
+        if provider=="instagram":
+            ig=tokens["instagram"]
+            if str(ig.get("ig_user_id") or "")==uid:include("instagram",uid,ig.get("owner_id") or (current_owner if not account else ""))
+            if str((providers.get("instagram") or {}).get("id") or "")==uid:include("instagram",uid,current_owner)
+        else:
+            fb=tokens["facebook"];ig=tokens["instagram"]
+            if str(fb.get("facebook_user_id") or "")==uid:include("facebook",uid,fb.get("owner_id") or (current_owner if not account else ""))
+            if str((providers.get("facebook") or {}).get("id") or "")==uid:include("facebook",uid,current_owner)
+            related=str(ig.get("facebook_user_id") or "")==uid
+            legacy=not ig.get("facebook_user_id") and ig.get("oauth_mode")=="facebook_login" and "facebook" in target_ids and (not ig.get("owner_id") or ig.get("owner_id") in owners.get("facebook",set()))
+            if related or legacy:include("instagram",ig.get("ig_user_id"),ig.get("owner_id") or (current_owner if not account else ""))
+        if not target_ids:continue  # An old reverse index is not authority over a new user's data.
         cleanup=dict(journal.get("cleanup") or {})
-        cleanup[sid]={"owner_id":current_owner,"targets":targets,"facebook_user_id":fb.get("facebook_user_id") or prior.get("facebook_user_id") or "","ig_user_id":ig.get("ig_user_id") or prior.get("ig_user_id") or ""}
+        cleanup[sid]={"target_ids":{p:sorted(ids) for p,ids in target_ids.items()},"owners":{p:sorted(ids) for p,ids in owners.items()}}
         journal={**journal,"provider":provider,"sessions":sorted(sessions),"cleanup":cleanup}
         _oauth_object_save(journal_key,journal,True)
-        for platform in targets:
-            providers.pop(platform,None)
-            _s3().delete_object(Bucket=S3_BUCKET,Key=f"social-connections/{sid}/{platform}.json")
+        for platform,ids in target_ids.items():
+            token=tokens[platform]
+            if str(token.get(id_field[platform]) or "") in ids:
+                _s3().delete_object(Bucket=S3_BUCKET,Key=f"social-connections/{sid}/{platform}.json")
             for name in (platform+"_config.json",platform+"_token.json"):
-                (ROOT/"sessions"/sid/"social"/name).unlink(missing_ok=True)
-        matched=[v for p,v in (profile.get("providers") or {}).items() if p in targets and isinstance(v,dict)]
-        for field in ("display_name","email","avatar"):
-            if any(profile.get(field) and profile.get(field)==v.get(field) for v in matched):profile.pop(field,None)
-        profile["providers"]=providers
-        if _safe_id(profile.get("account_id","")):_creator_account_save(sid,profile)
+                path=ROOT/"sessions"/sid/"social"/name
+                if not path.exists():continue
+                cached=_security_read_json(path)
+                if str(cached.get(id_field[platform]) or "") in ids:path.unlink(missing_ok=True)
+        clean=_meta_profile_without_identities(profile,target_ids)
+        if clean!=profile and account:_creator_account_save(sid,clean)
+        # Stored account profiles remain associated even after the browser logs into another owner.
+        for owner in set().union(*owners.values()) if owners else set():
+            key=_creator_profile_key(owner);stored=_oauth_object_read(key)
+            if stored:
+                clean=_meta_profile_without_identities(stored,target_ids)
+                if clean!=stored:_oauth_object_save(key,clean)
+        def belongs(row):
+            platform=str(row.get("platform") or "").lower()
+            if platform not in target_ids:return False
+            owner=str(row.get("meta_owner_id") or "")
+            return owner in owners.get(platform,set()) if owner else current_owner in owners.get(platform,set())
         with _ANALYTICS_LOCK, _CONTENT_MEMORY_LOCK:
-            epoch=ROOT/"sessions"/sid/".meta_analytics_epoch.json"
-            epoch.parent.mkdir(parents=True,exist_ok=True)
+            epoch=ROOT/"sessions"/sid/".meta_analytics_epoch.json";epoch.parent.mkdir(parents=True,exist_ok=True)
             _write_json_atomic(epoch,{"epoch":uuid.uuid4().hex})
             path=ROOT/"sessions"/sid/"social_analytics_v148.json"
             analytics=_oauth_object_read(f"social-analytics/{sid}/analytics_v148.json")
             if not analytics and path.exists():analytics=json.loads(path.read_text())
             if analytics:
-                analytics["records"]=[r for r in analytics.get("records",[]) if str(r.get("platform","")).lower() not in targets]
-                _oauth_object_save(f"social-analytics/{sid}/analytics_v148.json",analytics)
-                _write_json_atomic(path,analytics)
-            memory_path=ROOT/"sessions"/sid/"content_memory_v145.json"
-            memory_key=f"content-memory/{sid}/memory_v145.json"
-            memory=_oauth_object_read(memory_key,kind=list)
-            if not memory and memory_path.exists():memory=json.loads(memory_path.read_text())
+                analytics["records"]=[row for row in analytics.get("records",[]) if not belongs(row)]
+                _oauth_object_save(f"social-analytics/{sid}/analytics_v148.json",analytics);_write_json_atomic(path,analytics)
+            path=ROOT/"sessions"/sid/"content_memory_v145.json";key=f"content-memory/{sid}/memory_v145.json"
+            memory=_oauth_object_read(key,kind=list)
+            if not memory and path.exists():memory=json.loads(path.read_text())
             if memory:
                 for row in memory:
-                    if str(row.get("platform") or "").lower() in targets:
-                        for field in ("platform","performance_score","analytics_updated_at"):row.pop(field,None)
-                _oauth_object_save(memory_key,memory)
-                _write_json_atomic(memory_path,memory)
-        # Erase reverse associations for removed connections, preserving other owners.
-        for key in list(_oauth_bucket_keys("social-meta-identities/")):
-            row=_oauth_object_read(key,True)
-            if row.get("provider") not in targets:continue
-            remaining=set(row.get("sessions") or [])-{sid}
-            if remaining:_oauth_object_save(key,{**row,"sessions":sorted(remaining)},True)
-            else:_s3().delete_object(Bucket=S3_BUCKET,Key=key)
-    # Login mapping is data derived from the revoked provider, too.
+                    if belongs(row):
+                        for field in ("platform","performance_score","analytics_updated_at","meta_owner_id"):row.pop(field,None)
+                _oauth_object_save(key,memory);_write_json_atomic(path,memory)
+        # Remove only the actual external identities, never another user's same-platform index.
+        for platform,ids in target_ids.items():
+            for identity in ids:
+                key=_meta_index_key(platform,identity);row=_oauth_object_read(key,True)
+                if not row:continue
+                remaining=set(row.get("sessions") or [])-{sid}
+                if remaining:_oauth_object_save(key,{**row,"sessions":sorted(remaining)},True)
+                elif key!=journal_key:_s3().delete_object(Bucket=S3_BUCKET,Key=key)
     _s3().delete_object(Bucket=S3_BUCKET,Key=_creator_identity_key(provider,uid))
-    _s3().delete_object(Bucket=S3_BUCKET,Key=_meta_index_key(provider,uid))
+    _s3().delete_object(Bucket=S3_BUCKET,Key=journal_key)
 
 
 def _meta_disconnect(sid,platform):
@@ -2799,7 +2816,14 @@ def _meta_disconnect(sid,platform):
             result=_oauth_json(host+"/me/permissions",method="DELETE",headers={"Authorization":"Bearer "+access})
             if result.get("success") is False:raise RuntimeError("Revocation refused")
         except urllib.error.HTTPError as exc:
-            if exc.code!=401:raise
+            already_revoked=exc.code==401
+            if exc.code==400:
+                try:
+                    error=json.loads(exc.read(16385)).get("error",{})
+                    already_revoked=isinstance(error,dict) and error.get("code")==190
+                except (ValueError,TypeError,AttributeError):
+                    already_revoked=False
+            if not already_revoked:raise
     if uid:_meta_remove_data(platform,uid)
     else:
         _s3().delete_object(Bucket=S3_BUCKET,Key=f"social-connections/{_safe_id(sid)}/{platform}.json")
@@ -4052,6 +4076,7 @@ def _analytics_register(sid,record):
             "status":str((existing or {}).get("status") or "registered"),
             "metadata":dict(record.get("metadata") or {}),
         }
+        if platform.lower() in ("facebook","instagram"):payload["meta_owner_id"]=_storage_owner_id(sid)
         if existing is not None:
             existing.update(payload)
         else:
@@ -4093,6 +4118,7 @@ def _analytics_collect_one(sid,row):
                         item["performance_score"]=out["performance_score"]
                         item["platform"]=str(out.get("platform") or item.get("platform") or "")
                         item["analytics_updated_at"]=out["updated_at"]
+                        if str(row.get("platform") or "").lower() in ("facebook","instagram"):item["meta_owner_id"]=_storage_owner_id(sid)
                         changed=True
                         break
                 if changed:
@@ -4115,7 +4141,12 @@ def _analytics_collect_all(sid,force=False):
         rows=[dict(x) for x in (data.get("records") or []) if isinstance(x,dict)]
     refreshed=[_analytics_collect_one(sid,row) for row in rows]
     with _ANALYTICS_LOCK:
-        if meta_epoch!=_meta_analytics_epoch(sid):refreshed=[r for r in refreshed if str(r.get("platform") or "").lower() not in ("facebook","instagram")]
+        if meta_epoch!=_meta_analytics_epoch(sid):
+            # A concurrent deletion has already filtered the authoritative rows.
+            # Preserve surviving accounts instead of restoring stale snapshots.
+            surviving=_analytics_load(sid).get("records") or []
+            refreshed=[r for r in refreshed if str(r.get("platform") or "").lower() not in ("facebook","instagram")]
+            refreshed.extend(dict(r) for r in surviving if isinstance(r,dict) and str(r.get("platform") or "").lower() in ("facebook","instagram"))
         data["records"]=refreshed
         data["updated_at"]=now
         _analytics_save(sid,data)

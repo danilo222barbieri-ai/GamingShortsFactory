@@ -127,6 +127,30 @@ class MetaOAuth(unittest.TestCase):
         self.assertEqual(self.call_signed().status,200)
         rows=self.ns['_oauth_object_read']('social-analytics/browserA/analytics_v148.json')['records']
         self.assertEqual(rows,[{'platform':'YouTube','content_id':'keep'}],'A retry must finish after token/profile removal already succeeded')
+    def test_instagram_deletion_after_sid_reuse_preserves_current_owner_identity_and_analytics(self):
+        self.ns['_creator_account_save']('browserA',{'account_id':'accountA','providers':{'instagram':{'id':'42'}}})
+        self.ns['_instagram_user_save']('browserA',{'ig_user_id':'42','access_token':'old-owner-token'})
+        self.ns['_meta_index_add']('instagram','42','browserA')
+        self.ns['_creator_account_save']('browserA',{'account_id':'accountB','display_name':'Creator B','providers':{'instagram':{'id':'99','display_name':'Creator B'}}})
+        self.ns['_oauth_object_save']('social-analytics/browserA/analytics_v148.json',{'records':[{'platform':'Instagram','content_id':'B-content','meta_owner_id':'accountB'},{'platform':'Instagram','content_id':'A-content','meta_owner_id':'accountA'}]})
+        self.ns['_meta_index_add']('instagram','99','browserA')
+        reply=self.call_signed(signed=self.signed(secret='ig-secret'));self.assertEqual(reply.status,200)
+        profile=self.ns['_creator_account_load']('browserA');self.assertEqual(profile['providers']['instagram']['id'],'99');self.assertEqual(profile['display_name'],'Creator B')
+        rows=self.ns['_oauth_object_read']('social-analytics/browserA/analytics_v148.json')['records'];self.assertEqual(rows,[{'platform':'Instagram','content_id':'B-content','meta_owner_id':'accountB'}])
+        self.assertTrue(self.ns['_oauth_object_read'](self.ns['_meta_index_key']('instagram','99'),True))
+        old_profile=self.ns['_oauth_object_read'](self.ns['_creator_profile_key']('accountA'));self.assertNotIn('instagram',old_profile['providers'])
+    def test_inflight_collection_preserves_new_owner_rows_after_old_owner_deletion(self):
+        self.test_instagram_deletion_after_sid_reuse_preserves_current_owner_identity_and_analytics()
+        # Recreate an old association and token alongside B's surviving records.
+        self.ns['_oauth_object_save']('social-connections/browserA/instagram.json',{'owner_id':'accountA','ig_user_id':'42','access_token':'old'},True)
+        self.ns['_meta_index_add']('instagram','42','browserA')
+        def collect(sid,row):
+            self.assertEqual(self.call_signed(signed=self.signed(secret='ig-secret')).status,200)
+            return row
+        self.ns['_analytics_collect_one']=collect
+        self.ns['_analytics_collect_all']('browserA',force=True)
+        rows=self.ns['_oauth_object_read']('social-analytics/browserA/analytics_v148.json')['records']
+        self.assertEqual(rows,[{'platform':'Instagram','content_id':'B-content','meta_owner_id':'accountB'}])
     def test_data_deletion_failure_never_reports_success(self):
         self.bucket.fail=True;reply=self.call_signed();self.assertEqual(reply.status,503)
     def test_missing_secret_is_not_an_unsigned_bypass(self):
@@ -162,6 +186,29 @@ class MetaOAuth(unittest.TestCase):
         self.ns['_meta_disconnect']('browserA','facebook')
         self.assertEqual(calls[0][1]['method'],'DELETE');self.assertIn('/me/permissions',calls[0][0]);self.assertNotIn('private-token',calls[0][0])
         self.assertFalse(self.ns['_social_connection_load']('browserA','facebook'))
+    def test_instagram_token_commit_updates_cache_only_after_persistence(self):
+        self.ns['_instagram_user_save']('browserA',{'access_token':'old','ig_user_id':'42'})
+        self.ns['_instagram_user_write_local']('browserA',{'access_token':'old','ig_user_id':'42'})
+        self.ns['_instagram_user_save']('browserA',{'access_token':'new','ig_user_id':'42'})
+        self.assertEqual(self.ns['_instagram_user_load']('browserA')['access_token'],'new')
+        self.bucket.fail=True
+        with self.assertRaises(OSError):self.ns['_instagram_user_save']('browserA',{'access_token':'unsaved','ig_user_id':'42'})
+        self.bucket.fail=False
+        self.assertEqual(self.ns['_instagram_user_load']('browserA')['access_token'],'new')
+    def test_expired_meta_permission_can_be_disconnected(self):
+        self.seed()
+        def revoked(*args,**kwargs):
+            raise urllib.error.HTTPError('https://graph.facebook.com/me/permissions',400,'Bad Request',{},io.BytesIO(b'{"error":{"code":190}}'))
+        self.ns['_oauth_json']=revoked
+        self.ns['_meta_disconnect']('browserA','facebook')
+        self.assertFalse(self.ns['_social_connection_load']('browserA','facebook'))
+    def test_unrelated_meta_bad_request_keeps_connection(self):
+        self.seed()
+        def bad_request(*args,**kwargs):
+            raise urllib.error.HTTPError('https://graph.facebook.com/me/permissions',400,'Bad Request',{},io.BytesIO(b'{"error":{"code":100}}'))
+        self.ns['_oauth_json']=bad_request
+        with self.assertRaises(urllib.error.HTTPError):self.ns['_meta_disconnect']('browserA','facebook')
+        self.assertTrue(self.ns['_social_connection_load']('browserA','facebook'))
     def test_remote_disconnect_failure_keeps_connection_for_retry(self):
         self.seed();self.assertTrue('_meta_disconnect' in self.ns,'Remote deauthorization is missing')
         self.ns['_oauth_json']=lambda *a,**k:(_ for _ in ()).throw(OSError('network unavailable'))
@@ -188,6 +235,29 @@ class TikTokOAuth(unittest.TestCase):
     def test_tiktok_cross_browser_callback_never_exchanges_token(self):
         reply=Reply();self.ns['_tiktok_oauth_start'](reply,'browserA');q=urllib.parse.parse_qs(urllib.parse.urlsplit(reply.response['Location']).query);calls=[];self.ns['_oauth_json']=lambda *a,**kw:calls.append(a) or {}
         other=Reply('browserB');self.ns['_tiktok_oauth_callback'](other,{'state':q['state'],'code':['private-code']});self.assertEqual(other.status,400);self.assertFalse(calls)
+    def test_tiktok_valid_exchange_and_disconnect_use_existing_encrypted_storage(self):
+        start=Reply();self.ns['_tiktok_oauth_start'](start,'browserA')
+        query=urllib.parse.parse_qs(urllib.parse.urlsplit(start.response['Location']).query)
+        calls=[]
+        def official(url,**kwargs):
+            calls.append((url,kwargs))
+            if '/oauth/token/' in url:return {'access_token':'tt-access','refresh_token':'tt-refresh','open_id':'owner','scope':'user.info.basic,video.publish,video.list','expires_in':3600}
+            if '/user/info/' in url:return {'data':{'user':{'open_id':'owner','display_name':'Creator'}}}
+            if '/oauth/revoke/' in url:return {}
+            raise AssertionError('Unexpected provider endpoint')
+        self.ns['_oauth_json']=official
+        callback=Reply();self.ns['_tiktok_oauth_callback'](callback,{'state':query['state'],'code':['private-code']})
+        self.assertEqual(callback.status,302)
+        self.assertEqual(self.ns['_tiktok_user_load']('browserA')['open_id'],'owner')
+        self.assertNotIn(b'tt-access',self.bucket.objects[self.ns['_tiktok_user_key']('browserA')])
+        self.assertNotIn('private-code',calls[0][0])
+        self.ns['_tiktok_disconnect']('browserA')
+        self.assertFalse(self.ns['_tiktok_user_load']('browserA'))
+    def test_failed_token_persistence_keeps_last_committed_credentials(self):
+        self.ns['_tiktok_user_save']('browserA',{'access_token':'old','open_id':'owner'})
+        self.bucket.fail=True
+        with self.assertRaises(OSError):self.ns['_tiktok_user_save']('browserA',{'access_token':'unsaved','open_id':'owner'})
+        self.bucket.fail=False;self.assertEqual(self.ns['_tiktok_user_load']('browserA')['access_token'],'old')
     def test_refresh_failure_cannot_return_an_expired_token(self):
         self.ns['_tiktok_user_load']=lambda sid:{'access_token':'expired','open_id':'owner','refresh_token':'refresh','expires_at':time.time()-5}
         self.ns['_oauth_json']=lambda *a,**kw:(_ for _ in ()).throw(OSError('private-token'))
@@ -216,6 +286,13 @@ class TikTokPublication(unittest.TestCase):
     def test_failed_post_after_successful_upload_cannot_be_reported_published(self):
         opener,calls=self.transport(['FAILED'])
         with self.assertRaises(self.pm.PublishError):self.pm.tiktok_direct_post('token',str(self.video),{'caption':'Test'},'private',opener=opener)
+    def test_last_put_timeout_retains_the_known_publish_id(self):
+        opener,_calls=self.transport(['PUBLISH_COMPLETE'])
+        def ambiguous(req,timeout=0):
+            if req.get_method()=='PUT':raise TimeoutError('accepted bytes, response lost')
+            return opener(req,timeout)
+        with self.assertRaises(self.pm.PublishUnconfirmed) as err:self.pm.tiktok_direct_post('token',str(self.video),{'caption':'Test'},'private',opener=ambiguous)
+        self.assertEqual(err.exception.publish_id,'p_1')
     def test_only_publish_complete_is_success(self):
         opener,calls=self.transport(['PUBLISH_COMPLETE']);out=self.pm.tiktok_direct_post('token',str(self.video),{'caption':'Test'},'private',opener=opener)
         self.assertTrue(out['ok']);self.assertTrue(any('/status/fetch/' in u for u in calls),'Upload accepted is not publication confirmed')

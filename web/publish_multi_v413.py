@@ -365,7 +365,12 @@ def tiktok_direct_post(access_token, video_path, plan, privacy="public", opener=
                 with _open(opener, req, 300) as resp:
                     status = int(getattr(resp, "status", 200) or 200)
             except urllib.error.HTTPError as exc:
+                if exc.code>=500:raise PublishUnconfirmed(publish_id) from None
                 raise PublishError(f"TikTok upload HTTP {exc.code}") from None
+            except (OSError,TimeoutError):
+                # The transport can accept bytes before its response is lost.
+                raise PublishUnconfirmed(publish_id) from None
+            if status>=500:raise PublishUnconfirmed(publish_id)
             if status not in (200, 201, 206):
                 raise PublishError(f"TikTok upload HTTP {status}")
             sent += len(blob)
