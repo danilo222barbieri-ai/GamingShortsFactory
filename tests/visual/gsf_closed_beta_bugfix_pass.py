@@ -80,8 +80,17 @@ def audit(base, out, engine='chromium'):
                     hub.locator('#hub').evaluate("()=>{GSFHubV415.openView('dashboard');GSFAlive.emit('video.cleared');GSFAlive.refresh()}")
                     ring=[]
                     for scroll in (0,80,160,240):
-                        hub.locator('#hub').evaluate('(e,n)=>e.scrollTop=n',scroll);page.wait_for_timeout(35)
-                        point=hub.locator('#hub').evaluate("()=>{const t=document.querySelector('[data-alive-next~=upload]'),g=document.querySelector('#gsf-alive-guide'),r=g.getBoundingClientRect(),a=t.getBoundingClientRect();return {visible:getComputedStyle(g).display!=='none',offset:r.top-a.top+6}}")
+                        # WebKit can delay scroll delivery beyond one animation frame.
+                        # Sample in the actual event, so the periodic Alive tick cannot
+                        # conceal a missing scroll listener.
+                        point=hub.locator('#hub').evaluate("""(e,n)=>new Promise((resolve,reject)=>{
+                          const sample=()=>{const t=document.querySelector('[data-alive-next~=upload]'),g=document.querySelector('#gsf-alive-guide'),r=g.getBoundingClientRect(),a=t.getBoundingClientRect();return {visible:getComputedStyle(g).display!=='none',offset:r.top-a.top+6}};
+                          const desired=Math.max(0,Math.min(n,e.scrollHeight-e.clientHeight));
+                          if(e.scrollTop===desired){resolve(sample());return}
+                          const timer=setTimeout(()=>{e.removeEventListener('scroll',done);reject(new Error('Hub scroll event not delivered'))},5000);
+                          const done=()=>{clearTimeout(timer);resolve(sample())};
+                          e.addEventListener('scroll',done,{once:true});e.scrollTop=desired;
+                        })""",scroll)
                         if point['visible']:assert abs(point['offset'])<6,(label,point)
                         ring.append(point)
                     hub.locator('#hub').evaluate("()=>GSFAlive.say('Route lifecycle check')")
