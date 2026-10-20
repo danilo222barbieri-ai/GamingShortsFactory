@@ -1,6 +1,10 @@
 {
   "branch": "chat/social-oauth-master-youtube-tiktok-meta-fb-ig-tw-cdbf69",
   "created_at": "2026-10-20T14:46:04+00:00",
+  "evidence": {
+    "handoff": "Replacement claim will own existing social paths; previous branch untouched.",
+    "reason": "Explicit user-authorized transfer to this Codex chat: user answered vai after the ownership-transfer question. Preserve published branch; no OAuth implementation commits are published on it."
+  },
   "id": "social-oauth-master-youtube-tiktok-meta-fb-ig-tw-cdbf69",
   "owner": "chat/social-oauth-master-youtube-tiktok-meta-fb-ig-tw-cdbf69",
   "paths": [
@@ -15,5 +19,5 @@
     "web/test_v413_publish_multi.py"
   ],
   "scope": "social OAuth master: YouTube/TikTok/Meta FB+IG/Twitch connect, tokens, revoke, Meta deauth/data deletion, publishing",
-  "state": "active"
+  "state": "abandoned"
 }
