@@ -20,7 +20,7 @@ jobs:
           fetch-depth: 0
 
       - name: Apply exact OAuth hotfix
-        shell: python
+        shell: python {0}
         run: |
           from pathlib import Path
 
@@ -66,13 +66,6 @@ jobs:
               hub,
               ' let current="dashboard", projectPane="drafts";',
               ' let current="dashboard", projectPane="drafts";\n let oauthNavigating=false;',
-          )
-          replace_once(
-              hub,
-              ''' function connectSocial(key){
-  if(socialIsOn(key)){''',
-              ''' function connectSocial(key){
-  if(socialIsOn(key)){''',
           )
           replace_once(
               hub,
