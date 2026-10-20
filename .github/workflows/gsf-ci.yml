@@ -123,32 +123,19 @@ jobs:
           from pathlib import Path
 
           def replace_once(path, old, new):
-              p=Path(path)
-              text=p.read_text(encoding='utf-8')
-              n=text.count(old)
-              if n != 1:
-                  raise SystemExit(f'{path}: expected 1 match, got {n}: {old[:100]!r}')
+              p=Path(path); text=p.read_text(encoding='utf-8'); n=text.count(old)
+              if n != 1: raise SystemExit(f'{path}: expected 1 match, got {n}: {old[:100]!r}')
               p.write_text(text.replace(old,new,1),encoding='utf-8')
 
           def replace_in_block(path, start_marker, end_marker, old, new):
-              p=Path(path)
-              text=p.read_text(encoding='utf-8')
-              a=text.index(start_marker)
-              b=text.index(end_marker,a)
-              block=text[a:b]
-              n=block.count(old)
-              if n != 1:
-                  raise SystemExit(f'{path}: expected 1 block match, got {n}: {old[:100]!r}')
-              block=block.replace(old,new,1)
-              p.write_text(text[:a]+block+text[b:],encoding='utf-8')
+              p=Path(path); text=p.read_text(encoding='utf-8')
+              a=text.index(start_marker); b=text.index(end_marker,a); block=text[a:b]; n=block.count(old)
+              if n != 1: raise SystemExit(f'{path}: expected 1 block match, got {n}: {old[:100]!r}')
+              p.write_text(text[:a]+block.replace(old,new,1)+text[b:],encoding='utf-8')
 
           server='web/direct_upload_server.py'
-          replace_once(server,
-              'TIKTOK_SCOPE="user.info.basic,video.publish,video.list"',
-              'TIKTOK_SCOPE="user.info.basic,video.publish"')
-          replace_once(server,
-              'if not {"user.info.basic","video.publish","video.list"}<=granted:raise ValueError("Required permissions were not granted")',
-              'if not {"user.info.basic","video.publish"}<=granted:raise ValueError("Required permissions were not granted")')
+          replace_once(server,'TIKTOK_SCOPE="user.info.basic,video.publish,video.list"','TIKTOK_SCOPE="user.info.basic,video.publish"')
+          replace_once(server,'if not {"user.info.basic","video.publish","video.list"}<=granted:raise ValueError("Required permissions were not granted")','if not {"user.info.basic","video.publish"}<=granted:raise ValueError("Required permissions were not granted")')
           replace_once(server,
               '''def _redirect(handler,url):
               handler.send_response(302)
@@ -163,50 +150,27 @@ jobs:
               handler.send_header("Cache-Control","no-store, max-age=0")
               if target.startswith("/?gsf_hub=social"):handler.send_header("Pragma","no-cache")
               handler.end_headers()''')
-
-          for old,new in (
-              ('"youtube":bool(youtube_state)', '"youtube":bool(social_snapshot.get("youtube"))'),
-              ('"tiktok":bool(tiktok_state)', '"tiktok":bool(social_snapshot.get("tiktok"))'),
-              ('"instagram":bool(instagram_state)', '"instagram":bool(social_snapshot.get("instagram"))'),
-              ('"facebook":bool(providers.get("facebook"))', '"facebook":bool(social_snapshot.get("facebook"))'),
-              ('"twitch":bool(providers.get("twitch"))', '"twitch":bool(social_snapshot.get("twitch"))'),
-          ):
-              replace_in_block(server, 'if clean=="/creator-hub/state":', 'if clean=="/account":', old, new)
+          replace_in_block(server,'if clean=="/creator-hub/state":','if clean=="/account":','"twitch":bool(providers.get("twitch"))','"twitch":bool(social_snapshot.get("twitch"))')
 
           hub='web/creator_hub_v156_component/index.html'
-          replace_once(hub,
-              'let current="dashboard", projectPane="drafts";',
-              'let current="dashboard", projectPane="drafts";\nlet oauthNavigating=false;')
-          replace_in_block(hub, 'function connectSocial(key){', '// Profile:',
-              'if(key==="youtube")top.location.href="/social-connect/youtube/start";',
-              'oauthNavigating=true;\n  if(key==="youtube")top.location.href="/social-connect/youtube/start";')
-          replace_in_block(hub, 'async function loadState(){', 'function csrfHeaders',
-              'reportHubError("loadState",e);',
-              'if(oauthNavigating||document.visibilityState==="hidden")return null;\n    reportHubError("loadState",e);')
-          replace_once(hub,
-              'window.addEventListener("pageshow",repairFrame);',
-              'window.addEventListener("pageshow",()=>{oauthNavigating=false;repairFrame();loadState()});')
+          replace_once(hub,'let current="dashboard", projectPane="drafts";','let current="dashboard", projectPane="drafts";\nlet oauthNavigating=false;')
+          replace_in_block(hub,'function connectSocial(key){','// Profile:','if(key==="youtube")top.location.href="/social-connect/youtube/start";','oauthNavigating=true;\n  if(key==="youtube")top.location.href="/social-connect/youtube/start";')
+          replace_in_block(hub,'async function loadState(){','function csrfHeaders','reportHubError("loadState",e);','if(oauthNavigating||document.visibilityState==="hidden")return null;\n    reportHubError("loadState",e);')
+          replace_once(hub,'window.addEventListener("pageshow",repairFrame);','window.addEventListener("pageshow",()=>{oauthNavigating=false;repairFrame();loadState()});')
 
-          start=Path('web/start_web.sh')
-          st=start.read_text(encoding='utf-8')
-          old='python /app/web/direct_upload_server_v423.py &'
-          if old not in st:raise SystemExit('temporary V423 startup entrypoint missing')
+          start=Path('web/start_web.sh'); st=start.read_text(encoding='utf-8'); old='python /app/web/direct_upload_server_v423.py &'
+          if old not in st: raise SystemExit('temporary V423 startup entrypoint missing')
           st=st.replace(old,'python /app/web/direct_upload_server.py &',1)
           st=st.replace('# V423 keeps the stable upload server as the implementation module and applies\n# only the production-verified OAuth compatibility layer at the entrypoint.\n','')
-          start.write_text(st,encoding='utf-8')
-          Path('web/direct_upload_server_v423.py').unlink(missing_ok=True)
+          start.write_text(st,encoding='utf-8'); Path('web/direct_upload_server_v423.py').unlink(missing_ok=True)
 
-          social=Path('tests/test_social_oauth_v421.py')
-          text=social.read_text(encoding='utf-8')
-          text=text.replace('user.info.basic,video.publish,video.list','user.info.basic,video.publish')
-          social.write_text(text,encoding='utf-8')
+          social=Path('tests/test_social_oauth_v421.py'); text=social.read_text(encoding='utf-8')
+          social.write_text(text.replace('user.info.basic,video.publish,video.list','user.info.basic,video.publish'),encoding='utf-8')
 
-          Path('tests/test_oauth_return_regressions_v423.py').write_text('''import re\nimport unittest\nfrom pathlib import Path\n\nROOT=Path(__file__).resolve().parents[1]\nSERVER=(ROOT/"web/direct_upload_server.py").read_text(encoding="utf-8")\nHUB=(ROOT/"web/creator_hub_v156_component/index.html").read_text(encoding="utf-8")\n\nclass OAuthReturnRegressionContracts(unittest.TestCase):\n    def test_tiktok_direct_post_scope_is_minimal(self):\n        m=re.search(r\'^TIKTOK_SCOPE="([^"]+)"\',SERVER,re.M)\n        self.assertIsNotNone(m)\n        scopes=set(m.group(1).split(','))\n        self.assertIn('user.info.basic',scopes)\n        self.assertIn('video.publish',scopes)\n        self.assertNotIn('video.list',scopes)\n        cb=SERVER[SERVER.index('def _tiktok_oauth_callback'):SERVER.index('def _tiktok_disconnect')]\n        self.assertNotIn('"video.list"}<=granted',cb)\n\n    def test_twitch_state_uses_authoritative_social_snapshot(self):\n        block=SERVER[SERVER.index('if clean=="/creator-hub/state":'):SERVER.index('if clean=="/account":')]\n        self.assertIn('"twitch":bool(social_snapshot.get("twitch"))',block)\n        self.assertNotIn('"twitch":bool(providers.get("twitch"))',block)\n\n    def test_oauth_return_is_fresh_and_no_store(self):\n        self.assertIn('oauth_return=',SERVER)\n        self.assertIn('no-store, max-age=0',SERVER)\n        self.assertIn('handler.send_header("Pragma","no-cache")',SERVER)\n\n    def test_hub_suppresses_transient_navigation_failure(self):\n        self.assertIn('oauthNavigating=true',HUB.replace(' ',''))\n        self.assertIn('oauthNavigating||document.visibilityState==="hidden"',HUB)\n        self.assertIn('pageshow",()=>{oauthNavigating=false;repairFrame();loadState()}',HUB)\n\nif __name__=='__main__':unittest.main()\n''',encoding='utf-8')
+          Path('tests/test_oauth_return_regressions_v423.py').write_text('''import re\nimport unittest\nfrom pathlib import Path\nROOT=Path(__file__).resolve().parents[1]\nSERVER=(ROOT/"web/direct_upload_server.py").read_text(encoding="utf-8")\nHUB=(ROOT/"web/creator_hub_v156_component/index.html").read_text(encoding="utf-8")\nclass OAuthReturnRegressionContracts(unittest.TestCase):\n    def test_tiktok_direct_post_scope_is_minimal(self):\n        m=re.search(r\'^TIKTOK_SCOPE="([^"]+)"\',SERVER,re.M); self.assertIsNotNone(m); scopes=set(m.group(1).split(',')); self.assertIn('user.info.basic',scopes); self.assertIn('video.publish',scopes); self.assertNotIn('video.list',scopes)\n        cb=SERVER[SERVER.index('def _tiktok_oauth_callback'):SERVER.index('def _tiktok_disconnect')]; self.assertNotIn('"video.list"}<=granted',cb)\n    def test_twitch_state_uses_authoritative_social_snapshot(self):\n        block=SERVER[SERVER.index('if clean=="/creator-hub/state":'):SERVER.index('if clean=="/account":')]; self.assertIn('"twitch":bool(social_snapshot.get("twitch"))',block); self.assertNotIn('"twitch":bool(providers.get("twitch"))',block)\n    def test_oauth_return_is_fresh_and_no_store(self):\n        self.assertIn('oauth_return=',SERVER); self.assertIn('no-store, max-age=0',SERVER); self.assertIn('handler.send_header("Pragma","no-cache")',SERVER)\n    def test_hub_suppresses_transient_navigation_failure(self):\n        self.assertIn('oauthNavigating=true',HUB.replace(' ','')); self.assertIn('oauthNavigating||document.visibilityState==="hidden"',HUB); self.assertIn('pageshow",()=>{oauthNavigating=false;repairFrame();loadState()}',HUB)\nif __name__=='__main__':unittest.main()\n''',encoding='utf-8')
 
-          workflow=Path('.github/workflows/gsf-ci.yml')
-          w=workflow.read_text(encoding='utf-8')
-          marker='\n  oauth-hotfix:\n'
-          if marker not in w:raise SystemExit('temporary OAuth hotfix job marker missing')
+          workflow=Path('.github/workflows/gsf-ci.yml'); w=workflow.read_text(encoding='utf-8'); marker='\n  oauth-hotfix:\n'
+          if marker not in w: raise SystemExit('temporary OAuth hotfix job marker missing')
           workflow.write_text(w.split(marker,1)[0].rstrip()+"\n",encoding='utf-8')
           PY
 
