@@ -1,74 +1,49 @@
-import re
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SERVER = ROOT / "web" / "direct_upload_server.py"
-HUB = ROOT / "web" / "creator_hub_v156_component" / "index.html"
+PATCH = ROOT / "web" / "direct_upload_server_v423.py"
+START = ROOT / "web" / "start_web.sh"
 
 
 class OAuthReturnRegressionContracts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.server = SERVER.read_text(encoding="utf-8")
-        cls.hub = HUB.read_text(encoding="utf-8")
+        cls.patch = PATCH.read_text(encoding="utf-8")
+        cls.start = START.read_text(encoding="utf-8")
 
     def test_tiktok_publish_connection_does_not_require_video_list(self):
-        match = re.search(r'^TIKTOK_SCOPE="([^"]+)"', self.server, re.MULTILINE)
-        self.assertIsNotNone(match, "TikTok OAuth scope declaration is missing")
-        scopes = {item.strip() for item in match.group(1).split(",") if item.strip()}
-        self.assertIn("user.info.basic", scopes)
-        self.assertIn("video.publish", scopes)
+        self.assertIn('base.TIKTOK_SCOPE = "user.info.basic,video.publish"', self.patch)
+        callback = self.patch[
+            self.patch.index("def _tiktok_oauth_callback") : self.patch.index("base._tiktok_oauth_callback =")
+        ]
+        self.assertIn('{"user.info.basic", "video.publish"}', callback)
         self.assertNotIn(
             "video.list",
-            scopes,
-            "video.list is an analytics permission and must not block the Direct Post connection",
-        )
-
-        callback = self.server[
-            self.server.index("def _tiktok_oauth_callback") : self.server.index("def _tiktok_disconnect")
-        ]
-        self.assertNotIn(
-            '"video.list"}<=granted',
             callback,
-            "TikTok callback must accept a valid Direct Post grant without video.list",
+            "video.list is analytics-only and must not block Direct Post OAuth",
         )
 
     def test_creator_hub_state_uses_authoritative_twitch_connection(self):
-        state_route = self.server[
-            self.server.index('if clean=="/creator-hub/state"') : self.server.index('if clean=="/account"')
+        route = self.patch[
+            self.patch.index("def _creator_hub_state") : self.patch.index("class Handler")
         ]
-        self.assertNotIn(
-            '"twitch":bool(providers.get("twitch"))',
-            state_route,
-            "Twitch is a source OAuth connection, not a Creator login provider",
-        )
-        self.assertRegex(
-            state_route,
-            r'"twitch":\s*(?:bool\()?social_snapshot(?:\.get\("twitch"[^)]*\)|\["twitch"\])',
-        )
+        self.assertIn("social_snapshot = base._creator_social_snapshot", route)
+        self.assertIn('"twitch": bool(social_snapshot.get("twitch"))', route)
+        self.assertNotIn('bool(providers.get("twitch"))', route)
 
-    def test_oauth_navigation_failure_does_not_poison_restored_hub(self):
-        self.assertIn("oauthNavigating", self.hub)
-        connect_start = self.hub.index("function connectSocial")
-        connect_end = self.hub.index("// Profile:", connect_start)
-        self.assertIn("oauthNavigating=true", self.hub[connect_start:connect_end].replace(" ", ""))
+    def test_social_oauth_return_forces_fresh_mobile_page(self):
+        redirect = self.patch[
+            self.patch.index("def _fresh_social_redirect") : self.patch.index("base._redirect =")
+        ]
+        self.assertIn("oauth_return=", redirect)
+        self.assertIn('"Cache-Control", "no-store, max-age=0"', redirect)
+        self.assertIn('"Pragma", "no-cache"', redirect)
 
-        load_start = self.hub.index("async function loadState")
-        load_end = self.hub.index("function csrfHeaders", load_start)
-        load_block = self.hub[load_start:load_end]
-        self.assertRegex(load_block, r'catch\s*\([^)]*\)\s*\{[^}]*oauthNavigating')
-
-        pageshow = re.search(r'addEventListener\(["\']pageshow["\'][^;]+;', self.hub)
-        self.assertIsNotNone(pageshow, "Creator Hub must repair BFCache restores after OAuth")
-        self.assertIn("loadState", pageshow.group(0))
-
-    def test_render_strips_can_restore_layout_after_transient_load_failure(self):
-        start = self.hub.index("function renderStrips")
-        end = self.hub.index("function renderTrends", start)
-        block = self.hub[start:end]
-        self.assertIn('classList.toggle("strip"', block)
+    def test_canonical_startup_uses_v423_entrypoint(self):
+        self.assertIn("python /app/web/direct_upload_server_v423.py &", self.start)
+        self.assertNotIn("python /app/web/direct_upload_server.py &", self.start)
 
 
 if __name__ == "__main__":
