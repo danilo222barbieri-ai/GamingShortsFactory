@@ -21,7 +21,7 @@ for label in ("AUTO", "AZIONE", "REAZIONI", "STORIA"):
     require(f">{label}<" in src, f"motore {label} presente")
 
 require("TROVA I MOMENTI" in src, "CTA unica per avviare la ricerca")
-require("3 short" in src, "titolo risultati semplice")
+require("I tuoi momenti" in src, "titolo risultati valido anche con un solo momento")
 require("MIGLIORE" in src, "primo risultato evidenziato")
 require("Cambia motore" in src, "ritorno alla scelta motore senza perdere il video")
 
