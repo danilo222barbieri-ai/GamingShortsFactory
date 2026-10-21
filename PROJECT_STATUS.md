@@ -3,6 +3,13 @@
 > **CANONICAL SOURCE OF TRUTH FOR ALL TECHNICAL CHATS / AGENTS.**
 > Read this file before changing code. Refresh live GitHub/Railway evidence before changing production claims.
 
+## User-reported installed-app AI stall — verified branch fix, 2026-10-21
+
+- User contradicts prior broad AI-success claim: installed app waits~3min and never reaches choices, including3second videos. Reproduced actual3s upload/AI stall locally; ranker intentionally returns no candidates below5s, and no terminal result reached UI. Also discovered FFmpeg encoder wrapper breaks output-less duration probes; existing ffprobe now reads duration independently.
+- Fixes: reject unsupported sub5s analysis promptly with clear message and retained source/Editor route; propagate request-scoped failed/empty rank outcomes through existing results sheet/API/poller; ignore stale failure IDs; never cache failed/empty rank runs as successful results. Static Gemini model/format fallbacks share one90s budget (existing configured timeout), per-request SDK retries explicitly bounded; upload/status/cleanup options validated using official worker SDK2.25.0. Fast alternate-model fallback retained; no prompt/FPS/quality reductions.
+- Tests: six new regression cases; complete WebKit suite345PASS21SKIP63subcases81.93s; all eight CI UI/security contracts and worker semantic contract PASS. Actual3s standalone-emulated path reports minimum5s in4.41s and opens retained3.067s source in Editor, no JS errors. Actual valid20s local journey reaches one result3.2s, completes edit/render/export1080x1920/draft/resume/back without critical errors. Public baseline Chromium20s reaches one result4.42s, no JS errors; public WebKit upload crashed before analysis, inconclusive. These controlled clips do not prove recognition quality on arbitrary gameplay or fix live provider quota.
+- Not deployed. User next requests publication checks: Facebook guided path, Instagram professional-account requirement, TikTok error on pressing Pubblica; own targeted regression scope and preserve truthful guided versus direct outcomes. PR187 remains sole candidate; unchanged dependency audit blocker still requires compatible published Streamlit/Pillow before release.
+
 ## PR187 integration preparation — 2026-10-21 Europe/Rome
 
 - User reiterated full Railway release authorization. PR187 marked ready for review; reconciled current main coordination/status conflict while preserving both factual checkpoints. No runtime bytes changed in this reconciliation.

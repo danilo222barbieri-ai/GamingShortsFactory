@@ -1169,6 +1169,11 @@ function freshRows(j){
 async function pollResults(token,deadline){
   if(token!==pollToken||!awaitingResults)return;
   const j=await fetchResults();const list=freshRows(j);
+  if(j?.status==='failed'&&j.request_id&&j.request_id===requestId){
+    awaitingResults=false;state.processing=false;setScan("error");render();
+    const message=String(j.error||"Analisi non riuscita. Riprova.");$("aiStatus").textContent=message;
+    alive("failure",{job:"ai",message});return;
+  }
   if(list){runInfo={pool:Number(j.pool_size)||0,engine:String(j.engine||"")};if(applyResults(list))return}
   if(Date.now()>=deadline){awaitingResults=false;state.processing=false;setScan("error");render();alive("failure",{job:"ai",message:"I risultati non sono arrivati. Riproviamo."});return}
   setTimeout(()=>pollResults(token,deadline),1500)}

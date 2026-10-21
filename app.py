@@ -1765,6 +1765,18 @@ def durata_video(file_path):
 @st.cache_data(show_spinner=False,max_entries=256)
 def _gsf_duration_cached(file_path,size,mtime_ns,ffmpeg_path):
     """Read each unchanged media duration once across Streamlit reruns."""
+    # Metadata belongs to ffprobe: the encoder wrapper inserts output options
+    # and cannot safely handle the output-less `ffmpeg -i file` invocation.
+    if FFPROBE_PATH:
+        try:
+            probe=subprocess.run([FFPROBE_PATH,"-v","error","-show_entries","format=duration",
+                "-of","default=noprint_wrappers=1:nokey=1",str(file_path)],
+                capture_output=True,text=True,timeout=10)
+            value=float((probe.stdout or "").strip())
+            if probe.returncode==0 and value>0 and value<float("inf"):
+                return value
+        except (OSError,ValueError,subprocess.TimeoutExpired):
+            pass
 
     comando = [
         ffmpeg_path,
@@ -13477,6 +13489,19 @@ if video:
                 unsafe_allow_html=True,
             )
         if _gsf_create_ai_clicked:
+            try:
+                _gsf_analysis_source_duration=float(durata_video(str(_source_path)) or 0)
+            except Exception:
+                _gsf_analysis_source_duration=0.0
+            if 0 < _gsf_analysis_source_duration < 5.0:
+                _gsf_ai_short_message="L’analisi richiede almeno 5 secondi. Puoi aprire questo video nell’Editor dalla Home."
+                from web.ai_engines_v412 import write_results_meta as _gsf_ai_write_failure
+                _gsf_ai_write_failure(GSF_PREVIEW_DIR,{"items":[],"status":"failed","error_code":"video_too_short",
+                    "request_id":str(st.session_state.get("gsf_v412_request_id") or ""),"error":_gsf_ai_short_message})
+                st.warning(_gsf_ai_short_message)
+                _gsf_create_ai_clicked=False
+        if _gsf_create_ai_clicked:
+            _gsf_ai_run_error=""
             _gsf_save_persistent_state()
             st.session_state["gsf_ai_timing_start"]=time.perf_counter()
             st.session_state.pop("gsf_ai_result_timings",None)
@@ -13501,6 +13526,8 @@ if video:
                     __import__("web.ai_engines_v412",fromlist=["cache_profile"]).cache_profile(_gsf_v291_profile),
                 )
                 cached_ai = st.session_state.get("gsf_fast_ai_cache", {}).get(cache_key_ai)
+                if cached_ai is not None and not cached_ai.get("candidati"):
+                    cached_ai = None
                 st.session_state["gsf_ai_ranking_cache_hit"]=cached_ai is not None
 
                 with st.spinner(messaggio):
@@ -13514,13 +13541,18 @@ if video:
                             st.session_state["gsf_ai_v3_diagnostics"] = cached_ai["diagnostics"]
 
                     else:
-                        risultati_ai, ai_diag = _gsf_ai_rank_v3(
-                            analisi_input,
-                            modalita,
-                            clip_duration=float(duration),
-                            numero_clip=3,
-                            cache_token=_video_cache_token
-                        )
+                        try:
+                            risultati_ai, ai_diag = _gsf_ai_rank_v3(
+                                analisi_input,
+                                modalita,
+                                clip_duration=float(duration),
+                                numero_clip=3,
+                                cache_token=_video_cache_token
+                            )
+                        except Exception as _gsf_ai_rank_failure:
+                            print("GSF_AI_RANK_FAILURE",type(_gsf_ai_rank_failure).__name__,flush=True)
+                            risultati_ai, ai_diag = [], {}
+                            _gsf_ai_run_error="L’analisi non è riuscita. Il gameplay è conservato: puoi riprovare o aprirlo nell’Editor dalla Home."
 
                         candidati = [start_ai for score_ai, start_ai in risultati_ai]
                         st.session_state.ai_director_scores = risultati_ai
@@ -13560,7 +13592,7 @@ if video:
                         else:
                             st.session_state.clip_rifinite = {}
 
-                if cached_ai is None:
+                if cached_ai is None and candidati:
                     if "gsf_fast_ai_cache" not in st.session_state:
                         st.session_state["gsf_fast_ai_cache"] = {}
 
@@ -13577,7 +13609,11 @@ if video:
                 if candidati:
                     st.session_state.auto_clip_scelta = candidati[0]
                 else:
-                    st.warning("Non ho trovato candidati. Usa la modalità Manuale.")
+                    _gsf_ai_empty_message=_gsf_ai_run_error or "Non ho trovato momenti validi. Il gameplay è conservato: puoi cambiare motore o aprirlo nell’Editor dalla Home."
+                    from web.ai_engines_v412 import write_results_meta as _gsf_ai_write_failure
+                    _gsf_ai_write_failure(GSF_PREVIEW_DIR,{"items":[],"status":"failed","error_code":"analysis_failed" if _gsf_ai_run_error else "no_moments",
+                        "request_id":str(st.session_state.get("gsf_v412_request_id") or ""),"error":_gsf_ai_empty_message})
+                    st.warning(_gsf_ai_empty_message)
 
         if st.session_state.get("auto_clip_modalita") != modalita:
             candidati = []
