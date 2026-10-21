@@ -3,6 +3,18 @@
 > **CANONICAL SOURCE OF TRUTH FOR ALL TECHNICAL CHATS / AGENTS.**
 > Read this file before changing code. Refresh live GitHub/Railway evidence before changing production claims.
 
+## Twitch import completion follow-up — 2026-10-21 Europe/Rome
+
+- Latest user steering: continue Twitch/Alive work; user takes over Railway monitoring. No new Railway mutation or bypass performed in this follow-up.
+- Reproduced a Hub subview race in actual WebKit: start Clip import, open Settings while status is pending, complete import; old callback redirected to IA because only outer Hub route/epoch was checked. Minimal correction also requires current Library subview, retaining completion notification and normal Library→IA behavior. No Editor/provider/publishing changes.
+- Regression test failed on the actual unwanted `?gsf_page=ai` navigation before fix, then passed. OAuth/source WebKit103PASS1SKIP36subcases; Chromium two import-flow tests PASS; Hub structural contracts PASS. Full suite result recorded below once complete. Provider transport is controlled in these tests; real Twitch creator consent/import remains unverified.
+
+## PR187 release attempt — 2026-10-21 Europe/Rome
+
+- User resumed release; prior deployment pause is superseded. Candidate `f8e83ef556ed89111bc06d5cda5f00a17de37348`, PR187. Corrected stale AI title contract; all eight production/security/UI contract commands PASS locally and corresponding GitHub step PASS. GitHub CI39611417385 passes functional/core/AI/render/UI checks but FAILS dependency audit with eight Pillow12.3 CVEs fixed only13. Official Streamlit stable1.66.0 and nightly1.66.1.dev20261020 still cap Pillow<13. No supported compatible fix found; no check disabled. Fresh Production Gate39611417398 remains pending/in progress, not a recorded PASS.
+- Railway production is healthy: frontend deployment `f814cd64-e895-4258-9ec2-7f0741769a93` SUCCESS, public health all true, online commit `2cde19c1c1076326a2c02e1dbc93d60e73023ae5`. PR187 was not merged or deployed. Terminal release state BLOCKED by security compatibility.
+- Twitch/Alive implementation and final UX checkpoint remain available in PR187; real local journey/first-frame/timeline evidence below. Real Twitch creator consent/import and physical device acceptance remain unverified.
+
 ## PR187 final UX checkpoint / release requested — 2026-10-21 Europe/Rome
 
 - Latest user steering resumes Railway release of PR187, then continuation of remaining work. This supersedes the earlier deploy pause below; release still requires green CI/Gate and verified Railway SUCCESS/health. No deploy marker override or red-CI merge authorized.
