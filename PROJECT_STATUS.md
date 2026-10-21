@@ -3,6 +3,12 @@
 > **CANONICAL SOURCE OF TRUTH FOR ALL TECHNICAL CHATS / AGENTS.**
 > Read this file before changing code. Refresh live GitHub/Railway evidence before changing production claims.
 
+## PR187 release attempt — 2026-10-21 Europe/Rome
+
+- User resumed release; prior deployment pause is superseded. Candidate `f8e83ef556ed89111bc06d5cda5f00a17de37348`, PR187. Corrected stale AI title contract; all eight production/security/UI contract commands PASS locally and corresponding GitHub step PASS. GitHub CI39611417385 passes functional/core/AI/render/UI checks but FAILS dependency audit with eight Pillow12.3 CVEs fixed only13. Official Streamlit stable1.66.0 and nightly1.66.1.dev20261020 still cap Pillow<13. No supported compatible fix found; no check disabled. Fresh Production Gate39611417398 remains pending/in progress, not a recorded PASS.
+- Railway production is healthy: frontend deployment `f814cd64-e895-4258-9ec2-7f0741769a93` SUCCESS, public health all true, online commit `2cde19c1c1076326a2c02e1dbc93d60e73023ae5`. PR187 was not merged or deployed. Terminal release state BLOCKED by security compatibility.
+- Twitch/Alive implementation and final UX checkpoint remain available in PR187; real local journey/first-frame/timeline evidence below. Real Twitch creator consent/import and physical device acceptance remain unverified.
+
 ## Release queue / deploy paused by user — 2026-10-21 Europe/Rome
 
 User explicitly requested keeping blocked work queued for a later Railway release. Continue from draft PR187; do not merge, trigger Railway, or change deployment markers to bypass the hold. This is a tracked backlog, not a Railway deployment queue or a claim that all requested work is implemented.
