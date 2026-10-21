@@ -19,6 +19,7 @@
     "startup_scope": "Reuse canonical notification client at first-paint bootstrap; no second notification engine, no mobile gate change. Railway deferred.",
     "terminal_status": "HANDOFF_REQUIRED",
     "tests": "Real local WebKit full journey PASS incl render/export1080x1920/draft/back; delayed real Editor Back PASS; targeted50pass10subcases; navigation17pass8subcases; ten resume cycles PASS207s. Real Twitch consent/import unverified.",
+    "timeline_geometry": "Measured legacy home_style_v416.css height58 overrides canonical timeline sizing and clips44px track; acquire unowned file to remove conflicting height. Git CLI credential expired; use atomic connector Git tree/commit/ref with expected head.",
     "updated_at": "2026-10-20"
   },
   "id": "complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
@@ -49,6 +50,7 @@
     "web/direct_upload_server.py",
     "web/game_editor_mobile_component/editor.css",
     "web/game_editor_mobile_component/editor.mjs",
+    "web/game_editor_mobile_component/home_style_v416.css",
     "web/game_editor_mobile_component/night_arena_v417.css",
     "web/game_editor_mobile_component/overlay_v414.css",
     "web/game_editor_mobile_component/overlay_v414.mjs",
