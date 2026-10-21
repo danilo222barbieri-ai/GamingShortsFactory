@@ -230,6 +230,8 @@ class SourceLibraryBrowser(unittest.TestCase):
       self.assertIn('API ufficiali',page.locator('#sourceLibrary').inner_text())
       page.locator('[data-source-folder="live"]').click();page.get_by_text('Il canale non è in diretta.',exact=True).wait_for()
       page.locator('[data-source-folder="imported"]').click();page.locator('[data-source-editor]').wait_for()
+      card=page.locator('#sourceLibrary .sourceCard').first
+      self.assertGreaterEqual(card.locator('b').bounding_box()['x']-card.bounding_box()['x'],12,'Library content needs space inside the rounded card')
       self.assertEqual(page.evaluate('document.documentElement.scrollWidth'),width)
     page.reload();page.locator('[data-source-editor]').wait_for()
     self.assertEqual(page.locator('[data-source-folder="imported"]').get_attribute('aria-pressed'),'true')
@@ -244,6 +246,8 @@ class SourceLibraryBrowser(unittest.TestCase):
     connection['on']=False;page.reload();page.locator('[data-source-editor]').wait_for(timeout=2000)
     self.assertIn('Twitch scollegato',page.locator('#sourceLibrary').inner_text())
     page.locator('[data-source-folder="clips"]').click();page.locator('[data-source-connect]').wait_for()
+    card=page.locator('#sourceLibrary .card').first
+    self.assertGreaterEqual(card.locator('b').bounding_box()['x']-card.bounding_box()['x'],12,'Disconnected state must keep the same card inset')
     connection['on']=True;page.reload()
     for status in (401,403,429,503):
      with self.subTest(provider_status=status):

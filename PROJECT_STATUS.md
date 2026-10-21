@@ -3,6 +3,12 @@
 > **CANONICAL SOURCE OF TRUTH FOR ALL TECHNICAL CHATS / AGENTS.**
 > Read this file before changing code. Refresh live GitHub/Railway evidence before changing production claims.
 
+## Library card inset and successful Gate checkpoint — 2026-10-21 Europe/Rome
+
+- Production Gate39612720276 SUCCESS on7549f9c, including full Docker builds, health, runtime and mobile WebKit. Railway promotion skipped as expected on a PR; CI39612720454 still FAILS dependency audit. No new Railway deployment. Official Pillow13-compatible Streamlit commit exists upstream but remains unpublished in the checked stable/nightly packages.
+- Actual local screenshot exposed missing inset in both discovered/imported source cards and the disconnected Twitch card: generic `.card` provides surface/border but no padding. Scoped correction adds14px only to direct Library cards; no other layout or provider logic changed. WebKit regression measured1px before fix on all four required viewports plus disconnected state, then passed in WebKit and Chromium (ten subcases each).
+- Full serial suite339PASS21SKIP63subcases in79.38s, `/workspace/scratch/gsf-library-inset-serial-suite.log`. An overlapping suite was interrupted and the redundant local visual/stress replica stopped after official Gate SUCCESS; partial logs retained, neither counted as PASS. New card checkpoint requires fresh GitHub checks after push.
+
 ## PR187 upstream dependency unblock identified — 2026-10-21 Europe/Rome
 
 - Official Streamlit commit [`81bdb8a8a207691f17ec94df9eabc96b6b50ea7a`](https://github.com/streamlit/streamlit/commit/81bdb8a8a207691f17ec94df9eabc96b6b50ea7a), Allow Pillow13, merged2026-10-21 10:17UTC. Develop now allows Pillow<14. This supersedes earlier statements that the develop branch also capped Pillow<13.
