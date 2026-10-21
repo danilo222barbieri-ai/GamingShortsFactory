@@ -486,7 +486,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -1076,7 +1076,7 @@
         "web/publish_short_v405_component/**",
         "web/share_v156_component/**"
       ],
-      "scope": "ui: Night Arena single look — shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
+      "scope": "ui: Night Arena single look \u2014 shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
       "state": "completed"
     },
     {
@@ -1451,6 +1451,7 @@
       "branch": "chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
       "created_at": "2026-10-20T18:20:25+00:00",
       "evidence": {
+        "ai_title_contract": "CI39610472869 requires literal3short, contradicting valid1-3results and requested clean non-mural heading. Update expected truthful results title, retain all functional/structural assertions.",
         "alive_ui": "Read attached brief/video; public WebKit audit underway before UI changes. Preserve current OAuth/provider config and main hotfixes. Twitch commits8489b22/d369842 retained; Task3 incomplete.",
         "blocker": "General CI39518557591 FAIL eight Pillow12.3 CVEs require13; official Streamlit pillow<13 and older compatible Pillow affected. No audit bypass. New CI39572807878 in_progress.",
         "blockers": "Railway API returned Deploys have been paused temporarily twice (INVALID_ARGUMENT). No new deployment created. Six Meta/Instagram/Twitch credentials remain absent.",
@@ -1513,6 +1514,7 @@
         "web/nginx.conf.template",
         "web/publish_multi_v413.py",
         "web/share_v156_component/index.html",
+        "web/test_v404_crea_con_ia_simple.py",
         "web/test_v413_publish_multi.py"
       ],
       "scope": "Complete existing social OAuth Meta TikTok Twitch and signed Meta callbacks; user-requested Twitch source library design, no deployment while Railway paused; user requested Alive Ultra Fluid, shared notification continuity, player motion and mobile cold layout recovery2026-10-21",
