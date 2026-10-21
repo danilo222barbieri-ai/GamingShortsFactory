@@ -37,6 +37,7 @@
     "tests/js/gsf_alive_v418.test.mjs",
     "tests/test_alive_continuity_v424.py",
     "tests/test_alive_runtime_v418.py",
+    "tests/test_closed_beta_bugfix_pass.py",
     "tests/test_creator_hub_redesign_v415.py",
     "tests/test_mobile_game_editor_state.py",
     "tests/test_navigation_stability.py",
