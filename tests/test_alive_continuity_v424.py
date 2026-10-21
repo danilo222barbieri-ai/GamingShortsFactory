@@ -159,3 +159,42 @@ class PlayerContinuity(unittest.TestCase):
     page.wait_for_timeout(280);page.emulate_media(reduced_motion='reduce');page.locator('#enterEditorButton').click()
     self.assertEqual(page.locator('#previewStage').evaluate('e=>e.getAnimations().length'),0)
    finally:browser.close()
+
+@unittest.skipUnless(os.environ.get('GSF_BROWSER'),'Runs in actual browser gate')
+class NativeBackContinuity(unittest.TestCase):
+ def test_editor_to_hub_back_restores_parent_route(self):
+  self.assert_parent_back(False)
+
+ def test_late_editor_document_cannot_consume_parent_back(self):
+  self.assert_parent_back(True)
+
+ def assert_parent_back(self,delay_editor):
+  from test_closed_beta_bugfix_pass import installed_parent_html
+  from playwright.sync_api import sync_playwright
+  with sync_playwright() as p:
+   engine=getattr(p,os.environ['GSF_BROWSER']);options={'headless':True}
+   if engine.name=='chromium':options.update(executable_path=shutil.which('chromium'),args=['--no-sandbox'])
+   browser=engine.launch(**options)
+   try:
+    page=browser.new_page(viewport={'width':390,'height':844});parent=installed_parent_html();pending=[]
+    def serve(r):
+     if r.request.url=='http://gsf.test/':r.fulfill(content_type='text/html',body=parent)
+     elif delay_editor and '/game-editor-mobile/' in r.request.url and r.request.resource_type=='document':pending.append(r)
+     elif r.request.resource_type=='document':r.fulfill(content_type='text/html',body='<html><body>Loaded surface</body></html>')
+     else:r.fulfill(json={'ok':True,'account':{},'social':{}})
+    page.route('**/*',serve);page.goto('http://gsf.test/');page.wait_for_function('GSFNavigation.snapshot().surfaces===5')
+    page.evaluate("GSFNavigation.navigate({target:'editor'})")
+    if delay_editor:
+     for _ in range(60):
+      if pending:break
+      page.wait_for_timeout(50)
+     self.assertTrue(pending,'Editor document must be in flight')
+    else:page.frame_locator('#gsf-editor-overlay-v220 iframe').get_by_text('Loaded surface').wait_for()
+    page.evaluate("GSFNavigation.navigate({target:'hub'})");page.frame_locator('#gsf-creator-hub-live-v160 iframe').get_by_text('Loaded surface').wait_for()
+    if delay_editor:
+     pending.pop().fulfill(content_type='text/html',body='<html><body>Late editor surface</body></html>')
+     page.frame_locator('#gsf-editor-overlay-v220 iframe').get_by_text('Late editor surface').wait_for(state='attached')
+    page.evaluate('history.back()')
+    page.wait_for_function("GSFNavigation.snapshot().target==='editor'",timeout=3000)
+    self.assertIn('gsf_page=editor',page.url)
+   finally:browser.close()

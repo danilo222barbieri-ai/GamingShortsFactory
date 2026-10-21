@@ -16492,7 +16492,7 @@ if GSF_WEB_MODE:
       const frame=o.querySelector('iframe');
       const ensureFrame=()=>{
         if(frame.dataset.loaded==='1')return;
-        frame.src=frame.dataset.src||'/share-v156/';
+        frame.contentWindow.location.replace(frame.dataset.src||'/share-v156/');
         frame.dataset.loaded='1';
       };
       const open=(platform='')=>{
@@ -16829,7 +16829,8 @@ setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326He
         if(!reused){
           metadataReady=false;mobileReady=false;frame.dataset.ready='0';frame.__gsfEditorInitialized=false;
           frame.dataset.editorSource=editorSource;
-          frame.src=editorSource+'?v=2026';
+          // Surface documents must not add entries to the root router history.
+          frame.contentWindow.location.replace(editorSource+'?v=2026');
           frame.dataset.loaded='1';
         }
 
@@ -16957,7 +16958,7 @@ if GSF_WEB_MODE:
       };
       const ensureFrame=()=>{
         if(frame.dataset.loaded==='1')return;
-        frame.src=frame.dataset.src||'/ai-v221/';
+        frame.contentWindow.location.replace(frame.dataset.src||'/ai-v221/');
         frame.dataset.loaded='1';
       };
       const open=(remember=true)=>{
@@ -17990,7 +17991,7 @@ if GSF_WEB_MODE:
       const ensureHubSurface=()=>{
         let o=D.getElementById('gsf-creator-hub-live-v160');
         if(!o){o=D.createElement('section');o.id='gsf-creator-hub-live-v160';o.setAttribute('aria-hidden','true');o.innerHTML=`<div class="gsf-hub-shell-v160"><iframe class="gsf-hub-frame" title="Creator Hub" data-src="/creator-hub-v156/" style="width:100%;height:100%;display:block;border:0;background:#F8FCFF"></iframe></div>`;D.body.appendChild(o)}
-        const f=o.querySelector('iframe');if(f&&f.dataset.loaded!=='1'){f.src='/creator-hub-v156/?v=343';f.dataset.loaded='1'}return o;
+        const f=o.querySelector('iframe');if(f&&f.dataset.loaded!=='1'){f.contentWindow.location.replace('/creator-hub-v156/?v=343');f.dataset.loaded='1'}return o;
       };
       const focusHub=(section)=>{const o=ensureHubSurface();show(o);const f=o.querySelector('iframe');f.dataset.gsfSection=section;const send=()=>{try{f?.contentWindow?.postMessage({type:'GSF_HUB_FOCUS',section:f.dataset.gsfSection||'dashboard',epoch:P.GSFNavigation.snapshot().epoch},P.location.origin)}catch(_e){}};send();if(f&&f.dataset.v343Focus!=='1'){f.dataset.v343Focus='1';f.addEventListener('load',send)}return true};
 
