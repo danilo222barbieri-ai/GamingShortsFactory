@@ -17861,6 +17861,16 @@ if GSF_WEB_MODE:
         });
       };
 
+      let startupReady=false;
+      const homeReady=()=>[...d.querySelectorAll('iframe')].some(f=>{try{return !!f.contentWindow.__GSF_V333_CTA_TOUCH&&!!f.contentDocument.querySelector('#home154')}catch(_e){return false}});
+      const finishStartup=()=>{startupReady=true;P.GSFNotify?.dismiss('alive:startup')};
+      P.addEventListener('message',e=>{
+        if(e.origin!==P.location.origin||e.data?.type!=='GSF_HOME_READY')return;
+        const home=[...d.querySelectorAll('iframe')].find(f=>f.contentWindow===e.source);
+        try{if(home?.contentWindow.__GSF_V333_CTA_TOUCH&&home.contentDocument.querySelector('#home154'))finishStartup()}catch(_e){}
+      },{signal:bridge.signal});
+      P.addEventListener('gsf:surfacechange',()=>{if(P.GSFNavigation.snapshot().target!=='home')finishStartup()},{signal:bridge.signal});
+
       // V258: replacement upload is owned by the Home uploader itself.
       // Existing global notifications remain available from every page.
       P.addEventListener('message',(e)=>{
@@ -17876,6 +17886,11 @@ if GSF_WEB_MODE:
 
       // Re-enable silent Web Push when permission already exists.
       ensurePush().then(()=>{
+        if(P.GSFNavigation.snapshot().target==='home'&&!startupReady&&!homeReady()){
+          P.GSFNotify?.upsert('alive:startup',{title:'Avvio GSF',body:'Preparo il tuo spazio.',kind:'working',ttl:0});
+          bridge.timeout(()=>{if(!startupReady&&!homeReady()&&P.GSFNavigation.snapshot().target==='home')P.GSFNotify?.upsert('alive:startup',{title:'Avvio non completato',body:'La Home non ha ancora risposto.',kind:'warning',ttl:0,actionLabel:'Riprova',onClick:()=>P.location.reload()})},60000);
+        }
+
         try{P.GSFPush&&P.GSFPush.ensure&&P.GSFPush.ensure().catch(()=>{})}catch(_e){}
       });
     })(window.parent);
@@ -17936,6 +17951,9 @@ if GSF_WEB_MODE:
         if(s)return s;
         s=D.createElement('style');s.id='gsf-global-shell-v343-style';
         s.textContent=`
+          /* Streamlit mounts its chrome after this shell; never flash it above GSF. */
+          html body [data-testid="stHeader"],html body [data-testid="stToolbar"],
+          html body [data-testid="stStatusWidget"],html body [data-testid="stDecoration"]{display:none!important}
           :root{
             --gsf-shell-header-h:44px;
             --gsf-shell-gamebar-h:62px;

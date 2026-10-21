@@ -133,7 +133,15 @@ class PlayerContinuity(unittest.TestCase):
     page=browser.new_page(viewport={'width':390,'height':844});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     def route(r):
      path=urlsplit(r.request.url).path
-     if path=='/clip.mp4':r.fulfill(content_type='video/mp4',body=MEDIA_FIXTURE)
+     if path=='/clip.mp4':
+      import re
+      match=re.fullmatch(r'bytes=(\d+)-(\d*)',r.request.headers.get('range',''))
+      headers={'Accept-Ranges':'bytes'}
+      if match:
+       start=int(match[1]);end=min(int(match[2]) if match[2] else len(MEDIA_FIXTURE)-1,len(MEDIA_FIXTURE)-1)
+       headers['Content-Range']=f'bytes {start}-{end}/{len(MEDIA_FIXTURE)}'
+       r.fulfill(status=206,content_type='video/mp4',headers=headers,body=MEDIA_FIXTURE[start:end+1])
+      else:r.fulfill(content_type='video/mp4',headers=headers,body=MEDIA_FIXTURE)
      else:
       file=ROOT/'web/game_editor_mobile_component'/('index.html' if path=='/' else path.lstrip('/'))
       if file.is_file():r.fulfill(content_type='text/css' if file.suffix=='.css' else 'text/javascript' if file.suffix=='.mjs' else 'text/html',body=file.read_text())
@@ -158,6 +166,29 @@ class PlayerContinuity(unittest.TestCase):
     self.assertEqual(page.locator('video').count(),1);self.assertFalse(errors,errors)
     page.wait_for_timeout(280);page.emulate_media(reduced_motion='reduce');page.locator('#enterEditorButton').click()
     self.assertEqual(page.locator('#previewStage').evaluate('e=>e.getAnimations().length'),0)
+    page.wait_for_function('document.querySelector("video").seekable.length>0');page.locator('video').evaluate('v=>{v.pause();v.currentTime=.5}')
+    page.evaluate("()=>{window.GSFGameEditor2026.commitEditorState({inPoint:.25,outPoint:1.75,zoom:1.4});window.beforeScrub=window.GSFGameEditor2026.getState()}")
+    track=page.locator('#timelineTrack');rect=track.bounding_box()
+    page.mouse.move(rect['x']+rect['width']*.3,rect['y']+rect['height']/2);page.mouse.down()
+    page.mouse.move(rect['x']+rect['width']*.75,rect['y']+rect['height']/2,steps=5);page.mouse.up()
+    page.wait_for_function('Math.abs(document.querySelector("video").currentTime-1.5)<.15&&!document.querySelector("video").seeking')
+    self.assertAlmostEqual(page.locator('video').evaluate('v=>v.currentTime'),1.5,delta=.15)
+    self.assertTrue(page.locator('video').evaluate('v=>v.paused'))
+    page.mouse.move(rect['x']+rect['width']*.5,rect['y']+rect['height']/2);page.mouse.down()
+    page.mouse.move(rect['x']+rect['width']*.95,rect['y']+rect['height']/2,steps=5);page.mouse.up()
+    page.wait_for_function('!document.querySelector("video").seeking')
+    self.assertAlmostEqual(page.locator('video').evaluate('v=>v.currentTime'),1.75,delta=.02)
+    self.assertTrue(page.evaluate('originalVideo===document.querySelector("video")'))
+    self.assertEqual(page.evaluate('GSFGameEditor2026.getState()'),page.evaluate('beforeScrub'))
+    for width,height in [(375,667),(390,844),(393,852),(430,932)]:
+     with self.subTest(timeline_viewport=(width,height)):
+      page.set_viewport_size({'width':width,'height':height})
+      page.evaluate('()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+      geometry=track.evaluate("e=>{const r=e.getBoundingClientRect(),p=e.parentElement.getBoundingClientRect(),x=r.x+r.width/2;return {height:r.height,bottom:r.bottom,parentBottom:p.bottom,hitTop:e.contains(document.elementFromPoint(x,r.top+2)),hitBottom:e.contains(document.elementFromPoint(x,r.bottom-2))}}")
+      self.assertGreaterEqual(geometry['height'],44)
+      self.assertLessEqual(geometry['bottom'],geometry['parentBottom']-1)
+      self.assertTrue(geometry['hitTop'] and geometry['hitBottom'],geometry)
+    self.assertFalse(errors,errors)
    finally:browser.close()
 
 @unittest.skipUnless(os.environ.get('GSF_BROWSER'),'Runs in actual browser gate')
@@ -197,4 +228,100 @@ class NativeBackContinuity(unittest.TestCase):
     page.evaluate('history.back()')
     page.wait_for_function("GSFNavigation.snapshot().target==='editor'",timeout=3000)
     self.assertIn('gsf_page=editor',page.url)
+   finally:browser.close()
+
+@unittest.skipUnless(os.environ.get('GSF_BROWSER'),'Runs in actual browser gate')
+class OAuthLibraryReturn(unittest.TestCase):
+ def test_legacy_callback_opens_hub_and_restores_requested_library_once(self):
+  from test_closed_beta_bugfix_pass import installed_parent_html
+  from playwright.sync_api import sync_playwright
+  with sync_playwright() as p:
+   engine=getattr(p,os.environ['GSF_BROWSER']);options={'headless':True}
+   if engine.name=='chromium':options.update(executable_path=shutil.which('chromium'),args=['--no-sandbox'])
+   browser=engine.launch(**options)
+   try:
+    for pending in (False,True,"expired"):
+     with self.subTest(library_return=pending):
+      context=browser.new_context(viewport={'width':390,'height':844});page=context.new_page()
+      if pending:page.add_init_script("if(window===top)sessionStorage.setItem('gsf-source-oauth-return',JSON.stringify({provider:'twitch',folder:'videos',created:Date.now()-"+('700000' if pending=='expired' else '0')+"}))")
+      parent=installed_parent_html()
+      def serve(r):
+       if r.request.is_navigation_request() and r.request.frame==page.main_frame:r.fulfill(content_type='text/html',body=parent)
+       elif r.request.resource_type=='document':r.fulfill(content_type='text/html',body='<html><body>Hub surface</body></html>')
+       else:r.fulfill(json={'ok':True,'account':{},'social':{}})
+      page.route('**/*',serve);page.goto('http://gsf.test/?gsf_hub=social&oauth_return=1')
+      expected='live' if pending is True else 'social'
+      page.wait_for_function("section=>GSFNavigation.snapshot().target==='hub'&&GSFNavigation.snapshot().section===section",arg=expected,timeout=3000)
+      self.assertIsNone(page.evaluate("sessionStorage.getItem('gsf-source-oauth-return')"))
+      self.assertIn('gsf_page=hub',page.url);self.assertNotIn('gsf_hub=',page.url)
+      if pending is True:self.assertEqual(page.evaluate("JSON.parse(sessionStorage.getItem('gsf-source-view')).folder"),'videos')
+      context.close()
+   finally:browser.close()
+
+@unittest.skipUnless(os.environ.get('GSF_BROWSER'),'Runs in actual browser gate')
+class StartupContinuity(unittest.TestCase):
+ def test_canonical_notification_exists_before_home_and_finishes_on_readiness(self):
+  from test_closed_beta_bugfix_pass import installed_parent_html
+  from playwright.sync_api import sync_playwright
+  with sync_playwright() as p:
+   engine=getattr(p,os.environ['GSF_BROWSER']);options={'headless':True}
+   if engine.name=='chromium':options.update(executable_path=shutil.which('chromium'),args=['--no-sandbox'])
+   browser=engine.launch(**options)
+   try:
+    page=browser.new_page(viewport={'width':390,'height':844});parent=installed_parent_html();pending=[];errors=[]
+    page.on('pageerror',lambda e:errors.append(str(e)))
+    def serve(r):
+     if r.request.url=='http://gsf.test/':r.fulfill(content_type='text/html',body=parent)
+     elif r.request.url=='http://gsf.test/home':pending.append(r)
+     else:r.fulfill(json={'ok':True,'render_status':'idle','account':{},'social':{}})
+    page.route('**/*',serve);page.goto('http://gsf.test/')
+    notice=page.locator('[data-notice-id="alive:startup"]');notice.wait_for(timeout=3000)
+    self.assertEqual(notice.get_attribute('data-kind'),'working')
+    page.evaluate("()=>{const chrome=document.createElement('header');chrome.dataset.testid='stHeader';chrome.textContent='Deploy';document.body.append(chrome)}")
+    self.assertEqual(page.locator('[data-testid="stHeader"]').evaluate('e=>getComputedStyle(e).display'),'none','Late React chrome must be hidden before transient app CSS arrives')
+    self.assertEqual(page.locator('#gsf-global-push-client-v258').count(),0,'Canonical client must be available without a late script fetch')
+    page.evaluate("()=>{window.bootNotify=GSFNotify;const f=document.createElement('iframe');f.src='/home';document.body.append(f)}")
+    for _ in range(60):
+     if pending:break
+     page.wait_for_timeout(50)
+    self.assertTrue(pending)
+    pending.pop().fulfill(content_type='text/html',body='<html><body><main id="home154"></main><script>window.__GSF_V333_CTA_TOUCH=true;parent.postMessage({type:"GSF_HOME_READY"},location.origin)</script></body></html>')
+    notice.wait_for(state='hidden',timeout=3000)
+    self.assertTrue(page.evaluate('bootNotify===GSFNotify'))
+    self.assertFalse(errors,errors)
+   finally:browser.close()
+
+@unittest.skipUnless(os.environ.get('GSF_BROWSER') and (os.environ.get('GSF_BASE_URL') or os.environ.get('BASE')),'Requires the running production-image browser gate')
+class StartupVisual(unittest.TestCase):
+ def test_first_frames_four_mobile_viewports_and_standalone(self):
+  from playwright.sync_api import sync_playwright
+  import tempfile
+  base=os.environ.get('GSF_BASE_URL') or os.environ['BASE']
+  output=Path(os.environ.get('OUT_DIR') or tempfile.mkdtemp(prefix='gsf-first-frames-'))/'first-frames';output.mkdir(parents=True,exist_ok=True)
+  with sync_playwright() as p:
+   engine=getattr(p,os.environ['GSF_BROWSER']);options={'headless':True}
+   if engine.name=='chromium':options.update(executable_path=shutil.which('chromium'),args=['--no-sandbox'])
+   browser=engine.launch(**options)
+   try:
+    for width,height in [(375,667),(390,844),(393,852),(430,932)]:
+     for standalone in (False,True):
+      with self.subTest(viewport=(width,height),standalone_emulated=standalone):
+       context=browser.new_context(**{**p.devices['iPhone 13'],'viewport':{'width':width,'height':height}})
+       try:
+        page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+        if standalone:page.add_init_script("Object.defineProperty(navigator,'standalone',{value:true});const nativeMatch=window.matchMedia.bind(window);window.matchMedia=q=>q==='(display-mode: standalone)'?{...nativeMatch(q),matches:true,addEventListener(){},removeEventListener(){}}:nativeMatch(q)")
+        page.add_init_script("if(window===top){window.__firstFrames=[];const start=performance.now();const sample=t=>{__firstFrames.push({ms:Math.round(t-start),body:!!document.body,bg:getComputedStyle(document.documentElement).backgroundColor,chrome:[...document.querySelectorAll('[data-testid=stHeader],[data-testid=stToolbar],[data-testid=stStatusWidget]')].some(e=>getComputedStyle(e).display!=='none'&&e.getBoundingClientRect().height>0)});if(t-start<1500)requestAnimationFrame(sample)};requestAnimationFrame(sample)}")
+        folder=output/f'{width}-{height}-{standalone}';folder.mkdir(exist_ok=True)
+        page.goto(base,wait_until='domcontentloaded');page.screenshot(path=str(folder/'first-dom-frame.png'))
+        page.wait_for_timeout(100);page.screenshot(path=str(folder/'after100ms.png'))
+        page.wait_for_timeout(200);page.screenshot(path=str(folder/'after300ms.png'))
+        page.wait_for_function("()=>[...document.querySelectorAll('iframe')].some(f=>{try{return !!f.contentWindow.__GSF_V333_CTA_TOUCH}catch(_){return false}})",timeout=90000)
+        page.screenshot(path=str(folder/'ready.png'))
+        samples=page.evaluate('__firstFrames');(folder/'evidence.json').write_text(json.dumps({'frames':samples,'errors':errors,'standalone_emulated':standalone},indent=2))
+        painted=[sample for sample in samples if sample['body']]
+        self.assertTrue(painted,'Capture actual browser rendering frames')
+        self.assertTrue(all(sample['bg']=='rgb(5, 13, 22)' and not sample['chrome'] for sample in painted),painted)
+        self.assertEqual(page.evaluate('document.documentElement.scrollWidth'),width)
+        self.assertFalse(errors,errors)
+       finally:context.close()
    finally:browser.close()

@@ -293,10 +293,6 @@ input::placeholder,textarea::placeholder{color:var(--na-text-faint)}
 <body>
 <main id="crea413" aria-label="Crea Short">
   <section class="stage" id="stage">
-    <p class="scribble m1" id="muralReady">Preparo il tuo<br>Short…<svg viewBox="0 0 46 30" aria-hidden="true"><path d="M6 4c10 4 22 10 30 20"/><path d="M28 23l8 1-1-8"/></svg></p>
-    <p class="scribble m2">Tocca i social<br>che vuoi<svg viewBox="0 0 46 30" aria-hidden="true"><path d="M40 4C30 8 18 14 10 24"/><path d="M10 16l0 8 8 0"/></svg></p>
-    <p class="scribble m3">WhatsApp, Telegram, X…<br>condividi in un tocco</p>
-    <p class="scribble m4">Salvalo anche<br>su Dropbox</p>
 
     <button class="peek" type="button" id="peekBtn" hidden>▶ Anteprima</button>
     <div class="orbit" id="orbit">
@@ -1384,8 +1380,6 @@ async function sync(){
     if(!r.ok||!j.ok)throw new Error('state');
     const rev=String(j.revision||''), was=server.revision;
     Object.assign(server,j);server.revision=rev;
-    $('#muralReady').firstChild.textContent=j.ready?'Il tuo Short':'Preparo il tuo';
-    $('#muralReady').childNodes[2].textContent=j.ready?'è pronto':'Short…';
     const v=$('#preview');
     if(j.ready&&(rev!==was||!v.getAttribute('src'))){
       v.src='/share/final?revision='+encodeURIComponent(rev);v.hidden=false;$('#thumbSpin').hidden=true;linkCache={url:'',exp:0};

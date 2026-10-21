@@ -12,12 +12,12 @@
 
 ## Global Constraints
 
-- No changes to OAuth YouTube, social publishing or Game Editor runtime.
+- Original source-library scope: no changes to OAuth YouTube, social publishing or Game Editor runtime. The explicit2026-10-21 final UX follow-up authorizes existing Editor controls/timeline/continuity changes; OAuth YouTube and publishing remain untouched.
 - No Live recording, VOD downloading, scraping or extracted HLS.
 - Existing Twitch scope `channel:manage:clips`; no additional mandatory Railway variables.
 - Existing clip limits512MiB/120second download/15second socket retained.
 - Only real valid1–3 moments; never fabricate three or reject one valid moment.
-- Railway deploy remains paused; prepare and test branch without claiming production verified.
+- Latest2026-10-21 steering resumes PR187 release after green CI/Gate; the prior pause is superseded. Never claim production verified before observed SUCCESS and health.
 - Before product edits extend this chat's existing claim to each new source/test file and updated Hub contract. Reuse the isolated current worktree. Preserve existing deployment authorization and evidence.
 
 ## Review Focus

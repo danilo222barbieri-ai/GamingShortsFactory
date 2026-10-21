@@ -3229,9 +3229,6 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
 
  <div id="view">
   <div class="stage">
-   <div id="muralPrimary" class="scribble left muralGuide"><span class="guideText">Trasforma<br>il tuo gameplay<br>in Shorts</span></div>
-   <div id="muralUpload" class="scribble right muralGuide"><span class="guideText">Trascina e tocca<br>per caricare</span><span class="padSketch"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M15.5 22.5c2.2-5.6 8.5-8.2 13.8-5.4l3.2 1.7 3.2-1.7c5.3-2.8 11.6-.2 13.8 5.4l5.2 13.4c2.6 6.7-2.3 13.9-9.5 13.9-4.4 0-7.2-2.4-10.2-7.4l-1.6-2.7h-2.8L29 42.4c-3 5-5.8 7.4-10.2 7.4-7.2 0-12.1-7.2-9.5-13.9l5.2-13.4Z"/><path d="M20 27.5v10M15 32.5h10"/><circle cx="42" cy="27.5" r="2.1"/><circle cx="48" cy="32.5" r="2.1"/><circle cx="42" cy="37.5" r="2.1"/><circle cx="36" cy="32.5" r="2.1"/></svg></span></div>
-   <div id="muralAmbient" class="muralAmbient muralGuide"><span class="guideText">Qui comincia<br>il tuo highlight</span></div>
    <div class="rings">
     <input id="pick" class="pick" type="file" accept="video/mp4,video/quicktime,video/x-matroska,.mp4,.mov,.mkv">
     <label id="circle" class="circle" for="pick" data-alive-orb data-alive-round data-alive-next="upload new_video">
@@ -4709,6 +4706,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
 <script id="gsfAliveHome">
 /* GSF Alive 2 on Home: the upload orb is the lungs; facts come from the page, never invented. */
 (()=>{
+ try{parent.postMessage({type:'GSF_HOME_READY'},location.origin)}catch(_e){}
  const A=window.GSFAlive;if(!A)return;
  A.mount({page:"home",voiceAnchor:"#home154 .rings"});
  const circle=document.getElementById("circle"),bar=document.getElementById("bar");

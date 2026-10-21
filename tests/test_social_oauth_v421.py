@@ -321,6 +321,23 @@ class TwitchOAuth(unittest.TestCase):
         self.assertTrue('_twitch_oauth_start' in self.ns,'Twitch OAuth is not implemented')
         self.ns['_oauth_json']=self.api;reply=Reply();self.ns['_twitch_oauth_start'](reply,'browserA');q=urllib.parse.parse_qs(urllib.parse.urlsplit(reply.response['Location']).query)
         callback=Reply();self.ns['_twitch_oauth_callback'](callback,{'state':q['state'],'code':['private-code']});self.assertEqual(callback.status,302);return q
+    def test_content_retry_preserves_reconnect_error(self):
+        def access(sid,force_validate=False):
+            if force_validate:raise social421.TwitchError("Ricollega Twitch.",401)
+            return {'access_token':'private-access'}
+        self.ns['_twitch_access']=access
+        self.ns['_oauth_json']=lambda *a,**kw:(_ for _ in ()).throw(urllib.error.HTTPError('https://api.twitch.tv/helix/clips',401,'provider private details',{},None))
+        with self.assertRaises(social421.TwitchError) as error:self.ns['_twitch_api']('browserA','clips')
+        self.assertEqual(error.exception.status,401)
+        self.assertIn('Ricollega',str(error.exception))
+    def test_content_errors_keep_actionable_status_without_provider_details(self):
+        self.ns['_twitch_access']=lambda *a,**kw:{'access_token':'private-access'}
+        for status,expected in [(403,403),(429,429),(500,503),(503,503)]:
+            with self.subTest(status=status):
+                self.ns['_oauth_json']=lambda *a,**kw:(_ for _ in ()).throw(urllib.error.HTTPError('https://api.twitch.tv/helix/clips',status,'private-access',{},None))
+                with self.assertRaises(social421.TwitchError) as error:self.ns['_twitch_api']('browserA','clips')
+                self.assertEqual(error.exception.status,expected)
+                self.assertNotIn('private-access',str(error.exception))
     def test_code_exchange_validation_and_identity_are_bound_to_session(self):
         q=self.connected();self.assertEqual(q['redirect_uri'],['https://gsf.test/auth/twitch/callback']);self.assertEqual(q['scope'],['channel:manage:clips'])
         self.assertEqual(self.ns['_twitch_access']('browserA')['user_id'],'42')
@@ -439,7 +456,7 @@ class TwitchHubBrowser(unittest.TestCase):
                     elif url.path=='/direct-upload/bucket/status':r.fulfill(json={'ok':True,'ready':True})
                     else:r.fulfill(json={'ok':True})
                 page.route('**/*',route);page.goto('http://gsf.test/')
-                page.locator('.socialDot[data-social="twitch"].connected').wait_for();page.locator('.socialDot[data-social="twitch"]').click()
+                page.locator('.socialDot[data-social="twitch"].connected').wait_for();page.locator('[data-open="live"]').click()
                 page.locator('[data-source-folder="videos"]').click();page.get_by_text('My VOD',exact=True).wait_for();self.assertEqual(page.locator('[data-source-import]').count(),0)
                 page.locator('[data-source-folder="clips"]').click();page.locator('[data-source-import="clip1"]').click();page.wait_for_url('**/?gsf_page=ai')
                 self.assertEqual(posts,[{'type':'clips','clip_id':'clip1'}]);self.assertFalse(errors,errors)

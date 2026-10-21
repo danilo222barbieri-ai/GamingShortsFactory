@@ -3150,6 +3150,13 @@ def _twitch_api(sid,path,params=None):
             if exc.code!=401:raise
             token=_twitch_access(sid,force_validate=True)
             return _oauth_json(url,headers={"Authorization":"Bearer "+token["access_token"],"Client-Id":TWITCH_CLIENT_ID},timeout=15)
+    except _social421.TwitchError:
+        raise
+    except urllib.error.HTTPError as exc:
+        if exc.code==401:raise _social421.TwitchError("Accesso Twitch scaduto. Ricollega l'account.",401) from None
+        if exc.code==403:raise _social421.TwitchError("Twitch non autorizza l'accesso a questi contenuti. Verifica il collegamento.",403) from None
+        if exc.code==429:raise _social421.TwitchError("Twitch ha ricevuto troppe richieste. Attendi e riprova.",429) from None
+        raise _social421.TwitchError("Twitch temporaneamente non disponibile. Riprova più tardi.",503) from None
     except Exception:raise _social421.TwitchError("Impossibile recuperare i contenuti Twitch. Riprova più tardi.") from None
 
 

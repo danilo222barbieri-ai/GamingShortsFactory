@@ -42,6 +42,24 @@
   };
   const routeFromUrl=()=>{
     const q=new URL(location.href).searchParams;
+    // Existing OAuth callbacks use this legacy entry point. Resolve it in
+    // the canonical router before any surface mounts, including cold starts.
+    if(!q.has('gsf_page')&&q.get('gsf_hub')==='social'){
+      let section='social';
+      if(q.has('oauth_return'))try{
+        const pending=JSON.parse(sessionStorage.getItem('gsf-source-oauth-return')||'null');
+        sessionStorage.removeItem('gsf-source-oauth-return');
+        const age=Date.now()-Number(pending?.created);
+        if(pending?.provider==='twitch'&&age>=0&&age<600000&&['live','videos','clips','imported'].includes(pending.folder)){
+          sessionStorage.setItem('gsf-source-view',JSON.stringify({provider:'twitch',folder:pending.folder}));section='live';
+        }
+      }catch(_e){}
+      const url=new URL(location.href);
+      url.searchParams.delete('gsf_hub');url.searchParams.delete('oauth_return');
+      url.searchParams.set('gsf_page','hub');url.searchParams.set('gsf_section',section);
+      history.replaceState(history.state,'',url);
+      return {target:'hub',section};
+    }
     const route={target:q.get('gsf_page')||'home',section:q.get('gsf_section')||''};
     // Unknown URL routes recover to Home. Internal protocol messages (such
     // as ai-state) must keep being ignored by navigate's allowlist.

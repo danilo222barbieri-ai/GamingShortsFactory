@@ -202,7 +202,7 @@ class SourceLibraryBrowser(unittest.TestCase):
    if path=='videos':return {'data':[{'id':'vod1','user_id':'creator','title':'VOD ufficiale','url':'https://www.twitch.tv/videos/vod1','duration':'1h2m3s'}]}
    return {'data':[{'id':'clip1','broadcaster_id':'creator','title':'Clip già importata','url':'https://clips.twitch.tv/clip1','duration':20}]}
   fixture.ns['_twitch_api']=api
-  connection={'on':True}
+  connection={'on':True};failure={'status':0}
   with sync_playwright() as p:
    engine=getattr(p,os.environ['GSF_BROWSER']);options={'headless':True}
    if engine.name=='chromium':options.update(executable_path=shutil.which('chromium'),args=['--no-sandbox'])
@@ -214,7 +214,9 @@ class SourceLibraryBrowser(unittest.TestCase):
      url=urllib.parse.urlsplit(r.request.url);q=urllib.parse.parse_qs(url.query)
      if url.path=='/':r.fulfill(content_type='text/html',body=(ROOT/'web/creator_hub_v156_component/index.html').read_text())
      elif url.path=='/creator-hub/state':r.fulfill(json={'ok':True,'csrf_token':'csrf','account':{'display_name':'Creator'},'social':{'twitch':connection['on']}})
-     elif url.path=='/social-connect/twitch/content':r.fulfill(json={'ok':True,**fixture.ns['_twitch_content']('browserA',q.get('type',['clips'])[0])})
+     elif url.path=='/social-connect/twitch/content':
+      if failure['status']:r.fulfill(status=failure['status'],json={'ok':False,'error':'Errore Twitch verificato'})
+      else:r.fulfill(json={'ok':True,**fixture.ns['_twitch_content']('browserA',q.get('type',['clips'])[0])})
      elif url.path=='/creator-hub/sources':r.fulfill(json={'ok':True,**fixture.ns['_source_list']('browserA',q.get('provider',['upload'])[0])})
      else:r.fulfill(json={'ok':True})
     page.route('**/*',route)
@@ -231,8 +233,38 @@ class SourceLibraryBrowser(unittest.TestCase):
       self.assertEqual(page.evaluate('document.documentElement.scrollWidth'),width)
     page.reload();page.locator('[data-source-editor]').wait_for()
     self.assertEqual(page.locator('[data-source-folder="imported"]').get_attribute('aria-pressed'),'true')
+    # Social owns account identity; content belongs only to the Library view.
+    self.assertEqual(page.locator('[data-twitch-content]').count(),0)
+    page.evaluate("GSFHubV304.openView('dashboard')")
+    page.locator('[data-social="twitch"]').click()
+    page.locator('.view[data-view="settings"].active').wait_for(timeout=2000)
+    self.assertEqual(page.locator('.socialCard[data-platform="twitch"] [data-connect]').inner_text(),'Scollega')
+    page.evaluate("GSFHubV304.openView('live')")
+    page.locator('[data-source-editor]').wait_for()
     connection['on']=False;page.reload();page.locator('[data-source-editor]').wait_for(timeout=2000)
     self.assertIn('Twitch scollegato',page.locator('#sourceLibrary').inner_text())
     page.locator('[data-source-folder="clips"]').click();page.locator('[data-source-connect]').wait_for()
+    connection['on']=True;page.reload()
+    for status in (401,403,429,503):
+     with self.subTest(provider_status=status):
+      failure['status']=status
+      page.locator('[data-source-folder="videos"]').click()
+      page.get_by_role('button',name='Riprova',exact=True).wait_for()
+      self.assertIn('Errore Twitch verificato',page.locator('#sourceLibrary').inner_text())
+      self.assertEqual(page.locator('[data-source-account]').count(),int(status in (401,403)))
+    failure['status']=401;page.locator('[data-source-folder="clips"]').click()
+    page.locator('[data-source-account]').click()
+    page.locator('.view[data-view="settings"].active').wait_for()
+    failure['status']=0;connection['on']=False
+    for provider in ('tiktok','twitch'):
+     with self.subTest(new_oauth=provider):
+      page.goto('http://gsf.test/');page.evaluate("GSFHubV304.openView('live')")
+      page.locator('[data-source-folder="clips"]').click();page.locator('[data-source-connect]').click()
+      page.wait_for_url('**/social-connect/twitch/start')
+      self.assertEqual(page.evaluate("JSON.parse(sessionStorage.getItem('gsf-source-oauth-return')).provider"),'twitch')
+      page.goto('http://gsf.test/');page.evaluate("GSFHubV304.openView('settings')")
+      page.locator('.socialCard[data-platform="'+provider+'"] [data-connect]').click()
+      page.wait_for_url('**/social-connect/'+provider+'/start')
+      self.assertIsNone(page.evaluate("sessionStorage.getItem('gsf-source-oauth-return')"))
     self.assertFalse(errors,errors)
    finally:browser.close()

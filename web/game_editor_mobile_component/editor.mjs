@@ -31,6 +31,7 @@ const captionOverlay = $("#captionOverlay");
 const hudSafeOverlay = $("#hudSafeOverlay");
 const selectedRange = $("#selectedRange");
 const playhead = $("#playhead");
+const timelineTrack = $("#timelineTrack");
 const eventMarkers = $("#eventMarkers");
 const undoButton = $("#undoButton");
 const redoButton = $("#redoButton");
@@ -630,6 +631,40 @@ playButton.addEventListener("click", async () => {
   try { await video.play(); } catch (_error) { setStatus("Tocca di nuovo per avviare l’anteprima", "error"); }
 });
 
+// Scrub the existing clip track directly; trim thumbs retain their own input.
+let timelineGesture = null;
+function seekTimeline(clientX) {
+  const rect = timelineTrack.getBoundingClientRect();
+  if (!rect.width) return;
+  const { duration, inPoint, outPoint } = boundsFor(history.value);
+  // Stay on the final selected frame instead of triggering playback-end wrap.
+  video.currentTime = clamp((clientX - rect.left) / rect.width * duration, inPoint, Math.max(inPoint, outPoint - 0.001));
+  renderTransport(history.value);
+}
+function finishTimelineGesture(event, resume = true) {
+  if (!timelineGesture || (event && event.pointerId !== timelineGesture.id)) return;
+  const gesture = timelineGesture;
+  if (event?.type === "pointerup") seekTimeline(event.clientX);
+  timelineGesture = null;
+  if (timelineTrack.hasPointerCapture(gesture.id)) timelineTrack.releasePointerCapture(gesture.id);
+  if (resume && gesture.playing && !document.hidden) video.play().catch(() => setStatus("Tocca per riprendere l’anteprima"));
+}
+timelineTrack.addEventListener("pointerdown", (event) => {
+  if (!video.readyState || timelineGesture || event.target.closest("input,button") || (event.pointerType === "mouse" && event.button !== 0)) return;
+  event.preventDefault();
+  timelineGesture = { id: event.pointerId, playing: !video.paused };
+  video.pause();
+  timelineTrack.setPointerCapture(event.pointerId);
+  seekTimeline(event.clientX);
+});
+timelineTrack.addEventListener("pointermove", (event) => {
+  if (timelineGesture?.id !== event.pointerId) return;
+  event.preventDefault();seekTimeline(event.clientX);
+});
+timelineTrack.addEventListener("pointerup", event => finishTimelineGesture(event));
+timelineTrack.addEventListener("pointercancel", event => finishTimelineGesture(event));
+timelineTrack.addEventListener("lostpointercapture", event => finishTimelineGesture(event));
+
 scrubRange.addEventListener("input", () => {
   video.currentTime = clamp(scrubRange.value, history.value.inPoint, history.value.outPoint);
   renderTransport(history.value);
@@ -801,6 +836,7 @@ document.addEventListener("keydown", (event) => {
 
 // A BFCache pagehide is a suspension, not destruction. Never discard dirty edits.
 function suspendEditor() {
+  finishTimelineGesture(null, false);
   finishGesture({ cancelled: true });
   video.pause();
   saveSequencer.flush();

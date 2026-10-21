@@ -333,7 +333,7 @@ a.row{color:inherit;text-decoration:none}
      <div class="counter"><span>Pubblicati</span><b id="countPublished">0</b></div>
     </div>
     <div class="card rows liveRow">
-     <button class="row" type="button" data-open="live"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="2.2"/><path d="M8 8.5a5 5 0 0 0 0 7M16 8.5a5 5 0 0 1 0 7M5.2 5.8a9 9 0 0 0 0 12.4M18.8 5.8a9 9 0 0 1 0 12.4"/></svg></span><span class="rtext"><b>Sorgenti / Libreria</b><small>Upload e Twitch</small></span><span class="chev">›</span></button>
+     <button class="row" type="button" data-open="live"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="2.2"/><path d="M8 8.5a5 5 0 0 0 0 7M16 8.5a5 5 0 0 1 0 7M5.2 5.8a9 9 0 0 0 0 12.4M18.8 5.8a9 9 0 0 1 0 12.4"/></svg></span><span class="rtext"><b>Live e VOD</b><small>Upload, Twitch e Clip</small></span><span class="chev">›</span></button>
     </div>
    </div>
    <div class="dashMain">
@@ -353,8 +353,8 @@ a.row{color:inherit;text-decoration:none}
  </section>
 
  <!-- Sorgenti: one catalog, existing upload/AI/Editor pipeline -->
- <section class="view" data-view="live" aria-label="Sorgenti e Libreria">
-  <div class="detailHead"><button class="backBtn" type="button" data-back aria-label="Torna al Creator Hub">‹</button><h1>Sorgenti / Libreria</h1></div>
+ <section class="view" data-view="live" aria-label="Live e VOD / Sorgenti">
+  <div class="detailHead"><button class="backBtn" type="button" data-back aria-label="Torna al Creator Hub">‹</button><h1>Live e VOD</h1></div>
   <div class="sheetActions" aria-label="Sorgente"><button class="btn ghost" data-source-provider="upload">Upload</button><button class="btn ghost" data-source-provider="twitch">Twitch</button><button class="btn ghost" data-source-provider="youtube">YouTube</button></div>
   <div class="sheetActions" id="sourceFolders" aria-label="Contenuti Twitch"><button class="btn ghost" data-source-folder="live">Live</button><button class="btn ghost" data-source-folder="videos">VOD</button><button class="btn ghost" data-source-folder="clips">Clip</button><button class="btn ghost" data-source-folder="imported">Importati</button></div>
   <div id="sourceLibrary" aria-live="polite"></div>
@@ -1196,7 +1196,6 @@ let oauthNavigating=false;
    btn.disabled=false;
    btn.className=yes?"btn danger":"btn";
   });
-  $$("[data-twitch-content]").forEach(b=>b.hidden=!socialIsOn("twitch"));
   const n=PLATFORMS.filter(p=>socialIsOn(p.key)).length;
   const so=$("#profileOverviewSocial");if(so)so.textContent=n+" di "+PLATFORMS.length;
  }
@@ -1206,16 +1205,14 @@ let oauthNavigating=false;
   const row=$("#socialRow");
   if(row)row.innerHTML=PLATFORMS.map(p=>'<button class="socialDot" type="button" data-social="'+p.key+'" aria-label="'+p.name+'">'+logo(p)+'<span class="tick">'+TICK+'</span></button>').join("");
   const list=$("#socialSettings");
-  if(list)list.innerHTML=PLATFORMS.map(p=>'<div class="row socialCard" data-platform="'+p.key+'"><span class="logoBox">'+logo(p)+'</span><span class="rtext"><b>'+p.name+'</b><small class="socialState">…</small></span><button class="btn" type="button" data-connect="'+p.key+'">Collega</button>'+ (p.key==="twitch"?'<button class="btn ghost" type="button" data-twitch-content hidden>Contenuti</button>':'')+'</div>').join("");
+  if(list)list.innerHTML=PLATFORMS.map(p=>'<div class="row socialCard" data-platform="'+p.key+'"><span class="logoBox">'+logo(p)+'</span><span class="rtext"><b>'+p.name+'</b><small class="socialState">…</small></span><button class="btn" type="button" data-connect="'+p.key+'">Collega</button></div>').join("");
   $$(".socialDot").forEach(b=>b.onclick=()=>{
    const key=b.dataset.social;
    if(!socialIsOn(key)){connectSocial(key);return}
-   if(key==="twitch"){openTwitchContent();return}
    openView("settings");
    setTimeout(()=>{const c=document.querySelector('.socialCard[data-platform="'+key+'"]');if(c){c.scrollIntoView({block:"center"});c.animate&&c.animate([{background:"#EEF9FF"},{background:"transparent"}],{duration:900})}},30);
   });
   $$("[data-connect]").forEach(b=>b.onclick=()=>connectSocial(b.dataset.connect));
-  $$("[data-twitch-content]").forEach(b=>b.onclick=()=>openTwitchContent());
  }
 
  function cardHtml(kind,item){
@@ -1451,7 +1448,7 @@ let oauthNavigating=false;
   const url=imported?'/creator-hub/sources?provider='+sourceProvider+'&after='+encodeURIComponent(cursor):'/social-connect/twitch/content?type='+sourceFolder+'&after='+encodeURIComponent(cursor);
   try{
    const response=await fetch(url,{cache:'no-store',credentials:'same-origin',signal}),data=await response.json();
-   if(!response.ok||!data.ok)throw new Error(data.error||'Libreria non disponibile.');if(signal.aborted||current!=='live')return;
+   if(!response.ok||!data.ok){const error=new Error(data.error||'Libreria non disponibile.');error.status=response.status;throw error}if(signal.aborted||current!=='live')return;
    const status=sourceProvider==='twitch'?'<div class="row"><span class="rtext">'+(socialIsOn('twitch')?'Twitch collegato':'Twitch scollegato')+'</span><button class="btn ghost" data-source-disconnect>'+(socialIsOn('twitch')?'Scollega':'Collega')+'</button></div>':'';
    host.innerHTML=status+(data.data||[]).map(row=>{
     const identity=row.source_id||row.id;
@@ -1465,7 +1462,7 @@ let oauthNavigating=false;
    host.querySelectorAll('[data-source-open]').forEach(b=>b.onclick=()=>activateLibrarySource(b.dataset.sourceOpen,'ai'));
    host.querySelectorAll('[data-source-editor]').forEach(b=>b.onclick=()=>activateLibrarySource(b.dataset.sourceEditor,'editor'));
    if(data.cursor){const more=document.createElement('button');more.className='btn ghost';more.textContent='Altri contenuti';more.onclick=()=>loadSources(data.cursor);host.append(more)}
-  }catch(error){if(error.name!=='AbortError'&&!signal.aborted){host.textContent=String(error.message||'Libreria non disponibile.');const retry=document.createElement('button');retry.className='btn ghost';retry.textContent='Riprova';retry.onclick=()=>loadSources(cursor);host.append(retry)}}
+  }catch(error){if(error.name!=='AbortError'&&!signal.aborted){host.textContent=String(error.message||'Libreria non disponibile.');const retry=document.createElement('button');retry.className='btn ghost';retry.textContent='Riprova';retry.onclick=()=>loadSources(cursor);host.append(retry);if(sourceProvider==='twitch'&&[401,403].includes(error.status)){const account=document.createElement('button');account.className='btn ghost';account.dataset.sourceAccount='';account.textContent='Gestisci account Twitch';account.onclick=()=>{openView('settings');loadState()};host.append(account)}}}
  }
  async function activateLibrarySource(identity,target){
   if(twitchImportAbort)return;
@@ -1533,6 +1530,10 @@ let oauthNavigating=false;
    sheetBox.querySelector('[data-m="ok"]').onclick=()=>{closeSheet();disconnectSocial(key)};
    return;
   }
+  try{sessionStorage.removeItem('gsf-source-oauth-return')}catch(_e){}
+  if(key==='twitch'&&current==='live')try{
+   sessionStorage.setItem('gsf-source-oauth-return',JSON.stringify({provider:'twitch',folder:sourceFolder,created:Date.now()}));
+  }catch(_e){}
   oauthNavigating=true;
   if(key==="youtube")top.location.href="/social-connect/youtube/start";
   else if(key==="tiktok")top.location.href="/social-connect/tiktok/start";
