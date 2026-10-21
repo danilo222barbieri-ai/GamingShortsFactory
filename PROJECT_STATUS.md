@@ -7,7 +7,7 @@
 
 - Latest user steering: continue Twitch/Alive work; user takes over Railway monitoring. No new Railway mutation or bypass performed in this follow-up.
 - Reproduced a Hub subview race in actual WebKit: start Clip import, open Settings while status is pending, complete import; old callback redirected to IA because only outer Hub route/epoch was checked. Minimal correction also requires current Library subview, retaining completion notification and normal Library→IA behavior. No Editor/provider/publishing changes.
-- Regression test failed on the actual unwanted `?gsf_page=ai` navigation before fix, then passed. OAuth/source WebKit103PASS1SKIP36subcases; Chromium two import-flow tests PASS; Hub structural contracts PASS. Full suite result recorded below once complete. Provider transport is controlled in these tests; real Twitch creator consent/import remains unverified.
+- Regression test failed on the actual unwanted `?gsf_page=ai` navigation before fix, then passed. OAuth/source WebKit103PASS1SKIP36subcases; Chromium two import-flow tests PASS; Hub structural contracts PASS. Full suite339PASS21SKIP63subcases, log `/workspace/scratch/gsf-twitch-subview-full-suite.log`. Provider transport is controlled in these tests; real Twitch creator consent/import remains unverified.
 
 ## PR187 release attempt — 2026-10-21 Europe/Rome
 

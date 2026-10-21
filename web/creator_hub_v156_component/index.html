@@ -1500,7 +1500,7 @@ let oauthNavigating=false;
      window.GSFAlive?.emit('upload.completed');
      try{parent.GSFNotify?.update('alive:upload',{title:'Clip Twitch importata',kind:'success'})}catch(_e){}
      if(progress.isConnected)progress.textContent='Clip importata. Puoi creare lo Short con IA.';
-     let stillHere=true;try{const route=parent.GSFNavigation.snapshot();stillHere=route.target==='hub'&&route.epoch===epoch}catch(_e){}
+     let stillHere=current==='live';try{const route=parent.GSFNavigation.snapshot();stillHere=stillHere&&route.target==='hub'&&route.epoch===epoch}catch(_e){}
      if(stillHere&&!document.hidden)top.location.href='/?gsf_page=ai';
      else toast('Clip Twitch importata: apri Crea con IA.');
      return;

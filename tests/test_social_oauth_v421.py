@@ -435,6 +435,39 @@ class PublicOAuthRouting(unittest.TestCase):
             with response:self.assertEqual(response.status,400)
 
 class TwitchHubBrowser(unittest.TestCase):
+    def test_import_completion_keeps_the_current_hub_subview(self):
+        if not os.environ.get('GSF_BROWSER'):self.skipTest('Runs in the blocking real WebKit gate')
+        from playwright.sync_api import sync_playwright
+        import shutil
+        html=(ROOT/'web/creator_hub_v156_component/index.html').read_text();pending=[];errors=[]
+        with sync_playwright() as p:
+            engine=getattr(p,os.environ['GSF_BROWSER']);options={'executable_path':shutil.which('chromium'),'args':['--no-sandbox']} if engine.name=='chromium' else {}
+            browser=engine.launch(**options)
+            try:
+                page=browser.new_page(viewport={'width':390,'height':844});page.on('pageerror',lambda error:errors.append(str(error)))
+                page.add_init_script("window.GSFNavigation={snapshot:()=>({target:'hub',epoch:1})};")
+                def route(r):
+                    url=urllib.parse.urlsplit(r.request.url)
+                    if url.path=='/':r.fulfill(content_type='text/html',body='<p>AI route</p>' if url.query else html)
+                    elif url.path=='/creator-hub/state':r.fulfill(json={'ok':True,'csrf_token':'csrf','account':{'display_name':'Creator'},'social':{'twitch':True},'drafts':[],'shorts':[]})
+                    elif url.path=='/social-connect/twitch/content':r.fulfill(json={'ok':True,'data':[{'id':'clip1','title':'My Clip','can_import':True,'external_id':'clip1'}]})
+                    elif url.path=='/social-connect/twitch/import':r.fulfill(status=202,json={'ok':True,'upload_id':'import1'})
+                    elif url.path=='/direct-upload/bucket/status':pending.append(r)
+                    else:r.fulfill(json={'ok':True})
+                page.route('**/*',route);page.goto('http://gsf.test/')
+                page.locator('.socialDot[data-social="twitch"].connected').wait_for();page.locator('[data-open="live"]').click()
+                with page.expect_request('**/direct-upload/bucket/status?upload_id=import1'):
+                    page.locator('[data-source-import="clip1"]').click()
+                page.evaluate("GSFHubV304.openView('settings')")
+                page.locator('.view[data-view="settings"].active').wait_for()
+                self.assertEqual(len(pending),1);pending[0].fulfill(json={'ok':True,'ready':True})
+                page.wait_for_function("document.querySelector('#toastLocal')?.textContent.includes('Clip Twitch importata') || location.search.includes('gsf_page=ai')")
+                self.assertEqual(page.url,'http://gsf.test/','Import completion must not redirect away from account settings')
+                self.assertTrue(page.locator('.view[data-view="settings"].active').is_visible())
+                self.assertIn('Clip Twitch importata',page.locator('#toastLocal').inner_text())
+                self.assertFalse(errors,errors)
+            finally:browser.close()
+
     def test_connected_twitch_clip_import_and_vod_limit_use_source_library(self):
         if not os.environ.get('GSF_BROWSER'):self.skipTest('Runs in the blocking real WebKit gate')
         from playwright.sync_api import sync_playwright
