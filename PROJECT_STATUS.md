@@ -3,6 +3,12 @@
 > **CANONICAL SOURCE OF TRUTH FOR ALL TECHNICAL CHATS / AGENTS.**
 > Read this file before changing code. Refresh live GitHub/Railway evidence before changing production claims.
 
+## PR187 Gate green / Library inset follow-up — 2026-10-21 Europe/Rome
+
+- Official Gate39612720276 SUCCESS on7549f9c, including full images/health/runtime/WebKit. Promotion skipped on PR. Required CI39612720454 still FAILS dependency audit; no deployment performed.
+- New candidate `c80d028d863b822701bf48a307150c65b1556c1f` fixes only missing inset in Library cards, proven RED1px/GREEN15px with WebKit/Chromium and actual local shell. Serial full suite339PASS21SKIP63subcases79.38s. Fresh candidate checks pending; real Twitch consent/import remains unverified.
+- Release authorization persists. Official upstream Streamlit Pillow13 compatibility patch is merged but not yet published in checked PyPI stable/nightly. No unsupported override/suppression; PR187 remains BLOCKED until compatible published dependencies and required checks pass.
+
 ## PR187 upstream dependency unblock identified — 2026-10-21 Europe/Rome
 
 - Official Streamlit commit [`81bdb8a8a207691f17ec94df9eabc96b6b50ea7a`](https://github.com/streamlit/streamlit/commit/81bdb8a8a207691f17ec94df9eabc96b6b50ea7a), Allow Pillow13, merged2026-10-21 10:17UTC. Develop now allows Pillow<14. This supersedes earlier statements that the develop branch also capped Pillow<13.
