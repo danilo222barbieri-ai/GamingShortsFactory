@@ -16,6 +16,7 @@
     "railway": "New work not deployed; PR draft/unmerged until dependency blocker resolved.",
     "release_policy": "User2026-10-21: queue work, Railway deployment deferred; keep PR187 draft/unmerged. No auto deploy retry or marker bypass.",
     "source_library": "User approved architecture and explicitly instructed direct implementation; OAuth deploy BUILDING7aab3e32, user took over deployment monitoring. Implement source library in branch.",
+    "startup_scope": "Reuse canonical notification client at first-paint bootstrap; no second notification engine, no mobile gate change. Railway deferred.",
     "terminal_status": "HANDOFF_REQUIRED",
     "tests": "Real local WebKit full journey PASS incl render/export1080x1920/draft/back; delayed real Editor Back PASS; targeted50pass10subcases; navigation17pass8subcases; ten resume cycles PASS207s. Real Twitch consent/import unverified.",
     "updated_at": "2026-10-20"
@@ -55,6 +56,7 @@
     "web/gsf_social_oauth_v421.py",
     "web/gsf_sources_v422.py",
     "web/home_v154_component/index.html",
+    "web/install_adsense_bridge.py",
     "web/legal/privacy.html",
     "web/nginx.conf.template",
     "web/publish_multi_v413.py",
