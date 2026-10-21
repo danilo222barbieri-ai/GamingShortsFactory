@@ -1451,6 +1451,7 @@
       "branch": "chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
       "created_at": "2026-10-20T18:20:25+00:00",
       "evidence": {
+        "ai_stall_followup": "User reports installed app always waits~3min and never reaches choices, including3sec video. Found ranker total<5 returns empty without terminal UI result; worker logs show Gemini429/503/504 and wall89-368sec. Acquire narrow contract/provider/test scope to reproduce and fix; do not claim resolved from synthetic fast fallback.",
         "ai_title_contract": "CI39610472869 requires literal3short, contradicting valid1-3results and requested clean non-mural heading. Update expected truthful results title, retain all functional/structural assertions.",
         "alive_ui": "Read attached brief/video; public WebKit audit underway before UI changes. Preserve current OAuth/provider config and main hotfixes. Twitch commits8489b22/d369842 retained; Task3 incomplete.",
         "blocker": "Confirmed official stable Streamlit1.66.0 and nightly1.66.1.dev20261020 requirepillow<13; audit fixes eight PillowCVEs only13. No supported compatible fix found and no suppression applied.",
@@ -1487,6 +1488,7 @@
         "docs/superpowers/specs/2026-10-20-source-library-twitch-design.md",
         "requirements-web.txt",
         "tests/js/gsf_alive_v418.test.mjs",
+        "tests/test_ai_failure_recovery_v425.py",
         "tests/test_alive_continuity_v424.py",
         "tests/test_alive_runtime_v418.py",
         "tests/test_closed_beta_bugfix_pass.py",
@@ -1496,6 +1498,7 @@
         "tests/test_social_oauth_v421.py",
         "tests/test_source_library_v422.py",
         "tests/visual/gsf_closed_beta_e2e.py",
+        "web/ai_engines_v412.py",
         "web/ai_v221_component/index.html",
         "web/creator_hub_v156_component/index.html",
         "web/direct_upload_server.py",
@@ -1514,6 +1517,7 @@
         "web/legal/privacy.html",
         "web/nginx.conf.template",
         "web/publish_multi_v413.py",
+        "web/semantic_video_v114.py",
         "web/share_v156_component/index.html",
         "web/test_v404_crea_con_ia_simple.py",
         "web/test_v413_publish_multi.py"
