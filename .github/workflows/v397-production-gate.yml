@@ -228,7 +228,11 @@ jobs:
           python -m playwright install --with-deps webkit
           python tests/visual/gsf_visual_check.py
           GSF_BROWSER=webkit python -m unittest discover -s tests -p test_closed_beta_bugfix_pass.py
+          GSF_BROWSER=webkit python -m unittest discover -s tests -p test_alive_continuity_v424.py
           GSF_BROWSER=webkit python -m unittest discover -s tests -p test_social_oauth_v421.py
+          GSF_BROWSER=webkit python -m unittest discover -s tests -p test_source_library_v422.py
+          GSF_BROWSER=webkit python -m unittest discover -s tests -p test_ai_failure_recovery_v425.py
+          GSF_BROWSER=webkit python -m unittest discover -s tests -p test_publish_recovery_v426.py
 
       - name: Upload mobile WebKit evidence
         if: always()

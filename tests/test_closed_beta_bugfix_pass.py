@@ -155,7 +155,7 @@ class HubColdGeometry(unittest.TestCase):
                 child.locator('#profileNameInput').wait_for();child.locator('#profileNameInput').evaluate("e=>new Promise((resolve,reject)=>{setTimeout(()=>reject(new Error('State did not settle')),10000);const tick=()=>e.value==='Beta creator'?resolve():setTimeout(tick,10);tick()})")
                 self.assertTrue(child.locator('#profileAvatar').evaluate("e=>e.classList.contains('has-photo')"))
                 fail[0]=True;child.locator('#profileNameInput').fill('Unsaved');child.locator('#saveProfileBtn').click()
-                child.locator('#toastLocal').filter(has_text='Salvataggio non disponibile').wait_for()
+                page.locator('.gsf-site-toast[data-kind="error"]').filter(has_text='Salvataggio non disponibile').wait_for()
                 self.assertEqual(child.locator('#profileNameInput').input_value(),'Unsaved')
                 self.assertEqual(state['account']['display_name'],'Beta creator')
             finally:browser.close()

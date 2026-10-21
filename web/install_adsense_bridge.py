@@ -35,12 +35,21 @@ for name,selector in selectors.items():
     scripts=re.findall(r"<script[^>]*>([\s\S]*?)</script>",controllers[name])
     if not scripts:raise RuntimeError("empty parent controller: "+name)
     mounts.append("{selector:"+repr(selector)+",node:null,mount:()=>{"+"\n".join(scripts)+"}}")
+# Generate the initial client from its sole canonical source, without importing
+# the companion server or installing a second notification implementation.
+client_tree=ast.parse((Path(__file__).parent/"direct_upload_server.py").read_text(encoding="utf-8"))
+client_function=next(node for node in client_tree.body if isinstance(node,ast.FunctionDef) and node.name=="_push_client_bytes")
+client_namespace={}
+exec(compile(ast.Module(body=[client_function],type_ignores=[]),"<canonical-notification-client>","exec"),client_namespace)
+notification_client=client_namespace["_push_client_bytes"]().decode("utf-8").replace("</script","<\\/script")
 bootstrap="""
 (() => {
  const controllers=[CONTROLLERS];
  const surfaces=SURFACE_MARKUP;
+ const installNotifications=()=>{NOTIFICATION_CLIENT};
  const mount=()=>{
    if(!document.body)return;
+   if(!window.GSFNotify)installNotifications();
    for(const [id,html] of surfaces){
      if(!document.getElementById(id))document.body.insertAdjacentHTML("beforeend",html);
    }
@@ -52,7 +61,7 @@ bootstrap="""
  new MutationObserver(mount).observe(document.documentElement,{childList:true,subtree:true});
  mount();
 })();
-""".replace("CONTROLLERS",",\n".join(mounts)).replace("SURFACE_MARKUP",json.dumps([[surface_ids[name],html] for name,html in surfaces.items()]))
+""".replace("CONTROLLERS",",\n".join(mounts)).replace("SURFACE_MARKUP",json.dumps([[surface_ids[name],html] for name,html in surfaces.items()])).replace("NOTIFICATION_CLIENT",notification_client)
 navigation_script='<script '+navigation_marker+'>'+navigation+bootstrap+'</script>'
 if navigation_marker in s:
     start=s.index('<script '+navigation_marker)

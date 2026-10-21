@@ -304,6 +304,8 @@ a.row{color:inherit;text-decoration:none}
 .empty:has(.na-cta){position:relative}
 .empty:has(.na-cta)::after{content:"";position:absolute;left:36px;top:36px;width:0;height:0;border-left:13px solid #79D2FF;border-top:8px solid transparent;border-bottom:8px solid transparent;filter:drop-shadow(0 0 6px rgba(121,210,255,.8))}
 /* GSF_NIGHT_ARENA_PAGE:END */
+
+#sourceLibrary{display:grid;gap:12px;margin-top:12px;min-width:0}#sourceLibrary>.card{padding:14px}.sourceCard{display:grid;gap:8px;min-width:0;overflow:hidden}.sourceThumb{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px}.sourceCard small{color:var(--muted,#9fb7ca)}[data-source-provider][aria-pressed=true],[data-source-folder][aria-pressed=true]{border-color:#79d2ff;color:#eaf6ff}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&amp;family=Nunito+Sans:opsz,wght@6..12,400..800&amp;display=swap" data-gsf-night-arena-font>
 </head>
@@ -331,7 +333,7 @@ a.row{color:inherit;text-decoration:none}
      <div class="counter"><span>Pubblicati</span><b id="countPublished">0</b></div>
     </div>
     <div class="card rows liveRow">
-     <button class="row" type="button" data-open="live"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="2.2"/><path d="M8 8.5a5 5 0 0 0 0 7M16 8.5a5 5 0 0 1 0 7M5.2 5.8a9 9 0 0 0 0 12.4M18.8 5.8a9 9 0 0 1 0 12.4"/></svg></span><span class="rtext"><b>Live e VOD</b><small>In arrivo</small></span><span class="chev">›</span></button>
+     <button class="row" type="button" data-open="live"><span class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="2.2"/><path d="M8 8.5a5 5 0 0 0 0 7M16 8.5a5 5 0 0 1 0 7M5.2 5.8a9 9 0 0 0 0 12.4M18.8 5.8a9 9 0 0 1 0 12.4"/></svg></span><span class="rtext"><b>Live e VOD</b><small>Upload, Twitch e Clip</small></span><span class="chev">›</span></button>
     </div>
    </div>
    <div class="dashMain">
@@ -350,10 +352,12 @@ a.row{color:inherit;text-decoration:none}
   <div class="grid" id="projectGrid"></div>
  </section>
 
- <!-- Live e VOD (empty for now) -->
- <section class="view" data-view="live" aria-label="Live e VOD">
+ <!-- Sorgenti: one catalog, existing upload/AI/Editor pipeline -->
+ <section class="view" data-view="live" aria-label="Live e VOD / Sorgenti">
   <div class="detailHead"><button class="backBtn" type="button" data-back aria-label="Torna al Creator Hub">‹</button><h1>Live e VOD</h1></div>
-  <div class="card liveEmpty"><div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="2.2"/><path d="M8 8.5a5 5 0 0 0 0 7M16 8.5a5 5 0 0 1 0 7M5.2 5.8a9 9 0 0 0 0 12.4M18.8 5.8a9 9 0 0 1 0 12.4"/></svg></div><b>In arrivo</b><p>Qui troverai le tue dirette e i VOD da trasformare in Shorts.</p></div>
+  <div class="sheetActions" aria-label="Sorgente"><button class="btn ghost" data-source-provider="upload">Upload</button><button class="btn ghost" data-source-provider="twitch">Twitch</button><button class="btn ghost" data-source-provider="youtube">YouTube</button></div>
+  <div class="sheetActions" id="sourceFolders" aria-label="Contenuti Twitch"><button class="btn ghost" data-source-folder="live">Live</button><button class="btn ghost" data-source-folder="videos">VOD</button><button class="btn ghost" data-source-folder="clips">Clip</button><button class="btn ghost" data-source-folder="imported">Importati</button></div>
+  <div id="sourceLibrary" aria-live="polite"></div>
  </section>
 
  <!-- Impostazioni -->
@@ -554,7 +558,7 @@ a.row{color:inherit;text-decoration:none}
         return Object.assign({}, s, { mode: calmMode(s, now) });
     }
     s.last = String(type);
-    s.seq = (Number(s.seq) || 0) + 1;
+    s.seq = (Number(prev && prev.seq) || 0) + 1;
     s.updated = now;
     s.mode = calmMode(s, now);
     return s;
@@ -764,10 +768,12 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     clearTimeout(celebrateTimer);
     if (visible() && state.celebrate_until > Date.now()) celebrateTimer = later(() => { state.mode = calmMode(state, Date.now()); paint(); renderBubble(); }, state.celebrate_until - Date.now() + 30);
     const fresh = state.seq !== (prev && prev.seq);
+    let notificationHandled = false;
+    if (fresh) try { const notify = W.top.GSFNotify || W.GSFNotify; if (notify && notify.alive) notificationHandled = notify.alive(state); } catch (_e) {}
     if (fresh && mounted && visible()) {
       if (state.last && SPOKEN.has(state.last) && state.seq !== lastSpokenSeq) {
         lastSpokenSeq = state.seq;
-        say(state.message, { anchor: page.voiceAnchor });
+        if (!notificationHandled) say(state.message, { anchor: page.voiceAnchor });
         beat();
         if (state.last === "render.completed" || (state.last === "publish.completed" && state.published)) { celebrate(); haptic([14, 50, 22]); }
         else if (/\.started$/.test(state.last) && !fromRemote) haptic(10);
@@ -921,7 +927,9 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   let bubbleGo = null, bubbleKind = "";
   function renderBubble() {
     if (!bubbleEl) return;
-    const m = mounted && visible() ? bubbleModel() : null;
+    let shared = false;
+    try { shared = !!(W.top.GSFNotify && W.top.GSFNotify.alive); } catch (_e) {}
+    const m = mounted && visible() && !shared ? bubbleModel() : null;
     bubbleGo = m ? m.go : null;
     if (!m) { bubbleEl.classList.remove("on", "spin", "done"); bubbleEl.tabIndex = -1; bubbleKind = ""; return; }
     const ins = insets();
@@ -1166,9 +1174,11 @@ let oauthNavigating=false;
   else if(["profile","social","subscription","account"].includes(v))v="settings";
   if(!["dashboard","projects","live","settings"].includes(v))v="dashboard";
   current=v;
+  if(v!=='live')sourceAbort?.abort();
   $$("[data-view]").forEach(s=>s.classList.toggle("active",s.dataset.view===v));
   if(v==="projects")renderProjects();
   closeSheet();
+  if(v==='live')loadSources();
   hub.scrollTop=0;fitHub();
   try{window.GSFAlive&&window.GSFAlive.refresh()}catch(_e){}
  }
@@ -1186,7 +1196,6 @@ let oauthNavigating=false;
    btn.disabled=false;
    btn.className=yes?"btn danger":"btn";
   });
-  $$("[data-twitch-content]").forEach(b=>b.hidden=!socialIsOn("twitch"));
   const n=PLATFORMS.filter(p=>socialIsOn(p.key)).length;
   const so=$("#profileOverviewSocial");if(so)so.textContent=n+" di "+PLATFORMS.length;
  }
@@ -1196,16 +1205,14 @@ let oauthNavigating=false;
   const row=$("#socialRow");
   if(row)row.innerHTML=PLATFORMS.map(p=>'<button class="socialDot" type="button" data-social="'+p.key+'" aria-label="'+p.name+'">'+logo(p)+'<span class="tick">'+TICK+'</span></button>').join("");
   const list=$("#socialSettings");
-  if(list)list.innerHTML=PLATFORMS.map(p=>'<div class="row socialCard" data-platform="'+p.key+'"><span class="logoBox">'+logo(p)+'</span><span class="rtext"><b>'+p.name+'</b><small class="socialState">…</small></span><button class="btn" type="button" data-connect="'+p.key+'">Collega</button>'+ (p.key==="twitch"?'<button class="btn ghost" type="button" data-twitch-content hidden>Contenuti</button>':'')+'</div>').join("");
+  if(list)list.innerHTML=PLATFORMS.map(p=>'<div class="row socialCard" data-platform="'+p.key+'"><span class="logoBox">'+logo(p)+'</span><span class="rtext"><b>'+p.name+'</b><small class="socialState">…</small></span><button class="btn" type="button" data-connect="'+p.key+'">Collega</button></div>').join("");
   $$(".socialDot").forEach(b=>b.onclick=()=>{
    const key=b.dataset.social;
    if(!socialIsOn(key)){connectSocial(key);return}
-   if(key==="twitch"){openTwitchContent();return}
    openView("settings");
    setTimeout(()=>{const c=document.querySelector('.socialCard[data-platform="'+key+'"]');if(c){c.scrollIntoView({block:"center"});c.animate&&c.animate([{background:"#EEF9FF"},{background:"transparent"}],{duration:900})}},30);
   });
   $$("[data-connect]").forEach(b=>b.onclick=()=>connectSocial(b.dataset.connect));
-  $$("[data-twitch-content]").forEach(b=>b.onclick=()=>openTwitchContent());
  }
 
  function cardHtml(kind,item){
@@ -1308,6 +1315,7 @@ let oauthNavigating=false;
   setSocialVisuals();
   renderStrips();
   if(current==="projects")renderProjects();
+  if(current==="live")loadSources();
   syncNotify();
  }
 
@@ -1421,20 +1429,56 @@ let oauthNavigating=false;
   }catch(e){toast("Bozza non disponibile","error")}
  }
  let twitchImportAbort=null;
- async function openTwitchContent(kind="clips",cursor=""){
-  openSheet('<h3>Twitch</h3><div class="sheetActions"><button class="btn ghost" data-tw-tab="clips">Clip</button><button class="btn ghost" data-tw-tab="videos">VOD</button><button class="btn ghost" data-tw-close>Chiudi</button></div><div id="twitchItems"><p>Caricamento contenuti…</p></div>');
-  sheetBox.querySelector('[data-tw-close]').onclick=closeSheet;
-  sheetBox.querySelectorAll('[data-tw-tab]').forEach(b=>b.onclick=()=>openTwitchContent(b.dataset.twTab));
-  const items=sheetBox.querySelector('#twitchItems');
-  try{
-   const response=await fetch('/social-connect/twitch/content?type='+encodeURIComponent(kind)+'&after='+encodeURIComponent(cursor),{cache:'no-store',credentials:'same-origin'}),data=await response.json();
-   if(!response.ok||!data.ok)throw new Error(data.error||'Contenuti Twitch non disponibili.');
-   if(!items.isConnected)return;
-   items.innerHTML=(data.data||[]).map(row=>'<div class="row"><span class="rtext"><b>'+esc(row.title||row.id)+'</b>'+(!row.importable?'<small>'+esc(row.import_reason)+'</small>':'')+'</span>'+(row.importable?'<button class="btn" data-tw-import="'+esc(row.id)+'">Importa</button>':'<a class="btn ghost" target="_blank" rel="noopener noreferrer" href="https://www.twitch.tv/videos/'+encodeURIComponent(row.id)+'">Apri Twitch</a>')+'</div>').join('')||'<p>Nessun contenuto disponibile.</p>';
-   items.querySelectorAll('[data-tw-import]').forEach(b=>b.onclick=()=>importTwitchClip(b.dataset.twImport));
-   if(data.cursor){const more=document.createElement('button');more.className='btn ghost';more.textContent='Altri contenuti';more.onclick=()=>openTwitchContent(kind,data.cursor);items.append(more)}
-  }catch(error){if(items.isConnected)items.textContent=String(error.message||'Twitch non disponibile.')}
+ let sourceProvider='twitch',sourceFolder='clips',sourceAbort=null;
+ try{const saved=JSON.parse(sessionStorage.getItem('gsf-source-view')||'{}');if(['upload','twitch','youtube'].includes(saved.provider))sourceProvider=saved.provider;if(['live','videos','clips','imported'].includes(saved.folder))sourceFolder=saved.folder}catch(_e){}
+ function openSources(provider='twitch',folder='clips'){
+  sourceProvider=provider;sourceFolder=folder;openView('live');
  }
+ async function loadSources(cursor=''){
+  try{sessionStorage.setItem('gsf-source-view',JSON.stringify({provider:sourceProvider,folder:sourceFolder}))}catch(_e){}
+  sourceAbort?.abort();const controller=sourceAbort=new AbortController(),signal=controller.signal;
+  const host=$('#sourceLibrary');if(!host)return;
+  const folders=$('#sourceFolders');folders.hidden=sourceProvider!=='twitch';
+  $$('[data-source-provider]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sourceProvider===sourceProvider)));
+  $$('[data-source-folder]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sourceFolder===sourceFolder)));
+  if(sourceProvider==='youtube'){host.innerHTML='<p>YouTube: sorgenti non ancora disponibili. Il collegamento e la pubblicazione esistenti restano nelle Impostazioni.</p>';return}
+  if(sourceProvider==='twitch'&&sourceFolder!=='imported'&&!socialIsOn('twitch')){host.innerHTML='<div class="card"><b>Twitch non collegato</b><p>Collega il tuo canale per vedere Live, VOD e Clip.</p><button class="btn" data-source-connect>Collega Twitch</button></div>';host.querySelector('[data-source-connect]').onclick=()=>connectSocial('twitch');return}
+  host.innerHTML='<p role="status">Caricamento libreria…</p>';
+  const imported=sourceProvider==='upload'||sourceFolder==='imported';
+  const url=imported?'/creator-hub/sources?provider='+sourceProvider+'&after='+encodeURIComponent(cursor):'/social-connect/twitch/content?type='+sourceFolder+'&after='+encodeURIComponent(cursor);
+  try{
+   const response=await fetch(url,{cache:'no-store',credentials:'same-origin',signal}),data=await response.json();
+   if(!response.ok||!data.ok){const error=new Error(data.error||'Libreria non disponibile.');error.status=response.status;throw error}if(signal.aborted||current!=='live')return;
+   const status=sourceProvider==='twitch'?'<div class="row"><span class="rtext">'+(socialIsOn('twitch')?'Twitch collegato':'Twitch scollegato')+'</span><button class="btn ghost" data-source-disconnect>'+(socialIsOn('twitch')?'Scollega':'Collega')+'</button></div>':'';
+   host.innerHTML=status+(data.data||[]).map(row=>{
+    const identity=row.source_id||row.id;
+    const metadata=[row.game_name,typeof row.duration==='number'?Math.round(row.duration)+' s':'',row.is_live?'In diretta':'',row.imported?'Già importato':''].filter(Boolean).map(esc).join(' · ');
+    const actions=row.can_analyze?'<button class="btn" data-source-open="'+esc(identity)+'">Crea con IA</button><button class="btn ghost" data-source-editor="'+esc(identity)+'">Editor</button>':row.can_import?'<button class="btn" data-source-import="'+esc(row.external_id||row.id)+'">Importa clip</button>':'';
+    return '<article class="card sourceCard">'+(row.thumbnail?'<img class="sourceThumb" loading="lazy" src="'+esc(row.thumbnail)+'" alt="">':'')+'<b>'+esc(row.title||'Gameplay')+'</b><small>'+metadata+'</small>'+(!row.can_import&&!row.can_analyze?'<p>'+esc(row.import_reason||'Video non disponibile.')+'</p>':'')+'<div class="sheetActions">'+actions+(row.url?'<a class="btn ghost" href="'+esc(row.url)+'" target="_blank" rel="noopener noreferrer">Apri Twitch</a>':'')+'</div></article>';
+   }).join('');
+   if(!(data.data||[]).length)host.insertAdjacentHTML('beforeend','<p>'+ (sourceFolder==='live'?'Il canale non è in diretta.':'Nessun contenuto in questa cartella.')+'</p>');
+   host.querySelector('[data-source-disconnect]')?.addEventListener('click',()=>connectSocial('twitch'));
+   host.querySelectorAll('[data-source-import]').forEach(b=>b.onclick=()=>importTwitchClip(b.dataset.sourceImport));
+   host.querySelectorAll('[data-source-open]').forEach(b=>b.onclick=()=>activateLibrarySource(b.dataset.sourceOpen,'ai'));
+   host.querySelectorAll('[data-source-editor]').forEach(b=>b.onclick=()=>activateLibrarySource(b.dataset.sourceEditor,'editor'));
+   if(data.cursor){const more=document.createElement('button');more.className='btn ghost';more.textContent='Altri contenuti';more.onclick=()=>loadSources(data.cursor);host.append(more)}
+  }catch(error){if(error.name!=='AbortError'&&!signal.aborted){host.textContent=String(error.message||'Libreria non disponibile.');const retry=document.createElement('button');retry.className='btn ghost';retry.textContent='Riprova';retry.onclick=()=>loadSources(cursor);host.append(retry);if(sourceProvider==='twitch'&&[401,403].includes(error.status)){const account=document.createElement('button');account.className='btn ghost';account.dataset.sourceAccount='';account.textContent='Gestisci account Twitch';account.onclick=()=>{openView('settings');loadState()};host.append(account)}}}
+ }
+ async function activateLibrarySource(identity,target){
+  if(twitchImportAbort)return;
+  const controller=twitchImportAbort=new AbortController(),signal=controller.signal;let epoch=null;try{epoch=parent.GSFNavigation.snapshot().epoch}catch(_e){}
+  try{
+   const job=await postJson('/creator-hub/sources/activate',{source_id:identity,target});
+   let ready=!!job.ready;const deadline=Date.now()+180000;
+   while(!ready&&Date.now()<deadline){if(signal.aborted)throw new DOMException('Aborted','AbortError');const r=await fetch('/direct-upload/bucket/status?upload_id='+encodeURIComponent(job.upload_id),{cache:'no-store',credentials:'same-origin',signal}),j=await r.json();if(!r.ok||j.error)throw new Error(j.error||'Sorgente non disponibile.');ready=!!j.ready;if(!ready)await new Promise(resolve=>setTimeout(resolve,1000))}
+   if(!ready)throw new Error('Preparazione non ancora confermata. Il progetto precedente resta disponibile.');
+   let stillHere=current==='live';try{const route=parent.GSFNavigation.snapshot();stillHere=stillHere&&route.target==='hub'&&route.epoch===epoch}catch(_e){}
+   if(stillHere&&!document.hidden)top.location.href='/?gsf_page='+target;else toast('Sorgente pronta nella Libreria.');
+  }catch(error){if(error.name!=='AbortError')toast(String(error.message||'Sorgente non disponibile.'),'error')}
+  finally{if(twitchImportAbort===controller)twitchImportAbort=null}
+ }
+
+ function openTwitchContent(kind='clips'){openSources('twitch',kind)}
  async function importTwitchClip(clipId){
   if(twitchImportAbort)return;
   const controller=twitchImportAbort=new AbortController(),signal=controller.signal;
@@ -1443,16 +1487,20 @@ let oauthNavigating=false;
   const progress=sheetBox.querySelector('#twitchImportStatus');
   try{parent.postMessage({type:'gsf-upload',state:'running'},location.origin)}catch(_e){}
   try{
+   window.GSFAlive?.emit('upload.started');
    const job=await postJson('/social-connect/twitch/import',{type:'clips',clip_id:clipId});
+   let sharedStatus=null;try{sharedStatus=parent.GSFNotify?.trackSource(job)}catch(_e){}
    const deadline=Date.now()+180000;
    while(Date.now()<deadline){
     if(signal.aborted)throw new DOMException('Aborted','AbortError');
-    const response=await fetch('/direct-upload/bucket/status?upload_id='+encodeURIComponent(job.upload_id),{cache:'no-store',credentials:'same-origin',signal}),status=await response.json();
-    if(!response.ok)throw new Error(status.error||'Importazione non riuscita.');
+    const response=sharedStatus?null:await fetch('/direct-upload/bucket/status?upload_id='+encodeURIComponent(job.upload_id),{cache:'no-store',credentials:'same-origin',signal}),status=sharedStatus?await sharedStatus:await response.json();
+    if((response&&!response.ok)||status.error)throw new Error(status.error||'Importazione non riuscita.');
     if(status.ready){
      try{parent.postMessage({type:'gsf-upload',state:'done'},location.origin)}catch(_e){}
+     window.GSFAlive?.emit('upload.completed');
+     try{parent.GSFNotify?.update('alive:upload',{title:'Clip Twitch importata',kind:'success'})}catch(_e){}
      if(progress.isConnected)progress.textContent='Clip importata. Puoi creare lo Short con IA.';
-     let stillHere=true;try{const route=parent.GSFNavigation.snapshot();stillHere=route.target==='hub'&&route.epoch===epoch}catch(_e){}
+     let stillHere=current==='live';try{const route=parent.GSFNavigation.snapshot();stillHere=stillHere&&route.target==='hub'&&route.epoch===epoch}catch(_e){}
      if(stillHere&&!document.hidden)top.location.href='/?gsf_page=ai';
      else toast('Clip Twitch importata: apri Crea con IA.');
      return;
@@ -1462,10 +1510,12 @@ let oauthNavigating=false;
    throw new Error('Importazione ancora da confermare. Controlla Home prima di riprovare.');
   }catch(error){
    try{parent.postMessage({type:'gsf-upload',state:'error'},location.origin)}catch(_e){}
-   if(error.name!=='AbortError'&&progress.isConnected)progress.textContent=String(error.message||'Importazione non riuscita.');
+   if(error.name!=='AbortError'){window.GSFAlive?.emit('failure',{job:'upload',message:'Importazione Twitch non riuscita. Il progetto precedente è conservato.'});if(progress.isConnected)progress.textContent=String(error.message||'Importazione non riuscita.');}
   }finally{if(twitchImportAbort===controller)twitchImportAbort=null}
  }
- window.addEventListener('pagehide',()=>twitchImportAbort?.abort());
+ window.addEventListener('pagehide',()=>{twitchImportAbort?.abort();sourceAbort?.abort()});
+ $$('[data-source-provider]').forEach(b=>b.onclick=()=>{sourceProvider=b.dataset.sourceProvider;loadSources()});
+ $$('[data-source-folder]').forEach(b=>b.onclick=()=>{sourceFolder=b.dataset.sourceFolder;loadSources()});
 
  async function disconnectSocial(key){
   try{
@@ -1480,6 +1530,10 @@ let oauthNavigating=false;
    sheetBox.querySelector('[data-m="ok"]').onclick=()=>{closeSheet();disconnectSocial(key)};
    return;
   }
+  try{sessionStorage.removeItem('gsf-source-oauth-return')}catch(_e){}
+  if(key==='twitch'&&current==='live')try{
+   sessionStorage.setItem('gsf-source-oauth-return',JSON.stringify({provider:'twitch',folder:sourceFolder,created:Date.now()}));
+  }catch(_e){}
   oauthNavigating=true;
   if(key==="youtube")top.location.href="/social-connect/youtube/start";
   else if(key==="tiktok")top.location.href="/social-connect/tiktok/start";

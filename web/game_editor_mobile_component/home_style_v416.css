@@ -185,7 +185,6 @@
 .v414-transport input[type="range"] { accent-color: var(--gsf-primary); }
 
 .v414-timeline {
-  height: 58px;
   border-radius: 20px;
 }
 .v414-timeline .timeline-heading strong { color: var(--v416-ink); font-size: 9px; font-weight: 900; }

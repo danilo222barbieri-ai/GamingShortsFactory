@@ -11,12 +11,16 @@ class Bucket:
     def __init__(self):self.objects={};self.fail=False
     def put_object(self,**kw):
         if self.fail:raise OSError('storage unavailable')
+        current=self.objects.get(kw['Key'])
+        etag='"'+hashlib.md5(current).hexdigest()+'"' if current is not None else None
+        if (kw.get('IfNoneMatch')=='*' and current is not None) or ('IfMatch' in kw and kw['IfMatch']!=etag):
+            error=OSError('conditional conflict');error.response={'Error':{'Code':'PreconditionFailed'}};raise error
         self.objects[kw['Key']]=kw['Body']
     def get_object(self,**kw):
         if self.fail:raise OSError('storage unavailable')
         if kw['Key'] not in self.objects:
             e=FileNotFoundError();e.response={'Error':{'Code':'NoSuchKey'}};raise e
-        return {'Body':io.BytesIO(self.objects[kw['Key']])}
+        return {'Body':io.BytesIO(self.objects[kw['Key']]),'ETag':'"'+hashlib.md5(self.objects[kw['Key']]).hexdigest()+'"'}
     def delete_object(self,**kw):
         if self.fail:raise OSError('storage unavailable')
         self.objects.pop(kw['Key'],None)
@@ -317,6 +321,23 @@ class TwitchOAuth(unittest.TestCase):
         self.assertTrue('_twitch_oauth_start' in self.ns,'Twitch OAuth is not implemented')
         self.ns['_oauth_json']=self.api;reply=Reply();self.ns['_twitch_oauth_start'](reply,'browserA');q=urllib.parse.parse_qs(urllib.parse.urlsplit(reply.response['Location']).query)
         callback=Reply();self.ns['_twitch_oauth_callback'](callback,{'state':q['state'],'code':['private-code']});self.assertEqual(callback.status,302);return q
+    def test_content_retry_preserves_reconnect_error(self):
+        def access(sid,force_validate=False):
+            if force_validate:raise social421.TwitchError("Ricollega Twitch.",401)
+            return {'access_token':'private-access'}
+        self.ns['_twitch_access']=access
+        self.ns['_oauth_json']=lambda *a,**kw:(_ for _ in ()).throw(urllib.error.HTTPError('https://api.twitch.tv/helix/clips',401,'provider private details',{},None))
+        with self.assertRaises(social421.TwitchError) as error:self.ns['_twitch_api']('browserA','clips')
+        self.assertEqual(error.exception.status,401)
+        self.assertIn('Ricollega',str(error.exception))
+    def test_content_errors_keep_actionable_status_without_provider_details(self):
+        self.ns['_twitch_access']=lambda *a,**kw:{'access_token':'private-access'}
+        for status,expected in [(403,403),(429,429),(500,503),(503,503)]:
+            with self.subTest(status=status):
+                self.ns['_oauth_json']=lambda *a,**kw:(_ for _ in ()).throw(urllib.error.HTTPError('https://api.twitch.tv/helix/clips',status,'private-access',{},None))
+                with self.assertRaises(social421.TwitchError) as error:self.ns['_twitch_api']('browserA','clips')
+                self.assertEqual(error.exception.status,expected)
+                self.assertNotIn('private-access',str(error.exception))
     def test_code_exchange_validation_and_identity_are_bound_to_session(self):
         q=self.connected();self.assertEqual(q['redirect_uri'],['https://gsf.test/auth/twitch/callback']);self.assertEqual(q['scope'],['channel:manage:clips'])
         self.assertEqual(self.ns['_twitch_access']('browserA')['user_id'],'42')
@@ -414,7 +435,40 @@ class PublicOAuthRouting(unittest.TestCase):
             with response:self.assertEqual(response.status,400)
 
 class TwitchHubBrowser(unittest.TestCase):
-    def test_connected_twitch_clip_import_and_vod_limit_use_existing_hub_sheet(self):
+    def test_import_completion_keeps_the_current_hub_subview(self):
+        if not os.environ.get('GSF_BROWSER'):self.skipTest('Runs in the blocking real WebKit gate')
+        from playwright.sync_api import sync_playwright
+        import shutil
+        html=(ROOT/'web/creator_hub_v156_component/index.html').read_text();pending=[];errors=[]
+        with sync_playwright() as p:
+            engine=getattr(p,os.environ['GSF_BROWSER']);options={'executable_path':shutil.which('chromium'),'args':['--no-sandbox']} if engine.name=='chromium' else {}
+            browser=engine.launch(**options)
+            try:
+                page=browser.new_page(viewport={'width':390,'height':844});page.on('pageerror',lambda error:errors.append(str(error)))
+                page.add_init_script("window.GSFNavigation={snapshot:()=>({target:'hub',epoch:1})};")
+                def route(r):
+                    url=urllib.parse.urlsplit(r.request.url)
+                    if url.path=='/':r.fulfill(content_type='text/html',body='<p>AI route</p>' if url.query else html)
+                    elif url.path=='/creator-hub/state':r.fulfill(json={'ok':True,'csrf_token':'csrf','account':{'display_name':'Creator'},'social':{'twitch':True},'drafts':[],'shorts':[]})
+                    elif url.path=='/social-connect/twitch/content':r.fulfill(json={'ok':True,'data':[{'id':'clip1','title':'My Clip','can_import':True,'external_id':'clip1'}]})
+                    elif url.path=='/social-connect/twitch/import':r.fulfill(status=202,json={'ok':True,'upload_id':'import1'})
+                    elif url.path=='/direct-upload/bucket/status':pending.append(r)
+                    else:r.fulfill(json={'ok':True})
+                page.route('**/*',route);page.goto('http://gsf.test/')
+                page.locator('.socialDot[data-social="twitch"].connected').wait_for();page.locator('[data-open="live"]').click()
+                with page.expect_request('**/direct-upload/bucket/status?upload_id=import1'):
+                    page.locator('[data-source-import="clip1"]').click()
+                page.evaluate("GSFHubV304.openView('settings')")
+                page.locator('.view[data-view="settings"].active').wait_for()
+                self.assertEqual(len(pending),1);pending[0].fulfill(json={'ok':True,'ready':True})
+                page.wait_for_function("document.querySelector('#toastLocal')?.textContent.includes('Clip Twitch importata') || location.search.includes('gsf_page=ai')")
+                self.assertEqual(page.url,'http://gsf.test/','Import completion must not redirect away from account settings')
+                self.assertTrue(page.locator('.view[data-view="settings"].active').is_visible())
+                self.assertIn('Clip Twitch importata',page.locator('#toastLocal').inner_text())
+                self.assertFalse(errors,errors)
+            finally:browser.close()
+
+    def test_connected_twitch_clip_import_and_vod_limit_use_source_library(self):
         if not os.environ.get('GSF_BROWSER'):self.skipTest('Runs in the blocking real WebKit gate')
         from playwright.sync_api import sync_playwright
         import shutil
@@ -430,14 +484,14 @@ class TwitchHubBrowser(unittest.TestCase):
                     if url.path=='/':r.fulfill(content_type='text/html',body='<p>Imported into existing AI route</p>' if url.query else html)
                     elif url.path=='/creator-hub/state':r.fulfill(json={'ok':True,'csrf_token':'csrf','account':{'display_name':'Creator'},'social':{'twitch':True},'drafts':[],'shorts':[]})
                     elif url.path=='/social-connect/twitch/content':
-                        vod='type=videos' in url.query;r.fulfill(json={'ok':True,'data':[{'id':'vod1' if vod else 'clip1','title':'My VOD' if vod else 'My Clip','importable':not vod,'import_reason':'Le API ufficiali Twitch non espongono il file VOD.' if vod else ''}]})
+                        vod='type=videos' in url.query;r.fulfill(json={'ok':True,'data':[{'id':'vod1' if vod else 'clip1','title':'My VOD' if vod else 'My Clip','importable':not vod,'can_import':not vod,'external_id':'clip1' if not vod else 'vod1','import_reason':'Le API ufficiali Twitch non espongono il file VOD.' if vod else ''}]})
                     elif url.path=='/social-connect/twitch/import':posts.append(r.request.post_data_json);self.assertEqual(r.request.headers.get('x-gsf-csrf'),'csrf');r.fulfill(status=202,json={'ok':True,'upload_id':'import1'})
                     elif url.path=='/direct-upload/bucket/status':r.fulfill(json={'ok':True,'ready':True})
                     else:r.fulfill(json={'ok':True})
                 page.route('**/*',route);page.goto('http://gsf.test/')
-                page.locator('.socialDot[data-social="twitch"].connected').wait_for();page.locator('.socialDot[data-social="twitch"]').click()
-                page.locator('[data-tw-tab="videos"]').click();page.get_by_text('My VOD',exact=True).wait_for();self.assertEqual(page.locator('[data-tw-import]').count(),0)
-                page.locator('[data-tw-tab="clips"]').click();page.locator('[data-tw-import="clip1"]').click();page.wait_for_url('**/?gsf_page=ai')
+                page.locator('.socialDot[data-social="twitch"].connected').wait_for();page.locator('[data-open="live"]').click()
+                page.locator('[data-source-folder="videos"]').click();page.get_by_text('My VOD',exact=True).wait_for();self.assertEqual(page.locator('[data-source-import]').count(),0)
+                page.locator('[data-source-folder="clips"]').click();page.locator('[data-source-import="clip1"]').click();page.wait_for_url('**/?gsf_page=ai')
                 self.assertEqual(posts,[{'type':'clips','clip_id':'clip1'}]);self.assertFalse(errors,errors)
             finally:browser.close()
 

@@ -136,3 +136,10 @@ test("restored legacy jobs retain their recent real progress", () => {
   assert.equal(core.expire(legacy,T0+11*60000).active_job,"upload");
   assert.equal(core.expire(legacy,T0+25*60000).active_job,null);
 });
+
+test("clearing a video keeps the event sequence monotonic", () => {
+  const started = core.reduce(core.BASE, "ai.started", {}, T0);
+  const cleared = core.reduce(started, "video.cleared", {}, T0 + 1);
+  assert.ok(cleared.seq > started.seq);
+  assert.equal(cleared.active_job, null);
+});

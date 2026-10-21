@@ -384,6 +384,9 @@ def _write_json_atomic(path,payload):
     tmp=Path(str(path)+".tmp")
     tmp.write_text(json.dumps(payload,ensure_ascii=False),encoding="utf-8")
     os.replace(tmp,path)
+    if Path(path).name==".direct_upload_ready.json":
+        try:_source_register_marker(Path(path).parent.parent.name,payload)
+        except Exception as exc:print("GSF_SOURCE_CATALOG_REGISTER_WARN",type(exc).__name__,flush=True)
 
 def _safe_id(value):
     value=str(value or "")
@@ -600,72 +603,123 @@ def _push_client_bytes():
   const disable=async()=>{const token=++intent;if(!await setPreference(false,token))return false;try{const reg=await navigator.serviceWorker.getRegistration("/");const sub=reg&&await reg.pushManager.getSubscription();if(sub)await sub.unsubscribe()}catch(_e){}return true};
 
 
-  const ensureToastUi=()=>{
-    let host=document.getElementById("gsf-site-toast-stack");
-    if(host)return host;
-    const style=document.createElement("style");
-    style.id="gsf-site-toast-style";
-    style.textContent="#gsf-site-toast-stack{position:fixed;right:14px;top:calc(env(safe-area-inset-top,0px) + 56px);z-index:2147483640;width:min(300px,calc(100vw - 28px));display:flex;flex-direction:column;align-items:flex-end;gap:7px;pointer-events:none;font-family:'Avenir Next','SF Pro Display','SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}.gsf-site-toast{position:relative;display:grid;grid-template-columns:34px minmax(0,1fr) 20px;gap:8px;align-items:center;width:min(286px,calc(100vw - 28px));padding:8px 8px 8px 9px;border:1px solid rgba(194,219,236,.82);border-radius:15px;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 9px 24px rgba(37,72,101,.12),inset 0 1px 0 rgba(255,255,255,.88);color:#24475f;pointer-events:auto;overflow:hidden;opacity:0;transform:translateY(8px) scale(.985);transition:opacity .17s ease,transform .17s ease}.gsf-site-toast.gsf-show{opacity:1;transform:translateY(0) scale(1)}.gsf-site-toast.gsf-hide{opacity:0;transform:translateY(6px) scale(.99)}.gsf-site-toast-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg,#eaf8ff,#d7f3ff)}.gsf-site-toast-icon img{width:26px;height:26px;border-radius:8px;display:block}.gsf-site-toast-copy{min-width:0}.gsf-site-toast-title{font-size:12px;font-weight:900;line-height:1.15;color:#315b75;letter-spacing:.003em}.gsf-site-toast-body{margin-top:2px;font-size:10px;font-weight:650;line-height:1.25;color:#71889a;white-space:normal}.gsf-site-toast-close{border:0;background:transparent;color:#91a7b7;width:20px;height:20px;border-radius:7px;font-size:16px;line-height:18px;padding:0;cursor:pointer}.gsf-site-toast-bar{position:absolute;left:0;bottom:0;height:2px;width:100%;background:linear-gradient(90deg,#8bd9f8,#9fe9ce);transform-origin:left center;animation:gsfToastLife 3.2s linear forwards}.gsf-site-toast.gsf-simple{display:flex;align-items:center;justify-content:center;width:auto;min-width:132px;max-width:220px;padding:9px 14px;border-radius:999px}.gsf-site-toast.gsf-simple .gsf-site-toast-icon,.gsf-site-toast.gsf-simple .gsf-site-toast-body,.gsf-site-toast.gsf-simple .gsf-site-toast-close{display:none}.gsf-site-toast.gsf-simple .gsf-site-toast-copy{display:block}.gsf-site-toast.gsf-simple .gsf-site-toast-title{font-size:11px;color:#486b84;text-align:center;white-space:nowrap}.gsf-site-toast.gsf-simple .gsf-site-toast-bar{height:1.5px;opacity:.65}.gsf-site-toast-actions{grid-column:2/4;display:flex;justify-content:flex-end;gap:7px;margin-top:2px}.gsf-site-toast-action{border:1px solid rgba(142,186,220,.42);border-radius:999px;background:rgba(255,255,255,.92);color:#587694;font-size:10px;font-weight:850;padding:7px 10px;cursor:pointer}.gsf-site-toast-action.primary{background:linear-gradient(145deg,#dff3ff,#dff8ee);color:#2f7190;border-color:rgba(112,194,208,.38)}.gsf-site-toast[data-kind=error]{border-color:rgba(235,187,187,.82)}.gsf-site-toast[data-kind=error] .gsf-site-toast-icon{background:linear-gradient(145deg,#fff0f0,#ffdede)}.gsf-site-toast[data-kind=error] .gsf-site-toast-bar{background:linear-gradient(90deg,#ff9d9d,#ffc0c0)}@keyframes gsfToastLife{from{transform:scaleX(1)}to{transform:scaleX(0)}}@media(max-width:600px){#gsf-site-toast-stack{right:10px;bottom:max(74px,calc(env(safe-area-inset-bottom,0px) + 66px));width:calc(100vw - 20px)}.gsf-site-toast{width:min(270px,calc(100vw - 20px));grid-template-columns:32px minmax(0,1fr) 20px;padding:7px 8px}.gsf-site-toast-icon{width:32px;height:32px}.gsf-site-toast-icon img{width:24px;height:24px}.gsf-site-toast.gsf-simple{min-width:118px;max-width:190px;padding:8px 13px}.gsf-site-toast.gsf-simple .gsf-site-toast-title{font-size:10.5px}}";
-    document.head.appendChild(style);
-    host=document.createElement("div");
-    host.id="gsf-site-toast-stack";
-    host.setAttribute("aria-live","polite");
-    document.body.appendChild(host);
-    return host;
-  };
-
-  const seenPersistent=(token)=>{if(!token)return false;try{return localStorage.getItem("gsf-site-notice:"+token)==="1";}catch(e){return false;}};
-  const markPersistent=(token)=>{if(!token)return;try{localStorage.setItem("gsf-site-notice:"+token,"1");}catch(e){}};
-  const showToast=(title,body,kind="success",opts={})=>{
-    const token=String(opts.token||"");
-    if(opts.persistent&&token&&seenPersistent(token))return false;
-    if(opts.persistent&&token)markPersistent(token);
-    const host=ensureToastUi(),el=document.createElement("div");
-    el.className="gsf-site-toast";if(!String(body||"").trim())el.classList.add("gsf-simple");el.dataset.kind=kind;
-    const icon=document.createElement("div");icon.className="gsf-site-toast-icon";
-    const img=document.createElement("img");img.src="/app-icon.png?v=4";img.alt="";icon.appendChild(img);
-    const copy=document.createElement("div");copy.className="gsf-site-toast-copy";
-    const strong=document.createElement("div");strong.className="gsf-site-toast-title";strong.textContent=String(title||"Gaming Shorts Factory");
-    const small=document.createElement("div");small.className="gsf-site-toast-body";small.textContent=String(body||"");copy.append(strong,small);
-    const close=document.createElement("button");close.className="gsf-site-toast-close";close.type="button";close.setAttribute("aria-label","Chiudi");close.textContent="×";
-    const bar=document.createElement("div");bar.className="gsf-site-toast-bar";el.append(icon,copy,close,bar);host.prepend(el);
-    while(host.children.length>3)host.lastElementChild?.remove();
-    const remove=()=>{if(!el.isConnected)return;el.classList.add("gsf-hide");setTimeout(()=>el.remove(),240);};
-    close.onclick=(ev)=>{ev.stopPropagation();remove();};
-    if(typeof opts.onClick==="function"){el.style.cursor="pointer";el.addEventListener("click",(ev)=>{if(ev.target===close)return;opts.onClick();remove();});}
-    requestAnimationFrame(()=>el.classList.add("gsf-show"));setTimeout(remove,String(body||"").trim()?4800:3000);return true;
-  };
-
-  window.GSFPush={enable:()=>subscribe(true),disable,status,ensure:()=>subscribe(false).catch(()=>false)};
-  window.GSFNotify={
-    show:(title,body,kind)=>showToast(title,body,kind||"success"),
-    confirm:(title,body,opts={})=>{
-      const host=ensureToastUi(),el=document.createElement("div");
-      el.className="gsf-site-toast";el.dataset.kind="confirm";
-      const icon=document.createElement("div");icon.className="gsf-site-toast-icon";
-      const img=document.createElement("img");img.src="/app-icon.png?v=4";img.alt="";icon.appendChild(img);
-      const copy=document.createElement("div");copy.className="gsf-site-toast-copy";
-      const strong=document.createElement("div");strong.className="gsf-site-toast-title";strong.textContent=String(title||"Gaming Shorts Factory");
-      const small=document.createElement("div");small.className="gsf-site-toast-body";small.textContent=String(body||"");copy.append(strong,small);
-      const close=document.createElement("button");close.className="gsf-site-toast-close";close.type="button";close.setAttribute("aria-label","Chiudi");close.textContent="×";
-      const actions=document.createElement("div");actions.className="gsf-site-toast-actions";
-      const cancel=document.createElement("button");cancel.className="gsf-site-toast-action";cancel.type="button";cancel.textContent=String(opts.cancelText||"Annulla");
-      const ok=document.createElement("button");ok.className="gsf-site-toast-action primary";ok.type="button";ok.textContent=String(opts.confirmText||"Continua");
-      actions.append(cancel,ok);el.append(icon,copy,close,actions);host.prepend(el);
-      while(host.children.length>3)host.lastElementChild?.remove();
-      const remove=()=>{if(!el.isConnected)return;el.classList.add("gsf-hide");setTimeout(()=>el.remove(),240);};
-      close.onclick=remove;cancel.onclick=remove;
-      ok.onclick=(ev)=>{ev.stopPropagation();try{if(typeof opts.onConfirm==="function")opts.onConfirm();}finally{remove();}};
-      requestAnimationFrame(()=>el.classList.add("gsf-show"));
-      return {close:remove};
+  // One parent-owned evolution of GSFNotify; push consent/storage remain unchanged.
+  let UI=window;try{if(window.top.document)UI=window.top}catch(_e){}
+  const installNotify=()=>{
+    if(UI.GSFNotify&&UI.GSFNotify.continuityVersion===1){UI.GSFNotify.attachDocument(document);return UI.GSFNotify}
+    const records=new Map(),pending=[],docs=new WeakSet();let host=null,serial=0,layoutFrame=0;
+    const reduced=()=>UI.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const CSS=`
+#gsf-site-toast-stack{position:fixed;right:max(12px,env(safe-area-inset-right,0px));top:max(10px,env(safe-area-inset-top,0px));z-index:2147483647;width:min(320px,calc(100vw - 24px));display:flex;flex-direction:column;gap:8px;pointer-events:none;font-family:'Avenir Next','SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden;contain:layout style}
+.gsf-site-toast{position:relative;flex:none;box-sizing:border-box;display:grid;grid-template-columns:28px minmax(0,1fr) 28px;gap:9px;align-items:center;width:100%;min-height:72px;padding:10px;border:1px solid rgba(121,210,255,.28);border-radius:18px;background:rgba(8,24,39,.94);color:#eaf6ff;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 10px 28px rgba(0,0,0,.3);pointer-events:auto;opacity:0;transform:translateY(-7px);transition:opacity .22s ease,transform .22s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+.gsf-site-toast.gsf-show{opacity:1;transform:translateY(0)}.gsf-site-toast.gsf-hide{opacity:0;transform:translateY(-5px);pointer-events:none}
+.gsf-site-toast-icon{width:28px;height:28px;display:grid;place-items:center;color:#79d2ff}.gsf-site-toast-icon img{width:26px;height:26px;object-fit:contain;border-radius:7px}.gsf-site-toast-copy{min-width:0}.gsf-site-toast-title{font-size:12px;font-weight:800;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gsf-site-toast-body{font-size:11px;line-height:1.4;color:#abc3d5;min-height:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:3px}
+.gsf-site-toast-close{width:28px;height:32px;padding:0;border:0;background:transparent;color:#abc3d5;font-size:20px;border-radius:9px;cursor:pointer}.gsf-site-toast-close:focus-visible,.gsf-site-toast-action:focus-visible{outline:2px solid #79d2ff;outline-offset:1px}.gsf-site-toast-bar{position:absolute;left:0;bottom:0;height:2px;width:100%;transform-origin:left;background:#79d2ff;transform:scaleX(1);transition:transform .25s ease,opacity .22s ease;opacity:.7}
+.gsf-site-toast[data-kind=working] .gsf-site-toast-icon{border:2px solid rgba(121,210,255,.25);border-top-color:#79d2ff;box-sizing:border-box;border-radius:50%;animation:gsfNoticeSpin 1.1s linear infinite}.gsf-site-toast[data-kind=working] .gsf-site-toast-icon img{visibility:hidden}.gsf-site-toast[data-kind=working]:not(.gsf-progress-known) .gsf-site-toast-bar{width:30%;animation:gsfNoticeIndeterminate 1.8s ease-in-out infinite}.gsf-site-toast[data-kind=success]{border-color:rgba(94,214,160,.5)}.gsf-site-toast[data-kind=success] .gsf-site-toast-bar{background:#5ed6a0}.gsf-site-toast[data-kind=error]{border-color:rgba(255,139,139,.6)}.gsf-site-toast[data-kind=error] .gsf-site-toast-bar{background:#ff8b8b}.gsf-site-toast[data-kind=warning]{border-color:rgba(255,181,71,.55)}.gsf-site-toast-actions{grid-column:2/4;display:flex;justify-content:flex-end;gap:8px}.gsf-site-toast-action{min-height:36px;max-width:100%;border:1px solid rgba(121,210,255,.35);background:rgba(121,210,255,.08);border-radius:12px;padding:6px 12px;color:#eaf6ff;font-family:inherit;font-size:11px;font-weight:700;line-height:1.3;cursor:pointer}.gsf-site-toast-action.primary{background:rgba(39,174,243,.2)}
+#gsf-site-toast-stack.gsf-compact .gsf-site-toast:nth-child(n+2){visibility:hidden;pointer-events:none}
+@keyframes gsfNoticeSpin{to{transform:rotate(1turn)}}@keyframes gsfNoticeIndeterminate{0%{transform:translateX(-110%);opacity:.4}50%{opacity:.85}100%{transform:translateX(440%);opacity:.4}}
+@media(prefers-reduced-motion:reduce){.gsf-site-toast,.gsf-site-toast-bar{transition:none!important;animation:none!important}.gsf-site-toast-icon{animation:none!important}.gsf-site-toast-bar{opacity:.5}}
+`;
+    const styleFor=doc=>{if(!doc.getElementById('gsf-site-toast-style')){const style=doc.createElement('style');style.id='gsf-site-toast-style';style.textContent=CSS;(doc.head||doc.documentElement).appendChild(style)}};
+    const visible=e=>{if(!e)return false;const r=e.getBoundingClientRect(),s=e.ownerDocument.defaultView.getComputedStyle(e);return r.height>0&&r.width>0&&s.display!=='none'&&s.visibility!=='hidden'};
+    const position=()=>{
+      layoutFrame=0;if(!host)return;
+      let doc=UI.document,target=doc.body,full=doc.fullscreenElement;
+      try{while(full&&full.tagName==='IFRAME'&&full.contentDocument){doc=full.contentDocument;full=doc.fullscreenElement||doc.querySelector('#gameEditorApp.is-expanded')||doc.body}if(full)target=full;else if(UI.document.documentElement.classList.contains('gsf-mobile-editor-fullscreen')){const f=UI.document.querySelector('#gsf-editor-overlay-v220 iframe');if(f?.contentDocument?.querySelector('#gameEditorApp.is-expanded')){doc=f.contentDocument;target=doc.querySelector('#gameEditorApp')}}}catch(_e){doc=UI.document;target=doc.body}
+      if(!target)return;styleFor(doc);if(host.ownerDocument!==doc||host.parentNode!==target)target.appendChild(host);
+      const view=doc.defaultView,vv=view.visualViewport,viewportBottom=(vv?.offsetTop||0)+(vv?.height||view.innerHeight);
+      const header=doc.querySelector('#gsf-global-header')||doc.querySelector('.v414-top-hud');
+      const bars=[...doc.querySelectorAll('#gsf-global-gamebar,.v414-tool-rail,.v414-editor-actions,.v414-timeline')].filter(visible);
+      const top=Math.max(10,(vv?.offsetTop||0)+10,visible(header)?header.getBoundingClientRect().bottom+8:0);
+      const bottom=Math.min(viewportBottom-10,...bars.map(bar=>bar.getBoundingClientRect().top-8));
+      host.style.top='max(env(safe-area-inset-top,0px),'+Math.round(top)+'px)';host.style.maxHeight='max(0px,calc('+Math.max(0,bottom-top)+'px - env(safe-area-inset-bottom,0px)))';host.classList.toggle('gsf-compact',bottom-top<165);
+    };
+    const layout=()=>{if(!layoutFrame)layoutFrame=UI.requestAnimationFrame(position)};
+    const attachDocument=doc=>{if(!doc||docs.has(doc))return;docs.add(doc);doc.addEventListener('fullscreenchange',layout);doc.addEventListener('webkitfullscreenchange',layout)};
+    const ensure=()=>{if(!host){host=UI.document.createElement('div');host.id='gsf-site-toast-stack';host.setAttribute('aria-live','polite');host.setAttribute('aria-atomic','false');UI.document.body.appendChild(host);attachDocument(UI.document)}position();return host};
+    const clearTimers=r=>{UI.clearTimeout(r.timer);UI.clearTimeout(r.exitTimer);r.timer=r.exitTimer=0};
+    const drain=()=>{while(pending.length&&[...records.values()].filter(r=>r.el).length<2){const r=pending.shift();if(records.get(r.id)===r)mount(r)}};
+    const dismiss=id=>{const r=records.get(String(id));if(!r)return false;clearTimers(r);r.closing=true;const finish=()=>{if(records.get(r.id)!==r)return;r.el?.remove();records.delete(r.id);const i=pending.indexOf(r);if(i>=0)pending.splice(i,1);drain();layout()};if(!r.el||reduced())finish();else{r.el.classList.add('gsf-hide');r.exitTimer=UI.setTimeout(finish,230)}return true};
+    const lifetime=r=>{UI.clearTimeout(r.timer);r.timer=0;if(r.data.kind==='working'||r.data.kind==='confirm'||UI.document.hidden)return;const ttl=r.data.ttl===undefined?(r.data.kind==='error'?7000:4200):Number(r.data.ttl);if(ttl>0)r.timer=UI.setTimeout(()=>dismiss(r.id),Math.min(ttl,60000))};
+    const paint=r=>{
+      if(!r.el)return;const e=r.el,d=r.data;clearTimers(r);r.closing=false;e.classList.remove('gsf-hide');e.dataset.kind=d.kind||'info';const setText=(selector,value)=>{const node=e.querySelector(selector);if(node.textContent!==value)node.textContent=value};setText('.gsf-site-toast-title',String(d.title||'Gaming Shorts Factory'));setText('.gsf-site-toast-body',String(d.body||''));
+      const known=typeof d.progress==='number'&&Number.isFinite(d.progress);e.classList.toggle('gsf-progress-known',known);e.querySelector('.gsf-site-toast-bar').style.transform=known?'scaleX('+Math.max(0,Math.min(1,d.progress))+')':'';
+      const actions=e.querySelector('.gsf-site-toast-actions');
+      const wanted=d.kind==='confirm'?[['cancel',String(d.cancelText||'Annulla'),false],['confirm',String(d.confirmText||'Continua'),true]]:typeof d.onClick==='function'?[['open',String(d.actionLabel||'Apri'),true]]:[];
+      for(const child of [...actions.children])if(!wanted.some(([key])=>key===child.dataset.action))child.remove();
+      for(const [key,label,primary] of wanted){let b=[...actions.children].find(node=>node.dataset.action===key);if(!b){b=e.ownerDocument.createElement('button');b.type='button';b.dataset.action=key;b.className='gsf-site-toast-action'+(primary?' primary':'');let used=false;b.onclick=event=>{event.stopPropagation();if(used)return;used=true;try{const callback=key==='confirm'?r.data.onConfirm:key==='open'?r.data.onClick:null;callback?.()}finally{dismiss(r.id)}};actions.appendChild(b)}if(b.textContent!==label)b.textContent=label;}
+      actions.hidden=!actions.children.length;e.setAttribute('role',d.kind==='error'?'alert':'status');UI.requestAnimationFrame(()=>{if(records.get(r.id)===r&&!r.closing)e.classList.add('gsf-show')});lifetime(r);layout();
+    };
+    function mount(r){const parent=ensure(),doc=host.ownerDocument,e=doc.createElement('div');e.className='gsf-site-toast';e.dataset.noticeId=r.id;
+      const icon=doc.createElement('span');icon.className='gsf-site-toast-icon';icon.setAttribute('aria-hidden','true');const image=doc.createElement('img');image.src='/app-icon.png?v=4';image.alt='';icon.appendChild(image);
+      const copy=doc.createElement('div');copy.className='gsf-site-toast-copy';const title=doc.createElement('div');title.className='gsf-site-toast-title';const body=doc.createElement('div');body.className='gsf-site-toast-body';copy.append(title,body);
+      const close=doc.createElement('button');close.type='button';close.className='gsf-site-toast-close';close.setAttribute('aria-label','Chiudi notifica');close.textContent='×';close.onclick=()=>dismiss(r.id);
+      const bar=doc.createElement('span');bar.className='gsf-site-toast-bar';bar.setAttribute('aria-hidden','true');const actions=doc.createElement('div');actions.className='gsf-site-toast-actions';e.append(icon,copy,close,bar,actions);r.el=e;parent.appendChild(e);paint(r)
     }
+    const upsert=(id,data={})=>{id=String(id||'').slice(0,180);if(!id)return false;let r=records.get(id);
+      if(r){r.data={...r.data,...data};paint(r)}else{
+        if(records.size>=8){const expendable=pending.find(x=>!['working','confirm','error'].includes(x.data.kind));if(expendable)dismiss(expendable.id);else return false}
+        r={id,data:{kind:'info',...data},el:null,timer:0,exitTimer:0,closing:false};records.set(id,r);if([...records.values()].filter(x=>x.el).length<2)mount(r);else pending.push(r)
+      }
+      return {id,update:patch=>upsert(id,patch),close:()=>dismiss(id)}
+    };
+    const show=(title,body,kind='success',opts={})=>{
+      const token=String(opts.token||'');if(opts.persistent&&token){try{if(UI.localStorage.getItem('gsf-site-notice:'+token)==='1')return false}catch(_e){}}
+      const id=opts.id||token||('notice:'+String(kind)+':'+String(title)+':'+String(body||''));const result=upsert(id,{...opts,title,body,kind});
+      if(result&&opts.persistent&&token)try{UI.localStorage.setItem('gsf-site-notice:'+token,'1')}catch(_e){}return !!result;
+    };
+    const aliveSeen=new Map(),aliveJobs=new Set();
+    const alive=state=>{
+      const event=String(state.last||''),job=event==='failure'?state.error_job:event.split('.')[0];
+      const terminal=['upload.completed','ai.found','render.completed','render.cancelled','publish.completed'];
+      for(const r of records.values()){const previous=r.id.startsWith('alive:')?r.id.slice(6):'';if(previous&&r.data.kind==='working'&&previous!==state.active_job&&previous!==job)dismiss(r.id)}
+      if(!['upload','ai','render','publish'].includes(job)&&event!=='editor.saved')return false;
+      if(!state.active_job&&!terminal.includes(event)&&event!=='failure'&&event!=='editor.saved')return false;
+      const stamp=String(state.updated)+':'+String(state.seq);if(aliveSeen.get(job)===stamp)return true;aliveSeen.set(job,stamp);
+      if(event==='render.cancelled'){dismiss('alive:render');aliveJobs.delete('render');return true}
+      const kind=event==='failure'||(event==='publish.completed'&&!state.published)?'error':state.active_job===job?'working':'success';
+      const target=job==='render'&&kind==='success'?'short':job==='ai'&&kind==='success'&&state.moments_count>0?'ai':kind==='error'?({upload:'home',ai:'ai',render:'short',publish:'social'}[job]):null;
+      const onClick=target&&UI.GSFNavigation?()=>UI.GSFNavigation.navigate({target}):null;
+      aliveJobs.add(job);upsert('alive:'+job,{title:String(state.message||'GSF'),body:'',kind,progress:kind==='working'?state.progress:1,onClick,actionLabel:kind==='error'?'Riapri':'Apri'});return true;
+    };
+    const sourceJobs=new Map();
+    const trackSource=job=>{
+      const id=String(job?.upload_id||'');if(!/^[A-Za-z0-9_-]{1,80}$/.test(id))return Promise.resolve({error:'Importazione non valida.'});
+      if(sourceJobs.has(id))return sourceJobs.get(id).promise;
+      if(sourceJobs.size>=2)return Promise.resolve({error:'Attendi il completamento dell’importazione corrente.'});
+      let finish;const promise=new Promise(resolve=>finish=resolve);
+      sourceJobs.set(id,{id,promise,finish,started:Date.now()});aliveJobs.add('upload');upsert('alive:upload',{title:'Importazione gameplay',body:'Puoi continuare a navigare.',kind:'working',onClick:null});return promise;
+    };
+    const pollSources=async signal=>{
+      for(const job of sourceJobs.values()){
+        let status={};const timedOut=Date.now()-job.started>600000;
+        if(!timedOut)try{const response=await UI.fetch('/direct-upload/bucket/status?upload_id='+encodeURIComponent(job.id),{cache:'no-store',credentials:'same-origin',signal});if(!response.ok)continue;status=await response.json()}catch(_e){continue}
+        if(signal.aborted)return;
+        if(!status.ready&&!status.error&&!timedOut)continue;
+        sourceJobs.delete(job.id);uploadActive=false;
+        const kind=status.ready?'success':status.error?'error':'warning';
+        upsert('alive:upload',{title:status.ready?'Gameplay importato':status.error?'Importazione non riuscita':'Importazione da verificare',body:status.ready?'Disponibile nella Libreria.':'Il progetto precedente resta disponibile.',kind,progress:status.ready?1:null,onClick:UI.GSFNavigation?()=>UI.GSFNavigation.navigate({target:'hub',section:'live'}):null,actionLabel:'Apri Libreria'});
+        job.finish(status.ready?status:{error:status.error?'Importazione non riuscita.':'Verifica lo stato nella Libreria prima di riprovare.'});
+      }
+    };
+    const service={continuityVersion:1,show,upsert,alive,trackSource,pollSources,handles:job=>aliveJobs.has(job),update:(id,patch)=>records.has(String(id))?upsert(id,patch):false,dismiss,attachDocument,layout,confirm:(title,body,opts={})=>upsert(opts.id||'confirm:'+String(++serial),{...opts,title,body,kind:'confirm'})};
+    UI.addEventListener('message',event=>{if(event.origin===UI.location.origin&&event.data?.type==='GSF_GAME_EDITOR_UI')layout()});
+    UI.addEventListener('resize',layout,{passive:true});UI.visualViewport?.addEventListener('resize',layout,{passive:true});UI.visualViewport?.addEventListener('scroll',layout,{passive:true});
+    UI.addEventListener('gsf:surfacechange',()=>{layout();for(const r of records.values())if(r.data.route&&r.data.kind!=='working'&&r.data.route!==UI.GSFNavigation?.snapshot().target)dismiss(r.id)});
+    UI.document.addEventListener('visibilitychange',()=>{for(const r of records.values())if(r.el)lifetime(r);layout()});
+    if(UI.ResizeObserver){const observer=new UI.ResizeObserver(layout);for(const e of UI.document.querySelectorAll('#gsf-global-header,#gsf-global-gamebar'))observer.observe(e)}
+    attachDocument(document);UI.GSFNotify=service;return service;
   };
+  window.GSFPush={enable:()=>subscribe(true),disable,status,ensure:()=>subscribe(false).catch(()=>false)};
+  window.GSFNotify=installNotify();
+  if(window!==UI)return; // Embedded surfaces share the parent monitor, not another polling loop.
+  const showToast=(title,body,kind='success',opts={})=>window.GSFNotify.show(title,body,kind,opts);
 
   let uploadActive=false,uploadCycle=0,uploadDoneCycle=0,lastRenderStatus="";
   window.addEventListener("message",(event)=>{
     const d=event.data||{};if(d.type!=="gsf-upload")return;const state=String(d.state||"");
     if(state==="running"){if(!uploadActive){uploadCycle+=1;uploadActive=true;}}
-    else if(state==="done"){uploadActive=false;if(uploadDoneCycle!==uploadCycle){uploadDoneCycle=uploadCycle;const name=String(d.name||"").trim();showToast("Video caricato","","success");}}
+    else if(state==="done"){uploadActive=false;if(uploadDoneCycle!==uploadCycle){uploadDoneCycle=uploadCycle;const name=String(d.name||"").trim();if(!window.GSFNotify.handles("upload"))showToast("Video caricato","","success",{id:"alive:upload"});}}
     else if(state==="error"){const wasActive=uploadActive;uploadActive=false;if(wasActive)showToast("Upload interrotto","Il caricamento non è stato completato. Puoi riprovare senza perdere il resto del lavoro.","error");}
   });
 
@@ -687,21 +741,24 @@ def _push_client_bytes():
   const pollJob=async()=>{
     if(monitorSuspended||document.hidden||pollController)return;
     const controller=new AbortController();pollController=controller;
+    const deadline=setTimeout(()=>controller.abort(),12000);
     try{
+      await window.GSFNotify.pollSources(controller.signal);
+      if(controller.signal.aborted)return;
       const j=await fetch("/job/status",{cache:"no-store",signal:controller.signal}).then(r=>r.json()),status=String(j.render_status||"");
       if(controller.signal.aborted||monitorSuspended||document.hidden)return;
       if(status==="ready"){
         const token=String(j.completed_at||j.started_at||"ready");
-        showToast("Short completato","","success",{token:"short-ready-"+token,persistent:true,onClick:()=>openShareHub()});
+        if(!window.GSFNotify.handles("render"))showToast("Short completato","","success",{token:"short-ready-"+token,persistent:true,onClick:()=>openShareHub()});
         if(lastRenderStatus!=="ready"){
             if(!syncReadyResult())setTimeout(()=>{if(!monitorSuspended&&!document.hidden)syncReadyResult();},250);
         }
       }else if(status==="failed"){
         const token=String(j.failed_at||j.started_at||"failed");
-        showToast("Creazione Short non riuscita","Il rendering si è fermato. Il progetto e la bozza restano disponibili.","error",{token:"short-failed-"+token,persistent:true});
+        if(!window.GSFNotify.handles("render"))showToast("Creazione Short non riuscita","Il rendering si è fermato. Il progetto e la bozza restano disponibili.","error",{token:"short-failed-"+token,persistent:true});
       }
       lastRenderStatus=status;
-    }catch(e){}finally{if(pollController===controller)pollController=null;}
+    }catch(e){}finally{clearTimeout(deadline);if(pollController===controller)pollController=null;}
   };
   const stopMonitor=()=>{monitorSuspended=true;clearInterval(pollTimer);pollTimer=0;if(pollController)pollController.abort();pollController=null;};
   const startMonitor=()=>{if(document.hidden)return;monitorSuspended=false;if(!pollTimer)pollTimer=setInterval(pollJob,1500);pollJob();};
@@ -793,7 +850,7 @@ def _trigger_prescan(payload):
         )
         print(f"GSF worker prescan warning: {str(exc)[:180]}",flush=True)
 
-def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,total,analysis_key):
+def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,total,analysis_key,before_publish=None,source_id=""):
     _materialize_t0=time.perf_counter()
     perf_event(
         "materialize_start",
@@ -822,7 +879,9 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
         _security_validate_media(tmp,ext)
         os.replace(tmp,final)
         marker=media/".direct_upload_ready.json"
+        if before_publish:before_publish()
         _write_json_atomic(marker,{
+            **({"source_id":source_id} if source_id else {}),
             "path":str(final),
             "name":original_name,
             "size":total,
@@ -2986,8 +3045,102 @@ def _twitch_disconnect(sid):
     _twitch_forget(sid)
 
 
+def _source_owner(sid):
+    sid=_safe_id(sid)
+    if not sid:raise ValueError("Invalid source session")
+    # Read the durable association; a provider/storage outage must not become guest access.
+    session=_oauth_object_read(_creator_session_key(sid))
+    account=_safe_id(session.get("account_id") or "")
+    return "account-"+account if account else "guest-"+sid
+
+
+def _source_catalog(sid):
+    from web.gsf_sources_v422 import SourceCatalog
+    return SourceCatalog(_s3(),S3_BUCKET,_source_owner(sid))
+
+
+def _source_load(sid,source_id):
+    return _source_catalog(sid).load(source_id)
+
+
+def _source_save(sid,record):
+    return _source_catalog(sid).save(record)
+
+
+def _source_checked(record):
+    row=dict(record)
+    if row.get('status')=='importing' and time.time()-float(row.get('import_started_at') or 0)>600:row['status']='failed'
+    if row.get('status')!='ready':return row
+    sid=_safe_id(row.get('origin_sid'));upload=_safe_id(row.get('upload_id'))
+    key=str(row.get('bucket_key') or '')
+    if not sid or not upload or not key.startswith('uploads/'+sid+'/'+upload+'/'):
+        row['status']='unavailable';return row
+    try:
+        info=_s3().head_object(Bucket=S3_BUCKET,Key=key)
+        if int(info.get('ContentLength',0))!=int(row.get('size',0)) or int(row.get('size',0))<=0:row['status']='unavailable'
+    except Exception as exc:
+        code=str(getattr(exc,'response',{}).get('Error',{}).get('Code',''))
+        if isinstance(exc,FileNotFoundError) or code in ('NoSuchKey','404','NotFound'):row['status']='unavailable'
+        else:raise
+    return row
+
+
+def _source_list(sid,provider='upload',folder='imported',after=''):
+    from web.gsf_sources_v422 import public_source
+    if provider not in ('upload','twitch','youtube') or folder!='imported':raise ValueError('Invalid source folder')
+    catalog=_source_catalog(sid);result=catalog.list(provider,folder,after)
+    result['data']=[public_source(_source_checked(catalog.load(row['id']))) for row in result['data']]
+    return result
+
+
+def _source_activate(sid,identity,target='ai'):
+    if target not in ('ai','editor'):raise ValueError('Invalid source target')
+    catalog=_source_catalog(sid);row=catalog.load(identity)
+    if not row:raise LookupError('Sorgente non disponibile per questo account')
+    row=_source_checked(row)
+    if row.get('status')!='ready' or row.get('kind') not in ('local_upload','twitch_clip'):raise LookupError('Il video non è disponibile')
+    owner=catalog.owner;media=ROOT/'sessions'/_safe_id(sid)/'media';media.mkdir(parents=True,exist_ok=True)
+    marker=media/'.direct_upload_ready.json';fence=marker.read_bytes() if marker.exists() else None
+    def guard():
+        if _source_owner(sid)!=owner:raise PermissionError('Account sorgente cambiato')
+        if (marker.read_bytes() if marker.exists() else None)!=fence:raise RuntimeError('Il progetto corrente è cambiato')
+    path=Path(str(row.get('local_path') or ''))
+    local=path.is_file() and path.resolve().is_relative_to(media.resolve()) and path.stat().st_size==int(row['size'])
+    upload_id=str(row['upload_id'])
+    if local:
+        guard()
+        _write_json_atomic(marker,{'path':str(path),'name':str(row.get('title') or path.name),'size':row['size'],'upload_id':upload_id,'source_id':identity,'completed_at':time.time(),'storage':'railway_bucket','bucket_key':row['bucket_key'],'analysis_key':row.get('analysis_key','')})
+        return {'ready':True,'reused':True,'upload_id':upload_id,'source_id':identity,'target':target}
+    # Cold replicas use exactly the upload materializer and ready marker consumed by AI/Editor.
+    name,stem,ext=_safe_filename(Path(row['bucket_key']).name)
+    threading.Thread(target=_materialize_bucket_object,args=(sid,upload_id,row['bucket_key'],name,stem,ext,int(row['size']),row.get('analysis_key','')),kwargs={'before_publish':guard,'source_id':identity},name='gsf-source-restore',daemon=True).start()
+    return {'preparing':True,'reused':True,'upload_id':upload_id,'source_id':identity,'target':target}
+
+
+def _source_capture_upload(sid,upload_id):
+    sid=_safe_id(sid);upload_id=_safe_id(upload_id)
+    if not sid or not upload_id:raise ValueError('Invalid upload provenance')
+    key='source-upload-owners/'+sid+'/'+upload_id+'.json'
+    previous=_oauth_object_read(key)
+    if previous:return previous
+    receipt={'owner_id':_source_owner(sid),'sid':sid,'upload_id':upload_id}
+    _oauth_object_save(key,receipt);return receipt
+
+
+def _source_register_marker(sid,marker):
+    from web.gsf_sources_v422 import source_id
+    if marker.get('source_id'):return
+    sid=_safe_id(sid);upload=_safe_id(marker.get('upload_id'))
+    if not sid or not upload:return
+    receipt=_oauth_object_read('source-upload-owners/'+sid+'/'+upload+'.json')
+    owner=_source_owner(sid)
+    if receipt.get('owner_id')!=owner or receipt.get('sid')!=sid or receipt.get('upload_id')!=upload:return
+    row={'id':source_id(owner,'local_upload','',upload),'owner_id':owner,'kind':'local_upload','provider':'upload','provider_user_id':'','external_id':upload,'upload_id':upload,'origin_sid':sid,'title':str(marker.get('name') or 'Gameplay'),'status':'ready','bucket_key':marker.get('bucket_key',''),'analysis_key':marker.get('analysis_key',''),'size':marker.get('size',0),'local_path':marker.get('path','')}
+    if _source_checked(row).get('status')=='ready':_source_save(sid,row)
+
+
 def _twitch_api(sid,path,params=None):
-    if path not in ("clips","clips/downloads","videos"):raise ValueError("Unsupported Twitch API")
+    if path not in ("clips","clips/downloads","videos","streams","games"):raise ValueError("Unsupported Twitch API")
     token=_twitch_access(sid)
     url="https://api.twitch.tv/helix/"+path
     if params:url+="?"+urllib.parse.urlencode(params,doseq=True)
@@ -2997,22 +3150,56 @@ def _twitch_api(sid,path,params=None):
             if exc.code!=401:raise
             token=_twitch_access(sid,force_validate=True)
             return _oauth_json(url,headers={"Authorization":"Bearer "+token["access_token"],"Client-Id":TWITCH_CLIENT_ID},timeout=15)
+    except _social421.TwitchError:
+        raise
+    except urllib.error.HTTPError as exc:
+        if exc.code==401:raise _social421.TwitchError("Accesso Twitch scaduto. Ricollega l'account.",401) from None
+        if exc.code==403:raise _social421.TwitchError("Twitch non autorizza l'accesso a questi contenuti. Verifica il collegamento.",403) from None
+        if exc.code==429:raise _social421.TwitchError("Twitch ha ricevuto troppe richieste. Attendi e riprova.",429) from None
+        raise _social421.TwitchError("Twitch temporaneamente non disponibile. Riprova più tardi.",503) from None
     except Exception:raise _social421.TwitchError("Impossibile recuperare i contenuti Twitch. Riprova più tardi.") from None
 
 
 def _twitch_content(sid,kind,after=""):
-    if kind not in ("clips","videos"):raise ValueError("Tipo di contenuto non valido")
-    token=_twitch_access(sid)
+    from web.gsf_sources_v422 import source_id,public_source
+    if kind not in ("clips","videos","live"):raise ValueError("Tipo di contenuto non valido")
+    token=_twitch_access(sid);owner=_source_owner(sid)
+    endpoint="streams" if kind=="live" else kind
     params={"broadcaster_id" if kind=="clips" else "user_id":token["user_id"],"first":20}
     if after:
         if len(after)>512:raise ValueError("Pagina non valida")
         params["after"]=after
-    payload=_twitch_api(sid,kind,params)
+    payload=_twitch_api(sid,endpoint,params)
+    owned=[row for row in payload.get("data",[]) if isinstance(row,dict) and str(row.get("broadcaster_id" if kind=="clips" else "user_id") or "")==token["user_id"]]
+    games={}
+    game_ids=sorted({str(row.get("game_id")) for row in owned if row.get("game_id")})
+    if game_ids and kind=="clips":
+        try:games={str(row.get("id")):str(row.get("name") or "") for row in _twitch_api(sid,"games",{"id":game_ids}).get("data",[]) if isinstance(row,dict)}
+        except Exception:pass  # Optional labels never break the actual media listing.
     rows=[]
-    for row in payload.get("data",[]):
-        if str(row.get("broadcaster_id" if kind=="clips" else "user_id") or "")!=token["user_id"]:continue
-        rows.append({"id":str(row.get("id") or ""),"title":str(row.get("title") or "")[:200],"duration":row.get("duration"),"url":str(row.get("url") or ""),"created_at":str(row.get("created_at") or ""),"importable":kind=="clips","import_reason":"" if kind=="clips" else "Le API ufficiali Twitch espongono i metadati VOD, non il file video da importare."})
+    source_kind={"clips":"twitch_clip","videos":"twitch_vod","live":"twitch_live"}[kind]
+    for row in owned:
+        external=str(row.get("id") or "")
+        if not external:continue
+        identity=source_id(owner,source_kind,token["user_id"],external)
+        thumb=str(row.get("thumbnail_url") or "").replace("%{width}","640").replace("%{height}","360").replace("{width}","640").replace("{height}","360")
+        url=str(row.get("url") or "")
+        if kind=="live" and re.fullmatch(r"[A-Za-z0-9_]{1,30}",str(row.get("user_login") or "")):url="https://www.twitch.tv/"+row["user_login"]
+        record={"id":identity,"kind":source_kind,"provider":"twitch","external_id":external,"title":str(row.get("title") or "")[:200],"thumbnail":thumb,"game_name":row.get("game_name") if kind=="live" else games.get(str(row.get("game_id")),""),"created_at":row.get("created_at"),"started_at":row.get("started_at"),"duration":row.get("duration"),"url":url,"status":"discovered","is_live":kind=="live"}
+        previous=_source_load(sid,identity)
+        original_receipt=dict(previous)
+        if previous:
+            previous=_source_checked(previous)
+            record={**record,**{key:previous[key] for key in ('status','bucket_key','analysis_key','upload_id','origin_sid','size','local_path','import_started_at','completed_at') if key in previous}}
+        try:_source_catalog(sid).save_if_unchanged({**record,'owner_id':owner,'provider_user_id':token['user_id']},original_receipt)
+        except ValueError:record=_source_load(sid,identity) or record
+        item=public_source(record)
+        # Keep the existing content API's external ID contract for old Hub clients.
+        item.update(id=external,source_id=identity,importable=item["can_import"],video_type=str(row.get("type") or "") if kind=="videos" else "")
+        rows.append(item)
+    if _source_owner(sid)!=owner:raise PermissionError("Source account changed")
     return {"data":rows,"cursor":str((payload.get("pagination") or {}).get("cursor") or ""),"type":kind}
+
 
 
 def _twitch_clip_source(sid,clip_id):
@@ -3026,18 +3213,27 @@ def _twitch_clip_source(sid,clip_id):
     found=next((row for row in urls if row.get("clip_id")==clip_id),{})
     url=str(found.get("landscape_download_url") or found.get("portrait_download_url") or "")
     if not url:raise LookupError("Twitch non rende disponibile il file di questa clip")
-    return {"url":url,"clip_id":clip_id,"owner_id":_storage_owner_id(sid),"twitch_user_id":token["user_id"]}
+    from web.gsf_sources_v422 import twitch_url,duration_seconds
+    return {"url":url,"clip_id":clip_id,"owner_id":_storage_owner_id(sid),"catalog_owner":_source_owner(sid),"twitch_user_id":token["user_id"],"metadata":{"title":str(clip.get("title") or "Clip Twitch")[:300],"thumbnail":twitch_url(clip.get("thumbnail_url"),True),"duration":duration_seconds(clip.get("duration")),"created_at":str(clip.get("created_at") or ""),"url":twitch_url(clip.get("url"))}}
 
 
 def _twitch_import_start(sid,clip_id):
     lock=_state_lock("twitch-import",sid)
     if not lock.acquire(blocking=False):raise ValueError("Un'importazione Twitch è già in corso.")
     try:
+        from web.gsf_sources_v422 import source_id
+        owner=_source_owner(sid);token=_twitch_access(sid)
+        identity=source_id(owner,'twitch_clip',token['user_id'],clip_id)
+        previous=_source_load(sid,identity)
+        if previous.get('status')=='importing' and _source_checked(previous).get('status')=='importing':raise ValueError('Importazione già in corso per questa clip.')
+        if previous and _source_checked(previous).get('status')=='ready':
+            result=_source_activate(sid,identity,'ai');lock.release();return result
         source=_twitch_clip_source(sid,clip_id)
         media=ROOT/"sessions"/_safe_id(sid)/"media";media.mkdir(parents=True,exist_ok=True)
         marker=media/".direct_upload_ready.json"
         fence=marker.read_bytes() if marker.exists() else None
         upload_id=uuid.uuid4().hex[:20]
+        _source_catalog(sid).save_if_unchanged({**source.get('metadata',{}),'id':identity,'owner_id':owner,'kind':'twitch_clip','provider':'twitch','provider_user_id':token['user_id'],'external_id':clip_id,'status':'importing','upload_id':upload_id,'origin_sid':sid,'import_started_at':time.time()},previous)
         threading.Thread(target=_twitch_import_run,args=(sid,upload_id,source,fence,lock),name="gsf-twitch-import",daemon=True).start()
         return {"upload_id":upload_id,"preparing":True}
     except Exception:
@@ -3057,10 +3253,33 @@ def _twitch_import_run(sid,upload_id,source,fence,lock):
         if str(token.get("user_id") or "")!=source["twitch_user_id"] or _storage_owner_id(sid)!=source["owner_id"]:raise RuntimeError("Import owner changed")
         marker=media/".direct_upload_ready.json"
         if (marker.read_bytes() if marker.exists() else None)!=fence:raise RuntimeError("Another upload replaced the source")
+        from web.gsf_sources_v422 import source_id
+        owner=source['catalog_owner']
+        if _source_owner(sid)!=owner:raise RuntimeError("Import catalog owner changed")
+        identity=source_id(owner,'twitch_clip',source['twitch_user_id'],source['clip_id'])
+        for attempt in range(3):
+            previous=_source_load(sid,identity)
+            if previous and previous.get('upload_id')!=upload_id:raise RuntimeError('Import superseded')
+            if _source_owner(sid)!=owner:raise RuntimeError('Import catalog owner changed')
+            ready={**source.get('metadata',{}),**previous,'id':identity,'owner_id':owner,'kind':'twitch_clip','provider':'twitch','provider_user_id':source['twitch_user_id'],'external_id':source['clip_id'],'status':'ready','upload_id':upload_id,'origin_sid':sid,'local_path':str(final),'size':size,'completed_at':time.time(),**persisted}
+            try:
+                _source_catalog(sid).save_if_unchanged(ready,previous)
+                break
+            except ValueError:
+                if attempt==2:raise RuntimeError('Import receipt changed repeatedly') from None
+
+        if (marker.read_bytes() if marker.exists() else None)!=fence or _source_owner(sid)!=owner:raise RuntimeError("Import project changed")
         # Same marker and persistence helper used by upload: existing AI/Editor pipeline owns the rest.
-        _write_json_atomic(marker,{"path":str(final),"name":name,"size":size,"upload_id":upload_id,"completed_at":time.time(),"storage":"direct_fallback_bucket",**persisted})
+        _write_json_atomic(marker,{"source_id":identity,"path":str(final),"name":name,"size":size,"upload_id":upload_id,"completed_at":time.time(),"storage":"direct_fallback_bucket",**persisted})
     except Exception:
         pending.unlink(missing_ok=True);final.unlink(missing_ok=True)
+        try:
+            from web.gsf_sources_v422 import SourceCatalog,source_id
+            catalog=SourceCatalog(_s3(),S3_BUCKET,source['catalog_owner'])
+            identity=source_id(catalog.owner,'twitch_clip',source['twitch_user_id'],source['clip_id'])
+            failed=catalog.load(identity)
+            if failed.get('status')=='importing' and failed.get('upload_id')==upload_id:catalog.save_if_unchanged({**failed,'status':'failed'},failed)
+        except Exception as exc:print("GSF_SOURCE_IMPORT_RECEIPT_WARN",type(exc).__name__,flush=True)
         _write_json_atomic(media/".direct_upload_error.json",{"upload_id":upload_id,"error":"Importazione Twitch non riuscita. Il progetto precedente è conservato."})
     finally:lock.release()
 
@@ -4566,8 +4785,9 @@ def _publish_run(sid,job,request,video_path):
         except Exception as exc:
             message=str(exc)[:220] or "Pubblicazione non riuscita."
             extra={"confirmation_pending":True,"content_id":exc.publish_id} if isinstance(exc,_pm413.PublishUnconfirmed) else {}
-            _publish_update(sid,job,platform,status="error",error=message,**extra)
-            print("GSF_V413_PUBLISH_FAIL",sid,platform,type(exc).__name__,flush=True)
+            error_code=str(getattr(exc,"code","") or "") if isinstance(exc,_pm413.PublishError) else ""
+            _publish_update(sid,job,platform,status="error",error=message,error_code=error_code,**extra)
+            print("GSF_V413_PUBLISH_FAIL",sid,platform,type(exc).__name__,error_code,flush=True)
     done=all(r.get("status") in ("done","error","manual","needs_connection") for r in job["results"].values())
     if done:
         _publish_update(sid,job,state="finished")
@@ -5013,6 +5233,14 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 _json(self,404,{"ok":False,"error":"Avatar non disponibile"})
             return
+        if clean=="/creator-hub/sources":
+            sid=_social_sid(self)
+            if not sid:_json(self,400,{"ok":False,"error":"Sessione browser non valida."});return
+            query=parse_qs(path.query)
+            try:_json(self,200,{"ok":True,**_source_list(sid,str(query.get('provider',['upload'])[0]),'imported',str(query.get('after',[''])[0]))})
+            except ValueError:_json(self,400,{"ok":False,"error":"Cartella sorgenti non valida."})
+            except Exception:_json(self,503,{"ok":False,"error":"Libreria temporaneamente non disponibile."})
+            return
         if clean=="/creator-hub/state":
             sid=_social_sid(self)
             if not sid:
@@ -5219,6 +5447,15 @@ class Handler(BaseHTTPRequestHandler):
             _json(self,400,{"ok":False,"error":"invalid session"})
             return
 
+        if path=="/creator-hub/sources/activate":
+            if not _security_csrf_valid(self,sid):_json(self,403,{"ok":False,"error":"csrf validation failed"});return
+            try:
+                data=_read_json(self,max_bytes=16384)
+                _json(self,200,{"ok":True,**_source_activate(sid,str(data.get('source_id') or ''),str(data.get('target') or 'ai'))})
+            except (LookupError,PermissionError):_json(self,404,{"ok":False,"error":"Sorgente non disponibile per questo account."})
+            except ValueError:_json(self,400,{"ok":False,"error":"Richiesta sorgente non valida."})
+            except Exception:_json(self,503,{"ok":False,"error":"Impossibile aprire la sorgente. Il progetto precedente è conservato."})
+            return
         if path=="/social-connect/twitch/import":
             if not _security_csrf_valid(self,sid):_json(self,403,{"ok":False,"error":"csrf validation failed"});return
             try:
@@ -5666,6 +5903,8 @@ class Handler(BaseHTTPRequestHandler):
                 if total<=0 or total>MAX_FILE_BYTES:
                     raise ValueError("file size not allowed")
                 upload_id=uuid.uuid4().hex[:20]
+                try:_source_capture_upload(sid,upload_id)
+                except Exception as exc:print("GSF_SOURCE_PROVENANCE_WARN",type(exc).__name__,flush=True)
                 key=f"uploads/{sid}/{upload_id}/{safe_stem}{ext}"
                 analysis_key=f"analysis/{sid}/{upload_id}/v52-keyframe-turbo.json"
                 created=_s3().create_multipart_upload(
@@ -5833,6 +6072,8 @@ class Handler(BaseHTTPRequestHandler):
                         _json(self,409,{"ok":False,"error":"upload metadata changed"})
                         return
                 else:
+                    try:_source_capture_upload(sid,upload_id)
+                    except Exception as exc:print("GSF_SOURCE_PROVENANCE_WARN",type(exc).__name__,flush=True)
                     state={
                         "total":total,
                         "count":count,

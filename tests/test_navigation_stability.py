@@ -325,8 +325,10 @@ setTimeout(()=>{assert.equal(called,100);assert.equal(retained,0,'completed time
                 options={'executable_path':executable,'args':['--no-sandbox']} if executable else {}
                 browser=engine.launch(**options)
                 page=browser.new_page(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
-                page.route('**/*',lambda route:route.fulfill(status=200,json={'ok':False}))
-                page.set_content(first)
+                # Real surface navigation resolves URLs against an HTTP origin;
+                # about:blank cannot exercise location.replace or root history.
+                page.route('**/*',lambda route:route.fulfill(content_type='text/html',body=first) if route.request.url=='http://gsf.test/' else route.fulfill(status=200,json={'ok':False}))
+                page.goto('http://gsf.test/')
                 page.evaluate("GSFNavigation.navigate({target:'editor'})")
                 frame=page.locator('#gsf-editor-overlay-v220 iframe')
                 # Measure after finite opening animations, retaining the cold-size assertions.

@@ -219,13 +219,13 @@ def _generate_content_semantic(
             ]
         )
     config=types.GenerateContentConfig(
-        http_options=types.HttpOptions(timeout=int(max(1.0,float(semantic_timeout))*1000)),
+        http_options=types.HttpOptions(timeout=int(max(1.0,float(semantic_timeout))*1000),retry_options=types.HttpRetryOptions(attempts=1)),
     )
     if structured:
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
             response_json_schema=_schema(max_events),
-            http_options=types.HttpOptions(timeout=int(max(1.0,float(semantic_timeout))*1000)),
+            http_options=types.HttpOptions(timeout=int(max(1.0,float(semantic_timeout))*1000),retry_options=types.HttpRetryOptions(attempts=1)),
         )
     response=client.models.generate_content(
         model=model,
@@ -411,6 +411,14 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
             float(os.environ.get("GSF_SEMANTIC_STATIC_TIMEOUT_SECONDS","90") or 90),
         ),
     )
+    # One budget covers provider/model/format fallbacks; a retry must not
+    # restart another full timeout after the UI has already been waiting.
+    provider_deadline=started+(static_timeout if base_processing_mode=="static" else semantic_timeout)
+    def remaining_timeout(limit):
+        remaining=provider_deadline-time.perf_counter()
+        if remaining<=0:raise TimeoutError("Gemini analysis deadline exceeded")
+        return min(float(limit),remaining)
+
     model_attempts=[]
     selected_model=primary_model
     selected_mode=base_processing_mode
@@ -418,16 +426,16 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
 
     try:
         from google import genai
-        client=genai.Client(api_key=key)
+        client=genai.Client(api_key=key,http_options={"timeout":int(remaining_timeout(semantic_timeout)*1000),"retry_options":{"attempts":1}})
 
         video_content=None
         if input_method=="inline":
             video_content=_inline_video_content(source,base_processing_mode)
         else:
-            uploaded=client.files.upload(file=str(source))
+            uploaded=client.files.upload(file=str(source),config={"http_options":{"timeout":max(1,int(remaining_timeout(semantic_timeout)*1000)),"retry_options":{"attempts":1}}})
             deadline=time.time()+180
-            while time.time()<deadline:
-                uploaded=client.files.get(name=uploaded.name)
+            while time.time()<deadline and time.perf_counter()<provider_deadline:
+                uploaded=client.files.get(name=uploaded.name,config={"http_options":{"timeout":max(1,int(remaining_timeout(semantic_timeout)*1000)),"retry_options":{"attempts":1}}})
                 state=str(
                     getattr(getattr(uploaded,"state",None),"name",getattr(uploaded,"state",""))
                     or ""
@@ -475,7 +483,7 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
                     if attempt_mode=="static":
                         payload=_generate_content_semantic(
                             client,candidate_model,source,uploaded,prompt_json,max_events,
-                            static_timeout,structured=True,duration_seconds=duration_seconds,
+                            remaining_timeout(static_timeout),structured=True,duration_seconds=duration_seconds,
                         )
                     else:
                         candidate_video=dict(video_content or {})
@@ -485,7 +493,7 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
                             candidate_video["processing"]=attempt_mode
                         payload=_stream_semantic_interaction(
                             client,candidate_model,candidate_video,prompt_json,max_events,
-                            semantic_timeout,structured=True,
+                            remaining_timeout(semantic_timeout),structured=True,
                         )
                 except Exception as first_exc:
                     message=str(first_exc).lower()
@@ -501,7 +509,7 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
                     try:
                         payload=_generate_content_semantic(
                             client,candidate_model,source,uploaded,prompt_json,max_events,
-                            static_timeout,structured=True,duration_seconds=duration_seconds,
+                            remaining_timeout(static_timeout),structured=True,duration_seconds=duration_seconds,
                         )
                     except Exception as structured_exc:
                         structured_message=str(structured_exc).lower()
@@ -513,7 +521,7 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
                             raise
                         payload=_generate_content_semantic(
                             client,candidate_model,source,uploaded,prompt_json,max_events,
-                            static_timeout,structured=False,duration_seconds=duration_seconds,
+                            remaining_timeout(static_timeout),structured=False,duration_seconds=duration_seconds,
                         )
 
                 selected_model=candidate_model
@@ -575,6 +583,6 @@ def analyze_gameplay_video(path,game_hint="",max_events=12):
     finally:
         if uploaded is not None and client is not None:
             try:
-                client.files.delete(name=uploaded.name)
+                client.files.delete(name=uploaded.name,config={"http_options":{"timeout":2000,"retry_options":{"attempts":1}}})
             except Exception:
                 pass

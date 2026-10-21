@@ -108,8 +108,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid rgba(39,174,243,
 
 /* ---------- results ---------- */
 .top2{flex:0 0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-top:8px}
-.title-mural{position:relative;margin:4px 0 0;transform:rotate(-5deg);transform-origin:left;font-family:var(--gsf-mural-font);font-weight:700;color:var(--gsf-mural);line-height:1.05;font-size:clamp(22px,6vw,30px)}
-.title-mural small{display:block;margin-top:6px;font-family:var(--gsf-font);font-size:11px;font-weight:800;letter-spacing:.14em;color:#6C55D9}
+.results-title{position:relative;margin:4px 0 0;font-family:var(--gsf-font);font-weight:700;color:var(--gsf-mural);line-height:1.05;font-size:clamp(22px,6vw,30px)}
+.results-title small{display:block;margin-top:6px;font-family:var(--gsf-font);font-size:11px;font-weight:800;letter-spacing:.14em;color:#6C55D9}
 .side{display:grid;justify-items:end;gap:7px}
 .back{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 13px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid var(--gsf-line);font-size:12px;font-weight:800;color:#3E5880}
 .back svg{width:14px;height:14px}
@@ -262,7 +262,7 @@ input::placeholder,textarea::placeholder{color:var(--na-text-faint)}
  --gsf-sky:rgba(39,174,243,.16);--gsf-mint:rgba(94,214,160,.16);--gsf-sun:rgba(255,216,77,.16);--gsf-violet:rgba(157,130,255,.18);--gsf-rose:rgba(255,102,115,.16)}
 html,body{background:var(--na-bg)}
 #ai404{background:transparent}
-.mural,.title-mural,.empty-state,.change,.restore,.sheet-head h2{font-weight:700}
+.mural,.results-title,.empty-state,.change,.restore,.sheet-head h2{font-weight:700}
 .mural{font-size:clamp(22px,5.6vw,30px)}
 .pill{background:var(--na-glass);border-color:var(--na-edge);color:var(--na-text);box-shadow:var(--na-shine)}
 .pill .dot{background:rgba(5,13,22,.6);color:var(--na-text-muted)}
@@ -291,7 +291,7 @@ html,body{background:var(--na-bg)}
 .seg button{color:var(--na-text-muted)}
 .seg button.active{background:rgba(39,174,243,.22);color:#fff;box-shadow:var(--na-glow-primary)}
 /* Results */
-.title-mural small{color:#B9A7FF}
+.results-title small{color:#B9A7FF}
 .back{background:var(--na-glass);border-color:var(--na-edge);color:var(--na-text)}
 .frame{border-color:rgba(121,210,255,.35);background:var(--na-deep);box-shadow:0 0 30px rgba(39,174,243,.3)}
 .play{background:rgba(5,13,22,.45);border-color:rgba(255,255,255,.35);color:#fff}
@@ -321,7 +321,7 @@ html,body{background:var(--na-bg)}
 /* One mural per screen, written with a marker */
 @keyframes naPen{from{clip-path:inset(0 100% 0 0);opacity:.2}to{clip-path:inset(0 0 0 0);opacity:1}}
 .m2{display:none!important}
-.m1,.title-mural{animation:naPen 1.1s cubic-bezier(.3,.7,.2,1) both}
+.m1{animation:naPen 1.1s cubic-bezier(.3,.7,.2,1) both}
 /* AI made visible: results stream in one by one, the violet glow follows the confidence score */
 @keyframes naArrive{from{opacity:0;transform:translateY(14px) scale(.9);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
 .short:not(.skel){animation:naArrive .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * .18s)}
@@ -342,8 +342,6 @@ html,body{background:var(--na-bg)}
   <!-- VIEW 1: engines around the big circle -->
   <section class="view is-active" data-view="engines" aria-label="Che cosa vuoi trovare?">
     <div class="stage">
-      <p class="mural m1" id="muralA">Che cosa vuoi<br>trovare?</p>
-      <p class="mural m2" id="muralB">L'IA guarda<br>tutto il video</p>
 
       <button class="eng e1 is-selected" type="button" data-engine="auto" aria-pressed="true"><span class="bub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 13.8 9.6 19.5 11.4 13.8 13.2 12 19 10.2 13.2 4.5 11.4 10.2 9.6Z"/><path d="M18.5 3.5v3M17 5h3"/></svg></span><b>AUTO</b><span class="d">Sceglie da solo i più forti</span></button>
       <button class="eng e2" type="button" data-engine="action" aria-pressed="false"><span class="bub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5"/></svg></span><b>AZIONE</b><span class="d">Clutch, fight e flick</span></button>
@@ -365,9 +363,9 @@ html,body{background:var(--na-bg)}
   </section>
 
   <!-- VIEW 2: three shorts as portals -->
-  <section class="view" data-view="moments" aria-label="I tuoi 3 short">
+  <section class="view" data-view="moments" aria-label="I tuoi momenti">
     <div class="top2">
-      <p class="title-mural">Ecco i tuoi<br>3 short<small>MOTORE <span id="engineUsed">AUTO</span></small></p>
+      <p class="results-title">I tuoi momenti<small>MOTORE <span id="engineUsed">AUTO</span></small></p>
       <div class="side">
         <button id="changeSearch" class="back" type="button"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>Cambia motore</button>
         <span id="runChip" class="pill"><span class="dot"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg></span><span id="runText">In attesa</span></span>
@@ -538,7 +536,7 @@ html,body{background:var(--na-bg)}
         return Object.assign({}, s, { mode: calmMode(s, now) });
     }
     s.last = String(type);
-    s.seq = (Number(s.seq) || 0) + 1;
+    s.seq = (Number(prev && prev.seq) || 0) + 1;
     s.updated = now;
     s.mode = calmMode(s, now);
     return s;
@@ -748,10 +746,12 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     clearTimeout(celebrateTimer);
     if (visible() && state.celebrate_until > Date.now()) celebrateTimer = later(() => { state.mode = calmMode(state, Date.now()); paint(); renderBubble(); }, state.celebrate_until - Date.now() + 30);
     const fresh = state.seq !== (prev && prev.seq);
+    let notificationHandled = false;
+    if (fresh) try { const notify = W.top.GSFNotify || W.GSFNotify; if (notify && notify.alive) notificationHandled = notify.alive(state); } catch (_e) {}
     if (fresh && mounted && visible()) {
       if (state.last && SPOKEN.has(state.last) && state.seq !== lastSpokenSeq) {
         lastSpokenSeq = state.seq;
-        say(state.message, { anchor: page.voiceAnchor });
+        if (!notificationHandled) say(state.message, { anchor: page.voiceAnchor });
         beat();
         if (state.last === "render.completed" || (state.last === "publish.completed" && state.published)) { celebrate(); haptic([14, 50, 22]); }
         else if (/\.started$/.test(state.last) && !fromRemote) haptic(10);
@@ -905,7 +905,9 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   let bubbleGo = null, bubbleKind = "";
   function renderBubble() {
     if (!bubbleEl) return;
-    const m = mounted && visible() ? bubbleModel() : null;
+    let shared = false;
+    try { shared = !!(W.top.GSFNotify && W.top.GSFNotify.alive); } catch (_e) {}
+    const m = mounted && visible() && !shared ? bubbleModel() : null;
     bubbleGo = m ? m.go : null;
     if (!m) { bubbleEl.classList.remove("on", "spin", "done"); bubbleEl.tabIndex = -1; bubbleKind = ""; return; }
     const ins = insets();
@@ -1167,6 +1169,11 @@ function freshRows(j){
 async function pollResults(token,deadline){
   if(token!==pollToken||!awaitingResults)return;
   const j=await fetchResults();const list=freshRows(j);
+  if(j?.status==='failed'&&j.request_id&&j.request_id===requestId){
+    awaitingResults=false;state.processing=false;setScan("error");render();
+    const message=String(j.error||"Analisi non riuscita. Riprova.");$("aiStatus").textContent=message;
+    alive("failure",{job:"ai",message});return;
+  }
   if(list){runInfo={pool:Number(j.pool_size)||0,engine:String(j.engine||"")};if(applyResults(list))return}
   if(Date.now()>=deadline){awaitingResults=false;state.processing=false;setScan("error");render();alive("failure",{job:"ai",message:"I risultati non sono arrivati. Riproviamo."});return}
   setTimeout(()=>pollResults(token,deadline),1500)}
@@ -1209,7 +1216,7 @@ function ring(score,big){const r=46,c=2*Math.PI*r,v=Math.max(0,Math.min(100,scor
 
 function renderMoments(){
   const host=$("previews"),r=rows();host.innerHTML="";
-  if(!r.length){host.innerHTML='<span class="sr">Sto preparando i tuoi 3 short…</span>'+[0,1,2].map(i=>'<div class="short skel" style="--i:'+i+'" aria-hidden="true"><div class="frame"></div></div>').join("");return} /* GSF_NIGHT_ARENA: skeleton portals while the AI works */
+  if(!r.length){host.innerHTML='<span class="sr">Sto preparando i tuoi momenti…</span>'+[0,1,2].map(i=>'<div class="short skel" style="--i:'+i+'" aria-hidden="true"><div class="frame"></div></div>').join("");return} /* GSF_NIGHT_ARENA: skeleton portals while the AI works */
   if(Number(state.selectedMoment)>=r.length)state.selectedMoment=0;
   r.forEach((item,index)=>{
     const sel=Number(state.selectedMoment)===index,score=scoreOf(item);

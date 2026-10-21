@@ -67,9 +67,13 @@ def test_settings_page_contents():
     assert re.search(r'\["profile","social","subscription","account"\]\.includes\(v\)\)v="settings"', _script())
 
 
-def test_live_is_empty_placeholder():
+def test_sources_replace_placeholder_with_real_library():
     view = HUB[HUB.index('data-view="live"'):HUB.index('data-view="settings"')]
-    assert "In arrivo" in view and "pcard" not in view
+    assert 'id="sourceLibrary"' in view
+    for label in ('Upload','Twitch','YouTube','Live','VOD','Clip','Importati'):
+        assert label in view
+    assert '/creator-hub/sources' in _script()
+    assert '/creator-hub/sources/activate' in _script()
 
 
 def test_desktop_two_columns_and_brand_tokens():

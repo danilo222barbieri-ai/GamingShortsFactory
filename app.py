@@ -1765,6 +1765,18 @@ def durata_video(file_path):
 @st.cache_data(show_spinner=False,max_entries=256)
 def _gsf_duration_cached(file_path,size,mtime_ns,ffmpeg_path):
     """Read each unchanged media duration once across Streamlit reruns."""
+    # Metadata belongs to ffprobe: the encoder wrapper inserts output options
+    # and cannot safely handle the output-less `ffmpeg -i file` invocation.
+    if FFPROBE_PATH:
+        try:
+            probe=subprocess.run([FFPROBE_PATH,"-v","error","-show_entries","format=duration",
+                "-of","default=noprint_wrappers=1:nokey=1",str(file_path)],
+                capture_output=True,text=True,timeout=10)
+            value=float((probe.stdout or "").strip())
+            if probe.returncode==0 and value>0 and value<float("inf"):
+                return value
+        except (OSError,ValueError,subprocess.TimeoutExpired):
+            pass
 
     comando = [
         ffmpeg_path,
@@ -13477,6 +13489,19 @@ if video:
                 unsafe_allow_html=True,
             )
         if _gsf_create_ai_clicked:
+            try:
+                _gsf_analysis_source_duration=float(durata_video(str(_source_path)) or 0)
+            except Exception:
+                _gsf_analysis_source_duration=0.0
+            if 0 < _gsf_analysis_source_duration < 5.0:
+                _gsf_ai_short_message="L’analisi richiede almeno 5 secondi. Puoi aprire questo video nell’Editor dalla Home."
+                from web.ai_engines_v412 import write_results_meta as _gsf_ai_write_failure
+                _gsf_ai_write_failure(GSF_PREVIEW_DIR,{"items":[],"status":"failed","error_code":"video_too_short",
+                    "request_id":str(st.session_state.get("gsf_v412_request_id") or ""),"error":_gsf_ai_short_message})
+                st.warning(_gsf_ai_short_message)
+                _gsf_create_ai_clicked=False
+        if _gsf_create_ai_clicked:
+            _gsf_ai_run_error=""
             _gsf_save_persistent_state()
             st.session_state["gsf_ai_timing_start"]=time.perf_counter()
             st.session_state.pop("gsf_ai_result_timings",None)
@@ -13501,6 +13526,8 @@ if video:
                     __import__("web.ai_engines_v412",fromlist=["cache_profile"]).cache_profile(_gsf_v291_profile),
                 )
                 cached_ai = st.session_state.get("gsf_fast_ai_cache", {}).get(cache_key_ai)
+                if cached_ai is not None and not cached_ai.get("candidati"):
+                    cached_ai = None
                 st.session_state["gsf_ai_ranking_cache_hit"]=cached_ai is not None
 
                 with st.spinner(messaggio):
@@ -13514,13 +13541,18 @@ if video:
                             st.session_state["gsf_ai_v3_diagnostics"] = cached_ai["diagnostics"]
 
                     else:
-                        risultati_ai, ai_diag = _gsf_ai_rank_v3(
-                            analisi_input,
-                            modalita,
-                            clip_duration=float(duration),
-                            numero_clip=3,
-                            cache_token=_video_cache_token
-                        )
+                        try:
+                            risultati_ai, ai_diag = _gsf_ai_rank_v3(
+                                analisi_input,
+                                modalita,
+                                clip_duration=float(duration),
+                                numero_clip=3,
+                                cache_token=_video_cache_token
+                            )
+                        except Exception as _gsf_ai_rank_failure:
+                            print("GSF_AI_RANK_FAILURE",type(_gsf_ai_rank_failure).__name__,flush=True)
+                            risultati_ai, ai_diag = [], {}
+                            _gsf_ai_run_error="L’analisi non è riuscita. Il gameplay è conservato: puoi riprovare o aprirlo nell’Editor dalla Home."
 
                         candidati = [start_ai for score_ai, start_ai in risultati_ai]
                         st.session_state.ai_director_scores = risultati_ai
@@ -13560,7 +13592,7 @@ if video:
                         else:
                             st.session_state.clip_rifinite = {}
 
-                if cached_ai is None:
+                if cached_ai is None and candidati:
                     if "gsf_fast_ai_cache" not in st.session_state:
                         st.session_state["gsf_fast_ai_cache"] = {}
 
@@ -13577,7 +13609,11 @@ if video:
                 if candidati:
                     st.session_state.auto_clip_scelta = candidati[0]
                 else:
-                    st.warning("Non ho trovato candidati. Usa la modalità Manuale.")
+                    _gsf_ai_empty_message=_gsf_ai_run_error or "Non ho trovato momenti validi. Il gameplay è conservato: puoi cambiare motore o aprirlo nell’Editor dalla Home."
+                    from web.ai_engines_v412 import write_results_meta as _gsf_ai_write_failure
+                    _gsf_ai_write_failure(GSF_PREVIEW_DIR,{"items":[],"status":"failed","error_code":"analysis_failed" if _gsf_ai_run_error else "no_moments",
+                        "request_id":str(st.session_state.get("gsf_v412_request_id") or ""),"error":_gsf_ai_empty_message})
+                    st.warning(_gsf_ai_empty_message)
 
         if st.session_state.get("auto_clip_modalita") != modalita:
             candidati = []
@@ -16492,7 +16528,7 @@ if GSF_WEB_MODE:
       const frame=o.querySelector('iframe');
       const ensureFrame=()=>{
         if(frame.dataset.loaded==='1')return;
-        frame.src=frame.dataset.src||'/share-v156/';
+        frame.contentWindow.location.replace(frame.dataset.src||'/share-v156/');
         frame.dataset.loaded='1';
       };
       const open=(platform='')=>{
@@ -16829,7 +16865,8 @@ setTimeout(()=>{const b=document.querySelector('#gsf-editor-overlay-v220 .v326He
         if(!reused){
           metadataReady=false;mobileReady=false;frame.dataset.ready='0';frame.__gsfEditorInitialized=false;
           frame.dataset.editorSource=editorSource;
-          frame.src=editorSource+'?v=2026';
+          // Surface documents must not add entries to the root router history.
+          frame.contentWindow.location.replace(editorSource+'?v=2026');
           frame.dataset.loaded='1';
         }
 
@@ -16957,7 +16994,7 @@ if GSF_WEB_MODE:
       };
       const ensureFrame=()=>{
         if(frame.dataset.loaded==='1')return;
-        frame.src=frame.dataset.src||'/ai-v221/';
+        frame.contentWindow.location.replace(frame.dataset.src||'/ai-v221/');
         frame.dataset.loaded='1';
       };
       const open=(remember=true)=>{
@@ -17860,6 +17897,16 @@ if GSF_WEB_MODE:
         });
       };
 
+      let startupReady=false;
+      const homeReady=()=>[...d.querySelectorAll('iframe')].some(f=>{try{return !!f.contentWindow.__GSF_V333_CTA_TOUCH&&!!f.contentDocument.querySelector('#home154')}catch(_e){return false}});
+      const finishStartup=()=>{startupReady=true;P.GSFNotify?.dismiss('alive:startup')};
+      P.addEventListener('message',e=>{
+        if(e.origin!==P.location.origin||e.data?.type!=='GSF_HOME_READY')return;
+        const home=[...d.querySelectorAll('iframe')].find(f=>f.contentWindow===e.source);
+        try{if(home?.contentWindow.__GSF_V333_CTA_TOUCH&&home.contentDocument.querySelector('#home154'))finishStartup()}catch(_e){}
+      },{signal:bridge.signal});
+      P.addEventListener('gsf:surfacechange',()=>{if(P.GSFNavigation.snapshot().target!=='home')finishStartup()},{signal:bridge.signal});
+
       // V258: replacement upload is owned by the Home uploader itself.
       // Existing global notifications remain available from every page.
       P.addEventListener('message',(e)=>{
@@ -17875,6 +17922,11 @@ if GSF_WEB_MODE:
 
       // Re-enable silent Web Push when permission already exists.
       ensurePush().then(()=>{
+        if(P.GSFNavigation.snapshot().target==='home'&&!startupReady&&!homeReady()){
+          P.GSFNotify?.upsert('alive:startup',{title:'Avvio GSF',body:'Preparo il tuo spazio.',kind:'working',ttl:0});
+          bridge.timeout(()=>{if(!startupReady&&!homeReady()&&P.GSFNavigation.snapshot().target==='home')P.GSFNotify?.upsert('alive:startup',{title:'Avvio non completato',body:'La Home non ha ancora risposto.',kind:'warning',ttl:0,actionLabel:'Riprova',onClick:()=>P.location.reload()})},60000);
+        }
+
         try{P.GSFPush&&P.GSFPush.ensure&&P.GSFPush.ensure().catch(()=>{})}catch(_e){}
       });
     })(window.parent);
@@ -17935,6 +17987,9 @@ if GSF_WEB_MODE:
         if(s)return s;
         s=D.createElement('style');s.id='gsf-global-shell-v343-style';
         s.textContent=`
+          /* Streamlit mounts its chrome after this shell; never flash it above GSF. */
+          html body [data-testid="stHeader"],html body [data-testid="stToolbar"],
+          html body [data-testid="stStatusWidget"],html body [data-testid="stDecoration"]{display:none!important}
           :root{
             --gsf-shell-header-h:44px;
             --gsf-shell-gamebar-h:62px;
@@ -17963,6 +18018,9 @@ if GSF_WEB_MODE:
           #gsf-global-footer .v343Bug{grid-column:3;justify-self:end;border:0;background:transparent;color:#6983a4;font:800 7px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:3px 0;white-space:nowrap}
           #gsf-editor-overlay-v220,#gsf-short-overlay-v343,#gsf-creator-hub-live-v160,#gsf-ai-overlay-v221,#gsf-social-overlay-v159,#gsf-account-overlay-v223{position:fixed!important;left:0!important;right:0!important;top:var(--gsf-shell-content-top)!important;bottom:var(--gsf-shell-content-bottom)!important;height:auto!important;max-height:none!important;z-index:var(--gsf-shell-overlay-z)!important;box-sizing:border-box!important}
           #gsf-editor-overlay-v220 .gsf-editor-shell,#gsf-creator-hub-live-v160 .gsf-hub-shell-v160,#gsf-ai-overlay-v221 .gsf-ai-shell,#gsf-social-overlay-v159 .gsf-social-shell,#gsf-account-overlay-v223 .gsf-account-shell{position:absolute!important;inset:0!important;min-height:0!important;max-height:none!important}
+          /* Canonical frame geometry exists before transient Streamlit styles/bootstrap. */
+          #gsf-social-overlay-v159 iframe,#gsf-creator-hub-live-v160 iframe,#gsf-editor-overlay-v220 iframe,#gsf-ai-overlay-v221 iframe,#gsf-account-overlay-v223 iframe{display:block!important;width:100%!important;height:100%!important;min-width:0!important;max-width:100%!important;min-height:0!important;border:0!important;box-sizing:border-box!important;background:#050D16!important}
+          #gsf-social-overlay-v159 .gsf-social-shell,#gsf-creator-hub-live-v160 .gsf-hub-shell-v160,#gsf-editor-overlay-v220 .gsf-editor-shell,#gsf-ai-overlay-v221 .gsf-ai-shell,#gsf-account-overlay-v223 .gsf-account-shell{width:100%!important;height:100%!important;max-width:none!important;box-sizing:border-box!important}
           #gsf-short-overlay-v343{display:flex;align-items:center;justify-content:center;padding:8px;background:#050D16;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease,visibility .18s ease}
           #gsf-short-overlay-v343.is-open{opacity:1;visibility:visible;pointer-events:auto}
           #gsf-short-overlay-v343 .v343ShortShell{position:relative;width:min(680px,calc(100vw - 20px));height:100%;min-height:0;display:grid;grid-template-rows:auto 1fr auto;gap:9px;border:1px solid rgba(150,184,214,.24);border-radius:22px;background:rgba(255,255,255,.90);box-shadow:0 22px 58px rgba(49,94,135,.12);overflow:hidden;padding:12px;box-sizing:border-box}
@@ -17987,7 +18045,7 @@ if GSF_WEB_MODE:
       const ensureHubSurface=()=>{
         let o=D.getElementById('gsf-creator-hub-live-v160');
         if(!o){o=D.createElement('section');o.id='gsf-creator-hub-live-v160';o.setAttribute('aria-hidden','true');o.innerHTML=`<div class="gsf-hub-shell-v160"><iframe class="gsf-hub-frame" title="Creator Hub" data-src="/creator-hub-v156/" style="width:100%;height:100%;display:block;border:0;background:#F8FCFF"></iframe></div>`;D.body.appendChild(o)}
-        const f=o.querySelector('iframe');if(f&&f.dataset.loaded!=='1'){f.src='/creator-hub-v156/?v=343';f.dataset.loaded='1'}return o;
+        const f=o.querySelector('iframe');if(f&&f.dataset.loaded!=='1'){f.contentWindow.location.replace('/creator-hub-v156/?v=343');f.dataset.loaded='1'}return o;
       };
       const focusHub=(section)=>{const o=ensureHubSurface();show(o);const f=o.querySelector('iframe');f.dataset.gsfSection=section;const send=()=>{try{f?.contentWindow?.postMessage({type:'GSF_HUB_FOCUS',section:f.dataset.gsfSection||'dashboard',epoch:P.GSFNavigation.snapshot().epoch},P.location.origin)}catch(_e){}};send();if(f&&f.dataset.v343Focus!=='1'){f.dataset.v343Focus='1';f.addEventListener('load',send)}return true};
 

@@ -211,6 +211,11 @@ def merge_results(meta: Mapping[str, Any] | None, files: Iterable[tuple[int, flo
     """Join the results sheet with the mini preview files. None when there is no sheet."""
     if not isinstance(meta, Mapping):
         return None
+    if meta.get("status") == "failed":
+        return {"ok":True,"status":"failed","request_id":str(meta.get("request_id") or ""),
+                "error_code":str(meta.get("error_code") or "analysis_failed"),
+                "error":str(meta.get("error") or "Analisi non riuscita. Riprova."),
+                "previews":[],"count":0}
     files = list(files)
     previews = []
     for item in meta.get("items") or []:
