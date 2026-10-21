@@ -278,6 +278,7 @@ input::placeholder,textarea::placeholder{color:var(--na-text-faint)}
 .row{background:rgba(255,255,255,.04);border:1px solid var(--na-edge)}
 .row small{color:var(--na-text-muted)}
 .row small.err{color:#FF8A94}
+.row small{overflow-wrap:anywhere}.resultActions{display:flex;flex-direction:column;gap:6px}
 .row a,.row button{background:rgba(39,174,243,.12);border-color:var(--na-edge-strong);color:#9FDCFF}
 .bar{background:var(--na-edge)}
 .bar i{background:var(--na-cta)}
@@ -1130,6 +1131,7 @@ const ICONS={
 $$('[data-icon]').forEach(el=>{el.innerHTML=ICONS[el.dataset.icon]||'';el.setAttribute('aria-hidden','true')});
 
 const NAMES={youtube:'YouTube',tiktok:'TikTok',instagram:'Instagram',facebook:'Facebook'};
+const GUIDED_URL={facebook:'https://www.facebook.com/',instagram:'https://www.instagram.com/',tiktok:'https://www.tiktok.com/upload'};
 const LIMITS={all:{title:100,desc:2200},youtube:{title:100,desc:5000},tiktok:{title:0,desc:2200},instagram:{title:0,desc:2200},facebook:{title:255,desc:5000}};
 const SUGGEST={all:['gaming','shorts','gameplay','gamer','clip','highlights','viral'],youtube:['Shorts','gaming','youtubeshorts'],tiktok:['fyp','perte','gamingtiktok'],instagram:['reels','gamingreels','instagaming'],facebook:['gaming','video']};
 const PRIVACY_LABEL={public:'Pubblico',unlisted:'Non in elenco',private:'Privato'};
@@ -1214,7 +1216,8 @@ $$('.seg button').forEach(b=>b.onclick=()=>{privacy=b.dataset.privacy;save();ren
 
 /* platforms on the orbit */
 const selected=()=>$$('.plat[aria-pressed="true"]').map(b=>b.dataset.platform);
-const busy=()=>(server.publish_job||{}).state==='running';
+const confirming=job=>Object.values((job||{}).results||{}).some(r=>r.confirmation_pending);
+const busy=()=>(server.publish_job||{}).state==='running'||confirming(server.publish_job);
 const alive=(type,data)=>{try{window.GSFAlive&&window.GSFAlive.emit(type,data)}catch(_e){}};
 const aliveState=()=>{try{return window.GSFAlive?window.GSFAlive.state():{}}catch(_e){return{}}};
 const recent=()=>{const j=server.publish_job||{};return busy()||(j.state==='finished'&&Date.now()/1000-Number(j.updated_at||0)<600)};
@@ -1227,7 +1230,7 @@ function renderPlatforms(){
     else if(social[p]){lbl.textContent='Collegato';lbl.classList.add('on')}
     else{lbl.textContent='Collega';lbl.classList.add('go')}
     if(lbl.classList.contains('go'))lbl.setAttribute('data-alive-next','connect_social');else lbl.removeAttribute('data-alive-next');
-    st.className='st'+(r?(r.status==='running'||r.status==='queued'?' run':r.status==='done'?' ok':r.status==='error'?' ko':''):'');
+    st.className='st'+(r?(r.confirmation_pending||r.status==='running'||r.status==='queued'?' run':r.status==='done'?' ok':r.status==='error'?' ko':''):'');
     b.setAttribute('aria-label',NAMES[p]+', '+(b.getAttribute('aria-pressed')==='true'?'selezionato':'non selezionato')+', '+lbl.textContent);
   });
   $$('.seg button').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.privacy===privacy)));
@@ -1238,12 +1241,13 @@ function renderCore(){
   $('#orbit').classList.toggle('busy',busy());
   btn.disabled=!server.ready||busy()||!n;
   let title,sub;
-  if(busy()){const res=Object.values((server.publish_job||{}).results||{}).filter(r=>['queued','running','done','error'].includes(r.status));const done=res.filter(r=>r.status==='done'||r.status==='error').length;title='Pubblico…';sub=done+' di '+(res.length||n)+' completati'}
+  if(confirming(server.publish_job)){title='In attesa di TikTok';sub='Puoi uscire: verifico la conferma senza inviare un altro video'}
+  else if(busy()){const res=Object.values((server.publish_job||{}).results||{}).filter(r=>['queued','running','done','error'].includes(r.status));const done=res.filter(r=>r.status==='done'||r.status==='error').length;title='Pubblico…';sub=done+' di '+(res.length||n)+' completati'}
   else if(!server.ready){title='In arrivo';sub=shortNotice||'Lo Short finale sta arrivando'}
   else if(!n){title='Scegli i social';sub='Tocca le bolle sull\'anello'}
-  else{title=n>1?'Pubblica su '+n+' social':'Pubblica su '+NAMES[sel[0]];
+  else{const direct=sel.filter(p=>(server.publish_supported||[]).includes(p)).length;title=!direct?'Condividi su '+sel.map(p=>NAMES[p]).join(', '):direct<n?'Pubblica e condividi':n>1?'Pubblica su '+n+' social':'Pubblica su '+NAMES[sel[0]];
     const needTitle=sel.includes('youtube')&&!String(effective('youtube').title||'').trim();
-    sub=needTitle?'Aggiungi un titolo per YouTube':PRIVACY_LABEL[privacy]+' · '+((texts.all.tags||[]).length?(texts.all.tags||[]).length+' hashtag':'testi pronti')}
+    sub=needTitle?'Aggiungi un titolo per YouTube':!direct?'Completa la pubblicazione nell’app scelta':PRIVACY_LABEL[privacy]+' · '+((texts.all.tags||[]).length?(texts.all.tags||[]).length+' hashtag':'testi pronti')}
   $('#coreTitle').textContent=title;$('#coreSub').textContent=sub;
   btn.setAttribute('aria-label',title+'. '+sub);
 }
@@ -1252,7 +1256,7 @@ $$('.plat').forEach(b=>b.onclick=()=>{
   const p=b.dataset.platform, on=b.getAttribute('aria-pressed')!=='true';
   b.setAttribute('aria-pressed',String(on));save();renderPlatforms();
   if(on&&(server.publish_supported||[]).includes(p)&&!(server.social||{})[p])toast(NAMES[p]+' non è collegato: tocca di nuovo "Collega" per farlo');
-  if(on&&!(server.publish_supported||[]).includes(p))toast(NAMES[p]+': condivisione guidata, il testo viene copiato per te');
+  if(on&&!(server.publish_supported||[]).includes(p))toast(NAMES[p]+': condividi il video e completa il post nell’app');
 });
 $$('.plat .lbl').forEach(l=>l.addEventListener('click',e=>{const b=l.closest('.plat'),p=b.dataset.platform;if(l.classList.contains('go')){e.stopPropagation();connect(p)}}));
 function connect(p){
@@ -1270,30 +1274,41 @@ function renderResults(){
   Object.values(job.results).forEach(r=>{
     const row=document.createElement('div');row.className='row';
     let msg='',act=null;
-    if(r.status==='queued')msg='In coda…';
+    if(r.confirmation_pending)msg='In attesa di conferma TikTok. Non inviare di nuovo il video.';
+    else if(r.status==='queued')msg='In coda…';
     else if(r.status==='running')msg='Caricamento in corso…';
     else if(r.status==='done'){
-      msg=r.platform==='tiktok'?(r.private_only?'Inviato come privato: TikTok non ha ancora approvato l\'app per i post pubblici.':'Inviato: TikTok lo mostra tra qualche minuto.'):('Pubblicato'+(r.privacy==='private'?' come privato':r.privacy==='unlisted'?' non in elenco':''));
+      msg=r.platform==='tiktok'?((r.private_only||r.privacy==='SELF_ONLY'||(!r.privacy&&job.privacy==='private'))?'Pubblicato su TikTok come privato.':'Pubblicato su TikTok.'):('Pubblicato'+(r.privacy==='private'?' come privato':r.privacy==='unlisted'?' non in elenco':''));
       if(r.url&&/^https:\/\//.test(r.url)){act=document.createElement('a');act.href=r.url;act.target='_blank';act.rel='noopener';act.textContent='Apri'}
     }
     else if(r.status==='needs_connection'){msg='Account non collegato.';act=document.createElement('button');act.type='button';act.textContent='Collega';act.onclick=()=>connect(r.platform)}
-    else if(r.status==='manual'){msg='Il testo viene copiato: incollalo nell\'app.';act=document.createElement('button');act.type='button';act.textContent='Condividi';act.onclick=()=>manualShare(r.platform,r.caption||'')}
-    else msg=r.error||'Non riuscito.';
+    else if(r.status==='manual'){
+      msg=r.platform==='instagram'?'Condividi il video nell’app Instagram, anche con un account personale.':'Completa la pubblicazione nell’app Facebook: GSF prepara video e testo.';
+      act=document.createElement('div');act.className='resultActions';
+      const share=document.createElement('button');share.type='button';share.textContent='Condividi';share.onclick=()=>manualShare(r.platform,r.caption||'');
+      const link=document.createElement('a');link.href=GUIDED_URL[r.platform];link.target='_blank';link.rel='noopener noreferrer';link.textContent='Apri '+NAMES[r.platform];act.append(share,link);
+    }
+    else {msg=r.error||'Non riuscito.';if(r.platform==='tiktok'&&['access_token_invalid','scope_not_authorized'].includes(r.error_code)){act=document.createElement('button');act.type='button';act.textContent='Ricollega';act.onclick=()=>connect('tiktok')}}
     const logo=document.createElement('span');logo.className='logo '+CLS[r.platform];logo.innerHTML=ICONS[r.platform]||'';
-    const body=document.createElement('span');const b=document.createElement('b');b.textContent=r.label||NAMES[r.platform]||r.platform;const sm=document.createElement('small');sm.textContent=msg;if(r.status==='error')sm.className='err';body.append(b,sm);
-    if(r.status==='running'||r.status==='queued'){const bar=document.createElement('div');bar.className='bar';bar.innerHTML='<i></i>';body.append(bar)}
+    const body=document.createElement('span');const b=document.createElement('b');b.textContent=r.label||NAMES[r.platform]||r.platform;const sm=document.createElement('small');sm.textContent=msg;if(r.status==='error'&&!r.confirmation_pending)sm.className='err';body.append(b,sm);
+    if(r.confirmation_pending||r.status==='running'||r.status==='queued'){const bar=document.createElement('div');bar.className='bar';bar.innerHTML='<i></i>';body.append(bar)}
     row.append(logo,body);if(act)row.append(act);
     box.append(row);
   });
-  if(job.state==='running'&&!polling)polling=setInterval(pollJob,2500);
-  if(job.state!=='running'&&polling){clearInterval(polling);polling=null}
+  if((job.state==='running'||confirming(job))&&!polling)polling=setInterval(pollJob,2500);
+  if(job.state!=='running'&&!confirming(job)&&polling){clearInterval(polling);polling=null}
+}
+function reportPublishOutcome(job){
+  const res=Object.values(job.results||{}),ok=res.filter(r=>r.status==='done').length,ko=res.filter(r=>r.status==='error').length,manual=res.filter(r=>r.status==='manual').length,need=res.filter(r=>r.status==='needs_connection').length;
+  const parts=[];if(ok)parts.push(ok+' pubblicati');if(ko)parts.push(ko+' non riusciti');if(manual)parts.push(manual+' da condividere nell’app');if(need)parts.push(need+' account da collegare');
+  toast(parts.join(', ')||'Controlla gli esiti');if(ok||ko)alive('publish.completed',{ok,ko});
 }
 async function pollJob(){
   try{
     const r=await fetch('/publish/status',{cache:'no-store',credentials:'same-origin'});const j=await r.json();
     if(!r.ok||!j.ok)return;
-    const was=(server.publish_job||{}).state;server.publish_job=j.job||{};renderResults();renderPlatforms();
-    if(was==='running'&&server.publish_job.state==='finished'){const res=Object.values(server.publish_job.results||{});const ok=res.filter(x=>x.status==='done').length,ko=res.filter(x=>x.status==='error').length;toast(ko?ok+' pubblicati, '+ko+' da riprovare':'Fatto! Short pubblicato');alive('publish.completed',{ok,ko})}
+    const was=server.publish_job||{};server.publish_job=j.job||{};renderResults();renderPlatforms();
+    if((was.state==='running'||confirming(was))&&server.publish_job.state==='finished'&&!confirming(server.publish_job))reportPublishOutcome(server.publish_job);
   }catch(_e){}
 }
 
@@ -1311,7 +1326,7 @@ $('#publishBtn').onclick=async()=>{
     const r=await fetch('/publish/multi',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-GSF-CSRF':server.csrf_token||''},body:JSON.stringify(payload())});
     const j=await r.json().catch(()=>({}));
     if(!r.ok||!j.ok)throw new Error(j.error||'Pubblicazione non avviata');
-    server.publish_job=j.job||{};alive('publish.started');renderResults();renderPlatforms();open('results');
+    server.publish_job=j.job||{};if(busy())alive('publish.started');else reportPublishOutcome(server.publish_job);renderResults();renderPlatforms();open('results');
   }catch(e){toast(e.message||'Pubblicazione non avviata');renderPlatforms()}
 };
 
@@ -1332,9 +1347,9 @@ async function nativeShare(){
 }
 function download(){const a=document.createElement('a');a.href='/share/final';a.download='gaming-short.mp4';document.body.append(a);a.click();a.remove();toast('Download avviato')}
 async function manualShare(p,caption){
-  await copy(caption);toast('Testo copiato');
+  const copied=await copy(caption);toast(copied?'Testo copiato':'Copia il testo dalla sezione Testi');
   if(await nativeShare())return;
-  download();window.open(p==='instagram'?'https://www.instagram.com/':'https://www.facebook.com/','_blank','noopener');
+  download();toast('Video scaricato: usa Apri '+NAMES[p]+' e allegalo nell’app. '+(copied?'Testo copiato.':'Copia il testo dalla sezione Testi.'));
 }
 let dropboxLoading=null;
 function loadDropbox(){

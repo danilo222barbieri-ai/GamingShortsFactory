@@ -3,6 +3,13 @@
 > **CANONICAL SOURCE OF TRUTH FOR ALL TECHNICAL CHATS / AGENTS.**
 > Read this file before changing code. Refresh live GitHub/Railway evidence before changing production claims.
 
+## Publication recovery checkpoint — 2026-10-21
+
+- User locates TikTok failure at pressing Pubblica; exact live provider code remains unavailable. Provider failures now expose sanitized codes and actionable Italian messages, including non-JSON HTTP/network failures, without logging credentials or raw provider payloads. Public rejection no longer silently retries private; explicit private publishing remains supported and unavailable privacy choices never change automatically.
+- TikTok confirmation-pending outcomes keep polling and block duplicate submission until the existing backend confirms completion/failure. Guided Facebook/Instagram outcomes no longer leave Alive publishing forever or claim publication. Guided Instagram supports personal accounts through existing native video sharing; API professional-account requirements are unchanged and no automatic Meta publisher is introduced. Real destination links replace async popup opening; denied clipboard access no longer claims text was copied.
+- Verification: full WebKit-enabled suite354PASS21SKIP70subcases96.81s; nine targeted publication tests PASS, including four mobile widths, native file-share invocation and clipboard denial. Eight CI contracts PASS. Local production container manifest verified4edf91b6073f2ee1a5642b5ff2e5e4bd535c9265d5a32e0c4821a51a8235f395. Provider transport in publication tests is controlled: actual consent/account publication and physical iPhone share sheet are not verified.
+- Correct AI commit SHA: d004d794e1dbc7c86ed34e0563b2062449992f3d. Its Production Gate39626898963 and Editor shell39626898985 SUCCESS; CI39626898947 fails eight Pillow12.3.0 vulnerabilities requiring13.0.0. Fresh PyPI stable1.66.0/nightly1.66.1.dev20261020 still requirePillow<13. No audit bypass, marker mutation or Railway promotion. Publication checkpoint requires fresh remote checks.
+
 ## User-reported installed-app AI stall — verified branch fix, 2026-10-21
 
 - User contradicts prior broad AI-success claim: installed app waits~3min and never reaches choices, including3second videos. Reproduced actual3s upload/AI stall locally; ranker intentionally returns no candidates below5s, and no terminal result reached UI. Also discovered FFmpeg encoder wrapper breaks output-less duration probes; existing ffprobe now reads duration independently.

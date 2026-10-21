@@ -4785,8 +4785,9 @@ def _publish_run(sid,job,request,video_path):
         except Exception as exc:
             message=str(exc)[:220] or "Pubblicazione non riuscita."
             extra={"confirmation_pending":True,"content_id":exc.publish_id} if isinstance(exc,_pm413.PublishUnconfirmed) else {}
-            _publish_update(sid,job,platform,status="error",error=message,**extra)
-            print("GSF_V413_PUBLISH_FAIL",sid,platform,type(exc).__name__,flush=True)
+            error_code=str(getattr(exc,"code","") or "") if isinstance(exc,_pm413.PublishError) else ""
+            _publish_update(sid,job,platform,status="error",error=message,error_code=error_code,**extra)
+            print("GSF_V413_PUBLISH_FAIL",sid,platform,type(exc).__name__,error_code,flush=True)
     done=all(r.get("status") in ("done","error","manual","needs_connection") for r in job["results"].values())
     if done:
         _publish_update(sid,job,state="finished")

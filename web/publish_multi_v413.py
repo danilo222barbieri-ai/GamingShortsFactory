@@ -137,7 +137,9 @@ def normalize_request(payload) -> dict:
 # HTTP helpers
 # --------------------------------------------------------------------------
 class PublishError(RuntimeError):
-    pass
+    def __init__(self,message,code=""):
+        super().__init__(message)
+        self.code=str(code) if re.fullmatch(r"[a-z0-9_.-]{1,100}",str(code)) else ""
 
 
 class PublishUnconfirmed(PublishError):
@@ -146,10 +148,37 @@ class PublishUnconfirmed(PublishError):
         super().__init__("TikTok sta ancora elaborando il video: pubblicazione non confermata. Controlla lo stato prima di riprovare.")
 
 
+def _tiktok_failure(code):
+    code=str(code) if re.fullmatch(r"[a-z0-9_.-]{1,100}",str(code)) else "unknown_error"
+    messages={
+        "http_401":"TikTok ha rifiutato l’accesso. Ricollega l’account.",
+        "http_403":"TikTok ha negato la richiesta. Verifica i permessi e l’approvazione dell’app GSF.",
+        "http_429":"Attendi qualche minuto: TikTok sta limitando le richieste.",
+        "network_error":"TikTok non è raggiungibile. Attendi e riprova.",
+        "invalid_response":"TikTok non ha restituito una risposta valida. Attendi e riprova.",
+        "access_token_invalid":"Accesso TikTok scaduto o revocato. Ricollega l’account.",
+        "scope_not_authorized":"TikTok non ha concesso il permesso di pubblicazione. Ricollega l’account; se persiste, va verificata l’approvazione di GSF su TikTok.",
+        "unaudited_client_can_only_post_to_private_accounts":"TikTok non ha ancora approvato GSF per questi post pubblici. Scegli Privato oppure esporta il video e pubblicalo dall’app TikTok.",
+        "rate_limit_exceeded":"Attendi qualche minuto: TikTok sta limitando le richieste, poi riprova.",
+        "spam_risk_too_many_posts":"TikTok ha raggiunto il limite di pubblicazioni. Attendi prima di riprovare.",
+        "spam_risk_too_many_pending_share":"Ci sono troppi video TikTok in attesa. Controllali nell’app prima di riprovare.",
+        "spam_risk_user_banned_from_posting":"TikTok non consente a questo account di pubblicare. Verifica gli avvisi nell’app TikTok.",
+        "reached_active_user_cap":"L’app GSF ha raggiunto il limite di creator consentito da TikTok. È necessaria una verifica dell’app.",
+        "privacy_level_option_mismatch":"La privacy scelta non è disponibile per questo account TikTok. Scegli una delle impostazioni consentite.",
+        "privacy_unavailable":"TikTok non ha restituito le impostazioni di privacy. Attendi e riprova.",
+        "unsupported_privacy":"TikTok non supporta Non in elenco. Scegli Pubblico o Privato.",
+        "video_duration_too_long":"Il video supera la durata consentita da TikTok per questo account.",
+        "video_duration_too_short":"Il video è troppo breve per TikTok. Esporta una versione più lunga.",
+        "internal_error":"TikTok è temporaneamente non disponibile. Attendi e riprova.",
+    }
+    message=messages.get(code,"TikTok non ha accettato la pubblicazione. Lo Short resta disponibile per l’esportazione.")
+    return PublishError(message+" ["+code+"]",code)
+
+
 def tiktok_post_status(access_token,publish_id,opener=None):
     data=_json_call(opener,"https://open.tiktokapis.com/v2/post/publish/status/fetch/",access_token,{"publish_id":publish_id},timeout=10)
     code,_message=_api_error(data)
-    if code:raise PublishError("Stato TikTok non disponibile. Ricollega l'account se necessario.")
+    if code:raise _tiktok_failure(code)
     return str((data.get("data") or {}).get("status") or "")
 
 
@@ -172,9 +201,16 @@ def _json_call(opener, url, token, body, timeout=30):
             return json.loads(resp.read().decode("utf-8") or "{}")
     except urllib.error.HTTPError as exc:
         try:
-            return json.loads(exc.read().decode("utf-8") or "{}")
-        except Exception:
-            raise PublishError(f"HTTP {exc.code}") from None
+            payload=json.loads(exc.read().decode("utf-8") or "{}")
+            code,_message=_api_error(payload)
+            if code:return payload
+        except (ValueError,TypeError,AttributeError):
+            pass
+        raise _tiktok_failure("http_"+str(exc.code)) from None
+    except (OSError,TimeoutError):
+        raise _tiktok_failure("network_error") from None
+    except (ValueError,UnicodeDecodeError):
+        raise _tiktok_failure("invalid_response") from None
 
 
 def _api_error(payload):
@@ -289,13 +325,10 @@ def tiktok_chunk_plan(size):
 
 def _tiktok_privacy(options, wanted):
     options = [str(x) for x in options or [] if str(x)]
-    if wanted == "public" and "PUBLIC_TO_EVERYONE" in options:
-        return options, "PUBLIC_TO_EVERYONE"
-    if "SELF_ONLY" in options:
-        return options, "SELF_ONLY"
-    if options:
-        return options, options[0]
-    raise PublishError("TikTok non ha restituito opzioni di privacy.")
+    if wanted == "unlisted":raise _tiktok_failure("unsupported_privacy")
+    level="PUBLIC_TO_EVERYONE" if wanted=="public" else "SELF_ONLY"
+    if level in options:return options,level
+    raise _tiktok_failure("privacy_level_option_mismatch" if options else "privacy_unavailable")
 
 
 def tiktok_direct_post(access_token, video_path, plan, privacy="public", opener=None):
@@ -303,10 +336,7 @@ def tiktok_direct_post(access_token, video_path, plan, privacy="public", opener=
         raise PublishError("TikTok non collegato.")
     info = _json_call(opener, TIKTOK_CREATOR_INFO, access_token, {})
     code, message = _api_error(info)
-    if code:
-        if code in ("access_token_invalid", "scope_not_authorized"):
-            raise PublishError("TikTok ha rifiutato l'accesso: ricollega l'account.")
-        raise PublishError("TikTok: " + message)
+    if code:raise _tiktok_failure(code)
     creator = info.get("data") or {}
     options, level = _tiktok_privacy(creator.get("privacy_level_options"), privacy)
     size = os.path.getsize(video_path)
@@ -332,14 +362,7 @@ def tiktok_direct_post(access_token, video_path, plan, privacy="public", opener=
 
     started = init(level)
     code, message = _api_error(started)
-    if code == "unaudited_client_can_only_post_to_private_accounts" and level != "SELF_ONLY" and "SELF_ONLY" in options:
-        level = "SELF_ONLY"
-        started = init(level)
-        code, message = _api_error(started)
-    if code:
-        if code == "spam_risk_too_many_posts":
-            raise PublishError("TikTok: troppi post oggi, riprova più tardi.")
-        raise PublishError("TikTok: " + message)
+    if code:raise _tiktok_failure(code)
     data = started.get("data") or {}
     upload_url = str(data.get("upload_url") or "")
     publish_id = str(data.get("publish_id") or "")

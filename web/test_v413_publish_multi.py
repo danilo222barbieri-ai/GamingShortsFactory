@@ -124,16 +124,23 @@ try:
 except pm.PublishError:
     pass
 
-# TikTok: creator info -> unaudited public refused -> retry SELF_ONLY -> PUT
+# TikTok: public rejection must remain an explicit error; private requires user choice.
 creator = {"data": {"privacy_level_options": ["PUBLIC_TO_EVERYONE", "SELF_ONLY"]}, "error": {"code": "ok"}}
 refused = {"error": {"code": "unaudited_client_can_only_post_to_private_accounts", "message": "no"}}
 accepted = {"data": {"upload_url": "https://up.tiktok/x", "publish_id": "p_1"}, "error": {"code": "ok"}}
-op = Opener([Resp(json.dumps(creator).encode()), Resp(json.dumps(refused).encode()), Resp(json.dumps(accepted).encode()), Resp(status=201), Resp(json.dumps({"data":{"status":"PUBLISH_COMPLETE"},"error":{"code":"ok"}}).encode())])
-out = pm.tiktok_direct_post("tok", str(tmp), plan["tiktok"], "public", opener=op)
-check(out["ok"] and out["id"] == "p_1" and out["privacy"] == "SELF_ONLY" and out["private_only"], out)
-init = json.loads(op.calls[2][3])
+op = Opener([Resp(json.dumps(creator).encode()), Resp(json.dumps(refused).encode())])
+try:
+    pm.tiktok_direct_post("tok", str(tmp), plan["tiktok"], "public", opener=op)
+    raise AssertionError("Public refusal must not silently publish privately")
+except pm.PublishError as exc:
+    check(exc.code == "unaudited_client_can_only_post_to_private_accounts", str(exc))
+check(len(op.calls) == 2, "no automatic privacy change or duplicate init")
+op = Opener([Resp(json.dumps(creator).encode()), Resp(json.dumps(accepted).encode()), Resp(status=201), Resp(json.dumps({"data":{"status":"PUBLISH_COMPLETE"},"error":{"code":"ok"}}).encode())])
+out = pm.tiktok_direct_post("tok", str(tmp), plan["tiktok"], "private", opener=op)
+check(out["ok"] and out["id"] == "p_1" and out["privacy"] == "SELF_ONLY" and not out["private_only"], out)
+init = json.loads(op.calls[1][3])
 check(init["source_info"] == {"source": "FILE_UPLOAD", "video_size": 4096, "chunk_size": 4096, "total_chunk_count": 1}, init)
-check(op.calls[3][2].get("Content-range") == "bytes 0-4095/4096", op.calls[3][2])
+check(op.calls[2][2].get("Content-range") == "bytes 0-4095/4096", op.calls[2][2])
 check(pm.tiktok_chunk_plan(100 * 1024 * 1024) == (32 * 1024 * 1024, 3), "large files use 32MB chunks")
 
 # ---------------------------------------------------------------- wiring
@@ -143,7 +150,7 @@ for token in ("import publish_multi_v413 as _pm413", 'path in ("/publish/multi",
               "_security_csrf_valid(self,sid)", "GSF_DROPBOX_APP_KEY"):
     check(token in server, "server wiring missing: " + token)
 check('or job["results"][platform].get("status")!="queued"' in server, "runner must only publish queued (connected) platforms")
-check("print(" not in server.split("def _publish_run")[1].split("def _publish_start")[0].replace('print("GSF_V413_PUBLISH_OK",sid,platform,flush=True)', "").replace('print("GSF_V413_PUBLISH_FAIL",sid,platform,type(exc).__name__,flush=True)', ""),
+check("print(" not in server.split("def _publish_run")[1].split("def _publish_start")[0].replace('print("GSF_V413_PUBLISH_OK",sid,platform,flush=True)', "").replace('print("GSF_V413_PUBLISH_FAIL",sid,platform,type(exc).__name__,error_code,flush=True)', ""),
       "publish runner must not log tokens or payloads")
 
 nginx = (ROOT / "web" / "nginx.conf.template").read_text(encoding="utf-8")
