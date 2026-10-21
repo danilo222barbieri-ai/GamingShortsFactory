@@ -3,6 +3,17 @@
 > **CANONICAL SOURCE OF TRUTH FOR ALL TECHNICAL CHATS / AGENTS.**
 > Read this file before changing code. Refresh live GitHub/Railway evidence before changing production claims.
 
+## PR187 integration preparation — 2026-10-21 Europe/Rome
+
+- User reiterated full Railway release authorization. PR187 marked ready for review; reconciled current main coordination/status conflict while preserving both factual checkpoints. No runtime bytes changed in this reconciliation.
+- Latest checked PyPI versions remain stable1.66.0/nightly1.66.1.dev20261020 with Pillow<13. Required security audit remains blocked pending compatible publication. Repository auto-merge is disabled; no auto-merge configuration or check bypass applied. No Railway deployment performed.
+
+## PR187 Gate green / Library inset follow-up — 2026-10-21 Europe/Rome
+
+- Official Gate39612720276 SUCCESS on7549f9c, including full images/health/runtime/WebKit. Promotion skipped on PR. Required CI39612720454 still FAILS dependency audit; no deployment performed.
+- New candidate `c80d028d863b822701bf48a307150c65b1556c1f` fixes only missing inset in Library cards, proven RED1px/GREEN15px with WebKit/Chromium and actual local shell. Serial full suite339PASS21SKIP63subcases79.38s. Fresh candidate checks pending; real Twitch consent/import remains unverified.
+- Release authorization persists. Official upstream Streamlit Pillow13 compatibility patch is merged but not yet published in checked PyPI stable/nightly. No unsupported override/suppression; PR187 remains BLOCKED until compatible published dependencies and required checks pass.
+
 ## Library card inset and successful Gate checkpoint — 2026-10-21 Europe/Rome
 
 - Production Gate39612720276 SUCCESS on7549f9c, including full Docker builds, health, runtime and mobile WebKit. Railway promotion skipped as expected on a PR; CI39612720454 still FAILS dependency audit. No new Railway deployment. Official Pillow13-compatible Streamlit commit exists upstream but remains unpublished in the checked stable/nightly packages.
