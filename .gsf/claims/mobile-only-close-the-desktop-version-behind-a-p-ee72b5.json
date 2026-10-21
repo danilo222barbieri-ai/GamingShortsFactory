@@ -1,15 +1,27 @@
 {
   "branch": "chat/mobile-only-close-the-desktop-version-behind-a-p-ee72b5",
   "created_at": "2026-10-17T14:38:08+00:00",
+  "evidence": {
+    "closed_beta_handoff": {
+      "authorization": "User explicitly authorized transfer of the files necessary for mobile CLOSED BETA stabilization in this chat on 2026-10-18; preserve existing integrated and pending work.",
+      "paths": [
+        ".github/workflows/gsf-ci.yml",
+        "Dockerfile",
+        "PROJECT_STATUS.md",
+        "tests/test_navigation_stability.py",
+        "web/nginx.conf.template",
+        "web/runtime_smoke_v411.py"
+      ],
+      "to": "closed-beta-stabilization-production-gate-reliab-bd6c6c"
+    },
+    "startup_bootstrap_handoff": "User explicitly authorized transfer of necessary mobile-only stabilization files to current chat; latest final UX brief requires first-paint fix. Transfer only install_adsense_bridge.py; preserve mobile-only gating and other work."
+  },
   "id": "mobile-only-close-the-desktop-version-behind-a-p-ee72b5",
   "owner": "chat/mobile-only-close-the-desktop-version-behind-a-p-ee72b5",
   "paths": [
-    ".github/workflows/gsf-ci.yml",
     "tests/test_mobile_only_gate.py",
     "web/gsf_desktop_shell_v407.py",
-    "web/install_adsense_bridge.py",
     "web/mobile_only_gate.html",
-    "web/nginx.conf.template",
     "web/test_v267_global_desktop_polish.py",
     "web/test_v268_1_desktop_to_mobile_parity.py",
     "web/test_v268_desktop_aesthetic_calibration.py",
