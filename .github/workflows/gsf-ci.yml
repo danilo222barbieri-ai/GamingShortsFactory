@@ -99,7 +99,9 @@ jobs:
       - name: Dependency audit with pip-audit
         uses: pypa/gh-action-pip-audit@v1.1.0
         with:
-          inputs: requirements-web.txt
+          inputs: |
+            requirements-web.txt
+            constraints-web.txt
 
       - name: Dependency lock and source security scan
         run: |

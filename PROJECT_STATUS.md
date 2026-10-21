@@ -3,6 +3,13 @@
 > **CANONICAL SOURCE OF TRUTH FOR ALL TECHNICAL CHATS / AGENTS.**
 > Read this file before changing code. Refresh live GitHub/Railway evidence before changing production claims.
 
+## Runtime dependency audit follow-up — queued while Railway is paused
+
+- PR187 is MERGED as6cebeabd99483eb6f71c4d4bbd986231154dccac. Its final PR contracts39634398604 and browser39634398958 checks PASS; main Production Gate39641711534 SUCCESS and automatic promotion marker1b7e5d1 exists. Official hash-pinned Streamlit PR17589 preview natively supports Pillow13; no package-metadata rewrite or ignored Pillow advisories. The duplicate local artifact experiment was stashed, not committed.
+- Actual source deploy attempt returned Railway “Deploys have been paused temporarily”. Production still serves2cde19c1c1076326a2c02e1dbc93d60e73023ae5; post-deploy UI verify39644781325 failed because the expected new digest never became live. User explicitly deferred Railway until the platform works; do not keep retrying deployments or claim187 is online.
+- Extended audit of the exact constraints, rather than floating direct requirements alone, exposed certifi2026.7.22 / PYSEC-2026-4320. Pin certifi2026.10.19 and audit both direct requirements and runtime constraint files in CI. Fresh full-resolution audit:84 packages, zero known vulnerabilities, zero skipped packages; normal constrained pip resolution PASS. No advisory suppression or dependency override.
+- Local production container installs the exact main Streamlit preview, Pillow13 and corrected certifi normally; pip check PASS, app starts, canonical179-file digest65f0ac41893a3bf9b082c829ab917725e01dab43c7f55bb8960d706c7d610904 matches source. Local bucket/worker are intentionally not configured. Full suite/runtime verification and follow-up PR checkpoint recorded below when available. This follow-up remains queued for review/release; no Railway deployment requested after deferral.
+
 ## Publication recovery checkpoint — 2026-10-21
 
 - User locates TikTok failure at pressing Pubblica; exact live provider code remains unavailable. Provider failures now expose sanitized codes and actionable Italian messages, including non-JSON HTTP/network failures, without logging credentials or raw provider payloads. Public rejection no longer silently retries private; explicit private publishing remains supported and unavailable privacy choices never change automatically.
