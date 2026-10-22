@@ -42,11 +42,14 @@
   };
   const routeFromUrl=()=>{
     const q=new URL(location.href).searchParams;
-    // Existing OAuth callbacks use this legacy entry point. Resolve it in
-    // the canonical router before any surface mounts, including cold starts.
-    if(!q.has('gsf_page')&&q.get('gsf_hub')==='social'){
+    // GSF_OAUTH_CANONICAL_RETURN: accept both the legacy callback URL and
+    // the canonical Hub callback without mounting an oversized standalone frame.
+    const oauthReturn=q.has('oauth_return');
+    const oauthHub=(!q.has('gsf_page')&&q.get('gsf_hub')==='social')
+      ||(q.get('gsf_page')==='hub'&&q.get('gsf_section')==='social'&&oauthReturn);
+    if(oauthHub){
       let section='social';
-      if(q.has('oauth_return'))try{
+      if(oauthReturn)try{
         const pending=JSON.parse(sessionStorage.getItem('gsf-source-oauth-return')||'null');
         sessionStorage.removeItem('gsf-source-oauth-return');
         const age=Date.now()-Number(pending?.created);

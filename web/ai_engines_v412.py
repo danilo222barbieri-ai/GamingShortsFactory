@@ -53,6 +53,23 @@ def _num(value: Any, default: float = 0.0) -> float:
     return out if out == out else default
 
 
+def effective_analysis_duration(source_duration: Any, requested_duration: Any) -> float:
+    """Duration policy for Crea con IA.
+
+    Sources below five seconds are unsupported. A valid source shorter than the
+    requested Short is used in full; longer sources keep the requested length.
+    Unknown source duration preserves the requested value so normal probing/error
+    handling remains authoritative.
+    """
+    source = max(0.0, _num(source_duration, 0.0))
+    requested = max(5.0, _num(requested_duration, 15.0))
+    if 0.0 < source < 5.0:
+        return 0.0
+    if source >= 5.0:
+        return round(min(source, requested), 3)
+    return round(requested, 3)
+
+
 def cache_profile(profile: Any) -> str:
     """Normalised engine profile used in the AI cache key (one cache slot per engine)."""
     text = str(profile or "").strip().lower()
