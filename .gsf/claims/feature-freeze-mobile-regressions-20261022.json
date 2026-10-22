@@ -1,0 +1,22 @@
+{
+  "branch": "chat/feature-freeze-mobile-regressions-20261022",
+  "created_at": "2026-10-22T22:18:04+02:00",
+  "id": "feature-freeze-mobile-regressions-20261022",
+  "owner": "chat/feature-freeze-mobile-regressions-20261022",
+  "paths": [
+    "app.py",
+    "web/ai_engines_v412.py",
+    "web/ai_v221_component/index.html",
+    "web/creator_hub_v156_component/index.html",
+    "web/direct_upload_server.py",
+    "web/home_v154_component/index.html",
+    "web/gsf_alive_v418.js",
+    "web/gsf_navigation_lifecycle.js",
+    "web/install_adsense_bridge.py",
+    "tests/test_feature_freeze_mobile.py",
+    "PROJECT_STATUS.md",
+    "docs/superpowers/plans/2026-10-22-feature-freeze-mobile.md"
+  ],
+  "scope": "Feature freeze: short source AI, mobile OAuth shell, Home white gap, compact notifications; no merge/deploy",
+  "state": "active"
+}
