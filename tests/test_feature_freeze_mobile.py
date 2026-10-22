@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Release regression contract: these four assertions must stay green through Railway promotion.
 ROOT = Path(__file__).resolve().parents[1]
 
 
