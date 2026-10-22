@@ -1,0 +1,77 @@
+name: One-shot mobile hotfix
+
+on:
+  push:
+    branches: [chat/fix-mobile-regressions-to-rail-20261022]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chat/fix-mobile-regressions-to-rail-20261022
+      - name: Apply focused regression fixes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p=Path(path); text=p.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'patch anchor not found: {path}: {old[:80]!r}')
+              p.write_text(text.replace(old,new,1),encoding='utf-8')
+
+          # 1) Short-source AI: use the whole valid source immediately when it is
+          # shorter than the requested Short, instead of entering the long ranker.
+          replace_once('web/ai_engines_v412.py',
+          '''def cache_profile(profile: Any) -> str:\n''',
+          '''def effective_analysis_duration(source_duration: Any, requested_duration: Any) -> float:\n    """Duration policy for Crea con IA.\n\n    Sources below five seconds are unsupported. A valid source shorter than the\n    requested Short is used in full; longer sources keep the requested length.\n    Unknown source duration preserves the requested value so normal probing/error\n    handling remains authoritative.\n    """\n    source = max(0.0, _num(source_duration, 0.0))\n    requested = max(5.0, _num(requested_duration, 15.0))\n    if 0.0 < source < 5.0:\n        return 0.0\n    if source >= 5.0:\n        return round(min(source, requested), 3)\n    return round(requested, 3)\n\n\ndef cache_profile(profile: Any) -> str:\n''')
+
+          replace_once('app.py',
+          '''            try:\n                _gsf_analysis_source_duration=float(durata_video(str(_source_path)) or 0)\n            except Exception:\n                _gsf_analysis_source_duration=0.0\n            if 0 < _gsf_analysis_source_duration < 5.0:\n''',
+          '''            try:\n                _gsf_analysis_source_duration=float(durata_video(str(_source_path)) or 0)\n            except Exception:\n                _gsf_analysis_source_duration=0.0\n            _gsf_requested_analysis_duration=float(duration)\n            from web.ai_engines_v412 import effective_analysis_duration as _gsf_effective_duration\n            _gsf_effective_analysis_duration=_gsf_effective_duration(\n                _gsf_analysis_source_duration,_gsf_requested_analysis_duration\n            )\n            _gsf_use_full_source=bool(\n                _gsf_analysis_source_duration>=5.0\n                and _gsf_analysis_source_duration<_gsf_requested_analysis_duration\n            )\n            if _gsf_effective_analysis_duration>=5.0:\n                duration=float(_gsf_effective_analysis_duration)\n            if 0 < _gsf_analysis_source_duration < 5.0:\n''')
+
+          replace_once('app.py',
+          '''                cached_ai = st.session_state.get("gsf_fast_ai_cache", {}).get(cache_key_ai)\n                if cached_ai is not None and not cached_ai.get("candidati"):\n                    cached_ai = None\n                st.session_state["gsf_ai_ranking_cache_hit"]=cached_ai is not None\n''',
+          '''                cached_ai = st.session_state.get("gsf_fast_ai_cache", {}).get(cache_key_ai)\n                if cached_ai is not None and not cached_ai.get("candidati"):\n                    cached_ai = None\n                if _gsf_use_full_source:\n                    cached_ai={\n                        "candidati":[0.0],\n                        "scores":[(1.0,0.0)],\n                        "clip_rifinite":{0.0:float(duration)},\n                        "diagnostics":{"__meta__":{\n                            "full_source":True,\n                            "source_duration":round(float(_gsf_analysis_source_duration),3),\n                            "requested_duration":round(float(_gsf_requested_analysis_duration),3),\n                        }},\n                    }\n                st.session_state["gsf_ai_ranking_cache_hit"]=cached_ai is not None\n''')
+
+          # 2) OAuth: callbacks land directly on the canonical Creator Hub route.
+          replace_once('web/direct_upload_server.py',
+          '''def _redirect(handler,url):\n    target=str(url)\n    if target=="/?gsf_hub=social":target += "&oauth_return="+str(int(time.time()*1000))\n    handler.send_response(302)\n    handler.send_header("Location",target)\n    handler.send_header("Cache-Control","no-store, max-age=0")\n    if target.startswith("/?gsf_hub=social"):handler.send_header("Pragma","no-cache")\n    handler.end_headers()\n''',
+          '''def _redirect(handler,url):\n    target=str(url)\n    if target=="/?gsf_hub=social":\n        target="/?gsf_page=hub&gsf_section=social"\n    if target.startswith("/?gsf_page=hub&gsf_section="):\n        target += "&oauth_return="+str(int(time.time()*1000))\n    handler.send_response(302)\n    handler.send_header("Location",target)\n    handler.send_header("Cache-Control","no-store, max-age=0")\n    if target.startswith("/?gsf_page=hub&gsf_section="):handler.send_header("Pragma","no-cache")\n    handler.end_headers()\n''')
+
+          replace_once('web/gsf_navigation_lifecycle.js',
+          '''    // Existing OAuth callbacks use this legacy entry point. Resolve it in\n    // the canonical router before any surface mounts, including cold starts.\n    if(!q.has('gsf_page')&&q.get('gsf_hub')==='social'){\n      let section='social';\n      if(q.has('oauth_return'))try{\n        const pending=JSON.parse(sessionStorage.getItem('gsf-source-oauth-return')||'null');\n        sessionStorage.removeItem('gsf-source-oauth-return');\n        const age=Date.now()-Number(pending?.created);\n        if(pending?.provider==='twitch'&&age>=0&&age<600000&&['live','videos','clips','imported'].includes(pending.folder)){\n          sessionStorage.setItem('gsf-source-view',JSON.stringify({provider:'twitch',folder:pending.folder}));section='live';\n        }\n      }catch(_e){}\n      const url=new URL(location.href);\n      url.searchParams.delete('gsf_hub');url.searchParams.delete('oauth_return');\n      url.searchParams.set('gsf_page','hub');url.searchParams.set('gsf_section',section);\n      history.replaceState(history.state,'',url);\n      return {target:'hub',section};\n    }\n''',
+          '''    // GSF_OAUTH_CANONICAL_RETURN: accept both the legacy callback URL and\n    // the canonical Hub callback without mounting an oversized standalone frame.\n    const oauthReturn=q.has('oauth_return');\n    const oauthHub=(!q.has('gsf_page')&&q.get('gsf_hub')==='social')\n      ||(q.get('gsf_page')==='hub'&&q.get('gsf_section')==='social'&&oauthReturn);\n    if(oauthHub){\n      let section='social';\n      if(oauthReturn)try{\n        const pending=JSON.parse(sessionStorage.getItem('gsf-source-oauth-return')||'null');\n        sessionStorage.removeItem('gsf-source-oauth-return');\n        const age=Date.now()-Number(pending?.created);\n        if(pending?.provider==='twitch'&&age>=0&&age<600000&&['live','videos','clips','imported'].includes(pending.folder)){\n          sessionStorage.setItem('gsf-source-view',JSON.stringify({provider:'twitch',folder:pending.folder}));section='live';\n        }\n      }catch(_e){}\n      const url=new URL(location.href);\n      url.searchParams.delete('gsf_hub');url.searchParams.delete('oauth_return');\n      url.searchParams.set('gsf_page','hub');url.searchParams.set('gsf_section',section);\n      history.replaceState(history.state,'',url);\n      return {target:'hub',section};\n    }\n''')
+
+          # 3) Home: once embedded in the measured parent shell, use the iframe's
+          # real height instead of recalculating a nested Safari dvh.
+          home=Path('web/home_v154_component/index.html')
+          text=home.read_text(encoding='utf-8')
+          if 'GSF_HOME_NESTED_VIEWPORT_FIX' not in text:
+              style='''\n<style id="gsfHomeNestedViewportFix">\n/* GSF_HOME_NESTED_VIEWPORT_FIX: nested Safari uses the shell-measured frame. */\n@media(max-width:760px){\n html.gsf-v343-parent-ready,html.gsf-v343-parent-ready body{height:100%!important;min-height:100%!important;max-height:100%!important}\n html.gsf-v343-parent-ready #home154{height:100%!important;min-height:100%!important;max-height:100%!important}\n}\n</style>\n'''
+              if '</head>' not in text: raise SystemExit('home head anchor missing')
+              home.write_text(text.replace('</head>',style+'</head>',1),encoding='utf-8')
+
+          # 4) Alive: a long operation label stays a compact glass pill.
+          alive=Path('web/gsf_alive_v418.js')
+          text=alive.read_text(encoding='utf-8')
+          if 'GSF_ALIVE_COMPACT_PILL' not in text:
+              anchor='#gsf-alive-bubble.on{'
+              override='''/* GSF_ALIVE_COMPACT_PILL */\n#gsf-alive-bubble{max-width:min(78vw,320px);overflow:hidden}\n#gsf-alive-bubble .l{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis}\n#gsf-alive-bubble small{flex:0 0 auto}\n'''
+              if anchor not in text: raise SystemExit('alive bubble anchor missing')
+              alive.write_text(text.replace(anchor,override+anchor,1),encoding='utf-8')
+          PY
+
+          python -m py_compile app.py web/ai_engines_v412.py web/direct_upload_server.py
+          git rm .github/workflows/one-shot-mobile-hotfix.yml
+          git config user.name "GSF Release Fix"
+          git config user.email "gsf-release-fix@users.noreply.github.com"
+          git add app.py web/ai_engines_v412.py web/direct_upload_server.py web/gsf_navigation_lifecycle.js web/home_v154_component/index.html web/gsf_alive_v418.js
+          git commit -m "fix: close mobile release regressions"
+          git push origin HEAD:chat/fix-mobile-regressions-to-rail-20261022
