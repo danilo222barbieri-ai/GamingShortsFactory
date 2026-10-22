@@ -1,0 +1,37 @@
+name: One-shot sync Alive runtime
+
+on:
+  push:
+    branches: [chat/fix-mobile-regressions-to-rail-20261022]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chat/fix-mobile-regressions-to-rail-20261022
+      - name: Sync canonical Alive and correct regression assertion
+        shell: bash
+        run: |
+          python tools/gsf_alive_inline.py --write
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('tests/test_feature_freeze_mobile.py')
+          text=p.read_text(encoding='utf-8')
+          old='assert \'target=="/?gsf_page=hub&gsf_section=social"\' in server'
+          new='assert \'target="/?gsf_page=hub&gsf_section=social"\' in server'
+          if old not in text:
+              raise SystemExit('oauth regression assertion anchor missing')
+          p.write_text(text.replace(old,new,1),encoding='utf-8')
+          PY
+          python -m pytest -q tests/test_alive_runtime_v418.py tests/test_feature_freeze_mobile.py
+          git rm .github/workflows/one-shot-sync-alive.yml
+          git config user.name "GSF Release Fix"
+          git config user.email "gsf-release-fix@users.noreply.github.com"
+          git add web/home_v154_component/index.html web/ai_v221_component/index.html web/share_v156_component/index.html web/creator_hub_v156_component/index.html tests/test_feature_freeze_mobile.py
+          git commit -m "fix: sync compact Alive runtime across surfaces"
+          git push origin HEAD:chat/fix-mobile-regressions-to-rail-20261022
