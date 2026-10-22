@@ -3,10 +3,10 @@
 # The wheel metadata natively declares pillow>=9.2.0,<14; SHA256 pins the exact CI artifact.
 streamlit @ https://core-previews.s3-us-west-2.amazonaws.com/pr-17589/streamlit-1.66.0-py3-none-any.whl#sha256=841f0d2ac3b59d7501a95a2771ee31b8cb3bf0f210258135089e75ab9157a7fa
 faster-whisper==1.2.1
-numpy==2.5.3
-google-api-python-client==2.200.0
-google-auth-oauthlib==1.4.1
-google-auth-httplib2==0.4.2
-boto3==1.43.104
+numpy==2.5.4
+google-api-python-client==2.201.0
+google-auth-oauthlib==1.5.0
+google-auth-httplib2==0.4.4
+boto3==1.43.115
 pywebpush==2.5.0
-cryptography==50.0.1
+cryptography==50.0.2
