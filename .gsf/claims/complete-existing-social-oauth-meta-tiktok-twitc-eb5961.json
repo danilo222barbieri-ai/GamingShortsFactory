@@ -28,6 +28,15 @@
       ],
       "to": "feature-freeze-mobile-regressions-20261022"
     },
+    "handoff_freeze_test_integration": {
+      "authorization": "Same explicit user transfer of only files necessary for the four fixes; wire browser tests in existing Gate and update changed geometry/OAuth expectations.",
+      "paths": [
+        ".github/workflows/v397-production-gate.yml",
+        "tests/test_alive_continuity_v424.py",
+        "tests/test_source_library_v422.py"
+      ],
+      "to": "feature-freeze-mobile-regressions-20261022"
+    },
     "pr": "https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/187",
     "production_gate": "39612720276 SUCCESS on7549f9c including images/health/runtime/WebKit; promotion skipped on PR. Newc80d028 Library inset awaits fresh checks.",
     "publication_followup": "User explicitly requests after AI fix: verify all publish routes, Facebook guided, Instagram professional-account requirement, TikTok error on Pubblica; preserve platform constraints and truthful completion, no fabricated success or silent privacy changes.",
@@ -54,7 +63,6 @@
   "paths": [
     ".env.example",
     ".github/workflows/gsf-ci.yml",
-    ".github/workflows/v397-production-gate.yml",
     "Dockerfile",
     "constraints-web.txt",
     "docs/architecture/gsf-alive-continuity-audit-2026-10-21.md",
@@ -64,7 +72,6 @@
     "requirements-web.txt",
     "tests/js/gsf_alive_v418.test.mjs",
     "tests/test_ai_failure_recovery_v425.py",
-    "tests/test_alive_continuity_v424.py",
     "tests/test_alive_runtime_v418.py",
     "tests/test_closed_beta_bugfix_pass.py",
     "tests/test_creator_hub_redesign_v415.py",
@@ -74,7 +81,6 @@
     "tests/test_navigation_stability.py",
     "tests/test_publish_recovery_v426.py",
     "tests/test_social_oauth_v421.py",
-    "tests/test_source_library_v422.py",
     "tests/visual/gsf_closed_beta_e2e.py",
     "vendor/streamlit",
     "web/game_editor_mobile_component/editor.css",
