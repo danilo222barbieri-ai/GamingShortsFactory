@@ -96,12 +96,13 @@ jobs:
             cmp -s "$f" "/tmp/v410-canonical/$f" || { echo "::error title=V410::$f would still be modified by the V410 patch"; exit 1; }
           done
 
-      - name: Dependency audit with pip-audit
-        uses: pypa/gh-action-pip-audit@v1.1.0
-        with:
-          inputs: |
-            requirements-web.txt
-            constraints-web.txt
+      - name: Exact runtime dependency audit
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/gsf-runtime-audit
+          python -m pip install --disable-pip-version-check pip-audit
+          python -m pip install --disable-pip-version-check --target /tmp/gsf-runtime-audit -r requirements-web.txt -c constraints-web.txt
+          python -m pip_audit --strict --path /tmp/gsf-runtime-audit
 
       - name: Dependency lock and source security scan
         run: |
