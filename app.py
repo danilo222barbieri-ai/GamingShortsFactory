@@ -13493,6 +13493,17 @@ if video:
                 _gsf_analysis_source_duration=float(durata_video(str(_source_path)) or 0)
             except Exception:
                 _gsf_analysis_source_duration=0.0
+            _gsf_requested_analysis_duration=float(duration)
+            from web.ai_engines_v412 import effective_analysis_duration as _gsf_effective_duration
+            _gsf_effective_analysis_duration=_gsf_effective_duration(
+                _gsf_analysis_source_duration,_gsf_requested_analysis_duration
+            )
+            _gsf_use_full_source=bool(
+                _gsf_analysis_source_duration>=5.0
+                and _gsf_analysis_source_duration<_gsf_requested_analysis_duration
+            )
+            if _gsf_effective_analysis_duration>=5.0:
+                duration=float(_gsf_effective_analysis_duration)
             if 0 < _gsf_analysis_source_duration < 5.0:
                 _gsf_ai_short_message="L’analisi richiede almeno 5 secondi. Puoi aprire questo video nell’Editor dalla Home."
                 from web.ai_engines_v412 import write_results_meta as _gsf_ai_write_failure
@@ -13528,6 +13539,17 @@ if video:
                 cached_ai = st.session_state.get("gsf_fast_ai_cache", {}).get(cache_key_ai)
                 if cached_ai is not None and not cached_ai.get("candidati"):
                     cached_ai = None
+                if _gsf_use_full_source:
+                    cached_ai={
+                        "candidati":[0.0],
+                        "scores":[(1.0,0.0)],
+                        "clip_rifinite":{0.0:float(duration)},
+                        "diagnostics":{"__meta__":{
+                            "full_source":True,
+                            "source_duration":round(float(_gsf_analysis_source_duration),3),
+                            "requested_duration":round(float(_gsf_requested_analysis_duration),3),
+                        }},
+                    }
                 st.session_state["gsf_ai_ranking_cache_hit"]=cached_ai is not None
 
                 with st.spinner(messaggio):

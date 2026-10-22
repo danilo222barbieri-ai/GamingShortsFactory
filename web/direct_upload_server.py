@@ -1085,11 +1085,14 @@ def _html(handler,status,body):
 
 def _redirect(handler,url):
     target=str(url)
-    if target=="/?gsf_hub=social":target += "&oauth_return="+str(int(time.time()*1000))
+    if target=="/?gsf_hub=social":
+        target="/?gsf_page=hub&gsf_section=social"
+    if target.startswith("/?gsf_page=hub&gsf_section="):
+        target += "&oauth_return="+str(int(time.time()*1000))
     handler.send_response(302)
     handler.send_header("Location",target)
     handler.send_header("Cache-Control","no-store, max-age=0")
-    if target.startswith("/?gsf_hub=social"):handler.send_header("Pragma","no-cache")
+    if target.startswith("/?gsf_page=hub&gsf_section="):handler.send_header("Pragma","no-cache")
     handler.end_headers()
 
 def _social_sid(handler):
