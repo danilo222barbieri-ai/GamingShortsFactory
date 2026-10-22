@@ -22,7 +22,7 @@ def test_oauth_callbacks_return_to_the_canonical_creator_hub_shell():
     server = (ROOT / "web/direct_upload_server.py").read_text(encoding="utf-8")
     nav = (ROOT / "web/gsf_navigation_lifecycle.js").read_text(encoding="utf-8")
 
-    assert 'target=="/?gsf_page=hub&gsf_section=social"' in server
+    assert 'target="/?gsf_page=hub&gsf_section=social"' in server
     assert "oauth_return" in server
     assert "GSF_OAUTH_CANONICAL_RETURN" in nav
     assert "q.has('oauth_return')" in nav
