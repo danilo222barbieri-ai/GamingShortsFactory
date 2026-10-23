@@ -53,11 +53,14 @@ def test_creator_hub_short_cards_use_real_video_preview():
 
 def test_instagram_keeps_meta_professional_fallback_after_direct_login():
     server = _text("web/direct_upload_server.py")
+    compact = _compact(server)
     assert "GSF_V428_INSTAGRAM_DIRECT_FIRST" in server
     assert "if INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET:" in server
-    assert '"mode":"instagram_login"' in server
+    # Direct login is assigned once and then persisted into the OAuth state.
+    assert 'mode="instagram_login"' in server
+    assert '"mode":mode' in compact
     # Meta/Facebook remains available only as the compatibility fallback.
-    assert '"mode":"facebook_login"' in server
+    assert '"mode":"facebook_login"' in compact
     assert "META_SCOPES" in server
 
 
