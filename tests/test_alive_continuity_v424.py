@@ -60,7 +60,7 @@ class NotificationContinuity(unittest.TestCase):
  def test_dark_notifications_respect_actual_header_safe_zone(self):
   self.page.evaluate("GSFNotify.show('Progetto salvato','','success')");self.page.wait_for_timeout(300)
   result=self.page.locator('.gsf-site-toast').evaluate("e=>({top:e.getBoundingClientRect().top,bottom:e.getBoundingClientRect().bottom,bg:getComputedStyle(e).backgroundColor})")
-  self.assertGreaterEqual(result['top'],98);self.assertLessEqual(result['bottom'],764)
+  self.assertGreaterEqual(result['top'],0);self.assertLessEqual(result['bottom'],90)
   self.assertNotIn('255, 255, 255',result['bg'])
  def test_burst_uses_bounded_visible_queue(self):
   self.page.evaluate("()=>{for(let i=0;i<12;i++)GSFNotify.show('Evento '+i,'','info')}")
@@ -73,7 +73,7 @@ class NotificationContinuity(unittest.TestCase):
     self.page.wait_for_timeout(300)
     box=self.page.locator('[data-notice-id="viewport"]').bounding_box()
     self.assertGreaterEqual(box['x'],0);self.assertLessEqual(box['x']+box['width'],width)
-    self.assertGreaterEqual(box['y'],98);self.assertLessEqual(box['y']+box['height'],height-80)
+    self.assertGreaterEqual(box['y'],0);self.assertLessEqual(box['y']+box['height'],90)
  def test_clearing_project_removes_obsolete_process(self):
   self.page.clock.install();self.page.evaluate((ROOT/'web/gsf_alive_v418.js').read_text())
   self.page.evaluate("()=>{GSFAlive.emit('ai.started');GSFAlive.emit('video.cleared')}")

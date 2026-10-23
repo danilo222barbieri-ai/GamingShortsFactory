@@ -359,7 +359,7 @@ html,body{background:var(--na-bg)}
       </button>
       <p class="sr" id="aiStatus" aria-live="polite">Prima carica un gameplay dalla Home</p>
     </div>
-    <div class="foot"><span class="label">DURATA</span><div class="seg" role="group" aria-label="Durata short"><button type="button" data-duration="15" class="active">15s</button><button type="button" data-duration="30">30s</button></div></div>
+    <div class="foot"><span class="label">DURATA</span><div class="seg" role="group" aria-label="Durata short"><button type="button" data-duration="15" class="active">15s</button><button type="button" data-duration="30">30s</button><button type="button" data-duration="60">60s</button></div></div>
   </section>
 
   <!-- VIEW 2: three shorts as portals -->
@@ -1109,7 +1109,7 @@ const DEMO=/[?&]demo=1/.test(location.search);
 const ENGINE_LABEL={auto:"AUTO",action:"AZIONE",reaction:"REAZIONI",best:"STORIA"};
 const DEFAULT_STATE={loaded:false,duration:15,engine:"auto",previews:[],selectedMoment:0,processing:false};
 const DRAFT_KEY="gsf_ai_draft_v412";
-const RESULTS_TIMEOUT_MS=180000;
+const RESULTS_TIMEOUT_MS=120000;
 const MURALS={
   idle:["Che cosa vuoi<br>trovare?","L'IA guarda<br>tutto il video"],
   scanning:["Sto guardando<br>il tuo gameplay","Audio, azione<br>e reazioni"],
@@ -1140,7 +1140,7 @@ function setMurals(mode){if(mode===muralMode)return;muralMode=mode;const m=MURAL
 /* ---------- views ---------- */
 function showView(name){document.querySelectorAll("[data-view]").forEach(v=>v.classList.toggle("is-active",v.dataset.view===name))}
 function selectEngine(engine,emit=true){state.engine=ENGINE_LABEL[engine]?engine:"auto";document.querySelectorAll("[data-engine]").forEach(card=>{const on=card.dataset.engine===state.engine;card.classList.toggle("is-selected",on);card.setAttribute("aria-pressed",String(on));card.disabled=Boolean(state.processing)});updateOrb();if(emit)send("engine",{engine:state.engine})}
-function selectDuration(value,emit=true){state.duration=Number(value)===30?30:15;document.querySelectorAll("[data-duration]").forEach(b=>{b.classList.toggle("active",Number(b.dataset.duration)===state.duration);b.disabled=Boolean(state.processing)});updateOrb();if(emit)send("duration",{duration:state.duration})}
+function selectDuration(value,emit=true){state.duration=[15,30,60].includes(Number(value))?Number(value):15;document.querySelectorAll("[data-duration]").forEach(b=>{b.classList.toggle("active",Number(b.dataset.duration)===state.duration);b.disabled=Boolean(state.processing)});updateOrb();if(emit)send("duration",{duration:state.duration})}
 function updateOrb(){const sub=$("orbSub");if(!sub)return;
   if(state.processing){sub.textContent="Sto cercando i momenti…";return}
   if(failed){sub.textContent="I risultati non sono arrivati · tocca per riprovare";return}
@@ -1153,7 +1153,7 @@ function setScan(mode){
   if(mode==="off"){view.classList.remove("scanning");setMurals("idle");updateOrb();return}
   if(mode==="error"){view.classList.remove("scanning");setMurals("error");updateOrb();$("aiStatus").textContent="Tocca il cerchio per riprovare";return}
   view.classList.add("scanning");setMurals("scanning");scanStarted=Date.now();
-  const tick=()=>{const s=(Date.now()-scanStarted)/1000;$("scanTime").textContent=fmt(s);$("aiStatus").textContent=s<20?"Ancora qualche secondo…":s<60?"Sto confrontando i momenti…":"Quasi fatto, resta qui…"};tick();scanTimer=setInterval(tick,500)}
+  const tick=()=>{const s=(Date.now()-scanStarted)/1000;$("scanTime").textContent=fmt(s);$("aiStatus").textContent="Analizzo gameplay, audio e reazioni… · "+fmt(s)};tick();scanTimer=setInterval(tick,500)}
 
 /* ---------- results bridge: parent state + /ai/results polling ---------- */
 function applyResults(list){
@@ -1161,9 +1161,9 @@ function applyResults(list){
   if(!next.length)return false;
   state.previews=next;state.processing=false;
   if(awaitingResults||!document.querySelector('[data-view="moments"]').classList.contains("is-active")){state.selectedMoment=0;awaitingResults=false;showView("moments")}
-  setScan("off");render();autosave("results");alive("ai.found",{count:next.length});return true}
+  setScan("off");render();if(!next[0]?.whole_source){autosave("results");alive("ai.found",{count:next.length})};return true}
 const signature=list=>list.map(d=>String(d.video||"")+"@"+String(d.mtime||"")).join("|");
-async function fetchResults(){if(DEMO)return null;try{const r=await fetch("/ai/results?_="+Date.now(),{cache:"no-store",credentials:"same-origin"});if(!r.ok)return null;return await r.json()}catch(_e){return null}}
+async function fetchResults(){if(DEMO)return null;const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),6000);try{const r=await fetch("/ai/results?_="+Date.now(),{cache:"no-store",credentials:"same-origin",signal:controller.signal});if(!r.ok)return null;return await r.json()}catch(_e){return null}finally{clearTimeout(timer)}}
 function freshRows(j){
   const rows=(j&&Array.isArray(j.previews)?j.previews:[]).filter(Boolean);
   const list=rows.filter(d=>d.video);
@@ -1173,12 +1173,24 @@ function freshRows(j){
 async function pollResults(token,deadline){
   if(token!==pollToken||!awaitingResults)return;
   const j=await fetchResults();const list=freshRows(j);
-  if(j?.status==='failed'&&j.request_id&&j.request_id===requestId){
+  if(token!==pollToken||!awaitingResults)return;
+  if(j?.whole_source&&j.request_id===requestId&&list){
+    const first=!rows().some(x=>x.whole_source);
+    if(first)applyResults(list);else state.previews=list;
+    awaitingResults=j.status==='analyzing';state.processing=awaitingResults;
+    if(j.status==='failed'){
+      state.previews=list.map(x=>({...x,why:x.why+' '+String(j.error||'Analisi non riuscita. Puoi continuare con il video intero.')}));
+      alive('failure',{job:'ai',message:j.error||'Analisi non riuscita'});
+    }else if(!awaitingResults)alive('ai.found',{count:1});
+    if(first||!awaitingResults)render();
+    if(!awaitingResults)return;
+  }
+  if(!j?.whole_source&&j?.status==='failed'&&j.request_id&&j.request_id===requestId){
     awaitingResults=false;state.processing=false;setScan("error");render();
     const message=String(j.error||"Analisi non riuscita. Riprova.");$("aiStatus").textContent=message;
     alive("failure",{job:"ai",message});return;
   }
-  if(list){runInfo={pool:Number(j.pool_size)||0,engine:String(j.engine||"")};if(applyResults(list))return}
+  if(list&&!j?.whole_source){runInfo={pool:Number(j.pool_size)||0,engine:String(j.engine||"")};if(applyResults(list))return}
   if(Date.now()>=deadline){awaitingResults=false;state.processing=false;setScan("error");render();alive("failure",{job:"ai",message:"I risultati non sono arrivati. Riproviamo."});return}
   setTimeout(()=>pollResults(token,deadline),1500)}
 async function startSearch(){
@@ -1188,7 +1200,7 @@ async function startSearch(){
   const before=await fetchResults();baseline=signature((before&&Array.isArray(before.previews)?before.previews:[]).filter(d=>d&&d.video));
   if(token!==pollToken)return;
   send("create",{engine:state.engine,duration:state.duration,request_id:requestId});
-  setTimeout(()=>pollResults(token,Date.now()+RESULTS_TIMEOUT_MS),2500)}
+  setTimeout(()=>pollResults(token,Date.now()+RESULTS_TIMEOUT_MS),150)}
 /* after "Cambia short" the app renders the new clip: pick up its video when it is ready */
 async function pollReplaced(index,start,deadline){
   if(DEMO||Date.now()>deadline)return;
@@ -1234,8 +1246,8 @@ function renderMoments(){
 }
 function renderDetail(){
   const r=rows(),i=Number(state.selectedMoment)||0,item=r[i];
-  const off=!item||Boolean(state.processing);
-  $("createShort").disabled=off;$("editMoment").disabled=off;$("swapShort").disabled=off;
+  const off=!item||(Boolean(state.processing)&&!item.whole_source);
+  $("createShort").disabled=off;$("editMoment").disabled=off;$("swapShort").disabled=off||Boolean(item?.whole_source);
   if(!item){$("detailNum").textContent="SHORT";$("detailTitle").textContent="";$("detailTime").textContent="";$("detailWhy").textContent="";$("detailTags").innerHTML="";return}
   const alts=altsFor(i),why=whyOf(item),tags=Array.isArray(item?.signals)?item.signals.slice(0,3):[];
   $("detailNum").textContent=`SHORT ${i+1}`;$("detailTitle").textContent=titleOf(item,i);
@@ -1282,7 +1294,7 @@ function render(){
   const cta=$("createAi");cta.disabled=!state.loaded||Boolean(state.processing);cta.classList.toggle("busy",Boolean(state.processing));
   if(!state.processing&&!failed)$("aiStatus").textContent=!state.loaded?"Prima carica un gameplay dalla Home":"Tocca il cerchio per partire";
   $("engineUsed").textContent=ENGINE_LABEL[state.engine]||"AUTO";
-  const r=rows();$("runText").textContent=r.length?(runInfo.pool>r.length?`${runInfo.pool} momenti analizzati`:`${r.length} short pronti`):"In attesa";$("runChip").classList.toggle("ok",r.length>0);
+  const r=rows();$("runText").textContent=state.processing&&r[0]?.whole_source?'IA · Analizzo il gameplay…':r.length?(runInfo.pool>r.length?`${runInfo.pool} momenti analizzati`:`${r.length} short pronti`):"In attesa";$("runChip").classList.toggle("ok",r.length>0);
   updateOrb();renderMoments();renderDetail()}
 
 /* ---------- events ---------- */

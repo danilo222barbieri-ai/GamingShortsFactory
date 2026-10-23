@@ -54,20 +54,10 @@ def _num(value: Any, default: float = 0.0) -> float:
 
 
 def effective_analysis_duration(source_duration: Any, requested_duration: Any) -> float:
-    """Duration policy for Crea con IA.
-
-    Sources below five seconds are unsupported. A valid source shorter than the
-    requested Short is used in full; longer sources keep the requested length.
-    Unknown source duration preserves the requested value so normal probing/error
-    handling remains authoritative.
-    """
+    """Use the full available source, preserving normal longer-source analysis."""
     source = max(0.0, _num(source_duration, 0.0))
-    requested = max(5.0, _num(requested_duration, 15.0))
-    if 0.0 < source < 5.0:
-        return 0.0
-    if source >= 5.0:
-        return round(min(source, requested), 3)
-    return round(requested, 3)
+    requested = max(0.1, _num(requested_duration, 15.0))
+    return min(source, requested) if source > 0 else requested
 
 
 def cache_profile(profile: Any) -> str:
@@ -82,6 +72,40 @@ def should_refine(profile: Any, modalita: str = "") -> bool:
     if text in ENGINE_PROFILES.values():
         return text in REFINE_PROFILES
     return modalita in ("🚀 AUTO TOTALE", "🎬 AI Director")
+
+
+def whole_source_meta(source_duration, selected_duration, *, request_id, video_url):
+    """Publish a usable candidate before analysis, without claiming AI success."""
+    source, requested = _num(source_duration), _num(selected_duration)
+    if not 0 < source < requested:
+        return None
+    return {"version": 1, "request_id": request_id, "status": "analyzing", "whole_source": True,
+            "updated_at": time.time(), "items": [{"index": 0, "start_time": 0,
+            "end_time": source, "video": video_url, "whole_source": True,
+            "label": "Il tuo video è già pronto",
+            "why": f"Dura {source:g} s, quindi non serve cercare un segmento da {requested:g} s.",
+            "alternates": [], "signals": [], "score": None}]}
+
+
+def run_duration_analysis(input_file, mode, duration, *, source_duration, rank, scan, cache_token=None, voice=None):
+    """Only skip segment selection. Full-video scan and voice analysis still run."""
+    if not 0 < _num(source_duration) < _num(duration):
+        return rank(input_file, mode, clip_duration=duration, numero_clip=3, cache_token=cache_token)
+    full_scan, cache_hit = scan(input_file, cache_token=cache_token)
+    if not isinstance(full_scan, Mapping) or not full_scan:
+        raise RuntimeError("Analisi del gameplay non disponibile")
+    scan_meta = dict(full_scan.get("meta") or {})
+    if scan_meta.get("video_error") or scan_meta.get("audio_error"):
+        raise RuntimeError("Analisi del gameplay non riuscita. Il video intero resta disponibile.")
+    voice_result = None
+    if voice is not None:
+        voice_result, _ = voice(input_file, 0.0, float(source_duration), cache_token=cache_token, force=True)
+    # Reuse the existing event/genre/Game Brain stages on a VALID whole-source
+    # window. They must not receive the impossible requested crop duration.
+    _, diagnostics = rank(input_file, mode, clip_duration=float(source_duration), numero_clip=1, cache_token=cache_token)
+    diagnostics = dict(diagnostics or {})
+    diagnostics.update({"__whole_source__": True, "__scan_cache_hit__": cache_hit, "__voice__": voice_result})
+    return [(0.0, 0.0)], diagnostics
 
 
 def _score(row: Mapping[str, Any]) -> int | None:
@@ -228,7 +252,10 @@ def merge_results(meta: Mapping[str, Any] | None, files: Iterable[tuple[int, flo
     """Join the results sheet with the mini preview files. None when there is no sheet."""
     if not isinstance(meta, Mapping):
         return None
-    if meta.get("status") == "failed":
+    if meta.get("status") == "analyzing" and time.time() - _num(meta.get("updated_at"), time.time()) >= 120:
+        meta = {**meta, "status": "failed", "error_code": "analysis_timeout",
+                "error": "L’analisi ha superato il tempo disponibile. Il video è conservato: puoi riprovare o continuare nell’Editor."}
+    if meta.get("status") == "failed" and not meta.get("whole_source"):
         return {"ok":True,"status":"failed","request_id":str(meta.get("request_id") or ""),
                 "error_code":str(meta.get("error_code") or "analysis_failed"),
                 "error":str(meta.get("error") or "Analisi non riuscita. Riprova."),
@@ -246,12 +273,15 @@ def merge_results(meta: Mapping[str, Any] | None, files: Iterable[tuple[int, flo
                 if best is None or mtime >= best[0]:
                     best = (mtime, name)
         row = dict(item)
-        row["video"] = url_for(best[1]) if best else ""
+        row["video"] = str(item.get("video") or "") if meta.get("whole_source") else url_for(best[1]) if best else ""
         row["mtime"] = best[0] if best else 0.0
         previews.append(row)
     ready = [row for row in previews if row["video"]]
     return {
         "ok": True,
+        "status": str(meta.get("status") or "success"),
+        "whole_source": bool(meta.get("whole_source")),
+        "error": str(meta.get("error") or ""),
         "request_id": str(meta.get("request_id") or ""),
         "engine": str(meta.get("engine") or ""),
         "pool_size": int(_num(meta.get("pool_size"), 0)),
