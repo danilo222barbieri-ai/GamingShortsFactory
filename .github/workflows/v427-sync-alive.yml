@@ -1,0 +1,45 @@
+name: V427 sync Alive
+
+on:
+  push:
+    branches:
+      - chat/fix-user-mobile-stabilization-20261023
+    paths:
+      - .github/workflows/v427-sync-alive.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chat/fix-user-mobile-stabilization-20261023
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Refresh verbatim Alive blocks
+        run: |
+          python tools/gsf_alive_inline.py --write
+          python tools/gsf_alive_inline.py
+      - name: Verify regression slice
+        run: |
+          python -m pip install --disable-pip-version-check pytest
+          python -m pytest -q tests/test_user_reported_mobile_v427.py tests/test_alive_runtime_v418.py
+          python -m compileall -q app.py web tests
+      - name: Commit synchronized canonical surfaces
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/v427-sync-alive.yml
+          git add web/home_v154_component/index.html \
+            web/ai_v221_component/index.html \
+            web/share_v156_component/index.html \
+            web/creator_hub_v156_component/index.html
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'fix: synchronize Alive runtime across mobile surfaces'
+          git push origin HEAD:chat/fix-user-mobile-stabilization-20261023
