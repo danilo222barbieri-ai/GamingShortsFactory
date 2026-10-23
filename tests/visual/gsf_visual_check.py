@@ -99,7 +99,12 @@ def check_mobile_editor(ctx, metrics):
     assert page.locator("[data-tool]").count() == 7
     assert page.locator("#eventMarkers .event-marker").count() == 1
 
-    page.locator("#fullscreenButton").click()
+    # V427 deliberately removes the redundant top HUD in mini mode. Enter the
+    # editor through the visible MODIFICA control, then exercise fullscreen from
+    # the expanded editor where the fullscreen control is intentionally visible.
+    page.wait_for_function("() => document.querySelector('#gameEditorApp').classList.contains('is-mini')")
+    page.locator("#enterEditorButton").click()
+    page.wait_for_function("() => document.querySelector('#gameEditorApp').classList.contains('is-expanded')")
     page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'true'")
     page.locator("#fullscreenButton").click()
     page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'false'")
@@ -111,7 +116,9 @@ def check_mobile_editor(ctx, metrics):
         "() => window.__editorMessages.filter(message => message.action === 'fullscreen_changed').map(message => message.active)"
     )
     assert fullscreen_signals[-2:] == [True, False]
-    page.locator("#fullscreenButton").click()
+    page.wait_for_function("() => document.querySelector('#gameEditorApp').classList.contains('is-mini')")
+    page.locator("#enterEditorButton").click()
+    page.wait_for_function("() => document.querySelector('#gameEditorApp').classList.contains('is-expanded')")
     page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'true'")
     page.evaluate("() => window.postMessage({type: 'GSF_GAME_EDITOR_SHELL_CLOSE'}, location.origin)")
     page.wait_for_function("() => document.querySelector('#fullscreenButton').getAttribute('aria-pressed') === 'false'")
