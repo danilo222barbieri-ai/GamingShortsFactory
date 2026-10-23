@@ -108,6 +108,67 @@ def run_duration_analysis(input_file, mode, duration, *, source_duration, rank, 
     return [(0.0, 0.0)], diagnostics
 
 
+def fallback_rank_pool(diagnostics: Mapping[str, Any] | None, *, source_duration: Any, clip_duration: Any, target: int = 3):
+    """Recover useful windows only when a successful analysis returned no rank pool.
+
+    Prefer real diagnostic signal peaks. If a valid source has no usable diagnostic
+    rows, return low-confidence deterministic coverage windows rather than an empty
+    result. Provider/decoder exceptions are not handled here and keep propagating.
+    """
+    source=max(0.0,_num(source_duration,0.0))
+    clip=max(0.1,_num(clip_duration,15.0))
+    count=max(1,min(8,int(target or 3)))
+    if source<=0:
+        return []
+    max_start=max(0.0,source-clip)
+    rows=[]
+    for raw_start, raw_row in dict(diagnostics or {}).items():
+        if str(raw_start).startswith("__") or not isinstance(raw_row,Mapping):
+            continue
+        try:
+            start=float(raw_start)
+        except (TypeError,ValueError):
+            start=_num(raw_row.get("start"),-1.0)
+        if start<0:
+            continue
+        features=raw_row.get("features") if isinstance(raw_row.get("features"),Mapping) else raw_row
+        event=max(0.0,_num(features.get("event_score"),0.0))
+        motion=max(0.0,_num(features.get("motion_burst"),0.0),_num(features.get("motion_avg"),0.0))
+        reaction=max(0.0,_num(features.get("reaction"),0.0),_num(features.get("reaction_cue"),0.0))
+        active=max(0.0,_num(features.get("active_ratio"),0.0))
+        synergy=max(0.0,_num(features.get("synergy"),0.0))
+        arc=max(0.0,_num(features.get("arc"),0.0))
+        hook=max(0.0,_num(features.get("hook"),0.0))
+        payoff=max(0.0,_num(features.get("payoff"),0.0))
+        dead=max(0.0,_num(features.get("dead_ratio"),0.0),_num(features.get("dead_streak_ratio"),0.0))
+        score=.34*event+.28*motion+.16*reaction+.08*active+.06*synergy+.04*arc+.02*hook+.02*payoff-.18*dead
+        rows.append((max(0.0,min(1.0,score)),max(0.0,min(max_start,start))))
+    if rows:
+        rows.sort(key=lambda pair:(pair[0],-pair[1]),reverse=True)
+        chosen=[]; min_gap=max(1.0,clip*.4)
+        for score,start in rows:
+            if any(abs(start-old_start)<min_gap for _,old_start in chosen):
+                continue
+            chosen.append((score,start))
+            if len(chosen)>=count:
+                break
+        if chosen:
+            return chosen
+    # Last-resort coverage for a valid decoded source: low confidence, bounded, unique.
+    starts=[max_start/2.0,0.0,max_start]
+    if count>3:
+        starts.extend(max_start*i/(count-1) for i in range(1,count-1))
+    out=[]
+    for start in starts:
+        start=max(0.0,min(max_start,float(start)))
+        if any(abs(start-old_start)<0.05 for _,old_start in out):
+            continue
+        out.append((max(.12,.25-.02*len(out)),start))
+        if len(out)>=count:
+            break
+    return out
+
+
 def _score(row: Mapping[str, Any]) -> int | None:
     raw = _num(row.get("brain_score"), -1.0)
     if raw <= 0:

@@ -80,6 +80,9 @@ button{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:tran
 .pcard .cover .glyph{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.9);color:var(--gsf-editor);box-shadow:0 6px 16px rgba(39,110,160,.12)}
 .pcard.short .cover .glyph{color:#1F9E6A}
 .pcard .cover .glyph svg{width:17px;height:17px}
+/* GSF_V427_SHORT_CARD_PREVIEW */
+.pcard .cover .cardPreview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;background:#06111d}
+.pcard .cover .tag,.pcard .cover .glyph{z-index:2}
 .pcard .tag{position:absolute;left:7px;top:7px;padding:3px 7px;border-radius:var(--gsf-radius-pill);background:rgba(255,255,255,.92);font-size:10px;font-weight:800;color:var(--gsf-muted)}
 .pcard .tag.pub{color:#14804A}
 .pcard .more{position:absolute;right:5px;top:5px;width:34px;height:34px;border-radius:12px;border:0;background:rgba(255,255,255,.92);display:grid;place-items:center;color:var(--gsf-ink)}
@@ -1228,7 +1231,8 @@ let oauthNavigating=false;
   const title=esc(item.title||"Short");
   const pub=(item.published||[]).map(p=>PLATFORM_NAMES[p]||p);
   const mb=(Number(item.final_bytes)||0)>1048576?Math.max(1,Math.round(Number(item.final_bytes)/1048576))+" MB":"";
-  return '<div class="pcard short" data-kind="short" data-id="'+id+'"><button class="cover" type="button" data-act="menu" aria-label="Azioni '+title+'"><span class="tag'+(pub.length?" pub":"")+'">'+(pub.length?"Pubblicato":"Short")+'</span><span class="glyph">'+PLAY+'</span></button><button class="more" type="button" data-act="menu" aria-label="Azioni Short">'+DOTS+'</button><div class="ptitle">'+title+'</div><div class="pmeta">'+esc(pub.length?pub.join(", "):(item.completed_at?ago(item.completed_at):"Salvato"))+(mb?" · "+mb:"")+'</div></div>';
+  const preview="/creator-hub/short/file?id="+encodeURIComponent(item.id||"")+"&preview=1#t=0.1";
+  return '<div class="pcard short" data-kind="short" data-id="'+id+'"><button class="cover" type="button" data-act="menu" aria-label="Azioni '+title+'"><video class="cardPreview" playsinline muted preload="metadata" src="'+esc(preview)+'" aria-hidden="true"></video><span class="tag'+(pub.length?" pub":"")+'">'+(pub.length?"Pubblicato":"Short")+'</span><span class="glyph">'+PLAY+'</span></button><button class="more" type="button" data-act="menu" aria-label="Azioni Short">'+DOTS+'</button><div class="ptitle">'+title+'</div><div class="pmeta">'+esc(pub.length?pub.join(", "):(item.completed_at?ago(item.completed_at):"Salvato"))+(mb?" · "+mb:"")+'</div></div>';
  }
  // GSF_NIGHT_ARENA: empty states always offer the next step.
  const UPLOAD_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>';

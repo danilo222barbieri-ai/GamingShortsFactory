@@ -3753,10 +3753,10 @@ def _instagram_oauth_start(handler,sid):
         _html(handler,503,_social_page(sid,"Configurazione URL pubblica Instagram incompleta sul server."))
         return
 
-    # Prefer Meta's current Instagram Login flow. It does not require a
-    # Facebook Page and uses the Instagram App ID shown under
-    # Instagram > API setup with Instagram login.
-    if INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET:
+    # GSF_V427_INSTAGRAM_META_FIRST: when the Meta professional flow is
+    # configured, prefer it for publishing so users do not hit Instagram
+    # Login's development-role gate. Direct Instagram Login remains fallback.
+    if INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET and not (META_APP_ID and META_APP_SECRET):
         mode="instagram_login"
         state="gsfig_"+secrets.token_urlsafe(28)
         state_dir=ROOT/"social_oauth"
@@ -5225,12 +5225,14 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 key=str(row.get("bucket_key") or _short_object_key(sid,short_id))
                 filename=re.sub(r"[^A-Za-z0-9_.-]+","_",str(row.get("title") or short_id))[:100]+".mp4"
+                preview=str((parse_qs(path.query).get("preview") or [""])[0]).strip().lower() in ("1","true","yes")
                 url=_s3().generate_presigned_url(
                     "get_object",
                     Params={
                         "Bucket":S3_BUCKET,
                         "Key":key,
-                        "ResponseContentDisposition":f'attachment; filename="{filename}"',
+                        "ResponseContentDisposition":"inline" if preview else f'attachment; filename="{filename}"',
+                        "ResponseContentType":"video/mp4",
                         "ResponseContentType":"video/mp4",
                     },
                     ExpiresIn=900,
