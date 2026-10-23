@@ -36,6 +36,52 @@ def _render_v428_uploader_handoff_reset_bridge():
         try{return frame?.contentDocument||null}catch(_e){return null}
       };
 
+      /* GSF_V429_COMPACT_NOTIFICATIONS
+         V428 became the sole event-notification surface, but its first mobile
+         dimensions were closer to a panel than a toast. Keep the same runtime
+         and semantics while making the visual footprint deliberately small. */
+      const ensureCompactNotifications=()=>{
+        let style=D.getElementById('gsf-v429-compact-notifications');
+        if(!style){
+          style=D.createElement('style');
+          style.id='gsf-v429-compact-notifications';
+          style.textContent=`
+#gsf-site-toast-stack{width:min(300px,calc(100vw - 28px))!important;gap:6px!important}
+.gsf-site-toast{grid-template-columns:20px minmax(0,1fr) 20px!important;gap:7px!important;min-height:48px!important;padding:7px 8px!important;border-radius:14px!important}
+.gsf-site-toast-icon{width:20px!important;height:20px!important}
+.gsf-site-toast-icon img{width:18px!important;height:18px!important;border-radius:5px!important}
+.gsf-site-toast-title{font-size:14px!important;line-height:1.05!important}
+.gsf-site-toast-body{font-size:12px!important;line-height:1.12!important;min-height:0!important;margin-top:2px!important;-webkit-line-clamp:1!important}
+.gsf-site-toast-close{width:20px!important;height:24px!important;font-size:16px!important}
+.gsf-site-toast-actions{gap:6px!important}
+.gsf-site-toast-action{min-height:28px!important;padding:4px 9px!important;font-size:10px!important;border-radius:9px!important}
+`;
+          (D.head||D.documentElement).appendChild(style);
+        }
+
+        /* GSF_V429_SINGLE_EVENT_NOTIFICATIONS
+           Alive V418 still owns guidance, heartbeat and carried progress. Its
+           legacy event whisper is only a fallback when GSFNotify says an event
+           was not handled. Mark non-toast-worthy event chatter as handled and
+           route uncovered failures through the compact global surface instead. */
+        const notify=P.GSFNotify;
+        if(!notify||notify.__GSF_V429_SINGLE_EVENT_NOTIFICATIONS__)return;
+        const originalAlive=notify.alive;
+        notify.alive=function(state){
+          let handled=false;
+          try{handled=typeof originalAlive==='function'?originalAlive.call(notify,state):false}catch(_e){handled=false}
+          if(handled)return true;
+          const event=String(state?.last||'');
+          if(event==='moment.selected'||event==='recovered')return true;
+          if(event==='failure'){
+            try{notify.show(String(state?.message||'Qualcosa si è fermato.'),'','error',{id:'alive:fallback-error'})}catch(_e){}
+            return true;
+          }
+          return false;
+        };
+        notify.__GSF_V429_SINGLE_EVENT_NOTIFICATIONS__=true;
+      };
+
       const clearStaleMedia=(doc,circle,rings)=>{
         doc.querySelectorAll('#circle video,#circle img,#circle canvas,.rings video,.rings img,.rings canvas').forEach((node)=>{
           try{node.remove()}catch(_e){}
@@ -95,6 +141,7 @@ def _render_v428_uploader_handoff_reset_bridge():
 
       const syncAll=()=>{
         raf=0;
+        ensureCompactNotifications();
         D.querySelectorAll(HOME).forEach(syncFrame);
       };
       const schedule=()=>{
@@ -139,8 +186,8 @@ def _render_v428_uploader_handoff_reset_bridge():
 
 def render_home_v154(*, loaded=False, duration=15, engine="", height=900, key="gsf_home_v155"):
     # V181 MOBILE FULL-VIEWPORT SHELL
-    # On phones the Home component must own the real viewport: no Streamlit
-    # spacer above it and no parent-page scroll below it.
+    # The parent owns the viewport. Home itself must now live inside the global
+    # shell's content bounds so its stage/cards are never hidden by header/Game Bar.
     st.html(r"""
     <style id="gsf-mobile-full-viewport-v181">
     @media (max-width:760px){
@@ -183,13 +230,17 @@ def render_home_v154(*, loaded=False, duration=15, engine="", height=900, key="g
         overflow:hidden !important;
       }
 
+      /* GSF_V429_HOME_SHELL_BOUNDS */
       [data-testid="stElementContainer"]:has(iframe[title*="gsf_home_v154"]){
         position:fixed !important;
-        inset:0 !important;
+        left:0 !important;
+        right:0 !important;
+        top:var(--gsf-shell-content-top,44px) !important;
+        bottom:var(--gsf-shell-content-bottom,112px) !important;
         width:100vw !important;
-        height:100dvh !important;
+        height:auto !important;
         min-height:0 !important;
-        max-height:100dvh !important;
+        max-height:none !important;
         margin:0 !important;
         padding:0 !important;
         overflow:hidden !important;
@@ -213,11 +264,11 @@ def render_home_v154(*, loaded=False, duration=15, engine="", height=900, key="g
         position:absolute !important;
         inset:0 !important;
         display:block !important;
-        width:100vw !important;
+        width:100% !important;
         max-width:none !important;
-        height:100dvh !important;
-        min-height:100dvh !important;
-        max-height:100dvh !important;
+        height:100% !important;
+        min-height:0 !important;
+        max-height:none !important;
         margin:0 !important;
         padding:0 !important;
         border:0 !important;
@@ -225,7 +276,7 @@ def render_home_v154(*, loaded=False, duration=15, engine="", height=900, key="g
     }
 
       /* V225 MOBILE APP-SURFACE STACKING
-         The Home iframe must stay fullscreen but must not cover persistent
+         The Home iframe stays inside the persistent shell and must not cover
          app surfaces rendered later in the Streamlit parent. */
       [data-testid="stElementContainer"]:has(#gsf-creator-hub-live-v160),
       [data-testid="stElementContainer"]:has(#gsf-social-overlay-v159),
