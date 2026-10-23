@@ -2,6 +2,9 @@
 (() => {
   if (window.GSFNavigation) return;
   const D = document;
+  if(new URL(location.href).searchParams.has('oauth_return')&&window.opener){
+    try{if(window.opener.location.origin===location.origin){window.opener.postMessage({type:'GSF_OAUTH_RETURN'},location.origin);window.close();return}}catch(_e){}
+  }
   // Streamlit owns reconnection. Close its live transport cleanly before the
   // browser caches the document instead of letting Chrome abort it. Ordinary
   // background/freeze keeps the connection and mounted Home intact.

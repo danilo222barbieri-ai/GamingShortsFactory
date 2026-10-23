@@ -219,7 +219,7 @@ class SourceLibraryBrowser(unittest.TestCase):
       else:r.fulfill(json={'ok':True,**fixture.ns['_twitch_content']('browserA',q.get('type',['clips'])[0])})
      elif url.path=='/creator-hub/sources':r.fulfill(json={'ok':True,**fixture.ns['_source_list']('browserA',q.get('provider',['upload'])[0])})
      else:r.fulfill(json={'ok':True})
-    page.route('**/*',route)
+    page.context.route('**/*',route)
     for width,height in [(375,667),(390,844),(393,852),(430,932)]:
      with self.subTest(viewport=(width,height)):
       page.set_viewport_size({'width':width,'height':height});page.goto('http://gsf.test/')
@@ -263,12 +263,15 @@ class SourceLibraryBrowser(unittest.TestCase):
     for provider in ('tiktok','twitch'):
      with self.subTest(new_oauth=provider):
       page.goto('http://gsf.test/');page.evaluate("GSFHubV304.openView('live')")
-      page.locator('[data-source-folder="clips"]').click();page.locator('[data-source-connect]').click()
-      page.wait_for_url('**/social-connect/twitch/start')
+      page.locator('[data-source-folder="clips"]').click()
+      with page.expect_popup() as connected:page.locator('[data-source-connect]').click()
+      popup=connected.value;popup.wait_for_url('**/social-connect/twitch/start')
+      self.assertEqual(page.url,'http://gsf.test/');popup.close()
       self.assertEqual(page.evaluate("JSON.parse(sessionStorage.getItem('gsf-source-oauth-return')).provider"),'twitch')
       page.goto('http://gsf.test/');page.evaluate("GSFHubV304.openView('settings')")
-      page.locator('.socialCard[data-platform="'+provider+'"] [data-connect]').click()
-      page.wait_for_url('**/social-connect/'+provider+'/start')
+      with page.expect_popup() as connected:page.locator('.socialCard[data-platform="'+provider+'"] [data-connect]').click()
+      popup=connected.value;popup.wait_for_url('**/social-connect/'+provider+'/start')
+      self.assertEqual(page.url,'http://gsf.test/');popup.close()
       self.assertIsNone(page.evaluate("sessionStorage.getItem('gsf-source-oauth-return')"))
     self.assertFalse(errors,errors)
    finally:browser.close()

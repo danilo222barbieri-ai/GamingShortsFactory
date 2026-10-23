@@ -1527,6 +1527,13 @@ let oauthNavigating=false;
    await loadState();toast("Account scollegato");
   }catch(e){toast(String(e.message||e),"error")}
  }
+ let oauthPopup=null,oauthTimer=0;
+ function finishOAuth(){
+  clearInterval(oauthTimer);oauthTimer=0;oauthNavigating=false;oauthPopup=null;
+  repairFrame();loadState();
+ }
+ window.addEventListener('message',e=>{if(e.origin===location.origin&&e.source===oauthPopup&&e.data?.type==='GSF_OAUTH_RETURN')finishOAuth()});
+ window.addEventListener('pagehide',()=>clearInterval(oauthTimer),{once:true});
  function connectSocial(key){
   if(socialIsOn(key)){
    openSheet('<h3>Scollegare '+esc(PLATFORM_NAMES[key]||key)+'?</h3><p>Potrai ricollegarlo quando vuoi.</p><div class="sheetActions"><button class="btn ghost" type="button" data-m="close">Annulla</button><button class="btn danger" type="button" data-m="ok">Scollega</button></div>');
@@ -1538,12 +1545,12 @@ let oauthNavigating=false;
   if(key==='twitch'&&current==='live')try{
    sessionStorage.setItem('gsf-source-oauth-return',JSON.stringify({provider:'twitch',folder:sourceFolder,created:Date.now()}));
   }catch(_e){}
+  if(!['youtube','tiktok','instagram','facebook','twitch'].includes(key))return;
+  if(oauthPopup&&!oauthPopup.closed){oauthPopup.focus();return}
+  oauthPopup=window.open('/social-connect/'+key+'/start','gsf-social-oauth','popup,width=480,height=720');
+  if(!oauthPopup){toast('Consenti l’apertura della finestra per collegare il social.','error');return}
   oauthNavigating=true;
-  if(key==="youtube")top.location.href="/social-connect/youtube/start";
-  else if(key==="tiktok")top.location.href="/social-connect/tiktok/start";
-  else if(key==="instagram")top.location.href="/social-connect/instagram/start";
-  else if(key==="facebook")top.location.href="/social-connect/facebook/start";
-  else if(key==="twitch")top.location.href="/social-connect/twitch/start";
+  clearInterval(oauthTimer);oauthTimer=setInterval(()=>{if(oauthPopup?.closed)finishOAuth()},500);
  }
 
  // Profile: photo (auto-resized) and name

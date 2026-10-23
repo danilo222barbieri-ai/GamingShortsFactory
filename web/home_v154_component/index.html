@@ -3563,9 +3563,9 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    return false;
  }
  function setDuration(n,emit=true){
-   duration=Number(n)===30?30:15;
+   duration=[15,30,60].includes(Number(n))?Number(n):15;
  document.querySelectorAll(".dur").forEach(b=>b.classList.toggle("active",Number(b.dataset.duration)===duration));
-   if(emit)parentClick(duration===15?["15s","15 s","15 sec","15 secondi"]:["30s","30 s","30 sec","30 secondi"],true);
+   if(emit)parentClick([duration+"s",duration+" s",duration+" sec",duration+" secondi"],true);
    if(emit)value({event:"duration",duration,engine});
  }
  function setEngine(name,emit=true){
@@ -3819,7 +3819,8 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
      if(!Number.isFinite(idx)){try{idx=Number(sessionStorage.getItem("gsf_ai_selected_moment_v288"))}catch(_e){idx=0}}
      idx=Math.max(0,Math.min(2,Number.isFinite(idx)?idx:0));
      const selectedPreview=(Array.isArray(previewData)?previewData[idx]:null)||{};
-     shellNav("editor",{momentIndex:idx,video_url:String(e.data.video||selectedPreview.video||""),cover:String(selectedPreview.cover||""),start_time:Number(e.data.start_time),end_time:Number(e.data.end_time),duration:Number(duration)||15,engine:String(engine||"")});
+     const candidateDuration=Number(e.data.end_time)-Number(e.data.start_time);
+     shellNav("editor",{momentIndex:idx,video_url:String(e.data.video||selectedPreview.video||""),cover:String(selectedPreview.cover||""),start_time:Number(e.data.start_time),end_time:Number(e.data.end_time),duration:Number.isFinite(candidateDuration)&&candidateDuration>0?candidateDuration:Number(duration)||15,engine:String(engine||"")});
      value({event:"open_editor",duration,engine,index:idx,start_time:Number(e.data.start_time)});
      return;
    }
