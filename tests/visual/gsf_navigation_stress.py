@@ -389,6 +389,12 @@ def force_fallback_fullscreen(page):
     frame=page.frame_locator('#gsf-editor-overlay-v220 iframe')
     frame.locator('#gameEditorApp').wait_for()
     frame.locator('#gameEditorApp').evaluate("e=>e.requestFullscreen=()=>Promise.reject(new Error('Fullscreen unavailable on this device'))")
-    tap(frame.locator('#fullscreenButton'))
+    # Mini mode intentionally hides the redundant header, including fullscreen.
+    # Follow the visible user entry instead of attempting to click a hidden HUD.
+    if frame.locator('#gameEditorApp').evaluate("e=>e.classList.contains('is-mini')"):
+        tap(frame.locator('#enterEditorButton'))
+        frame.locator('#gameEditorApp.is-expanded').wait_for(state='visible')
+    elif not page.evaluate("document.documentElement.classList.contains('gsf-mobile-editor-fullscreen')"):
+        tap(frame.locator('#fullscreenButton'))
     page.wait_for_function("()=>document.documentElement.classList.contains('gsf-mobile-editor-fullscreen')")
     return frame

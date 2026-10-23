@@ -1,5 +1,12 @@
 # Gaming Shorts Factory — Project Status
 
+## PR193 WebKit gate correction and release — 2026-10-23 Europe/Rome
+
+- Owner explicitly supersedes the earlier release hold: fix PR193, require all checks green, merge, then verify Railway and the served commit. Claim `pr193-webkit-gate-release-20261023`, existing PR branch `chat/fix-user-mobile-stabilization-20261023`.
+- Failed official Gate39930229447 has three errors with one stale setup: navigation/resume tests click the fullscreen button hidden by the intentional mini-header cleanup. The main visual check already enters through visible MODIFICA. Shared `force_fallback_fullscreen` now follows that same real pointer path, waits for expanded Editor, retains forced native rejection and the parent fallback-fullscreen assertion, and avoids toggling an already expanded fallback off. No product, timeout, skip, workflow or assertion removed.
+- Exact PR runtime179-file digest399b5657577f88843b7c10611f18ba386023bc93b0f6df28b02dcf4632b7cb04 verified in local production container. Two previously failing WebKit cases PASS15.28s; full ordinary suite348PASS53SKIP71subcases85.08s. Complete real WebKit visual/navigation/ten-resume-cycle run remains in progress; original background waits retained. Independent review: no P1/P2 in helper or broader PR diff.
+- Current production baseline health alltrue, release02157a6b4214b335d27637cfba440a06b79af41b; corresponding Railway GitHub deployment7273250340 reports success. PR193 has not yet merged or deployed at this checkpoint. Fresh remote checks and final production evidence are mandatory before claiming completion.
+
 ## Feature-freeze mobile follow-up — 2026-10-23 Europe/Rome
 
 - Claim/branch: `feature-freeze-mobile-regressions-20261022` / `chat/feature-freeze-mobile-regressions-20261022`; explicit owner-authorized transfer of only necessary paths. User requires a new PR, with **no merge and no Railway deployment**. Runtime candidate `b475b68`; tests-first commit `5ec4d74`.
