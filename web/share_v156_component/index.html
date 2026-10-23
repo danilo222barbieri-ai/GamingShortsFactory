@@ -698,6 +698,10 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
 #gsf-alive-bubble{max-width:min(78vw,320px);overflow:hidden}
 #gsf-alive-bubble .l{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis}
 #gsf-alive-bubble small{flex:0 0 auto}
+/* GSF_V427_ALIVE_HEADER_DOT */
+#gsf-alive-bubble.header-dot{width:38px;height:38px;max-width:38px;padding:4px;border-radius:50%;gap:0;justify-content:center}
+#gsf-alive-bubble.header-dot .l,#gsf-alive-bubble.header-dot small{display:none!important}
+#gsf-alive-bubble.header-dot svg{width:28px;height:28px;margin:0}
 #gsf-alive-bubble.on{opacity:1;transform:none;pointer-events:auto}
 #gsf-alive-bubble:focus-visible{outline:2px solid #79D2FF;outline-offset:2px}
 #gsf-alive-bubble svg{flex:none;width:28px;height:28px;transform:rotate(-90deg)}
@@ -921,6 +925,7 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
     let shared = false;
     try { shared = !!(W.top.GSFNotify && W.top.GSFNotify.alive); } catch (_e) {}
     const m = mounted && visible() && !shared ? bubbleModel() : null;
+    bubbleEl.classList.toggle("header-dot",page.dock!=="bottom");
     bubbleGo = m ? m.go : null;
     if (!m) { bubbleEl.classList.remove("on", "spin", "done"); bubbleEl.tabIndex = -1; bubbleKind = ""; return; }
     const ins = insets();
