@@ -11,3 +11,5 @@ Goal: fix the seven regressions reproduced on the current mobile production UI w
 7. AI: if a valid analysis completes with an empty rank pool, derive candidates from diagnostics; if diagnostics are empty but the media is valid, provide bounded coverage windows instead of returning zero moments. Never mask decoder/provider exceptions.
 8. AI UI: keep 15s/30s/60s on one horizontal row.
 9. Run targeted tests, full CI/Editor shell/Production Gate, merge only green, then verify Railway frontend status and live health/UI release.
+
+Targeted V427 regression tests, existing V412 AI contracts, Creator Hub redesign contracts and Python compile verification passed after the canonical fixes were applied. This coordination update intentionally changes no runtime code.
