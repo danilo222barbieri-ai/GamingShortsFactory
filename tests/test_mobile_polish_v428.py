@@ -56,6 +56,8 @@ def test_moments_screen_is_clean_swipeable_and_uses_create_short_language():
     assert "renderMomentDots" in page
     assert ">Crea Short</button>" in page
     assert ">Pubblica</button>" not in page
+    assert 'data-alive-next="create_short publish"' not in page
+    assert 'data-alive-next="create_short"' in page
 
 
 def test_home_legacy_nav_is_hidden_when_global_gamebar_owns_navigation():
