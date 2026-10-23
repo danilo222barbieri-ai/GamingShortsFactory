@@ -66,6 +66,20 @@ def test_home_legacy_nav_is_hidden_when_global_gamebar_owns_navigation():
     assert "html.gsf-v343-parent-ready #home154 .bottomNav{display:none!important}" in home
 
 
+def test_home_uploader_returns_to_idle_after_handoff_without_forgetting_source():
+    embed = _source("web/home_v154_embed.py")
+    # Source readiness must remain true for AI/Editor/Crea Short; only the uploader
+    # presentation is reset after the direct-upload handoff.
+    assert "loaded=bool(loaded)" in embed
+    assert "GSF_V428_UPLOADER_HANDOFF_RESET" in embed
+    assert "data-gsf-uploader-idle" in embed
+    assert "replaceConfirm" in embed
+    assert "loadedCheck" in embed
+    assert "CARICA<br>IL TUO GAMEPLAY" in embed
+    assert "gsf-upload" in embed
+    assert "state==='done'" in embed
+
+
 def test_global_notifications_are_one_readable_pen_surface_outside_header():
     server = _source("web/direct_upload_server.py")
     client = _function_source("web/direct_upload_server.py", "_push_client_bytes")
