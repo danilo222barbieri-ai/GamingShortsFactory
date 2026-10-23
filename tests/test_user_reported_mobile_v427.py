@@ -51,11 +51,12 @@ def test_creator_hub_short_cards_use_real_video_preview():
     assert '/creator-hub/short/file?id=' in hub
 
 
-def test_instagram_prefers_existing_meta_professional_login_when_available():
+def test_instagram_keeps_meta_professional_fallback_after_direct_login():
     server = _text("web/direct_upload_server.py")
-    assert "GSF_V427_INSTAGRAM_META_FIRST" in server
-    assert "if INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET and not (META_APP_ID and META_APP_SECRET):" in server
-    # The existing Meta path must remain available after the direct-login fallback.
+    assert "GSF_V428_INSTAGRAM_DIRECT_FIRST" in server
+    assert "if INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET:" in server
+    assert '"mode":"instagram_login"' in server
+    # Meta/Facebook remains available only as the compatibility fallback.
     assert '"mode":"facebook_login"' in server
     assert "META_SCOPES" in server
 

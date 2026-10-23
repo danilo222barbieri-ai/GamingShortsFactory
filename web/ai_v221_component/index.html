@@ -115,9 +115,12 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid rgba(39,174,243,
 .back{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 13px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid var(--gsf-line);font-size:12px;font-weight:800;color:#3E5880}
 .back svg{width:14px;height:14px}
 
-.portals{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:clamp(6px,2.5vw,26px)}
-.short{--s:min(25vw,19vh,150px);position:relative;flex:0 0 auto;width:var(--s);height:var(--s);border-radius:50%;cursor:pointer;transition:width .4s var(--ease),height .4s var(--ease)}
-.short.is-selected{--s:min(38vw,29vh,230px)}
+/* GSF_V428_MOMENT_CAROUSEL */
+.portals{flex:1;min-height:0;display:flex;align-items:center;justify-content:flex-start;gap:clamp(16px,5vw,28px);overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;padding:12px calc(50% - min(19vw,14.5vh,115px))}
+.portals::-webkit-scrollbar{display:none}
+.short{--s:min(38vw,29vh,230px);position:relative;flex:0 0 auto;width:var(--s);height:var(--s);border-radius:50%;cursor:pointer;scroll-snap-align:center;scroll-snap-stop:always;opacity:.66;transform:scale(.88);transition:transform .32s var(--ease),opacity .32s var(--ease)}
+.short.is-selected{opacity:1;transform:scale(1)}
+.moment-dots{flex:0 0 auto;display:flex;justify-content:center;align-items:center;gap:7px;min-height:18px;margin:-2px 0 5px}.moment-dot{width:7px;height:7px;padding:0;border-radius:50%;background:rgba(159,183,202,.38);transition:transform .22s var(--ease),background .22s var(--ease)}.moment-dot.is-selected{transform:scale(1.45);background:var(--gsf-cyan)}
 .short .ring{position:absolute;inset:-9px;border-radius:50%;pointer-events:none}
 .short .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
 .frame{position:absolute;inset:0;border-radius:50%;overflow:hidden;border:3px solid #fff;background:#0E2236;box-shadow:0 16px 40px rgba(39,90,140,.18)}
@@ -369,11 +372,11 @@ html,body{background:var(--na-bg)}
       <p class="results-title">I tuoi momenti<small>MOTORE <span id="engineUsed">AUTO</span></small></p>
       <div class="side">
         <button id="changeSearch" class="back" type="button"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>Cambia motore</button>
-        <span id="runChip" class="pill"><span class="dot"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg></span><span id="runText">In attesa</span></span>
-        <span id="savedChip" class="pill ok"><span class="dot"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5 6.5 12 13 4.5"/></svg></span><span id="savedText">Bozza salvata</span></span>
+        <button id="findMoreMoments" class="back" type="button">Trova altri momenti</button>
       </div>
     </div>
     <div id="previews" class="portals" aria-live="polite" data-alive-next="choose_moment"></div>
+    <div id="momentDots" class="moment-dots" aria-label="Momenti trovati"></div>
     <div class="card">
       <div class="card-top"><h2><span id="detailNum" class="num">SHORT 1</span><span id="detailTitle"></span></h2><span id="detailTime" class="tc"></span></div>
       <p id="detailWhy" class="why"></p>
@@ -381,7 +384,7 @@ html,body{background:var(--na-bg)}
     </div>
     <div class="acts" aria-label="Azioni sullo short selezionato">
       <button id="editMoment" class="act ed" type="button"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="7" width="18" height="11" rx="5.5"/><path d="M8 10.5v4M6 12.5h4"/><circle cx="15.5" cy="11.5" r=".9" fill="currentColor"/><circle cx="17.5" cy="13.5" r=".9" fill="currentColor"/></svg></span>Apri nell'editor</button>
-      <button id="createShort" class="act pub" type="button" data-alive-next="create_short publish"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l10.5-6.5Z"/></svg></span>Pubblica</button>
+      <button id="createShort" class="act pub" type="button" data-alive-next="create_short"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l10.5-6.5Z"/></svg></span>Crea Short</button>
     </div>
   </section>
 </div></main>
@@ -1219,12 +1222,10 @@ async function pollReplaced(index,start,deadline){
 
 /* ---------- autosave: every result, selection and swap is kept as a draft ---------- */
 function autosave(reason){
-  const chip=$("savedChip"),text=$("savedText");chip.classList.add("busy");text.textContent="Salvo la bozza…";
   clearTimeout(saveTimer);saveTimer=setTimeout(()=>{
     const p=selectedPayload();
     store.set({engine:state.engine,duration:state.duration,selectedMoment:state.selectedMoment,previews:rows(),saved_at:Date.now(),reason});
     send("save",{...p,autosave:true});
-    const t=new Date();chip.classList.remove("busy");text.textContent=`Bozza salvata · ${String(t.getHours()).padStart(2,"0")}:${String(t.getMinutes()).padStart(2,"0")}`;
   },450)}
 
 /* ---------- selection & actions ---------- */
@@ -1236,9 +1237,14 @@ function editSelectedMoment(){const payload=selectedPayload();confirmSelectedMom
 
 function ring(score,big){const r=46,c=2*Math.PI*r,v=Math.max(0,Math.min(100,score||0));return `<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="${r}" fill="none" stroke="#E3F1FA" stroke-width="${big?3:2.4}"/><circle cx="50" cy="50" r="${r}" fill="none" stroke="url(#gsfRing)" stroke-width="${big?3:2.4}" stroke-linecap="round" stroke-dasharray="${(c*v/100).toFixed(1)} ${c.toFixed(1)}"/><defs><linearGradient id="gsfRing"><stop offset="0" stop-color="#9D82FF"/><stop offset="1" stop-color="#53E0EA"/></linearGradient></defs></svg>`}
 
+function renderMomentDots(){
+  const host=$("momentDots"),r=rows();host.innerHTML="";
+  r.forEach((_item,index)=>{const dot=document.createElement("button");dot.type="button";dot.className="moment-dot"+(Number(state.selectedMoment)===index?" is-selected":"");dot.setAttribute("aria-label",`Vai al momento ${index+1}`);dot.addEventListener("click",()=>selectMoment(index));host.appendChild(dot)});
+}
+
 function renderMoments(){
   const host=$("previews"),r=rows();host.innerHTML="";
-  if(!r.length){host.innerHTML='<span class="sr">Sto preparando i tuoi momenti…</span>'+[0,1,2].map(i=>'<div class="short skel" style="--i:'+i+'" aria-hidden="true"><div class="frame"></div></div>').join("");return} /* GSF_NIGHT_ARENA: skeleton portals while the AI works */
+  if(!r.length){host.innerHTML='<span class="sr">Sto preparando i tuoi momenti…</span>'+[0,1,2].map(i=>'<div class="short skel" style="--i:'+i+'" aria-hidden="true"><div class="frame"></div></div>').join("");renderMomentDots();return} /* GSF_NIGHT_ARENA: skeleton portals while the AI works */
   if(Number(state.selectedMoment)>=r.length)state.selectedMoment=0;
   r.forEach((item,index)=>{
     const sel=Number(state.selectedMoment)===index,score=scoreOf(item);
@@ -1249,6 +1255,8 @@ function renderMoments(){
     card.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target===card){e.preventDefault();selectMoment(index)}});
     const play=card.querySelector(".play");if(play)play.addEventListener("click",e=>{e.stopPropagation();selectMoment(index);playIn(document.querySelector(`.short[data-index="${index}"]`),item)});
     host.appendChild(card)});
+  renderMomentDots();
+  requestAnimationFrame(()=>host.querySelector(`.short[data-index="${Number(state.selectedMoment)||0}"]`)?.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"}));
 }
 function renderDetail(){
   const r=rows(),i=Number(state.selectedMoment)||0,item=r[i];
@@ -1300,14 +1308,24 @@ function render(){
   const cta=$("createAi");cta.disabled=!state.loaded||Boolean(state.processing);cta.classList.toggle("busy",Boolean(state.processing));
   if(!state.processing&&!failed)$("aiStatus").textContent=!state.loaded?"Prima carica un gameplay dalla Home":"Tocca il cerchio per partire";
   $("engineUsed").textContent=ENGINE_LABEL[state.engine]||"AUTO";
-  const r=rows();$("runText").textContent=state.processing&&r[0]?.whole_source?'IA · Analizzo il gameplay…':r.length?(runInfo.pool>r.length?`${runInfo.pool} momenti analizzati`:`${r.length} short pronti`):"In attesa";$("runChip").classList.toggle("ok",r.length>0);
+  const r=rows();
   updateOrb();renderMoments();renderDetail()}
+
+let momentScrollTimer=0;
+function syncMomentFromCarousel(){
+  const host=$("previews"),cards=[...host.querySelectorAll(".short[data-index]")];if(!cards.length)return;
+  const hr=host.getBoundingClientRect(),center=hr.left+hr.width/2;let best=cards[0],distance=Infinity;
+  cards.forEach(card=>{const r=card.getBoundingClientRect(),d=Math.abs((r.left+r.width/2)-center);if(d<distance){distance=d;best=card}});
+  const index=Number(best.dataset.index);if(Number.isInteger(index)&&index!==Number(state.selectedMoment))selectMoment(index);
+}
+$("previews").addEventListener("scroll",()=>{clearTimeout(momentScrollTimer);momentScrollTimer=setTimeout(syncMomentFromCarousel,130)},{passive:true});
 
 /* ---------- events ---------- */
 document.querySelectorAll("[data-engine]").forEach(c=>c.addEventListener("click",()=>selectEngine(c.dataset.engine,true)));
 document.querySelectorAll("[data-duration]").forEach(b=>b.addEventListener("click",()=>selectDuration(b.dataset.duration,true)));
 $("createAi").addEventListener("click",()=>{if(failed)setScan("off");startSearch()});
 $("changeSearch").addEventListener("click",()=>{awaitingResults=false;pollToken++;state.processing=false;stopPlayback();setScan("off");showView("engines");send("change_engine");render()});
+$("findMoreMoments").addEventListener("click",()=>{if(state.processing)return;stopPlayback();startSearch()});
 $("createShort").addEventListener("click",createSelectedShort);
 $("editMoment").addEventListener("click",editSelectedMoment);
 $("swapShort").addEventListener("click",()=>openSheet(Number(state.selectedMoment)||0));

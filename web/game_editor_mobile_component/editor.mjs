@@ -771,7 +771,7 @@ redoButton.addEventListener("click", () => {
 
 $("#backButton").addEventListener("click", () => requestEditorAction("close"));
 $("#saveDraftButton").addEventListener("click", () => requestEditorAction("save_draft"));
-$("#continueButton").addEventListener("click", () => requestEditorAction("continue_to_short"));
+$("#continueButton").addEventListener("click", () => requestEditorAction("close"));
 $("#miniCreateShortButton").addEventListener("click", () => requestEditorAction("continue_to_short"));
 
 fullscreenButton.addEventListener("click", toggleFullscreen);
