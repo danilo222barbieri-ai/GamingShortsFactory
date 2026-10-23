@@ -6360,6 +6360,25 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3, cache
         numero_clip=_pool_target,
         cache_token=cache_token,
     )
+    # GSF_V427_AI_EMPTY_POOL_FALLBACK: preserve real ranker results, but do
+    # not strand a valid gameplay at zero moments when ranking yields no pool.
+    if not _pool:
+        from web.ai_engines_v412 import fallback_rank_pool as _gsf_v427_fallback_rank_pool
+        try:
+            _source_duration=float(durata_video(input_file) or 0.0)
+        except Exception:
+            _source_duration=0.0
+        _pool=_gsf_v427_fallback_rank_pool(
+            _diagnostics,
+            source_duration=_source_duration,
+            clip_duration=float(clip_duration),
+            target=_pool_target,
+        )
+        if _pool:
+            _diagnostics=dict(_diagnostics or {})
+            _meta=dict(_diagnostics.get("__meta__") or {})
+            _meta["empty_pool_fallback"]=True
+            _diagnostics["__meta__"]=_meta
     if not isinstance(_diagnostics,dict):
         _diagnostics={}
     _mode=str(modalita or "").lower()
