@@ -610,10 +610,10 @@ def _push_client_bytes():
     const records=new Map(),pending=[],docs=new WeakSet();let host=null,serial=0,layoutFrame=0;
     const reduced=()=>UI.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const CSS=`
-#gsf-site-toast-stack{position:fixed;right:max(12px,env(safe-area-inset-right,0px));top:max(10px,env(safe-area-inset-top,0px));z-index:2147483647;width:min(320px,calc(100vw - 24px));display:flex;flex-direction:column;gap:8px;pointer-events:none;font-family:'Avenir Next','SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden;contain:layout style}
+#gsf-site-toast-stack{position:fixed;left:50%;right:auto;top:max(10px,env(safe-area-inset-top,0px));z-index:2147483647;width:min(360px,calc(100vw - 32px));display:flex;flex-direction:column;gap:8px;pointer-events:none;font-family:'Caveat','Segoe Print','Bradley Hand',cursive;overflow:hidden;contain:layout style;transform:translateX(-50%)}
 .gsf-site-toast{position:relative;flex:none;box-sizing:border-box;display:grid;grid-template-columns:28px minmax(0,1fr) 28px;gap:9px;align-items:center;width:100%;min-height:72px;padding:10px;border:1px solid rgba(121,210,255,.28);border-radius:18px;background:rgba(8,24,39,.94);color:#eaf6ff;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 10px 28px rgba(0,0,0,.3);pointer-events:auto;opacity:0;transform:translateY(-7px);transition:opacity .22s ease,transform .22s cubic-bezier(.2,.8,.2,1);overflow:hidden}
 .gsf-site-toast.gsf-show{opacity:1;transform:translateY(0)}.gsf-site-toast.gsf-hide{opacity:0;transform:translateY(-5px);pointer-events:none}
-.gsf-site-toast-icon{width:28px;height:28px;display:grid;place-items:center;color:#79d2ff}.gsf-site-toast-icon img{width:26px;height:26px;object-fit:contain;border-radius:7px}.gsf-site-toast-copy{min-width:0}.gsf-site-toast-title{font-size:12px;font-weight:800;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gsf-site-toast-body{font-size:11px;line-height:1.4;color:#abc3d5;min-height:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:3px}
+.gsf-site-toast-icon{width:28px;height:28px;display:grid;place-items:center;color:#79d2ff}.gsf-site-toast-icon img{width:26px;height:26px;object-fit:contain;border-radius:7px}.gsf-site-toast-copy{min-width:0}.gsf-site-toast-title{font-size:17px;font-weight:700;line-height:1.05;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gsf-site-toast-body{font-size:15px;line-height:1.15;color:#c8deed;min-height:17px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px}
 .gsf-site-toast-close{width:28px;height:32px;padding:0;border:0;background:transparent;color:#abc3d5;font-size:20px;border-radius:9px;cursor:pointer}.gsf-site-toast-close:focus-visible,.gsf-site-toast-action:focus-visible{outline:2px solid #79d2ff;outline-offset:1px}.gsf-site-toast-bar{position:absolute;left:0;bottom:0;height:2px;width:100%;transform-origin:left;background:#79d2ff;transform:scaleX(1);transition:transform .25s ease,opacity .22s ease;opacity:.7}
 .gsf-site-toast[data-kind=working] .gsf-site-toast-icon{border:2px solid rgba(121,210,255,.25);border-top-color:#79d2ff;box-sizing:border-box;border-radius:50%;animation:gsfNoticeSpin 1.1s linear infinite}.gsf-site-toast[data-kind=working] .gsf-site-toast-icon img{visibility:hidden}.gsf-site-toast[data-kind=working]:not(.gsf-progress-known) .gsf-site-toast-bar{width:30%;animation:gsfNoticeIndeterminate 1.8s ease-in-out infinite}.gsf-site-toast[data-kind=success]{border-color:rgba(94,214,160,.5)}.gsf-site-toast[data-kind=success] .gsf-site-toast-bar{background:#5ed6a0}.gsf-site-toast[data-kind=error]{border-color:rgba(255,139,139,.6)}.gsf-site-toast[data-kind=error] .gsf-site-toast-bar{background:#ff8b8b}.gsf-site-toast[data-kind=warning]{border-color:rgba(255,181,71,.55)}.gsf-site-toast-actions{grid-column:2/4;display:flex;justify-content:flex-end;gap:8px}.gsf-site-toast-action{min-height:36px;max-width:100%;border:1px solid rgba(121,210,255,.35);background:rgba(121,210,255,.08);border-radius:12px;padding:6px 12px;color:#eaf6ff;font-family:inherit;font-size:11px;font-weight:700;line-height:1.3;cursor:pointer}.gsf-site-toast-action.primary{background:rgba(39,174,243,.2)}
 #gsf-site-toast-stack.gsf-compact .gsf-site-toast:nth-child(n+2){visibility:hidden;pointer-events:none}
@@ -644,14 +644,9 @@ def _push_client_bytes():
       const bars=[...doc.querySelectorAll('#gsf-global-gamebar,.v414-tool-rail,.v414-editor-actions,.v414-timeline')].filter(visible);
       const top=Math.max(10,(vv?.offsetTop||0)+10,visible(header)?header.getBoundingClientRect().bottom+8:0);
       const bottom=Math.min(viewportBottom-10,...bars.map(bar=>bar.getBoundingClientRect().top-8));
-      const inline=visible(header)&&header.id==='gsf-global-header'&&![...records.values()].some(r=>r.el&&r.data.kind==='confirm');
-      host.classList.toggle('gsf-inline',inline);host.classList.toggle('gsf-pill',![...records.values()].some(r=>r.el&&r.data.kind==='confirm'));
-      if(inline){
-        const hr=header.getBoundingClientRect(),brand=header.querySelector('.v343Brand'),account=header.querySelector('.v343Account');
-        const left=brand?brand.getBoundingClientRect().right+6:hr.left+8,right=account?account.getBoundingClientRect().left-6:hr.right-8;
-        host.style.left=Math.round(left)+'px';host.style.right='auto';host.style.width=Math.max(0,Math.min(320,right-left))+'px';
-        host.style.top=Math.round(hr.bottom-38)+'px';host.style.maxHeight='36px';return;
-      }
+      /* GSF_V428_PEN_NOTIFICATIONS: one readable surface, never inside the profile header. */
+      const inline=false;
+      host.classList.remove('gsf-inline');host.classList.remove('gsf-pill');
       host.style.left='';host.style.right='';host.style.width='';
       host.style.top='max(env(safe-area-inset-top,0px),'+Math.round(top)+'px)';host.style.maxHeight='max(0px,calc('+Math.max(0,bottom-top)+'px - env(safe-area-inset-bottom,0px)))';host.classList.toggle('gsf-compact',bottom-top<165);
     };
@@ -661,7 +656,7 @@ def _push_client_bytes():
     const clearTimers=r=>{UI.clearTimeout(r.timer);UI.clearTimeout(r.exitTimer);r.timer=r.exitTimer=0};
     const drain=()=>{while(pending.length&&[...records.values()].filter(r=>r.el).length<2){const r=pending.shift();if(records.get(r.id)===r)mount(r)}};
     const dismiss=id=>{const r=records.get(String(id));if(!r)return false;clearTimers(r);r.closing=true;const finish=()=>{if(records.get(r.id)!==r)return;r.el?.remove();records.delete(r.id);const i=pending.indexOf(r);if(i>=0)pending.splice(i,1);drain();layout()};if(!r.el||reduced())finish();else{r.el.classList.add('gsf-hide');r.exitTimer=UI.setTimeout(finish,230)}return true};
-    const lifetime=r=>{UI.clearTimeout(r.timer);r.timer=0;if(r.data.kind==='working'||r.data.kind==='confirm'||UI.document.hidden)return;const ttl=r.data.ttl===undefined?(r.data.kind==='error'?7000:4200):Number(r.data.ttl);if(ttl>0)r.timer=UI.setTimeout(()=>dismiss(r.id),Math.min(ttl,60000))};
+    const lifetime=r=>{UI.clearTimeout(r.timer);r.timer=0;if(r.data.kind==='working'||r.data.kind==='confirm'||UI.document.hidden)return;const ttl=r.data.ttl===undefined?(r.data.kind==='error'?9000:6500):Number(r.data.ttl);if(ttl>0)r.timer=UI.setTimeout(()=>dismiss(r.id),Math.min(ttl,60000))};
     const paint=r=>{
       if(!r.el)return;const e=r.el,d=r.data;clearTimers(r);r.closing=false;e.classList.remove('gsf-hide');e.dataset.kind=d.kind||'info';const setText=(selector,value)=>{const node=e.querySelector(selector);if(node.textContent!==value)node.textContent=value};setText('.gsf-site-toast-title',String(d.title||'Gaming Shorts Factory'));setText('.gsf-site-toast-body',String(d.body||''));
       const known=typeof d.progress==='number'&&Number.isFinite(d.progress);e.classList.toggle('gsf-progress-known',known);e.querySelector('.gsf-site-toast-bar').style.transform=known?'scaleX('+Math.max(0,Math.min(1,d.progress))+')':'';
@@ -3753,10 +3748,10 @@ def _instagram_oauth_start(handler,sid):
         _html(handler,503,_social_page(sid,"Configurazione URL pubblica Instagram incompleta sul server."))
         return
 
-    # GSF_V427_INSTAGRAM_META_FIRST: when the Meta professional flow is
-    # configured, prefer it for publishing so users do not hit Instagram
-    # Login's development-role gate. Direct Instagram Login remains fallback.
-    if INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET and not (META_APP_ID and META_APP_SECRET):
+    # GSF_V428_INSTAGRAM_DIRECT_FIRST: connection and publishing are separate.
+    # Prefer the dedicated Instagram Login whenever its credentials exist;
+    # Facebook Login remains a compatibility fallback for Meta-only installs.
+    if INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET:
         mode="instagram_login"
         state="gsfig_"+secrets.token_urlsafe(28)
         state_dir=ROOT/"social_oauth"
