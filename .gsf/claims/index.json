@@ -1555,6 +1555,21 @@
     {
       "branch": "chat/feature-freeze-mobile-regressions-20261022",
       "created_at": "2026-10-22T22:18:04+02:00",
+      "evidence": {
+        "commit": "3f332b96c68d2b37cbd1c71384d70ed027c74e86",
+        "gate": "39912466489 first attempt failed before OAuth tests at apt mirror timeout3minutes; failed job retried on new runner; current result pending",
+        "notes": "Rebased onto0f0f01d after concurrentPR190; preserved canonical OAuth/Home/Alive/security changes, removed short-source fake cache shortcut; current PR draft, mergeable. Independent final review clear.",
+        "pr": "https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/192",
+        "railway": "NO merge,auto-merge,promotion,marker mutation or Railway deployment by this task. User release hold remains.",
+        "terminal_status": "PR_OPEN_CHECKS_PENDING",
+        "tests": {
+          "dedicated": "18 passed (14 new behavioral cases,4 preserved contracts); four WebKit iPhone viewports",
+          "github_ci": "39912466480 SUCCESS;324passed72skipped62subcases; exact runtime dependency audit clean",
+          "local_webkit": "146passed2skipped93subcases; one Windows codec player test deselected only locally, kept in official Gate",
+          "node": "22passed"
+        },
+        "updated_at": "2026-10-23T08:41:58+02:00"
+      },
       "id": "feature-freeze-mobile-regressions-20261022",
       "owner": "chat/feature-freeze-mobile-regressions-20261022",
       "paths": [
