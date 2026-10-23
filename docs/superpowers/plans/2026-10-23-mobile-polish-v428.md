@@ -23,6 +23,13 @@ Stabilize the current mobile beta without adding product scope: keep editor work
 6. Hide the legacy Home bottom navigation whenever the parent/global shell is active so no white surface can peek under Game Bar.
 7. Run targeted tests, JavaScript syntax/contracts, full CI, Production Gate candidate checks, and self-review the branch before requesting merge.
 
+## Verification state
+- RED observed after adding the V428 regression suite before runtime changes.
+- Six V428 targeted regression tests pass after implementation.
+- Mobile Game Editor JavaScript syntax check passes.
+- Crea Short no longer carries publish semantics; social publication remains a separate later action.
+- Full GSF CI and Production Gate must pass on the clean PR head before merge.
+
 ## Constraints
 - Feature freeze: no new engines, publishing modes, rendering behavior, or social providers.
 - Preserve current working upload → AI moments → editor → Crea Short flow.
