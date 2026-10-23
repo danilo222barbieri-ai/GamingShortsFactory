@@ -183,13 +183,22 @@ def check_mobile_editor(ctx, metrics):
     page.locator("#aiPreviewCancelButton").click()
     assert page.evaluate("() => window.GSFGameEditor2026.getState()") == state_before_quick
 
+    # V428 contract: save and Done/close are draft-only. Final Short creation is
+    # emitted only from the explicit Crea Short control in mini mode.
     page.locator("#saveDraftButton").click()
     page.locator("#continueButton").click()
     page.wait_for_function(
-        "() => ['save_draft', 'continue_to_short'].every(action => window.__editorMessages.some(message => message.action === action))"
+        "() => ['save_draft', 'close'].every(action => window.__editorMessages.some(message => message.action === action))"
     )
     actions = page.evaluate("() => window.__editorMessages.map(message => message.action)")
-    assert "save_draft" in actions and "continue_to_short" in actions
+    assert "save_draft" in actions and "close" in actions
+    assert "continue_to_short" not in actions
+    page.evaluate("() => window.postMessage({type: 'GSF_GAME_EDITOR_SHELL_CLOSE'}, location.origin)")
+    page.wait_for_function("() => document.querySelector('#gameEditorApp').classList.contains('is-mini')")
+    page.locator("#miniCreateShortButton").click()
+    page.wait_for_function(
+        "() => window.__editorMessages.some(message => message.action === 'continue_to_short')"
+    )
     assert not errors, errors
     page.screenshot(path=str(OUT / "14-mobile-game-editor.png"), full_page=False)
     metrics["surfaces"]["mobile-game-editor"] = {
