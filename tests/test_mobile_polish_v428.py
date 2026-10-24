@@ -60,10 +60,12 @@ def test_moments_screen_is_clean_swipeable_and_uses_create_short_language():
     assert 'data-alive-next="create_short"' in page
 
 
-def test_home_legacy_nav_is_hidden_when_global_gamebar_owns_navigation():
+def test_home_keeps_hidden_nav_reserve_under_global_gamebar():
     home = _source("web/home_v154_component/index.html")
-    assert "GSF_V428_GLOBAL_GAMEBAR_OWNS_NAV" in home
-    assert "html.gsf-v343-parent-ready #home154 .bottomNav{display:none!important}" in home
+    assert "GSF_HOME_SHELL_FIT" in home
+    assert "const need=Math.max(68" in home
+    assert "GSF_V428_GLOBAL_GAMEBAR_OWNS_NAV" not in home
+    assert "html.gsf-v343-parent-ready #home154 .bottomNav{display:none!important}" not in home
 
 
 def test_home_uploader_returns_to_idle_after_handoff_without_forgetting_source():
