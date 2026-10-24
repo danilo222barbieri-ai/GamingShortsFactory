@@ -36,31 +36,6 @@ def _render_v428_uploader_handoff_reset_bridge():
         try{return frame?.contentDocument||null}catch(_e){return null}
       };
 
-      /* GSF_V430_GLOBAL_GAMEBAR_SAFE_HOME
-         The global Game Bar owns navigation on mobile. The legacy Home nav/footer
-         must not reserve vertical space inside the iframe, otherwise the action
-         cards are pushed into the area covered by the global Game Bar. */
-      const ensureHomeGamebarSafeLayout=(doc)=>{
-        if(!doc)return;
-        let style=doc.getElementById('gsf-v430-global-gamebar-safe-home');
-        if(style)return;
-        style=doc.createElement('style');
-        style.id='gsf-v430-global-gamebar-safe-home';
-        style.textContent=`
-@media (max-width:760px){
-  .bottomNav,.siteFooter{display:none!important}
-  #home154{padding-bottom:max(18px,env(safe-area-inset-bottom))!important}
-  /* GSF_V431_STABLE_HOME_ACTION_POSITION
-     Once the legacy inner nav/footer are removed, the flex-growing stage would
-     absorb that freed height and push the three action cards downward. Keep the
-     hero stage adaptive but non-growing so the cards stay high and stable. */
-  .stage{flex:0 0 clamp(300px,42dvh,330px)!important;min-height:clamp(300px,42dvh,330px)!important}
-  .features{margin-bottom:0!important}
-}
-`;
-        (doc.head||doc.documentElement).appendChild(style);
-      };
-
       /* GSF_V429_COMPACT_NOTIFICATIONS
          V428 became the sole event-notification surface, but its first mobile
          dimensions were closer to a panel than a toast. Keep the same runtime
@@ -120,7 +95,6 @@ def _render_v428_uploader_handoff_reset_bridge():
 
       const syncFrame=(frame)=>{
         const doc=frameDoc(frame);if(!doc)return;
-        ensureHomeGamebarSafeLayout(doc);
         const circle=doc.getElementById('circle');
         const rings=doc.querySelector('.rings');
         const icon=doc.getElementById('uploadIcon');
