@@ -82,6 +82,40 @@ def _render_v428_uploader_handoff_reset_bridge():
         notify.__GSF_V429_SINGLE_EVENT_NOTIFICATIONS__=true;
       };
 
+      /* GSF_V430_HOME_GAMEBAR_OVERLAP
+         Streamlit wrapper selectors can drift across releases. Measure the Home
+         iframe itself against the shell's reserved Game Bar boundary and shrink
+         only the inner Home surface by the pixels that are actually overlapped. */
+      const syncHomeGamebarOverlap=(frame,doc)=>{
+        const home=doc.getElementById('home154');
+        if(!home)return;
+        let style=doc.getElementById('gsf-v430-home-gamebar-overlap');
+        if(!style){
+          style=doc.createElement('style');
+          style.id='gsf-v430-home-gamebar-overlap';
+          style.textContent=`
+@media (max-width:760px){
+  #home154{
+    height:calc(100dvh - var(--gsf-v430-gamebar-overlap,0px))!important;
+    min-height:calc(100dvh - var(--gsf-v430-gamebar-overlap,0px))!important;
+    max-height:calc(100dvh - var(--gsf-v430-gamebar-overlap,0px))!important;
+    overflow:hidden!important;
+  }
+}`;
+          (doc.head||doc.documentElement).appendChild(style);
+        }
+        let shellBottom=112;
+        try{
+          const raw=String(P.getComputedStyle(D.documentElement).getPropertyValue('--gsf-shell-content-bottom')||'').trim();
+          const parsed=parseFloat(raw);
+          if(Number.isFinite(parsed)&&parsed>=0)shellBottom=parsed;
+        }catch(_e){}
+        const frameBottom=frame.getBoundingClientRect().bottom;
+        const intendedBottom=P.innerHeight-shellBottom;
+        const overlap=Math.max(0,Math.ceil(frameBottom-intendedBottom));
+        doc.documentElement.style.setProperty('--gsf-v430-gamebar-overlap',`${overlap}px`);
+      };
+
       const clearStaleMedia=(doc,circle,rings)=>{
         doc.querySelectorAll('#circle video,#circle img,#circle canvas,.rings video,.rings img,.rings canvas').forEach((node)=>{
           try{node.remove()}catch(_e){}
@@ -95,6 +129,7 @@ def _render_v428_uploader_handoff_reset_bridge():
 
       const syncFrame=(frame)=>{
         const doc=frameDoc(frame);if(!doc)return;
+        syncHomeGamebarOverlap(frame,doc);
         const circle=doc.getElementById('circle');
         const rings=doc.querySelector('.rings');
         const icon=doc.getElementById('uploadIcon');
