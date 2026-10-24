@@ -101,6 +101,12 @@ def _render_v428_uploader_handoff_reset_bridge():
     max-height:calc(100dvh - var(--gsf-v430-gamebar-overlap,0px))!important;
     overflow:hidden!important;
   }
+  #home154 .ui{
+    height:100%!important;
+    min-height:0!important;
+    max-height:100%!important;
+  }
+  #home154 #view{min-height:0!important}
 }`;
           (doc.head||doc.documentElement).appendChild(style);
         }
