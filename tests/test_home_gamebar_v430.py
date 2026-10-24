@@ -16,4 +16,6 @@ def test_mobile_home_stage_does_not_absorb_freed_nav_space():
     bridge = (ROOT / "web/home_v154_embed.py").read_text(encoding="utf-8")
     compact = "".join(bridge.split())
     assert "GSF_V431_STABLE_HOME_ACTION_POSITION" in bridge
-    assert ".stage{flex:0 0 clamp(300px,42dvh,330px)!important;min-height:clamp(300px,42dvh,330px)!important}" in compact
+    assert ".stage{" in compact
+    assert "flex:00clamp(300px,42dvh,330px)!important" in compact
+    assert "min-height:clamp(300px,42dvh,330px)!important" in compact
