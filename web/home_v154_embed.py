@@ -50,6 +50,11 @@ def _render_v428_uploader_handoff_reset_bridge():
 @media (max-width:760px){
   .bottomNav,.siteFooter{display:none!important}
   #home154{padding-bottom:max(18px,env(safe-area-inset-bottom))!important}
+  /* GSF_V431_STABLE_HOME_ACTION_POSITION
+     Once the legacy inner nav/footer are removed, the flex-growing stage would
+     absorb that freed height and push the three action cards downward. Keep the
+     hero stage adaptive but non-growing so the cards stay high and stable. */
+  .stage{flex:0 0 clamp(300px,42dvh,330px)!important;min-height:clamp(300px,42dvh,330px)!important}
   .features{margin-bottom:0!important}
 }
 `;
