@@ -68,8 +68,11 @@ def test_startup_only_verifies_and_launches():
     assert "python /app/gsf_ui_manifest.py verify" in body
     assert "exec python -m streamlit run /app/app.py" in body
     launched = re.findall(r"^python (\S+)", body, re.M)
-    assert set(launched) <= {"/app/gsf_ui_manifest.py", "-", "/app/web/direct_upload_server.py",
+    assert set(launched) <= {"/app/gsf_ui_manifest.py", "-", "/app/web/direct_upload_server_lowmem.py",
                              "/app/web/contact_server.py"}, launched
+    lowmem = (WEB / "direct_upload_server_lowmem.py").read_text(encoding="utf-8")
+    assert "import direct_upload_server as server" in lowmem
+    assert "_MATERIALIZE_GATE=threading.BoundedSemaphore(1)" in lowmem
     for forbidden in (".replace(", "sed -i", "cp /app/web", "mv /app/web", "> /app/", "rm -f /app/"):
         assert forbidden not in body, f"startup must not transform files ({forbidden})"
     # the only file the startup writes is runtime config outside /app
