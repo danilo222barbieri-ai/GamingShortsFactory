@@ -45,7 +45,7 @@ PY
 rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 envsubst '${PORT}' < /app/web/nginx.conf.template > /etc/nginx/conf.d/default.conf
 
-python /app/web/direct_upload_server.py &
+python /app/web/direct_upload_server_lowmem.py &
 python /app/web/contact_server.py &
 nginx
 
