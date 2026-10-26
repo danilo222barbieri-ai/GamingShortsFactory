@@ -1643,6 +1643,7 @@
         "requirements-web.txt",
         "tests/test_mobile_regressions_v429.py",
         "tests/test_upload_lowmem_v435.py",
+        "tests/visual/gsf_visual_check.py",
         "tools/gsf_beta_v435_probe.py",
         "web/home_v154_component/index.html",
         "web/home_v154_embed.py",
