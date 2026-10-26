@@ -2,6 +2,7 @@
 
 ## Director memory checkpoint — 2026-10-26
 
+- Gate40374615651 failed before tests on slow Ubuntu FFmpeg dependency download within the OAuth3minute budget. Separated bounded installation from unchanged3minute tests; no bypass.
 - Exact peak attribution refined the cause to Director cold-open buffering its main stream behind a late trim. Independent bounded cold/main inputs preserve montage and reduce measured isolated full-container peak to589770752bytes, zero OOM,15.718s output from15s input. Native gate reentrancy now survives Streamlit module reload.21targeted tests and independent review PASS; mixed-load/remote Gate still pending. No merge/deploy.
 
 ## Latest V435 measured memory checkpoint — 2026-10-26

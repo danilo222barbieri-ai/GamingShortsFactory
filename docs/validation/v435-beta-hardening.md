@@ -130,3 +130,10 @@ Streamlit module reload could also make an inner Director wait on its own native
 slot; thread-owned reentrancy now spans module identities. Both defects have RED
 regressions and21targeted tests PASS; independent final review no P1/P2. Final
 concurrent full journeys and remote Gate remain mandatory before merge/deploy.
+
+## CI dependency timeout
+
+Gate40374615651 stopped before tests/build: Ubuntu FFmpeg apt transfer consumed
+the OAuth step's3minute timeout. Installation now has a separate bounded8minute
+step with2network retries and30s HTTP timeout; actual OAuth tests keep their
+original3minute budget. No contract or gate removed. Exact-head rerun required.

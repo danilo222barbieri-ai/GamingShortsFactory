@@ -135,13 +135,16 @@ jobs:
             web/auto_highlights/engine_v129.py \
             web/game_brain_v112.py
 
+      - name: Install runtime contract dependencies
+        timeout-minutes: 8
+        run: |
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 install -y --no-install-recommends ffmpeg
+          python -m pip install --disable-pip-version-check cryptography==50.0.1
+
       - name: OAuth session, signature and isolation contracts
         timeout-minutes: 3
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends ffmpeg
-          python -m pip install --disable-pip-version-check cryptography==50.0.1
-          python -m unittest discover -s tests -p test_social_oauth_v421.py
+        run: python -m unittest discover -s tests -p test_social_oauth_v421.py
 
       - name: Build worker image
         timeout-minutes: 15
