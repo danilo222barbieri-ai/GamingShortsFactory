@@ -17,6 +17,13 @@ def _f(v,d=0.0):
 
 
 def _run(cmd,timeout=180):
+    if os.environ.get("GSF_LOW_MEMORY_WEB","0").strip().lower() in {"1","true","yes","on"}:
+        bounded=[cmd[0],"-filter_threads","1","-filter_complex_threads","1"]
+        for arg in cmd[1:]:
+            if arg=="-i":
+                bounded += ["-threads","1"]
+            bounded.append(arg)
+        cmd=bounded
     with _gsf_render_slot_v293("director-v143"):
         p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=timeout,check=False)
     if p.returncode!=0:
@@ -73,14 +80,14 @@ def _prepend_cold_open(src,out,duration,peak):
     if b-a<.25:
         shutil.copyfile(src,out); return False
     if has_audio:
-        graph=(f"[0:v]trim=start={a:.4f}:end={b:.4f},setpts=PTS-STARTPTS[cv];"
-               f"[0:a]atrim=start={a:.4f}:end={b:.4f},asetpts=PTS-STARTPTS[ca];"
-               "[0:v]setpts=PTS-STARTPTS[mv];[0:a]asetpts=PTS-STARTPTS[ma];"
+        graph=("[0:v]setpts=PTS-STARTPTS[cv];"
+               "[0:a]asetpts=PTS-STARTPTS[ca];"
+               "[1:v]setpts=PTS-STARTPTS[mv];[1:a]asetpts=PTS-STARTPTS[ma];"
                "[cv][ca][mv][ma]concat=n=2:v=1:a=1[vout][aout]")
     else:
-        graph=(f"[0:v]trim=start={a:.4f}:end={b:.4f},setpts=PTS-STARTPTS[cv];"
-               "[0:v]setpts=PTS-STARTPTS[mv];[cv][mv]concat=n=2:v=1:a=0[vout]")
-    cmd=["/usr/bin/ffmpeg","-hide_banner","-loglevel","error","-y","-i",str(src),"-filter_complex",graph,"-map","[vout]"]
+        graph=("[0:v]setpts=PTS-STARTPTS[cv];"
+               "[1:v]setpts=PTS-STARTPTS[mv];[cv][mv]concat=n=2:v=1:a=0[vout]")
+    cmd=["/usr/bin/ffmpeg","-hide_banner","-loglevel","error","-y","-ss",f"{a:.4f}","-t",f"{b-a:.4f}","-i",str(src),"-i",str(src),"-filter_complex",graph,"-map","[vout]"]
     if has_audio: cmd+=["-map","[aout]"]
     cmd+=_tail(has_audio,_signals(meta,motion=.80,detail=.75,action_peak=.95))+[str(out)]
     _run(cmd)

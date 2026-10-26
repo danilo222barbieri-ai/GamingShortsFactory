@@ -1,5 +1,9 @@
 # Gaming Shorts Factory — Project Status
 
+## Director memory checkpoint — 2026-10-26
+
+- Exact peak attribution refined the cause to Director cold-open buffering its main stream behind a late trim. Independent bounded cold/main inputs preserve montage and reduce measured isolated full-container peak to589770752bytes, zero OOM,15.718s output from15s input. Native gate reentrancy now survives Streamlit module reload.21targeted tests and independent review PASS; mixed-load/remote Gate still pending. No merge/deploy.
+
 ## Latest V435 measured memory checkpoint — 2026-10-26
 
 - PR203 remains draft, release held. Confirmed child OOM under1GiB despite successful downloads; isolated cinematic graph RSS862628KiB. Existing render admission now spans frontend processes and quality checks, cinematic decoder/filter/encoder threads are bounded only in low-memory mode. Effects/graph/CRF14 preserved.19targeted tests PASS; final mixed-load repeat and official gate pending.

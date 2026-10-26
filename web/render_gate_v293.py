@@ -57,7 +57,7 @@ def render_slot(label="final"):
     global _ACTIVE
     # A final render invokes cinematic/audio/director stages synchronously.
     # They reuse the owning thread's slot; another job still has to acquire it.
-    if getattr(_THREAD_STATE, "owns_slot", False):
+    if getattr(threading.current_thread(), "_gsf_final_render_owns_slot", False):
         yield
         return
     label = str(label or "final")[:80]
@@ -82,6 +82,9 @@ def render_slot(label="final"):
         _RENDER_GATE.release()
         raise
     _THREAD_STATE.owns_slot = True
+    # Streamlit can reload modules while a render is active. Nested stages on
+    # this same thread must retain admission across those module identities.
+    threading.current_thread()._gsf_final_render_owns_slot = True
     waited = time.perf_counter() - wait_started
     with _STATE_LOCK:
         _ACTIVE += 1
@@ -101,6 +104,7 @@ def render_slot(label="final"):
             _ACTIVE = max(0, _ACTIVE - 1)
             active = _ACTIVE
         _THREAD_STATE.owns_slot = False
+        threading.current_thread()._gsf_final_render_owns_slot = False
         try:
             if process_slot is not None:
                 process_slot.close()

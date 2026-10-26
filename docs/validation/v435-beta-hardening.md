@@ -117,3 +117,16 @@ post-deploy verification have not yet passed. No new deployment has been request
   already usable during analysis. Test now polls the same request's terminal
   result with bounded120s deadline; no product assertions or gate removed.
 - No merge or deployment. Public remains the previous verified V435 release.
+
+## Director buffering and reload-reentrancy correction
+
+The first thread-budget repeat still OOMed. Exact command attribution identified
+Director cold-open (`[cv]`) buffering the full main stream behind a late trim, not
+the separate cinematic module. Director now seeks a bounded independent cold input
+and concatenates the unchanged main input. All effects stay enabled. Actual15s
+1080x1920 input produces15.718s export in11.07s, full-container peak589770752bytes,
+zero oom/oom_kill. This isolated result does not replace mixed-load acceptance.
+Streamlit module reload could also make an inner Director wait on its own native
+slot; thread-owned reentrancy now spans module identities. Both defects have RED
+regressions and21targeted tests PASS; independent final review no P1/P2. Final
+concurrent full journeys and remote Gate remain mandatory before merge/deploy.

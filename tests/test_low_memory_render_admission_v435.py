@@ -206,3 +206,31 @@ def test_cinematic_low_memory_bounds_decoder_filter_and_encoder_without_changing
     assert tail[tail.index('-pix_fmt')+1]=='yuv420p'
     monkeypatch.setenv('GSF_LOW_MEMORY_WEB','0')
     assert module._encode_tail(True)[module._encode_tail(True).index('-threads')+1]=='2'
+
+
+def test_director_cold_open_does_not_buffer_the_whole_main_video(monkeypatch,tmp_path):
+    import sys
+    sys.path.insert(0,str(ROOT/'web'))
+    import director_render_exec_v143 as director
+    commands=[]
+    monkeypatch.setattr(director,'probe_media',lambda path:{'duration':15.,'has_audio':True,'width':1080,'height':1920})
+    monkeypatch.setattr(director,'_run',lambda cmd,**kw:commands.append(cmd))
+    assert director._prepend_cold_open(tmp_path/'source.mp4',tmp_path/'out.mp4',.7,6.)
+    command=commands[0]
+    assert command.count('-i')==2, 'One input feeding late cold-open and full main buffers hundreds of full-resolution frames'
+    assert command.index('-ss')<command.index('-i')
+    assert command.index('-t')<command.index('-i')
+    graph=command[command.index('-filter_complex')+1]
+    assert 'trim=' not in graph
+    assert '[1:v]' in graph and '[1:a]' in graph
+    assert 'concat=n=2:v=1:a=1' in graph
+
+
+def test_nested_postprocessing_survives_module_reload(tmp_path,monkeypatch):
+    setup_env(monkeypatch,tmp_path)
+    monkeypatch.setenv('GSF_RENDER_QUEUE_TIMEOUT','.05')
+    outer=load_gate()
+    inner=load_gate()
+    with outer.render_slot('final'):
+        with inner.render_slot('reimported-director'):
+            assert outer._ACTIVE==1
