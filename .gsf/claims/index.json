@@ -1674,6 +1674,7 @@
         "web/direct_upload_server.py",
         "web/home_v154_component/index.html",
         "web/home_v154_embed.py",
+        "web/render_gate_v293.py",
         "web/test_v105_dependency_lock.py"
       ],
       "scope": "Closed beta V435 hardening: current Home notification regression tests and measured isolated upload runtime validation; no redesign or deploy until blockers closed",
