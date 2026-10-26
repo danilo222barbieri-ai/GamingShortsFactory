@@ -4,7 +4,10 @@
   "id": "closed-beta-v435-hardening-current-home-notifica-4860a6",
   "owner": "Codex beta V435 validation",
   "paths": [
+    "PROJECT_STATUS.md",
+    "constraints-web.txt",
     "docs/validation/v435-beta-hardening.md",
+    "requirements-web.txt",
     "tests/test_mobile_regressions_v429.py",
     "tests/test_upload_lowmem_v435.py",
     "tools/gsf_beta_v435_probe.py"

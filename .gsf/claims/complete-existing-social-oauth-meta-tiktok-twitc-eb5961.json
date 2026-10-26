@@ -56,7 +56,15 @@
     },
     "timeline_geometry": "Measured legacy home_style_v416.css height58 overrides canonical timeline sizing and clips44px track; acquire unowned file to remove conflicting height. Git CLI credential expired; use atomic connector Git tree/commit/ref with expected head.",
     "updated_at": "2026-10-21T16:04:00Z",
-    "upstream_dependency_fix": "Official Streamlit merged Allow Pillow13 commit81bdb8a8a207691f17ec94df9eabc96b6b50ea7a on2026-10-21T10:17:53Z; develop now permits Pillow<14. PyPI stable1.66.0 and nightly1.66.1.dev20261020 still require<13; no compatible published prerelease/backport found. Official nightly schedule04:30UTC. Wait for published auditable release, then normal resolver/audit/full runtime checks. No override or CVE suppression."
+    "upstream_dependency_fix": "Official Streamlit merged Allow Pillow13 commit81bdb8a8a207691f17ec94df9eabc96b6b50ea7a on2026-10-21T10:17:53Z; develop now permits Pillow<14. PyPI stable1.66.0 and nightly1.66.1.dev20261020 still require<13; no compatible published prerelease/backport found. Official nightly schedule04:30UTC. Wait for published auditable release, then normal resolver/audit/full runtime checks. No override or CVE suppression.",
+    "handoff_v435_20261026": {
+      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6",
+      "paths": [
+        "constraints-web.txt",
+        "requirements-web.txt"
+      ],
+      "reason": "Same Codex task resumes under explicit user V435 beta-hardening request, including stable Streamlit migration if published; preserve all prior work."
+    }
   },
   "id": "complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
   "owner": "chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
@@ -64,12 +72,10 @@
     ".env.example",
     ".github/workflows/gsf-ci.yml",
     "Dockerfile",
-    "constraints-web.txt",
     "docs/architecture/gsf-alive-continuity-audit-2026-10-21.md",
     "docs/superpowers/plans/2026-10-20-source-library-twitch.md",
     "docs/superpowers/specs/2026-10-20-source-library-twitch-design.md",
     "gsf_alive_notifications.py",
-    "requirements-web.txt",
     "tests/js/gsf_alive_v418.test.mjs",
     "tests/test_ai_failure_recovery_v425.py",
     "tests/test_alive_runtime_v418.py",
