@@ -168,7 +168,7 @@ jobs:
 
       - name: Start production frontend image
         run: |
-          docker run -d --name gsf-production-gate \
+          docker run -d --name gsf-production-gate --memory=1g --memory-swap=1g \
             -e PORT=8080 \
             -e GSF_WEB_MODE=1 \
             -e GSF_LOW_MEMORY_WEB=1 \
@@ -234,6 +234,20 @@ jobs:
           GSF_BROWSER=webkit python -m unittest discover -s tests -p test_ai_failure_recovery_v425.py
           GSF_BROWSER=webkit python -m unittest discover -s tests -p test_feature_freeze_mobile.py
           GSF_BROWSER=webkit python -m unittest discover -s tests -p test_publish_recovery_v426.py
+
+      - name: Frontend 1 GiB memory health
+        timeout-minutes: 1
+        run: |
+          docker exec -i gsf-production-gate python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('/sys/fs/cgroup')
+          events={key:int(value) for key,value in (line.split() for line in (root/'memory.events').read_text().splitlines())}
+          metrics={'limit_bytes':int((root/'memory.max').read_text()),'peak_bytes':int((root/'memory.peak').read_text()),'events':events}
+          print(json.dumps(metrics),flush=True)
+          assert metrics['limit_bytes']==1024**3, 'Frontend must be tested at the Railway 1GiB budget'
+          assert events.get('oom',0)==0 and events.get('oom_kill',0)==0, 'An OOM-killed child must block promotion even if health stays green'
+          PY
 
       - name: Upload mobile WebKit evidence
         if: always()

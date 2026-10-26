@@ -89,3 +89,31 @@ post-deploy verification have not yet passed. No new deployment has been request
   is required; Docker OOMKilled=false alone cannot exclude killed child processes.
 - Second-edit render/export acceptance is now added to the real E2E harness and
   remains pending at this checkpoint. No release or beta readiness is claimed.
+
+## Measured render memory blocker and admission correction — 2026-10-26
+
+- Repeated mixed-load test confirms real OOM child deaths under1GiB; Docker
+  OOMKilled=false was insufficient. Release stays held until an exact repeat passes.
+- Existing process-local render semaphore now also uses a bounded cross-process
+  POSIX slot on low-memory frontend. Capacity timeout is terminal, not restarted
+  per encoder. Background quality inspection uses this same slot and rechecks the
+  queued file fingerprint; quality checks remain enabled.
+- Actual peak process attribution isolated the cinematic FFmpeg graph at862628KiB
+  RSS by itself. Its direct /usr/bin invocation bypassed the wrapper's filter and
+  codec budgets. Low-memory mode now bounds filter pools and every input decoder
+  to1thread, and the encoder to1thread. Graph,CRF14,pixel format and effects stay.
+  Other deployments retain encoder2threads. Regression reproduced RED;19targeted
+  render/admission/recipe tests PASS. Independent review requested for final delta.
+- Corrected second-render harness now polls resolved backend state rather than an
+  asynchronous browser predicate. AUTO375 and ACTION430 both complete real second
+  edit/render/download, changed export hash and exact codecs, without JS errors.
+  Those runs still had OOM events and are NOT memory acceptance evidence.
+- Full ordinary suite before cinematic thread correction:364PASS58SKIP71subcases.
+  Exact final suite, four WebKit upload terminal cases, concurrent REACTION/BEST
+  full journeys and1GiB/OOM measurements are running. Production Gate additionally
+  enforces actual1GiB/no-swap and zero cgroup oom/oom_kill counters.
+- Official prior head df0abc7:GSF CI40335014268 SUCCESS; blocking Gate40335014381
+  failed on an immediate terminal-state assertion while source moments were
+  already usable during analysis. Test now polls the same request's terminal
+  result with bounded120s deadline; no product assertions or gate removed.
+- No merge or deployment. Public remains the previous verified V435 release.

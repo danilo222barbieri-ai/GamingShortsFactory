@@ -1,6 +1,7 @@
 """Real post-upload state delivery; no request/result mocking."""
 import os
 import unittest
+import time
 import uuid
 from urllib.parse import urlsplit
 from visual.gsf_navigation_stress import MEDIA_FIXTURE
@@ -43,7 +44,16 @@ class UploadHandoff(unittest.TestCase):
                 ai.locator('#createAi').click()
                 page.wait_for_function("""()=>{const d=document.querySelector('#gsf-ai-overlay-v221 iframe')?.contentDocument;return !!d&&(d.querySelector('[data-view="moments"]')?.classList.contains('is-active')||d.querySelector('[data-view="engines"]')?.classList.contains('failed'))}""", polling=100, timeout=120000)
                 request_id = page.evaluate('()=>window.__gsfTestRequest')
-                result = page.evaluate("()=>fetch('/ai/results',{cache:'no-store',credentials:'same-origin'}).then(r=>r.json())")
+                # A whole-source moment is intentionally usable while the scan
+                # continues. Wait for this request's actual backend terminal state.
+                deadline = time.monotonic()+120
+                while True:
+                    result = page.evaluate("()=>fetch('/ai/results',{cache:'no-store',credentials:'same-origin'}).then(r=>r.json())")
+                    if result.get('request_id')==request_id and result.get('status') in ('success','failed'):
+                        break
+                    if time.monotonic()>=deadline:
+                        self.fail('Backend did not terminate the current AI request')
+                    page.wait_for_timeout(100)
                 self.assertTrue(request_id)
                 self.assertEqual(result.get('request_id'), request_id)
                 self.assertIn(result.get('status'), ('success', 'failed'))

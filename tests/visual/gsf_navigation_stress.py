@@ -273,10 +273,12 @@ def browser_page(mobile=True):
             # emits upload_complete so the app reruns and materializes the source.
             home=next(f for f in page.frames if f.evaluate("()=>{try{return window.__GSF_V333_CTA_TOUCH===true}catch(_){return false}}"))
             home.set_input_files('#pick',files=[{'name':'stability.mp4','mimeType':'video/mp4','buffer':MEDIA_FIXTURE}])
+            # The approved uploader resets to idle after handoff; uploaded rings
+            # are transient presentation, not a stable completion predicate.
             # Upload completion triggers a real Streamlit rerun. Warm-up must
             # measure the loaded app, including its finite widget hotkeys.
             try:
-                page.wait_for_function("()=>[...document.querySelectorAll('iframe')].some(f=>{try{return f.contentWindow.__GSF_V333_CTA_TOUCH===true&&!!f.contentDocument.querySelector('.rings.uploaded')}catch(_){return false}})",timeout=120000)
+                page.wait_for_function("()=>[...document.querySelectorAll('iframe')].some(f=>{try{return f.contentWindow.__GSF_V333_CTA_TOUCH===true&&!!f.contentDocument.querySelector('#circle[data-gsf-uploader-idle=\"true\"]')}catch(_){return false}})",timeout=120000)
             except Exception as exc:
                 # Make the setup failure diagnosable from the gate annotations.
                 state=page.evaluate("""()=>{const app=document.querySelector('[data-testid=stApp]');const home=[...document.querySelectorAll('iframe')].find(f=>{try{return f.contentWindow.__GSF_V333_CTA_TOUCH===true}catch(_){return false}});let h={};try{const d=home.contentDocument;h={rings:d.querySelector('.rings')?.className,circle:d.querySelector('#circle')?.className,status:d.querySelector('#statusText')?.textContent,frameSrc:home.getAttribute('src')?.slice(0,80),parentIsTop:home.contentWindow.parent===window}}catch(e){h={err:String(e)}};return {script:app?.getAttribute('data-test-script-state'),exceptions:[...document.querySelectorAll('[data-testid=stException],.stException')].map(e=>e.innerText.slice(0,400)),alerts:[...document.querySelectorAll('[data-testid=stAlert]')].map(e=>e.innerText.slice(0,200)),home:h,frames:[...document.querySelectorAll('iframe')].map(f=>(f.title||'')+'|'+String(f.getAttribute('src')||'').slice(0,60))}}""")

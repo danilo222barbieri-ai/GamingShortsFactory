@@ -1,5 +1,10 @@
 # Gaming Shorts Factory — Project Status
 
+## Latest V435 measured memory checkpoint — 2026-10-26
+
+- PR203 remains draft, release held. Confirmed child OOM under1GiB despite successful downloads; isolated cinematic graph RSS862628KiB. Existing render admission now spans frontend processes and quality checks, cinematic decoder/filter/encoder threads are bounded only in low-memory mode. Effects/graph/CRF14 preserved.19targeted tests PASS; final mixed-load repeat and official gate pending.
+- AUTO375 and ACTION430 actual second-edit/render/export pass with changed hashes and exact1080x1920/H264/yuv420p/AAC48kHz-stereo, no critical JS errors, but those runs have OOM events and do not satisfy memory acceptance. Ordinary suite364PASS58SKIP71subcases before final thread fix. Four terminal upload cases and final concurrent REACTION/BEST journeys are running. No new Railway deployment.
+
 ## V435 closed-beta hardening — 2026-10-26 Europe/Rome
 
 - Latest user requires total feature freeze and no merge/deploy until upload/RAM/E2E/security blockers close. Claim `closed-beta-v435-hardening-current-home-notifica-4860a6`; dedicated branch of the same name under `chat/`. Same-task narrow ownership transfers are recorded in the live registry.

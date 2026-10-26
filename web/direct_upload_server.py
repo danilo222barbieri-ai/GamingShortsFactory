@@ -4513,7 +4513,17 @@ def _quality_schedule(sid,stable):
 
     def run():
         try:
-            report=_quality_inspect(stable)
+            if os.environ.get("GSF_LOW_MEMORY_WEB","0").strip().lower() in {"1","true","yes","on"}:
+                # Quality decoding also consumes frame buffers. Reuse final
+                # render admission instead of competing with the next encoder.
+                from web.render_gate_v293 import render_slot
+                with render_slot("quality"):
+                    if (not stable.is_file() or stable.stat().st_size!=size
+                        or abs(stable.stat().st_mtime-mtime)>=0.01):
+                        return
+                    report=_quality_inspect(stable)
+            else:
+                report=_quality_inspect(stable)
             report["source_size"]=size
             report["source_mtime"]=mtime
             _quality_store(sid,report)

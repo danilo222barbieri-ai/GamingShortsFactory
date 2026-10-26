@@ -202,7 +202,16 @@ def run(base, media, out, engine='chromium', ai_timeout=600, manual=False, ai_en
             resumed.locator('#continueButton').click()
             page.wait_for_function("()=>GSFNavigation.snapshot().target==='home'")
             page.frame_locator('iframe[title*="gsf_home_v154"]').locator('.feature[data-action="short"]').click()
-            page.wait_for_function("""old=>fetch('/job/status',{cache:'no-store',credentials:'same-origin'}).then(r=>r.json()).then(j=>{if(['failed','error'].includes(j.render_status))throw new Error('Second render failed');return j.download_ready&&Number(j.started_at)>old})""",arg=float(first_render.get('started_at') or 0),polling=1000,timeout=300000)
+            second_deadline=time.monotonic()+300
+            while True:
+                status=page.evaluate("()=>fetch('/job/status',{cache:'no-store',credentials:'same-origin'}).then(r=>r.json())")
+                if status.get('render_status') in ('failed','error'):
+                    raise AssertionError('Second render failed')
+                if status.get('download_ready') and float(status.get('started_at') or 0)>float(first_render.get('started_at') or 0):
+                    break
+                if time.monotonic()>=second_deadline:
+                    raise AssertionError('Second render did not complete within its deadline')
+                page.wait_for_timeout(1000)
             share=page.frame_locator('#gsf-social-overlay-v159 iframe')
             share.locator('[data-open="save"]').click()
             with page.expect_download() as second_download:
