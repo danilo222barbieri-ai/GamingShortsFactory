@@ -1575,7 +1575,14 @@
           "local_webkit": "146passed2skipped93subcases; one Windows codec player test deselected only locally, kept in official Gate",
           "node": "22passed"
         },
-        "updated_at": "2026-10-23T08:41:58+02:00"
+        "updated_at": "2026-10-23T08:41:58+02:00",
+        "v435_handoff": {
+          "paths": [
+            "web/home_v154_component/index.html"
+          ],
+          "reason": "User-authorized stabilization continues: actual upload completion loses component state on iframe replacement; no layout changes.",
+          "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
+        }
       },
       "id": "feature-freeze-mobile-regressions-20261022",
       "owner": "chat/feature-freeze-mobile-regressions-20261022",
@@ -1592,7 +1599,6 @@
         "web/direct_upload_server.py",
         "web/gsf_alive_v418.js",
         "web/gsf_navigation_lifecycle.js",
-        "web/home_v154_component/index.html",
         "web/home_v154_embed.py",
         "web/install_adsense_bridge.py"
       ],
@@ -1634,6 +1640,7 @@
         "tests/test_mobile_regressions_v429.py",
         "tests/test_upload_lowmem_v435.py",
         "tools/gsf_beta_v435_probe.py",
+        "web/home_v154_component/index.html",
         "web/test_v105_dependency_lock.py"
       ],
       "scope": "Closed beta V435 hardening: current Home notification regression tests and measured isolated upload runtime validation; no redesign or deploy until blockers closed",
