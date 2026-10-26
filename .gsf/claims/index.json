@@ -1458,6 +1458,7 @@
         "blockers": "Railway API returned Deploys have been paused temporarily twice (INVALID_ARGUMENT). No new deployment created. Six Meta/Instagram/Twitch credentials remain absent.",
         "ci": "39612720454 FAIL dependency audit only; Editor shell39612720272 PASS; Production Gate39612720276 in progress at checkpoint.",
         "commit": "ba9c2dad69fee7cda56e37747bf1694a138ec558",
+        "dependency_lock_handoff_20261026": "closed-beta-v435-hardening-current-home-notifica-4860a6",
         "deploy_authorization": "User explicitly approved unchanged frontend repo/main reconnection with vai after permission question. Authorization persists.",
         "final_blockers": "Authorized closed-beta stabilization: real E2E found native back failure; CI dependency audit found Pillow12.3 vulnerabilities fixed13.0. Acquire currently unowned router/tests and lock files before minimum fixes; preserve all security gates.",
         "gate": "39630325211 in progress; previous AI Gate39626898963 SUCCESS; current CI39630325233 FAILS eight Pillow CVEs",
@@ -1551,7 +1552,6 @@
         "web/publish_multi_v413.py",
         "web/semantic_video_v114.py",
         "web/share_v156_component/index.html",
-        "web/test_v105_dependency_lock.py",
         "web/test_v404_crea_con_ia_simple.py",
         "web/test_v413_publish_multi.py"
       ],
@@ -1633,7 +1633,8 @@
         "requirements-web.txt",
         "tests/test_mobile_regressions_v429.py",
         "tests/test_upload_lowmem_v435.py",
-        "tools/gsf_beta_v435_probe.py"
+        "tools/gsf_beta_v435_probe.py",
+        "web/test_v105_dependency_lock.py"
       ],
       "scope": "Closed beta V435 hardening: current Home notification regression tests and measured isolated upload runtime validation; no redesign or deploy until blockers closed",
       "state": "active"

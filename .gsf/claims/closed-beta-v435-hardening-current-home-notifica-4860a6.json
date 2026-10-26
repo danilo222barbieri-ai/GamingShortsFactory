@@ -10,7 +10,8 @@
     "requirements-web.txt",
     "tests/test_mobile_regressions_v429.py",
     "tests/test_upload_lowmem_v435.py",
-    "tools/gsf_beta_v435_probe.py"
+    "tools/gsf_beta_v435_probe.py",
+    "web/test_v105_dependency_lock.py"
   ],
   "scope": "Closed beta V435 hardening: current Home notification regression tests and measured isolated upload runtime validation; no redesign or deploy until blockers closed",
   "state": "active"
