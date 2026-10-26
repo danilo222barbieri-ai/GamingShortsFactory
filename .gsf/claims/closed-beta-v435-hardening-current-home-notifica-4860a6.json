@@ -1,0 +1,14 @@
+{
+  "branch": "chat/closed-beta-v435-hardening-current-home-notifica-4860a6",
+  "created_at": "2026-10-26T12:42:16+00:00",
+  "id": "closed-beta-v435-hardening-current-home-notifica-4860a6",
+  "owner": "Codex beta V435 validation",
+  "paths": [
+    "docs/validation/v435-beta-hardening.md",
+    "tests/test_mobile_regressions_v429.py",
+    "tests/test_upload_lowmem_v435.py",
+    "tools/gsf_beta_v435_probe.py"
+  ],
+  "scope": "Closed beta V435 hardening: current Home notification regression tests and measured isolated upload runtime validation; no redesign or deploy until blockers closed",
+  "state": "active"
+}
