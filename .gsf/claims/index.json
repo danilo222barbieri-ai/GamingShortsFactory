@@ -1590,21 +1590,27 @@
           ],
           "reason": "User-authorized stabilization continues: actual upload completion loses component state on iframe replacement; no layout changes.",
           "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
+        },
+        "v435_notification_gate_handoff": {
+          "paths": [
+            ".github/workflows/v397-production-gate.yml",
+            "tests/test_alive_continuity_v424.py",
+            "tests/test_feature_freeze_mobile.py",
+            "web/direct_upload_server.py"
+          ],
+          "reason": "Same authorized beta task: actual toast empty action area intercepts Shorts tab; current gate continue-on-error conflicts with latest mandatory blocking verification; preserve approved V428 appearance.",
+          "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
         }
       },
       "id": "feature-freeze-mobile-regressions-20261022",
       "owner": "chat/feature-freeze-mobile-regressions-20261022",
       "paths": [
-        ".github/workflows/v397-production-gate.yml",
         "app.py",
         "docs/superpowers/plans/2026-10-22-feature-freeze-mobile.md",
-        "tests/test_alive_continuity_v424.py",
-        "tests/test_feature_freeze_mobile.py",
         "tests/test_source_library_v422.py",
         "web/ai_engines_v412.py",
         "web/ai_v221_component/index.html",
         "web/creator_hub_v156_component/index.html",
-        "web/direct_upload_server.py",
         "web/gsf_alive_v418.js",
         "web/gsf_navigation_lifecycle.js",
         "web/install_adsense_bridge.py"
@@ -1640,15 +1646,19 @@
       "id": "closed-beta-v435-hardening-current-home-notifica-4860a6",
       "owner": "Codex beta V435 validation",
       "paths": [
+        ".github/workflows/v397-production-gate.yml",
         "PROJECT_STATUS.md",
         "constraints-web.txt",
         "docs/validation/v435-beta-hardening.md",
         "requirements-web.txt",
+        "tests/test_alive_continuity_v424.py",
+        "tests/test_feature_freeze_mobile.py",
         "tests/test_mobile_regressions_v429.py",
         "tests/test_upload_lowmem_v435.py",
         "tests/visual/gsf_closed_beta_e2e.py",
         "tests/visual/gsf_visual_check.py",
         "tools/gsf_beta_v435_probe.py",
+        "web/direct_upload_server.py",
         "web/home_v154_component/index.html",
         "web/home_v154_embed.py",
         "web/test_v105_dependency_lock.py"
