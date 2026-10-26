@@ -67,3 +67,25 @@ acceptance remain unverified. Do not infer 6 simultaneous full users from this p
 CLOSED BETA remains NO-GO at this checkpoint: final complete candidate E2E,
 render/mixed-load memory acceptance, remote CI/Production Gate, promotion and
 post-deploy verification have not yet passed. No new deployment has been requested.
+
+## Later checkpoint: notification interaction and full journeys
+
+- AUTO375x667 and ACTION430x932 actual WebKit journeys pass first render/export,
+  Hub/drafts/Shorts/Profile/social settings, preserved edit resume, refresh and Back,
+  without critical runtime errors. All export codec assertions pass.
+- An existing notification's empty actions container intercepted the Shorts tab.
+  Passive notification regions now pass pointers through; real close/action and
+  confirmation controls remain interactive. Appearance/placement unchanged.
+  Browser regression reproduced RED, then16notification cases and4subcases PASS.
+- Stale browser assertions for the retired header pill and its earlier TTL were
+  corrected to the approved outside-header V428 surface, without restyling it.
+- Pre-existing WebKit continue-on-error is removed. The gate is blocking again;
+  a diagnostic-green run does not count as a valid release gate.
+- Ordinary suite359PASS58SKIP71subcases. Strengthened WebKit4cases PASS37.05s,
+  with request-ID-matched actual backend terminal responses.
+- Two-render observed cgroup peak1023.91MiB,2ffmpeg processes. Cumulative OOM
+  count2 existed when read but its initial value was not recorded, so attribution
+  and OOM-free concurrency remain unverified. A repeat with before/after counters
+  is required; Docker OOMKilled=false alone cannot exclude killed child processes.
+- Second-edit render/export acceptance is now added to the real E2E harness and
+  remains pending at this checkpoint. No release or beta readiness is claimed.

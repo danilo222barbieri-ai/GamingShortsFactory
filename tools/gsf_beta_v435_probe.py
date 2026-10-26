@@ -88,6 +88,9 @@ def run(media: Path, output: Path, counts: list[int]):
             server.S3_ACCESS_KEY = server.S3_SECRET_KEY = 'isolated-probe'
             for count in counts:
                 peak_transfers = 0
+                event_path = Path('/sys/fs/cgroup/memory.events')
+                before_events = dict((key, int(value)) for key, value in
+                                     (line.split() for line in event_path.read_text().splitlines()))
                 samples = []
                 stop_sampling = threading.Event()
                 def sample():
@@ -120,7 +123,12 @@ def run(media: Path, output: Path, counts: list[int]):
                 stop_sampling.set()
                 sampler.join(timeout=2)
                 assert peak_transfers == 1, peak_transfers
-                result['batches'].append({'concurrent_completions': count, 'max_active_transfers': peak_transfers,
+                after_events = dict((key, int(value)) for key, value in
+                                    (line.split() for line in event_path.read_text().splitlines()))
+                oom_delta = {key: after_events.get(key, 0)-before_events.get(key, 0)
+                             for key in ('oom', 'oom_kill')}
+                assert samples, 'Cgroup memory sampling is required'
+                result['batches'].append({'oom_event_delta': oom_delta, 'concurrent_completions': count, 'max_active_transfers': peak_transfers,
                     'duration_seconds': round(time.monotonic()-started, 3),
                     'cpu_seconds': round(time.process_time()-cpu, 3),
                     'process_peak_rss_mib': round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024, 2),
@@ -134,6 +142,7 @@ def run(media: Path, output: Path, counts: list[int]):
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2)+'\n')
     print(json.dumps(result, indent=2))
+    assert all(not any(b['oom_event_delta'].values()) for b in result['batches']), 'OOM observed in isolated container; see evidence'
 
 
 if __name__ == '__main__':

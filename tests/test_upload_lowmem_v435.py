@@ -62,3 +62,14 @@ class UploadHandoff(unittest.TestCase):
 
     def test_430_932(self):
         self.check_viewport(430, 932)
+
+
+def test_mobile_webkit_remains_a_blocking_release_gate():
+    from pathlib import Path
+    import re
+    root = Path(__file__).resolve().parents[1]
+    workflow = (root / '.github/workflows/v397-production-gate.yml').read_text()
+    block = re.search(r"      - name: (?:Extended Mobile WebKit diagnostics|Mobile WebKit interaction gate)\n([\s\S]*?)(?=      - name:)", workflow)
+    assert block, 'Mobile WebKit coverage must remain in Production Gate'
+    assert 'continue-on-error' not in block.group(1), 'Mobile regressions must prevent promotion'
+    assert 'python tests/visual/gsf_visual_check.py' in block.group(1)

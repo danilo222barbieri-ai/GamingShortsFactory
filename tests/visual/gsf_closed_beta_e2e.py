@@ -5,6 +5,7 @@ Use GSF_BROWSER_PROXY for the managed proxy; preserve the browser's trusted CA
 profile. Evidence excludes cookies, account data and signed media URLs.
 """
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -127,6 +128,7 @@ def run(base, media, out, engine='chromium', ai_timeout=600, manual=False, ai_en
                     raise AssertionError('Render deadline exceeded: '+str(safe_status)+'; UI: '+share.locator('#coreSub').inner_text())
                 page.wait_for_timeout(5000)
             passed('render_completed')
+            first_render=page.evaluate("()=>fetch('/job/status',{cache:'no-store',credentials:'same-origin'}).then(r=>r.json())")
             share.locator('[data-open="save"]').click()
             with page.expect_download() as download:
                 share.locator('[data-share="download"]').click()
@@ -189,6 +191,31 @@ def run(base, media, out, engine='chromium', ai_timeout=600, manual=False, ai_en
             page.go_back()
             page.wait_for_function("()=>GSFNavigation.snapshot().target==='editor'")
             passed('browser_back')
+            resumed=page.frame_locator('#gsf-editor-overlay-v220 iframe')
+            resumed.locator('#enterEditorButton').click()
+            resumed.locator('[data-tool="text"]').click()
+            resumed.locator('#captionTextInput').fill('GSF second beta verification')
+            resumed.locator('#closeToolSheetButton').click()
+            with page.expect_response('**/creator-hub/project/save-draft') as saved_second:
+                resumed.locator('#saveDraftButton').click()
+            assert saved_second.value.ok and saved_second.value.json().get('ok')
+            resumed.locator('#continueButton').click()
+            page.wait_for_function("()=>GSFNavigation.snapshot().target==='home'")
+            page.frame_locator('iframe[title*="gsf_home_v154"]').locator('.feature[data-action="short"]').click()
+            page.wait_for_function("""old=>fetch('/job/status',{cache:'no-store',credentials:'same-origin'}).then(r=>r.json()).then(j=>{if(['failed','error'].includes(j.render_status))throw new Error('Second render failed');return j.download_ready&&Number(j.started_at)>old})""",arg=float(first_render.get('started_at') or 0),polling=1000,timeout=300000)
+            share=page.frame_locator('#gsf-social-overlay-v159 iframe')
+            share.locator('[data-open="save"]').click()
+            with page.expect_download() as second_download:
+                share.locator('[data-share="download"]').click()
+            second_export=out/'beta-export-second.mp4'
+            second_download.value.save_as(second_export)
+            second_probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-of','json',str(second_export)],text=True))
+            second_video=next(stream for stream in second_probe['streams'] if stream['codec_type']=='video')
+            second_audio=next(stream for stream in second_probe['streams'] if stream['codec_type']=='audio')
+            assert (second_video['width'],second_video['height'],second_video['codec_name'],second_video['pix_fmt'])==(1080,1920,'h264','yuv420p')
+            assert (second_audio['codec_name'],int(second_audio['sample_rate']),second_audio['channels'])==('aac',48000,2)
+            assert hashlib.sha256(exported.read_bytes()).digest()!=hashlib.sha256(second_export.read_bytes()).digest(), 'Second edit reused the old export'
+            passed('second_edit_render_export',{'bytes':second_export.stat().st_size,'width':1080,'height':1920})
             assert not evidence['errors'], evidence['errors']
             passed('no_critical_runtime_errors')
         finally:
