@@ -1,5 +1,16 @@
 # Gaming Shorts Factory — Project Status
 
+## V435 closed-beta hardening — 2026-10-26 Europe/Rome
+
+- Latest user requires total feature freeze and no merge/deploy until upload/RAM/E2E/security blockers close. Claim `closed-beta-v435-hardening-current-home-notifica-4860a6`; dedicated branch of the same name under `chat/`. Same-task narrow ownership transfers are recorded in the live registry.
+- Live evidence supersedes old PR193 checkpoint: PR193 merged111113a; its head CI/Editor/Gate all SUCCESS. Current main has progressed to V435; public health alltrue on release4c4e392, UI Verify40227921535 SUCCESS. This task has not deployed anything.
+- Two obsolete V429 assertions reproduced RED and corrected without restoring removed layout. Real upload-completion E2E exposed a stale Home iframe registration: render and subsequent create_ai messages are lost after document replacement. Final minimal fix changes only the existing component key on source-readiness transitions; ordinary reruns remain stable. Earlier signal/replay experiments were rejected and removed; no new state owner or forced refresh.
+- Official stable Streamlit1.66.1 supports Pillow13 and replaces the preview; filelock4.0.6 has three fresh CVEs fixed4.2.1. Exact installed-runtime strict audit85distributions clean after update, resolver/pip check PASS; clean CI image audit still required. No suppression or audit bypass.
+- Actual isolated materialization with canonical launcher+boto3 over streaming local HTTP, 1GiB/no swap:1/2/4/6completions all correct, max1active download, heavy41.2MB source peak778.86MiB, no OOM/restart. HEVC/hvc1 MOV batches also complete. This is not real production bucket or full concurrent-user validation.
+- Four WebKit real upload→AI terminal cases PASS35.78s, now strengthened with request-ID-matched backend evidence. Actual local20s AUTO reaches1moment2.3s, Editor preview/edit/save PASS. Full current E2E still pending; obsolete FATTO→render harness is corrected to current FATTO→Home→Crea Short. No UI/layout/Editor/algorithm changes.
+- Full ordinary suite358PASS57SKIP71subcases before final key simplification; earlier real WebKit visual/nav/resume29PASS429s; syntax/Node/eightsecurity contracts/36coordination tests/Bandit passed. Independent final-key review found no P1/P2. Final full candidate gates, render/mixed-load acceptance and production release proof remain mandatory. Detailed evidence/limits: `docs/validation/v435-beta-hardening.md`. CLOSED BETA not declared ready.
+
+
 ## PR193 WebKit gate correction and release — 2026-10-23 Europe/Rome
 
 - Owner explicitly supersedes the earlier release hold: fix PR193, require all checks green, merge, then verify Railway and the served commit. Claim `pr193-webkit-gate-release-20261023`, existing PR branch `chat/fix-user-mobile-stabilization-20261023`.
