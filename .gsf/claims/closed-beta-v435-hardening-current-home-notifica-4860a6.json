@@ -12,6 +12,7 @@
     "tests/test_upload_lowmem_v435.py",
     "tools/gsf_beta_v435_probe.py",
     "web/home_v154_component/index.html",
+    "web/home_v154_embed.py",
     "web/test_v105_dependency_lock.py"
   ],
   "scope": "Closed beta V435 hardening: current Home notification regression tests and measured isolated upload runtime validation; no redesign or deploy until blockers closed",

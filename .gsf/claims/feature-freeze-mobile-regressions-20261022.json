@@ -17,11 +17,16 @@
     },
     "updated_at": "2026-10-23T08:41:58+02:00",
     "v435_handoff": {
-      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6",
       "paths": [
         "web/home_v154_component/index.html"
       ],
-      "reason": "User-authorized stabilization continues: actual upload completion loses component state on iframe replacement; no layout changes."
+      "reason": "User-authorized stabilization continues: actual upload completion loses component state on iframe replacement; no layout changes.",
+      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
+    },
+    "upload_protocol_handoff_20261026": {
+      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6",
+      "path": "web/home_v154_embed.py",
+      "reason": "Same user-authorized beta stabilization; real loaded=true delivery lost before new Home iframe installs its listener."
     }
   },
   "id": "feature-freeze-mobile-regressions-20261022",
@@ -39,7 +44,6 @@
     "web/direct_upload_server.py",
     "web/gsf_alive_v418.js",
     "web/gsf_navigation_lifecycle.js",
-    "web/home_v154_embed.py",
     "web/install_adsense_bridge.py"
   ],
   "scope": "Feature freeze: short source AI, mobile OAuth shell, Home white gap, compact notifications; no merge/deploy",

@@ -1576,6 +1576,11 @@
           "node": "22passed"
         },
         "updated_at": "2026-10-23T08:41:58+02:00",
+        "upload_protocol_handoff_20261026": {
+          "path": "web/home_v154_embed.py",
+          "reason": "Same user-authorized beta stabilization; real loaded=true delivery lost before new Home iframe installs its listener.",
+          "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
+        },
         "v435_handoff": {
           "paths": [
             "web/home_v154_component/index.html"
@@ -1599,7 +1604,6 @@
         "web/direct_upload_server.py",
         "web/gsf_alive_v418.js",
         "web/gsf_navigation_lifecycle.js",
-        "web/home_v154_embed.py",
         "web/install_adsense_bridge.py"
       ],
       "scope": "Feature freeze: short source AI, mobile OAuth shell, Home white gap, compact notifications; no merge/deploy",
@@ -1641,6 +1645,7 @@
         "tests/test_upload_lowmem_v435.py",
         "tools/gsf_beta_v435_probe.py",
         "web/home_v154_component/index.html",
+        "web/home_v154_embed.py",
         "web/test_v105_dependency_lock.py"
       ],
       "scope": "Closed beta V435 hardening: current Home notification regression tests and measured isolated upload runtime validation; no redesign or deploy until blockers closed",
