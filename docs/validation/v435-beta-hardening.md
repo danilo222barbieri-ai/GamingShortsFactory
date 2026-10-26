@@ -137,3 +137,13 @@ Gate40374615651 stopped before tests/build: Ubuntu FFmpeg apt transfer consumed
 the OAuth step's3minute timeout. Installation now has a separate bounded8minute
 step with2network retries and30s HTTP timeout; actual OAuth tests keep their
 original3minute budget. No contract or gate removed. Exact-head rerun required.
+
+## Dependency mirror repeat
+
+Gate40375892254 again timed out in installation after8m12s, before OAuth tests.
+The measured stalled Azure Ubuntu mirror is replaced by the official HTTPS Ubuntu
+archive in the runner mirror list; bounded retries/timeouts and all tests remain.
+CI40375892142 and Editor40375891888 SUCCESS. Full ordinary suite367PASS58SKIP
+71subcases. Zero container OOM after streamed cold-open correction, including
+materialization overlap. Full final browser processes were interrupted by the
+session execution limit before their second-export assertions; rerun required.
