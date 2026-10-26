@@ -6,11 +6,13 @@
   "paths": [
     ".github/workflows/v397-production-gate.yml",
     "PROJECT_STATUS.md",
+    "app.py",
     "constraints-web.txt",
     "docs/validation/v435-beta-hardening.md",
     "requirements-web.txt",
     "tests/test_alive_continuity_v424.py",
     "tests/test_feature_freeze_mobile.py",
+    "tests/test_low_memory_render_admission_v435.py",
     "tests/test_mobile_regressions_v429.py",
     "tests/test_upload_lowmem_v435.py",
     "tests/visual/gsf_closed_beta_e2e.py",

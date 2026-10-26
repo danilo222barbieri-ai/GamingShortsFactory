@@ -1600,12 +1600,18 @@
           ],
           "reason": "Same authorized beta task: actual toast empty action area intercepts Shorts tab; current gate continue-on-error conflicts with latest mandatory blocking verification; preserve approved V428 appearance.",
           "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
+        },
+        "v435_render_admission_handoff": {
+          "paths": [
+            "app.py"
+          ],
+          "reason": "Same user-authorized stabilization: repeated isolated1GiB mixed concurrency adds one confirmed OOM kill; implement narrow existing frontend render admission/backpressure, preserve pipeline.",
+          "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
         }
       },
       "id": "feature-freeze-mobile-regressions-20261022",
       "owner": "chat/feature-freeze-mobile-regressions-20261022",
       "paths": [
-        "app.py",
         "docs/superpowers/plans/2026-10-22-feature-freeze-mobile.md",
         "tests/test_source_library_v422.py",
         "web/ai_engines_v412.py",
@@ -1652,11 +1658,13 @@
       "paths": [
         ".github/workflows/v397-production-gate.yml",
         "PROJECT_STATUS.md",
+        "app.py",
         "constraints-web.txt",
         "docs/validation/v435-beta-hardening.md",
         "requirements-web.txt",
         "tests/test_alive_continuity_v424.py",
         "tests/test_feature_freeze_mobile.py",
+        "tests/test_low_memory_render_admission_v435.py",
         "tests/test_mobile_regressions_v429.py",
         "tests/test_upload_lowmem_v435.py",
         "tests/visual/gsf_closed_beta_e2e.py",

@@ -29,20 +29,26 @@
       "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
     },
     "v435_notification_gate_handoff": {
-      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6",
       "paths": [
         ".github/workflows/v397-production-gate.yml",
         "tests/test_alive_continuity_v424.py",
         "tests/test_feature_freeze_mobile.py",
         "web/direct_upload_server.py"
       ],
-      "reason": "Same authorized beta task: actual toast empty action area intercepts Shorts tab; current gate continue-on-error conflicts with latest mandatory blocking verification; preserve approved V428 appearance."
+      "reason": "Same authorized beta task: actual toast empty action area intercepts Shorts tab; current gate continue-on-error conflicts with latest mandatory blocking verification; preserve approved V428 appearance.",
+      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
+    },
+    "v435_render_admission_handoff": {
+      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6",
+      "paths": [
+        "app.py"
+      ],
+      "reason": "Same user-authorized stabilization: repeated isolated1GiB mixed concurrency adds one confirmed OOM kill; implement narrow existing frontend render admission/backpressure, preserve pipeline."
     }
   },
   "id": "feature-freeze-mobile-regressions-20261022",
   "owner": "chat/feature-freeze-mobile-regressions-20261022",
   "paths": [
-    "app.py",
     "docs/superpowers/plans/2026-10-22-feature-freeze-mobile.md",
     "tests/test_source_library_v422.py",
     "web/ai_engines_v412.py",
