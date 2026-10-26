@@ -1673,6 +1673,7 @@
         "tools/gsf_beta_v435_probe.py",
         "web/cinematic_render_v125.py",
         "web/direct_upload_server.py",
+        "web/director_render_exec_v143.py",
         "web/home_v154_component/index.html",
         "web/home_v154_embed.py",
         "web/quality_control_v124.py",
