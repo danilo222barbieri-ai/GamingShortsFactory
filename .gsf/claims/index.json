@@ -1629,12 +1629,16 @@
           "reason": "Same Codex task resumes under explicit user V435 beta-hardening request, including stable Streamlit migration if published; preserve all prior work.",
           "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
         },
-        "pr": "https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/193"
+        "pr": "https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/193",
+        "v435_handoff": {
+          "path": "tests/visual/gsf_navigation_stress.py",
+          "reason": "Same Codex resumes beta validation; shared runtime helper must use persistent approved uploader handoff state, not transient retired loaded ring.",
+          "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
+        }
       },
       "id": "pr193-webkit-gate-release-20261023",
       "owner": "Codex PR193 release",
       "paths": [
-        "tests/visual/gsf_navigation_stress.py",
         "tests/test_pr193_fullscreen_entry.py"
       ],
       "scope": "User explicitly requests fixing PR193 WebKit gate then merge and verified Railway release; test helper follows intended MODIFICA entry, no feature changes",
@@ -1656,6 +1660,7 @@
         "tests/test_mobile_regressions_v429.py",
         "tests/test_upload_lowmem_v435.py",
         "tests/visual/gsf_closed_beta_e2e.py",
+        "tests/visual/gsf_navigation_stress.py",
         "tests/visual/gsf_visual_check.py",
         "tools/gsf_beta_v435_probe.py",
         "web/direct_upload_server.py",

@@ -14,6 +14,7 @@
     "tests/test_mobile_regressions_v429.py",
     "tests/test_upload_lowmem_v435.py",
     "tests/visual/gsf_closed_beta_e2e.py",
+    "tests/visual/gsf_navigation_stress.py",
     "tests/visual/gsf_visual_check.py",
     "tools/gsf_beta_v435_probe.py",
     "web/direct_upload_server.py",

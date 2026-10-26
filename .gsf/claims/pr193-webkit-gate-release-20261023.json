@@ -2,19 +2,23 @@
   "branch": "chat/fix-user-mobile-stabilization-20261023",
   "created_at": "2026-10-23T11:55:40.490139+00:00",
   "evidence": {
-    "pr": "https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/193",
     "handoff_v435_20261026": {
-      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6",
       "paths": [
         "PROJECT_STATUS.md"
       ],
-      "reason": "Same Codex task resumes under explicit user V435 beta-hardening request, including stable Streamlit migration if published; preserve all prior work."
+      "reason": "Same Codex task resumes under explicit user V435 beta-hardening request, including stable Streamlit migration if published; preserve all prior work.",
+      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
+    },
+    "pr": "https://github.com/danilo222barbieri-ai/GamingShortsFactory/pull/193",
+    "v435_handoff": {
+      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6",
+      "path": "tests/visual/gsf_navigation_stress.py",
+      "reason": "Same Codex resumes beta validation; shared runtime helper must use persistent approved uploader handoff state, not transient retired loaded ring."
     }
   },
   "id": "pr193-webkit-gate-release-20261023",
   "owner": "Codex PR193 release",
   "paths": [
-    "tests/visual/gsf_navigation_stress.py",
     "tests/test_pr193_fullscreen_entry.py"
   ],
   "scope": "User explicitly requests fixing PR193 WebKit gate then merge and verified Railway release; test helper follows intended MODIFICA entry, no feature changes",
