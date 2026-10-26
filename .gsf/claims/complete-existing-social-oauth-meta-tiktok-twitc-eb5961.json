@@ -9,6 +9,7 @@
     "blockers": "Railway API returned Deploys have been paused temporarily twice (INVALID_ARGUMENT). No new deployment created. Six Meta/Instagram/Twitch credentials remain absent.",
     "ci": "39612720454 FAIL dependency audit only; Editor shell39612720272 PASS; Production Gate39612720276 in progress at checkpoint.",
     "commit": "ba9c2dad69fee7cda56e37747bf1694a138ec558",
+    "dependency_lock_handoff_20261026": "closed-beta-v435-hardening-current-home-notifica-4860a6",
     "deploy_authorization": "User explicitly approved unchanged frontend repo/main reconnection with vai after permission question. Authorization persists.",
     "final_blockers": "Authorized closed-beta stabilization: real E2E found native back failure; CI dependency audit found Pillow12.3 vulnerabilities fixed13.0. Acquire currently unowned router/tests and lock files before minimum fixes; preserve all security gates.",
     "gate": "39630325211 in progress; previous AI Gate39626898963 SUCCESS; current CI39630325233 FAILS eight Pillow CVEs",
@@ -65,7 +66,10 @@
     "timeline_geometry": "Measured legacy home_style_v416.css height58 overrides canonical timeline sizing and clips44px track; acquire unowned file to remove conflicting height. Git CLI credential expired; use atomic connector Git tree/commit/ref with expected head.",
     "updated_at": "2026-10-21T16:04:00Z",
     "upstream_dependency_fix": "Official Streamlit merged Allow Pillow13 commit81bdb8a8a207691f17ec94df9eabc96b6b50ea7a on2026-10-21T10:17:53Z; develop now permits Pillow<14. PyPI stable1.66.0 and nightly1.66.1.dev20261020 still require<13; no compatible published prerelease/backport found. Official nightly schedule04:30UTC. Wait for published auditable release, then normal resolver/audit/full runtime checks. No override or CVE suppression.",
-    "dependency_lock_handoff_20261026": "closed-beta-v435-hardening-current-home-notifica-4860a6"
+    "v435_e2e_handoff": {
+      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6",
+      "reason": "Same beta validation task: update obsolete uploader/FATTO test flow to current UI and exact export acceptance."
+    }
   },
   "id": "complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
   "owner": "chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
@@ -88,7 +92,6 @@
     "tests/test_navigation_stability.py",
     "tests/test_publish_recovery_v426.py",
     "tests/test_social_oauth_v421.py",
-    "tests/visual/gsf_closed_beta_e2e.py",
     "vendor/streamlit",
     "web/game_editor_mobile_component/editor.css",
     "web/game_editor_mobile_component/editor.mjs",

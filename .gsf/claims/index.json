@@ -1514,7 +1514,11 @@
         },
         "timeline_geometry": "Measured legacy home_style_v416.css height58 overrides canonical timeline sizing and clips44px track; acquire unowned file to remove conflicting height. Git CLI credential expired; use atomic connector Git tree/commit/ref with expected head.",
         "updated_at": "2026-10-21T16:04:00Z",
-        "upstream_dependency_fix": "Official Streamlit merged Allow Pillow13 commit81bdb8a8a207691f17ec94df9eabc96b6b50ea7a on2026-10-21T10:17:53Z; develop now permits Pillow<14. PyPI stable1.66.0 and nightly1.66.1.dev20261020 still require<13; no compatible published prerelease/backport found. Official nightly schedule04:30UTC. Wait for published auditable release, then normal resolver/audit/full runtime checks. No override or CVE suppression."
+        "upstream_dependency_fix": "Official Streamlit merged Allow Pillow13 commit81bdb8a8a207691f17ec94df9eabc96b6b50ea7a on2026-10-21T10:17:53Z; develop now permits Pillow<14. PyPI stable1.66.0 and nightly1.66.1.dev20261020 still require<13; no compatible published prerelease/backport found. Official nightly schedule04:30UTC. Wait for published auditable release, then normal resolver/audit/full runtime checks. No override or CVE suppression.",
+        "v435_e2e_handoff": {
+          "reason": "Same beta validation task: update obsolete uploader/FATTO test flow to current UI and exact export acceptance.",
+          "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
+        }
       },
       "id": "complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
       "owner": "chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
@@ -1537,7 +1541,6 @@
         "tests/test_navigation_stability.py",
         "tests/test_publish_recovery_v426.py",
         "tests/test_social_oauth_v421.py",
-        "tests/visual/gsf_closed_beta_e2e.py",
         "vendor/streamlit",
         "web/game_editor_mobile_component/editor.css",
         "web/game_editor_mobile_component/editor.mjs",
@@ -1643,6 +1646,7 @@
         "requirements-web.txt",
         "tests/test_mobile_regressions_v429.py",
         "tests/test_upload_lowmem_v435.py",
+        "tests/visual/gsf_closed_beta_e2e.py",
         "tests/visual/gsf_visual_check.py",
         "tools/gsf_beta_v435_probe.py",
         "web/home_v154_component/index.html",
