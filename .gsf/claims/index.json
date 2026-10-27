@@ -486,7 +486,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -1076,7 +1076,7 @@
         "web/publish_short_v405_component/**",
         "web/share_v156_component/**"
       ],
-      "scope": "ui: Night Arena single look \u2014 shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
+      "scope": "ui: Night Arena single look — shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
       "state": "completed"
     },
     {
@@ -1656,6 +1656,7 @@
       "id": "closed-beta-v435-hardening-current-home-notifica-4860a6",
       "owner": "Codex beta V435 validation",
       "paths": [
+        ".github/workflows/gsf-production-ui-verify.yml",
         ".github/workflows/v397-production-gate.yml",
         "PROJECT_STATUS.md",
         "app.py",
@@ -1681,7 +1682,10 @@
         "web/test_v105_dependency_lock.py"
       ],
       "scope": "Closed beta V435 hardening: current Home notification regression tests and measured isolated upload runtime validation; no redesign or deploy until blockers closed",
-      "state": "active"
+      "state": "active",
+      "evidence": {
+        "public_e2e_verification": "User requires verified deployed upload-to-second-export; reuse existing real E2E in existing post-deploy verifier, retaining version/page/CSRF checks; local environment currently offline."
+      }
     }
   ],
   "version": 1
