@@ -105,8 +105,60 @@ def test_owned_home_media_stays_retired_when_its_document_is_replaced():
     request._gsf_media_surface = 'editor'
     assert not request_surface_is_inactive(request), 'The active Editor video must remain protected'
     request._gsf_media_surface = 'home'
+    for missing in (None, '', 'not-a-route'):
+        target[0] = missing
+        assert not request_surface_is_inactive(request), 'Missing or unknown route cannot prove departure'
+    target[0] = 'editor'
+    def unavailable_route(expression):
+        raise RuntimeError('Top-level context unavailable')
+    frame.page.evaluate = unavailable_route
+    assert not request_surface_is_inactive(request), 'Unreadable route cannot prove departure'
     request.failure = 'Connection reset'
     assert request_failure_is_critical(request, inactive_surface=True, base_url='https://gsf.test')
     request.failure = 'Load request cancelled'
     request.url = 'https://other.test/editor-media/current?na=123'
     assert request_failure_is_critical(request, inactive_surface=True, base_url='https://gsf.test')
+
+
+@unittest.skipUnless(os.environ.get('GSF_BROWSER'), 'request ownership capture runs in the blocking browser gate')
+class MediaRequestOwnershipCapture(unittest.TestCase):
+    def test_only_an_unambiguous_same_frame_home_video_claims_home_ownership(self):
+        from playwright.sync_api import sync_playwright
+        from visual.gsf_navigation_stress import INSTRUMENT, install_request_ownership
+        with sync_playwright() as p:
+            engine = getattr(p, os.environ.get('GSF_BROWSER', 'webkit'))
+            options = {'executable_path': os.environ.get('GSF_CHROMIUM', '/usr/bin/chromium'),
+                       'args': ['--no-sandbox']} if engine.name == 'chromium' else {}
+            browser = engine.launch(**options)
+            try:
+                cases = [
+                    ('home', '<div id="home154"><video muted autoplay preload="auto" src="/media.mp4"></video></div>', 'home'),
+                    ('editor', '<video id="gameplayVideo" muted autoplay preload="auto" src="/media.mp4"></video>', None),
+                    ('ambiguous', '<div id="home154"><video muted autoplay></video></div><video muted autoplay></video>', None),
+                    ('unmatched', '<p>No document-owned video</p>', None),
+                ]
+                for name, html, expected in cases:
+                    with self.subTest(owner=name):
+                        page = browser.new_page()
+                        page.add_init_script(INSTRUMENT)
+                        install_request_ownership(page)
+                        captured = []
+                        page.on('request', lambda request: captured.append(request) if request.url.endswith('/media.mp4') else None)
+                        def serve(route):
+                            if route.request.url.endswith('/media.mp4'):
+                                return  # Hold the real media request while inspecting its captured owner.
+                            route.fulfill(content_type='text/html', body=html)
+                        page.route('**/*', serve)
+                        page.goto('http://capture.gsf.test/', wait_until='domcontentloaded')
+                        if name == 'ambiguous':
+                            page.evaluate("()=>{for(const v of document.querySelectorAll('video')){v.src='/media.mp4';v.load()}}")
+                        if name == 'unmatched':
+                            page.evaluate("()=>{const v=document.createElement('video');v.src='/media.mp4';v.preload='auto';v.load();window.detachedMedia=v}")
+                        deadline = time.monotonic()+5
+                        while not captured and time.monotonic()<deadline:
+                            page.wait_for_timeout(20)
+                        self.assertTrue(captured, 'The browser must emit a real media request')
+                        self.assertEqual(getattr(captured[0], '_gsf_media_surface', None), expected)
+                        page.close()
+            finally:
+                browser.close()

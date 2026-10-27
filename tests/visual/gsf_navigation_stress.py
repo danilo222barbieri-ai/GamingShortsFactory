@@ -54,6 +54,16 @@ def request_surface_is_inactive(request):
     if request.resource_type not in ('media','other','fetch'):return False
     owner=getattr(request,'_gsf_fetch_owner',None) or getattr(request,'_gsf_media_owner',None)
     if owner and owner[0] in owner[1]:return True
+    # The frame can already contain a replacement document when WebKit reports
+    # cancellation. Only immutable ownership captured from its actual Home video
+    # may use the persistent top-level navigation registry as departure proof.
+    if getattr(request,'_gsf_media_surface',None)=='home':
+        try:
+            target=request.frame.page.evaluate("()=>window.GSFNavigation?.snapshot()?.target")
+            if isinstance(target,str) and target in ('hub','ai','editor','short','social','account','profile','projects','live'):
+                print('PROVEN RETIRED HOME MEDIA route='+target,flush=True)
+                return True
+        except Exception:pass  # Missing authoritative route is not retirement.
     if owner and request.resource_type in ('media','other','fetch') and request.failure in ('Load request cancelled','net::ERR_ABORTED'):
         for _ in range(5):
             try:request.frame.page.wait_for_timeout(20)
@@ -180,11 +190,13 @@ def install_request_ownership(page):
                 token=request.frame.evaluate("url=>{const row=window.__gsfFetchOwners?.get(url)?.find(row=>!row.claimed);if(!row)return null;row.claimed=true;return row.token}",request.url)
                 if token:request._gsf_fetch_owner=(token,suspended)
             elif request.resource_type in ('media','other'):
-                token=request.frame.evaluate("url=>[...document.querySelectorAll('video')].some(v=>v.src===url||v.currentSrc===url)?window.__gsfDocumentToken:null",request.url)
+                proof=request.frame.evaluate("url=>{const matches=[...document.querySelectorAll('video')].filter(v=>v.src===url||v.currentSrc===url);if(matches.length!==1)return null;return {document:window.__gsfDocumentToken,surface:matches[0].closest('#home154')?'home':null}}",request.url)
+                token=proof.get('document') if isinstance(proof,dict) else None
                 if token:
                     retire_changed_document(request.frame,token)
                     identity=token+':media:'+str(next(media_sequence))
                     request._gsf_media_owner=(identity,retired)
+                    request._gsf_media_surface=proof.get('surface')
                     documents=frame_documents.setdefault(request.frame,{})
                     documents[identity]=token
                     while len(documents)>128:documents.pop(next(iter(documents)))
