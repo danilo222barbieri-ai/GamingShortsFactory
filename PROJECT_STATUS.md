@@ -1,5 +1,28 @@
 # Gaming Shorts Factory — Project Status
 
+## Director memory checkpoint — 2026-10-26
+
+- Gate40374615651 failed before tests on slow Ubuntu FFmpeg dependency download within the OAuth3minute budget. Separated bounded installation from unchanged3minute tests; no bypass.
+- Exact peak attribution refined the cause to Director cold-open buffering its main stream behind a late trim. Independent bounded cold/main inputs preserve montage and reduce measured isolated full-container peak to589770752bytes, zero OOM,15.718s output from15s input. Native gate reentrancy now survives Streamlit module reload.21targeted tests and independent review PASS; mixed-load/remote Gate still pending. No merge/deploy.
+
+## Latest V435 measured memory checkpoint — 2026-10-26
+
+- PR203 remains draft, release held. Confirmed child OOM under1GiB despite successful downloads; isolated cinematic graph RSS862628KiB. Existing render admission now spans frontend processes and quality checks, cinematic decoder/filter/encoder threads are bounded only in low-memory mode. Effects/graph/CRF14 preserved.19targeted tests PASS; final mixed-load repeat and official gate pending.
+- AUTO375 and ACTION430 actual second-edit/render/export pass with changed hashes and exact1080x1920/H264/yuv420p/AAC48kHz-stereo, no critical JS errors, but those runs have OOM events and do not satisfy memory acceptance. Ordinary suite364PASS58SKIP71subcases before final thread fix. Four terminal upload cases and final concurrent REACTION/BEST journeys are running. No new Railway deployment.
+
+## V435 closed-beta hardening — 2026-10-26 Europe/Rome
+
+- Latest user requires total feature freeze and no merge/deploy until upload/RAM/E2E/security blockers close. Claim `closed-beta-v435-hardening-current-home-notifica-4860a6`; dedicated branch of the same name under `chat/`. Same-task narrow ownership transfers are recorded in the live registry.
+- Live evidence supersedes old PR193 checkpoint: PR193 merged111113a; its head CI/Editor/Gate all SUCCESS. Current main has progressed to V435; public health alltrue on release4c4e392, UI Verify40227921535 SUCCESS. This task has not deployed anything.
+- Two obsolete V429 assertions reproduced RED and corrected without restoring removed layout. Real upload-completion E2E exposed a stale Home iframe registration: render and subsequent create_ai messages are lost after document replacement. Final minimal fix changes only the existing component key on source-readiness transitions; ordinary reruns remain stable. Earlier signal/replay experiments were rejected and removed; no new state owner or forced refresh.
+- Full actual WebKit AUTO375x667 and ACTION430x932 journeys now PASS through real1080x1920/H264/yuv420p/AAC48kHz-stereo export, Hub/draft resume/refresh/Back, no critical runtime errors. Exposed second defect: notification empty action container intercepted Shorts tab while no iframe click fired. Existing notification CSS now passes passive regions through and retains close/action/confirm interactivity; appearance unchanged. Regression RED→GREEN; obsolete header-pill/oldTTL browser expectations updated to approved V428 pen notification bounds.
+- Fresh workflow inspection found pre-existing WebKit continue-on-error:true; restored blocking gate as required by current brief and added guard. Old diagnostic-green status cannot satisfy current release criteria. Two-render memory reached1GiB; cumulative OOM counter2 has unknown baseline, so OOM-free concurrency is not claimed. Probe now records before/after OOM deltas; repeat and second-edit render remain pending.
+- Official stable Streamlit1.66.1 supports Pillow13 and replaces the preview; filelock4.0.6 has three fresh CVEs fixed4.2.1. Exact installed-runtime strict audit85distributions clean after update, resolver/pip check PASS; clean CI image audit still required. No suppression or audit bypass.
+- Actual isolated materialization with canonical launcher+boto3 over streaming local HTTP, 1GiB/no swap:1/2/4/6completions all correct, max1active download, heavy41.2MB source peak778.86MiB, no OOM/restart. HEVC/hvc1 MOV batches also complete. This is not real production bucket or full concurrent-user validation.
+- Four WebKit real upload→AI terminal cases PASS35.78s, now strengthened with request-ID-matched backend evidence. Actual local20s AUTO reaches1moment2.3s, Editor preview/edit/save PASS. Full current E2E still pending; obsolete FATTO→render harness is corrected to current FATTO→Home→Crea Short. No UI/layout/Editor/algorithm changes.
+- Current ordinary suite359PASS58SKIP71subcases; notification browser16PASS4subcases; earlier real WebKit visual/nav/resume29PASS429s; syntax/Node/eightsecurity contracts/36coordination tests/Bandit passed. Independent final-key review found no P1/P2. Final full candidate gates, render/mixed-load acceptance and production release proof remain mandatory. Detailed evidence/limits: `docs/validation/v435-beta-hardening.md`. CLOSED BETA not declared ready.
+
+
 ## PR193 WebKit gate correction and release — 2026-10-23 Europe/Rome
 
 - Owner explicitly supersedes the earlier release hold: fix PR193, require all checks green, merge, then verify Railway and the served commit. Claim `pr193-webkit-gate-release-20261023`, existing PR branch `chat/fix-user-mobile-stabilization-20261023`.

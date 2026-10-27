@@ -258,7 +258,7 @@ class Mobile(unittest.TestCase):
                     page.locator('#editMoment').click()
                     page.wait_for_function("messages.some(x=>x.action==='open_editor'&&x.end_time===SOURCE)".replace('SOURCE',str(source)))
 
-    def test_notification_pill_has_no_layout_shift_or_duplicate_alive(self):
+    def test_notification_surface_has_no_layout_shift_or_duplicate_alive(self):
         code=literal_function('web/direct_upload_server.py','_push_client_bytes').decode()
         for width,height in VIEWPORTS:
             with self.subTest(width=width):
@@ -269,11 +269,14 @@ class Mobile(unittest.TestCase):
                 before=page.locator('#content').bounding_box();page.evaluate(code)
                 page.evaluate("()=>{const s={last:'ai.started',active_job:'ai',message:'IA · Analizzo il gameplay…',seq:1,updated:1};GSFNotify.alive(s);GSFNotify.alive(s)}")
                 self.assertEqual(page.locator('.gsf-site-toast').count(),1)
-                self.assertLessEqual(page.locator('.gsf-site-toast').bounding_box()['height'],40)
                 self.assertEqual(page.locator('#content').bounding_box(),before)
                 pill=page.locator('.gsf-site-toast').bounding_box()
                 header=page.locator('#gsf-global-header').bounding_box()
-                self.assertLessEqual(pill['y']+pill['height'],header['y']+header['height'])
+                bar=page.locator('#gsf-global-gamebar').bounding_box()
+                self.assertGreaterEqual(pill['y'],header['y']+header['height'])
+                self.assertLessEqual(pill['y']+pill['height'],bar['y'])
+                self.assertGreaterEqual(pill['x'],0)
+                self.assertLessEqual(pill['x']+pill['width'],width)
 
     def test_oauth_keeps_parent_shell_and_returns_to_social(self):
         hub=(ROOT/'web/creator_hub_v156_component/index.html').read_text(encoding='utf-8')

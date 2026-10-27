@@ -5,6 +5,7 @@ Use GSF_BROWSER_PROXY for the managed proxy; preserve the browser's trusted CA
 profile. Evidence excludes cookies, account data and signed media URLs.
 """
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -16,7 +17,7 @@ from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright
 
 
-def run(base, media, out, engine='chromium', ai_timeout=600, manual=False):
+def run(base, media, out, engine='chromium', ai_timeout=600, manual=False, ai_engine='auto', viewport=None):
     out.mkdir(parents=True, exist_ok=True)
     evidence = {'checks': {}, 'errors': [], 'base': base}
 
@@ -32,7 +33,11 @@ def run(base, media, out, engine='chromium', ai_timeout=600, manual=False):
         if os.environ.get('GSF_BROWSER_PROXY'):
             options['proxy'] = {'server': os.environ['GSF_BROWSER_PROXY']}
         browser = getattr(p, engine).launch(**options)
-        context = browser.new_context(**p.devices['iPhone 13'], accept_downloads=True)
+        device = dict(p.devices['iPhone 13'])
+        if viewport:
+            width, height = map(int, viewport.split('x'))
+            device['viewport'] = {'width': width, 'height': height}
+        context = browser.new_context(**device, accept_downloads=True)
         if base.startswith('http://'):
             context.add_cookies([{'name':'gsf_sid','value':'beta'+uuid.uuid4().hex[:24],'url':base+'/'}])
         page = context.new_page()
@@ -47,7 +52,7 @@ def run(base, media, out, engine='chromium', ai_timeout=600, manual=False):
             home = next(f for f in page.frames if f.evaluate('()=>window.__GSF_V333_CTA_TOUCH===true'))
             passed('home')
             home.set_input_files('#pick', str(media))
-            page.wait_for_function("()=>[...document.querySelectorAll('iframe')].some(f=>{try{return !!f.contentDocument.querySelector('.rings.uploaded')}catch(_){return false}})", timeout=120000)
+            page.wait_for_function("()=>[...document.querySelectorAll('iframe')].some(f=>{try{return !!f.contentDocument.querySelector('#circle[data-gsf-uploader-idle=\"true\"]')}catch(_){return false}})", timeout=120000)
             page.wait_for_function("()=>document.querySelector('[data-testid=stApp]')?.getAttribute('data-test-script-state')==='notRunning'", timeout=60000)
             passed('upload')
             # Upload triggers a Streamlit rerun that can replace the Home iframe.
@@ -62,6 +67,7 @@ def run(base, media, out, engine='chromium', ai_timeout=600, manual=False):
                 ai = page.frame_locator('#gsf-ai-overlay-v221 iframe')
                 ai.locator('#createAi').wait_for()
                 passed('ai_reachable')
+                ai.locator(f'.eng[data-engine=\"{ai_engine}\"]').click()
                 ai.locator('#createAi').click()
                 started = time.monotonic()
                 while not ai.locator('[data-view="moments"]').evaluate("e=>e.classList.contains('is-active')"):
@@ -103,6 +109,9 @@ def run(base, media, out, engine='chromium', ai_timeout=600, manual=False):
             edited_state=editor.locator('#gameEditorApp').evaluate('()=>window.GSFGameEditor2026.getState()')
             passed('editor_edit_and_save')
             editor.locator('#continueButton').click()
+            page.wait_for_function("()=>GSFNavigation.snapshot().target==='home'")
+            passed('editor_done_returns_home')
+            page.frame_locator('iframe[title*="gsf_home_v154"]').locator('.feature[data-action="short"]').click()
             share = page.frame_locator('#gsf-social-overlay-v159 iframe')
             share.locator('#crea413').wait_for(timeout=60000)
             passed('crea_short')
@@ -119,6 +128,7 @@ def run(base, media, out, engine='chromium', ai_timeout=600, manual=False):
                     raise AssertionError('Render deadline exceeded: '+str(safe_status)+'; UI: '+share.locator('#coreSub').inner_text())
                 page.wait_for_timeout(5000)
             passed('render_completed')
+            first_render=page.evaluate("()=>fetch('/job/status',{cache:'no-store',credentials:'same-origin'}).then(r=>r.json())")
             share.locator('[data-open="save"]').click()
             with page.expect_download() as download:
                 share.locator('[data-share="download"]').click()
@@ -127,6 +137,9 @@ def run(base, media, out, engine='chromium', ai_timeout=600, manual=False):
             probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-show_format','-of','json',str(exported)],text=True))
             video=next(stream for stream in probe['streams'] if stream['codec_type']=='video')
             assert (video['width'],video['height'])==(1080,1920), video
+            assert video['codec_name']=='h264' and video['pix_fmt']=='yuv420p', video
+            audio=next(stream for stream in probe['streams'] if stream['codec_type']=='audio')
+            assert audio['codec_name']=='aac' and int(audio['sample_rate'])==48000 and audio['channels']==2, audio
             assert float(probe['format']['duration'])>0 and exported.stat().st_size>1024
             passed('export',{'width':video['width'],'height':video['height'],'duration':float(probe['format']['duration']),'bytes':exported.stat().st_size})
             with page.expect_response('**/drafts/save-current') as saved_current:
@@ -178,6 +191,40 @@ def run(base, media, out, engine='chromium', ai_timeout=600, manual=False):
             page.go_back()
             page.wait_for_function("()=>GSFNavigation.snapshot().target==='editor'")
             passed('browser_back')
+            resumed=page.frame_locator('#gsf-editor-overlay-v220 iframe')
+            resumed.locator('#enterEditorButton').click()
+            resumed.locator('[data-tool="text"]').click()
+            resumed.locator('#captionTextInput').fill('GSF second beta verification')
+            resumed.locator('#closeToolSheetButton').click()
+            with page.expect_response('**/creator-hub/project/save-draft') as saved_second:
+                resumed.locator('#saveDraftButton').click()
+            assert saved_second.value.ok and saved_second.value.json().get('ok')
+            resumed.locator('#continueButton').click()
+            page.wait_for_function("()=>GSFNavigation.snapshot().target==='home'")
+            page.frame_locator('iframe[title*="gsf_home_v154"]').locator('.feature[data-action="short"]').click()
+            second_deadline=time.monotonic()+300
+            while True:
+                status=page.evaluate("()=>fetch('/job/status',{cache:'no-store',credentials:'same-origin'}).then(r=>r.json())")
+                if status.get('render_status') in ('failed','error'):
+                    raise AssertionError('Second render failed')
+                if status.get('download_ready') and float(status.get('started_at') or 0)>float(first_render.get('started_at') or 0):
+                    break
+                if time.monotonic()>=second_deadline:
+                    raise AssertionError('Second render did not complete within its deadline')
+                page.wait_for_timeout(1000)
+            share=page.frame_locator('#gsf-social-overlay-v159 iframe')
+            share.locator('[data-open="save"]').click()
+            with page.expect_download() as second_download:
+                share.locator('[data-share="download"]').click()
+            second_export=out/'beta-export-second.mp4'
+            second_download.value.save_as(second_export)
+            second_probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-of','json',str(second_export)],text=True))
+            second_video=next(stream for stream in second_probe['streams'] if stream['codec_type']=='video')
+            second_audio=next(stream for stream in second_probe['streams'] if stream['codec_type']=='audio')
+            assert (second_video['width'],second_video['height'],second_video['codec_name'],second_video['pix_fmt'])==(1080,1920,'h264','yuv420p')
+            assert (second_audio['codec_name'],int(second_audio['sample_rate']),second_audio['channels'])==('aac',48000,2)
+            assert hashlib.sha256(exported.read_bytes()).digest()!=hashlib.sha256(second_export.read_bytes()).digest(), 'Second edit reused the old export'
+            passed('second_edit_render_export',{'bytes':second_export.stat().st_size,'width':1080,'height':1920})
             assert not evidence['errors'], evidence['errors']
             passed('no_critical_runtime_errors')
         finally:
@@ -195,5 +242,7 @@ if __name__ == '__main__':
     parser.add_argument('--browser', default='chromium')
     parser.add_argument('--ai-timeout', type=int, default=600)
     parser.add_argument('--manual', action='store_true', help='Exercise the existing manual Home Editor path instead of AI selection')
+    parser.add_argument('--ai-engine', choices=('auto','action','reaction','best'), default='auto')
+    parser.add_argument('--viewport', choices=('375x667','390x844','393x852','430x932'))
     args = parser.parse_args()
-    run(args.base.rstrip('/'), args.media, args.out, args.browser, args.ai_timeout, args.manual)
+    run(args.base.rstrip('/'), args.media, args.out, args.browser, args.ai_timeout, args.manual, args.ai_engine, args.viewport)

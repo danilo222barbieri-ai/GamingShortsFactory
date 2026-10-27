@@ -611,7 +611,10 @@ def _push_client_bytes():
     const reduced=()=>UI.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const CSS=`
 #gsf-site-toast-stack{position:fixed;left:50%;right:auto;top:max(10px,env(safe-area-inset-top,0px));z-index:2147483647;width:min(360px,calc(100vw - 32px));display:flex;flex-direction:column;gap:8px;pointer-events:none;font-family:'Caveat','Segoe Print','Bradley Hand',cursive;overflow:hidden;contain:layout style;transform:translateX(-50%)}
-.gsf-site-toast{position:relative;flex:none;box-sizing:border-box;display:grid;grid-template-columns:28px minmax(0,1fr) 28px;gap:9px;align-items:center;width:100%;min-height:72px;padding:10px;border:1px solid rgba(121,210,255,.28);border-radius:18px;background:rgba(8,24,39,.94);color:#eaf6ff;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 10px 28px rgba(0,0,0,.3);pointer-events:auto;opacity:0;transform:translateY(-7px);transition:opacity .22s ease,transform .22s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+.gsf-site-toast{position:relative;flex:none;box-sizing:border-box;display:grid;grid-template-columns:28px minmax(0,1fr) 28px;gap:9px;align-items:center;width:100%;min-height:72px;padding:10px;border:1px solid rgba(121,210,255,.28);border-radius:18px;background:rgba(8,24,39,.94);color:#eaf6ff;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 10px 28px rgba(0,0,0,.3);pointer-events:none;opacity:0;transform:translateY(-7px);transition:opacity .22s ease,transform .22s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+.gsf-site-toast[data-kind=confirm]{pointer-events:auto}
+.gsf-site-toast-close,.gsf-site-toast-action{pointer-events:auto}
+.gsf-site-toast.gsf-hide button{pointer-events:none}
 .gsf-site-toast.gsf-show{opacity:1;transform:translateY(0)}.gsf-site-toast.gsf-hide{opacity:0;transform:translateY(-5px);pointer-events:none}
 .gsf-site-toast-icon{width:28px;height:28px;display:grid;place-items:center;color:#79d2ff}.gsf-site-toast-icon img{width:26px;height:26px;object-fit:contain;border-radius:7px}.gsf-site-toast-copy{min-width:0}.gsf-site-toast-title{font-size:17px;font-weight:700;line-height:1.05;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gsf-site-toast-body{font-size:15px;line-height:1.15;color:#c8deed;min-height:17px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px}
 .gsf-site-toast-close{width:28px;height:32px;padding:0;border:0;background:transparent;color:#abc3d5;font-size:20px;border-radius:9px;cursor:pointer}.gsf-site-toast-close:focus-visible,.gsf-site-toast-action:focus-visible{outline:2px solid #79d2ff;outline-offset:1px}.gsf-site-toast-bar{position:absolute;left:0;bottom:0;height:2px;width:100%;transform-origin:left;background:#79d2ff;transform:scaleX(1);transition:transform .25s ease,opacity .22s ease;opacity:.7}
@@ -4510,7 +4513,17 @@ def _quality_schedule(sid,stable):
 
     def run():
         try:
-            report=_quality_inspect(stable)
+            if os.environ.get("GSF_LOW_MEMORY_WEB","0").strip().lower() in {"1","true","yes","on"}:
+                # Quality decoding also consumes frame buffers. Reuse final
+                # render admission instead of competing with the next encoder.
+                from web.render_gate_v293 import render_slot
+                with render_slot("quality"):
+                    if (not stable.is_file() or stable.stat().st_size!=size
+                        or abs(stable.stat().st_mtime-mtime)>=0.01):
+                        return
+                    report=_quality_inspect(stable)
+            else:
+                report=_quality_inspect(stable)
             report["source_size"]=size
             report["source_mtime"]=mtime
             _quality_store(sid,report)

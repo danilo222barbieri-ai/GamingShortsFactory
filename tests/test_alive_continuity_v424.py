@@ -25,6 +25,21 @@ class NotificationContinuity(unittest.TestCase):
   self.assertTrue(self.page.evaluate("originalNotice===document.querySelector('.gsf-site-toast')"));self.assertIn('Cerco',self.page.locator('.gsf-site-toast').inner_text())
   self.page.evaluate("GSFNotify.update('analysis',{title:'2 momenti trovati',kind:'success'})")
   self.assertTrue(self.page.evaluate("originalNotice===document.querySelector('.gsf-site-toast')"));self.assertIn('2 momenti',self.page.locator('.gsf-site-toast').inner_text());self.assertFalse(self.errors,self.errors)
+ def test_notification_copy_and_empty_action_area_do_not_swallow_underlying_taps(self):
+  self.page.evaluate("()=>{window.underlyingClicks=0;window.noticeClicks=0;GSFNotify.upsert('overlay',{title:'Render pronto',kind:'success',onClick:()=>noticeClicks++,ttl:0})}")
+  self.page.wait_for_function("()=>getComputedStyle(document.querySelector('.gsf-site-toast')).opacity==='1'")
+  box=self.page.locator('.gsf-site-toast-actions').bounding_box()
+  self.assertIsNotNone(box)
+  point={'x':box['x']+8,'y':box['y']+box['height']/2}
+  self.page.evaluate("p=>{const b=document.createElement('button');b.id='underlying';b.textContent='Shorts';b.style.cssText='position:fixed;left:'+(p.x-5)+'px;top:'+(p.y-5)+'px;width:20px;height:20px';b.onclick=()=>underlyingClicks++;document.body.append(b)}",point)
+  self.page.mouse.click(point['x'],point['y'])
+  self.assertEqual(self.page.evaluate('underlyingClicks'),1,'Empty notification action area must not intercept app controls')
+  self.page.locator('.gsf-site-toast-action').click()
+  self.assertEqual(self.page.evaluate('noticeClicks'),1,'Real notification actions must stay interactive')
+  self.page.evaluate("GSFNotify.upsert('close-test',{title:'Analisi',kind:'working'})")
+  self.page.locator('[data-notice-id="close-test"] .gsf-site-toast-close').click()
+  self.page.locator('[data-notice-id="close-test"]').wait_for(state='detached')
+
  def test_action_focus_survives_process_update(self):
   self.page.evaluate("()=>{window.actionCount=0;window.realAction=()=>actionCount++;GSFNotify.upsert('render',{title:'Render pronto',kind:'success',onClick:realAction,ttl:0});window.originalAction=document.querySelector('.gsf-site-toast-action');originalAction.focus();GSFNotify.update('render',{body:'Pronto per aprire'})}")
   self.assertTrue(self.page.evaluate("originalAction===document.querySelector('.gsf-site-toast-action')"))
@@ -33,7 +48,7 @@ class NotificationContinuity(unittest.TestCase):
  def test_long_process_persists_then_completes_and_dismisses(self):
   self.page.clock.install();self.page.evaluate("GSFNotify.upsert('long-analysis',{title:'Analisi in corso',kind:'working'})")
   self.page.clock.run_for(12000);self.assertEqual(self.page.locator('.gsf-site-toast').count(),1)
-  self.page.evaluate("GSFNotify.update('long-analysis',{title:'Pronto',kind:'success'})");self.page.clock.run_for(5000);self.assertEqual(self.page.locator('.gsf-site-toast').count(),0)
+  self.page.evaluate("GSFNotify.update('long-analysis',{title:'Pronto',kind:'success'})");self.page.clock.run_for(7000);self.assertEqual(self.page.locator('.gsf-site-toast').count(),0)
  def test_real_alive_events_evolve_one_process_notification(self):
   self.page.evaluate((ROOT/'web/gsf_alive_v418.js').read_text())
   self.page.evaluate("()=>{GSFAlive.emit('ai.started');window.processNotice=document.querySelector('.gsf-site-toast');GSFAlive.emit('ai.found',{count:1})}")
@@ -60,7 +75,8 @@ class NotificationContinuity(unittest.TestCase):
  def test_dark_notifications_respect_actual_header_safe_zone(self):
   self.page.evaluate("GSFNotify.show('Progetto salvato','','success')");self.page.wait_for_timeout(300)
   result=self.page.locator('.gsf-site-toast').evaluate("e=>({top:e.getBoundingClientRect().top,bottom:e.getBoundingClientRect().bottom,bg:getComputedStyle(e).backgroundColor})")
-  self.assertGreaterEqual(result['top'],0);self.assertLessEqual(result['bottom'],90)
+  header=self.page.locator('#gsf-global-header').bounding_box();bar=self.page.locator('#gsf-global-gamebar').bounding_box()
+  self.assertGreaterEqual(result['top'],header['y']+header['height']);self.assertLessEqual(result['bottom'],bar['y'])
   self.assertNotIn('255, 255, 255',result['bg'])
  def test_burst_uses_bounded_visible_queue(self):
   self.page.evaluate("()=>{for(let i=0;i<12;i++)GSFNotify.show('Evento '+i,'','info')}")
@@ -73,7 +89,7 @@ class NotificationContinuity(unittest.TestCase):
     self.page.wait_for_timeout(300)
     box=self.page.locator('[data-notice-id="viewport"]').bounding_box()
     self.assertGreaterEqual(box['x'],0);self.assertLessEqual(box['x']+box['width'],width)
-    self.assertGreaterEqual(box['y'],0);self.assertLessEqual(box['y']+box['height'],90)
+    self.assertGreaterEqual(box['y'],90);self.assertLessEqual(box['y']+box['height'],height-80)
  def test_clearing_project_removes_obsolete_process(self):
   self.page.clock.install();self.page.evaluate((ROOT/'web/gsf_alive_v418.js').read_text())
   self.page.evaluate("()=>{GSFAlive.emit('ai.started');GSFAlive.emit('video.cleared')}")

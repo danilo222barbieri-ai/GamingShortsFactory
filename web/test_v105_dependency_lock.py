@@ -9,13 +9,8 @@ def need(ok,msg):
 req=Path("/app/requirements-web.txt").read_text(encoding="utf-8")
 constraints_path=Path("/app/constraints-web.txt")
 
-streamlit_wheel=(
-    "streamlit @ https://core-previews.s3-us-west-2.amazonaws.com/pr-17589/"
-    "streamlit-1.66.0-py3-none-any.whl"
-    "#sha256=841f0d2ac3b59d7501a95a2771ee31b8cb3bf0f210258135089e75ab9157a7fa"
-)
-need(streamlit_wheel in req,"Streamlit Pillow 13 preview wheel pinned to official URL and SHA256")
-need("streamlit==" not in req,"legacy Streamlit PyPI pin removed")
+need("streamlit==1.66.1" in req,"stable Streamlit Pillow 13 compatible release pinned")
+need("core-previews" not in req,"official stable replaces temporary preview artifact")
 
 expected_direct={
     "faster-whisper":"1.2.1",
@@ -39,9 +34,11 @@ for line in [
     "onnxruntime==1.30.0",
     "pandas==2.3.3",
     "pillow==13.0.0",
+    "filelock==4.2.1",
+    "opentelemetry-api==1.45.1",
     "pyarrow==25.0.1",
     "requests==2.34.2",
-    "streamlit==1.66.0",
+    "streamlit==1.66.1",
     "tokenizers==0.23.2",
 ]:
     need(line in constraints,f"constraint locks {line}")
