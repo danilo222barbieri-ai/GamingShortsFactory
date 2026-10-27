@@ -83,3 +83,30 @@ def test_mobile_webkit_remains_a_blocking_release_gate():
     assert block, 'Mobile WebKit coverage must remain in Production Gate'
     assert 'continue-on-error' not in block.group(1), 'Mobile regressions must prevent promotion'
     assert 'python tests/visual/gsf_visual_check.py' in block.group(1)
+
+
+def test_owned_home_media_stays_retired_when_its_document_is_replaced():
+    from types import SimpleNamespace
+    from visual.gsf_navigation_stress import request_surface_is_inactive, request_failure_is_critical
+    target = ['home']
+    def unavailable_document(*args):
+        raise RuntimeError('Execution context was destroyed')
+    frame = SimpleNamespace(is_detached=lambda: False, evaluate=unavailable_document,
+                            page=SimpleNamespace(evaluate=lambda expression: target[0]))
+    request = SimpleNamespace(resource_type='media', failure='Load request cancelled',
+                              url='https://gsf.test/editor-media/current?na=123',
+                              frame=frame, _gsf_media_surface='home')
+    assert not request_surface_is_inactive(request), 'An active Home preview must remain protected'
+    target[0] = 'editor'
+    assert request_surface_is_inactive(request), 'The authoritative route retired the proven Home owner even if its old document is unreadable'
+    assert not request_failure_is_critical(request, inactive_surface=True, base_url='https://gsf.test')
+    request._gsf_media_surface = None
+    assert not request_surface_is_inactive(request), 'Missing ownership proof must fail closed'
+    request._gsf_media_surface = 'editor'
+    assert not request_surface_is_inactive(request), 'The active Editor video must remain protected'
+    request._gsf_media_surface = 'home'
+    request.failure = 'Connection reset'
+    assert request_failure_is_critical(request, inactive_surface=True, base_url='https://gsf.test')
+    request.failure = 'Load request cancelled'
+    request.url = 'https://other.test/editor-media/current?na=123'
+    assert request_failure_is_critical(request, inactive_surface=True, base_url='https://gsf.test')
