@@ -1454,14 +1454,34 @@ let oauthNavigating=false;
   const folders=$('#sourceFolders');folders.hidden=sourceProvider!=='twitch';
   $$('[data-source-provider]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sourceProvider===sourceProvider)));
   $$('[data-source-folder]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sourceFolder===sourceFolder)));
-  if(sourceProvider==='youtube'){host.innerHTML='<p>YouTube: sorgenti non ancora disponibili. Il collegamento e la pubblicazione esistenti restano nelle Impostazioni.</p>';return}
+  if(sourceProvider==='youtube'&&!socialIsOn('youtube')){
+    host.innerHTML='<div class="card" style="text-align:center;padding:26px 14px"><div style="font-size:26px;margin-bottom:8px">▶️</div><b style="font-size:15.5px">Canale YouTube non collegato</b><p style="color:var(--gsf-muted);font-size:12.5px;max-width:360px;margin:8px auto 14px;line-height:1.45">Collega il tuo account YouTube per consultare i video del canale, visualizzare statistiche e pubblicare Shorts con 1 click.</p><button class="btn" data-source-connect-yt>Collega Canale YouTube</button></div>';
+    host.querySelector('[data-source-connect-yt]').onclick=()=>connectSocial('youtube');
+    return;
+  }
   if(sourceProvider==='twitch'&&sourceFolder!=='imported'&&!socialIsOn('twitch')){host.innerHTML='<div class="card"><b>Twitch non collegato</b><p>Collega il tuo canale per vedere Live, VOD e Clip.</p><button class="btn" data-source-connect>Collega Twitch</button></div>';host.querySelector('[data-source-connect]').onclick=()=>connectSocial('twitch');return}
   host.innerHTML='<p role="status">Caricamento libreria…</p>';
   const imported=sourceProvider==='upload'||sourceFolder==='imported';
-  const url=imported?'/creator-hub/sources?provider='+sourceProvider+'&after='+encodeURIComponent(cursor):'/social-connect/twitch/content?type='+sourceFolder+'&after='+encodeURIComponent(cursor);
+  const url=sourceProvider==='youtube'?'/social-connect/youtube/content?after='+encodeURIComponent(cursor):(imported?'/creator-hub/sources?provider='+sourceProvider+'&after='+encodeURIComponent(cursor):'/social-connect/twitch/content?type='+sourceFolder+'&after='+encodeURIComponent(cursor));
   try{
    const response=await fetch(url,{cache:'no-store',credentials:'same-origin',signal}),data=await response.json();
    if(!response.ok||!data.ok){const error=new Error(data.error||'Libreria non disponibile.');error.status=response.status;throw error}if(signal.aborted||current!=='live')return;
+   if(sourceProvider==='youtube'){
+     const ch=data.channel||{};
+     const chBanner='<div class="row" style="background:var(--gsf-surface);border:1px solid var(--gsf-line);border-radius:var(--gsf-radius-sm);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:10px">'+(ch.thumbnail?'<img src="'+esc(ch.thumbnail)+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover">':'<span style="font-size:20px">▶️</span>')+'<div><b style="font-size:13.5px">'+esc(ch.title||'Canale YouTube')+'</b><div style="font-size:11.5px;color:var(--gsf-muted)">'+(ch.subscribers!=null?esc(ch.subscribers.toLocaleString())+' iscritti · ':'')+esc(ch.video_count!=null?ch.video_count+' video':'')+'</div></div></div><button class="btn ghost" data-source-disconnect-yt style="font-size:11px;padding:4px 10px">Scollega</button></div>';
+     const note='<div style="background:rgba(39,174,243,.08);border:1px solid rgba(39,174,243,.20);border-radius:var(--gsf-radius-sm);padding:8px 12px;margin-bottom:12px;font-size:11.5px;color:var(--gsf-ink);line-height:1.4"><b>💡 Info ToS YouTube:</b> I flussi video non possono essere scaricati via API. Per estrarre Shorts con l\'IA, carica il file originale registrato da OBS o PC.</div>';
+     const items=(data.data||[]).map(row=>{
+       const durText=typeof row.duration==='number'&&row.duration>0?(Math.floor(row.duration/60)+':'+String(Math.round(row.duration%60)).padStart(2,'0')):'';
+       const stats=[durText,row.views!=null?row.views.toLocaleString()+' views':'',row.likes!=null?row.likes.toLocaleString()+' like':''].filter(Boolean).map(esc).join(' · ');
+       return '<div class="card sourceCard" style="display:grid;grid-template-columns:108px 1fr;gap:12px;align-items:center;padding:10px"><div style="position:relative;width:108px;height:64px;border-radius:8px;overflow:hidden;background:#000">'+(row.thumbnail?'<img src="'+esc(row.thumbnail)+'" style="width:100%;height:100%;object-fit:cover">':'')+(durText?'<span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.75);color:#fff;font-size:10px;padding:1px 4px;border-radius:4px">'+esc(durText)+'</span>':'')+'</div><div><b style="font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+esc(row.title)+'</b><div style="font-size:11px;color:var(--gsf-muted);margin:3px 0 6px">'+stats+'</div><div style="display:flex;gap:6px"><a href="'+esc(row.url)+'" target="_blank" rel="noopener noreferrer" class="btn ghost" style="font-size:11px;padding:4px 8px;text-decoration:none">Apri su YouTube ↗</a><button class="btn" data-empty-cta="upload" style="font-size:11px;padding:4px 8px">Carica per IA</button></div></div></div>';
+     }).join('') || '<div class="card" style="text-align:center;padding:20px;color:var(--gsf-muted)">Nessun video trovato sul canale.</div>';
+     const more=data.cursor?'<button class="btn ghost" data-source-more="'+esc(data.cursor)+'" style="width:100%;margin-top:10px">Carica altri video</button>':'';
+     host.innerHTML=chBanner+note+items+more;
+     const disc=host.querySelector('[data-source-disconnect-yt]');if(disc)disc.onclick=()=>disconnectSocial('youtube');
+     const moreBtn=host.querySelector('[data-source-more]');if(moreBtn)moreBtn.onclick=()=>loadSources(moreBtn.dataset.sourceMore);
+     host.querySelectorAll('[data-empty-cta]').forEach(b=>b.onclick=()=>shell("home",{section:""}));
+     return;
+   }
    const status=sourceProvider==='twitch'?'<div class="row"><span class="rtext">'+(socialIsOn('twitch')?'Twitch collegato':'Twitch scollegato')+'</span><button class="btn ghost" data-source-disconnect>'+(socialIsOn('twitch')?'Scollega':'Collega')+'</button></div>':'';
    host.innerHTML=status+(data.data||[]).map(row=>{
     const identity=row.source_id||row.id;

@@ -4258,6 +4258,101 @@ def _youtube_analytics_token(sid):
         print("GSF_V148_YOUTUBE_REFRESH_WARN",sid,repr(str(exc))[:180],flush=True)
     return token
 
+def _parse_yt_duration(iso_str):
+    m=re.match(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?',str(iso_str or ''))
+    if not m:return 0
+    h,m_,s=m.groups()
+    return int(h or 0)*3600+int(m_ or 0)*60+int(s or 0)
+
+def _youtube_content(sid,after=""):
+    token=_youtube_analytics_token(sid)
+    access=str(token.get("access_token") or token.get("token") or "")
+    if not access:
+        return {"connected":False,"data":[],"channel":None,"cursor":"","message":"YouTube non collegato."}
+    ch_url="https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails,statistics&mine=true"
+    req=urllib.request.Request(ch_url,headers={"Authorization":f"Bearer {access}"})
+    try:
+        with urllib.request.urlopen(req,timeout=15) as resp:
+            ch_data=json.loads(resp.read().decode("utf-8"))
+    except Exception as exc:
+        print("GSF_YOUTUBE_CHANNELS_WARN",sid,repr(str(exc))[:180],flush=True)
+        return {"connected":True,"data":[],"channel":None,"cursor":"","error":"Impossibile recuperare il canale YouTube"}
+    items=ch_data.get("items") or []
+    if not items:
+        return {"connected":True,"data":[],"channel":{"title":"Canale non trovato","subscribers":0,"videos":0},"cursor":""}
+    ch_item=items[0]
+    snippet=ch_item.get("snippet",{})
+    stats=ch_item.get("statistics",{})
+    content_details=ch_item.get("contentDetails",{})
+    uploads_id=content_details.get("relatedPlaylists",{}).get("uploads","") or ""
+    channel_info={
+        "id":str(ch_item.get("id") or ""),
+        "title":str(snippet.get("title") or "Canale YouTube")[:200],
+        "custom_url":str(snippet.get("customUrl") or "")[:100],
+        "thumbnail":str(snippet.get("thumbnails",{}).get("default",{}).get("url") or ""),
+        "subscribers":int(stats.get("subscriberCount",0) or 0),
+        "video_count":int(stats.get("videoCount",0) or 0),
+        "view_count":int(stats.get("viewCount",0) or 0),
+    }
+    if not uploads_id:
+        return {"connected":True,"data":[],"channel":channel_info,"cursor":""}
+    p_params={"part":"snippet,contentDetails","playlistId":uploads_id,"maxResults":"15"}
+    if after and len(after)<512:
+        p_params["pageToken"]=after
+    p_url="https://www.googleapis.com/youtube/v3/playlistItems?"+urllib.parse.urlencode(p_params)
+    p_req=urllib.request.Request(p_url,headers={"Authorization":f"Bearer {access}"})
+    try:
+        with urllib.request.urlopen(p_req,timeout=15) as p_resp:
+            p_data=json.loads(p_resp.read().decode("utf-8"))
+    except Exception as exc:
+        print("GSF_YOUTUBE_PLAYLIST_ITEMS_WARN",sid,repr(str(exc))[:180],flush=True)
+        return {"connected":True,"data":[],"channel":channel_info,"cursor":""}
+    p_items=p_data.get("items") or []
+    next_cursor=str(p_data.get("nextPageToken") or "")
+    video_ids=[str(it.get("contentDetails",{}).get("videoId") or "") for it in p_items if str(it.get("contentDetails",{}).get("videoId") or "")]
+    vid_map={}
+    if video_ids:
+        v_params={"part":"contentDetails,statistics","id":",".join(video_ids[:15])}
+        v_url="https://www.googleapis.com/youtube/v3/videos?"+urllib.parse.urlencode(v_params)
+        v_req=urllib.request.Request(v_url,headers={"Authorization":f"Bearer {access}"})
+        try:
+            with urllib.request.urlopen(v_req,timeout=15) as resp:
+                v_data=json.loads(resp.read().decode("utf-8"))
+                for vi in v_data.get("items") or []:
+                    vid_map[str(vi.get("id") or "")]=vi
+        except Exception:
+            pass
+    rows=[]
+    for it in p_items:
+        vid=str(it.get("contentDetails",{}).get("videoId") or "")
+        if not vid:continue
+        s=it.get("snippet",{})
+        vi_info=vid_map.get(vid,{})
+        vi_stats=vi_info.get("statistics",{})
+        vi_dur_iso=vi_info.get("contentDetails",{}).get("duration","")
+        dur_sec=_parse_yt_duration(vi_dur_iso)
+        thumbs=s.get("thumbnails",{})
+        thumb_url=thumbs.get("medium",{}).get("url") or thumbs.get("default",{}).get("url") or ""
+        rows.append({
+            "id":vid,
+            "source_id":vid,
+            "external_id":vid,
+            "kind":"youtube_vod",
+            "provider":"youtube",
+            "title":str(s.get("title") or "Video senza titolo")[:300],
+            "created_at":str(s.get("publishedAt") or "")[:50],
+            "thumbnail":thumb_url,
+            "duration":dur_sec,
+            "views":int(vi_stats.get("viewCount",0) or 0),
+            "likes":int(vi_stats.get("likeCount",0) or 0),
+            "url":f"https://www.youtube.com/watch?v={vid}",
+            "can_import":False,
+            "can_analyze":False,
+            "can_open_editor":False,
+            "import_reason":"Video YouTube protetto da ToS. Per creare lo Short, carica il file originale gameplay salvato da OBS/PC.",
+        })
+    return {"connected":True,"data":rows,"channel":channel_info,"cursor":next_cursor,"type":"videos"}
+
 def _tiktok_analytics_token(sid):
     token=dict(_tiktok_user_load(sid) or {})
     now=time.time();expiry=float(token.get("expires_at") or 0)
@@ -4920,6 +5015,13 @@ class Handler(BaseHTTPRequestHandler):
             except _social421.TwitchError as exc:_json(self,exc.status,{"ok":False,"error":str(exc)})
             except ValueError:_json(self,400,{"ok":False,"error":"Richiesta Twitch non valida"})
             except Exception:_json(self,503,{"ok":False,"error":"Contenuti Twitch temporaneamente non disponibili"})
+            return
+        if clean=="/social-connect/youtube/content":
+            try:
+                query=parse_qs(path.query)
+                _json(self,200,{"ok":True,**_youtube_content(_social_sid(self),str((query.get("after") or [""])[0]))})
+            except ValueError as exc:_json(self,400,{"ok":False,"error":str(exc)})
+            except Exception:_json(self,503,{"ok":False,"error":"Contenuti YouTube temporaneamente non disponibili"})
             return
         if clean=="/auth/tiktok/callback":
             _tiktok_oauth_callback(self,parse_qs(path.query));return
