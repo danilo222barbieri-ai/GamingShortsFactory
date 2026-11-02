@@ -532,16 +532,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         clean=self.path.rstrip("/")
-        if clean not in ("/prescan","/auto-highlights","/render"):
-            _json(self,404,{"ok":False,"error":"not found"})
-            return
-        if not _authorized(self):
-            _json(self,403,{"ok":False,"error":"forbidden"})
-            return
-        if not _bucket_enabled():
-            _json(self,503,{"ok":False,"error":"bucket unavailable"})
-            return
         if clean=="/render":
+            if not _authorized(self):
+                _json(self,403,{"ok":False,"error":"forbidden"})
+                return
+            if not _bucket_enabled():
+                _json(self,503,{"ok":False,"error":"bucket unavailable"})
+                return
             try:
                 data=_read_json(self)
                 job_id=str(data.get("job_id") or uuid.uuid4().hex[:16])
@@ -554,6 +551,15 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,202,{"ok":True,"queued":True,"job_id":job_id})
             except Exception as exc:
                 _json(self,400,{"ok":False,"error":str(exc)[:240]})
+            return
+        if clean not in ("/prescan","/auto-highlights"):
+            _json(self,404,{"ok":False,"error":"not found"})
+            return
+        if not _authorized(self):
+            _json(self,403,{"ok":False,"error":"forbidden"})
+            return
+        if not _bucket_enabled():
+            _json(self,503,{"ok":False,"error":"bucket unavailable"})
             return
         if clean=="/auto-highlights":
             try:
