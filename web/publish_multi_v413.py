@@ -31,7 +31,7 @@ MARKER = "V413_PUBLISH_MULTI"
 PLATFORMS = ("youtube", "tiktok", "instagram", "facebook")
 # Platforms this server can publish to by itself today. Instagram needs Meta
 # app credentials and Facebook publishing is not implemented yet.
-SUPPORTED = ("youtube", "tiktok")
+SUPPORTED = ("youtube", "tiktok", "instagram", "facebook")
 
 LIMITS = {
     "youtube": {"title": 100, "description": 5000, "tags": 30},

@@ -368,9 +368,18 @@ a.row{color:inherit;text-decoration:none}
  <!-- Sorgenti: one catalog, existing upload/AI/Editor pipeline -->
  <section class="view" data-view="live" aria-label="Live e VOD / Sorgenti">
   <div class="detailHead"><button class="backBtn" type="button" data-back aria-label="Torna al Creator Hub">‹</button><h1>Live e VOD</h1></div>
-  <div class="sheetActions" aria-label="Sorgente"><button class="btn ghost" data-source-provider="upload">Upload</button><button class="btn ghost" data-source-provider="twitch">Twitch</button><button class="btn ghost" data-source-provider="youtube">YouTube</button></div>
-  <div class="sheetActions" id="sourceFolders" aria-label="Contenuti Twitch"><button class="btn ghost" data-source-folder="live">Live</button><button class="btn ghost" data-source-folder="videos">VOD</button><button class="btn ghost" data-source-folder="clips">Clip</button><button class="btn ghost" data-source-folder="imported">Importati</button></div>
-  <div id="sourceLibrary" aria-live="polite"></div>
+  <div class="seg" role="tablist" aria-label="Sorgente" style="margin-bottom:10px">
+    <button type="button" data-source-provider="twitch" class="on">Twitch</button>
+    <button type="button" data-source-provider="youtube">YouTube</button>
+    <button type="button" data-source-provider="upload">Upload</button>
+  </div>
+  <div class="seg" id="sourceFolders" role="tablist" aria-label="Contenuti Twitch" style="margin-bottom:12px">
+    <button type="button" data-source-folder="live" class="on">Live</button>
+    <button type="button" data-source-folder="videos">VOD</button>
+    <button type="button" data-source-folder="clips">Clip</button>
+    <button type="button" data-source-folder="imported">Importati</button>
+  </div>
+  <div id="sourceLibrary" class="grid" aria-live="polite"></div>
  </section>
 
  <!-- Impostazioni -->
@@ -1462,15 +1471,19 @@ let oauthNavigating=false;
   sourceAbort?.abort();const controller=sourceAbort=new AbortController(),signal=controller.signal;
   const host=$('#sourceLibrary');if(!host)return;
   const folders=$('#sourceFolders');folders.hidden=sourceProvider!=='twitch';
-  $$('[data-source-provider]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sourceProvider===sourceProvider)));
-  $$('[data-source-folder]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sourceFolder===sourceFolder)));
+  $$('[data-source-provider]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.sourceProvider===sourceProvider));b.classList.toggle('on',b.dataset.sourceProvider===sourceProvider)});
+  $$('[data-source-folder]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.sourceFolder===sourceFolder));b.classList.toggle('on',b.dataset.sourceFolder===sourceFolder)});
   if(sourceProvider==='youtube'&&!socialIsOn('youtube')){
-    host.innerHTML='<div class="card" style="text-align:center;padding:26px 14px"><div style="font-size:26px;margin-bottom:8px">▶️</div><b style="font-size:15.5px">Canale YouTube non collegato</b><p style="color:var(--gsf-muted);font-size:12.5px;max-width:360px;margin:8px auto 14px;line-height:1.45">Collega il tuo account YouTube per consultare i video del canale, visualizzare statistiche e pubblicare Shorts con 1 click.</p><button class="btn" data-source-connect-yt>Collega Canale YouTube</button></div>';
+    host.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="cover" style="width:48px;height:48px;margin:0 auto 12px;display:grid;place-items:center;background:rgba(239,68,68,.12);border-radius:50%;color:#EF4444"><span style="font-size:22px">▶️</span></div><b>Canale YouTube non collegato</b><p style="color:var(--gsf-muted);font-size:12.5px;max-width:360px;margin:8px auto 14px;line-height:1.45">Collega il tuo account YouTube per consultare i video del canale, visualizzare statistiche e pubblicare Shorts con 1 click.</p><button class="na-cta" type="button" data-source-connect-yt style="margin:0 auto">Collega Canale YouTube</button></div>';
     host.querySelector('[data-source-connect-yt]').onclick=()=>connectSocial('youtube');
     return;
   }
-  if(sourceProvider==='twitch'&&sourceFolder!=='imported'&&!socialIsOn('twitch')){host.innerHTML='<div class="card"><b>Twitch non collegato</b><p>Collega il tuo canale per vedere Live, VOD e Clip.</p><button class="btn" data-source-connect>Collega Twitch</button></div>';host.querySelector('[data-source-connect]').onclick=()=>connectSocial('twitch');return}
-  host.innerHTML='<p role="status">Caricamento libreria…</p>';
+  if(sourceProvider==='twitch'&&sourceFolder!=='imported'&&!socialIsOn('twitch')){
+    host.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="cover" style="width:48px;height:48px;margin:0 auto 12px;display:grid;place-items:center;background:rgba(145,71,255,.15);border-radius:50%;color:#A970FF"><span style="font-size:22px">🎮</span></div><b>Twitch non collegato</b><p style="color:var(--gsf-muted);font-size:12.5px;max-width:360px;margin:8px auto 14px;line-height:1.45">Collega il tuo canale Twitch per vedere Live, VOD e Clip in tempo reale ed estrarre Shorts con l\'IA.</p><button class="na-cta" type="button" data-source-connect style="margin:0 auto">Collega Twitch</button></div>';
+    host.querySelector('[data-source-connect]').onclick=()=>connectSocial('twitch');
+    return;
+  }
+  host.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="cover"><span class="glyph">'+PLAY+'</span></div><b>Caricamento libreria…</b></div>';
   const imported=sourceProvider==='upload'||sourceFolder==='imported';
   const url=sourceProvider==='youtube'?'/social-connect/youtube/content?after='+encodeURIComponent(cursor):(imported?'/creator-hub/sources?provider='+sourceProvider+'&after='+encodeURIComponent(cursor):'/social-connect/twitch/content?type='+sourceFolder+'&after='+encodeURIComponent(cursor));
   try{
@@ -1478,35 +1491,48 @@ let oauthNavigating=false;
    if(!response.ok||!data.ok){const error=new Error(data.error||'Libreria non disponibile.');error.status=response.status;throw error}if(signal.aborted||current!=='live')return;
    if(sourceProvider==='youtube'){
      const ch=data.channel||{};
-     const chBanner='<div class="row" style="background:var(--gsf-surface);border:1px solid var(--gsf-line);border-radius:var(--gsf-radius-sm);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:10px">'+(ch.thumbnail?'<img src="'+esc(ch.thumbnail)+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover">':'<span style="font-size:20px">▶️</span>')+'<div><b style="font-size:13.5px">'+esc(ch.title||'Canale YouTube')+'</b><div style="font-size:11.5px;color:var(--gsf-muted)">'+(ch.subscribers!=null?esc(ch.subscribers.toLocaleString())+' iscritti · ':'')+esc(ch.video_count!=null?ch.video_count+' video':'')+'</div></div></div><button class="btn ghost" data-source-disconnect-yt style="font-size:11px;padding:4px 10px">Scollega</button></div>';
-     const note='<div style="background:rgba(39,174,243,.08);border:1px solid rgba(39,174,243,.20);border-radius:var(--gsf-radius-sm);padding:8px 12px;margin-bottom:12px;font-size:11.5px;color:var(--gsf-ink);line-height:1.4"><b>💡 Info ToS YouTube:</b> I flussi video non possono essere scaricati via API. Per estrarre Shorts con l\'IA, carica il file originale registrato da OBS o PC.</div>';
-     const items=(data.data||[]).map(row=>{
+     const chBanner='<div class="row" style="grid-column:1/-1;background:var(--gsf-surface);border:1px solid var(--gsf-line);border-radius:var(--gsf-radius-sm);padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:10px">'+(ch.thumbnail?'<img src="'+esc(ch.thumbnail)+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover">':'<span style="font-size:20px">▶️</span>')+'<div><b style="font-size:13.5px">'+esc(ch.title||'Canale YouTube')+'</b><div style="font-size:11.5px;color:var(--gsf-muted)">'+(ch.subscribers!=null?esc(ch.subscribers.toLocaleString())+' iscritti · ':'')+esc(ch.video_count!=null?ch.video_count+' video':'')+'</div></div></div><button class="btn ghost" data-source-disconnect-yt style="font-size:11px;padding:4px 10px">Scollega</button></div>';
+     const note='<div style="grid-column:1/-1;background:rgba(39,174,243,.08);border:1px solid rgba(39,174,243,.20);border-radius:var(--gsf-radius-sm);padding:8px 12px;margin-bottom:8px;font-size:11.5px;color:var(--gsf-ink);line-height:1.4"><b>💡 Info ToS YouTube:</b> I flussi video non possono essere scaricati via API. Per estrarre Shorts con l\'IA, carica il file originale registrato da OBS o PC.</div>';
+     const rawItems=data.data||[];
+     const items=rawItems.length?rawItems.map(row=>{
        const durText=typeof row.duration==='number'&&row.duration>0?(Math.floor(row.duration/60)+':'+String(Math.round(row.duration%60)).padStart(2,'0')):'';
-       const stats=[durText,row.views!=null?row.views.toLocaleString()+' views':'',row.likes!=null?row.likes.toLocaleString()+' like':''].filter(Boolean).map(esc).join(' · ');
-       return '<div class="card sourceCard" style="display:grid;grid-template-columns:108px 1fr;gap:12px;align-items:center;padding:10px"><div style="position:relative;width:108px;height:64px;border-radius:8px;overflow:hidden;background:#000">'+(row.thumbnail?'<img src="'+esc(row.thumbnail)+'" style="width:100%;height:100%;object-fit:cover">':'')+(durText?'<span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.75);color:#fff;font-size:10px;padding:1px 4px;border-radius:4px">'+esc(durText)+'</span>':'')+'</div><div><b style="font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+esc(row.title)+'</b><div style="font-size:11px;color:var(--gsf-muted);margin:3px 0 6px">'+stats+'</div><div style="display:flex;gap:6px"><a href="'+esc(row.url)+'" target="_blank" rel="noopener noreferrer" class="btn ghost" style="font-size:11px;padding:4px 8px;text-decoration:none">Apri su YouTube ↗</a><button class="btn" data-empty-cta="upload" style="font-size:11px;padding:4px 8px">Carica per IA</button></div></div></div>';
-     }).join('') || '<div class="card" style="text-align:center;padding:20px;color:var(--gsf-muted)">Nessun video trovato sul canale.</div>';
-     const more=data.cursor?'<button class="btn ghost" data-source-more="'+esc(data.cursor)+'" style="width:100%;margin-top:10px">Carica altri video</button>':'';
+       const stats=[durText,row.views!=null?row.views.toLocaleString()+' views':''].filter(Boolean).map(esc).join(' · ');
+       return '<div class="pcard vod"><div class="cover">'+(row.thumbnail?'<img class="cardPreview" loading="lazy" src="'+esc(row.thumbnail)+'" alt="">':'')+'<span class="tag">YouTube</span><span class="glyph">'+PLAY+'</span></div><div class="ptitle">'+esc(row.title)+'</div><div class="pmeta">'+stats+'</div><button class="na-cta" type="button" style="width:100%;font-size:11px;padding:6px;margin-top:6px;border-radius:10px" data-empty-cta="upload">'+UPLOAD_ICON+'Carica per IA</button></div>';
+     }).join(''):'<div class="empty" style="grid-column:1/-1"><div class="cover"><span class="glyph">'+PLAY+'</span></div><b>Nessun video trovato sul canale</b><p>Carica un gameplay direttamente per elaborarlo con l\'IA.</p><button class="na-cta" type="button" data-empty-cta="upload">'+UPLOAD_ICON+'Carica un gameplay</button></div>';
+     const more=data.cursor?'<button class="btn ghost" data-source-more="'+esc(data.cursor)+'" style="grid-column:1/-1;width:100%;margin-top:10px">Carica altri video</button>':'';
      host.innerHTML=chBanner+note+items+more;
      const disc=host.querySelector('[data-source-disconnect-yt]');if(disc)disc.onclick=()=>disconnectSocial('youtube');
      const moreBtn=host.querySelector('[data-source-more]');if(moreBtn)moreBtn.onclick=()=>loadSources(moreBtn.dataset.sourceMore);
      host.querySelectorAll('[data-empty-cta]').forEach(b=>b.onclick=()=>shell("home",{section:""}));
      return;
    }
-   const status=sourceProvider==='twitch'?'<div class="row"><span class="rtext">'+(socialIsOn('twitch')?'Twitch collegato':'Twitch scollegato')+'</span><button class="btn ghost" data-source-disconnect>'+(socialIsOn('twitch')?'Scollega':'Collega')+'</button></div>':'';
-   host.innerHTML=status+(data.data||[]).map(row=>{
-    const identity=row.source_id||row.id;
+   const status=sourceProvider==='twitch'?'<div class="row" style="grid-column:1/-1;background:var(--gsf-surface);border:1px solid var(--gsf-line);border-radius:var(--gsf-radius-sm);padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between"><span class="rtext"><b style="color:var(--gsf-ink)">'+(socialIsOn('twitch')?'Twitch collegato':'Twitch scollegato')+'</b></span><button class="btn ghost" data-source-disconnect style="font-size:11px;padding:4px 10px">'+(socialIsOn('twitch')?'Scollega':'Collega')+'</button></div>':'';
+   const rawData=data.data||[];
+   const items=rawData.length?rawData.map(row=>{
+    const identity=esc(row.source_id||row.id||'');
+    const isLive=row.is_live||sourceFolder==='live';
+    const tag=isLive?'Live':(sourceFolder==='clips'?'Clip':'VOD');
+    const tagClass=isLive?'tag pub':'tag';
     const metadata=[row.game_name,typeof row.duration==='number'?Math.round(row.duration)+' s':'',row.is_live?'In diretta':'',row.imported?'Già importato':''].filter(Boolean).map(esc).join(' · ');
-    const actions=row.can_analyze?'<button class="btn" data-source-open="'+esc(identity)+'">Crea con IA</button><button class="btn ghost" data-source-editor="'+esc(identity)+'">Editor</button>':row.can_import?'<button class="btn" data-source-import="'+esc(row.external_id||row.id)+'">Importa clip</button>':'';
-    return '<article class="card sourceCard">'+(row.thumbnail?'<img class="sourceThumb" loading="lazy" src="'+esc(row.thumbnail)+'" alt="">':'')+'<b>'+esc(row.title||'Gameplay')+'</b><small>'+metadata+'</small>'+(!row.can_import&&!row.can_analyze?'<p>'+esc(row.import_reason||'Video non disponibile.')+'</p>':'')+'<div class="sheetActions">'+actions+(row.url?'<a class="btn ghost" href="'+esc(row.url)+'" target="_blank" rel="noopener noreferrer">Apri Twitch</a>':'')+'</div></article>';
-   }).join('');
-   if(!(data.data||[]).length)host.insertAdjacentHTML('beforeend','<p>'+ (sourceFolder==='live'?'Il canale non è in diretta.':'Nessun contenuto in questa cartella.')+'</p>');
-   host.querySelector('[data-source-disconnect]')?.addEventListener('click',()=>connectSocial('twitch'));
+    const actions=row.can_analyze?'<button class="na-cta" type="button" style="width:100%;font-size:11px;padding:6px;margin-top:6px;border-radius:10px" data-source-open="'+identity+'">⚡ Crea con IA</button><button class="btn ghost" style="width:100%;font-size:10.5px;padding:4px;margin-top:4px" data-source-editor="'+identity+'">Editor</button>':row.can_import?'<button class="na-cta" type="button" style="width:100%;font-size:11px;padding:6px;margin-top:6px;border-radius:10px" data-source-import="'+esc(row.external_id||row.id)+'">⚡ Importa clip</button>':'';
+    return '<div class="pcard '+(isLive?'live':'vod')+'" data-source-id="'+identity+'"><div class="cover">'+(row.thumbnail?'<img class="cardPreview" loading="lazy" src="'+esc(row.thumbnail)+'" alt="">':'')+'<span class="'+tagClass+'">'+tag+'</span><span class="glyph">'+PLAY+'</span></div><div class="ptitle">'+esc(row.title||'Gameplay')+'</div><div class="pmeta">'+metadata+'</div>'+actions+(row.url?'<a class="btn ghost" style="display:block;text-align:center;text-decoration:none;font-size:11px;padding:5px;margin-top:4px" href="'+esc(row.url)+'" target="_blank" rel="noopener noreferrer">Apri Twitch ↗</a>':'')+'</div>';
+   }).join(''):'<div class="empty" style="grid-column:1/-1"><div class="cover"><span class="glyph">'+PLAY+'</span></div><b>'+(sourceFolder==='live'?'Il canale non è in diretta':'Nessun contenuto in questa cartella')+'</b><p>'+(sourceFolder==='live'?'Quando avvii la live su Twitch, comparirà qui pronta per estrarre clip e Shorts con l\'IA.':'Nessun video presente. Puoi caricare un file direttamente dal dispositivo.')+'</p><button class="na-cta" type="button" data-empty-cta="upload">'+UPLOAD_ICON+'Carica un gameplay</button></div>';
+   host.innerHTML=status+items;
+   host.querySelectorAll('[data-empty-cta]').forEach(b=>b.onclick=()=>shell("home",{section:""}));
+   host.querySelector('[data-source-disconnect]')?.addEventListener('click',()=>socialIsOn('twitch')?disconnectSocial('twitch'):connectSocial('twitch'));
    host.querySelectorAll('[data-source-import]').forEach(b=>b.onclick=()=>importTwitchClip(b.dataset.sourceImport));
    host.querySelectorAll('[data-source-open]').forEach(b=>b.onclick=()=>activateLibrarySource(b.dataset.sourceOpen,'ai'));
    host.querySelectorAll('[data-source-editor]').forEach(b=>b.onclick=()=>activateLibrarySource(b.dataset.sourceEditor,'editor'));
-   if(data.cursor){const more=document.createElement('button');more.className='btn ghost';more.textContent='Altri contenuti';more.onclick=()=>loadSources(data.cursor);host.append(more)}
-  }catch(error){if(error.name!=='AbortError'&&!signal.aborted){host.textContent=String(error.message||'Libreria non disponibile.');const retry=document.createElement('button');retry.className='btn ghost';retry.textContent='Riprova';retry.onclick=()=>loadSources(cursor);host.append(retry);if(sourceProvider==='twitch'&&[401,403].includes(error.status)){const account=document.createElement('button');account.className='btn ghost';account.dataset.sourceAccount='';account.textContent='Gestisci account Twitch';account.onclick=()=>{openView('settings');loadState()};host.append(account)}}}
+   if(data.cursor){const more=document.createElement('button');more.className='btn ghost';more.style.gridColumn='1/-1';more.style.marginTop='10px';more.textContent='Altri contenuti';more.onclick=()=>loadSources(data.cursor);host.append(more)}
+  }catch(error){
+   if(error.name!=='AbortError'&&!signal.aborted){
+    host.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="cover"><span class="glyph">'+PLAY+'</span></div><b>Libreria non disponibile</b><p>'+esc(String(error.message||''))+'</p><button class="btn ghost" data-source-retry style="margin:8px auto 0">Riprova</button></div>';
+    host.querySelector('[data-source-retry]')?.addEventListener('click',()=>loadSources(cursor));
+    if(sourceProvider==='twitch'&&[401,403].includes(error.status)){const account=document.createElement('button');account.className='na-cta';account.dataset.sourceAccount='';account.style.margin='8px auto 0';account.textContent='Gestisci account Twitch';account.onclick=()=>{openView('settings');loadState()};host.append(account)}
+   }
+  }
  }
+ 
  async function activateLibrarySource(identity,target){
   if(twitchImportAbort)return;
   const controller=twitchImportAbort=new AbortController(),signal=controller.signal;let epoch=null;try{epoch=parent.GSFNavigation.snapshot().epoch}catch(_e){}

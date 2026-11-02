@@ -1101,14 +1101,19 @@ def _html(handler,status,body):
 
 def _redirect(handler,url):
     target=str(url)
-    if target=="/?gsf_hub=social":
+    if target in ("/account","/account/"):
+        target="/?gsf_page=hub&gsf_section=profile"
+    elif target in ("/social-connect","/social-connect/"):
         target="/?gsf_page=hub&gsf_section=social"
-    if target.startswith("/?gsf_page=hub&gsf_section="):
-        target += "&oauth_return="+str(int(time.time()*1000))
+    elif target=="/?gsf_hub=social":
+        target="/?gsf_page=hub&gsf_section=social"
+    if target.startswith("/?gsf_page=hub") and "oauth_return=" not in target:
+        delim="&" if "?" in target else "?"
+        target += delim+"oauth_return="+str(int(time.time()*1000))
     handler.send_response(302)
     handler.send_header("Location",target)
     handler.send_header("Cache-Control","no-store, max-age=0")
-    if target.startswith("/?gsf_page=hub&gsf_section="):handler.send_header("Pragma","no-cache")
+    if target.startswith("/?gsf_page=hub"):handler.send_header("Pragma","no-cache")
     handler.end_headers()
 
 def _social_sid(handler):
@@ -2670,7 +2675,7 @@ def _creator_google_callback(handler,query):
             email=info.get("email",""),
             avatar=info.get("picture",""),
         )
-        _redirect(handler,"/account")
+        _redirect(handler,"/?gsf_page=hub&gsf_section=profile")
     except Exception as exc:
         _html(handler,500,_creator_page(sid,"Accesso Google fallito: "+str(exc)[:220]))
 
@@ -4871,6 +4876,89 @@ def _publish_final_path(sid):
         return stable
     return None
 
+def _instagram_direct_post(sid,video_path,plan,privacy):
+    cfg=_instagram_user_load(sid) or {}
+    token=str(cfg.get("access_token") or "")
+    ig_id=str(cfg.get("ig_user_id") or cfg.get("instagram_user_id") or "")
+    if not token or not ig_id:
+        sc=_social_connection_load(sid,"instagram") or {}
+        token=str(sc.get("access_token") or "")
+        ig_id=str(sc.get("ig_user_id") or sc.get("instagram_user_id") or "")
+    if not token or not ig_id:
+        raise _pm413.PublishError("Collega Instagram dal Creator Hub prima di pubblicare.",code="needs_connection")
+    caption=str(plan.get("caption") or "")[:2200]
+    token_sig,_exp=_pm413.sign_share_link(_share_link_secret(),sid,ttl=86400)
+    base_url=(PUBLIC_APP_URL or "https://gaming-shorts-factory-v79-production.up.railway.app").rstrip("/")
+    video_url=f"{base_url}/share/stream/{token_sig}"
+    create_url=f"https://graph.facebook.com/{META_GRAPH_VERSION}/{ig_id}/media"
+    init_data=urllib.parse.urlencode({"media_type":"REELS","video_url":video_url,"caption":caption,"share_to_feed":"true","access_token":token}).encode("utf-8")
+    req=urllib.request.Request(create_url,data=init_data,method="POST")
+    try:
+        with urllib.request.urlopen(req,timeout=30) as resp:
+            data=json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        err_body=exc.read().decode("utf-8","ignore")
+        try:
+            msg=json.loads(err_body).get("error",{}).get("message","Errore Instagram Reels API")
+        except Exception:
+            msg=err_body[:180] or "Errore container Instagram"
+        raise _pm413.PublishError(f"Instagram: {msg}",code="instagram_api_error")
+    container_id=data.get("id")
+    if not container_id:
+        raise _pm413.PublishError("Instagram: Impossibile creare il container Reels.",code="container_error")
+    status_url=f"https://graph.facebook.com/{META_GRAPH_VERSION}/{container_id}?fields=status_code&access_token={token}"
+    for _ in range(6):
+        time.sleep(3)
+        try:
+            with urllib.request.urlopen(status_url,timeout=15) as sresp:
+                sdata=json.loads(sresp.read().decode("utf-8"))
+                if sdata.get("status_code")=="FINISHED":break
+                elif sdata.get("status_code")=="ERROR":raise _pm413.PublishError("Instagram: Elaborazione video non riuscita.",code="transcode_error")
+        except Exception:pass
+    pub_url=f"https://graph.facebook.com/{META_GRAPH_VERSION}/{ig_id}/media_publish"
+    pub_data=urllib.parse.urlencode({"creation_id":container_id,"access_token":token}).encode("utf-8")
+    req_pub=urllib.request.Request(pub_url,data=pub_data,method="POST")
+    try:
+        with urllib.request.urlopen(req_pub,timeout=30) as resp:
+            pdata=json.loads(resp.read().decode("utf-8"))
+            media_id=pdata.get("id",container_id)
+            return {"id":media_id,"url":"https://www.instagram.com/","privacy":privacy}
+    except Exception as exc:
+        raise _pm413.PublishError(f"Instagram pubblicazione: {str(exc)[:160]}",code="publish_error")
+
+def _facebook_direct_post(sid,video_path,plan,privacy):
+    sc=_social_connection_load(sid,"facebook") or {}
+    token=str(sc.get("access_token") or "")
+    pages=sc.get("pages") or []
+    page_id=""
+    page_token=token
+    if pages and isinstance(pages,list):
+        page_id=str(pages[0].get("id") or "")
+        page_token=str(pages[0].get("access_token") or token)
+    if not page_id:
+        page_id=str(sc.get("facebook_user_id") or "me")
+    if not page_token:
+        raise _pm413.PublishError("Collega Facebook dal Creator Hub prima di pubblicare.",code="needs_connection")
+    caption=str(plan.get("caption") or "")[:5000]
+    token_sig,_exp=_pm413.sign_share_link(_share_link_secret(),sid,ttl=86400)
+    base_url=(PUBLIC_APP_URL or "https://gaming-shorts-factory-v79-production.up.railway.app").rstrip("/")
+    video_url=f"{base_url}/share/stream/{token_sig}"
+    post_url=f"https://graph.facebook.com/{META_GRAPH_VERSION}/{page_id}/videos"
+    form_data=urllib.parse.urlencode({"file_url":video_url,"description":caption,"access_token":page_token}).encode("utf-8")
+    req=urllib.request.Request(post_url,data=form_data,method="POST")
+    try:
+        with urllib.request.urlopen(req,timeout=30) as resp:
+            data=json.loads(resp.read().decode("utf-8"))
+            vid_id=data.get("id","")
+            return {"id":vid_id,"url":f"https://www.facebook.com/{vid_id}" if vid_id else "https://www.facebook.com/","privacy":privacy}
+    except urllib.error.HTTPError as exc:
+        err_body=exc.read().decode("utf-8","ignore")
+        try:
+            msg=json.loads(err_body).get("error",{}).get("message","Errore Facebook API")
+        except Exception:
+            msg=err_body[:180] or "Errore pubblicazione Facebook"
+        raise _pm413.PublishError(f"Facebook: {msg}",code="facebook_api_error")
+
 def _publish_run(sid,job,request,video_path):
     privacy=request["privacy"]
     for platform in request["platforms"]:
@@ -4883,10 +4971,16 @@ def _publish_run(sid,job,request,video_path):
                 token=_youtube_analytics_token(sid)
                 result=_pm413.youtube_upload(str(token.get("token") or token.get("access_token") or ""),str(video_path),plan,privacy)
                 id_type="video_id"
-            else:
+            elif platform=="tiktok":
                 token=_tiktok_analytics_token(sid)
                 result=_pm413.tiktok_direct_post(str(token.get("access_token") or ""),str(video_path),plan,privacy)
                 id_type="publish_id"
+            elif platform=="instagram":
+                result=_instagram_direct_post(sid,str(video_path),plan,privacy)
+                id_type="media_id"
+            elif platform=="facebook":
+                result=_facebook_direct_post(sid,str(video_path),plan,privacy)
+                id_type="video_id"
             _publish_update(sid,job,platform,status="done",url=str(result.get("url") or ""),
                             content_id=str(result.get("id") or ""),privacy=str(result.get("privacy") or ""),
                             private_only=bool(result.get("private_only")),error="")
@@ -5465,10 +5559,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         if clean=="/account":
             sid=_social_sid(self)
-            if not sid:
-                _html(self,400,"Sessione browser non valida.")
-                return
-            _html(self,200,_creator_page(sid))
+            _redirect(self,"/?gsf_page=hub&gsf_section=profile")
             return
         if clean=="/account/logout":
             sid=_social_sid(self)
@@ -5495,10 +5586,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         if clean=="/social-connect":
             sid=_social_sid(self)
-            if not sid:
-                _html(self,400,"Sessione browser non valida.")
-                return
-            _html(self,200,_social_page(sid))
+            _redirect(self,"/?gsf_page=hub&gsf_section=social")
             return
         if clean=="/social-connect/tiktok/start":
             _tiktok_oauth_start(self,_social_sid(self))
