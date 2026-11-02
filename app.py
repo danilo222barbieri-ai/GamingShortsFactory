@@ -11787,10 +11787,11 @@ if GSF_WEB_MODE:
             st.session_state.pop("gsf_v291_engine_profile",None)
             st.session_state.pop("gsf_v291_ai_request",None)
 
-        # Home's Editor CTA selects the existing manual renderer; opening an
-        # AI candidate (which carries an index) preserves its selected recipe.
-        if _v154_event=="open_editor" and _v154_engine=="manual" and "index" not in _gsf_v154_event:
+        # If video is < 15s or Home's Editor CTA was selected, set manual mode.
+        # Opening an AI candidate (carrying an index) preserves its selected recipe.
+        if (_v154_duration < 15 or (_v154_event=="open_editor" and "index" not in _gsf_v154_event)):
             st.session_state["modalita_gsf"]="✋ Manuale"
+            st.session_state["gsf_v154_engine"]="manual"
             st.session_state.pop("gsf_pending_engine_switch_v75",None)
 
         # V412 AI ENGINES: the AI page drives selection, editor hand-off and

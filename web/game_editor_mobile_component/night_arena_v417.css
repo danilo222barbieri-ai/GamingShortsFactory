@@ -277,3 +277,26 @@
   background: #9D82FF;
   box-shadow: 0 0 10px rgba(157, 130, 255, .8);
 }
+
+/* GSF ALIVE 2 — GAME EDITOR LIVING GLOW */
+.editor-app.is-mini .preview-stage {
+  animation: gsfStageGlowAlive 6s ease-in-out infinite!important;
+}
+@keyframes gsfStageGlowAlive {
+  0%,100% { box-shadow: 0 0 0 1px rgba(5, 13, 22, .9), 0 0 24px rgba(39, 174, 243, .35), 0 0 54px rgba(157, 130, 255, .20); }
+  50% { box-shadow: 0 0 0 1px rgba(5, 13, 22, .9), 0 0 38px rgba(39, 174, 243, .55), 0 0 76px rgba(83, 224, 234, .32); }
+}
+.v414-center-play {
+  animation: gsfPlayBtnAlive 4.6s ease-in-out infinite!important;
+}
+@keyframes gsfPlayBtnAlive {
+  0%,100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 20px rgba(39, 174, 243, .35); }
+  50% { transform: translate(-50%, -50%) scale(1.04); box-shadow: 0 0 34px rgba(83, 224, 234, .65); }
+}
+#miniCreateShortButton, .cta-primary {
+  animation: gsfEditorCtaAlive 3.8s ease-in-out infinite!important;
+}
+@keyframes gsfEditorCtaAlive {
+  0%,100% { box-shadow: 0 0 0 1px rgba(94, 214, 160, .4), 0 4px 18px rgba(94, 214, 160, .2); }
+  50% { box-shadow: 0 0 0 2px rgba(94, 214, 160, .75), 0 8px 30px rgba(94, 214, 160, .45); }
+}

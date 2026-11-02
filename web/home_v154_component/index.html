@@ -3690,8 +3690,67 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    }
    replacePending=false;
 
+   const measureDuration=(f)=>new Promise((resolve)=>{
+     try{
+       const v=document.createElement("video");
+       v.preload="metadata";
+       const u=URL.createObjectURL(f);
+       let done=false;
+       const finish=(d)=>{
+         if(done)return;
+         done=true;
+         try{URL.revokeObjectURL(u)}catch(_e){}
+         resolve(Number.isFinite(d)&&d>0?d:null);
+       };
+       v.onloadedmetadata=()=>finish(v.duration);
+       v.onerror=()=>finish(null);
+       setTimeout(()=>finish(null),3500);
+       v.src=u;
+     }catch(_e){resolve(null);}
+   });
+   const durationPromise=measureDuration(file);
+
    uploadBusy=true;gsfAlive("upload.started");setMuralState("uploading");circle.classList.add("busy");rings.classList.remove("uploaded");rings.classList.add("uploading");try{window.parent.postMessage({type:"gsf-upload",state:"running",name:file.name},location.origin)}catch(_e){};status.className="status show";uploadLabel.textContent="CARICAMENTO";uploadHint.textContent="";bar.style.width="1%";
-   try{const caps=await capabilities();if(caps&&caps.bucket===true)await bucketUpload(file,caps);else await fallbackUpload(file);bar.style.width="100%";statusText.textContent="Video caricato";setLoaded(true);gsfAlive("upload.completed");circle.classList.remove("busy");uploadBusy=false;try{window.parent.postMessage({type:"gsf-upload",state:"done",name:file.name},location.origin)}catch(_e){};value({event:"upload_complete",duration,engine});}
+   try{
+     const caps=await capabilities();
+     if(caps&&caps.bucket===true)await bucketUpload(file,caps);
+     else await fallbackUpload(file);
+     bar.style.width="100%";
+     statusText.textContent="Video caricato";
+     setLoaded(true);
+     circle.classList.remove("busy");
+     uploadBusy=false;
+
+     let actualSec=await durationPromise;
+     if(!actualSec&&Number.isFinite(Number(duration)))actualSec=Number(duration);
+     const isUnder15=actualSec!==null&&actualSec<15;
+
+     gsfAlive("upload.completed",{duration:actualSec});
+     try{
+       window.parent.postMessage({
+         type:"gsf-upload",
+         state:"done",
+         name:file.name,
+         duration:actualSec
+       },location.origin);
+     }catch(_e){}
+
+     if(isUnder15){
+       const sStr=Math.round(actualSec*10)/10;
+       parentToast("Gameplay pronto ("+sStr+"s)","Video < 15s · Apertura Game Editor...","success");
+       setEngine("manual");
+       gsfAlive("editor.opened",{duration:actualSec,reason:"video_under_15s"});
+       shellNav("editor",{duration:actualSec,engine:"manual"});
+       value({event:"open_editor",duration:actualSec,engine:"manual"});
+     }else if(actualSec!==null&&actualSec>=15){
+       const sStr=Math.round(actualSec);
+       parentToast("Gameplay pronto ("+sStr+"s)","Durata >= 15s · Cerco momenti con IA...","success");
+       shellNav("ai",{duration:actualSec,engine});
+       value({event:"open_ai",duration:actualSec,engine});
+     }else{
+       value({event:"upload_complete",duration,engine});
+     }
+   }
    catch(e){setMuralState(loaded?"ready":"idle");rings.classList.remove("uploading");if(loaded)rings.classList.add("uploaded");status.className="status show error";statusText.textContent="Upload interrotto — riprova";gsfAlive("failure",{job:"upload",message:"Upload interrotto. Riprova quando vuoi."});bar.style.width="0";circle.classList.remove("busy");uploadBusy=false;try{window.parent.postMessage({type:"gsf-upload",state:"error",name:file.name},location.origin)}catch(_e){}}
  });
  

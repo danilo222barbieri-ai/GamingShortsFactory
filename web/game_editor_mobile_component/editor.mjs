@@ -889,3 +889,7 @@ window.GSFGameEditor2026 = {
 renderState(history.value);
 showMediaUnavailable("Gameplay in preparazione");
 postToShell({ type: "GSF_GAME_EDITOR_READY" });
+try {
+  window.parent?.postMessage?.({ type: "gsf-alive", event: "editor.opened" }, location.origin);
+  window.top?.GSFAlive?.emit?.("editor.opened");
+} catch (_e) {}

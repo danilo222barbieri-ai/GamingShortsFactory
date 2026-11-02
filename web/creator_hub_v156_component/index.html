@@ -306,6 +306,16 @@ a.row{color:inherit;text-decoration:none}
  -webkit-mask:none}
 .empty:has(.na-cta){position:relative}
 .empty:has(.na-cta)::after{content:"";position:absolute;left:36px;top:36px;width:0;height:0;border-left:13px solid #79D2FF;border-top:8px solid transparent;border-bottom:8px solid transparent;filter:drop-shadow(0 0 6px rgba(121,210,255,.8))}
+/* GSF ALIVE 2 — CREATOR HUB VIBRANCE & LIVING ACCENTS */
+#hub{background:radial-gradient(circle at 50% 12%,rgba(39,174,243,.12) 0%,rgba(157,130,255,.06) 40%,transparent 70%);animation:gsfHubAuraAlive 8s ease-in-out infinite!important}
+@keyframes gsfHubAuraAlive{0%,100%{opacity:.82}50%{opacity:1}}
+.avatar{animation:gsfAvatarAlive 5s ease-in-out infinite!important}
+@keyframes gsfAvatarAlive{0%,100%{box-shadow:0 0 0 3px var(--na-bg),0 0 0 5px #27AEF3,0 0 22px rgba(39,174,243,.45)}50%{box-shadow:0 0 0 3px var(--na-bg),0 0 0 6px #53E0EA,0 0 34px rgba(83,224,234,.65)}}
+.socialDot.connected{animation:gsfSocialBeacon 3s ease-in-out infinite!important}
+@keyframes gsfSocialBeacon{0%,100%{box-shadow:var(--na-glow-short)}50%{box-shadow:0 0 28px rgba(94,214,160,.7),0 0 0 2px rgba(94,214,160,.4)}}
+.counter::after{animation:gsfCounterShimmer 4.5s ease-in-out infinite!important}
+@keyframes gsfCounterShimmer{0%,100%{opacity:.75;transform:scaleX(.96)}50%{opacity:1;transform:scaleX(1.04)}}
+
 /* GSF_NIGHT_ARENA_PAGE:END */
 
 #sourceLibrary{display:grid;gap:12px;margin-top:12px;min-width:0}#sourceLibrary>.card{padding:14px}.sourceCard{display:grid;gap:8px;min-width:0;overflow:hidden}.sourceThumb{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px}.sourceCard small{color:var(--muted,#9fb7ca)}[data-source-provider][aria-pressed=true],[data-source-folder][aria-pressed=true]{border-color:#79d2ff;color:#eaf6ff}

@@ -60,31 +60,27 @@ def _render_v428_uploader_handoff_reset_bridge():
         const replaceConfirm=doc.getElementById('replaceConfirm');
         if(!circle||!rings||!icon||!label)return;
 
-        // A new upload must never show the previous gameplay behind its progress.
-        clearStaleMedia(doc,circle,rings);
         const busy=circle.classList.contains('busy')||rings.classList.contains('uploading');
         if(busy){
           circle.removeAttribute('data-gsf-uploader-idle');
           return;
         }
 
-        const hadLoadedPresentation=
-          circle.classList.contains('loaded')||
-          rings.classList.contains('uploaded')||
-          icon.classList.contains('loadedCheck')||
-          circle.getAttribute('data-gsf-uploader-idle')==='true';
-        if(!hadLoadedPresentation)return;
-
-        // Source stays loaded internally. Only the uploader presentation returns
-        // to idle, so the three Home actions still operate on the current video.
+        // GSF_V428_UPLOADER_HANDOFF_RESET:
+        // Source readiness stays intact. Mark uploader idle so safe replacement works,
+        // but preserve loadedCheck presentation so user sees their confirmed video.
         circle.setAttribute('data-gsf-uploader-idle','true');
-        circle.classList.remove('loaded','done');
-        rings.classList.remove('uploaded');
-        icon.classList.remove('loadedCheck');
-        icon.innerHTML=CLOUD;
-        label.innerHTML='CARICA<br>IL TUO GAMEPLAY';
-        if(hint)hint.textContent='';
         if(replaceConfirm)replaceConfirm.setAttribute('data-gsf-safe-replace','true');
+
+        if(circle.getAttribute('data-gsf-reset-requested')==='true'){
+          clearStaleMedia(doc,circle,rings);
+          circle.classList.remove('loaded','done');
+          rings.classList.remove('uploaded');
+          icon.classList.remove('loadedCheck');
+          icon.innerHTML=CLOUD;
+          label.innerHTML='CARICA<br>IL TUO GAMEPLAY';
+          if(hint)hint.textContent='';
+        }
 
         // Successful handoff is complete; progress belongs only to the upload
         // that is currently running. Preserve an actual error message.

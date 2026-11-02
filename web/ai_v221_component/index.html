@@ -336,6 +336,23 @@ html,body{background:var(--na-bg)}
 .short.skel{cursor:default}
 .short.skel .frame{border-color:var(--na-edge);background:linear-gradient(100deg,rgba(255,255,255,.03) 20%,rgba(157,130,255,.22) 45%,rgba(83,224,234,.18) 55%,rgba(255,255,255,.03) 80%) var(--na-deep);background-size:200% 100%;animation:naShimmer 1.6s linear infinite;animation-delay:calc(var(--i,0) * .2s)}
 .short.skel .frame:after{display:none}
+/* GSF ALIVE 2 — NIGHT ARENA VIBRANCE & REACTIVE MOTION */
+#ai404::before{content:"";position:absolute;inset:-20%;background:radial-gradient(circle at 50% 25%,rgba(157,130,255,.14) 0%,rgba(39,174,243,.10) 35%,transparent 68%);pointer-events:none;z-index:0;animation:gsfAiAuraAlive 9s ease-in-out infinite!important}
+@keyframes gsfAiAuraAlive{0%,100%{opacity:.72;transform:scale(.98)}50%{opacity:1;transform:scale(1.02)}}
+.orb{animation:gsfAiOrbAlive 5.2s ease-in-out infinite!important}
+@keyframes gsfAiOrbAlive{0%,100%{transform:scale(1);box-shadow:0 0 0 4px rgba(5,13,22,.9),0 0 0 6px rgba(39,174,243,.55),0 0 40px rgba(39,174,243,.45),0 0 90px rgba(157,130,255,.25)}50%{transform:scale(1.018);box-shadow:0 0 0 4px rgba(5,13,22,.9),0 0 7px rgba(157,130,255,.7),0 0 55px rgba(157,130,255,.55),0 0 110px rgba(83,224,234,.35)}}
+.bub{animation:gsfBubFloatAlive 6s ease-in-out infinite!important}
+.eng:nth-child(2) .bub{animation-delay:-1.5s!important}
+.eng:nth-child(3) .bub{animation-delay:-3.0s!important}
+.eng:nth-child(4) .bub{animation-delay:-4.5s!important}
+@keyframes gsfBubFloatAlive{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.short.is-selected .frame{animation:gsfMomentSelectedAlive 3.8s ease-in-out infinite!important}
+@keyframes gsfMomentSelectedAlive{0%,100%{box-shadow:0 0 0 3px rgba(157,130,255,.6),0 0 38px rgba(157,130,255,.45)}50%{box-shadow:0 0 0 4px rgba(121,210,255,.8),0 0 54px rgba(83,224,234,.6)}}
+.act.pub{animation:gsfPubCtaAlive 4s ease-in-out infinite!important}
+@keyframes gsfPubCtaAlive{0%,100%{box-shadow:0 0 0 1px rgba(94,214,160,.45),0 4px 18px rgba(94,214,160,.2)}50%{box-shadow:0 0 0 2px rgba(94,214,160,.75),0 8px 28px rgba(94,214,160,.45)}}
+.pill.ok .dot{animation:gsfMintBeacon 2.2s ease-in-out infinite!important}
+@keyframes gsfMintBeacon{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.25);opacity:1;box-shadow:0 0 8px #5ED6A0}}
+
 /* GSF_NIGHT_ARENA_PAGE:END */
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&amp;family=Nunito+Sans:opsz,wght@6..12,400..800&amp;display=swap" data-gsf-night-arena-font>

@@ -287,6 +287,16 @@ input::placeholder,textarea::placeholder{color:var(--na-text-faint)}
 @keyframes naPen{from{clip-path:inset(0 100% 0 0);opacity:.2}to{clip-path:inset(0 0 0 0);opacity:1}}
 .m2,.m3,.m4{display:none!important}
 .m1{animation:naPen 1.1s cubic-bezier(.3,.7,.2,1) both}
+/* GSF ALIVE 2 — SHARE / PUBBLICA LIVING ENERGY */
+.r2{animation:gsfShareRingAlive 5s ease-in-out infinite!important}
+@keyframes gsfShareRingAlive{0%,100%{transform:scale(1);box-shadow:0 0 30px rgba(39,174,243,.25)}50%{transform:scale(1.02);box-shadow:0 0 45px rgba(83,224,234,.45)}}
+.core:not(:disabled){animation:gsfShareCoreAlive 5.5s ease-in-out infinite!important}
+@keyframes gsfShareCoreAlive{0%,100%{box-shadow:0 0 0 4px rgba(5,13,22,.9),0 0 0 6px rgba(39,174,243,.55),0 0 40px rgba(39,174,243,.45),0 0 90px rgba(94,214,160,.2),inset 0 1px 0 rgba(255,255,255,.12)}50%{box-shadow:0 0 0 4px rgba(5,13,22,.9),0 0 0 7px rgba(94,214,160,.75),0 0 55px rgba(94,214,160,.55),0 0 110px rgba(83,224,234,.35),inset 0 1px 0 rgba(255,255,255,.2)}}
+.plat[aria-pressed="true"]{animation:gsfPlatPulse 3s ease-in-out infinite!important}
+@keyframes gsfPlatPulse{0%,100%{box-shadow:0 0 0 3px rgba(5,13,22,.9),0 0 0 5px #27AEF3,0 0 26px rgba(39,174,243,.6)}50%{box-shadow:0 0 0 3px rgba(5,13,22,.9),0 0 0 6px #53E0EA,0 0 36px rgba(83,224,234,.8)}}
+.scribble{animation:gsfScribbleAlive 4.8s ease-in-out infinite!important}
+@keyframes gsfScribbleAlive{0%,100%{transform:rotate(-0.5deg);opacity:.9}50%{transform:rotate(0.5deg);opacity:1}}
+
 /* GSF_NIGHT_ARENA_PAGE:END */
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&amp;family=Nunito+Sans:opsz,wght@6..12,400..800&amp;display=swap" data-gsf-night-arena-font>
