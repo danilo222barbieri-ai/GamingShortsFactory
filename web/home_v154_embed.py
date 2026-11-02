@@ -243,7 +243,10 @@ def render_home_v154(*, loaded=False, duration=15, engine="", height=900, key="g
         duration=int(duration or 15),
         engine=str(engine or ""),
         height=int(height),
-        key=str(key),
+        # Source readiness changes the document during upload completion. Give
+        # Streamlit a fresh component lifecycle so its receiver registry cannot
+        # retain the previous iframe window (which drops render AND user events).
+        key=f"{key}:loaded={int(bool(loaded))}",
         default=None,
     )
     _render_v428_uploader_handoff_reset_bridge()

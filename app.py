@@ -3701,6 +3701,10 @@ def _gsf_render_core(source_path, output_path, start, duration, fmt='9:16 Short'
                     print('GSF_FINAL_RENDER_TIMEOUT', f'encoder={encoder}', f'elapsed={_diag_elapsed:.2f}', flush=True)
                 else:
                     print('GSF_FINAL_RENDER_EXCEPTION', f'encoder={encoder}', 'error=' + repr(str(_gsf_render_error)), flush=True)
+                    # Capacity is shared by all encoders: retrying a different
+                    # codec would only restart the same queue deadline.
+                    last_error = str(_gsf_render_error)
+                    break
                 last_error = f'Render {encoder} interrotto: tempo massimo superato.'
                 continue
             if r.returncode == 0 and os.path.exists(output_path) and (os.path.getsize(output_path) > 0):

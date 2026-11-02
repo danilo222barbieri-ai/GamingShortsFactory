@@ -49,7 +49,7 @@ def _encode_tail(has_audio=True):
         "-pix_fmt","yuv420p",
         "-profile:v","high",
         "-level","4.2",
-        "-threads","2",
+        "-threads","1" if os.environ.get("GSF_LOW_MEMORY_WEB","0").strip().lower() in {"1","true","yes","on"} else "2",
     ]
     if has_audio:
         args += ["-c:a","aac","-b:a","192k","-ar","48000","-ac","2"]
@@ -58,6 +58,15 @@ def _encode_tail(has_audio=True):
 
 
 def _run(cmd,timeout=180):
+    if os.environ.get("GSF_LOW_MEMORY_WEB","0").strip().lower() in {"1","true","yes","on"}:
+        # Direct /usr/bin calls bypass the launcher. Bound decoder/filter pools
+        # before inputs as well as encoder threads, retaining the same graph/CRF.
+        bounded=[cmd[0],"-filter_threads","1","-filter_complex_threads","1"]
+        for arg in cmd[1:]:
+            if arg=="-i":
+                bounded += ["-threads","1"]
+            bounded.append(arg)
+        cmd=bounded
     with _gsf_render_slot_v293("cinematic-v125"):
         proc=subprocess.run(
             cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,

@@ -1,0 +1,164 @@
+"""Real post-upload state delivery; no request/result mocking."""
+import os
+import unittest
+import time
+import uuid
+from urllib.parse import urlsplit
+from visual.gsf_navigation_stress import MEDIA_FIXTURE
+
+
+@unittest.skipUnless(os.environ.get('GSF_BASE_URL'), 'requires running GSF_BASE_URL')
+class UploadHandoff(unittest.TestCase):
+    def check_viewport(self, width, height):
+        from playwright.sync_api import sync_playwright, expect
+        base = os.environ['GSF_BASE_URL'].rstrip('/')
+        with sync_playwright() as p:
+            engine = getattr(p, os.environ.get('GSF_BROWSER', 'webkit'))
+            options = {'executable_path': os.environ.get('GSF_CHROMIUM', '/usr/bin/chromium'),
+                       'args': ['--no-sandbox']} if engine.name == 'chromium' else {}
+            if os.environ.get('GSF_BROWSER_PROXY'):
+                options['proxy'] = {'server': os.environ['GSF_BROWSER_PROXY']}
+            browser = engine.launch(**options)
+            try:
+                context = browser.new_context(**{**p.devices['iPhone 13'],
+                                                 'viewport': {'width': width, 'height': height}})
+                if base.startswith('http://'):
+                    context.add_cookies([{'name': 'gsf_sid', 'value': 'handoff'+uuid.uuid4().hex[:24], 'url': base+'/'}])
+                page = context.new_page()
+                errors = []
+                page.on('pageerror', lambda e: errors.append(str(e)))
+                page.on('response', lambda r: errors.append(f'HTTP {r.status} {urlsplit(r.url).path}') if r.status >= 500 else None)
+                page.goto(base, wait_until='domcontentloaded', timeout=60000)
+                page.wait_for_function("()=>[...document.querySelectorAll('iframe')].some(f=>{try{return f.contentWindow.__GSF_V333_CTA_TOUCH===true}catch(_){return false}})", timeout=60000)
+                home = page.frame_locator('iframe[title*="gsf_home_v154"]')
+                home.locator('#pick').set_input_files(files=[{'name': 'handoff.mp4', 'mimeType': 'video/mp4', 'buffer': MEDIA_FIXTURE}])
+                # The approved uploader returns to idle after success. Its old
+                # transient .rings.uploaded class is deliberately not the contract.
+                home.locator('#circle[data-gsf-uploader-idle="true"]').wait_for(timeout=60000)
+                home.locator('.feature[data-action="ai"]').click()
+                ai = page.frame_locator('#gsf-ai-overlay-v221 iframe')
+                expect(ai.locator('#createAi')).to_be_enabled(timeout=20000)
+                # Readiness alone missed a stale Streamlit window registry: it
+                # could paint an enabled CTA while silently dropping create_ai.
+                page.evaluate("""()=>window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data?.type==='GSF_AI_UI'&&e.data.action==='create')window.__gsfTestRequest=e.data.request_id})""")
+                ai.locator('#createAi').click()
+                page.wait_for_function("""()=>{const d=document.querySelector('#gsf-ai-overlay-v221 iframe')?.contentDocument;return !!d&&(d.querySelector('[data-view="moments"]')?.classList.contains('is-active')||d.querySelector('[data-view="engines"]')?.classList.contains('failed'))}""", polling=100, timeout=120000)
+                request_id = page.evaluate('()=>window.__gsfTestRequest')
+                # A whole-source moment is intentionally usable while the scan
+                # continues. Wait for this request's actual backend terminal state.
+                deadline = time.monotonic()+120
+                while True:
+                    result = page.evaluate("()=>fetch('/ai/results',{cache:'no-store',credentials:'same-origin'}).then(r=>r.json())")
+                    if result.get('request_id')==request_id and result.get('status') in ('success','failed'):
+                        break
+                    if time.monotonic()>=deadline:
+                        self.fail('Backend did not terminate the current AI request')
+                    page.wait_for_timeout(100)
+                self.assertTrue(request_id)
+                self.assertEqual(result.get('request_id'), request_id)
+                self.assertIn(result.get('status'), ('success', 'failed'))
+                self.assertFalse(errors, errors)
+            finally:
+                browser.close()
+
+    def test_375_667(self):
+        self.check_viewport(375, 667)
+
+    def test_390_844(self):
+        self.check_viewport(390, 844)
+
+    def test_393_852(self):
+        self.check_viewport(393, 852)
+
+    def test_430_932(self):
+        self.check_viewport(430, 932)
+
+
+def test_mobile_webkit_remains_a_blocking_release_gate():
+    from pathlib import Path
+    import re
+    root = Path(__file__).resolve().parents[1]
+    workflow = (root / '.github/workflows/v397-production-gate.yml').read_text()
+    block = re.search(r"      - name: (?:Extended Mobile WebKit diagnostics|Mobile WebKit interaction gate)\n([\s\S]*?)(?=      - name:)", workflow)
+    assert block, 'Mobile WebKit coverage must remain in Production Gate'
+    assert 'continue-on-error' not in block.group(1), 'Mobile regressions must prevent promotion'
+    assert 'python tests/visual/gsf_visual_check.py' in block.group(1)
+
+
+def test_owned_home_media_stays_retired_when_its_document_is_replaced():
+    from types import SimpleNamespace
+    from visual.gsf_navigation_stress import request_surface_is_inactive, request_failure_is_critical
+    target = ['home']
+    def unavailable_document(*args):
+        raise RuntimeError('Execution context was destroyed')
+    frame = SimpleNamespace(is_detached=lambda: False, evaluate=unavailable_document,
+                            page=SimpleNamespace(evaluate=lambda expression: target[0]))
+    request = SimpleNamespace(resource_type='media', failure='Load request cancelled',
+                              url='https://gsf.test/editor-media/current?na=123',
+                              frame=frame, _gsf_media_surface='home')
+    assert not request_surface_is_inactive(request), 'An active Home preview must remain protected'
+    target[0] = 'editor'
+    assert request_surface_is_inactive(request), 'The authoritative route retired the proven Home owner even if its old document is unreadable'
+    assert not request_failure_is_critical(request, inactive_surface=True, base_url='https://gsf.test')
+    request._gsf_media_surface = None
+    assert not request_surface_is_inactive(request), 'Missing ownership proof must fail closed'
+    request._gsf_media_surface = 'editor'
+    assert not request_surface_is_inactive(request), 'The active Editor video must remain protected'
+    request._gsf_media_surface = 'home'
+    for missing in (None, '', 'not-a-route'):
+        target[0] = missing
+        assert not request_surface_is_inactive(request), 'Missing or unknown route cannot prove departure'
+    target[0] = 'editor'
+    def unavailable_route(expression):
+        raise RuntimeError('Top-level context unavailable')
+    frame.page.evaluate = unavailable_route
+    assert not request_surface_is_inactive(request), 'Unreadable route cannot prove departure'
+    request.failure = 'Connection reset'
+    assert request_failure_is_critical(request, inactive_surface=True, base_url='https://gsf.test')
+    request.failure = 'Load request cancelled'
+    request.url = 'https://other.test/editor-media/current?na=123'
+    assert request_failure_is_critical(request, inactive_surface=True, base_url='https://gsf.test')
+
+
+@unittest.skipUnless(os.environ.get('GSF_BROWSER'), 'request ownership capture runs in the blocking browser gate')
+class MediaRequestOwnershipCapture(unittest.TestCase):
+    def test_only_an_unambiguous_same_frame_home_video_claims_home_ownership(self):
+        from playwright.sync_api import sync_playwright
+        from visual.gsf_navigation_stress import INSTRUMENT, install_request_ownership
+        with sync_playwright() as p:
+            engine = getattr(p, os.environ.get('GSF_BROWSER', 'webkit'))
+            options = {'executable_path': os.environ.get('GSF_CHROMIUM', '/usr/bin/chromium'),
+                       'args': ['--no-sandbox']} if engine.name == 'chromium' else {}
+            browser = engine.launch(**options)
+            try:
+                cases = [
+                    ('home', '<div id="home154"><video muted autoplay preload="auto" src="/media.mp4"></video></div>', 'home'),
+                    ('editor', '<video id="gameplayVideo" muted autoplay preload="auto" src="/media.mp4"></video>', None),
+                    ('ambiguous', '<div id="home154"><video muted autoplay></video></div><video muted autoplay></video>', None),
+                    ('unmatched', '<p>No document-owned video</p>', None),
+                ]
+                for name, html, expected in cases:
+                    with self.subTest(owner=name):
+                        page = browser.new_page()
+                        page.add_init_script(INSTRUMENT)
+                        install_request_ownership(page)
+                        captured = []
+                        page.on('request', lambda request: captured.append(request) if request.url.endswith('/media.mp4') else None)
+                        def serve(route):
+                            if route.request.url.endswith('/media.mp4'):
+                                return  # Hold the real media request while inspecting its captured owner.
+                            route.fulfill(content_type='text/html', body=html)
+                        page.route('**/*', serve)
+                        page.goto('http://capture.gsf.test/', wait_until='domcontentloaded')
+                        if name == 'ambiguous':
+                            page.evaluate("()=>{for(const v of document.querySelectorAll('video')){v.src='/media.mp4';v.load()}}")
+                        if name == 'unmatched':
+                            page.evaluate("()=>{const v=document.createElement('video');v.src='/media.mp4';v.preload='auto';v.load();window.detachedMedia=v}")
+                        deadline = time.monotonic()+5
+                        while not captured and time.monotonic()<deadline:
+                            page.wait_for_timeout(20)
+                        self.assertTrue(captured, 'The browser must emit a real media request')
+                        self.assertEqual(getattr(captured[0], '_gsf_media_surface', None), expected)
+                        page.close()
+            finally:
+                browser.close()

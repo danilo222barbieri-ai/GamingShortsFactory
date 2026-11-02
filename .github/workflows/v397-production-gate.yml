@@ -135,13 +135,21 @@ jobs:
             web/auto_highlights/engine_v129.py \
             web/game_brain_v112.py
 
+      - name: Install runtime contract dependencies
+        timeout-minutes: 8
+        run: |
+          # The runner Azure mirror stalled in two measured runs. Use the
+          # official Ubuntu archive over HTTPS; retain bounded retries/timeouts.
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i "s|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g" /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 install -y --no-install-recommends ffmpeg
+          python -m pip install --disable-pip-version-check cryptography==50.0.1
+
       - name: OAuth session, signature and isolation contracts
         timeout-minutes: 3
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends ffmpeg
-          python -m pip install --disable-pip-version-check cryptography==50.0.1
-          python -m unittest discover -s tests -p test_social_oauth_v421.py
+        run: python -m unittest discover -s tests -p test_social_oauth_v421.py
 
       - name: Build worker image
         timeout-minutes: 15
@@ -168,7 +176,7 @@ jobs:
 
       - name: Start production frontend image
         run: |
-          docker run -d --name gsf-production-gate \
+          docker run -d --name gsf-production-gate --memory=1g --memory-swap=1g \
             -e PORT=8080 \
             -e GSF_WEB_MODE=1 \
             -e GSF_LOW_MEMORY_WEB=1 \
@@ -214,14 +222,13 @@ jobs:
           # the running container must not have rewritten any canonical file
           docker exec gsf-production-gate python /app/gsf_ui_manifest.py verify
 
-      - name: Extended Mobile WebKit diagnostics
-        continue-on-error: true
+      - name: Mobile WebKit interaction gate
         timeout-minutes: 25
         env:
           BASE: http://127.0.0.1:18080
           CYCLES: '2'
-          # Keep every route sequence and leak assertion for diagnosis, but do not
-          # block production on non-critical Safari/WebKit regressions.
+          # Mobile interactions and lifecycle regressions block release; keep
+          # every route sequence and leak assertion.
           GSF_NAV_CYCLES: '3'
           OUT_DIR: /tmp/gsf-mobile-webkit
         run: |
@@ -235,6 +242,20 @@ jobs:
           GSF_BROWSER=webkit python -m unittest discover -s tests -p test_ai_failure_recovery_v425.py
           GSF_BROWSER=webkit python -m unittest discover -s tests -p test_feature_freeze_mobile.py
           GSF_BROWSER=webkit python -m unittest discover -s tests -p test_publish_recovery_v426.py
+
+      - name: Frontend 1 GiB memory health
+        timeout-minutes: 1
+        run: |
+          docker exec -i gsf-production-gate python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('/sys/fs/cgroup')
+          events={key:int(value) for key,value in (line.split() for line in (root/'memory.events').read_text().splitlines())}
+          metrics={'limit_bytes':int((root/'memory.max').read_text()),'peak_bytes':int((root/'memory.peak').read_text()),'events':events}
+          print(json.dumps(metrics),flush=True)
+          assert metrics['limit_bytes']==1024**3, 'Frontend must be tested at the Railway 1GiB budget'
+          assert events.get('oom',0)==0 and events.get('oom_kill',0)==0, 'An OOM-killed child must block promotion even if health stays green'
+          PY
 
       - name: Upload mobile WebKit evidence
         if: always()

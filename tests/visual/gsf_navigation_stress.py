@@ -54,6 +54,16 @@ def request_surface_is_inactive(request):
     if request.resource_type not in ('media','other','fetch'):return False
     owner=getattr(request,'_gsf_fetch_owner',None) or getattr(request,'_gsf_media_owner',None)
     if owner and owner[0] in owner[1]:return True
+    # The frame can already contain a replacement document when WebKit reports
+    # cancellation. Only immutable ownership captured from its actual Home video
+    # may use the persistent top-level navigation registry as departure proof.
+    if getattr(request,'_gsf_media_surface',None)=='home':
+        try:
+            target=request.frame.page.evaluate("()=>window.GSFNavigation?.snapshot()?.target")
+            if isinstance(target,str) and target in ('hub','ai','editor','short','social','account','profile','projects','live'):
+                print('PROVEN RETIRED HOME MEDIA route='+target,flush=True)
+                return True
+        except Exception:pass  # Missing authoritative route is not retirement.
     if owner and request.resource_type in ('media','other','fetch') and request.failure in ('Load request cancelled','net::ERR_ABORTED'):
         for _ in range(5):
             try:request.frame.page.wait_for_timeout(20)
@@ -180,11 +190,13 @@ def install_request_ownership(page):
                 token=request.frame.evaluate("url=>{const row=window.__gsfFetchOwners?.get(url)?.find(row=>!row.claimed);if(!row)return null;row.claimed=true;return row.token}",request.url)
                 if token:request._gsf_fetch_owner=(token,suspended)
             elif request.resource_type in ('media','other'):
-                token=request.frame.evaluate("url=>[...document.querySelectorAll('video')].some(v=>v.src===url||v.currentSrc===url)?window.__gsfDocumentToken:null",request.url)
+                proof=request.frame.evaluate("url=>{const matches=[...document.querySelectorAll('video')].filter(v=>v.src===url||v.currentSrc===url);if(matches.length!==1)return null;return {document:window.__gsfDocumentToken,surface:matches[0].closest('#home154')?'home':null}}",request.url)
+                token=proof.get('document') if isinstance(proof,dict) else None
                 if token:
                     retire_changed_document(request.frame,token)
                     identity=token+':media:'+str(next(media_sequence))
                     request._gsf_media_owner=(identity,retired)
+                    request._gsf_media_surface=proof.get('surface')
                     documents=frame_documents.setdefault(request.frame,{})
                     documents[identity]=token
                     while len(documents)>128:documents.pop(next(iter(documents)))
@@ -273,10 +285,12 @@ def browser_page(mobile=True):
             # emits upload_complete so the app reruns and materializes the source.
             home=next(f for f in page.frames if f.evaluate("()=>{try{return window.__GSF_V333_CTA_TOUCH===true}catch(_){return false}}"))
             home.set_input_files('#pick',files=[{'name':'stability.mp4','mimeType':'video/mp4','buffer':MEDIA_FIXTURE}])
+            # The approved uploader resets to idle after handoff; uploaded rings
+            # are transient presentation, not a stable completion predicate.
             # Upload completion triggers a real Streamlit rerun. Warm-up must
             # measure the loaded app, including its finite widget hotkeys.
             try:
-                page.wait_for_function("()=>[...document.querySelectorAll('iframe')].some(f=>{try{return f.contentWindow.__GSF_V333_CTA_TOUCH===true&&!!f.contentDocument.querySelector('.rings.uploaded')}catch(_){return false}})",timeout=120000)
+                page.wait_for_function("()=>[...document.querySelectorAll('iframe')].some(f=>{try{return f.contentWindow.__GSF_V333_CTA_TOUCH===true&&!!f.contentDocument.querySelector('#circle[data-gsf-uploader-idle=\"true\"]')}catch(_){return false}})",timeout=120000)
             except Exception as exc:
                 # Make the setup failure diagnosable from the gate annotations.
                 state=page.evaluate("""()=>{const app=document.querySelector('[data-testid=stApp]');const home=[...document.querySelectorAll('iframe')].find(f=>{try{return f.contentWindow.__GSF_V333_CTA_TOUCH===true}catch(_){return false}});let h={};try{const d=home.contentDocument;h={rings:d.querySelector('.rings')?.className,circle:d.querySelector('#circle')?.className,status:d.querySelector('#statusText')?.textContent,frameSrc:home.getAttribute('src')?.slice(0,80),parentIsTop:home.contentWindow.parent===window}}catch(e){h={err:String(e)}};return {script:app?.getAttribute('data-test-script-state'),exceptions:[...document.querySelectorAll('[data-testid=stException],.stException')].map(e=>e.innerText.slice(0,400)),alerts:[...document.querySelectorAll('[data-testid=stAlert]')].map(e=>e.innerText.slice(0,200)),home:h,frames:[...document.querySelectorAll('iframe')].map(f=>(f.title||'')+'|'+String(f.getAttribute('src')||'').slice(0,60))}}""")

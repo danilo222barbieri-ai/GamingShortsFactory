@@ -21,32 +21,36 @@ def _function_source(path: str, name: str) -> str:
     return ast.get_source_segment(text, node) or ""
 
 
-def test_home_mobile_frame_stays_between_global_header_and_gamebar():
-    embed = _source("web/home_v154_embed.py")
+def test_restored_home_keeps_full_viewport_and_original_gamebar_reserve():
+    embed = _function_source("web/home_v154_embed.py", "render_home_v154")
+    home = _source("web/home_v154_component/index.html")
 
-    assert "GSF_V429_HOME_SHELL_BOUNDS" in embed
-    assert "top:var(--gsf-shell-content-top,44px) !important;" in embed
-    assert "bottom:var(--gsf-shell-content-bottom,112px) !important;" in embed
-    assert "height:auto !important;" in embed
-    assert "height:100% !important;" in embed
-    assert "min-height:0 !important;" in embed
+    # V429 clipped the approved fullscreen Home. Protect its deliberate removal,
+    # plus the original internal reserve that keeps action cards above Game Bar.
+    assert "GSF_V429_HOME_SHELL_BOUNDS" not in embed
+    assert "position:fixed !important;" in embed
+    assert "inset:0 !important;" in embed
+    assert "height:100dvh !important;" in embed
+    assert "GSF_HOME_SHELL_FIT" in home
+    assert "const need=Math.max(68" in home
+    assert "GSF_V428_GLOBAL_GAMEBAR_OWNS_NAV" not in home
 
 
-def test_notifications_use_one_compact_event_surface_on_mobile():
+def test_notifications_keep_one_parent_owned_bounded_event_surface():
+    client = _function_source("web/direct_upload_server.py", "_push_client_bytes")
     bridge = _function_source(
-        "web/home_v154_embed.py",
-        "_render_v428_uploader_handoff_reset_bridge",
+        "web/home_v154_embed.py", "_render_v428_uploader_handoff_reset_bridge",
     )
 
-    assert "GSF_V429_COMPACT_NOTIFICATIONS" in bridge
-    assert "width:min(300px,calc(100vw - 28px))!important" in bridge
-    assert "min-height:48px!important" in bridge
-    assert "grid-template-columns:20px minmax(0,1fr) 20px!important" in bridge
-    assert "font-size:14px!important" in bridge
-    assert "font-size:12px!important" in bridge
-
-    # V418 may keep its guidance whispers, but event notifications have one owner.
-    assert "GSF_V429_SINGLE_EVENT_NOTIFICATIONS" in bridge
-    assert "moment.selected" in bridge
-    assert "recovered" in bridge
-    assert "originalAlive.call(notify,state)" in bridge
+    # The uploader bridge is behavior-only; notification layout belongs to the
+    # existing global service, not the retired V429 local CSS/Alive adapter.
+    assert "GSF_V429_COMPACT_NOTIFICATIONS" not in bridge
+    assert "GSF_V429_SINGLE_EVENT_NOTIFICATIONS" not in bridge
+    assert "UI.GSFNotify&&UI.GSFNotify.continuityVersion===1" in client
+    assert "host.id='gsf-site-toast-stack'" in client
+    assert "records.size>=8" in client
+    assert "filter(r=>r.el).length<2" in client
+    assert "aliveSeen.get(job)===stamp" in client
+    assert "upsert('alive:'+job" in client
+    assert 'if(!window.GSFNotify.handles("upload"))' in client
+    assert 'if(!window.GSFNotify.handles("render"))' in client
