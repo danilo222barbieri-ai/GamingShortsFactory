@@ -12505,7 +12505,10 @@ def _gsf_v106_run_render_locked(cmd,timeout,encoder="",fmt="",duration=0.0):
                     _gsf_stable=_gsf_media/"gaming_short_finale_share.mp4"
                     _job_file=_gsf_root/_gsf_sid/"render_job.json"
                     _gsf_lock_handle=open(_gsf_root/_gsf_sid/"final_render.lock","a+")
-                    __import__("fcntl").flock(_gsf_lock_handle.fileno(),__import__("fcntl").LOCK_EX)
+                    try:
+                        __import__("fcntl").flock(_gsf_lock_handle.fileno(),__import__("fcntl").LOCK_EX)
+                    except (ImportError, AttributeError, OSError):
+                        pass
                     _job={}
                     if _job_file.is_file():
                         try:_job=__import__("json").loads(_job_file.read_text(encoding="utf-8"))
@@ -12518,6 +12521,24 @@ def _gsf_v106_run_render_locked(cmd,timeout,encoder="",fmt="",duration=0.0):
                         __import__("shutil").copyfile(_gsf_stable,_gsf_out)
                         print("GSF_FINAL_RENDER_REUSED","sid="+_gsf_sid,flush=True)
                         return subprocess.CompletedProcess(cmd,0,"","")
+            _worker_url = str(__import__("os").environ.get("GSF_WORKER_URL","") or "").rstrip("/")
+            if _gsf_is_final and _job_file is not None and _worker_url:
+                try:
+                    from gsf_core.render_client import RenderJobRequest, dispatch_render_to_worker
+                    _w_job_id = f"render_{_gsf_sid}_{int(time.time())}"
+                    _w_req = RenderJobRequest(
+                        job_id=_w_job_id,
+                        session_id=_gsf_sid,
+                        source_key=str(st.session_state.get("gsf_source_s3_key","") or ""),
+                        output_key=f"final-results/{_gsf_sid}/latest.mp4",
+                        cmd=cmd,
+                        timeout_seconds=float(timeout or 600.0),
+                    )
+                    dispatch_render_to_worker(_w_req, worker_url=_worker_url)
+                    print(f"GSF_WORKER_RENDER_DISPATCHED sid={_gsf_sid} job={_w_job_id}", flush=True)
+                except Exception as _w_err:
+                    print(f"GSF_WORKER_RENDER_FALLBACK_LOCAL: {_w_err}", flush=True)
+
             if _gsf_is_final and _job_file is not None:
                 _proc=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
                 try:

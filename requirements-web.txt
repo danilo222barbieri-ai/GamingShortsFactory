@@ -1,7 +1,4 @@
-# Official Streamlit PR Preview for streamlit/streamlit#17589 (Allow Pillow 13).
-# Built by Streamlit PR Preview CI from head 23768634bffb2a6861ba74a1432cd80ae3acd3b8.
-# The wheel metadata natively declares pillow>=9.2.0,<14; SHA256 pins the exact CI artifact.
-streamlit @ https://core-previews.s3-us-west-2.amazonaws.com/pr-17589/streamlit-1.66.0-py3-none-any.whl#sha256=841f0d2ac3b59d7501a95a2771ee31b8cb3bf0f210258135089e75ab9157a7fa
+streamlit==1.66.1
 faster-whisper==1.2.1
 numpy==2.5.3
 google-api-python-client==2.200.0

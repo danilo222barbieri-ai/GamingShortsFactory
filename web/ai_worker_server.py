@@ -5,10 +5,13 @@ import json
 import math
 import os
 import re
+import shutil
 import subprocess
+import sys
 import tempfile
 import threading
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -89,6 +92,15 @@ def _load_scan_fn():
     global _SCAN_FN
     if _SCAN_FN is not None:
         return _SCAN_FN
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from gsf_core.ai_scan import gsf_ai_scan_base
+        _SCAN_FN = gsf_ai_scan_base
+        return _SCAN_FN
+    except Exception:
+        pass
+    if not AI_APP_PATH.is_file():
+        raise RuntimeError(f"worker scan functions missing: neither gsf_core nor {AI_APP_PATH} found")
     source=AI_APP_PATH.read_text(encoding="utf-8")
     tree=ast.parse(source)
     wanted={
@@ -336,6 +348,88 @@ def _run_job(job_id,key,analysis_key,engine_version,name,size):
                 except Exception:
                     pass
 
+
+def _run_render_job(job_id, payload):
+    with SCAN_SEMAPHORE:
+        started = time.perf_counter()
+        work = None
+        try:
+            _set_job_state(job_id, {"state": "rendering", "started_at": time.time(), "job_id": job_id})
+            source_key = str(payload.get("source_key") or "")
+            output_key = str(payload.get("output_key") or f"renders/{job_id}/gaming_short_finale_share.mp4")
+            cmd = list(payload.get("cmd") or [])
+            timeout = float(payload.get("timeout") or 600.0)
+
+            work = Path(tempfile.mkdtemp(prefix="gsf_render_"))
+            local_source = None
+            if source_key and _bucket_enabled():
+                suffix = Path(source_key).suffix or ".mp4"
+                local_source = work / f"source{suffix}"
+                cfg = TransferConfig(
+                    multipart_threshold=8*1024*1024,
+                    multipart_chunksize=16*1024*1024,
+                    max_concurrency=max(2, int(os.environ.get("GSF_WORKER_DOWNLOAD_CONCURRENCY", "8"))),
+                    use_threads=True,
+                )
+                with open(local_source, "wb") as out:
+                    _s3().download_fileobj(S3_BUCKET, source_key, out, Config=cfg)
+
+            local_output = work / "output.mp4"
+            if cmd:
+                adapted_cmd = list(cmd)
+                if local_source is not None:
+                    for i, arg in enumerate(adapted_cmd):
+                        if i > 0 and adapted_cmd[i-1] == "-i":
+                            adapted_cmd[i] = str(local_source)
+                if len(adapted_cmd) > 1:
+                    adapted_cmd[-1] = str(local_output)
+            else:
+                raise ValueError("empty render command")
+
+            res = subprocess.run(
+                adapted_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=timeout,
+                check=False,
+            )
+            if res.returncode != 0 or not local_output.is_file() or local_output.stat().st_size <= 1024:
+                err = (res.stderr or res.stdout or "ffmpeg render failed")[-600:]
+                raise RuntimeError(f"render command failed ({res.returncode}): {err}")
+
+            if _bucket_enabled():
+                with open(local_output, "rb") as body:
+                    _s3().put_object(
+                        Bucket=S3_BUCKET,
+                        Key=output_key,
+                        Body=body,
+                        ContentType="video/mp4",
+                    )
+
+            wall = time.perf_counter() - started
+            _set_job_state(job_id, {
+                "state": "completed",
+                "job_id": job_id,
+                "output_key": output_key,
+                "output_bytes": local_output.stat().st_size,
+                "wall_seconds": round(wall, 3),
+            })
+            print(f"GSF worker render done {job_id} output_key={output_key} wall={wall:.2f}s", flush=True)
+        except Exception as exc:
+            _set_job_state(job_id, {
+                "state": "error",
+                "job_id": job_id,
+                "error": str(exc)[:240],
+            })
+            print(f"GSF worker render failed {job_id}: {str(exc)[:240]}", flush=True)
+        finally:
+            if work is not None:
+                try:
+                    shutil.rmtree(work, ignore_errors=True)
+                except Exception:
+                    pass
+
 def _safe_segment(value,default="unknown"):
     text=re.sub(r"[^A-Za-z0-9_-]+","-",str(value or "")).strip("-_")[:80]
     return text or default
@@ -430,7 +524,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path.path.rstrip("/")=="/status":
             analysis_key=(parse_qs(path.query).get("analysis_key") or [""])[0]
-            job_id=_job_id(analysis_key)
+            job_id=(parse_qs(path.query).get("job_id") or [""])[0] or _job_id(analysis_key)
             state=_get_job_state(job_id,analysis_key)
             _json(self,200,{"ok":True,"job":state})
             return
@@ -438,7 +532,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         clean=self.path.rstrip("/")
-        if clean not in ("/prescan","/auto-highlights"):
+        if clean not in ("/prescan","/auto-highlights","/render"):
             _json(self,404,{"ok":False,"error":"not found"})
             return
         if not _authorized(self):
@@ -446,6 +540,20 @@ class Handler(BaseHTTPRequestHandler):
             return
         if not _bucket_enabled():
             _json(self,503,{"ok":False,"error":"bucket unavailable"})
+            return
+        if clean=="/render":
+            try:
+                data=_read_json(self)
+                job_id=str(data.get("job_id") or uuid.uuid4().hex[:16])
+                _set_job_state(job_id,{"state":"queued","job_id":job_id,"output_key":str(data.get("output_key") or "")})
+                threading.Thread(
+                    target=_run_render_job,
+                    args=(job_id,data),
+                    daemon=True,
+                ).start()
+                _json(self,202,{"ok":True,"queued":True,"job_id":job_id})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:240]})
             return
         if clean=="/auto-highlights":
             try:
