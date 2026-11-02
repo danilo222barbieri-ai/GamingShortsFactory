@@ -41,7 +41,7 @@ def namespace(root,bucket):
       META_GRAPH_VERSION='v24.0',FACEBOOK_SCOPES='public_profile,pages_show_list',META_SCOPES='pages_show_list,instagram_basic,instagram_content_publish,pages_read_engagement',INSTAGRAM_SCOPES='instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights',
       ID_RE=re.compile(r'^[A-Za-z0-9_-]{1,80}$'),_STATE_LOCKS={},_STATE_LOCKS_GUARD=threading.Lock(),_ANALYTICS_LOCK=threading.Lock(),_CONTENT_MEMORY_LOCK=threading.Lock(),_ANALYTICS_TICK={},html=html)
     ns['_social421']=social421
-    tree=ast.parse((ROOT/'web/direct_upload_server.py').read_text())
+    tree=ast.parse((ROOT/'web/direct_upload_server.py').read_text(encoding='utf-8'))
     exec(compile(ast.Module(body=[x for x in tree.body if isinstance(x,ast.FunctionDef)],type_ignores=[]),'<real-companion>','exec'),ns)
     ns.update(_bucket_enabled=lambda:True,_s3=lambda:bucket)
     return ns
@@ -220,7 +220,7 @@ class MetaOAuth(unittest.TestCase):
         self.assertTrue(self.ns['_social_connection_load']('browserA','facebook'))
     def test_public_signed_route_does_not_require_browser_session(self):
         from http.server import BaseHTTPRequestHandler
-        tree=ast.parse((ROOT/'web/direct_upload_server.py').read_text());node=next(x for x in tree.body if isinstance(x,ast.ClassDef) and x.name=='Handler')
+        tree=ast.parse((ROOT/'web/direct_upload_server.py').read_text(encoding='utf-8'));node=next(x for x in tree.body if isinstance(x,ast.ClassDef) and x.name=='Handler')
         self.ns.update(BaseHTTPRequestHandler=BaseHTTPRequestHandler,urlparse=urllib.parse.urlparse,parse_qs=urllib.parse.parse_qs)
         exec(compile(ast.Module(body=[node],type_ignores=[]),'<real-http-router>','exec'),self.ns)
         reply=Reply('',urllib.parse.urlencode({'signed_request':self.signed()}).encode());reply.path='/auth/meta/data-deletion'
