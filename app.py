@@ -1160,8 +1160,8 @@ st.set_page_config(
 st.markdown(r"""
 <style id="gsf-v152-neutral-reset">
 html,body,[data-testid="stAppViewContainer"],.stApp{
-  background:#fff !important;
-  color:#172033 !important;
+  background:#050D16 !important;
+  color:#EAF6FF !important;
 }
 [data-testid="stAppViewContainer"] .main .block-container{
   max-width:1200px !important;
@@ -1213,9 +1213,10 @@ html,body,[data-testid="stAppViewContainer"],.stApp{
   min-height:120px !important;
   opacity:1 !important;
   visibility:visible !important;
-  border:1px dashed #b7c2d0 !important;
+  border:1px dashed rgba(121,210,255,.35) !important;
   border-radius:12px !important;
-  background:#fff !important;
+  background:#0B1926 !important;
+  color:#EAF6FF !important;
 }
 [data-testid="stFileUploaderDropzone"] button{
   position:static !important;
@@ -2077,7 +2078,7 @@ def crea_anteprima(input_file, output_file, start, duration):
         "-ss", str(start),
         "-i", input_file,
         "-t", str(duration),
-        "-vf", "scale=640:-2",
+        "-vf", "scale=480:-2",
     ]
     encoders=[]
     try:
@@ -2085,7 +2086,7 @@ def crea_anteprima(input_file, output_file, start, duration):
             encoders.append(("h264_qsv",["-preset","veryfast","-global_quality","30"]))
     except Exception:
         pass
-    encoders.append(("libx264",["-preset","veryfast","-crf","30","-threads","1"]))
+    encoders.append(("libx264",["-preset","ultrafast","-crf","28","-threads","0"]))
 
     for encoder,options in encoders:
         try:
@@ -13629,7 +13630,7 @@ if video:
                                 _event_strength=float(
                                     (_diag.get("features") or {}).get("event_score",0.0)
                                 )
-                                if _event_strength>=0.56:
+                                if _event_strength>=0.56 or _gsf_analysis_source_duration <= _gsf_requested_duration + 5.0:
                                     nuovo_start=float(start_ai)
                                     nuova_durata=float(duration)
                                 else:
@@ -13726,39 +13727,28 @@ if video:
                 _mini_preview_bytes = {}
                 _gsf_preview_t0=time.perf_counter()
                 with st.spinner("Preparo le tre anteprime leggere..."):
-                    for _card in _short_cards:
-                        _mini_key = (
+                    from concurrent.futures import ThreadPoolExecutor, as_completed
+                    def _gen_one_mini(_c):
+                        _mkey = (
                             _video_cache_token,
-                            round(float(_card["start"]), 2),
-                            round(float(_card["preview_duration"]), 2),
+                            round(float(_c["start"]), 2),
+                            round(float(_c["preview_duration"]), 2),
                         )
-
-                        def _make_mini_preview(
-                            _card=_card,
-                            _duration=float(_card["preview_duration"]),
-                        ):
-                            with _gsf_session_tempdir("gsf_preview_") as _preview_temp:
-                                _preview_output = os.path.join(
-                                    _preview_temp,
-                                    f"mini_{int(_card['index'])}.mp4",
-                                )
-                                if crea_anteprima(
-                                    str(_source_path),
-                                    _preview_output,
-                                    float(_card["start"]),
-                                    _duration,
-                                ):
-                                    return Path(_preview_output).read_bytes()
+                        def _make_mp(_card=_c, _dur=float(_c["preview_duration"])):
+                            with _gsf_session_tempdir("gsf_preview_") as _ptemp:
+                                _pout = os.path.join(_ptemp, f"mini_{int(_card['index'])}.mp4")
+                                if crea_anteprima(str(_source_path), _pout, float(_card["start"]), _dur):
+                                    return Path(_pout).read_bytes()
                             return None
+                        _mb = _gsf_preview_cache_get(_mini_preview_cache, _mkey, _make_mp, max_items=3)
+                        return int(_c["index"]), _mb
 
-                        _mini_bytes = _gsf_preview_cache_get(
-                            _mini_preview_cache,
-                            _mini_key,
-                            _make_mini_preview,
-                            max_items=3,
-                        )
-                        if _mini_bytes:
-                            _mini_preview_bytes[int(_card["index"])] = bytes(_mini_bytes)
+                    with ThreadPoolExecutor(max_workers=min(3, len(_short_cards))) as _mp_pool:
+                        _mp_futs = [_mp_pool.submit(_gen_one_mini, _card) for _card in _short_cards]
+                        for _fut in as_completed(_mp_futs):
+                            _cidx, _cbytes = _fut.result()
+                            if _cbytes:
+                                _mini_preview_bytes[_cidx] = bytes(_cbytes)
 
                 # V412 AI ENGINES: results sheet read by /ai/results for the AI page.
                 try:
@@ -16535,9 +16525,9 @@ if GSF_WEB_MODE:
       z-index:2147483650;
       display:flex;align-items:center;justify-content:center;
       padding:34px clamp(16px,3vw,46px) 14px;
-      background:rgba(222,238,247,.48);
-      -webkit-backdrop-filter:blur(5px) saturate(.98);
-      backdrop-filter:blur(5px) saturate(.98);
+      background:rgba(5,13,22,.85);
+      -webkit-backdrop-filter:blur(8px);
+      backdrop-filter:blur(8px);
       opacity:0;visibility:hidden;pointer-events:none;
       transition:opacity .24s ease,visibility .24s ease;
     }
@@ -16559,9 +16549,9 @@ if GSF_WEB_MODE:
     #gsf-social-overlay-v159 iframe{width:100%;height:100%;border:0;background:#050D16}
     #gsf-social-overlay-v159 .gsf-social-close{
       position:absolute;z-index:5;right:13px;top:12px;width:34px;height:34px;
-      border:1px solid rgba(158,190,216,.34);border-radius:12px;
-      background:rgba(255,255,255,.94);color:#617B9D;font-size:20px;cursor:pointer;
-      box-shadow:0 7px 18px rgba(64,104,143,.09)
+      border:1px solid rgba(121,210,255,.24);border-radius:12px;
+      background:rgba(16,40,61,.82);color:#EAF6FF;font-size:20px;cursor:pointer;
+      box-shadow:0 7px 18px rgba(0,0,0,.35)
     }
     @media(max-width:760px){
       #gsf-social-overlay-v159{
@@ -16669,9 +16659,9 @@ _GSF_SURFACE_HUB = r"""<div id="gsf-creator-hub-live-v160" aria-hidden="true">
       position:fixed;left:0;right:0;top:0;bottom:78px;
       z-index:2147483660;display:flex;align-items:center;justify-content:center;
       padding:24px clamp(14px,2.5vw,38px) 12px;
-      background:rgba(222,238,247,.46);
-      -webkit-backdrop-filter:blur(5px) saturate(.98);
-      backdrop-filter:blur(5px) saturate(.98);
+      background:rgba(5,13,22,.85);
+      -webkit-backdrop-filter:blur(8px);
+      backdrop-filter:blur(8px);
       opacity:0;visibility:hidden;pointer-events:none;
       transition:opacity .24s ease,visibility .24s ease
     }
@@ -16687,8 +16677,8 @@ _GSF_SURFACE_HUB = r"""<div id="gsf-creator-hub-live-v160" aria-hidden="true">
     #gsf-creator-hub-live-v160 iframe{width:100%;height:100%;border:0;background:#050D16}
     #gsf-creator-hub-live-v160 .gsf-hub-close-v160{
       position:absolute;z-index:7;right:13px;top:11px;width:34px;height:34px;
-      border:1px solid rgba(158,190,216,.34);border-radius:12px;background:rgba(255,255,255,.94);
-      color:#617B9D;font-size:20px;cursor:pointer;box-shadow:0 7px 18px rgba(64,104,143,.09)
+      border:1px solid rgba(121,210,255,.24);border-radius:12px;background:rgba(16,40,61,.82);
+      color:#EAF6FF;font-size:20px;cursor:pointer;box-shadow:0 7px 18px rgba(0,0,0,.35)
     }
     @media(max-width:760px){
       #gsf-creator-hub-live-v160{bottom:70px;padding:8px 5px}
@@ -16737,13 +16727,13 @@ _GSF_SURFACE_EDITOR = r"""<div id="gsf-editor-overlay-v220" aria-hidden="true">
 }
 </style>
 <style id="gsf-v220-editor-shell">
-    #gsf-editor-overlay-v220{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483655;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(222,238,247,.46);-webkit-backdrop-filter:blur(5px) saturate(.98);backdrop-filter:blur(5px) saturate(.98);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
+    #gsf-editor-overlay-v220{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483655;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(5,13,22,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
     #gsf-editor-overlay-v220.is-open{opacity:1;visibility:visible;pointer-events:auto}
-    #gsf-editor-overlay-v220 .gsf-editor-shell{position:relative;width:min(1260px,calc(100vw - 30px));height:min(760px,calc(100dvh - 118px));border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:radial-gradient(circle at 8% 6%,rgba(126,214,255,.20),transparent 25%),radial-gradient(circle at 92% 7%,rgba(127,236,197,.18),transparent 26%),linear-gradient(180deg,#FCFEFF,#F6FBFF);box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.94);transform:translateY(10px) scale(.975);opacity:0;transition:transform .32s cubic-bezier(.16,.84,.24,1),opacity .24s ease}
+    #gsf-editor-overlay-v220 .gsf-editor-shell{position:relative;width:min(1260px,calc(100vw - 30px));height:min(760px,calc(100dvh - 118px));border:1px solid rgba(121,210,255,.18);border-radius:30px;overflow:hidden;background:#050D16;box-shadow:0 30px 86px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08);transform:translateY(10px) scale(.975);opacity:0;transition:transform .32s cubic-bezier(.16,.84,.24,1),opacity .24s ease}
     #gsf-editor-overlay-v220.is-open .gsf-editor-shell{transform:translateY(0) scale(1);opacity:1}
     #gsf-editor-overlay-v220 .gsf-editor-head{height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 54px 0 20px;border-bottom:1px solid rgba(148,183,213,.20);color:#0D2A66;font-size:14px;font-weight:900}
     #gsf-editor-overlay-v220 .gsf-editor-head small{display:block;color:#7185A6;font-size:9px;font-weight:700;margin-top:2px}
-    #gsf-editor-overlay-v220 .gsf-editor-close{position:absolute;z-index:6;right:13px;top:10px;width:34px;height:34px;border-radius:12px;border:1px solid rgba(158,190,216,.34);background:rgba(255,255,255,.94);color:#617B9D;font-size:20px;cursor:pointer;box-shadow:0 7px 18px rgba(64,104,143,.09)}
+    #gsf-editor-overlay-v220 .gsf-editor-close{position:absolute;z-index:6;right:13px;top:10px;width:34px;height:34px;border-radius:12px;border:1px solid rgba(121,210,255,.24);background:rgba(16,40,61,.82);color:#EAF6FF;font-size:20px;cursor:pointer;box-shadow:0 7px 18px rgba(0,0,0,.35)}
     #gsf-editor-overlay-v220 .gsf-editor-body{position:absolute;left:0;right:0;top:54px;bottom:0;display:grid;grid-template-columns:180px 1fr 180px;align-items:center}
     #gsf-editor-overlay-v220 .gsf-editor-frame{width:100%;height:100%;border:0;background:transparent}
     #gsf-editor-overlay-v220 .editor-note{color:#637DA8;font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive;font-size:16px;font-weight:600;line-height:1.08;text-align:center;padding:14px;pointer-events:none}
@@ -17027,12 +17017,12 @@ _GSF_SURFACE_AI = r"""<div id="gsf-ai-overlay-v221" aria-hidden="true">
 if GSF_WEB_MODE:
     st.markdown(r"""
     <style id="gsf-v221-ai-shell">
-    #gsf-ai-overlay-v221{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483654;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(222,238,247,.46);-webkit-backdrop-filter:blur(5px) saturate(.98);backdrop-filter:blur(5px) saturate(.98);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
+    #gsf-ai-overlay-v221{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483654;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(5,13,22,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
     #gsf-ai-overlay-v221.is-open{opacity:1;visibility:visible;pointer-events:auto}
     #gsf-ai-overlay-v221 .gsf-ai-shell{position:relative;width:min(1240px,calc(100vw - 30px));height:min(730px,calc(100dvh - 118px));border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:#050D16;box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.94);transform:translateY(10px) scale(.975);opacity:0;transition:transform .32s cubic-bezier(.16,.84,.24,1),opacity .24s ease}
     #gsf-ai-overlay-v221.is-open .gsf-ai-shell{transform:translateY(0) scale(1);opacity:1}
     #gsf-ai-overlay-v221 iframe{width:100%;height:100%;border:0;background:#050D16}
-    #gsf-ai-overlay-v221 .gsf-ai-close{position:absolute;z-index:7;right:13px;top:11px;width:34px;height:34px;border-radius:12px;border:1px solid rgba(158,190,216,.34);background:rgba(255,255,255,.94);color:#617B9D;font-size:20px;cursor:pointer;box-shadow:0 7px 18px rgba(64,104,143,.09)}
+    #gsf-ai-overlay-v221 .gsf-ai-close{position:absolute;z-index:7;right:13px;top:11px;width:34px;height:34px;border-radius:12px;border:1px solid rgba(121,210,255,.24);background:rgba(16,40,61,.82);color:#EAF6FF;font-size:20px;cursor:pointer;box-shadow:0 7px 18px rgba(0,0,0,.35)}
     @media(max-width:760px){#gsf-ai-overlay-v221{bottom:70px;padding:8px 5px}#gsf-ai-overlay-v221 .gsf-ai-shell{width:calc(100vw - 10px);height:calc(100dvh - 84px);border-radius:22px}#gsf-ai-overlay-v221 .gsf-ai-close{right:8px;top:7px;width:31px;height:31px}}
     </style>
         <!-- gsf-ai-overlay-v221: mounted once by the parent app. -->
@@ -17103,12 +17093,12 @@ if GSF_WEB_MODE:
 if GSF_WEB_MODE:
     st.markdown(r"""
     <style id="gsf-v223-account-shell">
-    #gsf-account-overlay-v223{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483662;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(222,238,247,.46);-webkit-backdrop-filter:blur(5px) saturate(.98);backdrop-filter:blur(5px) saturate(.98);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
+    #gsf-account-overlay-v223{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483662;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(5,13,22,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
     #gsf-account-overlay-v223.is-open{opacity:1;visibility:visible;pointer-events:auto}
     #gsf-account-overlay-v223 .gsf-account-shell{position:relative;width:min(980px,calc(100vw - 30px));height:min(680px,calc(100dvh - 118px));border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:#050D16;box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.94);transform:translateY(10px) scale(.975);opacity:0;transition:transform .30s cubic-bezier(.16,.84,.24,1),opacity .24s ease}
     #gsf-account-overlay-v223.is-open .gsf-account-shell{transform:translateY(0) scale(1);opacity:1}
     #gsf-account-overlay-v223 iframe{width:100%;height:100%;border:0;background:#050D16}
-    #gsf-account-overlay-v223 .gsf-account-close{position:absolute;z-index:7;right:13px;top:11px;width:34px;height:34px;border:1px solid rgba(158,190,216,.34);border-radius:12px;background:rgba(255,255,255,.94);color:#617B9D;font-size:20px;cursor:pointer}
+    #gsf-account-overlay-v223 .gsf-account-close{position:absolute;z-index:7;right:13px;top:11px;width:34px;height:34px;border:1px solid rgba(121,210,255,.24);border-radius:12px;background:rgba(16,40,61,.82);color:#EAF6FF;font-size:20px;cursor:pointer}
     @media(max-width:760px){#gsf-account-overlay-v223{bottom:70px;padding:8px 5px}#gsf-account-overlay-v223 .gsf-account-shell{width:calc(100vw - 10px);height:calc(100dvh - 84px);border-radius:22px}#gsf-account-overlay-v223 .gsf-account-close{right:8px;top:7px;width:31px;height:31px}}
     </style>
     <div id="gsf-account-overlay-v223" aria-hidden="true">

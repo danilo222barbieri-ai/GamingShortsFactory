@@ -1156,7 +1156,7 @@ const SUGGEST={all:['gaming','shorts','gameplay','gamer','clip','highlights','vi
 const PRIVACY_LABEL={public:'Pubblico',unlisted:'Non in elenco',private:'Privato'};
 const STORE='gsf_crea_short_v413';
 
-let server={ready:false,social:{},csrf_token:'',dropbox_app_key:'',publish_supported:['youtube','tiktok'],publish_job:{},revision:''};
+let server={ready:false,social:{},csrf_token:'',dropbox_app_key:'',publish_supported:['youtube','tiktok','instagram','facebook'],publish_job:{},revision:''};
 let scope='all', privacy='public', polling=null;
 const texts={all:{title:'',description:'',tags:[]}};
 
@@ -1245,8 +1245,7 @@ function renderPlatforms(){
   $$('.plat').forEach(b=>{
     const p=b.dataset.platform, lbl=$('[data-status]',b), st=$('.st',b), r=recent()?res[p]:null;
     lbl.className='lbl';
-    if(!supported.includes(p)){lbl.textContent='Guidata'}
-    else if(social[p]){lbl.textContent='Collegato';lbl.classList.add('on')}
+    if(social[p]){lbl.textContent='Collegato';lbl.classList.add('on')}
     else{lbl.textContent='Collega';lbl.classList.add('go')}
     if(lbl.classList.contains('go'))lbl.setAttribute('data-alive-next','connect_social');else lbl.removeAttribute('data-alive-next');
     st.className='st'+(r?(r.confirmation_pending||r.status==='running'||r.status==='queued'?' run':r.status==='done'?' ok':r.status==='error'?' ko':''):'');
@@ -1258,11 +1257,11 @@ function renderPlatforms(){
 function renderCore(){
   const sel=selected(), n=sel.length, btn=$('#publishBtn');
   $('#orbit').classList.toggle('busy',busy());
-  btn.disabled=!server.ready||busy()||!n;
+  btn.disabled=busy()||!n;
   let title,sub;
   if(confirming(server.publish_job)){title='In attesa di TikTok';sub='Puoi uscire: verifico la conferma senza inviare un altro video'}
   else if(busy()){const res=Object.values((server.publish_job||{}).results||{}).filter(r=>['queued','running','done','error'].includes(r.status));const done=res.filter(r=>r.status==='done'||r.status==='error').length;title='Pubblico…';sub=done+' di '+(res.length||n)+' completati'}
-  else if(!server.ready){title='In arrivo';sub=shortNotice||'Lo Short finale sta arrivando'}
+  else if(!server.ready){title='Crea lo Short';sub=shortNotice||'Genera lo Short con l\'IA o Editor prima di pubblicare'}
   else if(!n){title='Scegli i social';sub='Tocca le bolle sull\'anello'}
   else{const direct=sel.filter(p=>(server.publish_supported||[]).includes(p)).length;title=!direct?'Condividi su '+sel.map(p=>NAMES[p]).join(', '):direct<n?'Pubblica e condividi':n>1?'Pubblica su '+n+' social':'Pubblica su '+NAMES[sel[0]];
     const needTitle=sel.includes('youtube')&&!String(effective('youtube').title||'').trim();
@@ -1279,9 +1278,9 @@ $$('.plat').forEach(b=>b.onclick=()=>{
 });
 $$('.plat .lbl').forEach(l=>l.addEventListener('click',e=>{const b=l.closest('.plat'),p=b.dataset.platform;if(l.classList.contains('go')){e.stopPropagation();connect(p)}}));
 function connect(p){
-  if(!(server.publish_supported||[]).includes(p)){window.open(p==='instagram'?'https://www.instagram.com/':'https://www.facebook.com/','_blank','noopener');return}
-  const url='/social-connect/'+p+'/start';
-  if(!window.open(url,'_blank'))location.href=url;
+  const url='/social-connect/'+encodeURIComponent(p)+'/start';
+  const w=window.open(url,'gsf_oauth_'+p,'width=520,height=680,scrollbars=yes');
+  if(!w)location.href=url;
   toast('Collega '+NAMES[p]+' e poi torna qui');
 }
 
@@ -1338,7 +1337,14 @@ function payload(){
   return{platforms:selected(),privacy,shared:{title:texts.all.title||'',description:texts.all.description||'',hashtags:(texts.all.tags||[]).join(' ')},overrides};
 }
 $('#publishBtn').onclick=async()=>{
+  if(!server.ready){
+    toast('Lo Short finale non è ancora pronto. Crealo con l\'IA o nell\'Editor.');
+    try{parent.postMessage({type:'GSF_SHELL_NAV',target:'ai'},location.origin)}catch(_e){};
+    return;
+  }
   const sel=selected();if(!sel.length){toast('Tocca almeno un social sull\'anello');return}
+  const notConn=sel.find(p=>!(server.social||{})[p]);
+  if(notConn){toast(NAMES[notConn]+' non è collegato. Tocca Collega per connetterti.');connect(notConn);return}
   if(sel.includes('youtube')&&!String(effective('youtube').title||'').trim()){open('texts');pickScope('all');setTimeout(()=>$('#fTitle').focus(),300);toast('Serve un titolo per YouTube');return}
   const btn=$('#publishBtn');btn.disabled=true;$('#coreTitle').textContent='Avvio…';
   try{

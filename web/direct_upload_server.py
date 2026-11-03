@@ -4889,7 +4889,7 @@ def _instagram_direct_post(sid,video_path,plan,privacy):
     caption=str(plan.get("caption") or "")[:2200]
     token_sig,_exp=_pm413.sign_share_link(_share_link_secret(),sid,ttl=86400)
     base_url=(PUBLIC_APP_URL or "https://gaming-shorts-factory-v79-production.up.railway.app").rstrip("/")
-    video_url=f"{base_url}/share/stream/{token_sig}"
+    video_url=f"{base_url}/share/public/{token_sig}"
     create_url=f"https://graph.facebook.com/{META_GRAPH_VERSION}/{ig_id}/media"
     init_data=urllib.parse.urlencode({"media_type":"REELS","video_url":video_url,"caption":caption,"share_to_feed":"true","access_token":token}).encode("utf-8")
     req=urllib.request.Request(create_url,data=init_data,method="POST")
@@ -4942,7 +4942,7 @@ def _facebook_direct_post(sid,video_path,plan,privacy):
     caption=str(plan.get("caption") or "")[:5000]
     token_sig,_exp=_pm413.sign_share_link(_share_link_secret(),sid,ttl=86400)
     base_url=(PUBLIC_APP_URL or "https://gaming-shorts-factory-v79-production.up.railway.app").rstrip("/")
-    video_url=f"{base_url}/share/stream/{token_sig}"
+    video_url=f"{base_url}/share/public/{token_sig}"
     post_url=f"https://graph.facebook.com/{META_GRAPH_VERSION}/{page_id}/videos"
     form_data=urllib.parse.urlencode({"file_url":video_url,"description":caption,"access_token":page_token}).encode("utf-8")
     req=urllib.request.Request(post_url,data=form_data,method="POST")
@@ -5343,6 +5343,9 @@ class Handler(BaseHTTPRequestHandler):
         if clean.startswith("/share/public/"):
             _share_public_stream(self,clean[len("/share/public/"):])
             return
+        if clean.startswith("/share/stream/"):
+            _share_public_stream(self,clean[len("/share/stream/"):])
+            return
         if clean=="/share/state":
             sid=_social_sid(self)
             if not sid:
@@ -5587,6 +5590,9 @@ class Handler(BaseHTTPRequestHandler):
         if clean=="/social-connect":
             sid=_social_sid(self)
             _redirect(self,"/?gsf_page=hub&gsf_section=social")
+            return
+        if clean in ("/social-connect/youtube","/social-connect/tiktok","/social-connect/instagram","/social-connect/facebook"):
+            _redirect(self,clean+"/start")
             return
         if clean=="/social-connect/tiktok/start":
             _tiktok_oauth_start(self,_social_sid(self))
