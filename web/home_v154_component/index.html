@@ -3263,7 +3263,7 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
   <div class="features">
    <button class="feature fAi" data-action="ai" data-alive-next="create_with_ai"><span class="featureIcon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M20 6c1.2 8.5 5.5 12.8 14 14-8.5 1.2-12.8 5.5-14 14-1.2-8.5-5.5-12.8-14-14 8.5-1.2 12.8-5.5 14-14Z"/><path d="M37 5c.45 3.1 2 4.65 5 5-3 .45-4.55 2-5 5-.45-3-2-4.55-5-5 3-.35 4.55-1.9 5-5Z"/></svg></span><b>Crea con IA</b><small>Trova i momenti più epici</small></button>
    <button class="feature fEditor" data-action="editor"><span class="featureIcon"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M15.5 22.5c2.2-5.6 8.5-8.2 13.8-5.4l3.2 1.7 3.2-1.7c5.3-2.8 11.6-.2 13.8 5.4l5.2 13.4c2.6 6.7-2.3 13.9-9.5 13.9-4.4 0-7.2-2.4-10.2-7.4l-1.6-2.7h-2.8L29 42.4c-3 5-5.8 7.4-10.2 7.4-7.2 0-12.1-7.2-9.5-13.9l5.2-13.4Z"/><path d="M20 27.5v10M15 32.5h10"/><circle cx="42" cy="27.5" r="2.1"/><circle cx="48" cy="32.5" r="2.1"/><circle cx="42" cy="37.5" r="2.1"/><circle cx="36" cy="32.5" r="2.1"/></svg></span><b>Game Editor</b><small>Personalizza il tuo gameplay</small></button>
-   <button class="feature fShort" data-action="short" data-alive-next="create_short publish"><span class="featureIcon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M17 12.5 35 24 17 35.5Z"/></svg></span><b>Crea Short</b><small>Genera il tuo video in verticale 9:16</small></button>
+   <button class="feature fShort" data-action="short"><span class="featureIcon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M17 12.5 35 24 17 35.5Z"/></svg></span><b>Crea Short</b><small>Genera il tuo video in verticale 9:16</small></button>
   </div>
 
   <div id="aiPanel" class="aiPanel">
@@ -4235,6 +4235,7 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
     if (s.short_ready && !s.published) return s.social_connected === false ? "connect_social" : "publish";
     if (s.published) return "new_video";
     if (!s.video_ready) return "upload";
+    if (page && (page.name === "home" || page.target === "home")) return null;
     if (s.moments_count && !s.moment_selected) return "choose_moment";
     if (s.moment_selected) return "create_short";
     return "create_with_ai";
@@ -4538,6 +4539,13 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   }
   function guide() {
     if (!layer) return;
+    const modal = D.querySelector(".sheet.open,[aria-modal='true']:not([aria-hidden='true']),[role='dialog']:not([aria-hidden='true']),.modal.open,[id^='sheet-'].open");
+    if (modal) {
+      if (guideEl) guideEl.style.display = "none";
+      if (whisperEl) whisperEl.classList.remove("on");
+      guided = null;
+      return;
+    }
     const action = nextAction(state);
     const el = visible() ? targetFor(action) : null;
     guided = el;

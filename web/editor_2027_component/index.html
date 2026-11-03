@@ -957,6 +957,7 @@ html body #ng27#ng27 .createShortJourneyBtn *{color:var(--na-cta-ink)!important}
  }
  let lastSentFrameHeight=0;
  function setFrameHeight(height){
+   try{if(window.parent!==window)return;}catch(_e){return;}
    let h=Math.max(320,Math.round(Number(height)||720));
    try{
      const pw=Math.max(320,Number(window.parent.innerWidth||window.innerWidth||1920));
@@ -971,6 +972,7 @@ html body #ng27#ng27 .createShortJourneyBtn *{color:var(--na-cta-ink)!important}
    sendMessage(SET_FRAME_HEIGHT,{height:h});
  }
  function fitEditorViewport(){
+   try{if(window.parent!==window)return;}catch(_e){return;}
    try{
      const pw=Math.max(320,Number(window.parent.innerWidth||window.innerWidth||1920));
      const ph=Math.max(560,Number(window.parent.innerHeight||window.innerHeight||720));

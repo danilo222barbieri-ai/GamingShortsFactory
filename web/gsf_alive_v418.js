@@ -166,6 +166,7 @@
     if (s.short_ready && !s.published) return s.social_connected === false ? "connect_social" : "publish";
     if (s.published) return "new_video";
     if (!s.video_ready) return "upload";
+    if (page && (page.name === "home" || page.target === "home")) return null;
     if (s.moments_count && !s.moment_selected) return "choose_moment";
     if (s.moment_selected) return "create_short";
     return "create_with_ai";
@@ -469,6 +470,13 @@ html[data-alive-mode=idle] #gsf-alive-aura{opacity:.32}
   }
   function guide() {
     if (!layer) return;
+    const modal = D.querySelector(".sheet.open,[aria-modal='true']:not([aria-hidden='true']),[role='dialog']:not([aria-hidden='true']),.modal.open,[id^='sheet-'].open");
+    if (modal) {
+      if (guideEl) guideEl.style.display = "none";
+      if (whisperEl) whisperEl.classList.remove("on");
+      guided = null;
+      return;
+    }
     const action = nextAction(state);
     const el = visible() ? targetFor(action) : null;
     guided = el;

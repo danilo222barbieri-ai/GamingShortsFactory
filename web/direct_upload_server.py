@@ -2055,8 +2055,6 @@ def _draft_delete(sid,draft_id):
     sid=_safe_id(sid); draft_id=_safe_id(draft_id)
     if not sid or not draft_id:
         return False
-    if not _draft_load(sid,draft_id):
-        return False
     root=_draft_dir(sid)
     try:
         (root/(draft_id+".json")).unlink(missing_ok=True)
@@ -2065,10 +2063,12 @@ def _draft_delete(sid,draft_id):
     except Exception:
         pass
     if _bucket_enabled():
-        try:
-            _s3().delete_object(Bucket=S3_BUCKET,Key=_draft_key(sid,draft_id))
-        except Exception:
-            pass
+        for prefix in (f"drafts/{sid}/{draft_id}.json", _draft_key(sid,draft_id)):
+            if prefix:
+                try:
+                    _s3().delete_object(Bucket=S3_BUCKET,Key=prefix)
+                except Exception:
+                    pass
     _draft_index_remove(sid,draft_id)
     print("GSF_DRAFT_DELETED",sid,draft_id,flush=True)
     return True
@@ -2313,14 +2313,14 @@ def _short_delete(sid,short_id):
     if not sid or not short_id:
         return False
     rows=_short_list(sid)
-    target=next((dict(r) for r in rows if _safe_id((r or {}).get("id",""))==short_id),None)
-    if not target:
-        return False
+    target=next((dict(r) for r in rows if _safe_id((r or {}).get("id",""))==short_id),None) or {}
     if _bucket_enabled():
-        try:
-            _s3().delete_object(Bucket=S3_BUCKET,Key=str(target.get("bucket_key") or _short_object_key(sid,short_id)))
-        except Exception:
-            pass
+        for k in (str(target.get("bucket_key") or ""), _short_object_key(sid,short_id), f"shorts/{sid}/{short_id}.mp4"):
+            if k:
+                try:
+                    _s3().delete_object(Bucket=S3_BUCKET,Key=k)
+                except Exception:
+                    pass
     remaining=[r for r in rows if _safe_id((r or {}).get("id",""))!=short_id]
     _short_index_save(sid,remaining)
     print("GSF_SHORT_DELETED",sid,short_id,flush=True)
