@@ -1342,10 +1342,16 @@ let oauthNavigating=false;
    card.classList.toggle("connected",yes);
    const st=card.querySelector(".socialState"),btn=card.querySelector("[data-connect]");
    if(!st||!btn)return;
-   st.textContent=yes?"Collegato":"Non collegato";
-   btn.textContent=yes?"Scollega":"Collega";
+   if(key==="facebook"&&yes&&state.facebook_page&&state.facebook_page.name){
+    st.textContent="Pagina: "+state.facebook_page.name;
+    btn.textContent="Gestisci";
+    btn.className="btn";
+   } else {
+    st.textContent=yes?"Collegato":"Non collegato";
+    btn.textContent=yes?"Scollega":"Collega";
+    btn.className=yes?"btn danger":"btn";
+   }
    btn.disabled=false;
-   btn.className=yes?"btn danger":"btn";
   });
   const n=PLATFORMS.filter(p=>socialIsOn(p.key)).length;
   const so=$("#profileOverviewSocial");if(so)so.textContent=n+" di "+PLATFORMS.length;
@@ -1838,8 +1844,57 @@ let oauthNavigating=false;
  }
  window.addEventListener('message',e=>{if(e.origin===location.origin&&e.source===oauthPopup&&e.data?.type==='GSF_OAUTH_RETURN')finishOAuth()});
  window.addEventListener('pagehide',()=>clearInterval(oauthTimer),{once:true});
+ async function openFacebookPageSheet(){
+   openSheet('<h3>Pagina Facebook</h3><p>Caricamento pagine in corso...</p><div class="sheetActions"><button class="btn ghost" type="button" data-m="close">Chiudi</button></div>');
+   sheetBox.querySelector('[data-m="close"]').onclick=closeSheet;
+   try{
+    const resp=await fetch('/social-connect/facebook/pages',{cache:'no-store'});
+    const data=await resp.json();
+    if(!data.ok||!data.pages||!data.pages.length){
+     openSheet('<h3>Nessuna Pagina Facebook</h3><p>Questo account Facebook non gestisce alcuna Pagina con autorizzazione di pubblicazione. I video non possono essere pubblicati sui profili personali. Crea una Pagina Facebook e ricollega l\'account.</p><div class="sheetActions"><button class="btn ghost" type="button" data-m="close">Chiudi</button><button class="btn danger" type="button" data-m="disconnect">Scollega</button></div>');
+     sheetBox.querySelector('[data-m="close"]').onclick=closeSheet;
+     sheetBox.querySelector('[data-m="disconnect"]').onclick=()=>{closeSheet();disconnectSocial('facebook')};
+     return;
+    }
+    let rowsHtml='<div class="rows">';
+    data.pages.forEach(p=>{
+     const isSel=!!p.selected;
+     const pic=p.picture?'<img src="'+esc(p.picture)+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;margin-right:8px;" />':'<span class="ricon" style="margin-right:8px;">📄</span>';
+     const badge=isSel?'<span style="color:#14804A;font-weight:700;font-size:12px;">Selezionata ✓</span>':'<button class="btn" type="button" data-sel-page="'+esc(p.id)+'" style="padding:6px 12px;font-size:12px;">Seleziona</button>';
+     rowsHtml+='<div class="row" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;"><div style="display:flex;align-items:center;min-width:0;">'+pic+'<div style="min-width:0;"><strong style="display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(p.name)+'</strong></div></div><div>'+badge+'</div></div>';
+    });
+    rowsHtml+='</div>';
+    openSheet('<h3>Pagina Facebook</h3><p>I tuoi video verranno pubblicati sulla Pagina selezionata:</p>'+rowsHtml+'<div class="sheetActions"><button class="btn ghost" type="button" data-m="close">Chiudi</button><button class="btn danger" type="button" data-m="disconnect">Scollega Facebook</button></div>');
+    sheetBox.querySelector('[data-m="close"]').onclick=closeSheet;
+    sheetBox.querySelector('[data-m="disconnect"]').onclick=()=>{closeSheet();disconnectSocial('facebook')};
+    sheetBox.querySelectorAll('[data-sel-page]').forEach(b=>{
+     b.onclick=async()=>{
+      const pageId=b.dataset.selPage;
+      b.disabled=true;b.textContent="Salvataggio...";
+      try{
+       const sRes=await postJson('/social-connect/facebook/select-page',{page_id:pageId});
+       if(sRes.ok){
+        await loadState();
+        toast("Pagina Facebook selezionata: "+(sRes.selected_page?.name||""));
+        openFacebookPageSheet();
+       } else {
+        toast(sRes.error||"Errore selezione pagina","error");
+       }
+      }catch(e){toast(String(e.message||e),"error")}
+     };
+    });
+   }catch(e){
+    toast("Errore recupero Pagine Facebook: "+String(e.message||e),"error");
+    closeSheet();
+   }
+ }
+
  function connectSocial(key){
   if(socialIsOn(key)){
+   if(key==="facebook"){
+    openFacebookPageSheet();
+    return;
+   }
    openSheet('<h3>Scollegare '+esc(PLATFORM_NAMES[key]||key)+'?</h3><p>Potrai ricollegarlo quando vuoi.</p><div class="sheetActions"><button class="btn ghost" type="button" data-m="close">Annulla</button><button class="btn danger" type="button" data-m="ok">Scollega</button></div>');
    sheetBox.querySelector('[data-m="close"]').onclick=closeSheet;
    sheetBox.querySelector('[data-m="ok"]').onclick=()=>{closeSheet();disconnectSocial(key)};

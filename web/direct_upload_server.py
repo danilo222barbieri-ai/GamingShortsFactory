@@ -114,7 +114,7 @@ META_APP_ID=_env_first("GSF_META_APP_ID",default="")
 META_APP_SECRET=_env_first("GSF_META_APP_SECRET",default="")
 META_GRAPH_VERSION=_env_first("GSF_META_GRAPH_VERSION",default="v24.0")
 FACEBOOK_REDIRECT_URI=(PUBLIC_APP_URL+"/auth/facebook/callback") if PUBLIC_APP_URL else ""
-FACEBOOK_SCOPES="public_profile,pages_show_list"
+FACEBOOK_SCOPES="public_profile,pages_show_list,pages_read_engagement,pages_manage_posts"
 META_SCOPES="pages_show_list,instagram_basic,instagram_content_publish,pages_read_engagement"
 # V263 Creator Hub return compatibility tokens for legacy V104.6 build contract only:
 # _redirect(handler,"/social-connect")
@@ -3011,11 +3011,41 @@ def _facebook_connect_callback(handler,query):
         token=_oauth_json("https://graph.facebook.com/"+META_GRAPH_VERSION+"/oauth/access_token",method="POST",data=urllib.parse.urlencode({"client_id":META_APP_ID,"client_secret":META_APP_SECRET,"redirect_uri":FACEBOOK_REDIRECT_URI,"code":query["code"][0]}).encode(),headers={"Content-Type":"application/x-www-form-urlencoded"})
         access=str(token.get("access_token") or "")
         if not access:raise ValueError("Invalid token response")
+        # Exchange for long-lived user token (yields non-expiring Page access tokens) via POST body to avoid token in URL
+        try:
+            long_data=urllib.parse.urlencode({
+                "grant_type":"fb_exchange_token",
+                "client_id":META_APP_ID,
+                "client_secret":META_APP_SECRET,
+                "fb_exchange_token":access,
+            }).encode()
+            long_res=_oauth_json("https://graph.facebook.com/"+META_GRAPH_VERSION+"/oauth/access_token",method="POST",data=long_data,headers={"Content-Type":"application/x-www-form-urlencoded"})
+            if long_res.get("access_token"):
+                access=str(long_res["access_token"])
+        except Exception as l_err:
+            pass
         headers={"Authorization":"Bearer "+access}
         info=_oauth_json("https://graph.facebook.com/"+META_GRAPH_VERSION+"/me?fields=id,name,picture",headers=headers)
         uid=str(info.get("id") or "")
         if not re.fullmatch(r"[0-9]{1,128}",uid):raise ValueError("Invalid identity")
-        pages=_oauth_json("https://graph.facebook.com/"+META_GRAPH_VERSION+"/me/accounts?fields=id,name,access_token,tasks",headers=headers).get("data",[])
+        pages_raw=_oauth_json("https://graph.facebook.com/"+META_GRAPH_VERSION+"/me/accounts?fields=id,name,access_token,tasks,picture.width(100).height(100)",headers=headers).get("data",[])
+        valid_pages=[]
+        for p in pages_raw:
+            pid=str(p.get("id") or "")
+            pname=str(p.get("name") or "")
+            ptoken=str(p.get("access_token") or "")
+            tasks=[str(t).upper() for t in (p.get("tasks") or [])]
+            pic_url=str(((p.get("picture") or {}).get("data") or {}).get("url") or "")
+            can_publish=any(t in tasks for t in ("CREATE_CONTENT","MANAGE","PUBLISH_TO_PAGE","MODERATE","EDIT_PAGE")) or not tasks
+            if pid and ptoken and can_publish:
+                valid_pages.append({
+                    "id":pid,
+                    "name":pname,
+                    "access_token":ptoken,
+                    "tasks":tasks,
+                    "picture":pic_url,
+                })
+
         # Do not silently switch an already logged-in GSF account to another identity owner.
         mapped=_oauth_object_read(_creator_identity_key("facebook",uid))
         current=_creator_account_load(sid) or {}
@@ -3023,9 +3053,47 @@ def _facebook_connect_callback(handler,query):
         _meta_index_add("facebook",uid,sid)
         _creator_login(sid,"facebook",uid,display_name=info.get("name",""),avatar=((info.get("picture") or {}).get("data") or {}).get("url",""))
         now=time.time()
-        _social_connection_save(sid,"facebook",{"access_token":access,"facebook_user_id":uid,"pages":pages,"saved_at":now,"expires_at":now+int(token.get("expires_in") or 0)})
-        _redirect(handler,"/?gsf_hub=social")
-    except Exception:_html(handler,502,"Collegamento Facebook non riuscito. Riprova dal Creator Hub.")
+        
+        # Determine selected Page
+        existing_sc=_social_connection_load(sid,"facebook") or {}
+        existing_pid=str(existing_sc.get("selected_page_id") or "")
+        selected_page_id=""
+        selected_page_name=""
+        selected_page_token=""
+        for vp in valid_pages:
+            if existing_pid and vp["id"]==existing_pid:
+                selected_page_id=vp["id"]
+                selected_page_name=vp["name"]
+                selected_page_token=vp["access_token"]
+                break
+        if not selected_page_id and valid_pages:
+            selected_page_id=valid_pages[0]["id"]
+            selected_page_name=valid_pages[0]["name"]
+            selected_page_token=valid_pages[0]["access_token"]
+
+        conn_payload={
+            "access_token":access,
+            "facebook_user_id":uid,
+            "user_name":str(info.get("name") or ""),
+            "pages":valid_pages,
+            "selected_page_id":selected_page_id,
+            "selected_page_name":selected_page_name,
+            "selected_page_token":selected_page_token,
+            "saved_at":now,
+            "expires_at":now+5184000,
+            "needs_reauth":False,
+            "owner_id":_storage_owner_id(sid),
+        }
+        _social_connection_save(sid,"facebook",conn_payload)
+        if len(valid_pages)>1:
+            _redirect(handler,"/?gsf_hub=social&fb_select=1")
+        elif len(valid_pages)==0:
+            _redirect(handler,"/?gsf_hub=social&fb_nopage=1")
+        else:
+            _redirect(handler,"/?gsf_hub=social")
+    except Exception as exc:
+        print("GSF_FB_CONNECT_ERR",sid,repr(str(exc))[:160],flush=True)
+        _html(handler,502,"Collegamento Facebook non riuscito. Riprova dal Creator Hub.")
 
 
 def _twitch_oauth_start(handler,sid):
@@ -3379,7 +3447,12 @@ def _start_twitch_token_validation():
 def _social_connected(sid,provider):
     try:
         token=_social_connection_load(sid,provider)
-        return bool(token.get("access_token") and (provider=="twitch" or float(token.get("expires_at") or 0)>time.time()))
+        if not token.get("access_token"):
+            return False
+        if provider=="facebook":
+            return bool(token.get("selected_page_id") and token.get("selected_page_token") and not token.get("needs_reauth"))
+        exp=float(token.get("expires_at",0) or 0)
+        return exp==0 or exp>time.time()
     except Exception:return False
 
 
@@ -5147,36 +5220,70 @@ def _instagram_direct_post(sid,video_path,plan,privacy):
 
 def _facebook_direct_post(sid,video_path,plan,privacy):
     sc=_social_connection_load(sid,"facebook") or {}
-    token=str(sc.get("access_token") or "")
-    pages=sc.get("pages") or []
-    page_id=""
-    page_token=token
-    if pages and isinstance(pages,list):
-        page_id=str(pages[0].get("id") or "")
-        page_token=str(pages[0].get("access_token") or token)
-    if not page_id:
-        page_id=str(sc.get("facebook_user_id") or "me")
-    if not page_token:
+    if not sc or not sc.get("access_token"):
         raise _pm413.PublishError("Collega Facebook dal Creator Hub prima di pubblicare.",code="needs_connection")
+    if sc.get("needs_reauth"):
+        raise _pm413.PublishError("Facebook: autorizzazione scaduta o non valida per la Pagina. Ricollega Facebook nelle Impostazioni.",code="needs_reauth")
+    
+    page_id=str(sc.get("selected_page_id") or "")
+    page_token=str(sc.get("selected_page_token") or "")
+    pages=sc.get("pages") or []
+
+    if (not page_id or not page_token) and len(pages)==1:
+        page_id=str(pages[0].get("id") or "")
+        page_token=str(pages[0].get("access_token") or "")
+        sc["selected_page_id"]=page_id
+        sc["selected_page_name"]=str(pages[0].get("name") or "")
+        sc["selected_page_token"]=page_token
+        try:_social_connection_save(sid,"facebook",sc)
+        except Exception:pass
+
+    if not page_id or not page_token:
+        if not pages:
+            raise _pm413.PublishError("Nessuna Pagina Facebook trovata per questo account. I video possono essere pubblicati solo su Pagine Facebook, non sui profili personali.",code="no_page")
+        else:
+            raise _pm413.PublishError("Seleziona una Pagina Facebook nelle Impostazioni prima di pubblicare.",code="no_page_selected")
+
     caption=str(plan.get("caption") or "")[:5000]
+    title=str(plan.get("title") or "")[:255]
     token_sig,_exp=_pm413.sign_share_link(_share_link_secret(),sid,ttl=86400)
     base_url=(PUBLIC_APP_URL or "https://gaming-shorts-factory-v79-production.up.railway.app").rstrip("/")
     video_url=f"{base_url}/share/public/{token_sig}"
+
     post_url=f"https://graph.facebook.com/{META_GRAPH_VERSION}/{page_id}/videos"
-    form_data=urllib.parse.urlencode({"file_url":video_url,"description":caption,"access_token":page_token}).encode("utf-8")
+    form_data=urllib.parse.urlencode({
+        "file_url":video_url,
+        "description":caption,
+        "title":title,
+        "access_token":page_token
+    }).encode("utf-8")
     req=urllib.request.Request(post_url,data=form_data,method="POST")
     try:
-        with urllib.request.urlopen(req,timeout=30) as resp:
+        with urllib.request.urlopen(req,timeout=45) as resp:
             data=json.loads(resp.read().decode("utf-8"))
             vid_id=data.get("id","")
-            return {"id":vid_id,"url":f"https://www.facebook.com/{vid_id}" if vid_id else "https://www.facebook.com/","privacy":privacy}
+            return {"id":vid_id,"url":f"https://www.facebook.com/{vid_id}" if vid_id else f"https://www.facebook.com/{page_id}","privacy":privacy}
     except urllib.error.HTTPError as exc:
         err_body=exc.read().decode("utf-8","ignore")
+        code_err="facebook_api_error"
         try:
-            msg=json.loads(err_body).get("error",{}).get("message","Errore Facebook API")
+            err_json=json.loads(err_body).get("error",{})
+            msg=err_json.get("message","Errore Facebook API")
+            err_code=err_json.get("code")
+            if exc.code in (400,401) or err_code==190 or "OAuthException" in str(err_json):
+                code_err="needs_reauth"
+                msg="Facebook: autorizzazione scaduta o revocata. Ricollega l'account Facebook nelle Impostazioni."
+                sc["needs_reauth"]=True
+                try:_social_connection_save(sid,"facebook",sc)
+                except Exception:pass
+            elif err_code==100 and "permission to publish the video" in msg.lower():
+                code_err="permission_denied"
+                msg="Facebook: permessi insufficienti per pubblicare video sulla Pagina. Assicurati che l'account abbia i ruoli di gestione della Pagina e ricollega l'account."
         except Exception:
             msg=err_body[:180] or "Errore pubblicazione Facebook"
-        raise _pm413.PublishError(f"Facebook: {msg}",code="facebook_api_error")
+        raise _pm413.PublishError(f"{msg}",code=code_err)
+    except Exception as exc:
+        raise _pm413.PublishError(f"Facebook: {str(exc)[:160]}",code="facebook_api_error")
 
 def _publish_run(sid,job,request,video_path):
     privacy=request["privacy"]
@@ -5365,6 +5472,27 @@ class Handler(BaseHTTPRequestHandler):
             except _social421.TwitchError as exc:_json(self,exc.status,{"ok":False,"error":str(exc)})
             except ValueError:_json(self,400,{"ok":False,"error":"Richiesta Twitch non valida"})
             except Exception:_json(self,503,{"ok":False,"error":"Contenuti Twitch temporaneamente non disponibili"})
+            return
+        if clean=="/social-connect/facebook/pages":
+            sid=_social_sid(self)
+            sc=_social_connection_load(sid,"facebook") or {}
+            pages=sc.get("pages") or []
+            selected_id=str(sc.get("selected_page_id") or "")
+            out_pages=[]
+            for p in pages:
+                out_pages.append({
+                    "id":str(p.get("id") or ""),
+                    "name":str(p.get("name") or "Pagina"),
+                    "picture":str(p.get("picture") or ""),
+                    "selected":str(p.get("id") or "")==selected_id,
+                })
+            _json(self,200,{
+                "ok":True,
+                "connected":bool(sc.get("access_token")),
+                "has_pages":len(out_pages)>0,
+                "selected_page":{"id":selected_id,"name":str(sc.get("selected_page_name") or "")} if selected_id else None,
+                "pages":out_pages,
+            })
             return
         if clean=="/social-connect/youtube/content":
             try:
@@ -5773,7 +5901,7 @@ class Handler(BaseHTTPRequestHandler):
                     "youtube":bool(youtube_state),
                     "tiktok":bool(tiktok_state),
                     "instagram":bool(instagram_state),
-                    "facebook":bool(providers.get("facebook")),
+                    "facebook":bool(_social_connected(sid,"facebook") or providers.get("facebook")),
                     "twitch":bool(social_snapshot.get("twitch")),
                 },
                 "stats":{
@@ -5794,6 +5922,13 @@ class Handler(BaseHTTPRequestHandler):
                     "published":list((row or {}).get("published") or [])[:8],
                 } for row in all_shorts[:max(1,int(limits.get("shorts") or FREE_SHORT_LIMIT))]],
                 "project":project,
+                "facebook_page":{
+                    "connected":bool((_social_connection_load(sid,"facebook") or {}).get("selected_page_id")),
+                    "id":str((_social_connection_load(sid,"facebook") or {}).get("selected_page_id") or ""),
+                    "name":str((_social_connection_load(sid,"facebook") or {}).get("selected_page_name") or ""),
+                    "has_pages":bool((_social_connection_load(sid,"facebook") or {}).get("pages")),
+                    "page_count":len((_social_connection_load(sid,"facebook") or {}).get("pages") or []),
+                },
             })
             return
         if clean=="/account":
@@ -6052,6 +6187,40 @@ class Handler(BaseHTTPRequestHandler):
                 profile["display_name"]=name; profile["updated_at"]=time.time(); _creator_account_save(sid,profile)
                 _json(self,200,{"ok":True,"display_name":name,"updated_at":profile["updated_at"]})
             except Exception as exc: _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+        if path=="/social-connect/facebook/select-page":
+            sid=_social_sid(self)
+            if not sid:
+                _json(self,400,{"ok":False,"error":"Sessione browser non valida."})
+                return
+            try:
+                raw=self.rfile.read(int(self.headers.get("Content-Length",0) or 0))
+                body=json.loads(raw.decode("utf-8")) if raw else {}
+            except Exception:
+                body={}
+            target_page_id=str(body.get("page_id") or "")
+            sc=_social_connection_load(sid,"facebook") or {}
+            pages=sc.get("pages") or []
+            found=None
+            for p in pages:
+                if str(p.get("id") or "")==target_page_id:
+                    found=p
+                    break
+            if not found:
+                _json(self,404,{"ok":False,"error":"Pagina non trovata tra quelle accessibili."})
+                return
+            sc["selected_page_id"]=str(found.get("id") or "")
+            sc["selected_page_name"]=str(found.get("name") or "")
+            sc["selected_page_token"]=str(found.get("access_token") or "")
+            sc["needs_reauth"]=False
+            _social_connection_save(sid,"facebook",sc)
+            _json(self,200,{
+                "ok":True,
+                "selected_page":{
+                    "id":sc["selected_page_id"],
+                    "name":sc["selected_page_name"],
+                }
+            })
             return
         if path=="/creator-hub/social/disconnect":
             if not _security_csrf_valid(self,sid):
