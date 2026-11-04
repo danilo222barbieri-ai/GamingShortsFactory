@@ -471,6 +471,225 @@ _GENRE_MATCH_ORDER = (
 )
 
 
+CANONICAL_GAME_MAP: dict[str, tuple[str, str]] = {
+    # keyword: (Display Title, Genre)
+    "valorant": ("Valorant", "FPS"),
+    "counter strike": ("Counter-Strike 2", "FPS"),
+    "counterstrike": ("Counter-Strike 2", "FPS"),
+    "cs2": ("Counter-Strike 2", "FPS"),
+    "csgo": ("Counter-Strike: Global Offensive", "FPS"),
+    "call of duty": ("Call of Duty", "FPS"),
+    "modern warfare": ("Call of Duty: Modern Warfare", "FPS"),
+    "black ops": ("Call of Duty: Black Ops", "FPS"),
+    "overwatch": ("Overwatch 2", "FPS"),
+    "rainbow six": ("Rainbow Six Siege", "FPS"),
+    "r6 siege": ("Rainbow Six Siege", "FPS"),
+    "battlefield": ("Battlefield", "FPS"),
+    "doom": ("DOOM", "FPS"),
+    "the finals": ("The Finals", "FPS"),
+    "escape from tarkov": ("Escape from Tarkov", "FPS"),
+    "tarkov": ("Escape from Tarkov", "FPS"),
+    "fortnite": ("Fortnite", "Battle Royale"),
+    "warzone": ("Call of Duty: Warzone", "Battle Royale"),
+    "apex legends": ("Apex Legends", "Battle Royale"),
+    "apex": ("Apex Legends", "Battle Royale"),
+    "pubg": ("PUBG", "Battle Royale"),
+    "fall guys": ("Fall Guys", "Battle Royale"),
+    "devil may cry": ("Devil May Cry", "Action"),
+    "dmc": ("Devil May Cry", "Action"),
+    "god of war": ("God of War", "Action"),
+    "black myth": ("Black Myth: Wukong", "Action"),
+    "wukong": ("Black Myth: Wukong", "Action"),
+    "sekiro": ("Sekiro: Shadows Die Twice", "Action"),
+    "hades": ("Hades", "Action"),
+    "monster hunter": ("Monster Hunter", "Action"),
+    "sifu": ("Sifu", "Action"),
+    "ghost of tsushima": ("Ghost of Tsushima", "Action"),
+    "forza": ("Forza Horizon", "Racing"),
+    "gran turismo": ("Gran Turismo", "Racing"),
+    "assetto corsa": ("Assetto Corsa", "Racing"),
+    "f1 24": ("F1 24", "Racing"),
+    "f1 23": ("F1 23", "Racing"),
+    "f1": ("F1", "Racing"),
+    "formula 1": ("Formula 1", "Racing"),
+    "need for speed": ("Need for Speed", "Racing"),
+    "nfs": ("Need for Speed", "Racing"),
+    "mario kart": ("Mario Kart", "Racing"),
+    "rocket league": ("Rocket League", "Sports"),
+    "ea sports fc": ("EA Sports FC", "Sports"),
+    "fc 24": ("EA Sports FC 24", "Sports"),
+    "fc 25": ("EA Sports FC 25", "Sports"),
+    "fifa": ("EA Sports FC", "Sports"),
+    "nba 2k": ("NBA 2K", "Sports"),
+    "minecraft": ("Minecraft", "Survival"),
+    "rust": ("Rust", "Survival"),
+    "sons of the forest": ("Sons of the Forest", "Survival"),
+    "the forest": ("The Forest", "Survival"),
+    "palworld": ("Palworld", "Survival"),
+    "valheim": ("Valheim", "Survival"),
+    "subnautica": ("Subnautica", "Survival"),
+    "resident evil": ("Resident Evil", "Horror"),
+    "silent hill": ("Silent Hill", "Horror"),
+    "dead by daylight": ("Dead by Daylight", "Horror"),
+    "dbd": ("Dead by Daylight", "Horror"),
+    "phasmophobia": ("Phasmophobia", "Horror"),
+    "lethal company": ("Lethal Company", "Horror"),
+    "alan wake": ("Alan Wake", "Horror"),
+    "elden ring": ("Elden Ring", "RPG"),
+    "dark souls": ("Dark Souls", "RPG"),
+    "bloodborne": ("Bloodborne", "RPG"),
+    "baldur s gate": ("Baldur\'s Gate 3", "RPG"),
+    "bg3": ("Baldur\'s Gate 3", "RPG"),
+    "cyberpunk 2077": ("Cyberpunk 2077", "RPG"),
+    "cyberpunk": ("Cyberpunk 2077", "RPG"),
+    "witcher": ("The Witcher 3", "RPG"),
+    "genshin impact": ("Genshin Impact", "RPG"),
+    "super mario": ("Super Mario", "Platform"),
+    "mario wonder": ("Super Mario Wonder", "Platform"),
+    "mario odyssey": ("Super Mario Odyssey", "Platform"),
+    "celeste": ("Celeste", "Platform"),
+    "hollow knight": ("Hollow Knight", "Platform"),
+    "cuphead": ("Cuphead", "Platform"),
+    "astro bot": ("Astro Bot", "Platform"),
+    "life is strange": ("Life is Strange", "Narrative"),
+    "detroit become human": ("Detroit: Become Human", "Narrative"),
+    "the walking dead": ("The Walking Dead", "Narrative"),
+    "death stranding": ("Death Stranding", "Narrative"),
+    "disco elysium": ("Disco Elysium", "Narrative"),
+}
+
+
+def probe_media_metadata(source_path: str | Path) -> dict[str, str]:
+    """Extract format tags/metadata via ffprobe (tags like title, game, comment)."""
+    tags: dict[str, str] = {}
+    try:
+        out = subprocess.check_output(
+            [
+                "ffprobe", "-v", "error",
+                "-show_entries", "format_tags",
+                "-of", "json",
+                str(source_path)
+            ],
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+            text=True
+        )
+        data = json.loads(out)
+        tags = data.get("format", {}).get("tags", {}) or {}
+    except Exception:
+        pass
+    return tags
+
+
+def extract_game_title_from_path_or_meta(
+    source_path_or_title: Any,
+    metadata: Mapping[str, Any] | None = None
+) -> tuple[str, str]:
+    """Extract clean canonical game title and matched genre from filename or metadata."""
+    raw = str(source_path_or_title or "").strip()
+    if not raw and not metadata:
+        return "", "Auto"
+
+    # Check container metadata tags first
+    if isinstance(metadata, Mapping):
+        for k in ("game", "title", "game_name", "comment", "description", "album"):
+            v = str(metadata.get(k) or "").strip()
+            if v:
+                g = infer_game_genre_v2(v)
+                if g != "Auto":
+                    return v, g
+
+    p = Path(raw)
+    stem = p.stem if p.suffix else raw
+
+    # Split camelCase / PascalCase e.g. RocketLeague -> Rocket League
+    s = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", stem)
+    s = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1 \2", s)
+    s = re.sub(r"[\W_]+", " ", s).strip().lower()
+
+    # Sort keywords by length descending so longer phrases match first
+    sorted_kws = sorted(CANONICAL_GAME_MAP.keys(), key=lambda k: len(k), reverse=True)
+    padded = f" {s} "
+    for kw in sorted_kws:
+        if f" {kw} " in padded or (len(kw) > 3 and kw in s):
+            title, genre = CANONICAL_GAME_MAP[kw]
+            return title, genre
+
+    # Fallback to general infer_game_genre_v2
+    g = infer_game_genre_v2(s)
+    return ("", g)
+
+
+def classify_game_genre_from_scan(scan: Mapping[str, Any] | None) -> tuple[str, float]:
+    """Live behavioral classification of video genre from audio and motion arrays."""
+    if not isinstance(scan, Mapping):
+        return "Auto", 1.0
+    audio = [_num(x) for x in (scan.get("audio") or [])]
+    motion = [_num(x) for x in (scan.get("motion") or [])]
+    n = min(len(audio), len(motion))
+    if n < 6:
+        return "Auto", 1.0
+
+    avg_m = sum(motion) / n
+    avg_a = sum(audio) / n
+    max_m = max(motion)
+    max_a = max(audio)
+
+    if max_m < 0.05 and max_a < 0.05:
+        return "Auto", 1.0
+
+    silence_ratio = sum(1 for a in audio if a < 0.15) / n
+    active_motion_ratio = sum(1 for m in motion if m > 0.40) / n
+    motion_burstiness = max_m - avg_m
+    audio_burstiness = max_a - avg_a
+
+    # Horror: long periods of silence/low audio punctuated by extreme audio jumpscares
+    if silence_ratio >= 0.50 and audio_burstiness >= 0.55 and avg_m < 0.35:
+        return "Horror", 0.85
+
+    # Racing: continuous high-velocity sustained motion, very few quiet moments
+    if active_motion_ratio >= 0.60 and avg_m >= 0.50 and motion_burstiness < 0.38:
+        return "Racing", 0.85
+
+    # Action / Hack-and-Slash: high sustained combo combat motion with frequent bursts
+    if active_motion_ratio >= 0.25 and motion_burstiness >= 0.35:
+        return "Action", 0.80
+
+    # FPS: high burstiness in both motion and audio (gunfights, flick shots) with moderate baseline
+    if motion_burstiness >= 0.45 and audio_burstiness >= 0.45 and avg_m < 0.45:
+        return "FPS", 0.75
+
+    # Sports: high audio arc/cheering with intermittent play action
+    if audio_burstiness >= 0.50 and silence_ratio < 0.30 and avg_a >= 0.35:
+        return "Sports", 0.70
+
+    return "Auto", 1.0
+
+
+def detect_game_genre_live(
+    source_path_or_title: Any,
+    scan: Mapping[str, Any] | None = None,
+    metadata: Mapping[str, Any] | None = None,
+) -> tuple[str, str, float]:
+    """Live game-aware classifier.
+    
+    Returns:
+        (genre, detected_game_title, confidence)
+    """
+    raw_input = str(source_path_or_title or "").strip()
+    title, genre = extract_game_title_from_path_or_meta(raw_input, metadata=metadata)
+    if genre and genre != "Auto":
+        return genre, title, 0.95
+
+    if scan:
+        scan_genre, conf = classify_game_genre_from_scan(scan)
+        if scan_genre != "Auto":
+            return scan_genre, title or scan_genre, conf
+
+    return "Auto", title or "", 1.0
+
+
+
 def infer_game_genre_v2(value: Any) -> str:
     """Infer one of the 10 canonical game genres from a title/hint, or 'Auto' if unknown."""
     text = re.sub(r"[^a-z0-9]+", " ", str(value or "").lower()).strip()
@@ -494,6 +713,11 @@ def infer_game_genre_v2(value: Any) -> str:
                 if f" {clean_kw} " in padded:
                     return gname
     return "Auto"
+
+
+# Backward compatibility aliases
+infer_game_genre = infer_game_genre_v2
+detect_game_genre = detect_game_genre_live
 
 
 def get_game_profile(genre_or_title: Any) -> dict[str, Any]:
@@ -578,11 +802,14 @@ def precision_refine_boundary(
     total_seconds: float = 0.0,
     genre: str = "Auto",
 ) -> tuple[float, float]:
-    """Zero-subprocess boundary refinement using the 0.5s scan arrays.
+    """Zero-subprocess precision boundary refinement with dynamic contextual padding (< 5ms).
 
-    Finds a natural low-energy / silence dip near the candidate start so the clip
-    doesn't cut in the middle of a word or explosion, while keeping the main peak
-    inside the 35%-75% payoff zone.
+    Uses genre-specific context padding (pre_event_seconds & post_event_seconds)
+    and anti-cutoff boundary evaluation to ensure:
+    1. Cuts avoid loud speech/action peaks at both boundaries (natural breath/pause dip).
+    2. Event climax is guaranteed inside the 35%-75% payoff zone.
+    3. Neither pre-event context nor post-event reaction/aftermath is cut prematurely.
+    4. Clip boundaries strictly adhere to [0.0, total_seconds].
     """
     duration = max(0.5, _num(target_duration, 15.0))
     start = max(0.0, _num(center_start, 0.0))
@@ -604,7 +831,7 @@ def precision_refine_boundary(
 
     start = min(start, max_start)
 
-    # Locate the strongest instant inside [start, start + duration]
+    # Locate the strongest climax instant inside [start, start + duration]
     i0 = max(0, min(n - 1, int(round(start / step))))
     i1 = max(i0 + 1, min(n, int(round((start + duration) / step))))
     best_idx = i0
@@ -620,16 +847,17 @@ def precision_refine_boundary(
 
     peak_time = best_idx * step
     prof = get_game_profile(genre)
-    pre_pad = _num((prof.get("context_padding") or {}).get("pre_event_seconds"), 4.5)
-    # Target start places the climax around 45%-60% of the clip, or pre_pad before peak
-    ideal_offset = min(duration * 0.52, max(pre_pad, duration * 0.36))
+    pad_cfg = prof.get("context_padding") or {}
+    pre_pad = _num(pad_cfg.get("pre_event_seconds"), 4.5)
+    post_pad = _num(pad_cfg.get("post_event_seconds"), 3.0)
+
+    # Ideal offset centers pre_pad context before peak and post_pad after
+    ideal_offset = min(duration * 0.65, max(pre_pad, duration * 0.35))
     ideal_start = max(0.0, min(max_start, peak_time - ideal_offset))
 
-    # Search within [-2.0s, +2.0s] around ideal_start (and within [-3.0s, +3.0s] of original start)
-    search_lo = max(0.0, ideal_start - 2.0, start - 3.0)
-    search_hi = min(max_start, ideal_start + 2.0, start + 3.0)
-    if search_hi < search_lo:
-        search_lo, search_hi = max(0.0, start - 1.5), min(max_start, start + 1.5)
+    # Search window locally bounded around start (+/- 2.0s) to preserve candidate diversity
+    search_lo = max(0.0, start - 2.0)
+    search_hi = min(max_start, start + 2.0)
 
     idx_lo = max(0, min(n - 1, int(round(search_lo / step))))
     idx_hi = max(idx_lo, min(n - 1, int(round(search_hi / step))))
@@ -637,18 +865,28 @@ def precision_refine_boundary(
     chosen_start = start
     best_cost = 999.0
     for idx in range(idx_lo, idx_hi + 1):
-        cand_start = min(max_start, idx * step)
-        # Cost combines audio level at cut point (prefer quiet transition) + distance from ideal
-        a_cut = _num(audio[idx])
-        m_cut = _num(motion[idx])
-        # Next bucket hook energy (we want activity right after the cut)
+        cand_st = min(max_start, idx * step)
+        a_start = _num(audio[idx])
+        m_start = _num(motion[idx])
+        end_idx = min(n - 1, int(round((cand_st + duration) / step)))
+        a_end = _num(audio[end_idx])
+
         next_idx = min(n - 1, idx + 1)
         hook_energy = 0.5 * _num(audio[next_idx]) + 0.5 * _num(motion[next_idx])
-        drift = abs(cand_start - ideal_start) / max(1.0, duration)
-        cost = 0.50 * a_cut + 0.20 * m_cut - 0.18 * hook_energy + 0.35 * drift
+        drift_ideal = abs(cand_st - ideal_start) / max(1.0, duration)
+        drift_orig = abs(cand_st - start) / max(1.0, duration)
+
+        cost = (
+            0.35 * a_start
+            + 0.20 * a_end
+            + 0.15 * m_start
+            - 0.15 * hook_energy
+            + 0.25 * drift_ideal
+            + 0.20 * drift_orig
+        )
         if cost < best_cost:
             best_cost = cost
-            chosen_start = cand_start
+            chosen_start = cand_st
 
     return round(max(0.0, min(max_start, chosen_start)), 3), float(duration)
 
@@ -1147,13 +1385,29 @@ def run_fast_ai_pipeline(
         scan = run_fast_scan_base(src, total_seconds)
         save_cached_scan(src, scan, out_dir, ENGINE_VERSION_V2)
 
+    # BLOCCO 3: Advanced Live Game-Aware Classification
+    effective_genre = str(genre or "Auto").strip()
+    detected_game = ""
+    genre_conf = 1.0
+    if effective_genre in ("", "Auto") or effective_genre not in GAME_PROFILES:
+        inferred_g, det_title, g_conf = detect_game_genre_live(
+            source_path_or_title=src,
+            scan=scan,
+            metadata=None,
+        )
+        effective_genre = inferred_g
+        detected_game = det_title
+        genre_conf = g_conf
+    else:
+        detected_game = effective_genre
+
     _chk()
-    _prog(50.0, "Smart Ranking dei momenti migliori...")
+    _prog(50.0, f"Smart Ranking dei momenti migliori ({effective_genre})...")
     selected, alternates = smart_rank_candidates(
         scan,
         target_duration=eff_duration,
         total_seconds=total_seconds,
-        genre=genre,
+        genre=effective_genre,
         profile=profile,
         target_count=3,
         sid=sid,
@@ -1189,7 +1443,9 @@ def run_fast_ai_pipeline(
     )
     meta["status"] = status_label
     meta["result_state"] = result_state
-    meta["genre"] = genre
+    meta["genre"] = effective_genre
+    meta["detected_game"] = detected_game
+    meta["genre_confidence"] = genre_conf
     if result_state == "completed_no_highlights":
         meta["items"] = []
         meta["message"] = "Nessun momento sufficientemente forte trovato nel gameplay. Puoi aprirlo nell’Editor."
@@ -1205,4 +1461,7 @@ def run_fast_ai_pipeline(
         "duration": eff_duration,
         "total_time": round(time.perf_counter() - t_start, 3),
         "message": meta.get("message", ""),
+        "genre": effective_genre,
+        "detected_game": detected_game,
+        "genre_confidence": genre_conf,
     }

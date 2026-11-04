@@ -8,7 +8,7 @@ class FailureContract(unittest.TestCase):
  def test_duration_probe_works_when_ffmpeg_encoder_wrapper_cannot_probe(self):
   import ast,subprocess,shutil,tempfile
   from visual.gsf_navigation_stress import MEDIA_FIXTURE
-  tree=ast.parse((ROOT/'app.py').read_text());node=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='_gsf_duration_cached');node.decorator_list=[]
+  tree=ast.parse((ROOT/'app.py').read_text(encoding='utf-8'));node=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='_gsf_duration_cached');node.decorator_list=[]
   ns={'FFPROBE_PATH':shutil.which('ffprobe'),'subprocess':subprocess}
   exec(compile(ast.Module(body=[node],type_ignores=[]),'<actual-duration-reader>','exec'),ns)
   with tempfile.TemporaryDirectory() as folder:
@@ -40,7 +40,7 @@ class FailureBrowser(unittest.TestCase):
      if '/ai/results' in r.request.url:
       request=page.evaluate('currentAIRequest')
       r.fulfill(json={'ok':True,'request_id':request,'previews':[],'status':'failed' if request else 'idle','error':'L’analisi richiede almeno 5 secondi.'})
-     else:r.fulfill(content_type='text/html',body=(ROOT/'web/ai_v221_component/index.html').read_text())
+     else:r.fulfill(content_type='text/html',body=(ROOT/'web/ai_v221_component/index.html').read_text(encoding='utf-8'))
     page.route('**/*',route);page.goto('http://gsf.test/')
     page.evaluate("postMessage({type:'GSF_AI_STATE',state:{loaded:true}},location.origin)")
     page.locator('#createAi').click()
@@ -88,8 +88,9 @@ class ProviderBudget(unittest.TestCase):
 
 class RequestIsolation(unittest.TestCase):
  def test_old_failure_cannot_stop_new_analysis(self):
-  import subprocess
-  html=(ROOT/'web/ai_v221_component/index.html').read_text()
+  import subprocess, shutil
+  if not shutil.which('node'): self.skipTest('node not installed')
+  html=(ROOT/'web/ai_v221_component/index.html').read_text(encoding='utf-8')
   functions=html[html.index('function freshRows('):html.index('async function startSearch(')]
   script="""const vm=require('node:vm'),assert=require('node:assert/strict');let retries=0;const context={Date,requestId:'current',pollToken:1,awaitingResults:true,state:{processing:true},fetchResults:async()=>({request_id:'older',status:'failed',error:'Old failure',previews:[]}),setTimeout:()=>retries++,setScan:()=>{throw Error('Stale failure must not stop current scan')},render(){},alive(){}};vm.createContext(context);vm.runInContext(SOURCE,context);vm.runInContext('pollResults(1,Date.now()+10000)',context).then(()=>{assert.equal(context.state.processing,true);assert.equal(context.awaitingResults,true);assert.equal(retries,1)}).catch(e=>{console.error(e);process.exit(1)});"""
   import json

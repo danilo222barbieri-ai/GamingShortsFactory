@@ -13720,6 +13720,10 @@ if video:
                                 "alternates": _alt_list,
                                 "pool_size": len(_sel_list),
                             }
+                            if _fast_res.get("detected_game"):
+                                st.session_state["gsf_ai_detected_game"] = _fast_res["detected_game"]
+                            if _fast_res.get("genre"):
+                                st.session_state["gsf_ai_detected_genre"] = _fast_res["genre"]
                         except Exception as _gsf_ai_rank_failure:
                             print("GSF_AI_FAST_FAILURE", type(_gsf_ai_rank_failure).__name__, str(_gsf_ai_rank_failure), flush=True)
                             risultati_ai, ai_diag, candidati = [], {}, []
