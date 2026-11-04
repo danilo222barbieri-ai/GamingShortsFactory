@@ -22,9 +22,18 @@ from pathlib import Path
 from cryptography.fernet import Fernet, InvalidToken
 from urllib.parse import unquote, urlparse, parse_qs
 
-import boto3
-from botocore.config import Config
-from boto3.s3.transfer import TransferConfig
+try:
+    import boto3
+    from botocore.config import Config
+    from boto3.s3.transfer import TransferConfig
+except ImportError:
+    boto3 = None
+    class Config:
+        def __init__(self, *args, **kwargs):
+            pass
+    class TransferConfig:
+        def __init__(self, *args, **kwargs):
+            pass
 from gsf_perf import perf_event
 from guardian_v113 import inspect_and_repair_local as _guardian_local, source_restore_plan as _guardian_source_plan
 from quality_control_v124 import inspect_final_video as _quality_inspect
@@ -909,6 +918,24 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
             "analysis_key":analysis_key,
         })
         try:
+            _auto_save_uploaded_source_to_projects(
+                sid,upload_id,str(final),original_name,total,key,analysis_key
+            )
+        except Exception as proj_exc:
+            print("GSF_AUTO_SAVE_PROJECT_WARN",sid,upload_id,repr(str(proj_exc))[:180],flush=True)
+        try:
+            mgr=_get_global_job_manager()
+            for j in mgr.list_jobs(sid,limit=20,include_terminal=True):
+                if j.get("idempotency_key")==f"upload_{upload_id}" or (j.get("payload") or {}).get("upload_id")==upload_id:
+                    mgr.update_job(
+                        sid,j["id"],status="completed",progress=100.0,stage="Video caricato",
+                        result={"upload_id":upload_id,"path":str(final),"name":original_name},
+                        sync_s3=True,
+                    )
+                    break
+        except Exception:
+            pass
+        try:
             os.utime(ROOT/"sessions"/sid/".active",None)
         except Exception:
             pass
@@ -928,6 +955,17 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
             "error":str(exc)[:240],
             "failed_at":time.time(),
         })
+        try:
+            mgr=_get_global_job_manager()
+            for j in mgr.list_jobs(sid,limit=20,include_terminal=True):
+                if j.get("idempotency_key")==f"upload_{upload_id}" or (j.get("payload") or {}).get("upload_id")==upload_id:
+                    mgr.update_job(
+                        sid,j["id"],status="failed",stage="Errore preparazione video",
+                        error=str(exc)[:200],sync_s3=True,
+                    )
+                    break
+        except Exception:
+            pass
         perf_event(
             "materialize_error",
             upload_id=str(upload_id),
@@ -2185,6 +2223,112 @@ def _current_project_delete(sid):
     _write_json_atomic(root/"index.json",idx)
     print("GSF_PROJECT_DELETED",_safe_id(sid),pid,flush=True)
     return True
+
+def _auto_save_uploaded_source_to_projects(sid,upload_id,source_path,original_name,total=0,bucket_key="",analysis_key=""):
+    """Idempotently save a newly uploaded video into Projects & Drafts without duplication."""
+    sid=_safe_id(sid)
+    upload_id=_safe_id(upload_id) or "current"
+    if not sid or not source_path:
+        return {"ok":False,"error":"invalid session or source path"}
+    now=time.time()
+    clean_name=str(original_name or Path(str(source_path)).name or "Gameplay")[:160]
+    title=_v304_clean_title("Progetto · "+clean_name[:120],"Progetto · Gameplay")
+    session_root=ROOT/"sessions"/sid
+    session_root.mkdir(parents=True,exist_ok=True)
+
+    # 1. Update session_state.json and editor2027_current.txt so page navigation never loses the source.
+    state={}
+    state_path=session_root/"session_state.json"
+    if state_path.is_file():
+        try:
+            raw=json.loads(state_path.read_text(encoding="utf-8"))
+            if isinstance(raw,dict):
+                candidate=raw.get("state") if isinstance(raw.get("state"),dict) else raw
+                if isinstance(candidate,dict):
+                    state.update(candidate)
+        except Exception:
+            pass
+    state["video_Originale"]=str(source_path)
+    state["gsf_source_path"]=str(source_path)
+    state["gsf_editor_source_path"]=str(source_path)
+    state["gsf_source_name"]=clean_name
+    state["gsf_uploaded_video_name"]=clean_name
+    state["gsf_last_upload_id"]=upload_id
+    try:
+        _write_json_atomic(state_path,state)
+        (session_root/"editor2027_current.txt").write_text(str(source_path),encoding="utf-8")
+    except Exception:
+        pass
+
+    # 2. Save active project record in creator-projects / sessions/projects.
+    profile=_creator_account_load(sid) or {}
+    account_id=_safe_id(profile.get("account_id","")) if isinstance(profile,dict) else ""
+    project_root=(ROOT/"creator-projects"/account_id) if account_id else (session_root/"projects")
+    proj_id="proj_"+upload_id
+    proj_dir=project_root/proj_id
+    proj_dir.mkdir(parents=True,exist_ok=True)
+    pdata={
+        "id":proj_id,
+        "title":title,
+        "source_name":clean_name,
+        "upload_id":upload_id,
+        "updated_at":now,
+        "state":state,
+    }
+    _write_json_atomic(proj_dir/"project_state.json",pdata)
+    idx={}
+    idx_path=project_root/"index.json"
+    if idx_path.is_file():
+        try:
+            raw_idx=json.loads(idx_path.read_text(encoding="utf-8"))
+            if isinstance(raw_idx,dict):
+                idx=raw_idx
+        except Exception:
+            idx={}
+    projects_list=[r for r in (idx.get("projects") or idx.get("items") or []) if isinstance(r,dict) and _safe_id(r.get("id",""))!=proj_id]
+    projects_list.insert(0,{"id":proj_id,"title":title,"source_name":clean_name,"video_filename":clean_name,"upload_id":upload_id,"updated_at":now})
+    idx["active_project_id"]=proj_id
+    idx["active_project_title"]=title
+    idx["updated_at"]=now
+    idx["projects"]=projects_list[:50]
+    idx["items"]=projects_list[:50]
+    _write_json_atomic(idx_path,idx)
+
+    # 3. Upsert deterministic auto-draft (`draft_auto_<upload_id>`) so Creator Hub -> Progetti shows it immediately.
+    draft_id="draft_auto_"+upload_id
+    draft_payload={
+        "id":draft_id,
+        "title":title,
+        "source_name":clean_name,
+        "state":state,
+    }
+    draft_res={}
+    try:
+        draft_res=_draft_save(sid,draft_payload)
+    except StorageQuotaError:
+        # If quota is full of old automatic drafts, rotate the oldest auto-draft so new upload is saved.
+        try:
+            existing_drafts=_draft_list(sid)
+            auto_drafts=[d for d in existing_drafts if isinstance(d,dict) and str(d.get("id") or "").startswith("draft_auto_")]
+            if auto_drafts:
+                oldest=min(auto_drafts,key=lambda x:float(x.get("updated_at") or 0))
+                if oldest.get("id"):
+                    _draft_delete(sid,oldest["id"])
+                    draft_res=_draft_save(sid,draft_payload)
+        except Exception:
+            pass
+    except Exception as exc:
+        print("GSF_AUTO_DRAFT_SAVE_WARN",sid,upload_id,repr(str(exc))[:180],flush=True)
+
+    return {
+        "ok":True,
+        "saved":True,
+        "project_id":proj_id,
+        "draft_id":draft_res.get("id") or draft_id,
+        "upload_id":upload_id,
+        "title":title,
+        "source_name":clean_name,
+    }
 
 def _short_index_path(sid):
     sid=_safe_id(sid)
@@ -6177,6 +6321,51 @@ class Handler(BaseHTTPRequestHandler):
                     pass
             _json(self,200,{"ok":True,"ready":False})
             return
+        if clean=="/chunk/status":
+            sid=_safe_id(self.headers.get("X-GSF-Session-ID")) or _social_sid(self)
+            q=parse_qs(path.query)
+            upload_id=_safe_id((q.get("upload_id") or [""])[0])
+            expected_size=int((q.get("size") or ["0"])[0] or 0) if str((q.get("size") or ["0"])[0]).isdigit() else 0
+            if not sid or not upload_id:
+                _json(self,400,{"ok":False,"error":"invalid status id"})
+                return
+            media=ROOT/"sessions"/sid/"media"
+            marker=media/".direct_upload_ready.json"
+            if marker.is_file():
+                try:
+                    mdata=json.loads(marker.read_text(encoding="utf-8"))
+                    mpath=Path(str(mdata.get("path") or ""))
+                    if str(mdata.get("upload_id",""))==upload_id and mpath.is_file():
+                        _json(self,200,{"ok":True,"completed":True,"resumed":True,"received":[],"progress":100.0,"upload_id":upload_id})
+                        return
+                except Exception:
+                    pass
+            upload_dir=ROOT/"sessions"/sid/"direct_upload"/upload_id
+            state_path=upload_dir/"state.json"
+            data_path=upload_dir/"upload.tmp"
+            if state_path.is_file() and data_path.is_file():
+                try:
+                    st=json.loads(state_path.read_text(encoding="utf-8"))
+                    st_total=int(st.get("total",0) or 0)
+                    st_count=max(1,int(st.get("count",1) or 1))
+                    if expected_size<=0 or st_total==expected_size:
+                        received=sorted({int(x) for x in (st.get("received") or []) if 0<=int(x)<st_count})
+                        pct=round((len(received)/st_count)*100.0,1)
+                        _json(self,200,{
+                            "ok":True,
+                            "completed":False,
+                            "resumed":len(received)>0,
+                            "received":received,
+                            "count":st_count,
+                            "total":st_total,
+                            "progress":pct,
+                            "upload_id":upload_id,
+                        })
+                        return
+                except Exception:
+                    pass
+            _json(self,200,{"ok":True,"completed":False,"resumed":False,"received":[],"progress":0.0,"upload_id":upload_id})
+            return
         _json(self,404,{"ok":False,"error":"not found"})
 
     def do_POST(self):
@@ -6730,6 +6919,35 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,500,{"ok":False,"error":str(exc)[:220]})
             return
 
+        if path=="/projects/save-uploaded-source":
+            try:
+                try:
+                    data=_read_json(self,max_bytes=32*1024)
+                except Exception:
+                    data={}
+                data=data if isinstance(data,dict) else {}
+                marker=ROOT/"sessions"/sid/"media"/".direct_upload_ready.json"
+                meta={}
+                if marker.is_file():
+                    raw_m=json.loads(marker.read_text(encoding="utf-8"))
+                    if isinstance(raw_m,dict):
+                        meta=dict(raw_m)
+                source_path=str(meta.get("path") or data.get("path") or "")
+                original_name=str(meta.get("name") or data.get("name") or "Gameplay")
+                upload_id=_safe_id(meta.get("upload_id") or data.get("upload_id") or "current")
+                total=int(meta.get("size") or data.get("size") or 0)
+                if not source_path:
+                    _json(self,404,{"ok":False,"error":"Nessun video caricato trovato per il salvataggio nei Progetti."})
+                    return
+                res=_auto_save_uploaded_source_to_projects(
+                    sid,upload_id,source_path,original_name,total,
+                    str(meta.get("bucket_key") or ""),str(meta.get("analysis_key") or ""),
+                )
+                _json(self,200 if res.get("ok") else 400,res)
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:200]})
+            return
+
         if path=="/bucket/init":
             if not _bucket_enabled():
                 _json(self,503,{"ok":False,"error":"bucket unavailable"})
@@ -6741,21 +6959,97 @@ class Handler(BaseHTTPRequestHandler):
                 content_type=str(data.get("type") or "application/octet-stream")
                 if total<=0 or total>MAX_FILE_BYTES:
                     raise ValueError("file size not allowed")
-                upload_id=uuid.uuid4().hex[:20]
-                try:_source_capture_upload(sid,upload_id)
-                except Exception as exc:print("GSF_SOURCE_PROVENANCE_WARN",type(exc).__name__,flush=True)
-                key=f"uploads/{sid}/{upload_id}/{safe_stem}{ext}"
-                analysis_key=f"analysis/{sid}/{upload_id}/v52-keyframe-turbo.json"
-                created=_s3().create_multipart_upload(
-                    Bucket=S3_BUCKET,
-                    Key=key,
-                    ContentType=content_type,
-                    Metadata={
-                        "gsf-upload-id":upload_id,
-                        "gsf-original-name":original_name[:200],
-                    },
-                )
-                multipart_id=created["UploadId"]
+                raw_fp=re.sub(r"[^A-Za-z0-9_-]+","",str(data.get("fingerprint") or ""))[:64]
+                if not raw_fp:
+                    raw_fp=hashlib.sha256(f"{sid}|{original_name}|{total}|{int(data.get('last_modified',0) or 0)}".encode("utf-8")).hexdigest()[:24]
+                resume_dir=ROOT/"sessions"/sid/"direct_upload"
+                resume_dir.mkdir(parents=True,exist_ok=True)
+                resume_file=resume_dir/f"s3_resume_{raw_fp}.json"
+
+                resumed=False
+                uploaded_parts=[]
+                upload_id=""
+                multipart_id=""
+                key=""
+                analysis_key=""
+
+                if resume_file.is_file():
+                    try:
+                        saved_res=json.loads(resume_file.read_text(encoding="utf-8"))
+                        if (
+                            isinstance(saved_res,dict)
+                            and int(saved_res.get("total",0))==total
+                            and str(saved_res.get("name",""))==original_name
+                            and _safe_id(saved_res.get("upload_id",""))
+                            and str(saved_res.get("multipart_id",""))
+                            and str(saved_res.get("key","")).startswith(f"uploads/{sid}/")
+                        ):
+                            parts_resp=_s3().list_parts(
+                                Bucket=S3_BUCKET,
+                                Key=str(saved_res["key"]),
+                                UploadId=str(saved_res["multipart_id"]),
+                            )
+                            for p in (parts_resp.get("Parts") or []):
+                                pn=int(p.get("PartNumber",0) or 0)
+                                et=str(p.get("ETag") or "").strip()
+                                sz=int(p.get("Size",0) or 0)
+                                if pn>0 and et:
+                                    uploaded_parts.append({"PartNumber":pn,"ETag":et,"Size":sz})
+                            upload_id=_safe_id(saved_res["upload_id"])
+                            multipart_id=str(saved_res["multipart_id"])
+                            key=str(saved_res["key"])
+                            analysis_key=str(saved_res.get("analysis_key") or f"analysis/{sid}/{upload_id}/v52-keyframe-turbo.json")
+                            resumed=True
+                    except Exception:
+                        resumed=False
+                        uploaded_parts=[]
+
+                if not resumed:
+                    upload_id=uuid.uuid4().hex[:20]
+                    try:_source_capture_upload(sid,upload_id)
+                    except Exception as exc:print("GSF_SOURCE_PROVENANCE_WARN",type(exc).__name__,flush=True)
+                    key=f"uploads/{sid}/{upload_id}/{safe_stem}{ext}"
+                    analysis_key=f"analysis/{sid}/{upload_id}/v52-keyframe-turbo.json"
+                    created=_s3().create_multipart_upload(
+                        Bucket=S3_BUCKET,
+                        Key=key,
+                        ContentType=content_type,
+                        Metadata={
+                            "gsf-upload-id":upload_id,
+                            "gsf-original-name":original_name[:200],
+                        },
+                    )
+                    multipart_id=created["UploadId"]
+                    _write_json_atomic(resume_file,{
+                        "upload_id":upload_id,
+                        "multipart_id":multipart_id,
+                        "key":key,
+                        "analysis_key":analysis_key,
+                        "total":total,
+                        "name":original_name,
+                        "fingerprint":raw_fp,
+                        "created_at":time.time(),
+                    })
+
+                try:
+                    done_bytes=sum(int(p.get("Size",0) or 0) for p in uploaded_parts)
+                    init_pct=round(min(95.0,(done_bytes/max(1,total))*100.0),1) if uploaded_parts else 0.0
+                    profile=_creator_account_load(sid) or {}
+                    account_id=_safe_id(profile.get("account_id","")) if isinstance(profile,dict) else ""
+                    _get_global_job_manager().enqueue_job(
+                        sid=sid,
+                        kind="upload",
+                        title=f"Upload · {original_name[:80]}",
+                        payload={"upload_id":upload_id,"name":original_name,"size":total,"mode":"bucket","fingerprint":raw_fp},
+                        idempotency_key=f"upload_{upload_id}",
+                        account_id=account_id,
+                        initial_status="running",
+                        initial_progress=init_pct,
+                        auto_retry_on_boot=False,
+                    )
+                except Exception:
+                    pass
+
                 count=(total+BUCKET_PART_BYTES-1)//BUCKET_PART_BYTES
                 urls=[]
                 for part_number in range(1,count+1):
@@ -6773,6 +7067,9 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,200,{
                     "ok":True,
                     "mode":"bucket",
+                    "resumed":resumed,
+                    "uploaded_parts":uploaded_parts,
+                    "fingerprint":raw_fp,
                     "upload_id":upload_id,
                     "multipart_id":multipart_id,
                     "key":key,
@@ -6820,6 +7117,26 @@ class Handler(BaseHTTPRequestHandler):
                     UploadId=multipart_id,
                     MultipartUpload={"Parts":clean_parts},
                 )
+                try:
+                    resume_dir=ROOT/"sessions"/sid/"direct_upload"
+                    if resume_dir.is_dir():
+                        for rf in resume_dir.glob("s3_resume_*.json"):
+                            try:
+                                rdata=json.loads(rf.read_text(encoding="utf-8"))
+                                if isinstance(rdata,dict) and str(rdata.get("upload_id") or "")==upload_id:
+                                    rf.unlink(missing_ok=True)
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
+                try:
+                    mgr=_get_global_job_manager()
+                    for j in mgr.list_jobs(sid,limit=20,include_terminal=True):
+                        if j.get("idempotency_key")==f"upload_{upload_id}" or (j.get("payload") or {}).get("upload_id")==upload_id:
+                            mgr.update_job(sid,j["id"],status="running",progress=95.0,stage="Preparazione e salvataggio progetto")
+                            break
+                except Exception:
+                    pass
 
                 prescan_payload={
                     "key":key,
@@ -6852,6 +7169,23 @@ class Handler(BaseHTTPRequestHandler):
                 if not _bucket_enabled() or not upload_id or not key.startswith(f"uploads/{sid}/{upload_id}/"):
                     raise ValueError("invalid abort metadata")
                 _s3().abort_multipart_upload(Bucket=S3_BUCKET,Key=key,UploadId=multipart_id)
+                try:
+                    resume_dir=ROOT/"sessions"/sid/"direct_upload"
+                    if resume_dir.is_dir():
+                        for rf in resume_dir.glob("s3_resume_*.json"):
+                            try:
+                                rdata=json.loads(rf.read_text(encoding="utf-8"))
+                                if isinstance(rdata,dict) and str(rdata.get("upload_id") or "")==upload_id:
+                                    rf.unlink(missing_ok=True)
+                            except Exception:
+                                pass
+                    mgr=_get_global_job_manager()
+                    for j in mgr.list_jobs(sid,limit=20,include_terminal=True):
+                        if j.get("idempotency_key")==f"upload_{upload_id}" or (j.get("payload") or {}).get("upload_id")==upload_id:
+                            mgr.cancel_job(sid,j["id"],reason="Upload annullato")
+                            break
+                except Exception:
+                    pass
                 _json(self,200,{"ok":True})
             except Exception as exc:
                 _json(self,400,{"ok":False,"error":str(exc)[:180]})
@@ -6925,6 +7259,18 @@ class Handler(BaseHTTPRequestHandler):
                     with open(data_path,"wb") as seed:
                         seed.truncate(total)
                     _write_json_atomic(state_path,state)
+                    try:
+                        mgr=_get_global_job_manager()
+                        mgr.enqueue(
+                            sid=sid,
+                            kind="upload",
+                            title=f"Upload · {original_name[:80]}",
+                            payload={"upload_id":upload_id,"name":original_name,"size":total,"count":count,"mode":"chunk"},
+                            idempotency_key=f"upload_{upload_id}",
+                            auto_start=False,
+                        )
+                    except Exception:
+                        pass
 
                 ranges=dict(state.get("ranges",{}) or {})
                 this_range=[start,length]
@@ -6969,12 +7315,37 @@ class Handler(BaseHTTPRequestHandler):
                 os.close(fd)
 
             completed=False
+            received_count=0
+            pct_done=0.0
             with lock:
                 state=json.loads(state_path.read_text(encoding="utf-8"))
                 received={int(x) for x in (state.get("received",[]) or [])}
                 received.add(index)
                 state["received"]=sorted(received)
+                received_count=len(received)
+                pct_done=round((received_count/max(1,count))*100.0,1)
                 _write_json_atomic(state_path,state)
+
+                try:
+                    mgr=_get_global_job_manager()
+                    job=mgr.enqueue(
+                        sid=sid,
+                        kind="upload",
+                        title=f"Upload · {original_name[:80]}",
+                        payload={"upload_id":upload_id,"name":original_name,"size":total,"count":count,"mode":"chunk"},
+                        idempotency_key=f"upload_{upload_id}",
+                        auto_start=False,
+                    )
+                    if job and job.get("id"):
+                        mgr.update_job(
+                            sid,
+                            job["id"],
+                            state="running",
+                            progress=min(99.0,pct_done),
+                            stage_label=f"Caricamento chunk {received_count}/{count} ({pct_done:.0f}%)",
+                        )
+                except Exception:
+                    pass
 
                 if len(received)==count and received==set(range(count)):
                     fd=os.open(str(data_path),os.O_RDONLY)
@@ -6999,6 +7370,27 @@ class Handler(BaseHTTPRequestHandler):
                         "completed_at":time.time(),
                         "storage":"direct_fallback",
                     })
+                    try:
+                        _auto_save_uploaded_source_to_projects(
+                            sid,upload_id,str(final),original_name,total,"",""
+                        )
+                    except Exception as exc:
+                        print("GSF_CHUNK_AUTO_PROJECT_WARN",type(exc).__name__,flush=True)
+                    try:
+                        mgr=_get_global_job_manager()
+                        for j in mgr.list_jobs(sid,limit=30,include_terminal=True):
+                            if j.get("idempotency_key")==f"upload_{upload_id}" or (j.get("payload") or {}).get("upload_id")==upload_id:
+                                mgr.update_job(
+                                    sid,
+                                    j["id"],
+                                    state="completed",
+                                    progress=100.0,
+                                    stage_label="Video caricato e salvato nei Progetti",
+                                    result={"upload_id":upload_id,"path":str(final),"name":original_name,"size":total},
+                                )
+                                break
+                    except Exception:
+                        pass
                     if _bucket_enabled():
                         threading.Thread(
                             target=_persist_fallback_source_to_bucket,
@@ -7015,12 +7407,15 @@ class Handler(BaseHTTPRequestHandler):
                     except Exception:
                         pass
                     completed=True
+                    pct_done=100.0
 
             _json(self,200,{
                 "ok":True,
                 "completed":completed,
                 "index":index,
-                "bytes":start+length
+                "bytes":start+length,
+                "received_count":received_count,
+                "progress":pct_done,
             })
         except Exception as exc:
             _json(self,500,{"ok":False,"error":str(exc)[:160]})
