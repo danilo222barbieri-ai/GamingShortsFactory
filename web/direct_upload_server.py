@@ -3186,7 +3186,16 @@ def _twitch_api(sid,path,params=None):
 
 def _twitch_content(sid,kind,after=""):
     from web.gsf_sources_v422 import source_id,public_source
-    if kind not in ("clips","videos","live"):raise ValueError("Tipo di contenuto non valido")
+    if kind not in ("clips","videos","live","all"):raise ValueError("Tipo di contenuto non valido")
+    if kind=="all":
+        merged=[]
+        for sub in ("live","videos","clips"):
+            try:
+                res=_twitch_content(sid,sub,after="")
+                merged.extend(res.get("data",[]) or [])
+            except Exception:
+                pass
+        return {"data":merged,"cursor":"","type":"all"}
     token=_twitch_access(sid);owner=_source_owner(sid)
     endpoint="streams" if kind=="live" else kind
     params={"broadcaster_id" if kind=="clips" else "user_id":token["user_id"],"first":20}
