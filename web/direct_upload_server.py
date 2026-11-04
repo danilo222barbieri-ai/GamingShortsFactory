@@ -108,7 +108,7 @@ YOUTUBE_SCOPE="https://www.googleapis.com/auth/youtube.upload https://www.google
 YOUTUBE_REDIRECT_URI=_env_first("GSF_YOUTUBE_REDIRECT_URI",default=(PUBLIC_APP_URL+"/auth/youtube/callback") if PUBLIC_APP_URL else "")
 INSTAGRAM_APP_ID=_env_first("GSF_INSTAGRAM_APP_ID",default="")
 INSTAGRAM_APP_SECRET=_env_first("GSF_INSTAGRAM_APP_SECRET",default="")
-INSTAGRAM_SCOPES="instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights"
+INSTAGRAM_SCOPES="instagram_business_basic,instagram_business_content_publish"
 INSTAGRAM_REDIRECT_URI=(PUBLIC_APP_URL+"/auth/instagram/callback") if PUBLIC_APP_URL else ""
 META_APP_ID=_env_first("GSF_META_APP_ID",default="")
 META_APP_SECRET=_env_first("GSF_META_APP_SECRET",default="")
@@ -2931,30 +2931,63 @@ def _meta_remove_data(provider,uid):
 
 
 def _meta_disconnect(sid,platform):
+    sid=_safe_id(sid)
+    if not sid or platform not in ("facebook","instagram"):
+        return
     token=_social_connection_load(sid,"facebook") if platform=="facebook" else _instagram_user_load(sid)
     uid=str(token.get("facebook_user_id" if platform=="facebook" else "ig_user_id") or "")
     if not uid:
         uid=str((((_creator_account_load(sid) or {}).get("providers") or {}).get(platform) or {}).get("id") or "")
     access=str(token.get("access_token") or "")
-    if access:
-        host="https://graph.facebook.com/"+META_GRAPH_VERSION if platform=="facebook" or token.get("oauth_mode")=="facebook_login" else "https://graph.instagram.com"
+    if platform=="facebook":
+        if access:
+            try:
+                result=_oauth_json("https://graph.facebook.com/"+META_GRAPH_VERSION+"/me/permissions",method="DELETE",headers={"Authorization":"Bearer "+access})
+                if result.get("success") is False:raise RuntimeError("Revocation refused")
+            except urllib.error.HTTPError as exc:
+                already_revoked=exc.code==401
+                if exc.code==400:
+                    try:
+                        error=json.loads(exc.read(16385)).get("error",{})
+                        already_revoked=isinstance(error,dict) and error.get("code")==190
+                    except (ValueError,TypeError,AttributeError):
+                        already_revoked=False
+                if not already_revoked:raise
+        if uid:_meta_remove_data(platform,uid)
+        else:
+            if _bucket_enabled():
+                try:_s3().delete_object(Bucket=S3_BUCKET,Key=f"social-connections/{sid}/{platform}.json")
+                except Exception:pass
+            for name in (platform+"_config.json",platform+"_token.json"):
+                (ROOT/"sessions"/sid/"social"/name).unlink(missing_ok=True)
+        return
+
+    # platform == "instagram"
+    if access and token.get("oauth_mode")=="facebook_login":
         try:
-            result=_oauth_json(host+"/me/permissions",method="DELETE",headers={"Authorization":"Bearer "+access})
-            if result.get("success") is False:raise RuntimeError("Revocation refused")
-        except urllib.error.HTTPError as exc:
-            already_revoked=exc.code==401
-            if exc.code==400:
-                try:
-                    error=json.loads(exc.read(16385)).get("error",{})
-                    already_revoked=isinstance(error,dict) and error.get("code")==190
-                except (ValueError,TypeError,AttributeError):
-                    already_revoked=False
-            if not already_revoked:raise
-    if uid:_meta_remove_data(platform,uid)
-    else:
-        _s3().delete_object(Bucket=S3_BUCKET,Key=f"social-connections/{_safe_id(sid)}/{platform}.json")
-        for name in (platform+"_config.json",platform+"_token.json"):
-            (ROOT/"sessions"/_safe_id(sid)/"social"/name).unlink(missing_ok=True)
+            _oauth_json("https://graph.facebook.com/"+META_GRAPH_VERSION+"/me/permissions",method="DELETE",headers={"Authorization":"Bearer "+access})
+        except Exception as exc:
+            print("GSF_META_REVOKE_WARN",sid,platform,repr(str(exc))[:120],flush=True)
+    if _bucket_enabled():
+        try:_s3().delete_object(Bucket=S3_BUCKET,Key=f"social-connections/{sid}/{platform}.json")
+        except Exception:pass
+    social_dir=ROOT/"sessions"/sid/"social"
+    for name in (platform+"_config.json",platform+"_token.json"):
+        try:(social_dir/name).unlink(missing_ok=True)
+        except Exception:pass
+    try:
+        profile=_creator_account_load(sid) or {}
+        providers=dict(profile.get("providers") or {})
+        if platform in providers:
+            providers.pop(platform,None)
+            profile["providers"]=providers
+            profile["updated_at"]=time.time()
+            if _safe_id(profile.get("account_id","")):_creator_account_save(sid,profile)
+    except Exception:pass
+    if uid and _bucket_enabled():
+        try:_meta_remove_data(platform,uid)
+        except Exception as idx_err:
+            print("GSF_META_INDEX_REMOVE_WARN",uid,repr(str(idx_err))[:120],flush=True)
 
 
 def _meta_signed_callback(handler,kind):
@@ -3929,7 +3962,6 @@ def _instagram_oauth_start(handler,sid):
             "response_type":"code",
             "scope":INSTAGRAM_SCOPES,
             "force_reauth":"true",
-            "enable_fb_login":"0",
         }
         _redirect(handler,"https://www.instagram.com/oauth/authorize?"+urllib.parse.urlencode(params))
         return
