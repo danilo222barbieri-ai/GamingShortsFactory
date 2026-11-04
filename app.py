@@ -11177,10 +11177,10 @@ def _gsf_v989_direct_upload_html(loaded=False):
 html,body{margin:0;padding:0;background:transparent;overflow:hidden;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .wrap{height:278px;display:flex;align-items:flex-start;justify-content:center;padding-top:34px;box-sizing:border-box}
 .circle{box-sizing:border-box;width:218px;height:218px;border-radius:50%;display:flex;flex-direction:column;
-align-items:center;justify-content:center;background:linear-gradient(145deg,#EEF9FE 0%,#F3F0FF 100%);border:2px solid #C9DFED;
-box-shadow:0 10px 24px rgba(83,126,158,.10);color:#55758A}
-.icon{font-size:54px;font-weight:700;line-height:.82;color:#7297CF;margin-bottom:13px}
-.label{width:150px;min-height:42px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:17px;font-weight:800;line-height:1.2}
+align-items:center;justify-content:center;background:linear-gradient(145deg,#0d1f30 0%,#152e46 100%);border:2px solid #20415A;
+box-shadow:0 10px 24px rgba(5,13,22,.5);color:#53E0EA}
+.icon{font-size:54px;font-weight:700;line-height:.82;color:#53E0EA;margin-bottom:13px}
+.label{width:150px;min-height:42px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:17px;font-weight:800;line-height:1.2;color:#E1F7FF}
 @media(max-width:600px){.wrap{height:260px}.circle{width:208px;height:208px}.icon{font-size:52px}.label{width:144px;min-height:40px;font-size:16px}}
 </style></head><body><div class="wrap"><div class="circle"><div class="icon">✓</div><div class="label">Video caricato</div></div></div></body></html>
 """
@@ -11617,6 +11617,30 @@ if GSF_WEB_MODE:
         max-width:none !important;
         margin-top:0 !important;
         margin-bottom:0 !important;
+      }
+    }
+
+    @media (max-width:760px){
+      html,body,.stApp,
+      [data-testid="stAppViewContainer"],
+      [data-testid="stMain"],
+      [data-testid="stMainBlockContainer"],
+      .main .block-container{
+        background:#050D16 !important;
+      }
+      [data-testid="stElementContainer"]:has([class*="v73-upload-shell"]),
+      .st-key-v73-upload-shell,
+      [data-testid="stElementContainer"]:has([data-testid="stFileUploader"]),
+      [data-testid="stElementContainer"]:has(.st-key-v81_new_video),
+      .st-key-v81_new_video,
+      [data-testid="stElementContainer"]:has(iframe[srcdoc]),
+      .v67-ad, aside[class*="ad"]{
+        display:none !important;
+        height:0 !important;
+        min-height:0 !important;
+        margin:0 !important;
+        padding:0 !important;
+        overflow:hidden !important;
       }
     }
 

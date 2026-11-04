@@ -3200,15 +3200,15 @@ html body #home154#home154 .footerSocialLink{background:rgba(255,255,255,.06)!im
 :root{--gsf-v343-home-head:calc(44px + env(safe-area-inset-top));--gsf-v343-home-bottom:calc(62px + 30px + max(8px,env(safe-area-inset-bottom)) + 12px)}
 html.gsf-v343-parent-ready #home154 .topbar,
 html.gsf-v343-parent-ready #home154 .bottomNav,
-html.gsf-v343-parent-ready #home154 .siteFooter{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+html.gsf-v343-parent-ready #home154 .siteFooter{visibility:hidden!important;opacity:0!important;pointer-events:none!important;background:transparent!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 /* The shell owns the Game Bar: the action cards stay inside the reserved area above it. */
 html.gsf-v343-parent-ready #home154 .features{top:0!important}
 @media(max-width:760px){
   html,body{height:100%!important;min-height:100%!important;overflow:hidden!important}
   #home154{height:100dvh!important;min-height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
   #home154 .topbar{display:flex!important;min-height:var(--gsf-v343-home-head)!important;height:var(--gsf-v343-home-head)!important;flex:0 0 var(--gsf-v343-home-head)!important}
-  #home154 .bottomNav{display:grid!important;min-height:68px!important;height:68px!important;max-height:68px!important;flex:0 0 68px!important;margin:0!important}
-  #home154 .siteFooter{display:grid!important;min-height:calc(36px + max(8px,env(safe-area-inset-bottom)))!important;height:calc(36px + max(8px,env(safe-area-inset-bottom)))!important;max-height:calc(36px + max(8px,env(safe-area-inset-bottom)))!important;flex:0 0 calc(36px + max(8px,env(safe-area-inset-bottom)))!important;margin:0!important}
+  #home154 .bottomNav{display:grid!important;min-height:68px!important;height:68px!important;max-height:68px!important;flex:0 0 68px!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  #home154 .siteFooter{display:grid!important;min-height:calc(36px + max(8px,env(safe-area-inset-bottom)))!important;height:calc(36px + max(8px,env(safe-area-inset-bottom)))!important;max-height:calc(36px + max(8px,env(safe-area-inset-bottom)))!important;flex:0 0 calc(36px + max(8px,env(safe-area-inset-bottom)))!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 }
 </style>
 
@@ -4045,6 +4045,9 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    Night Arena removed the hidden footer reserve, so the hidden in-page nav row now
    takes exactly the height the shell Game Bar (plus the iOS safe area) covers in this frame. */
 (()=>{
+ if(window.parent !== window){
+   document.documentElement.classList.add("gsf-v343-parent-ready");
+ }
  const nav=document.querySelector("#home154 .bottomNav");if(!nav)return;
  let last=-1;
  const fit=()=>{
@@ -4062,7 +4065,19 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
  fit();
  let n=0;const t=setInterval(()=>{fit();if(++n>24)clearInterval(t)},500);
  window.addEventListener("resize",fit,{passive:true});
- window.addEventListener("message",e=>{if(e.origin===location.origin&&e.data&&e.data.type==="GSF_APP_RESUME")setTimeout(fit,150)});
+ const onResume=()=>{
+  fit();
+  try{
+   const circle=document.querySelector("#home154 .circle");
+   if(circle&&circle.classList.contains("loaded")){
+    const v=circle.querySelector(".naPreview video");
+    if(v&&v.paused){v.play().catch(()=>{})}
+   }
+  }catch(_e){}
+ };
+ window.addEventListener("pageshow",onResume);
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden)onResume()});
+ window.addEventListener("message",e=>{if(e.origin===location.origin&&e.data&&e.data.type==="GSF_APP_RESUME")setTimeout(onResume,150)});
 })();
 </script>
 <script id="gsf-alive-v418">

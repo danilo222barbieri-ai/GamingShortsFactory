@@ -165,6 +165,14 @@ def render_home_v154(*, loaded=False, duration=15, engine="", height=900, key="g
         padding:0 !important;
       }
 
+      html,body,.stApp,
+      [data-testid="stAppViewContainer"],
+      [data-testid="stMain"],
+      [data-testid="stMainBlockContainer"],
+      .main .block-container{
+        background:#050D16 !important;
+      }
+
       [data-testid="stMainBlockContainer"],
       .main .block-container{
         position:fixed !important;
@@ -174,6 +182,21 @@ def render_home_v154(*, loaded=False, duration=15, engine="", height=900, key="g
         height:100dvh !important;
         min-height:0 !important;
         max-height:100dvh !important;
+        margin:0 !important;
+        padding:0 !important;
+        overflow:hidden !important;
+      }
+
+      [data-testid="stElementContainer"]:has([class*="v73-upload-shell"]),
+      .st-key-v73-upload-shell,
+      [data-testid="stElementContainer"]:has([data-testid="stFileUploader"]),
+      [data-testid="stElementContainer"]:has(.st-key-v81_new_video),
+      .st-key-v81_new_video,
+      [data-testid="stElementContainer"]:has(iframe[srcdoc]),
+      .v67-ad, aside[class*="ad"]{
+        display:none !important;
+        height:0 !important;
+        min-height:0 !important;
         margin:0 !important;
         padding:0 !important;
         overflow:hidden !important;
