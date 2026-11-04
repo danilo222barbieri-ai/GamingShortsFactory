@@ -2086,7 +2086,7 @@ def crea_anteprima(input_file, output_file, start, duration):
             encoders.append(("h264_qsv",["-preset","veryfast","-global_quality","30"]))
     except Exception:
         pass
-    encoders.append(("libx264",["-preset","ultrafast","-crf","28","-threads","0"]))
+    encoders.append(("libx264",["-preset","ultrafast","-crf","28","-threads","2"]))
 
     for encoder,options in encoders:
         try:
@@ -3677,7 +3677,7 @@ def _gsf_render_core(source_path, output_path, start, duration, fmt='9:16 Short'
             base += ['-af', af]
         else:
             base += ['-map', '0:v:0', '-map', '1:a:0', '-af', af]
-        attempts = [('libx264 HQ', base + ['-c:v', 'libx264', '-preset', 'fast', '-crf', '14', '-threads', '1', '-filter_threads', '1', '-x264-params', 'rc-lookahead=8:sync-lookahead=0:ref=2:bframes=2', '-x264-params', 'rc-lookahead=16:ref=2:bframes=2', '-profile:v', 'high', '-level:v', '4.2', '-tag:v', 'avc1', '-pix_fmt', 'yuv420p', '-fpsmax', '60', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2', '-metadata:s:v:0', 'rotate=0', '-movflags', '+faststart', str(output_path)])]
+        attempts = [('libx264 HQ', base + ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-threads', '2', '-filter_threads', '2', '-x264-params', 'rc-lookahead=8:sync-lookahead=0:ref=2:bframes=2', '-profile:v', 'high', '-level:v', '4.2', '-tag:v', 'avc1', '-pix_fmt', 'yuv420p', '-fpsmax', '60', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2', '-metadata:s:v:0', 'rotate=0', '-movflags', '+faststart', str(output_path)])]
         last_error = ''
         for encoder, cmd in attempts:
             try:
@@ -13767,7 +13767,7 @@ if video:
                         _mb = _gsf_preview_cache_get(_mini_preview_cache, _mkey, _make_mp, max_items=3)
                         return int(_c["index"]), _mb
 
-                    with ThreadPoolExecutor(max_workers=min(3, len(_short_cards))) as _mp_pool:
+                    with ThreadPoolExecutor(max_workers=min(2, len(_short_cards))) as _mp_pool:
                         _mp_futs = [_mp_pool.submit(_gen_one_mini, _card) for _card in _short_cards]
                         for _fut in as_completed(_mp_futs):
                             _cidx, _cbytes = _fut.result()
@@ -16680,7 +16680,7 @@ _GSF_SURFACE_HUB = r"""<div id="gsf-creator-hub-live-v160" aria-hidden="true">
     </div>
 <style id="gsf-v160-hub-shell">
     #gsf-creator-hub-live-v160{
-      position:fixed;left:0;right:0;top:0;bottom:78px;
+      position:fixed;left:0;right:0;top:0;bottom:0px;
       z-index:2147483660;display:flex;align-items:center;justify-content:center;
       padding:24px clamp(14px,2.5vw,38px) 12px;
       background:rgba(5,13,22,.85);
@@ -16705,7 +16705,7 @@ _GSF_SURFACE_HUB = r"""<div id="gsf-creator-hub-live-v160" aria-hidden="true">
       color:#EAF6FF;font-size:20px;cursor:pointer;box-shadow:0 7px 18px rgba(0,0,0,.35)
     }
     @media(max-width:760px){
-      #gsf-creator-hub-live-v160{bottom:70px;padding:8px 5px}
+      #gsf-creator-hub-live-v160{bottom:0px;padding:8px 5px;background:#050D16!important}
       #gsf-creator-hub-live-v160 .gsf-hub-shell-v160{
         width:calc(100vw - 10px);height:calc(100dvh - 84px);border-radius:22px
       }
@@ -16751,7 +16751,7 @@ _GSF_SURFACE_EDITOR = r"""<div id="gsf-editor-overlay-v220" aria-hidden="true">
 }
 </style>
 <style id="gsf-v220-editor-shell">
-    #gsf-editor-overlay-v220{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483655;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(5,13,22,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
+    #gsf-editor-overlay-v220{position:fixed;left:0;right:0;top:0;bottom:0px;z-index:2147483655;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(5,13,22,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
     #gsf-editor-overlay-v220.is-open{opacity:1;visibility:visible;pointer-events:auto}
     #gsf-editor-overlay-v220 .gsf-editor-shell{position:relative;width:min(1260px,calc(100vw - 30px));height:min(760px,calc(100dvh - 118px));border:1px solid rgba(121,210,255,.18);border-radius:30px;overflow:hidden;background:#050D16;box-shadow:0 30px 86px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08);transform:translateY(10px) scale(.975);opacity:0;transition:transform .32s cubic-bezier(.16,.84,.24,1),opacity .24s ease}
     #gsf-editor-overlay-v220.is-open .gsf-editor-shell{transform:translateY(0) scale(1);opacity:1}
@@ -17041,7 +17041,7 @@ _GSF_SURFACE_AI = r"""<div id="gsf-ai-overlay-v221" aria-hidden="true">
 if GSF_WEB_MODE:
     st.markdown(r"""
     <style id="gsf-v221-ai-shell">
-    #gsf-ai-overlay-v221{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483654;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(5,13,22,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
+    #gsf-ai-overlay-v221{position:fixed;left:0;right:0;top:0;bottom:0px;z-index:2147483654;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(5,13,22,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
     #gsf-ai-overlay-v221.is-open{opacity:1;visibility:visible;pointer-events:auto}
     #gsf-ai-overlay-v221 .gsf-ai-shell{position:relative;width:min(1240px,calc(100vw - 30px));height:min(730px,calc(100dvh - 118px));border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:#050D16;box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.94);transform:translateY(10px) scale(.975);opacity:0;transition:transform .32s cubic-bezier(.16,.84,.24,1),opacity .24s ease}
     #gsf-ai-overlay-v221.is-open .gsf-ai-shell{transform:translateY(0) scale(1);opacity:1}
@@ -17117,7 +17117,7 @@ if GSF_WEB_MODE:
 if GSF_WEB_MODE:
     st.markdown(r"""
     <style id="gsf-v223-account-shell">
-    #gsf-account-overlay-v223{position:fixed;left:0;right:0;top:0;bottom:78px;z-index:2147483662;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(5,13,22,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
+    #gsf-account-overlay-v223{position:fixed;left:0;right:0;top:0;bottom:0px;z-index:2147483662;display:flex;align-items:center;justify-content:center;padding:24px clamp(14px,2.5vw,38px) 12px;background:rgba(5,13,22,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
     #gsf-account-overlay-v223.is-open{opacity:1;visibility:visible;pointer-events:auto}
     #gsf-account-overlay-v223 .gsf-account-shell{position:relative;width:min(980px,calc(100vw - 30px));height:min(680px,calc(100dvh - 118px));border:1px solid rgba(157,193,219,.35);border-radius:30px;overflow:hidden;background:#050D16;box-shadow:0 30px 86px rgba(19,45,65,.22),inset 0 1px 0 rgba(255,255,255,.94);transform:translateY(10px) scale(.975);opacity:0;transition:transform .30s cubic-bezier(.16,.84,.24,1),opacity .24s ease}
     #gsf-account-overlay-v223.is-open .gsf-account-shell{transform:translateY(0) scale(1);opacity:1}

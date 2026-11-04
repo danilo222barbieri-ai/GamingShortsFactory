@@ -2055,21 +2055,32 @@ def _draft_delete(sid,draft_id):
     sid=_safe_id(sid); draft_id=_safe_id(draft_id)
     if not sid or not draft_id:
         return False
-    root=_draft_dir(sid)
-    try:
-        (root/(draft_id+".json")).unlink(missing_ok=True)
-        for p in root.glob(draft_id+"_source.*"):
-            p.unlink(missing_ok=True)
-    except Exception:
-        pass
+    owner=_storage_owner_id(sid)
+    for target_sid in set(filter(None, (sid, owner))):
+        root=_draft_dir(target_sid)
+        try:
+            (root/(draft_id+".json")).unlink(missing_ok=True)
+            for p in root.glob(draft_id+"_source.*"):
+                p.unlink(missing_ok=True)
+        except Exception:
+            pass
     if _bucket_enabled():
-        for prefix in (f"drafts/{sid}/{draft_id}.json", _draft_key(sid,draft_id)):
+        keys_to_delete = {
+            f"drafts/{sid}/{draft_id}.json",
+            _draft_key(sid,draft_id),
+        }
+        if owner:
+            keys_to_delete.add(f"drafts/{owner}/{draft_id}.json")
+            keys_to_delete.add(_draft_key(owner,draft_id))
+        for prefix in keys_to_delete:
             if prefix:
                 try:
                     _s3().delete_object(Bucket=S3_BUCKET,Key=prefix)
                 except Exception:
                     pass
     _draft_index_remove(sid,draft_id)
+    if owner and owner != sid:
+        _draft_index_remove(owner,draft_id)
     print("GSF_DRAFT_DELETED",sid,draft_id,flush=True)
     return True
 
@@ -2312,17 +2323,45 @@ def _short_delete(sid,short_id):
     short_id=_safe_id(short_id)
     if not sid or not short_id:
         return False
+    owner=_storage_owner_id(sid)
     rows=_short_list(sid)
     target=next((dict(r) for r in rows if _safe_id((r or {}).get("id",""))==short_id),None) or {}
     if _bucket_enabled():
-        for k in (str(target.get("bucket_key") or ""), _short_object_key(sid,short_id), f"shorts/{sid}/{short_id}.mp4"):
+        keys_to_delete = {
+            str(target.get("bucket_key") or ""),
+            _short_object_key(sid,short_id),
+            f"shorts/{sid}/{short_id}.mp4",
+        }
+        if owner:
+            keys_to_delete.add(_short_object_key(owner,short_id))
+            keys_to_delete.add(f"shorts/{owner}/{short_id}.mp4")
+        for k in keys_to_delete:
             if k:
                 try:
                     _s3().delete_object(Bucket=S3_BUCKET,Key=k)
                 except Exception:
                     pass
+    for target_sid in set(filter(None, (sid, owner))):
+        try:
+            (ROOT/"sessions"/target_sid/"shorts"/(short_id+".mp4")).unlink(missing_ok=True)
+        except Exception:
+            pass
+    try:
+        stable, job = _final_local_paths(sid)
+        if job and job.is_file():
+            job_data = json.loads(job.read_text(encoding="utf-8"))
+            if str(job_data.get("short_id") or "") == short_id:
+                job.unlink(missing_ok=True)
+                if stable and stable.is_file():
+                    stable.unlink(missing_ok=True)
+    except Exception:
+        pass
+    _FINAL_S3_CACHE.pop(sid, None)
     remaining=[r for r in rows if _safe_id((r or {}).get("id",""))!=short_id]
     _short_index_save(sid,remaining)
+    if owner and owner != sid:
+        owner_rows=_short_list(owner)
+        _short_index_save(owner,[r for r in owner_rows if _safe_id((r or {}).get("id",""))!=short_id])
     print("GSF_SHORT_DELETED",sid,short_id,flush=True)
     return True
 

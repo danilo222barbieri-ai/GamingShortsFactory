@@ -1568,12 +1568,17 @@ let oauthNavigating=false;
      let j={};try{j=await r.json()}catch(_e){}
      if(!r.ok||!j.ok)throw new Error(j.error||"Eliminazione non riuscita");
      if(state.drafts)state.drafts=state.drafts.filter(d=>d.id!==id);
+     if(state.usage)state.usage.drafts=Math.max(0,(Number(state.usage.drafts)||1)-1);
     }else{
      await postJson("/creator-hub/short/delete",{id});
      if(state.shorts)state.shorts=state.shorts.filter(s=>s.id!==id);
+     if(state.usage)state.usage.shorts=Math.max(0,(Number(state.usage.shorts)||1)-1);
     }
+    stateLoadPromise=null;
     try{render()}catch(_e){}
-    closeSheet();toast(kind==="draft"?"Bozza eliminata":"Short eliminato");await loadState();
+    closeSheet();toast(kind==="draft"?"Bozza eliminata":"Short eliminato");
+    stateLoadPromise=null;
+    await loadState();
    }catch(e){ok.disabled=false;toast(String(e.message||e),"error")}
   };
  }
