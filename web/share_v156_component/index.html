@@ -90,12 +90,17 @@ button:disabled{cursor:not-allowed;opacity:.45}
 /* bottom sheets */
 .veil{position:fixed;left:0;right:0;top:var(--shell-top,0px);bottom:var(--shell-bottom,0px);z-index:40;background:rgba(13,42,102,.18);opacity:0;pointer-events:none;transition:opacity .25s var(--ease)}
 .veil.open{opacity:1;pointer-events:auto}
-.sheet{position:fixed;left:0;right:0;bottom:var(--shell-bottom,0px);z-index:41;max-height:calc(88% - var(--shell-top,0px) - var(--shell-bottom,0px));display:flex;flex-direction:column;overflow:hidden;background:#fff;border-radius:28px 28px 0 0;box-shadow:none;transform:translateY(105%);visibility:hidden;transition:transform .32s var(--ease),visibility 0s linear .32s;max-width:640px;margin:0 auto}
+.sheet{position:fixed;left:0;right:0;bottom:var(--shell-bottom,0px);z-index:90;max-height:min(90dvh,calc(100% - var(--shell-top,0px) - var(--shell-bottom,0px)));display:flex;flex-direction:column;overflow:hidden;background:#fff;border-radius:28px 28px 0 0;box-shadow:none;transform:translateY(105%);visibility:hidden;transition:transform .32s var(--ease),visibility 0s linear .32s;max-width:640px;margin:0 auto}
 .sheet.open{transform:none;visibility:visible;box-shadow:0 -20px 50px rgba(13,42,102,.16);transition:transform .32s var(--ease)}
 .sheetHead{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px}
 .sheetHead h2{margin:0;font:800 13px var(--font);letter-spacing:.12em;text-transform:uppercase;color:var(--gsf-muted)}
 .x{width:34px;height:34px;border-radius:12px;border:1px solid var(--gsf-line);background:#fff;font:700 20px/1 var(--font);color:var(--gsf-muted)}
-.sheetBody{flex:1 1 auto;min-height:0;max-height:calc(85vh - 72px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:4px 16px calc(24px + env(safe-area-inset-bottom))}
+.sheetBody{flex:1 1 auto;min-height:0;max-height:calc(86dvh - 72px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:4px 16px calc(44px + max(20px,env(safe-area-inset-bottom)))}
+@media(max-width:760px){
+  .sheet{max-height:min(92dvh,calc(100% - var(--shell-top,0px) - var(--shell-bottom,0px)))}
+  .sheetBody{max-height:calc(88dvh - 64px);padding-bottom:calc(54px + max(24px,env(safe-area-inset-bottom)))}
+  textarea.input{resize:none}
+}
 .grab{width:40px;height:4px;border-radius:2px;background:var(--gsf-line);margin:8px auto 0}
 
 .tabs{display:flex;gap:4px;padding:4px;margin:0 0 12px;border-radius:var(--r-pill);background:#EEF6FC;overflow-x:auto;scrollbar-width:none}
@@ -1173,6 +1178,25 @@ const nav=(target)=>{try{parent.postMessage({type:'GSF_SHELL_NAV',target},locati
 
 /* sheets */
 let openSheet=null,lastFocus=null,shortNotice='';
+
+const fitSheetToViewport=()=>{
+  if(!openSheet)return;
+  const vv=window.visualViewport;if(!vv)return;
+  const kbDiff=window.innerHeight-vv.height;
+  if(kbDiff>75){
+    const avail=vv.height;
+    openSheet.style.setProperty('max-height',`${avail-12}px`,'important');
+    openSheet.style.setProperty('bottom',`${Math.max(0,window.innerHeight-(vv.offsetTop+vv.height))}px`,'important');
+    const b=openSheet.querySelector('.sheetBody');
+    if(b)b.style.setProperty('max-height',`${avail-58}px`,'important');
+  }else{
+    openSheet.style.removeProperty('max-height');
+    openSheet.style.removeProperty('bottom');
+    const b=openSheet.querySelector('.sheetBody');
+    if(b)b.style.removeProperty('max-height');
+  }
+};
+
 function open(name){
   const s=$('#sheet-'+name);if(!s)return;
   if(openSheet&&openSheet!==s)close(false);
@@ -1180,19 +1204,58 @@ function open(name){
   const ag=document.getElementById('gsf-alive-guide');if(ag)ag.style.display='none';
   const aw=document.getElementById('gsf-alive-whisper');if(aw)aw.classList.remove('on');
   $('#veil').classList.add('open');s.classList.add('open');s.setAttribute('aria-hidden','false');
-  setTimeout(()=>{const f=s.querySelector('input,button.tab[aria-selected="true"],.tile,.x');if(f)f.focus({preventScroll:true})},260);
+  fitSheetToViewport();
+  setTimeout(()=>{
+    const f=s.querySelector('input,button.tab[aria-selected="true"],.tile,.x');
+    if(f)f.focus({preventScroll:true});
+  },260);
 }
+
 function close(restore=true){
   if(!openSheet)return;
+  if(document.activeElement&&openSheet.contains(document.activeElement)){
+    try{document.activeElement.blur()}catch(_e){}
+  }
   const v=openSheet.querySelector('video');if(v)v.pause();
+  openSheet.style.removeProperty('max-height');
+  openSheet.style.removeProperty('bottom');
+  const b=openSheet.querySelector('.sheetBody');
+  if(b)b.style.removeProperty('max-height');
   openSheet.classList.remove('open');openSheet.setAttribute('aria-hidden','true');openSheet=null;
   $('#veil').classList.remove('open');
   if(restore&&lastFocus)lastFocus.focus({preventScroll:true});
 }
+
 $$('[data-open]').forEach(b=>b.onclick=()=>open(b.dataset.open));
 $$('[data-close]').forEach(b=>b.onclick=()=>close());
 $('#veil').onclick=()=>close();
 document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+
+// Auto-scroll focused field into comfortable view and update viewport on iOS virtual keyboard
+document.addEventListener('focusin',e=>{
+  if(!openSheet||!openSheet.contains(e.target))return;
+  if(e.target.matches('input,textarea,[contenteditable="true"]')){
+    setTimeout(()=>{
+      fitSheetToViewport();
+      try{e.target.scrollIntoView({behavior:'smooth',block:'center'})}catch(_e){}
+    },280);
+  }
+});
+
+document.addEventListener('click',e=>{
+  if(openSheet&&openSheet.contains(e.target)){
+    if(e.target.matches('.grab,.sheetHead,.sheetHead h2,.hint')){
+      if(document.activeElement&&openSheet.contains(document.activeElement)&&document.activeElement.matches('input,textarea')){
+        try{document.activeElement.blur()}catch(_e){}
+      }
+    }
+  }
+});
+
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',fitSheetToViewport,{passive:true});
+  window.visualViewport.addEventListener('scroll',fitSheetToViewport,{passive:true});
+}
 
 /* persistence */
 const load=()=>{try{const s=JSON.parse(localStorage.getItem(STORE)||'{}');if(s.texts&&s.texts.all)Object.assign(texts,s.texts);if(s.privacy)privacy=s.privacy;if(Array.isArray(s.selected))$$('.plat').forEach(b=>b.setAttribute('aria-pressed',String(s.selected.includes(b.dataset.platform))))}catch(_e){}};
