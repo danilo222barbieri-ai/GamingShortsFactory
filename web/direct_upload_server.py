@@ -5285,6 +5285,69 @@ def _facebook_direct_post(sid,video_path,plan,privacy):
     except Exception as exc:
         raise _pm413.PublishError(f"Facebook: {str(exc)[:160]}",code="facebook_api_error")
 
+def _publish_preflight(sid,platforms):
+    video_path=_publish_final_path(sid)
+    has_video=bool(video_path and os.path.exists(video_path))
+    checks={}
+    for platform in platforms:
+        p_info={"platform":platform,"ready":False,"status":"unknown","message":""}
+        if platform=="youtube":
+            tok=_youtube_user_load(sid)
+            if not tok:
+                p_info["status"]="needs_connection"
+                p_info["message"]="YouTube non collegato: collega l'account nelle Impostazioni."
+            elif tok.get("needs_reauth"):
+                p_info["status"]="needs_reauth"
+                p_info["message"]="YouTube: accesso scaduto. Ricollega l'account nelle Impostazioni."
+            else:
+                p_info["ready"]=True
+                p_info["status"]="ready"
+                p_info["message"]=f"Pronto: canale {tok.get('channel_title') or 'collegato'}"
+        elif platform=="instagram":
+            tok=_instagram_user_load(sid) or _social_connection_load(sid,"instagram")
+            if not tok:
+                p_info["status"]="needs_connection"
+                p_info["message"]="Instagram non collegato: collega l'account nelle Impostazioni."
+            elif tok.get("needs_reauth"):
+                p_info["status"]="needs_reauth"
+                p_info["message"]="Instagram: autorizzazione scaduta o revocata. Ricollega l'account nelle Impostazioni."
+            else:
+                p_info["ready"]=True
+                p_info["status"]="ready"
+                p_info["message"]=f"Pronto: account @{tok.get('username') or 'Instagram'}"
+        elif platform=="facebook":
+            sc=_social_connection_load(sid,"facebook") or {}
+            if not sc or not sc.get("access_token"):
+                p_info["status"]="needs_connection"
+                p_info["message"]="Facebook non collegato: collega l'account nelle Impostazioni."
+            elif sc.get("needs_reauth"):
+                p_info["status"]="needs_reauth"
+                p_info["message"]="Facebook: autorizzazione scaduta. Ricollega Facebook nelle Impostazioni."
+            elif not sc.get("selected_page_id") or not sc.get("selected_page_token"):
+                pages=sc.get("pages") or []
+                if not pages:
+                    p_info["status"]="no_page"
+                    p_info["message"]="Nessuna Pagina Facebook trovata per questo account. I video possono essere pubblicati solo su Pagine Facebook."
+                else:
+                    p_info["status"]="no_page_selected"
+                    p_info["message"]="Nessuna Pagina Facebook selezionata: seleziona una Pagina nelle Impostazioni."
+            else:
+                p_info["ready"]=True
+                p_info["status"]="ready"
+                p_info["message"]=f"Pronto: Pagina {sc.get('selected_page_name') or 'Facebook'}"
+        elif platform=="tiktok":
+            tok=_tiktok_user_load(sid)
+            if not tok:
+                p_info["status"]="needs_connection"
+                p_info["message"]="TikTok non ancora collegato."
+            else:
+                p_info["ready"]=True
+                p_info["status"]="ready"
+                p_info["message"]="Pronto alla pubblicazione su TikTok."
+        checks[platform]=p_info
+    return {"ok":True,"has_video":has_video,"checks":checks}
+
+
 def _publish_run(sid,job,request,video_path):
     privacy=request["privacy"]
     for platform in request["platforms"]:
@@ -5327,7 +5390,7 @@ def _publish_run(sid,job,request,video_path):
             error_code=str(getattr(exc,"code","") or "") if isinstance(exc,_pm413.PublishError) else ""
             _publish_update(sid,job,platform,status="error",error=message,error_code=error_code,**extra)
             print("GSF_V413_PUBLISH_FAIL",sid,platform,type(exc).__name__,error_code,flush=True)
-    done=all(r.get("status") in ("done","error","manual","needs_connection") for r in job["results"].values())
+    done=all(r.get("status") in ("done","error","manual","needs_connection","needs_reauth","no_page","no_page_selected") for r in job["results"].values())
     if done:
         _publish_update(sid,job,state="finished")
 
@@ -5351,25 +5414,52 @@ def _publish_reconcile_tiktok(sid):
 def _publish_start(sid,payload):
     request=_pm413.normalize_request(payload)
     current=_publish_reconcile_tiktok(sid)
-    if any(r.get("confirmation_pending") for r in (current.get("results") or {}).values()):raise ValueError("Pubblicazione TikTok ancora da confermare. Controlla TikTok prima di riprovare.")
+    if any(r.get("confirmation_pending") for r in (current.get("results") or {}).values()):
+        raise ValueError("Pubblicazione TikTok ancora da confermare. Controlla TikTok prima di riprovare.")
     if current.get("state")=="running" and time.time()-float(current.get("updated_at") or 0)<900:
         raise ValueError("Una pubblicazione è già in corso.")
     video_path=_publish_final_path(sid)
     if not video_path:
         raise ValueError("Lo Short finale non è ancora pronto.")
-    social=_creator_social_snapshot(sid,{})
+    
+    preflight=_publish_preflight(sid,request["platforms"])
+    checks=preflight.get("checks",{})
+    job_id=uuid.uuid4().hex[:16]
     results={}
     for platform in request["platforms"]:
         if platform not in _pm413.SUPPORTED:
             status="manual"
-        elif not social.get(platform):
-            status="needs_connection"
+            err_msg=""
+            err_code=""
         else:
-            status="queued"
-        results[platform]={"platform":platform,"label":_PUBLISH_LABELS[platform],"status":status,"url":"","error":"",
-                           "caption":request["plans"][platform]["caption"]}
-    job={"id":uuid.uuid4().hex[:16],"state":"running","created_at":time.time(),"updated_at":time.time(),
-         "privacy":request["privacy"],"results":results}
+            pf=checks.get(platform,{})
+            if not pf.get("ready"):
+                status=pf.get("status") or "needs_connection"
+                err_msg=pf.get("message") or ""
+                err_code=status
+            else:
+                status="queued"
+                err_msg=""
+                err_code=""
+        attempt_id=f"{job_id}_{platform}_{int(time.time())}"
+        results[platform]={
+            "platform":platform,
+            "label":_PUBLISH_LABELS.get(platform,platform.title()),
+            "status":status,
+            "url":"",
+            "error":err_msg,
+            "error_code":err_code,
+            "caption":request["plans"][platform]["caption"],
+            "attempt_id":attempt_id,
+        }
+    job={
+        "id":job_id,
+        "state":"running",
+        "created_at":time.time(),
+        "updated_at":time.time(),
+        "privacy":request["privacy"],
+        "results":results
+    }
     _publish_update(sid,job)
     if any(r["status"]=="queued" for r in results.values()):
         threading.Thread(target=_publish_run,args=(sid,job,request,video_path),daemon=True,name="gsf-publish-v413").start()
@@ -5717,6 +5807,15 @@ class Handler(BaseHTTPRequestHandler):
         if clean=="/drafts/delete":
             _json(self,405,{"ok":False,"error":"method not allowed"})
             return
+        if clean=="/publish/preflight":
+            sid=_social_sid(self)
+            if not sid:
+                _json(self,400,{"ok":False,"error":"Sessione browser non valida."})
+                return
+            platforms=str((parse_qs(path.query).get("platforms") or ["youtube,tiktok,instagram,facebook"])[0]).split(",")
+            platforms=[p.strip().lower() for p in platforms if p.strip()]
+            _json(self,200,_publish_preflight(sid,platforms))
+            return
         if clean=="/publish/status":
             sid=_social_sid(self)
             if not sid:
@@ -5757,6 +5856,7 @@ class Handler(BaseHTTPRequestHandler):
                 "dropbox_app_key":DROPBOX_APP_KEY,
                 "publish_supported":list(_pm413.SUPPORTED),
                 "publish_job":_publish_job_load(sid),
+                "preflight":_publish_preflight(sid,list(_pm413.SUPPORTED)),
             })
             return
         if clean=="/share/final":
