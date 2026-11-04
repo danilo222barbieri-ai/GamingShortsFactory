@@ -13825,6 +13825,9 @@ if video:
                             round(float(_c["preview_duration"]), 2),
                         )
                         def _make_mp(_card=_c, _dur=float(_c["preview_duration"])):
+                            _existing = GSF_PREVIEW_DIR / f"v71_mini_{int(_card['index'])}_{float(_card['start']):.2f}.mp4"
+                            if _existing.is_file() and _existing.stat().st_size > 1024:
+                                return _existing.read_bytes()
                             with _gsf_session_tempdir("gsf_preview_") as _ptemp:
                                 _pout = os.path.join(_ptemp, f"mini_{int(_card['index'])}.mp4")
                                 if crea_anteprima(str(_source_path), _pout, float(_card["start"]), _dur):
