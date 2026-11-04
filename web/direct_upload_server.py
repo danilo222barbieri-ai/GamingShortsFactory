@@ -5958,6 +5958,31 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path=urlparse(self.path)
         clean=path.path.rstrip("/")
+        if clean=="/api/ai-moments/preferences":
+            query = parse_qs(path.query)
+            sid = str((query.get("sid") or [_social_sid(self)])[0]).strip()
+            account_id = str((query.get("account_id") or [""])[0]).strip()
+            if not account_id:
+                try:
+                    profile = _creator_account_load(sid)
+                    account_id = _safe_id(profile.get("account_id", "")) if isinstance(profile, dict) else ""
+                except Exception:
+                    account_id = ""
+            try:
+                from web.feedback_learning_v127 import load_user_model
+            except Exception:
+                from feedback_learning_v127 import load_user_model
+            model = load_user_model(sid=sid, account_id=account_id)
+            _json(self, 200, {
+                "ok": True,
+                "account_id": account_id,
+                "sid": sid,
+                "model": model,
+                "events": model.get("events", {}),
+                "genres": model.get("genres", {}),
+                "total_feedback": model.get("total_feedback", 0),
+            })
+            return
         if clean=="/auth/meta/data-deletion/status":
             _meta_deletion_status(self,parse_qs(path.query));return
         if clean=="/social-connect/twitch/start":
@@ -6657,6 +6682,39 @@ class Handler(BaseHTTPRequestHandler):
         sid=_safe_id(self.headers.get("X-GSF-Session-ID")) or _social_sid(self)
         if not sid:
             _json(self,400,{"ok":False,"error":"invalid session"})
+            return
+
+        if path == "/api/ai-moments/preferences":
+            try:
+                data = _read_json(self, max_bytes=64*1024)
+                data = data if isinstance(data, dict) else {}
+                action = str(data.get("action") or "reset").strip().lower()
+                target_sid = str(data.get("sid") or sid).strip()
+                account_id = str(data.get("account_id") or "").strip()
+                if not account_id:
+                    try:
+                        profile = _creator_account_load(target_sid)
+                        account_id = _safe_id(profile.get("account_id", "")) if isinstance(profile, dict) else ""
+                    except Exception:
+                        account_id = ""
+                try:
+                    from web.feedback_learning_v127 import reset_user_model
+                except Exception:
+                    from feedback_learning_v127 import reset_user_model
+                if action == "reset":
+                    model = reset_user_model(sid=target_sid, account_id=account_id)
+                    _json(self, 200, {
+                        "ok": True,
+                        "status": "reset",
+                        "message": "Preferenze IA ripristinate alle impostazioni di fabbrica.",
+                        "account_id": account_id,
+                        "sid": target_sid,
+                        "model": model,
+                    })
+                    return
+                _json(self, 400, {"ok": False, "error": f"Azione '{action}' non supportata"})
+            except Exception as exc:
+                _json(self, 500, {"ok": False, "error": str(exc)[:160]})
             return
 
         if path.startswith("/jobs/"):

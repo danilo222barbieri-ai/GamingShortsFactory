@@ -136,7 +136,11 @@ def empty_user_model() -> dict:
     }
 
 
-def user_preferences_path(sid: str, runtime_root: Path | str | None = None) -> Path:
+def user_preferences_path(
+    sid: str = "",
+    account_id: str | None = None,
+    runtime_root: Path | str | None = None
+) -> Path:
     from pathlib import Path
     import os
     if runtime_root:
@@ -144,49 +148,99 @@ def user_preferences_path(sid: str, runtime_root: Path | str | None = None) -> P
     else:
         env_root = os.environ.get("GSF_RUNTIME_ROOT")
         base = Path(env_root) if env_root else Path("/tmp/gsf-runtime")
-    return base / "sessions" / str(sid) / "ai_user_preferences.json"
+
+    acc = str(account_id or "").strip()
+    if acc:
+        return base / "users" / acc / "ai_user_preferences.json"
+
+    clean_sid = str(sid or "").strip()
+    if clean_sid:
+        # Check if sid has a linked creator account
+        try:
+            sess_file = base / "sessions" / clean_sid / "session.json"
+            if sess_file.is_file():
+                sdata = json.loads(sess_file.read_text(encoding="utf-8"))
+                found_acc = str(sdata.get("account_id") or "").strip()
+                if found_acc:
+                    return base / "users" / found_acc / "ai_user_preferences.json"
+        except Exception:
+            pass
+        return base / "sessions" / clean_sid / "ai_user_preferences.json"
+
+    return base / "users" / "default" / "ai_user_preferences.json"
 
 
-def load_user_model(sid: str, runtime_root: Path | str | None = None) -> dict:
-    if not sid:
+def load_user_model(
+    sid: str = "",
+    account_id: str | None = None,
+    runtime_root: Path | str | None = None
+) -> dict:
+    acc = str(account_id or "").strip()
+    clean_sid = str(sid or "").strip()
+    if not acc and not clean_sid:
         return empty_user_model()
-    path = user_preferences_path(sid, runtime_root)
-    if not path.is_file():
-        return empty_user_model()
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        if isinstance(data, dict):
-            return data
-    except Exception:
-        pass
+
+    path = user_preferences_path(clean_sid, account_id=acc, runtime_root=runtime_root)
+    if path.is_file():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                return data
+        except Exception:
+            pass
+
+    # Seamless migration: if authenticated account has no saved preferences yet,
+    # but the guest session does, migrate guest preferences to the account.
+    if acc and clean_sid:
+        guest_path = user_preferences_path(clean_sid, account_id=None, runtime_root=runtime_root)
+        if guest_path.is_file() and guest_path != path:
+            try:
+                guest_data = json.loads(guest_path.read_text(encoding="utf-8"))
+                if isinstance(guest_data, dict) and guest_data.get("total_feedback", 0) > 0:
+                    save_user_model(clean_sid, guest_data, account_id=acc, runtime_root=runtime_root)
+                    return guest_data
+            except Exception:
+                pass
+
     return empty_user_model()
 
 
-def save_user_model(sid: str, model: dict, runtime_root: Path | str | None = None) -> Path:
-    path = user_preferences_path(sid, runtime_root)
+def save_user_model(
+    sid: str = "",
+    model: dict | None = None,
+    account_id: str | None = None,
+    runtime_root: Path | str | None = None
+) -> Path:
+    payload = model if isinstance(model, dict) else empty_user_model()
+    path = user_preferences_path(sid, account_id=account_id, runtime_root=runtime_root)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")
     tmp.write_text(
-        json.dumps(model, ensure_ascii=False, separators=(",", ":"), sort_keys=True),
+        json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True),
         encoding="utf-8",
     )
     os.replace(tmp, path)
     return path
 
 
-def reset_user_model(sid: str, runtime_root: Path | str | None = None) -> dict:
+def reset_user_model(
+    sid: str = "",
+    account_id: str | None = None,
+    runtime_root: Path | str | None = None
+) -> dict:
     model = empty_user_model()
-    save_user_model(sid, model, runtime_root)
+    save_user_model(sid, model, account_id=account_id, runtime_root=runtime_root)
     return model
 
 
 def update_user_preferences(
-    sid: str,
-    event_row: dict,
+    sid: str = "",
+    event_row: dict | None = None,
+    account_id: str | None = None,
     runtime_root: Path | str | None = None
 ) -> dict:
     """Incrementally update user preferences with interpretable bounded shifts."""
-    current = load_user_model(sid, runtime_root)
+    current = load_user_model(sid, account_id=account_id, runtime_root=runtime_root)
     events = dict(current.get("events") or {})
     genres = dict(current.get("genres") or {})
     recent = list(current.get("recent_choices") or [])
@@ -248,7 +302,7 @@ def update_user_preferences(
         "genres": genres,
         "recent_choices": recent,
     })
-    save_user_model(sid, current, runtime_root)
+    save_user_model(sid, current, account_id=account_id, runtime_root=runtime_root)
     return current
 
 

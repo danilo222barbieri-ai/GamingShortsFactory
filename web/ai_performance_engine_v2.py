@@ -1144,6 +1144,7 @@ def smart_rank_candidates(
     profile: str = "auto",
     target_count: int = 3,
     sid: str = "",
+    account_id: str = "",
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Smart ranking of moments using verifiable multi-signal features and game profiles."""
     dur = max(1.0, _num(target_duration, 15.0))
@@ -1173,12 +1174,16 @@ def smart_rank_candidates(
         }], []
 
     user_model = None
-    if sid:
+    if sid or account_id:
         try:
-            from feedback_learning_v127 import load_user_model
-            user_model = load_user_model(sid)
+            from web.feedback_learning_v127 import load_user_model
+            user_model = load_user_model(sid=sid, account_id=account_id)
         except Exception:
-            user_model = None
+            try:
+                from feedback_learning_v127 import load_user_model
+                user_model = load_user_model(sid=sid, account_id=account_id)
+            except Exception:
+                user_model = None
 
     win_len = max(1, int(round(dur / step)))
     scored_pool: list[tuple[float, float, dict[str, Any], str]] = []
@@ -1358,6 +1363,7 @@ def run_fast_ai_pipeline(
     profile: str = "auto",
     request_id: str = "",
     sid: str = "",
+    account_id: str = "",
     generate_previews: bool = True,
     check_cancelled: Any = None,
     set_progress: Any = None,
@@ -1411,6 +1417,7 @@ def run_fast_ai_pipeline(
         profile=profile,
         target_count=3,
         sid=sid,
+        account_id=account_id,
     )
 
     candidate_starts = [round(float(r["start"]), 3) for r in selected]
