@@ -2078,7 +2078,7 @@ def crea_anteprima(input_file, output_file, start, duration):
         "-ss", str(start),
         "-i", input_file,
         "-t", str(duration),
-        "-vf", "scale=480:-2",
+        "-vf", "scale=360:-2:flags=fast_bilinear",
     ]
     encoders=[]
     try:
@@ -2086,7 +2086,7 @@ def crea_anteprima(input_file, output_file, start, duration):
             encoders.append(("h264_qsv",["-preset","veryfast","-global_quality","30"]))
     except Exception:
         pass
-    encoders.append(("libx264",["-preset","ultrafast","-crf","28","-threads","2"]))
+    encoders.append(("libx264",["-preset","ultrafast","-tune","zerolatency","-crf","28","-threads","2"]))
 
     for encoder,options in encoders:
         try:
@@ -4561,6 +4561,13 @@ _GSF_REACTION_WORDS = {
 @st.cache_resource(show_spinner=False)
 def _gsf_ai_whisper_tiny():
     """Carica Tiny una volta sola per i controlli vocali dei candidati."""
+    try:
+        from web.ai_performance_engine_v2 import get_cached_whisper_tiny
+        model = get_cached_whisper_tiny()
+        if model is not None:
+            return model
+    except Exception:
+        pass
     return WhisperModel("tiny", device="cpu", compute_type="int8")
 
 
@@ -4605,6 +4612,16 @@ def _gsf_ai_scan_cached(input_file, cache_token=None):
     if key in cache:
         return cache[key], True
 
+    try:
+        from web.ai_performance_engine_v2 import load_cached_scan as _gsf_load_v2_scan
+        _v2_scan, _v2_hit = _gsf_load_v2_scan(input_file, GSF_PREVIEW_DIR, GSF_AI_ENGINE_VERSION)
+        if _v2_hit and isinstance(_v2_scan, dict):
+            cache[key] = _v2_scan
+            _gsf_ai_cache_trim(cache, 3)
+            return _v2_scan, True
+    except Exception:
+        pass
+
     scan = None
     _prescan_t0=time.perf_counter()
     try:
@@ -4636,8 +4653,13 @@ def _gsf_ai_scan_cached(input_file, cache_token=None):
     scan.setdefault("meta",{}).update({"prescan_wait_seconds":_prescan_wait,"prescan_hit":_prescan_hit})
     if not any((scan.get("meta") or {}).get(key) for key in ("audio_error","video_error")):
         cache[key] = scan
-    _gsf_ai_cache_trim(cache, 2)
-    return scan, False
+        try:
+            from web.ai_performance_engine_v2 import save_cached_scan as _gsf_save_v2_scan
+            _gsf_save_v2_scan(input_file, scan, GSF_PREVIEW_DIR, GSF_AI_ENGINE_VERSION)
+        except Exception:
+            pass
+    _gsf_ai_cache_trim(cache, 3)
+    return scan, bool(_prescan_hit)
 
 
 def _gsf_ai_voice_cached(input_file, start, duration, cache_token=None, force=False):
@@ -4674,11 +4696,19 @@ def _gsf_ai_scan_profile_for_duration(total_seconds):
     """
     total=max(0.0,float(total_seconds or 0.0))
 
+    if total<=60:
+        return {
+            "tier":"fast_short",
+            "video_fps":2.0,
+            "analysis_width":144,
+            "adaptive":False,
+            "keyframes_only":False,
+        }
     if total<=3*60:
         return {
             "tier":"standard",
             "video_fps":2.0,
-            "analysis_width":192,
+            "analysis_width":160,
             "adaptive":False,
             "keyframes_only":False,
         }
@@ -6523,6 +6553,13 @@ def _gsf_ai_rank_v3(input_file, modalita, clip_duration=15, numero_clip=3, cache
         _meta["game_brain"]="v124-ai-director"
         _meta["candidate_pool"]=len(_pool or [])
         _meta["final_moments"]=len(_chosen or [])
+        try:
+            from web.ai_performance_engine_v2 import is_low_signal_scan
+            _scan_cache=st.session_state.get("gsf_ai_scan_cache_v50") or {}
+            _scan_obj=next(iter(_scan_cache.values()),None) if isinstance(_scan_cache,dict) and _scan_cache else None
+            _meta["low_signal_detected"]=bool(is_low_signal_scan(_scan_obj)) if isinstance(_scan_obj,dict) else False
+        except Exception:
+            pass
     print(
         "GSF_V124_AI_DIRECTOR",
         "pool="+str(len(_pool or [])),
@@ -6542,6 +6579,22 @@ def rifinisci_confini_clip(input_file, centro_start, durata_target):
     Rifinisce gratis inizio/fine della clip usando silenzio audio.
     Cerca un punto naturale vicino ai bordi senza allungare troppo.
     """
+    try:
+        from web.ai_performance_engine_v2 import precision_refine_boundary, load_cached_scan
+        _scan_cache = st.session_state.get("gsf_ai_scan_cache_v50") or {}
+        _scan = next(iter(_scan_cache.values()), None) if isinstance(_scan_cache, dict) and _scan_cache else None
+        if not isinstance(_scan, dict):
+            _scan, _ = load_cached_scan(input_file, GSF_PREVIEW_DIR, GSF_AI_ENGINE_VERSION)
+        if isinstance(_scan, dict) and _scan.get("audio") and _scan.get("motion"):
+            _genre = str(st.session_state.get("gsf_v108_game_genre") or "Auto")
+            return precision_refine_boundary(
+                _scan,
+                float(centro_start),
+                float(durata_target),
+                genre=_genre,
+            )
+    except Exception:
+        pass
     margine = 8.0
     analisi_start = max(0.0, centro_start - margine)
     analisi_durata = durata_target + margine * 2
@@ -13767,12 +13820,22 @@ if video:
                         _mb = _gsf_preview_cache_get(_mini_preview_cache, _mkey, _make_mp, max_items=3)
                         return int(_c["index"]), _mb
 
-                    with ThreadPoolExecutor(max_workers=min(2, len(_short_cards))) as _mp_pool:
+                    with ThreadPoolExecutor(max_workers=min(3, len(_short_cards))) as _mp_pool:
                         _mp_futs = [_mp_pool.submit(_gen_one_mini, _card) for _card in _short_cards]
                         for _fut in as_completed(_mp_futs):
                             _cidx, _cbytes = _fut.result()
                             if _cbytes:
                                 _mini_preview_bytes[_cidx] = bytes(_cbytes)
+                    for _card in _short_cards:
+                        _cbytes = _mini_preview_bytes.get(int(_card["index"]))
+                        if _cbytes:
+                            try:
+                                _gsf_bytes_to_preview(
+                                    _cbytes,
+                                    f"v71_mini_{_card['index']}_{_card['start']:.2f}",
+                                )
+                            except Exception:
+                                pass
 
                 # V412 AI ENGINES: results sheet read by /ai/results for the AI page.
                 try:

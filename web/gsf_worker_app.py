@@ -4417,11 +4417,19 @@ def _gsf_ai_scan_profile_for_duration(total_seconds):
     """
     total=max(0.0,float(total_seconds or 0.0))
 
+    if total<=60:
+        return {
+            "tier":"fast_short",
+            "video_fps":2.0,
+            "analysis_width":144,
+            "adaptive":False,
+            "keyframes_only":False,
+        }
     if total<=3*60:
         return {
             "tier":"standard",
             "video_fps":2.0,
-            "analysis_width":192,
+            "analysis_width":160,
             "adaptive":False,
             "keyframes_only":False,
         }
