@@ -152,6 +152,7 @@ class GlobalJobManager:
         clean_sid = _safe_id(sid, "anon")
         jid = _safe_id(job.get("id"), "job")
         job["status_it"] = JOB_STATUS_LABELS_IT.get(str(job.get("status") or ""), "in attesa")
+        job["stage_label"] = str(job.get("stage") or "")
         job["updated_at"] = time.time()
         snapshot = json.loads(json.dumps(job, default=str))
 
@@ -331,6 +332,7 @@ class GlobalJobManager:
         auto_retry_on_boot: bool = True,
         initial_status: str = "queued",
         initial_progress: float | None = 0.0,
+        auto_start: bool = True,
     ) -> dict[str, Any]:
         clean_sid = _safe_id(sid)
         if not clean_sid:
@@ -375,9 +377,12 @@ class GlobalJobManager:
             "updated_at": now,
         }
         snapshot = self._write_job_atomic(clean_sid, job, sync_s3=True)
-        if clean_kind in self._handlers and status == "queued":
+        if auto_start and clean_kind in self._handlers and status == "queued":
             self._schedule_execution(clean_sid, job_id)
         return snapshot
+
+    def enqueue(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        return self.enqueue_job(*args, **kwargs)
 
     def _find_by_idempotency(self, sid: str, kind: str, idempotency_key: str) -> dict[str, Any] | None:
         for job in self.list_jobs(sid, limit=40, include_terminal=True):
@@ -398,14 +403,20 @@ class GlobalJobManager:
         job_id: str,
         *,
         status: str | None = None,
+        state: str | None = None,
         progress: float | None = None,
         stage: str | None = None,
+        stage_label: str | None = None,
         result: Mapping[str, Any] | None = None,
         error: str | None = None,
         pid: int | None = None,
         extra: Mapping[str, Any] | None = None,
         sync_s3: bool = False,
     ) -> dict[str, Any] | None:
+        if status is None and state is not None:
+            status = state
+        if stage is None and stage_label is not None:
+            stage = stage_label
         clean_sid = _safe_id(sid)
         jid = _safe_id(job_id)
         with self._lock:

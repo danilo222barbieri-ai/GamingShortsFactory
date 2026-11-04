@@ -277,6 +277,31 @@ def write_results_meta(directory: Path | str, meta: Mapping[str, Any]) -> Path:
     tmp = directory / (META_FILENAME + f".{os.getpid()}.tmp")
     tmp.write_text(json.dumps(meta, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     os.replace(tmp, path)
+    try:
+        if directory.name == "media" and directory.parent.parent.name == "sessions":
+            sid = directory.parent.name
+            runtime_root = directory.parent.parent.parent
+            req_id = str(meta.get("request_id") or "current")[:40]
+            status = str(meta.get("status") or ("success" if meta.get("items") else "analyzing"))
+            from web.global_jobs_v2 import GlobalJobManager
+            mgr = GlobalJobManager(runtime_root=runtime_root)
+            job = mgr.enqueue(
+                sid=sid,
+                kind="ai_analysis",
+                title="Analisi IA · Trova i momenti",
+                payload={"request_id": req_id, "engine": str(meta.get("engine") or "AUTO")},
+                idempotency_key=f"ai_analysis_{req_id}",
+                auto_start=False,
+            )
+            if job and job.get("id"):
+                if status == "analyzing":
+                    mgr.update_job(sid, job["id"], state="running", progress=35.0, stage_label="Analisi IA del gameplay in corso...")
+                elif status == "failed":
+                    mgr.update_job(sid, job["id"], state="failed", error=str(meta.get("error") or "Analisi IA non riuscita"))
+                else:
+                    mgr.update_job(sid, job["id"], state="completed", progress=100.0, stage_label="Momenti IA pronti", result={"count": len(meta.get("items") or [])})
+    except Exception:
+        pass
     return path
 
 

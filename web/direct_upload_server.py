@@ -763,6 +763,132 @@ def _push_client_bytes():
     return true;
   };
 
+  const installActivityCenter=()=>{
+    if(UI.GSFActivityCenter)return UI.GSFActivityCenter;
+    let drawerOpen=false,lastJobs=[],seenStates=new Map();
+    const AC_CSS=`
+#gsf-activity-center-trigger{position:fixed;right:14px;bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:2147483640;display:none;align-items:center;gap:7px;height:36px;padding:0 13px;border-radius:999px;border:1px solid rgba(121,210,255,.38);background:rgba(8,24,39,.92);color:#eaf6ff;font:700 12px/1 var(--na-font,system-ui,sans-serif);box-shadow:0 8px 24px rgba(0,0,0,.38);cursor:pointer;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+#gsf-activity-center-trigger.is-visible{display:inline-flex}
+#gsf-activity-center-trigger .gsf-ac-dot{width:8px;height:8px;border-radius:50%;background:#53e0ea;box-shadow:0 0 8px #53e0ea}
+#gsf-global-activity-drawer{position:fixed;right:14px;bottom:calc(122px + env(safe-area-inset-bottom,0px));z-index:2147483645;width:min(360px,calc(100vw - 28px));max-height:min(420px,62vh);display:none;flex-direction:column;border-radius:18px;border:1px solid rgba(121,210,255,.32);background:rgba(8,24,39,.96);color:#eaf6ff;font-family:var(--na-font,system-ui,sans-serif);box-shadow:0 18px 42px rgba(0,0,0,.52);overflow:hidden;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+#gsf-global-activity-drawer.is-open{display:flex}
+.gsf-ac-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(121,210,255,.16);font-size:13px;font-weight:800;letter-spacing:.03em}
+.gsf-ac-close{border:0;background:transparent;color:#9fb7ca;font-size:18px;cursor:pointer;padding:2px 6px}
+.gsf-ac-list{overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.gsf-ac-empty{padding:18px 8px;text-align:center;font-size:12px;color:#9fb7ca}
+.gsf-ac-item{padding:10px;border-radius:12px;background:rgba(16,40,61,.65);border:1px solid rgba(121,210,255,.16);display:flex;flex-direction:column;gap:6px}
+.gsf-ac-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:700}
+.gsf-ac-badge{font-size:10px;padding:2px 7px;border-radius:999px;background:rgba(39,174,243,.18);color:#79d2ff;text-transform:uppercase}
+.gsf-ac-badge[data-state=completed]{background:rgba(94,214,160,.2);color:#5ed6a0}
+.gsf-ac-badge[data-state=failed],.gsf-ac-badge[data-state=cancelled]{background:rgba(255,138,148,.2);color:#ff8a94}
+.gsf-ac-stage{font-size:11px;color:#9fb7ca;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gsf-ac-bar-wrap{height:4px;border-radius:999px;background:rgba(121,210,255,.14);overflow:hidden}
+.gsf-ac-bar{height:100%;background:linear-gradient(90deg,#27aef3,#5ed6a0);transition:width .25s ease}
+.gsf-ac-actions{display:flex;justify-content:flex-end;gap:6px}
+.gsf-ac-btn{border:1px solid rgba(121,210,255,.3);background:rgba(255,255,255,.06);color:#eaf6ff;border-radius:8px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer}
+`;
+    const ensureDOM=()=>{
+      const doc=UI.document;if(!doc||!doc.body)return null;
+      if(!doc.getElementById('gsf-activity-center-style')){
+        const st=doc.createElement('style');st.id='gsf-activity-center-style';st.textContent=AC_CSS;(doc.head||doc.documentElement).appendChild(st);
+      }
+      let trig=doc.getElementById('gsf-activity-center-trigger');
+      if(!trig){
+        trig=doc.createElement('button');trig.id='gsf-activity-center-trigger';trig.type='button';
+        trig.setAttribute('aria-label','Centro Attività Globale');
+        trig.innerHTML='<span class="gsf-ac-dot"></span><span class="gsf-ac-label">Attività (0)</span>';
+        trig.onclick=()=>{drawerOpen=!drawerOpen;render();};
+        doc.body.appendChild(trig);
+      }
+      let drw=doc.getElementById('gsf-global-activity-drawer');
+      if(!drw){
+        drw=doc.createElement('aside');drw.id='gsf-global-activity-drawer';drw.setAttribute('aria-label','Centro Attività Globale');
+        drw.innerHTML='<div class="gsf-ac-head"><span>Centro Attività Globale</span><button type="button" class="gsf-ac-close" aria-label="Chiudi">×</button></div><div class="gsf-ac-list"></div>';
+        drw.querySelector('.gsf-ac-close').onclick=()=>{drawerOpen=false;render();};
+        doc.body.appendChild(drw);
+      }
+      return {trig,drw};
+    };
+    const cancel=async(jobId)=>{
+      await fetch('/jobs/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:jobId})}).catch(()=>{});
+      await refresh();
+    };
+    const retry=async(jobId)=>{
+      await fetch('/jobs/retry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:jobId})}).catch(()=>{});
+      await refresh();
+    };
+    const enqueue=async(payload)=>{
+      const r=await fetch('/jobs/enqueue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload||{})});
+      const j=await r.json();await refresh();return j;
+    };
+    const render=()=>{
+      const nodes=ensureDOM();if(!nodes)return;
+      const active=lastJobs.filter(j=>j&&(j.status==='queued'||j.status==='running'));
+      nodes.trig.classList.toggle('is-visible',active.length>0||drawerOpen);
+      const lbl=nodes.trig.querySelector('.gsf-ac-label');
+      if(lbl)lbl.textContent=active.length>0?('Attività ('+active.length+')'):'Centro Attività';
+      nodes.drw.classList.toggle('is-open',drawerOpen);
+      const list=nodes.drw.querySelector('.gsf-ac-list');
+      if(!list)return;
+      list.innerHTML='';
+      if(!lastJobs.length){
+        const empty=UI.document.createElement('div');empty.className='gsf-ac-empty';empty.textContent='Nessuna elaborazione attiva in background.';
+        list.appendChild(empty);return;
+      }
+      for(const j of lastJobs.slice(0,10)){
+        const item=UI.document.createElement('div');item.className='gsf-ac-item';item.dataset.jobId=String(j.id||'');
+        const row=UI.document.createElement('div');row.className='gsf-ac-row';
+        const title=UI.document.createElement('span');title.textContent=String(j.title||j.kind||'Lavoro');
+        const badge=UI.document.createElement('span');badge.className='gsf-ac-badge';badge.dataset.state=String(j.status||'queued');
+        const pct=typeof j.progress==='number'&&Number.isFinite(j.progress)?Math.round(j.progress):null;
+        badge.textContent=String(j.status_it||j.status||'')+(pct!==null&&j.status==='running'?' · '+pct+'%':'');
+        row.append(title,badge);item.appendChild(row);
+        if(j.stage_label||j.error){
+          const stg=UI.document.createElement('div');stg.className='gsf-ac-stage';stg.textContent=String(j.error||j.stage_label||'');
+          item.appendChild(stg);
+        }
+        if(pct!==null&&(j.status==='running'||j.status==='completed')){
+          const bw=UI.document.createElement('div');bw.className='gsf-ac-bar-wrap';
+          const b=UI.document.createElement('div');b.className='gsf-ac-bar';b.style.width=Math.max(2,Math.min(100,pct))+'%';
+          bw.appendChild(b);item.appendChild(bw);
+        }
+        const acts=UI.document.createElement('div');acts.className='gsf-ac-actions';
+        if(j.status==='queued'||j.status==='running'){
+          const btn=UI.document.createElement('button');btn.type='button';btn.className='gsf-ac-btn';btn.textContent='Annulla';
+          btn.onclick=()=>cancel(j.id);acts.appendChild(btn);
+        }else if(j.status==='failed'||j.status==='cancelled'){
+          const btn=UI.document.createElement('button');btn.type='button';btn.className='gsf-ac-btn';btn.textContent='Riprova';
+          btn.onclick=()=>retry(j.id);acts.appendChild(btn);
+        }
+        if(acts.children.length)item.appendChild(acts);
+        list.appendChild(item);
+      }
+    };
+    const sync=(jobs)=>{
+      if(!Array.isArray(jobs))return;
+      lastJobs=jobs;
+      for(const j of jobs){
+        if(!j||!j.id)continue;
+        const prev=seenStates.get(j.id);
+        seenStates.set(j.id,j.status);
+        if(prev&&prev!==j.status){
+          if(j.status==='completed'&&j.kind!=='create_short'&&j.kind!=='upload'){
+            showToast(String(j.title||'Elaborazione completata'),String(j.stage_label||'Completato in background.'),'success',{token:'bg-job-done-'+j.id+'-'+String(j.completed_at||1),persistent:true});
+          }else if(j.status==='failed'&&j.kind!=='create_short'&&j.kind!=='upload'){
+            showToast(String(j.title||'Elaborazione interrotta'),String(j.error||'Puoi riprovare dal Centro Attività.'),'error',{token:'bg-job-fail-'+j.id+'-'+String(j.updated_at||1),persistent:true});
+          }
+        }
+      }
+      render();
+    };
+    const refresh=async()=>{
+      try{const r=await fetch('/jobs/list',{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&Array.isArray(d.jobs))sync(d.jobs);}}catch(_e){}
+    };
+    const api={sync,refresh,open:()=>{drawerOpen=true;render();refresh();},close:()=>{drawerOpen=false;render();},toggle:()=>{drawerOpen=!drawerOpen;render();},cancel,retry,enqueue,getJobs:()=>lastJobs.slice()};
+    UI.GSFActivityCenter=api;return api;
+  };
+  const activityCenter=installActivityCenter();
+
   let pollController=null,pollTimer=0,monitorSuspended=false;
   const pollJob=async()=>{
     if(monitorSuspended||document.hidden||pollController)return;
@@ -773,6 +899,7 @@ def _push_client_bytes():
       if(controller.signal.aborted)return;
       const j=await fetch("/job/status",{cache:"no-store",signal:controller.signal}).then(r=>r.json()),status=String(j.render_status||"");
       if(controller.signal.aborted||monitorSuspended||document.hidden)return;
+      if(Array.isArray(j.active_jobs))activityCenter.sync(j.active_jobs);
       if(status==="ready"){
         const token=String(j.completed_at||j.started_at||"ready");
         if(!window.GSFNotify.handles("render"))showToast("Short completato","","success",{token:"short-ready-"+token,persistent:true,onClick:()=>openShareHub()});
@@ -5569,6 +5696,26 @@ def _publish_run(sid,job,request,video_path):
     done=all(r.get("status") in ("done","error","manual","needs_connection","needs_reauth","no_page","no_page_selected") for r in job["results"].values())
     if done:
         _publish_update(sid,job,state="finished")
+    try:
+        mgr=_get_global_job_manager()
+        results_vals=list((job.get("results") or {}).values())
+        total_p=max(1,len(results_vals))
+        done_p=sum(1 for r in results_vals if r.get("status") in ("done","error","manual","needs_connection","needs_reauth","no_page","no_page_selected"))
+        ok_p=sum(1 for r in results_vals if r.get("status")=="done")
+        pct_p=round((done_p/total_p)*100.0,1)
+        for gj in mgr.list_jobs(sid,limit=20,include_terminal=True):
+            if gj.get("idempotency_key")==f"publish_{job.get('id')}" or (gj.get("payload") or {}).get("publish_id")==job.get("id"):
+                if done:
+                    if ok_p>0:
+                        mgr.update_job(sid,gj["id"],state="completed",progress=100.0,stage_label=f"Pubblicato ({ok_p}/{total_p})",result={"publish_id":job.get("id")})
+                    else:
+                        err_first=next((str(r.get("error") or "") for r in results_vals if r.get("error")),"Pubblicazione non riuscita")
+                        mgr.update_job(sid,gj["id"],state="failed",error=err_first[:220])
+                else:
+                    mgr.update_job(sid,gj["id"],state="running",progress=min(99.0,pct_p),stage_label=f"Pubblicazione in corso ({done_p}/{total_p})...")
+                break
+    except Exception:
+        pass
 
 def _publish_reconcile_tiktok(sid):
     with _state_lock("publish-confirm",sid):
@@ -5637,6 +5784,20 @@ def _publish_start(sid,payload):
         "results":results
     }
     _publish_update(sid,job)
+    try:
+        mgr=_get_global_job_manager()
+        gjob=mgr.enqueue(
+            sid=sid,
+            kind="social_publish",
+            title="Pubblicazione Social · "+(", ".join(_PUBLISH_LABELS.get(p,p.title()) for p in request["platforms"]))[:60],
+            payload={"publish_id":job_id,"platforms":list(request["platforms"]),"privacy":request["privacy"]},
+            idempotency_key=f"publish_{job_id}",
+            auto_start=False,
+        )
+        if gjob and gjob.get("id"):
+            mgr.update_job(sid,gjob["id"],state="running",progress=10.0,stage_label="Avvio pubblicazione social...")
+    except Exception:
+        pass
     if any(r["status"]=="queued" for r in results.values()):
         threading.Thread(target=_publish_run,args=(sid,job,request,video_path),daemon=True,name="gsf-publish-v413").start()
     else:
@@ -5915,9 +6076,39 @@ class Handler(BaseHTTPRequestHandler):
             quality={}
             if sid and stable_ready and stable is not None:
                 quality=_quality_schedule(sid,stable)
+            render_progress=payload.get("progress")
+            global_jobs_list=[]
+            if sid:
+                try:
+                    mgr=_get_global_job_manager()
+                    if status in ("running","ready","failed") and started>0:
+                        r_idem=f"render_{int(started)}"
+                        r_job=mgr.enqueue(
+                            sid=sid,
+                            kind="create_short",
+                            title="Creazione Short 9:16",
+                            payload={"started_at":started},
+                            idempotency_key=r_idem,
+                            auto_start=False,
+                        )
+                        if r_job and r_job.get("id"):
+                            if status=="running":
+                                pct_val=float(render_progress) if isinstance(render_progress,(int,float)) else min(95.0,max(5.0,round(((time.time()-started)/25.0)*100.0,1)))
+                                render_progress=pct_val
+                                mgr.update_job(sid,r_job["id"],state="running",progress=pct_val,stage_label="Rendering FFmpeg 9:16 in corso...")
+                            elif status=="ready":
+                                render_progress=100.0
+                                mgr.update_job(sid,r_job["id"],state="completed",progress=100.0,stage_label="Short completato",result={"final_bytes":stable_bytes})
+                            elif status=="failed":
+                                mgr.update_job(sid,r_job["id"],state="failed",error=str(payload.get("error") or "Creazione Short non riuscita"))
+                    global_jobs_list=mgr.list_jobs(sid,limit=12,include_terminal=True)
+                except Exception:
+                    global_jobs_list=[]
             _json(self,200,{
                 "ok":True,
                 "render_status":status,
+                "progress":render_progress,
+                "active_jobs":global_jobs_list,
                 "started_at":payload.get("started_at"),
                 "completed_at":payload.get("completed_at"),
                 "failed_at":payload.get("failed_at"),
@@ -7504,8 +7695,192 @@ def _get_global_job_manager():
             _register_default_job_handlers(_GLOBAL_JOB_MANAGER)
     return _GLOBAL_JOB_MANAGER
 
+def _resolve_session_source_path(sid,payload=None):
+    payload=dict(payload or {})
+    cand=str(payload.get("source_path") or "").strip()
+    if cand and Path(cand).is_file():
+        return Path(cand)
+    session_root=ROOT/"sessions"/sid
+    ptr=session_root/"editor2027_current.txt"
+    if ptr.is_file():
+        try:
+            p=Path(ptr.read_text(encoding="utf-8").strip())
+            if p.is_file():
+                return p
+        except Exception:
+            pass
+    marker=session_root/"media"/".direct_upload_ready.json"
+    if marker.is_file():
+        try:
+            m=json.loads(marker.read_text(encoding="utf-8"))
+            p=Path(str(m.get("path") or ""))
+            if p.is_file():
+                return p
+        except Exception:
+            pass
+    restored=_restore_bucket_source(sid,cand)
+    if restored and Path(restored).is_file():
+        return Path(restored)
+    return None
+
+def _probe_video_duration_fast(path):
+    try:
+        out=subprocess.check_output(
+            ["ffprobe","-v","error","-show_entries","format=duration","-of","default=noprint_wrappers=1:nokey=1",str(path)],
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+            text=True,
+        ).strip()
+        d=float(out)
+        if d>0:
+            return d
+    except Exception:
+        pass
+    return 30.0
+
 def _register_default_job_handlers(mgr):
-    pass
+    def _handle_ai_analysis_job(job,ctx):
+        sid=_safe_id(job.get("sid",""))
+        payload=dict(job.get("payload") or {})
+        ctx.check_cancelled()
+        ctx.set_progress(10.0,stage="Verifica video sorgente...")
+        src=_resolve_session_source_path(sid,payload)
+        if src is None or not src.is_file():
+            raise RuntimeError("Video sorgente non trovato per l'analisi IA.")
+        req_id=str(payload.get("request_id") or job.get("id") or "bg_ai")[:40]
+        profile=str(payload.get("engine") or payload.get("profile") or "auto").lower()
+        req_dur=float(payload.get("duration") or 15.0)
+        media_dir=ROOT/"sessions"/sid/"media"
+        media_dir.mkdir(parents=True,exist_ok=True)
+        import ai_engines_v412 as _v412
+        src_dur=_probe_video_duration_fast(src)
+        eff_dur=_v412.effective_analysis_duration(src_dur,req_dur)
+        ctx.check_cancelled()
+        ctx.set_progress(35.0,stage="Scansione rapida del gameplay (Fast Detection)...")
+        ranked=_v412.fallback_rank_pool(payload.get("diagnostics") or {},source_duration=src_dur,clip_duration=eff_dur,target=3)
+        candidates=[round(float(start),3) for _score,start in ranked] or [0.0]
+        ctx.check_cancelled()
+        ctx.set_progress(70.0,stage="Smart Ranking dei momenti migliori...")
+        selected=[{"start":s,"brain_score":max(0.65,0.92-0.06*idx),"event":"highlight","category":"action","confidence":0.85} for idx,s in enumerate(candidates)]
+        meta=_v412.build_results_meta(
+            candidates,
+            {"selected":selected,"alternates":[],"pool_size":len(candidates)},
+            duration=eff_dur,
+            profile=profile,
+            request_id=req_id,
+        )
+        meta["status"]="success"
+        _v412.write_results_meta(media_dir,meta)
+        ctx.set_progress(100.0,stage="Momenti IA pronti")
+        return {"request_id":req_id,"candidates":candidates,"duration":eff_dur}
+
+    def _handle_ffmpeg_render_job(job,ctx):
+        sid=_safe_id(job.get("sid",""))
+        payload=dict(job.get("payload") or {})
+        ctx.check_cancelled()
+        ctx.set_progress(5.0,stage="Preparazione rendering 9:16...")
+        stable,job_file=_final_local_paths(sid)
+        if stable is None or job_file is None:
+            raise RuntimeError("Sessione non valida per il rendering.")
+        started_at=float(payload.get("started_at") or time.time())
+        dur=max(1.0,float(payload.get("duration") or 15.0))
+        start_t=max(0.0,float(payload.get("start_time") or 0.0))
+        tmp_out=stable.with_name(".gaming_short_finale_share.bg.tmp.mp4")
+        cmd=payload.get("ffmpeg_cmd")
+        if not isinstance(cmd,list) or not cmd:
+            src=_resolve_session_source_path(sid,payload)
+            if src is None or not src.is_file():
+                raise RuntimeError("Video sorgente non disponibile per creare lo Short.")
+            cmd=[
+                "ffmpeg","-y",
+                "-ss",f"{start_t:.3f}",
+                "-t",f"{dur:.3f}",
+                "-i",str(src),
+                "-vf","scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
+                "-c:v","libx264","-preset","veryfast","-crf","23",
+                "-c:a","aac","-b:a","128k",
+                "-movflags","+faststart",
+                str(tmp_out),
+            ]
+        else:
+            cmd=[str(x) for x in cmd]
+            tmp_out=Path(str(payload.get("tmp_output") or tmp_out))
+
+        _write_json_atomic(job_file,{
+            "status":"running",
+            "progress":5.0,
+            "started_at":started_at,
+            "global_job_id":job.get("id"),
+        })
+        try:
+            rc=ctx.run_ffmpeg_with_progress(cmd,duration_sec=dur)
+            if rc!=0 or not tmp_out.is_file() or tmp_out.stat().st_size<=512:
+                raise RuntimeError(f"FFmpeg terminato con codice {rc}")
+            os.replace(tmp_out,stable)
+            final_bytes=int(stable.stat().st_size)
+            done_meta={
+                "status":"ready",
+                "progress":100.0,
+                "started_at":started_at,
+                "completed_at":time.time(),
+                "final_path":str(stable),
+                "final_bytes":final_bytes,
+                "global_job_id":job.get("id"),
+            }
+            _write_json_atomic(job_file,done_meta)
+            if _bucket_enabled():
+                try:
+                    _final_persist_to_bucket(sid,stable,done_meta)
+                except Exception:
+                    pass
+            return {"final_path":str(stable),"final_bytes":final_bytes}
+        except Exception as exc:
+            try:
+                tmp_out.unlink(missing_ok=True)
+            except Exception:
+                pass
+            _write_json_atomic(job_file,{
+                "status":"failed",
+                "started_at":started_at,
+                "failed_at":time.time(),
+                "error":str(exc)[:240],
+                "global_job_id":job.get("id"),
+            })
+            raise
+
+    def _handle_social_publish_job(job,ctx):
+        sid=_safe_id(job.get("sid",""))
+        payload=dict(job.get("payload") or {})
+        ctx.check_cancelled()
+        ctx.set_progress(15.0,stage="Avvio pubblicazione social...")
+        pub_job=_publish_start(sid,payload)
+        return {"publish_id":pub_job.get("id"),"state":pub_job.get("state")}
+
+    def _handle_project_save_job(job,ctx):
+        sid=_safe_id(job.get("sid",""))
+        payload=dict(job.get("payload") or {})
+        ctx.check_cancelled()
+        ctx.set_progress(40.0,stage="Salvataggio progetto e bozza...")
+        src=_resolve_session_source_path(sid,payload)
+        if src is not None and src.is_file():
+            _auto_save_uploaded_source_to_projects(
+                sid=sid,
+                upload_id=str(payload.get("upload_id") or "current"),
+                source_path=str(src),
+                original_name=str(payload.get("name") or src.name),
+                total=int(src.stat().st_size),
+            )
+        draft=_current_project_save_draft(sid,title=str(payload.get("title") or ""))
+        ctx.set_progress(100.0,stage="Progetto salvato")
+        return {"saved":True,"draft":draft}
+
+    mgr.register_handler("ai_analysis",_handle_ai_analysis_job)
+    mgr.register_handler("whisper",_handle_ai_analysis_job)
+    mgr.register_handler("ffmpeg_render",_handle_ffmpeg_render_job)
+    mgr.register_handler("create_short",_handle_ffmpeg_render_job)
+    mgr.register_handler("export",_handle_ffmpeg_render_job)
+    mgr.register_handler("social_publish",_handle_social_publish_job)
+    mgr.register_handler("project_save",_handle_project_save_job)
 
 
 if __name__=="__main__":
