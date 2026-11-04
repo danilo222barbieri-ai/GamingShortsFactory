@@ -1025,16 +1025,21 @@ def smart_rank_candidates(
     )
 
     selected: list[dict[str, Any]] = []
+    sel_starts: list[float] = []
+    min_dist = max(3.5, dur * 0.30)
     for sc, cand_st, diag, evt in top_candidates:
         refined_st, refined_dur = precision_refine_boundary(
             scan, cand_st, dur, total_seconds=total, genre=genre
         )
+        if any(abs(refined_st - s) < min_dist for s in sel_starts):
+            continue
         row = dict(diag)
         row["start"] = refined_st
         row["duration"] = refined_dur
         row["score"] = sc
         row["brain_score"] = sc
         selected.append(row)
+        sel_starts.append(refined_st)
 
     # Collect alternates from remaining pool
     alternates: list[dict[str, Any]] = []
