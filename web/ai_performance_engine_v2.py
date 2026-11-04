@@ -257,7 +257,7 @@ GAME_PROFILES: dict[str, dict[str, Any]] = {
         "label": "Racing e Motori",
         "keywords": (
             "forza", "gran turismo", "assetto corsa", "iracing", "need for speed",
-            "nfs", "f1 2", "formula 1", "motogp", "wrc", "dirt rally",
+            "nfs", "f1", "f1 2", "formula 1", "motogp", "wrc", "dirt rally",
             "the crew", "project cars", "mario kart", "trackmania", "beamng",
             "burnout", "asphalt", "ride 5", "racing", "corsa",
         ),
@@ -364,7 +364,7 @@ GAME_PROFILES: dict[str, dict[str, Any]] = {
             "fallout", "starfield", "final fantasy", "persona", "diablo",
             "path of exile", "poe", "genshin impact", "honkai", "wuwa",
             "wuthering waves", "dragon s dogma", "kingdom come", "mass effect",
-            "dragon age", "zed", "zelda", "metaphor", "rpg", "soulslike",
+            "dragon age", "zelda", "metaphor", "rpg", "soulslike",
         ),
         "important_events": ["boss", "victory", "clutch", "impact", "kill"],
         "recommended_duration": 30,
@@ -484,8 +484,15 @@ def infer_game_genre_v2(value: Any) -> str:
     for gname in _GENRE_MATCH_ORDER:
         prof = GAME_PROFILES[gname]
         for kw in prof["keywords"]:
-            if kw in text or kw in padded:
-                return gname
+            clean_kw = str(kw or "").strip()
+            if not clean_kw:
+                continue
+            if " " in clean_kw:
+                if clean_kw in text or clean_kw in padded:
+                    return gname
+            else:
+                if f" {clean_kw} " in padded:
+                    return gname
     return "Auto"
 
 
