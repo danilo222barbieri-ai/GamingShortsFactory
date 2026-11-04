@@ -11851,14 +11851,15 @@ if GSF_WEB_MODE:
             "action":"action",
             "reaction":"reaction",
         }
-        if _v154_event=="create_ai" and _v154_engine in _gsf_v291_profile_map:
-            st.session_state["gsf_v291_engine_profile"]=_gsf_v291_profile_map[_v154_engine]
+        _engine_choice = _v154_engine if _v154_engine in _gsf_v291_profile_map else "auto"
+        if _v154_event in ("create_ai", "open_ai"):
+            st.session_state["gsf_v291_engine_profile"]=_gsf_v291_profile_map[_engine_choice]
             st.session_state["gsf_v291_requested_duration"]=(
                 int(_v154_duration) if int(_v154_duration) in (15,30,60) else 15
             )
             st.session_state["gsf_v291_ai_request"]={
-                "engine":_v154_engine,
-                "profile":_gsf_v291_profile_map[_v154_engine],
+                "engine":_engine_choice,
+                "profile":_gsf_v291_profile_map[_engine_choice],
                 "duration":int(_v154_duration) if int(_v154_duration) in (15,30,60) else 15,
             }
         elif _v154_engine=="manual" or (_v154_event=="open_editor" and "index" not in _gsf_v154_event):
@@ -11878,7 +11879,7 @@ if GSF_WEB_MODE:
         try:
             from web.ai_engines_v412 import apply_replacement as _gsf_v412_replace
             from web.ai_engines_v412 import select_candidate as _gsf_v412_select
-            if _v154_event=="create_ai":
+            if _v154_event in ("create_ai", "open_ai"):
                 st.session_state["gsf_v412_request_id"]=str(_gsf_v154_event.get("request_id") or "")[:40]
                 st.session_state.pop("gsf_v412_replaced",None)
             elif _v154_event in ("preview_moment","open_editor","create_short") and "index" in _gsf_v154_event:
@@ -17163,13 +17164,18 @@ if GSF_WEB_MODE:
         frame.contentWindow.location.replace(frame.dataset.src||'/ai-v221/');
         frame.dataset.loaded='1';
       };
-      const open=(remember=true)=>{
+      const open=(data={},remember=true)=>{
         ensureFrame();
         const so=document.getElementById('gsf-social-overlay-v159');if(so){so.classList.remove('is-open');so.style.opacity='0';so.style.visibility='hidden';so.style.pointerEvents='none'}
         const ed=document.getElementById('gsf-editor-overlay-v220');if(ed){ed.classList.remove('is-open');ed.style.opacity='0';ed.style.visibility='hidden';ed.style.pointerEvents='none'}
         o.classList.add('is-open');o.style.opacity='1';o.style.visibility='visible';o.style.pointerEvents='auto';o.setAttribute('aria-hidden','false');
         if(remember)try{sessionStorage.setItem(KEY,'1')}catch(e){}
-        setTimeout(()=>broadcastHome({type:'GSF_AI_COMMAND',action:'get_state'}),80);
+        setTimeout(()=>{
+          broadcastHome({type:'GSF_AI_COMMAND',action:'get_state'});
+          if(data&&(data.auto_search||data.target==='ai')){
+            try{frame.contentWindow.postMessage({type:'GSF_AI_START_SEARCH',data},location.origin)}catch(_e){}
+          }
+        },80);
       };
       const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true');try{sessionStorage.setItem(KEY,'0')}catch(e){}};
       o.querySelector('.gsf-ai-close').onclick=()=>P.GSFNavigation.navigate({target:'home'});o.addEventListener('click',e=>{if(e.target===o)P.GSFNavigation.navigate({target:'home'})},{signal:bridge.signal});
@@ -17185,12 +17191,18 @@ if GSF_WEB_MODE:
             P.postMessage({type:'GSF_SHELL_NAV',target:'short',candidate_id:selection.candidate_id,video:selection.video,start_time:selection.start_time,end_time:selection.end_time,index:selection.index},location.origin);
             return;
           }
+          if(action==='open_editor'){
+            broadcastHome({...selection,type:'GSF_AI_COMMAND',action:'open_editor'});
+            close();
+            P.postMessage({type:'GSF_SHELL_NAV',target:'editor',candidate_id:selection.candidate_id,video:selection.video,video_url:selection.video,start_time:selection.start_time,end_time:selection.end_time,momentIndex:selection.index,duration:selection.duration},location.origin);
+            return;
+          }
           broadcastHome({type:'GSF_AI_COMMAND',...selection});
           return;
         }
         if(e.data.type==='GSF_SHELL_NAV'&&e.data.target==='ai-state')forwardState(e.data);
       },{signal:bridge.signal});
-      P.GSFNavigation.registerSurface('ai',{open:()=>open(),close});
+      P.GSFNavigation.registerSurface('ai',{open:data=>open(data),close});
     })();
     
     })(window.parent);

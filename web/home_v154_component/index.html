@@ -3854,8 +3854,8 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
      }else if(actualSec!==null&&actualSec>=15){
        const sStr=Math.round(actualSec);
        parentToast("Gameplay pronto ("+sStr+"s)","Durata >= 15s · Cerco momenti con IA...","success");
-       shellNav("ai",{duration:actualSec,engine});
-       value({event:"open_ai",duration:actualSec,engine});
+       shellNav("ai",{duration:actualSec,engine:engine||"auto",auto_search:true});
+       value({event:"create_ai",duration:actualSec,engine:engine||"auto"});
      }else{
        value({event:"upload_complete",duration,engine});
      }

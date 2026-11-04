@@ -1364,13 +1364,42 @@ $("sheetClose").addEventListener("click",closeSheet);
 $("restoreAi").addEventListener("click",restoreShort);
 $("sheetWrap").addEventListener("click",e=>{if(e.target===$("sheetWrap"))closeSheet()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("sheetWrap").hidden)closeSheet()});
+async function checkResultsOrScan(){
+  if(DEMO)return;
+  const j=await fetchResults();
+  if(!j)return;
+  if(j.status==="analyzing"||j.status==="running"){
+    awaitingResults=true;state.processing=true;
+    setScan("on",Number(j.updated_at?j.updated_at*1000:Date.now()));
+    render();
+    const token=++pollToken;
+    setTimeout(()=>pollResults(token,Date.now()+RESULTS_TIMEOUT_MS),400);
+    return;
+  }
+  const list=(Array.isArray(j.previews)?j.previews:[]).filter(Boolean).filter(d=>d.video);
+  if(list.length>0&&!j.whole_source){
+    runInfo={pool:Number(j.pool_size)||0,engine:String(j.engine||"")};
+    applyResults(list);
+  }
+}
 window.addEventListener("message",event=>{
-  if(event.origin!==location.origin||!event.data||event.data.type!=="GSF_AI_STATE")return;
-  const incoming={...event.data.state};const list=incoming.previews;delete incoming.previews;
-  state={...state,...incoming};if(!Number.isInteger(Number(state.selectedMoment)))state.selectedMoment=0;
-  const hasPreviews=Array.isArray(list)&&list.length>0;
-  if(hasPreviews&&applyResults(list))return;
-  render()});
+  if(event.origin!==location.origin||!event.data)return;
+  if(event.data.type==="GSF_AI_START_SEARCH"){
+    state.loaded=true;
+    if(!awaitingResults&&!state.processing){
+      startSearch();
+    }
+    return;
+  }
+  if(event.data.type==="GSF_AI_STATE"){
+    const incoming={...event.data.state};const list=incoming.previews;delete incoming.previews;
+    state={...state,...incoming};if(!Number.isInteger(Number(state.selectedMoment)))state.selectedMoment=0;
+    const hasPreviews=Array.isArray(list)&&list.length>0;
+    if(hasPreviews&&applyResults(list))return;
+    if(state.loaded&&!state.processing&&!awaitingResults)checkResultsOrScan();
+    render();
+  }
+});
 
 /* ---------- demo host (preview only: simulates the app with example data) ---------- */
 function demoHost(action,data){
@@ -1417,7 +1446,7 @@ setInterval(()=>{if(!document.hidden)fitShell()},1200);
 const draft=store.get();
 if(DEMO)state={...state,loaded:true};
 if(draft&&!DEMO){state={...state,engine:ENGINE_LABEL[draft.engine]?draft.engine:state.engine,duration:draft.duration||state.duration}}
-send("ready");showView("engines");setMurals("idle");render();
+send("ready");showView("engines");setMurals("idle");render();checkResultsOrScan();
 if(!DEMO){try{const active=JSON.parse(sessionStorage.getItem("gsf_ai_active_scan_v2")||"null");if(active&&active.requestId&&Date.now()-Number(active.started||0)<RESULTS_TIMEOUT_MS){requestId=String(active.requestId);baseline=String(active.baseline||"");awaitingResults=true;state.processing=true;setScan("on",Number(active.started)||Date.now());render();const token=++pollToken;setTimeout(()=>pollResults(token,Number(active.started||Date.now())+RESULTS_TIMEOUT_MS),100)}}catch(_e){}}
 })();
 /* GSF Alive 2 on Crea con IA: the search circle breathes with the AI. */
