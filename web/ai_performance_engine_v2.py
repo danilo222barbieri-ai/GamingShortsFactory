@@ -905,6 +905,7 @@ def smart_rank_candidates(
     genre: str = "Auto",
     profile: str = "auto",
     target_count: int = 3,
+    sid: str = "",
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Smart ranking of moments using verifiable multi-signal features and game profiles."""
     dur = max(1.0, _num(target_duration, 15.0))
@@ -931,6 +932,14 @@ def smart_rank_candidates(
                 {"start": round(max_start, 3), "score": 0.60, "event": "highlight", "category": "action", "confidence": 0.40, "low_signal": True}
             )
         return base_candidates[:target_count], []
+
+    user_model = None
+    if sid:
+        try:
+            from feedback_learning_v127 import load_user_model
+            user_model = load_user_model(sid)
+        except Exception:
+            user_model = None
 
     win_len = max(1, int(round(dur / step)))
     scored_pool: list[tuple[float, float, dict[str, Any], str]] = []
@@ -981,6 +990,12 @@ def smart_rank_candidates(
             0.14 * arc
         )
         multiplier = genre_score_multiplier_v2(genre, profile, features)
+        if user_model:
+            try:
+                from feedback_learning_v127 import user_learning_multiplier
+                multiplier *= user_learning_multiplier(user_model, event_name, genre=genre)
+            except Exception:
+                pass
         final_score = round(max(0.05, min(0.99, raw_score * multiplier)), 3)
 
         event_name = "highlight"
@@ -1098,6 +1113,7 @@ def run_fast_ai_pipeline(
     genre: str = "Auto",
     profile: str = "auto",
     request_id: str = "",
+    sid: str = "",
     generate_previews: bool = True,
     check_cancelled: Any = None,
     set_progress: Any = None,
@@ -1133,7 +1149,8 @@ def run_fast_ai_pipeline(
         total_seconds=total_seconds,
         genre=genre,
         profile=profile,
-        target_count=3
+        target_count=3,
+        sid=sid,
     )
 
     candidate_starts = [round(float(r["start"]), 3) for r in selected]

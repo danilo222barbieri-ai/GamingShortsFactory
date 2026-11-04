@@ -4529,6 +4529,11 @@ def _ai_feedback_store(sid,event):
                 print("GSF_V124_FEEDBACK_BUCKET_WARN",sid,repr(str(exc))[:180],flush=True)
         try:
             model=_ai_learning_update(row)
+            try:
+                from feedback_learning_v127 import update_user_preferences
+                update_user_preferences(sid, row, runtime_root=ROOT)
+            except Exception:
+                pass
             print(
                 "GSF_V127_LEARNING",
                 "feedback="+str(int(model.get("total_feedback",0) or 0)),
@@ -5943,6 +5948,12 @@ class Handler(BaseHTTPRequestHandler):
         if clean=="/ai/results":
             sid=_social_sid(self)
             _json(self,200,_ai_results_payload(sid))
+
+        if clean=="/ai/preferences":
+            sid=_social_sid(self)
+            from feedback_learning_v127 import load_user_model
+            _json(self,200,{"ok":True,"preferences":load_user_model(sid,ROOT)})
+            return
             return
 
         if clean in ("","/health"):
@@ -6711,6 +6722,15 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,200,{"ok":bool(ok)})
             except Exception as exc:
                 _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+
+        if path=="/ai/preferences/reset":
+            try:
+                from feedback_learning_v127 import reset_user_model
+                reset_user_model(sid,ROOT)
+                _json(self,200,{"ok":True,"reset":True})
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:180]})
             return
 
         if path=="/content-memory/check":
@@ -7761,6 +7781,7 @@ def _register_default_job_handlers(mgr):
             genre=genre,
             profile=profile,
             request_id=req_id,
+            sid=sid,
             generate_previews=True,
             check_cancelled=ctx.check_cancelled,
             set_progress=ctx.set_progress,

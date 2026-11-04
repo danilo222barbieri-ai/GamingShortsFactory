@@ -119,3 +119,162 @@ def save_model(path,model):
     )
     os.replace(tmp,path)
     return path
+
+
+# ============================================================================
+# BLOCCO 4 — IA PERSONALIZZATA ISOLATA PER UTENTE
+# ============================================================================
+
+def empty_user_model() -> dict:
+    return {
+        "engine": "v3.0-user-preferences",
+        "updated_at": 0.0,
+        "total_feedback": 0,
+        "events": {},
+        "genres": {},
+        "recent_choices": [],
+    }
+
+
+def user_preferences_path(sid: str, runtime_root: Path | str | None = None) -> Path:
+    from pathlib import Path
+    import os
+    if runtime_root:
+        base = Path(runtime_root)
+    else:
+        env_root = os.environ.get("GSF_RUNTIME_ROOT")
+        base = Path(env_root) if env_root else Path("/tmp/gsf-runtime")
+    return base / "sessions" / str(sid) / "ai_user_preferences.json"
+
+
+def load_user_model(sid: str, runtime_root: Path | str | None = None) -> dict:
+    if not sid:
+        return empty_user_model()
+    path = user_preferences_path(sid, runtime_root)
+    if not path.is_file():
+        return empty_user_model()
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            return data
+    except Exception:
+        pass
+    return empty_user_model()
+
+
+def save_user_model(sid: str, model: dict, runtime_root: Path | str | None = None) -> Path:
+    path = user_preferences_path(sid, runtime_root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")
+    tmp.write_text(
+        json.dumps(model, ensure_ascii=False, separators=(",", ":"), sort_keys=True),
+        encoding="utf-8",
+    )
+    os.replace(tmp, path)
+    return path
+
+
+def reset_user_model(sid: str, runtime_root: Path | str | None = None) -> dict:
+    model = empty_user_model()
+    save_user_model(sid, model, runtime_root)
+    return model
+
+
+def update_user_preferences(
+    sid: str,
+    event_row: dict,
+    runtime_root: Path | str | None = None
+) -> dict:
+    """Incrementally update user preferences with interpretable bounded shifts."""
+    current = load_user_model(sid, runtime_root)
+    events = dict(current.get("events") or {})
+    genres = dict(current.get("genres") or {})
+    recent = list(current.get("recent_choices") or [])
+
+    event = normalize_event((event_row or {}).get("event"))
+    action = str((event_row or {}).get("action") or "selected").strip().lower()
+    genre = str((event_row or {}).get("genre") or "Auto").strip()
+    score = _num((event_row or {}).get("brain_score") or (event_row or {}).get("score"), 0.0)
+    weight = float(_ACTION_WEIGHTS.get(action, 0.5))
+
+    # 1. Update event statistics
+    st = dict(events.get(event) or {})
+    actions = dict(st.get("actions") or {})
+    actions[action] = int(actions.get(action, 0) or 0) + 1
+    cnt = int(st.get("count", 0) or 0) + 1
+    sig = _num(st.get("signal"), 0.0) + weight
+    st.update({
+        "count": cnt,
+        "signal": round(sig, 4),
+        "actions": actions,
+        "updated_at": time.time(),
+    })
+    events[event] = st
+
+    # 2. Update genre statistics if provided
+    if genre and genre != "Auto":
+        gst = dict(genres.get(genre) or {})
+        g_actions = dict(gst.get("actions") or {})
+        g_actions[action] = int(g_actions.get(action, 0) or 0) + 1
+        g_cnt = int(gst.get("count", 0) or 0) + 1
+        g_sig = _num(gst.get("signal"), 0.0) + weight
+        preferred = list(gst.get("preferred_events") or [])
+        if action in ("selected", "published") and event not in preferred:
+            preferred.append(event)
+        gst.update({
+            "count": g_cnt,
+            "signal": round(g_sig, 4),
+            "actions": g_actions,
+            "preferred_events": preferred[:5],
+            "updated_at": time.time(),
+        })
+        genres[genre] = gst
+
+    # 3. Add to recent choices (cap at 30 entries)
+    recent.append({
+        "timestamp": round(time.time(), 2),
+        "event": event,
+        "genre": genre,
+        "action": action,
+        "score": round(score, 3),
+    })
+    recent = recent[-30:]
+
+    current.update({
+        "engine": "v3.0-user-preferences",
+        "updated_at": time.time(),
+        "total_feedback": int(current.get("total_feedback", 0) or 0) + 1,
+        "events": events,
+        "genres": genres,
+        "recent_choices": recent,
+    })
+    save_user_model(sid, current, runtime_root)
+    return current
+
+
+def user_learning_multiplier(model: dict, event: str, genre: str = "Auto") -> float:
+    """Interpretable combined user preference multiplier, safely bounded in [0.88, 1.14]."""
+    evt = normalize_event(event)
+    events = (model or {}).get("events") or {}
+    est = events.get(evt) or {}
+    e_cnt = max(0, int(est.get("count", 0) or 0))
+    e_sig = _num(est.get("signal"), 0.0)
+
+    e_delta = 0.0
+    if e_cnt >= 2:
+        e_learned = e_sig / (e_cnt + 8.0)
+        e_delta = max(-0.08, min(0.08, e_learned * 0.12))
+
+    g_delta = 0.0
+    g = str(genre or "Auto")
+    if g != "Auto":
+        genres = (model or {}).get("genres") or {}
+        gst = genres.get(g) or {}
+        g_cnt = max(0, int(gst.get("count", 0) or 0))
+        g_sig = _num(gst.get("signal"), 0.0)
+        if g_cnt >= 2:
+            g_learned = g_sig / (g_cnt + 8.0)
+            g_delta = max(-0.05, min(0.05, g_learned * 0.10))
+
+    mult = 1.0 + e_delta + g_delta
+    return round(max(0.88, min(1.14, mult)), 4)
