@@ -7749,30 +7749,23 @@ def _register_default_job_handlers(mgr):
             raise RuntimeError("Video sorgente non trovato per l'analisi IA.")
         req_id=str(payload.get("request_id") or job.get("id") or "bg_ai")[:40]
         profile=str(payload.get("engine") or payload.get("profile") or "auto").lower()
+        genre=str(payload.get("genre") or "Auto")
         req_dur=float(payload.get("duration") or 15.0)
         media_dir=ROOT/"sessions"/sid/"media"
         media_dir.mkdir(parents=True,exist_ok=True)
-        import ai_engines_v412 as _v412
-        src_dur=_probe_video_duration_fast(src)
-        eff_dur=_v412.effective_analysis_duration(src_dur,req_dur)
-        ctx.check_cancelled()
-        ctx.set_progress(35.0,stage="Scansione rapida del gameplay (Fast Detection)...")
-        ranked=_v412.fallback_rank_pool(payload.get("diagnostics") or {},source_duration=src_dur,clip_duration=eff_dur,target=3)
-        candidates=[round(float(start),3) for _score,start in ranked] or [0.0]
-        ctx.check_cancelled()
-        ctx.set_progress(70.0,stage="Smart Ranking dei momenti migliori...")
-        selected=[{"start":s,"brain_score":max(0.65,0.92-0.06*idx),"event":"highlight","category":"action","confidence":0.85} for idx,s in enumerate(candidates)]
-        meta=_v412.build_results_meta(
-            candidates,
-            {"selected":selected,"alternates":[],"pool_size":len(candidates)},
-            duration=eff_dur,
+        from web.ai_performance_engine_v2 import run_fast_ai_pipeline
+        result=run_fast_ai_pipeline(
+            source_path=src,
+            output_dir=media_dir,
+            duration=req_dur,
+            genre=genre,
             profile=profile,
             request_id=req_id,
+            generate_previews=True,
+            check_cancelled=ctx.check_cancelled,
+            set_progress=ctx.set_progress,
         )
-        meta["status"]="success"
-        _v412.write_results_meta(media_dir,meta)
-        ctx.set_progress(100.0,stage="Momenti IA pronti")
-        return {"request_id":req_id,"candidates":candidates,"duration":eff_dur}
+        return result
 
     def _handle_ffmpeg_render_job(job,ctx):
         sid=_safe_id(job.get("sid",""))
