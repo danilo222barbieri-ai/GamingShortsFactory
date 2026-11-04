@@ -22,9 +22,18 @@ from pathlib import Path
 from cryptography.fernet import Fernet, InvalidToken
 from urllib.parse import unquote, urlparse, parse_qs
 
-import boto3
-from botocore.config import Config
-from boto3.s3.transfer import TransferConfig
+try:
+    import boto3
+    from botocore.config import Config
+    from boto3.s3.transfer import TransferConfig
+except ImportError:
+    boto3 = None
+    class Config:
+        def __init__(self, *args, **kwargs):
+            pass
+    class TransferConfig:
+        def __init__(self, *args, **kwargs):
+            pass
 from gsf_perf import perf_event
 from guardian_v113 import inspect_and_repair_local as _guardian_local, source_restore_plan as _guardian_source_plan
 from quality_control_v124 import inspect_final_video as _quality_inspect
@@ -754,6 +763,132 @@ def _push_client_bytes():
     return true;
   };
 
+  const installActivityCenter=()=>{
+    if(UI.GSFActivityCenter)return UI.GSFActivityCenter;
+    let drawerOpen=false,lastJobs=[],seenStates=new Map();
+    const AC_CSS=`
+#gsf-activity-center-trigger{position:fixed;right:14px;bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:2147483640;display:none;align-items:center;gap:7px;height:36px;padding:0 13px;border-radius:999px;border:1px solid rgba(121,210,255,.38);background:rgba(8,24,39,.92);color:#eaf6ff;font:700 12px/1 var(--na-font,system-ui,sans-serif);box-shadow:0 8px 24px rgba(0,0,0,.38);cursor:pointer;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+#gsf-activity-center-trigger.is-visible{display:inline-flex}
+#gsf-activity-center-trigger .gsf-ac-dot{width:8px;height:8px;border-radius:50%;background:#53e0ea;box-shadow:0 0 8px #53e0ea}
+#gsf-global-activity-drawer{position:fixed;right:14px;bottom:calc(122px + env(safe-area-inset-bottom,0px));z-index:2147483645;width:min(360px,calc(100vw - 28px));max-height:min(420px,62vh);display:none;flex-direction:column;border-radius:18px;border:1px solid rgba(121,210,255,.32);background:rgba(8,24,39,.96);color:#eaf6ff;font-family:var(--na-font,system-ui,sans-serif);box-shadow:0 18px 42px rgba(0,0,0,.52);overflow:hidden;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+#gsf-global-activity-drawer.is-open{display:flex}
+.gsf-ac-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(121,210,255,.16);font-size:13px;font-weight:800;letter-spacing:.03em}
+.gsf-ac-close{border:0;background:transparent;color:#9fb7ca;font-size:18px;cursor:pointer;padding:2px 6px}
+.gsf-ac-list{overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.gsf-ac-empty{padding:18px 8px;text-align:center;font-size:12px;color:#9fb7ca}
+.gsf-ac-item{padding:10px;border-radius:12px;background:rgba(16,40,61,.65);border:1px solid rgba(121,210,255,.16);display:flex;flex-direction:column;gap:6px}
+.gsf-ac-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:700}
+.gsf-ac-badge{font-size:10px;padding:2px 7px;border-radius:999px;background:rgba(39,174,243,.18);color:#79d2ff;text-transform:uppercase}
+.gsf-ac-badge[data-state=completed]{background:rgba(94,214,160,.2);color:#5ed6a0}
+.gsf-ac-badge[data-state=failed],.gsf-ac-badge[data-state=cancelled]{background:rgba(255,138,148,.2);color:#ff8a94}
+.gsf-ac-stage{font-size:11px;color:#9fb7ca;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gsf-ac-bar-wrap{height:4px;border-radius:999px;background:rgba(121,210,255,.14);overflow:hidden}
+.gsf-ac-bar{height:100%;background:linear-gradient(90deg,#27aef3,#5ed6a0);transition:width .25s ease}
+.gsf-ac-actions{display:flex;justify-content:flex-end;gap:6px}
+.gsf-ac-btn{border:1px solid rgba(121,210,255,.3);background:rgba(255,255,255,.06);color:#eaf6ff;border-radius:8px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer}
+`;
+    const ensureDOM=()=>{
+      const doc=UI.document;if(!doc||!doc.body)return null;
+      if(!doc.getElementById('gsf-activity-center-style')){
+        const st=doc.createElement('style');st.id='gsf-activity-center-style';st.textContent=AC_CSS;(doc.head||doc.documentElement).appendChild(st);
+      }
+      let trig=doc.getElementById('gsf-activity-center-trigger');
+      if(!trig){
+        trig=doc.createElement('button');trig.id='gsf-activity-center-trigger';trig.type='button';
+        trig.setAttribute('aria-label','Centro Attività Globale');
+        trig.innerHTML='<span class="gsf-ac-dot"></span><span class="gsf-ac-label">Attività (0)</span>';
+        trig.onclick=()=>{drawerOpen=!drawerOpen;render();};
+        doc.body.appendChild(trig);
+      }
+      let drw=doc.getElementById('gsf-global-activity-drawer');
+      if(!drw){
+        drw=doc.createElement('aside');drw.id='gsf-global-activity-drawer';drw.setAttribute('aria-label','Centro Attività Globale');
+        drw.innerHTML='<div class="gsf-ac-head"><span>Centro Attività Globale</span><button type="button" class="gsf-ac-close" aria-label="Chiudi">×</button></div><div class="gsf-ac-list"></div>';
+        drw.querySelector('.gsf-ac-close').onclick=()=>{drawerOpen=false;render();};
+        doc.body.appendChild(drw);
+      }
+      return {trig,drw};
+    };
+    const cancel=async(jobId)=>{
+      await fetch('/jobs/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:jobId})}).catch(()=>{});
+      await refresh();
+    };
+    const retry=async(jobId)=>{
+      await fetch('/jobs/retry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:jobId})}).catch(()=>{});
+      await refresh();
+    };
+    const enqueue=async(payload)=>{
+      const r=await fetch('/jobs/enqueue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload||{})});
+      const j=await r.json();await refresh();return j;
+    };
+    const render=()=>{
+      const nodes=ensureDOM();if(!nodes)return;
+      const active=lastJobs.filter(j=>j&&(j.status==='queued'||j.status==='running'));
+      nodes.trig.classList.toggle('is-visible',active.length>0||drawerOpen);
+      const lbl=nodes.trig.querySelector('.gsf-ac-label');
+      if(lbl)lbl.textContent=active.length>0?('Attività ('+active.length+')'):'Centro Attività';
+      nodes.drw.classList.toggle('is-open',drawerOpen);
+      const list=nodes.drw.querySelector('.gsf-ac-list');
+      if(!list)return;
+      list.innerHTML='';
+      if(!lastJobs.length){
+        const empty=UI.document.createElement('div');empty.className='gsf-ac-empty';empty.textContent='Nessuna elaborazione attiva in background.';
+        list.appendChild(empty);return;
+      }
+      for(const j of lastJobs.slice(0,10)){
+        const item=UI.document.createElement('div');item.className='gsf-ac-item';item.dataset.jobId=String(j.id||'');
+        const row=UI.document.createElement('div');row.className='gsf-ac-row';
+        const title=UI.document.createElement('span');title.textContent=String(j.title||j.kind||'Lavoro');
+        const badge=UI.document.createElement('span');badge.className='gsf-ac-badge';badge.dataset.state=String(j.status||'queued');
+        const pct=typeof j.progress==='number'&&Number.isFinite(j.progress)?Math.round(j.progress):null;
+        badge.textContent=String(j.status_it||j.status||'')+(pct!==null&&j.status==='running'?' · '+pct+'%':'');
+        row.append(title,badge);item.appendChild(row);
+        if(j.stage_label||j.error){
+          const stg=UI.document.createElement('div');stg.className='gsf-ac-stage';stg.textContent=String(j.error||j.stage_label||'');
+          item.appendChild(stg);
+        }
+        if(pct!==null&&(j.status==='running'||j.status==='completed')){
+          const bw=UI.document.createElement('div');bw.className='gsf-ac-bar-wrap';
+          const b=UI.document.createElement('div');b.className='gsf-ac-bar';b.style.width=Math.max(2,Math.min(100,pct))+'%';
+          bw.appendChild(b);item.appendChild(bw);
+        }
+        const acts=UI.document.createElement('div');acts.className='gsf-ac-actions';
+        if(j.status==='queued'||j.status==='running'){
+          const btn=UI.document.createElement('button');btn.type='button';btn.className='gsf-ac-btn';btn.textContent='Annulla';
+          btn.onclick=()=>cancel(j.id);acts.appendChild(btn);
+        }else if(j.status==='failed'||j.status==='cancelled'){
+          const btn=UI.document.createElement('button');btn.type='button';btn.className='gsf-ac-btn';btn.textContent='Riprova';
+          btn.onclick=()=>retry(j.id);acts.appendChild(btn);
+        }
+        if(acts.children.length)item.appendChild(acts);
+        list.appendChild(item);
+      }
+    };
+    const sync=(jobs)=>{
+      if(!Array.isArray(jobs))return;
+      lastJobs=jobs;
+      for(const j of jobs){
+        if(!j||!j.id)continue;
+        const prev=seenStates.get(j.id);
+        seenStates.set(j.id,j.status);
+        if(prev&&prev!==j.status){
+          if(j.status==='completed'&&j.kind!=='create_short'&&j.kind!=='upload'){
+            showToast(String(j.title||'Elaborazione completata'),String(j.stage_label||'Completato in background.'),'success',{token:'bg-job-done-'+j.id+'-'+String(j.completed_at||1),persistent:true});
+          }else if(j.status==='failed'&&j.kind!=='create_short'&&j.kind!=='upload'){
+            showToast(String(j.title||'Elaborazione interrotta'),String(j.error||'Puoi riprovare dal Centro Attività.'),'error',{token:'bg-job-fail-'+j.id+'-'+String(j.updated_at||1),persistent:true});
+          }
+        }
+      }
+      render();
+    };
+    const refresh=async()=>{
+      try{const r=await fetch('/jobs/list',{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&Array.isArray(d.jobs))sync(d.jobs);}}catch(_e){}
+    };
+    const api={sync,refresh,open:()=>{drawerOpen=true;render();refresh();},close:()=>{drawerOpen=false;render();},toggle:()=>{drawerOpen=!drawerOpen;render();},cancel,retry,enqueue,getJobs:()=>lastJobs.slice()};
+    UI.GSFActivityCenter=api;return api;
+  };
+  const activityCenter=installActivityCenter();
+
   let pollController=null,pollTimer=0,monitorSuspended=false;
   const pollJob=async()=>{
     if(monitorSuspended||document.hidden||pollController)return;
@@ -764,6 +899,7 @@ def _push_client_bytes():
       if(controller.signal.aborted)return;
       const j=await fetch("/job/status",{cache:"no-store",signal:controller.signal}).then(r=>r.json()),status=String(j.render_status||"");
       if(controller.signal.aborted||monitorSuspended||document.hidden)return;
+      if(Array.isArray(j.active_jobs))activityCenter.sync(j.active_jobs);
       if(status==="ready"){
         const token=String(j.completed_at||j.started_at||"ready");
         if(!window.GSFNotify.handles("render"))showToast("Short completato","","success",{token:"short-ready-"+token,persistent:true,onClick:()=>openShareHub()});
@@ -909,6 +1045,24 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
             "analysis_key":analysis_key,
         })
         try:
+            _auto_save_uploaded_source_to_projects(
+                sid,upload_id,str(final),original_name,total,key,analysis_key
+            )
+        except Exception as proj_exc:
+            print("GSF_AUTO_SAVE_PROJECT_WARN",sid,upload_id,repr(str(proj_exc))[:180],flush=True)
+        try:
+            mgr=_get_global_job_manager()
+            for j in mgr.list_jobs(sid,limit=20,include_terminal=True):
+                if j.get("idempotency_key")==f"upload_{upload_id}" or (j.get("payload") or {}).get("upload_id")==upload_id:
+                    mgr.update_job(
+                        sid,j["id"],status="completed",progress=100.0,stage="Video caricato",
+                        result={"upload_id":upload_id,"path":str(final),"name":original_name},
+                        sync_s3=True,
+                    )
+                    break
+        except Exception:
+            pass
+        try:
             os.utime(ROOT/"sessions"/sid/".active",None)
         except Exception:
             pass
@@ -928,6 +1082,17 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
             "error":str(exc)[:240],
             "failed_at":time.time(),
         })
+        try:
+            mgr=_get_global_job_manager()
+            for j in mgr.list_jobs(sid,limit=20,include_terminal=True):
+                if j.get("idempotency_key")==f"upload_{upload_id}" or (j.get("payload") or {}).get("upload_id")==upload_id:
+                    mgr.update_job(
+                        sid,j["id"],status="failed",stage="Errore preparazione video",
+                        error=str(exc)[:200],sync_s3=True,
+                    )
+                    break
+        except Exception:
+            pass
         perf_event(
             "materialize_error",
             upload_id=str(upload_id),
@@ -2186,6 +2351,112 @@ def _current_project_delete(sid):
     print("GSF_PROJECT_DELETED",_safe_id(sid),pid,flush=True)
     return True
 
+def _auto_save_uploaded_source_to_projects(sid,upload_id,source_path,original_name,total=0,bucket_key="",analysis_key=""):
+    """Idempotently save a newly uploaded video into Projects & Drafts without duplication."""
+    sid=_safe_id(sid)
+    upload_id=_safe_id(upload_id) or "current"
+    if not sid or not source_path:
+        return {"ok":False,"error":"invalid session or source path"}
+    now=time.time()
+    clean_name=str(original_name or Path(str(source_path)).name or "Gameplay")[:160]
+    title=_v304_clean_title("Progetto · "+clean_name[:120],"Progetto · Gameplay")
+    session_root=ROOT/"sessions"/sid
+    session_root.mkdir(parents=True,exist_ok=True)
+
+    # 1. Update session_state.json and editor2027_current.txt so page navigation never loses the source.
+    state={}
+    state_path=session_root/"session_state.json"
+    if state_path.is_file():
+        try:
+            raw=json.loads(state_path.read_text(encoding="utf-8"))
+            if isinstance(raw,dict):
+                candidate=raw.get("state") if isinstance(raw.get("state"),dict) else raw
+                if isinstance(candidate,dict):
+                    state.update(candidate)
+        except Exception:
+            pass
+    state["video_Originale"]=str(source_path)
+    state["gsf_source_path"]=str(source_path)
+    state["gsf_editor_source_path"]=str(source_path)
+    state["gsf_source_name"]=clean_name
+    state["gsf_uploaded_video_name"]=clean_name
+    state["gsf_last_upload_id"]=upload_id
+    try:
+        _write_json_atomic(state_path,state)
+        (session_root/"editor2027_current.txt").write_text(str(source_path),encoding="utf-8")
+    except Exception:
+        pass
+
+    # 2. Save active project record in creator-projects / sessions/projects.
+    profile=_creator_account_load(sid) or {}
+    account_id=_safe_id(profile.get("account_id","")) if isinstance(profile,dict) else ""
+    project_root=(ROOT/"creator-projects"/account_id) if account_id else (session_root/"projects")
+    proj_id="proj_"+upload_id
+    proj_dir=project_root/proj_id
+    proj_dir.mkdir(parents=True,exist_ok=True)
+    pdata={
+        "id":proj_id,
+        "title":title,
+        "source_name":clean_name,
+        "upload_id":upload_id,
+        "updated_at":now,
+        "state":state,
+    }
+    _write_json_atomic(proj_dir/"project_state.json",pdata)
+    idx={}
+    idx_path=project_root/"index.json"
+    if idx_path.is_file():
+        try:
+            raw_idx=json.loads(idx_path.read_text(encoding="utf-8"))
+            if isinstance(raw_idx,dict):
+                idx=raw_idx
+        except Exception:
+            idx={}
+    projects_list=[r for r in (idx.get("projects") or idx.get("items") or []) if isinstance(r,dict) and _safe_id(r.get("id",""))!=proj_id]
+    projects_list.insert(0,{"id":proj_id,"title":title,"source_name":clean_name,"video_filename":clean_name,"upload_id":upload_id,"updated_at":now})
+    idx["active_project_id"]=proj_id
+    idx["active_project_title"]=title
+    idx["updated_at"]=now
+    idx["projects"]=projects_list[:50]
+    idx["items"]=projects_list[:50]
+    _write_json_atomic(idx_path,idx)
+
+    # 3. Upsert deterministic auto-draft (`draft_auto_<upload_id>`) so Creator Hub -> Progetti shows it immediately.
+    draft_id="draft_auto_"+upload_id
+    draft_payload={
+        "id":draft_id,
+        "title":title,
+        "source_name":clean_name,
+        "state":state,
+    }
+    draft_res={}
+    try:
+        draft_res=_draft_save(sid,draft_payload)
+    except StorageQuotaError:
+        # If quota is full of old automatic drafts, rotate the oldest auto-draft so new upload is saved.
+        try:
+            existing_drafts=_draft_list(sid)
+            auto_drafts=[d for d in existing_drafts if isinstance(d,dict) and str(d.get("id") or "").startswith("draft_auto_")]
+            if auto_drafts:
+                oldest=min(auto_drafts,key=lambda x:float(x.get("updated_at") or 0))
+                if oldest.get("id"):
+                    _draft_delete(sid,oldest["id"])
+                    draft_res=_draft_save(sid,draft_payload)
+        except Exception:
+            pass
+    except Exception as exc:
+        print("GSF_AUTO_DRAFT_SAVE_WARN",sid,upload_id,repr(str(exc))[:180],flush=True)
+
+    return {
+        "ok":True,
+        "saved":True,
+        "project_id":proj_id,
+        "draft_id":draft_res.get("id") or draft_id,
+        "upload_id":upload_id,
+        "title":title,
+        "source_name":clean_name,
+    }
+
 def _short_index_path(sid):
     sid=_safe_id(sid)
     root=ROOT/"sessions"/sid/"shorts"
@@ -3325,6 +3596,73 @@ def _twitch_api(sid,path,params=None):
     except Exception:raise _social421.TwitchError("Impossibile recuperare i contenuti Twitch. Riprova più tardi.") from None
 
 
+
+def _twitch_vod_moments(sid, vod_id):
+    if not vod_id or not re.fullmatch(r"[A-Za-z0-9_-]{1,100}", str(vod_id)):
+        raise ValueError("ID VOD Twitch non valido")
+    token = _twitch_access(sid)
+    vod_resp = _twitch_api(sid, "videos", {"id": str(vod_id)})
+    vod_list = [v for v in vod_resp.get("data", []) if isinstance(v, dict)]
+    if not vod_list:
+        return {"moments": [], "count": 0, "reason": "not_found", "message": "VOD Twitch non trovato o rimosso."}
+    vod = vod_list[0]
+    from web.gsf_sources_v422 import duration_seconds
+    vod_dur = duration_seconds(vod.get("duration")) or 0
+
+    clips_resp = _twitch_api(sid, "clips", {"broadcaster_id": token["user_id"], "first": 100})
+    clips = [c for c in clips_resp.get("data", []) if isinstance(c, dict)]
+
+    matched = []
+    for c in clips:
+        c_vid = str(c.get("video_id") or "")
+        if c_vid == str(vod_id):
+            matched.append(c)
+
+    if not matched:
+        return {
+            "moments": [],
+            "count": 0,
+            "reason": "insufficient_data",
+            "message": "Nessun momento contrassegnato o clip presente per questo VOD nelle API ufficiali Twitch. Per estrarre uno Short, crea prima una clip su Twitch oppure seleziona un gameplay locale.",
+            "vod_title": str(vod.get("title") or "")[:120],
+            "vod_duration": vod_dur,
+        }
+
+    matched.sort(key=lambda x: int(x.get("view_count") or 0), reverse=True)
+    selected = []
+    for c in matched:
+        offset = float(c.get("vod_offset") or 0.0)
+        if any(abs(offset - float(s.get("start") or 0.0)) < 15.0 for s in selected):
+            continue
+        c_id = str(c.get("id") or "")
+        dur = float(c.get("duration") or 30.0)
+        views = int(c.get("view_count") or 0)
+        score = min(98, max(75, 78 + min(20, views * 3)))
+        thumb = str(c.get("thumbnail_url") or "").replace("%{width}", "480").replace("%{height}", "270").replace("{width}", "480").replace("{height}", "270")
+        selected.append({
+            "id": c_id,
+            "title": str(c.get("title") or "Momento Twitch")[:120],
+            "start": round(offset, 2),
+            "duration": round(dur, 2),
+            "views": views,
+            "score": score,
+            "thumbnail": thumb,
+            "url": str(c.get("url") or ""),
+            "embed_url": str(c.get("embed_url") or f"https://clips.twitch.tv/embed?clip={c_id}&parent=localhost"),
+            "can_import": True,
+        })
+        if len(selected) >= 3:
+            break
+
+    return {
+        "moments": selected,
+        "count": len(selected),
+        "vod_id": str(vod_id),
+        "vod_title": str(vod.get("title") or "")[:120],
+        "vod_duration": vod_dur,
+        "reason": "success",
+    }
+
 def _twitch_content(sid,kind,after=""):
     from web.gsf_sources_v422 import source_id,public_source
     if kind not in ("clips","videos","live","all"):raise ValueError("Tipo di contenuto non valido")
@@ -4258,6 +4596,11 @@ def _ai_feedback_store(sid,event):
                 print("GSF_V124_FEEDBACK_BUCKET_WARN",sid,repr(str(exc))[:180],flush=True)
         try:
             model=_ai_learning_update(row)
+            try:
+                from feedback_learning_v127 import update_user_preferences
+                update_user_preferences(sid, row, runtime_root=ROOT)
+            except Exception:
+                pass
             print(
                 "GSF_V127_LEARNING",
                 "feedback="+str(int(model.get("total_feedback",0) or 0)),
@@ -5425,6 +5768,26 @@ def _publish_run(sid,job,request,video_path):
     done=all(r.get("status") in ("done","error","manual","needs_connection","needs_reauth","no_page","no_page_selected") for r in job["results"].values())
     if done:
         _publish_update(sid,job,state="finished")
+    try:
+        mgr=_get_global_job_manager()
+        results_vals=list((job.get("results") or {}).values())
+        total_p=max(1,len(results_vals))
+        done_p=sum(1 for r in results_vals if r.get("status") in ("done","error","manual","needs_connection","needs_reauth","no_page","no_page_selected"))
+        ok_p=sum(1 for r in results_vals if r.get("status")=="done")
+        pct_p=round((done_p/total_p)*100.0,1)
+        for gj in mgr.list_jobs(sid,limit=20,include_terminal=True):
+            if gj.get("idempotency_key")==f"publish_{job.get('id')}" or (gj.get("payload") or {}).get("publish_id")==job.get("id"):
+                if done:
+                    if ok_p>0:
+                        mgr.update_job(sid,gj["id"],state="completed",progress=100.0,stage_label=f"Pubblicato ({ok_p}/{total_p})",result={"publish_id":job.get("id")})
+                    else:
+                        err_first=next((str(r.get("error") or "") for r in results_vals if r.get("error")),"Pubblicazione non riuscita")
+                        mgr.update_job(sid,gj["id"],state="failed",error=err_first[:220])
+                else:
+                    mgr.update_job(sid,gj["id"],state="running",progress=min(99.0,pct_p),stage_label=f"Pubblicazione in corso ({done_p}/{total_p})...")
+                break
+    except Exception:
+        pass
 
 def _publish_reconcile_tiktok(sid):
     with _state_lock("publish-confirm",sid):
@@ -5493,6 +5856,20 @@ def _publish_start(sid,payload):
         "results":results
     }
     _publish_update(sid,job)
+    try:
+        mgr=_get_global_job_manager()
+        gjob=mgr.enqueue(
+            sid=sid,
+            kind="social_publish",
+            title="Pubblicazione Social · "+(", ".join(_PUBLISH_LABELS.get(p,p.title()) for p in request["platforms"]))[:60],
+            payload={"publish_id":job_id,"platforms":list(request["platforms"]),"privacy":request["privacy"]},
+            idempotency_key=f"publish_{job_id}",
+            auto_start=False,
+        )
+        if gjob and gjob.get("id"):
+            mgr.update_job(sid,gjob["id"],state="running",progress=10.0,stage_label="Avvio pubblicazione social...")
+    except Exception:
+        pass
     if any(r["status"]=="queued" for r in results.values()):
         threading.Thread(target=_publish_run,args=(sid,job,request,video_path),daemon=True,name="gsf-publish-v413").start()
     else:
@@ -5595,6 +5972,18 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:_json(self,400,{"ok":False,"error":"Richiesta Twitch non valida"})
             except Exception:_json(self,503,{"ok":False,"error":"Contenuti Twitch temporaneamente non disponibili"})
             return
+
+        if clean=="/social-connect/twitch/vod-moments":
+            try:
+                query=parse_qs(path.query)
+                vod_id=str((query.get("vod_id") or [""])[0]).strip()
+                sid=_social_sid(self)
+                _json(self,200,{"ok":True,**_twitch_vod_moments(sid,vod_id)})
+            except _social421.TwitchError as exc:
+                _json(self,exc.status or 503,{"ok":False,"error":str(exc)})
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:160]})
+            return
         if clean=="/social-connect/facebook/pages":
             sid=_social_sid(self)
             sc=_social_connection_load(sid,"facebook") or {}
@@ -5638,6 +6027,12 @@ class Handler(BaseHTTPRequestHandler):
         if clean=="/ai/results":
             sid=_social_sid(self)
             _json(self,200,_ai_results_payload(sid))
+
+        if clean=="/ai/preferences":
+            sid=_social_sid(self)
+            from feedback_learning_v127 import load_user_model
+            _json(self,200,{"ok":True,"preferences":load_user_model(sid,ROOT)})
+            return
             return
 
         if clean in ("","/health"):
@@ -5771,9 +6166,39 @@ class Handler(BaseHTTPRequestHandler):
             quality={}
             if sid and stable_ready and stable is not None:
                 quality=_quality_schedule(sid,stable)
+            render_progress=payload.get("progress")
+            global_jobs_list=[]
+            if sid:
+                try:
+                    mgr=_get_global_job_manager()
+                    if status in ("running","ready","failed") and started>0:
+                        r_idem=f"render_{int(started)}"
+                        r_job=mgr.enqueue(
+                            sid=sid,
+                            kind="create_short",
+                            title="Creazione Short 9:16",
+                            payload={"started_at":started},
+                            idempotency_key=r_idem,
+                            auto_start=False,
+                        )
+                        if r_job and r_job.get("id"):
+                            if status=="running":
+                                pct_val=float(render_progress) if isinstance(render_progress,(int,float)) else min(95.0,max(5.0,round(((time.time()-started)/25.0)*100.0,1)))
+                                render_progress=pct_val
+                                mgr.update_job(sid,r_job["id"],state="running",progress=pct_val,stage_label="Rendering FFmpeg 9:16 in corso...")
+                            elif status=="ready":
+                                render_progress=100.0
+                                mgr.update_job(sid,r_job["id"],state="completed",progress=100.0,stage_label="Short completato",result={"final_bytes":stable_bytes})
+                            elif status=="failed":
+                                mgr.update_job(sid,r_job["id"],state="failed",error=str(payload.get("error") or "Creazione Short non riuscita"))
+                    global_jobs_list=mgr.list_jobs(sid,limit=12,include_terminal=True)
+                except Exception:
+                    global_jobs_list=[]
             _json(self,200,{
                 "ok":True,
                 "render_status":status,
+                "progress":render_progress,
+                "active_jobs":global_jobs_list,
                 "started_at":payload.get("started_at"),
                 "completed_at":payload.get("completed_at"),
                 "failed_at":payload.get("failed_at"),
@@ -5789,6 +6214,28 @@ class Handler(BaseHTTPRequestHandler):
                     render_status=status,
                 ),
             })
+            return
+        if clean=="/jobs/list":
+            sid=_safe_id(self.headers.get("X-GSF-Session-ID")) or _social_sid(self)
+            if not sid:
+                _json(self,400,{"ok":False,"error":"invalid session"})
+                return
+            mgr=_get_global_job_manager()
+            jobs=mgr.list_jobs(sid,limit=25,include_terminal=True)
+            _json(self,200,{"ok":True,"jobs":jobs,"active_count":sum(1 for j in jobs if j.get("status") in ("queued","running"))})
+            return
+        if clean=="/jobs/status":
+            sid=_safe_id(self.headers.get("X-GSF-Session-ID")) or _social_sid(self)
+            job_id=_safe_id((parse_qs(path.query).get("id") or [""])[0])
+            if not sid or not job_id:
+                _json(self,400,{"ok":False,"error":"invalid session or job id"})
+                return
+            mgr=_get_global_job_manager()
+            job=mgr.get_job(sid,job_id)
+            if not job:
+                _json(self,404,{"ok":False,"error":"job not found"})
+                return
+            _json(self,200,{"ok":True,"job":job})
             return
         if clean=="/source/restore":
             sid=_social_sid(self)
@@ -6155,6 +6602,51 @@ class Handler(BaseHTTPRequestHandler):
                     pass
             _json(self,200,{"ok":True,"ready":False})
             return
+        if clean=="/chunk/status":
+            sid=_safe_id(self.headers.get("X-GSF-Session-ID")) or _social_sid(self)
+            q=parse_qs(path.query)
+            upload_id=_safe_id((q.get("upload_id") or [""])[0])
+            expected_size=int((q.get("size") or ["0"])[0] or 0) if str((q.get("size") or ["0"])[0]).isdigit() else 0
+            if not sid or not upload_id:
+                _json(self,400,{"ok":False,"error":"invalid status id"})
+                return
+            media=ROOT/"sessions"/sid/"media"
+            marker=media/".direct_upload_ready.json"
+            if marker.is_file():
+                try:
+                    mdata=json.loads(marker.read_text(encoding="utf-8"))
+                    mpath=Path(str(mdata.get("path") or ""))
+                    if str(mdata.get("upload_id",""))==upload_id and mpath.is_file():
+                        _json(self,200,{"ok":True,"completed":True,"resumed":True,"received":[],"progress":100.0,"upload_id":upload_id})
+                        return
+                except Exception:
+                    pass
+            upload_dir=ROOT/"sessions"/sid/"direct_upload"/upload_id
+            state_path=upload_dir/"state.json"
+            data_path=upload_dir/"upload.tmp"
+            if state_path.is_file() and data_path.is_file():
+                try:
+                    st=json.loads(state_path.read_text(encoding="utf-8"))
+                    st_total=int(st.get("total",0) or 0)
+                    st_count=max(1,int(st.get("count",1) or 1))
+                    if expected_size<=0 or st_total==expected_size:
+                        received=sorted({int(x) for x in (st.get("received") or []) if 0<=int(x)<st_count})
+                        pct=round((len(received)/st_count)*100.0,1)
+                        _json(self,200,{
+                            "ok":True,
+                            "completed":False,
+                            "resumed":len(received)>0,
+                            "received":received,
+                            "count":st_count,
+                            "total":st_total,
+                            "progress":pct,
+                            "upload_id":upload_id,
+                        })
+                        return
+                except Exception:
+                    pass
+            _json(self,200,{"ok":True,"completed":False,"resumed":False,"received":[],"progress":0.0,"upload_id":upload_id})
+            return
         _json(self,404,{"ok":False,"error":"not found"})
 
     def do_POST(self):
@@ -6162,10 +6654,73 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/auth/meta/deauthorize","/auth/meta/data-deletion"):
             _meta_signed_callback(self,"deauthorize" if path.endswith("deauthorize") else "data-deletion")
             return
-        sid=_safe_id(self.headers.get("X-GSF-Session-ID"))
+        sid=_safe_id(self.headers.get("X-GSF-Session-ID")) or _social_sid(self)
         if not sid:
             _json(self,400,{"ok":False,"error":"invalid session"})
             return
+
+        if path.startswith("/jobs/"):
+            mgr=_get_global_job_manager()
+            try:
+                data=_read_json(self,max_bytes=128*1024)
+                data=data if isinstance(data,dict) else {}
+                if path=="/jobs/enqueue":
+                    profile=_creator_account_load(sid) or {}
+                    account_id=_safe_id(profile.get("account_id","")) if isinstance(profile,dict) else ""
+                    job=mgr.enqueue_job(
+                        sid=sid,
+                        kind=str(data.get("kind") or ""),
+                        title=str(data.get("title") or ""),
+                        payload=data.get("payload") if isinstance(data.get("payload"),dict) else {},
+                        idempotency_key=str(data.get("idempotency_key") or ""),
+                        account_id=account_id,
+                        max_retries=int(data.get("max_retries",3) or 3),
+                        auto_retry_on_boot=bool(data.get("auto_retry_on_boot",True)),
+                        initial_status=str(data.get("initial_status") or "queued"),
+                        initial_progress=data.get("initial_progress",0.0),
+                    )
+                    _json(self,202,{"ok":True,"job":job})
+                    return
+                if path=="/jobs/update":
+                    job_id=_safe_id(data.get("id") or data.get("job_id"))
+                    job=mgr.update_job(
+                        sid,
+                        job_id,
+                        status=data.get("status"),
+                        progress=data.get("progress"),
+                        stage=data.get("stage"),
+                        result=data.get("result") if isinstance(data.get("result"),dict) else None,
+                        error=data.get("error"),
+                        pid=data.get("pid"),
+                        sync_s3=bool(data.get("sync_s3",False)),
+                    )
+                    if not job:
+                        _json(self,404,{"ok":False,"error":"job not found"})
+                        return
+                    _json(self,200,{"ok":True,"job":job})
+                    return
+                if path=="/jobs/cancel":
+                    job_id=_safe_id(data.get("id") or data.get("job_id"))
+                    job=mgr.cancel_job(sid,job_id,reason=str(data.get("reason") or "Annullato dall'utente"))
+                    if not job:
+                        _json(self,404,{"ok":False,"error":"job not found"})
+                        return
+                    _json(self,200,{"ok":True,"job":job})
+                    return
+                if path=="/jobs/retry":
+                    job_id=_safe_id(data.get("id") or data.get("job_id"))
+                    job=mgr.retry_job(sid,job_id)
+                    if not job:
+                        _json(self,404,{"ok":False,"error":"job not found"})
+                        return
+                    _json(self,200,{"ok":True,"job":job})
+                    return
+            except ValueError as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:200]})
+                return
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:200]})
+                return
 
         if path=="/creator-hub/sources/activate":
             if not _security_csrf_valid(self,sid):_json(self,403,{"ok":False,"error":"csrf validation failed"});return
@@ -6246,6 +6801,15 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,200,{"ok":bool(ok)})
             except Exception as exc:
                 _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+
+        if path=="/ai/preferences/reset":
+            try:
+                from feedback_learning_v127 import reset_user_model
+                reset_user_model(sid,ROOT)
+                _json(self,200,{"ok":True,"reset":True})
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:180]})
             return
 
         if path=="/content-memory/check":
@@ -6645,6 +7209,35 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,500,{"ok":False,"error":str(exc)[:220]})
             return
 
+        if path=="/projects/save-uploaded-source":
+            try:
+                try:
+                    data=_read_json(self,max_bytes=32*1024)
+                except Exception:
+                    data={}
+                data=data if isinstance(data,dict) else {}
+                marker=ROOT/"sessions"/sid/"media"/".direct_upload_ready.json"
+                meta={}
+                if marker.is_file():
+                    raw_m=json.loads(marker.read_text(encoding="utf-8"))
+                    if isinstance(raw_m,dict):
+                        meta=dict(raw_m)
+                source_path=str(meta.get("path") or data.get("path") or "")
+                original_name=str(meta.get("name") or data.get("name") or "Gameplay")
+                upload_id=_safe_id(meta.get("upload_id") or data.get("upload_id") or "current")
+                total=int(meta.get("size") or data.get("size") or 0)
+                if not source_path:
+                    _json(self,404,{"ok":False,"error":"Nessun video caricato trovato per il salvataggio nei Progetti."})
+                    return
+                res=_auto_save_uploaded_source_to_projects(
+                    sid,upload_id,source_path,original_name,total,
+                    str(meta.get("bucket_key") or ""),str(meta.get("analysis_key") or ""),
+                )
+                _json(self,200 if res.get("ok") else 400,res)
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:200]})
+            return
+
         if path=="/bucket/init":
             if not _bucket_enabled():
                 _json(self,503,{"ok":False,"error":"bucket unavailable"})
@@ -6656,21 +7249,97 @@ class Handler(BaseHTTPRequestHandler):
                 content_type=str(data.get("type") or "application/octet-stream")
                 if total<=0 or total>MAX_FILE_BYTES:
                     raise ValueError("file size not allowed")
-                upload_id=uuid.uuid4().hex[:20]
-                try:_source_capture_upload(sid,upload_id)
-                except Exception as exc:print("GSF_SOURCE_PROVENANCE_WARN",type(exc).__name__,flush=True)
-                key=f"uploads/{sid}/{upload_id}/{safe_stem}{ext}"
-                analysis_key=f"analysis/{sid}/{upload_id}/v52-keyframe-turbo.json"
-                created=_s3().create_multipart_upload(
-                    Bucket=S3_BUCKET,
-                    Key=key,
-                    ContentType=content_type,
-                    Metadata={
-                        "gsf-upload-id":upload_id,
-                        "gsf-original-name":original_name[:200],
-                    },
-                )
-                multipart_id=created["UploadId"]
+                raw_fp=re.sub(r"[^A-Za-z0-9_-]+","",str(data.get("fingerprint") or ""))[:64]
+                if not raw_fp:
+                    raw_fp=hashlib.sha256(f"{sid}|{original_name}|{total}|{int(data.get('last_modified',0) or 0)}".encode("utf-8")).hexdigest()[:24]
+                resume_dir=ROOT/"sessions"/sid/"direct_upload"
+                resume_dir.mkdir(parents=True,exist_ok=True)
+                resume_file=resume_dir/f"s3_resume_{raw_fp}.json"
+
+                resumed=False
+                uploaded_parts=[]
+                upload_id=""
+                multipart_id=""
+                key=""
+                analysis_key=""
+
+                if resume_file.is_file():
+                    try:
+                        saved_res=json.loads(resume_file.read_text(encoding="utf-8"))
+                        if (
+                            isinstance(saved_res,dict)
+                            and int(saved_res.get("total",0))==total
+                            and str(saved_res.get("name",""))==original_name
+                            and _safe_id(saved_res.get("upload_id",""))
+                            and str(saved_res.get("multipart_id",""))
+                            and str(saved_res.get("key","")).startswith(f"uploads/{sid}/")
+                        ):
+                            parts_resp=_s3().list_parts(
+                                Bucket=S3_BUCKET,
+                                Key=str(saved_res["key"]),
+                                UploadId=str(saved_res["multipart_id"]),
+                            )
+                            for p in (parts_resp.get("Parts") or []):
+                                pn=int(p.get("PartNumber",0) or 0)
+                                et=str(p.get("ETag") or "").strip()
+                                sz=int(p.get("Size",0) or 0)
+                                if pn>0 and et:
+                                    uploaded_parts.append({"PartNumber":pn,"ETag":et,"Size":sz})
+                            upload_id=_safe_id(saved_res["upload_id"])
+                            multipart_id=str(saved_res["multipart_id"])
+                            key=str(saved_res["key"])
+                            analysis_key=str(saved_res.get("analysis_key") or f"analysis/{sid}/{upload_id}/v52-keyframe-turbo.json")
+                            resumed=True
+                    except Exception:
+                        resumed=False
+                        uploaded_parts=[]
+
+                if not resumed:
+                    upload_id=uuid.uuid4().hex[:20]
+                    try:_source_capture_upload(sid,upload_id)
+                    except Exception as exc:print("GSF_SOURCE_PROVENANCE_WARN",type(exc).__name__,flush=True)
+                    key=f"uploads/{sid}/{upload_id}/{safe_stem}{ext}"
+                    analysis_key=f"analysis/{sid}/{upload_id}/v52-keyframe-turbo.json"
+                    created=_s3().create_multipart_upload(
+                        Bucket=S3_BUCKET,
+                        Key=key,
+                        ContentType=content_type,
+                        Metadata={
+                            "gsf-upload-id":upload_id,
+                            "gsf-original-name":original_name[:200],
+                        },
+                    )
+                    multipart_id=created["UploadId"]
+                    _write_json_atomic(resume_file,{
+                        "upload_id":upload_id,
+                        "multipart_id":multipart_id,
+                        "key":key,
+                        "analysis_key":analysis_key,
+                        "total":total,
+                        "name":original_name,
+                        "fingerprint":raw_fp,
+                        "created_at":time.time(),
+                    })
+
+                try:
+                    done_bytes=sum(int(p.get("Size",0) or 0) for p in uploaded_parts)
+                    init_pct=round(min(95.0,(done_bytes/max(1,total))*100.0),1) if uploaded_parts else 0.0
+                    profile=_creator_account_load(sid) or {}
+                    account_id=_safe_id(profile.get("account_id","")) if isinstance(profile,dict) else ""
+                    _get_global_job_manager().enqueue_job(
+                        sid=sid,
+                        kind="upload",
+                        title=f"Upload · {original_name[:80]}",
+                        payload={"upload_id":upload_id,"name":original_name,"size":total,"mode":"bucket","fingerprint":raw_fp},
+                        idempotency_key=f"upload_{upload_id}",
+                        account_id=account_id,
+                        initial_status="running",
+                        initial_progress=init_pct,
+                        auto_retry_on_boot=False,
+                    )
+                except Exception:
+                    pass
+
                 count=(total+BUCKET_PART_BYTES-1)//BUCKET_PART_BYTES
                 urls=[]
                 for part_number in range(1,count+1):
@@ -6688,6 +7357,9 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,200,{
                     "ok":True,
                     "mode":"bucket",
+                    "resumed":resumed,
+                    "uploaded_parts":uploaded_parts,
+                    "fingerprint":raw_fp,
                     "upload_id":upload_id,
                     "multipart_id":multipart_id,
                     "key":key,
@@ -6735,6 +7407,26 @@ class Handler(BaseHTTPRequestHandler):
                     UploadId=multipart_id,
                     MultipartUpload={"Parts":clean_parts},
                 )
+                try:
+                    resume_dir=ROOT/"sessions"/sid/"direct_upload"
+                    if resume_dir.is_dir():
+                        for rf in resume_dir.glob("s3_resume_*.json"):
+                            try:
+                                rdata=json.loads(rf.read_text(encoding="utf-8"))
+                                if isinstance(rdata,dict) and str(rdata.get("upload_id") or "")==upload_id:
+                                    rf.unlink(missing_ok=True)
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
+                try:
+                    mgr=_get_global_job_manager()
+                    for j in mgr.list_jobs(sid,limit=20,include_terminal=True):
+                        if j.get("idempotency_key")==f"upload_{upload_id}" or (j.get("payload") or {}).get("upload_id")==upload_id:
+                            mgr.update_job(sid,j["id"],status="running",progress=95.0,stage="Preparazione e salvataggio progetto")
+                            break
+                except Exception:
+                    pass
 
                 prescan_payload={
                     "key":key,
@@ -6767,6 +7459,23 @@ class Handler(BaseHTTPRequestHandler):
                 if not _bucket_enabled() or not upload_id or not key.startswith(f"uploads/{sid}/{upload_id}/"):
                     raise ValueError("invalid abort metadata")
                 _s3().abort_multipart_upload(Bucket=S3_BUCKET,Key=key,UploadId=multipart_id)
+                try:
+                    resume_dir=ROOT/"sessions"/sid/"direct_upload"
+                    if resume_dir.is_dir():
+                        for rf in resume_dir.glob("s3_resume_*.json"):
+                            try:
+                                rdata=json.loads(rf.read_text(encoding="utf-8"))
+                                if isinstance(rdata,dict) and str(rdata.get("upload_id") or "")==upload_id:
+                                    rf.unlink(missing_ok=True)
+                            except Exception:
+                                pass
+                    mgr=_get_global_job_manager()
+                    for j in mgr.list_jobs(sid,limit=20,include_terminal=True):
+                        if j.get("idempotency_key")==f"upload_{upload_id}" or (j.get("payload") or {}).get("upload_id")==upload_id:
+                            mgr.cancel_job(sid,j["id"],reason="Upload annullato")
+                            break
+                except Exception:
+                    pass
                 _json(self,200,{"ok":True})
             except Exception as exc:
                 _json(self,400,{"ok":False,"error":str(exc)[:180]})
@@ -6840,6 +7549,18 @@ class Handler(BaseHTTPRequestHandler):
                     with open(data_path,"wb") as seed:
                         seed.truncate(total)
                     _write_json_atomic(state_path,state)
+                    try:
+                        mgr=_get_global_job_manager()
+                        mgr.enqueue(
+                            sid=sid,
+                            kind="upload",
+                            title=f"Upload · {original_name[:80]}",
+                            payload={"upload_id":upload_id,"name":original_name,"size":total,"count":count,"mode":"chunk"},
+                            idempotency_key=f"upload_{upload_id}",
+                            auto_start=False,
+                        )
+                    except Exception:
+                        pass
 
                 ranges=dict(state.get("ranges",{}) or {})
                 this_range=[start,length]
@@ -6884,12 +7605,37 @@ class Handler(BaseHTTPRequestHandler):
                 os.close(fd)
 
             completed=False
+            received_count=0
+            pct_done=0.0
             with lock:
                 state=json.loads(state_path.read_text(encoding="utf-8"))
                 received={int(x) for x in (state.get("received",[]) or [])}
                 received.add(index)
                 state["received"]=sorted(received)
+                received_count=len(received)
+                pct_done=round((received_count/max(1,count))*100.0,1)
                 _write_json_atomic(state_path,state)
+
+                try:
+                    mgr=_get_global_job_manager()
+                    job=mgr.enqueue(
+                        sid=sid,
+                        kind="upload",
+                        title=f"Upload · {original_name[:80]}",
+                        payload={"upload_id":upload_id,"name":original_name,"size":total,"count":count,"mode":"chunk"},
+                        idempotency_key=f"upload_{upload_id}",
+                        auto_start=False,
+                    )
+                    if job and job.get("id"):
+                        mgr.update_job(
+                            sid,
+                            job["id"],
+                            state="running",
+                            progress=min(99.0,pct_done),
+                            stage_label=f"Caricamento chunk {received_count}/{count} ({pct_done:.0f}%)",
+                        )
+                except Exception:
+                    pass
 
                 if len(received)==count and received==set(range(count)):
                     fd=os.open(str(data_path),os.O_RDONLY)
@@ -6914,6 +7660,27 @@ class Handler(BaseHTTPRequestHandler):
                         "completed_at":time.time(),
                         "storage":"direct_fallback",
                     })
+                    try:
+                        _auto_save_uploaded_source_to_projects(
+                            sid,upload_id,str(final),original_name,total,"",""
+                        )
+                    except Exception as exc:
+                        print("GSF_CHUNK_AUTO_PROJECT_WARN",type(exc).__name__,flush=True)
+                    try:
+                        mgr=_get_global_job_manager()
+                        for j in mgr.list_jobs(sid,limit=30,include_terminal=True):
+                            if j.get("idempotency_key")==f"upload_{upload_id}" or (j.get("payload") or {}).get("upload_id")==upload_id:
+                                mgr.update_job(
+                                    sid,
+                                    j["id"],
+                                    state="completed",
+                                    progress=100.0,
+                                    stage_label="Video caricato e salvato nei Progetti",
+                                    result={"upload_id":upload_id,"path":str(final),"name":original_name,"size":total},
+                                )
+                                break
+                    except Exception:
+                        pass
                     if _bucket_enabled():
                         threading.Thread(
                             target=_persist_fallback_source_to_bucket,
@@ -6930,12 +7697,15 @@ class Handler(BaseHTTPRequestHandler):
                     except Exception:
                         pass
                     completed=True
+                    pct_done=100.0
 
             _json(self,200,{
                 "ok":True,
                 "completed":completed,
                 "index":index,
-                "bytes":start+length
+                "bytes":start+length,
+                "received_count":received_count,
+                "progress":pct_done,
             })
         except Exception as exc:
             _json(self,500,{"ok":False,"error":str(exc)[:160]})
@@ -6972,10 +7742,248 @@ def _start_social_analytics_worker():
     threading.Thread(target=run,name="gsf-social-analytics-v148",daemon=True).start()
 
 
+_GLOBAL_JOB_MANAGER=None
+_GLOBAL_JOB_MANAGER_LOCK=threading.Lock()
+
+def _on_global_job_terminal(sid,job):
+    try:
+        status=str((job or {}).get("status") or "")
+        kind=str((job or {}).get("kind") or "")
+        title_map={
+            "upload":"Video caricato",
+            "ai_analysis":"Momenti IA pronti",
+            "whisper":"Sottotitoli IA pronti",
+            "ffmpeg_render":"Short pronto",
+            "create_short":"Short pronto",
+            "export":"Esportazione completata",
+            "social_publish":"Pubblicazione completata",
+            "project_save":"Progetto salvato",
+        }
+        if status=="completed":
+            _push_notify_sid(
+                sid,
+                title=title_map.get(kind,"Elaborazione completata"),
+                body=str(job.get("title") or "Il tuo lavoro in background è terminato."),
+                url="/",
+                tag="gsf-job-done-"+str(job.get("id") or ""),
+            )
+        elif status=="failed":
+            _push_notify_sid(
+                sid,
+                title="Elaborazione interrotta",
+                body=str(job.get("error") or "Si è verificato un problema. Puoi riprovare dall'app."),
+                url="/",
+                tag="gsf-job-fail-"+str(job.get("id") or ""),
+            )
+    except Exception:
+        pass
+
+def _get_global_job_manager():
+    global _GLOBAL_JOB_MANAGER
+    if _GLOBAL_JOB_MANAGER is not None:
+        return _GLOBAL_JOB_MANAGER
+    with _GLOBAL_JOB_MANAGER_LOCK:
+        if _GLOBAL_JOB_MANAGER is None:
+            from global_jobs_v2 import GlobalJobManager
+            _GLOBAL_JOB_MANAGER=GlobalJobManager(
+                runtime_root=ROOT,
+                s3_client_fn=_s3 if _bucket_enabled() else None,
+                s3_bucket=S3_BUCKET if _bucket_enabled() else "",
+                notify_fn=_on_global_job_terminal,
+            )
+            _register_default_job_handlers(_GLOBAL_JOB_MANAGER)
+    return _GLOBAL_JOB_MANAGER
+
+def _resolve_session_source_path(sid,payload=None):
+    payload=dict(payload or {})
+    cand=str(payload.get("source_path") or "").strip()
+    if cand and Path(cand).is_file():
+        return Path(cand)
+    session_root=ROOT/"sessions"/sid
+    ptr=session_root/"editor2027_current.txt"
+    if ptr.is_file():
+        try:
+            p=Path(ptr.read_text(encoding="utf-8").strip())
+            if p.is_file():
+                return p
+        except Exception:
+            pass
+    marker=session_root/"media"/".direct_upload_ready.json"
+    if marker.is_file():
+        try:
+            m=json.loads(marker.read_text(encoding="utf-8"))
+            p=Path(str(m.get("path") or ""))
+            if p.is_file():
+                return p
+        except Exception:
+            pass
+    restored=_restore_bucket_source(sid,cand)
+    if restored and Path(restored).is_file():
+        return Path(restored)
+    return None
+
+def _probe_video_duration_fast(path):
+    try:
+        out=subprocess.check_output(
+            ["ffprobe","-v","error","-show_entries","format=duration","-of","default=noprint_wrappers=1:nokey=1",str(path)],
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+            text=True,
+        ).strip()
+        d=float(out)
+        if d>0:
+            return d
+    except Exception:
+        pass
+    return 30.0
+
+def _register_default_job_handlers(mgr):
+    def _handle_ai_analysis_job(job,ctx):
+        sid=_safe_id(job.get("sid",""))
+        payload=dict(job.get("payload") or {})
+        ctx.check_cancelled()
+        ctx.set_progress(10.0,stage="Verifica video sorgente...")
+        src=_resolve_session_source_path(sid,payload)
+        if src is None or not src.is_file():
+            raise RuntimeError("Video sorgente non trovato per l'analisi IA.")
+        req_id=str(payload.get("request_id") or job.get("id") or "bg_ai")[:40]
+        profile=str(payload.get("engine") or payload.get("profile") or "auto").lower()
+        genre=str(payload.get("genre") or "Auto")
+        req_dur=float(payload.get("duration") or 15.0)
+        media_dir=ROOT/"sessions"/sid/"media"
+        media_dir.mkdir(parents=True,exist_ok=True)
+        from web.ai_performance_engine_v2 import run_fast_ai_pipeline
+        result=run_fast_ai_pipeline(
+            source_path=src,
+            output_dir=media_dir,
+            duration=req_dur,
+            genre=genre,
+            profile=profile,
+            request_id=req_id,
+            sid=sid,
+            generate_previews=True,
+            check_cancelled=ctx.check_cancelled,
+            set_progress=ctx.set_progress,
+        )
+        return result
+
+    def _handle_ffmpeg_render_job(job,ctx):
+        sid=_safe_id(job.get("sid",""))
+        payload=dict(job.get("payload") or {})
+        ctx.check_cancelled()
+        ctx.set_progress(5.0,stage="Preparazione rendering 9:16...")
+        stable,job_file=_final_local_paths(sid)
+        if stable is None or job_file is None:
+            raise RuntimeError("Sessione non valida per il rendering.")
+        started_at=float(payload.get("started_at") or time.time())
+        dur=max(1.0,float(payload.get("duration") or 15.0))
+        start_t=max(0.0,float(payload.get("start_time") or 0.0))
+        tmp_out=stable.with_name(".gaming_short_finale_share.bg.tmp.mp4")
+        cmd=payload.get("ffmpeg_cmd")
+        if not isinstance(cmd,list) or not cmd:
+            src=_resolve_session_source_path(sid,payload)
+            if src is None or not src.is_file():
+                raise RuntimeError("Video sorgente non disponibile per creare lo Short.")
+            cmd=[
+                "ffmpeg","-y",
+                "-ss",f"{start_t:.3f}",
+                "-t",f"{dur:.3f}",
+                "-i",str(src),
+                "-vf","scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
+                "-c:v","libx264","-preset","veryfast","-crf","23",
+                "-c:a","aac","-b:a","128k",
+                "-movflags","+faststart",
+                str(tmp_out),
+            ]
+        else:
+            cmd=[str(x) for x in cmd]
+            tmp_out=Path(str(payload.get("tmp_output") or tmp_out))
+
+        _write_json_atomic(job_file,{
+            "status":"running",
+            "progress":5.0,
+            "started_at":started_at,
+            "global_job_id":job.get("id"),
+        })
+        try:
+            rc=ctx.run_ffmpeg_with_progress(cmd,duration_sec=dur)
+            if rc!=0 or not tmp_out.is_file() or tmp_out.stat().st_size<=512:
+                raise RuntimeError(f"FFmpeg terminato con codice {rc}")
+            os.replace(tmp_out,stable)
+            final_bytes=int(stable.stat().st_size)
+            done_meta={
+                "status":"ready",
+                "progress":100.0,
+                "started_at":started_at,
+                "completed_at":time.time(),
+                "final_path":str(stable),
+                "final_bytes":final_bytes,
+                "global_job_id":job.get("id"),
+            }
+            _write_json_atomic(job_file,done_meta)
+            if _bucket_enabled():
+                try:
+                    _final_persist_to_bucket(sid,stable,done_meta)
+                except Exception:
+                    pass
+            return {"final_path":str(stable),"final_bytes":final_bytes}
+        except Exception as exc:
+            try:
+                tmp_out.unlink(missing_ok=True)
+            except Exception:
+                pass
+            _write_json_atomic(job_file,{
+                "status":"failed",
+                "started_at":started_at,
+                "failed_at":time.time(),
+                "error":str(exc)[:240],
+                "global_job_id":job.get("id"),
+            })
+            raise
+
+    def _handle_social_publish_job(job,ctx):
+        sid=_safe_id(job.get("sid",""))
+        payload=dict(job.get("payload") or {})
+        ctx.check_cancelled()
+        ctx.set_progress(15.0,stage="Avvio pubblicazione social...")
+        pub_job=_publish_start(sid,payload)
+        return {"publish_id":pub_job.get("id"),"state":pub_job.get("state")}
+
+    def _handle_project_save_job(job,ctx):
+        sid=_safe_id(job.get("sid",""))
+        payload=dict(job.get("payload") or {})
+        ctx.check_cancelled()
+        ctx.set_progress(40.0,stage="Salvataggio progetto e bozza...")
+        src=_resolve_session_source_path(sid,payload)
+        if src is not None and src.is_file():
+            _auto_save_uploaded_source_to_projects(
+                sid=sid,
+                upload_id=str(payload.get("upload_id") or "current"),
+                source_path=str(src),
+                original_name=str(payload.get("name") or src.name),
+                total=int(src.stat().st_size),
+            )
+        draft=_current_project_save_draft(sid,title=str(payload.get("title") or ""))
+        ctx.set_progress(100.0,stage="Progetto salvato")
+        return {"saved":True,"draft":draft}
+
+    mgr.register_handler("ai_analysis",_handle_ai_analysis_job)
+    mgr.register_handler("whisper",_handle_ai_analysis_job)
+    mgr.register_handler("ffmpeg_render",_handle_ffmpeg_render_job)
+    mgr.register_handler("create_short",_handle_ffmpeg_render_job)
+    mgr.register_handler("export",_handle_ffmpeg_render_job)
+    mgr.register_handler("social_publish",_handle_social_publish_job)
+    mgr.register_handler("project_save",_handle_project_save_job)
+
+
 if __name__=="__main__":
     ROOT.mkdir(parents=True,exist_ok=True)
     _ensure_bucket_cors()
     _ai_learning_restore()
+    try:
+        _get_global_job_manager().recover_after_restart()
+    except Exception as _rec_exc:
+        print("GSF_GLOBAL_JOBS_RECOVER_WARN",repr(str(_rec_exc))[:180],flush=True)
     _start_proactive_guardian()
     _start_social_analytics_worker()
     _start_twitch_token_validation()

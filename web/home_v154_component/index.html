@@ -3535,16 +3535,43 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
  try{purgeLegacySync();const observer=new MutationObserver(purgeLegacySync);parentObservers.push(observer);observer.observe(window.parent.document.body,{childList:true,subtree:true});}catch(e){}
  function collapseParentHomeSpacers(){try{normalizeParentHomeShell()}catch(_e){}}
  try{const observer=new MutationObserver(()=>{collapseParentHomeSpacers();scheduleFit()});parentObservers.push(observer);observer.observe(window.parent.document.body,{childList:true,subtree:true})}catch(_e){}
- function setLoaded(on){
+ const CLOUD_SVG=`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 42h-1C10.4 42 5 36.6 5 30s5.4-12 12-12c1.6 0 3.1.3 4.5.9C24.7 12.4 31.3 8 39 8c10.5 0 19 8.5 19 19 0 .7 0 1.4-.1 2.1C61.5 30.9 64 34.6 64 39c0 6.1-4.9 11-11 11H38"/><path d="M32 52V28"/><path d="m24 36 8-8 8 8"/></svg>`;
+ let circleResetTimer=0;
+ function restoreEmptyCircleForNewVideo(){
+   clearTimeout(circleResetTimer);
+   circle.querySelectorAll(".naPreview,video,img,canvas").forEach(n=>{try{n.remove()}catch(_e){}});
+   circle.classList.remove("loaded","busy","done");
+   circle.setAttribute("data-gsf-has-source",loaded?"true":"false");
+   circle.setAttribute("data-gsf-uploader-idle","true");
+   rings.classList.remove("uploading","uploaded");
+   uploadIcon.classList.remove("loadedCheck");
+   uploadIcon.innerHTML=CLOUD_SVG;
+   uploadLabel.innerHTML=loaded?"Carica un<br>nuovo video":"CARICA<br>IL TUO GAMEPLAY";
+   uploadHint.textContent="";
+   if(status&&!status.classList.contains("error")){
+     status.className="status";
+     statusText.textContent="";
+     bar.style.width="0%";
+   }
+   pick.disabled=false;
+   pick.value="";
+ }
+ function setLoaded(on,fromUploadComplete=false){
    loaded=!!on;gsfAlive("sync",{video_ready:loaded});
-   setMuralState(loaded?"ready":"idle"); view.classList.toggle("loadedView",loaded); circle.classList.toggle("loaded",loaded);
-   if(loaded){
+   setMuralState(loaded?"ready":"idle"); view.classList.toggle("loadedView",loaded);
+   circle.setAttribute("data-gsf-has-source",loaded?"true":"false");
+   if(loaded&&fromUploadComplete){
+     circle.classList.add("loaded","done");
      rings.classList.remove("uploading");rings.classList.add("uploaded");
      uploadIcon.classList.add("loadedCheck");
      uploadIcon.innerHTML=`<svg viewBox="0 0 64 64" aria-hidden="true" class="gsfLoadedCheckSvg"><path class="gsfCheckGhost" d="M12 35c4.5 3.7 8.1 7.2 12.6 11.1C33 35.2 42.6 24.2 52.4 16"/><path class="gsfCheckMain" d="M13.2 34.2c4.1 3.5 7.8 7 11.7 10.5C33.4 34 43 23.4 52 16.2"/></svg>`;
-     uploadLabel.innerHTML="";uploadHint.textContent="";pick.disabled=false;
+     uploadLabel.innerHTML="Video caricato";uploadHint.textContent="";pick.disabled=false;
+     clearTimeout(circleResetTimer);
+     circleResetTimer=window.setTimeout(restoreEmptyCircleForNewVideo,650);
    }
-   else{rings.classList.remove("uploading","uploaded");uploadIcon.classList.remove("loadedCheck");uploadIcon.innerHTML=`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 42h-1C10.4 42 5 36.6 5 30s5.4-12 12-12c1.6 0 3.1.3 4.5.9C24.7 12.4 31.3 8 39 8c10.5 0 19 8.5 19 19 0 .7 0 1.4-.1 2.1C61.5 30.9 64 34.6 64 39c0 6.1-4.9 11-11 11H38"/><path d="M32 52V28"/><path d="m24 36 8-8 8 8"/></svg>`;uploadLabel.innerHTML="CARICA<br>IL TUO GAMEPLAY";uploadHint.textContent="";pick.disabled=false;}
+   else{
+     restoreEmptyCircleForNewVideo();
+   }
    fitViewport();
  }
  function shellNav(target,data={}){
@@ -3641,36 +3668,102 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    closeReplaceToast();
  });
  circle.addEventListener("click",(ev)=>{
-   if(!loaded||uploadBusy)return;
+   if(!loaded||uploadBusy||!circle.classList.contains("loaded"))return;
    ev.preventDefault();
    ev.stopPropagation();
    if(typeof ev.stopImmediatePropagation==="function")ev.stopImmediatePropagation();
    openReplaceToast();
  },true);
 
+ function fileFingerprint(file){
+   const raw=String(file.name||"video")+"|"+String(file.size||0)+"|"+String(file.lastModified||0);
+   let h=2166136261>>>0;
+   for(let i=0;i<raw.length;i++){
+     h^=raw.charCodeAt(i);
+     h=Math.imul(h,16777619)>>>0;
+   }
+   return "up_"+h.toString(36)+"_"+Number(file.size||0).toString(36);
+ }
+ function updateUploadProgressUI(pct){
+   const cleanPct=Math.max(1,Math.min(99,Math.round(Number(pct)||0)));
+   bar.style.width=cleanPct+"%";
+   status.className="status show uploading";
+   statusText.textContent="Caricamento video… "+cleanPct+"%";
+   uploadLabel.innerHTML="CARICAMENTO<br>"+cleanPct+"%";
+ }
  async function capabilities(){try{const r=await fetch("/direct-upload/capabilities",{cache:"no-store"});return r.ok?await r.json():{bucket:false};}catch(e){return {bucket:false};}}
  function put(url,blob,onProgress){return new Promise((resolve,reject)=>{const x=new XMLHttpRequest();x.open("PUT",url,true);x.upload.onprogress=e=>{if(e.lengthComputable)onProgress(e.loaded)};x.onload=()=>{if(x.status>=200&&x.status<300){const et=x.getResponseHeader("ETag")||x.getResponseHeader("etag");et?resolve(et):reject(new Error("ETag mancante"));}else reject(new Error("HTTP "+x.status));};x.onerror=()=>reject(new Error("Errore rete"));x.timeout=240000;x.ontimeout=()=>reject(new Error("Timeout"));x.send(blob);});}
+ async function putWithRetry(url,blob,onProgress,retries=2){
+   let lastErr=null;
+   for(let attempt=0;attempt<=retries;attempt++){
+     try{return await put(url,blob,onProgress);}
+     catch(err){lastErr=err;if(attempt<retries)await new Promise(r=>setTimeout(r,400*(attempt+1)));}
+   }
+   throw lastErr||new Error("Upload part fallita");
+ }
  async function bucketUpload(file,caps){
-   const ir=await fetch("/direct-upload/bucket/init",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:file.name,size:file.size,type:file.type||"application/octet-stream"})});
+   const fp=fileFingerprint(file);
+   const ir=await fetch("/direct-upload/bucket/init",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:file.name,size:file.size,type:file.type||"application/octet-stream",fingerprint:fp,last_modified:Number(file.lastModified)||0})});
    const init=await ir.json(); if(!ir.ok||!init.ok)throw new Error(init.error||"Init fallita");
    const partSize=Number(init.part_size||caps.part_size||32*1024*1024),concurrency=Math.max(1,Number(init.concurrency||caps.concurrency||4));
-   const desc=Array.isArray(init.parts)?init.parts:[];let next=0,doneBytes=0;const live=new Map(),parts=[];
-   const update=()=>{let flight=0;for(const v of live.values())flight+=v;const pct=Math.min(99,Math.round(((doneBytes+flight)/file.size)*100));bar.style.width=pct+"%";statusText.textContent="Caricamento video… "+pct+"%";};
-   const worker=async()=>{while(true){const i=next++;if(i>=desc.length)return;const d=desc[i],start=i*partSize,end=Math.min(file.size,start+partSize),blob=file.slice(start,end);live.set(i,0);const et=await put(d.url,blob,s=>{live.set(i,s);update()});live.delete(i);doneBytes+=end-start;parts[i]={PartNumber:Number(d.number),ETag:et};update();}};
-   try{
-     await Promise.all(Array.from({length:Math.min(concurrency,desc.length)},()=>worker()));
-     statusText.textContent="Preparazione video…";
-     const dr=await fetch("/direct-upload/bucket/complete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({upload_id:init.upload_id,multipart_id:init.multipart_id,key:init.key,analysis_key:init.analysis_key,name:file.name,size:file.size,parts})});
-     const done=await dr.json();if(!dr.ok||!done.ok)throw new Error(done.error||"Finalizzazione fallita");
-     const deadline=Date.now()+300000;
-     while(Date.now()<deadline){const sr=await fetch("/direct-upload/bucket/status?upload_id="+encodeURIComponent(init.upload_id),{cache:"no-store"});const st=await sr.json();if(sr.ok&&st.ready)return true;if(!sr.ok&&st.error)throw new Error(st.error);await new Promise(r=>setTimeout(r,500));}
-     throw new Error("Preparazione troppo lunga");
-   }catch(e){try{await fetch("/direct-upload/bucket/abort",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({upload_id:init.upload_id,multipart_id:init.multipart_id,key:init.key})});}catch(_e){}throw e;}
+   const desc=Array.isArray(init.parts)?init.parts:[];
+   const uploadedParts=Array.isArray(init.uploaded_parts)?init.uploaded_parts:[];
+   const uploadedMap=new Map(uploadedParts.map(p=>[Number(p.PartNumber),String(p.ETag||"")]));
+   let next=0,doneBytes=0;const live=new Map(),parts=new Array(desc.length);
+   for(let i=0;i<desc.length;i++){
+     const d=desc[i],pNum=Number(d.number);
+     if(uploadedMap.has(pNum)&&uploadedMap.get(pNum)){
+       const start=i*partSize,end=Math.min(file.size,start+partSize);
+       doneBytes+=Math.max(0,end-start);
+       parts[i]={PartNumber:pNum,ETag:uploadedMap.get(pNum)};
+     }
+   }
+   const update=()=>{let flight=0;for(const v of live.values())flight+=v;const pct=Math.min(99,Math.round(((doneBytes+flight)/Math.max(1,file.size))*100));updateUploadProgressUI(pct);};
+   if(doneBytes>0)update();
+   const worker=async()=>{while(true){const i=next++;if(i>=desc.length)return;if(parts[i])continue;const d=desc[i],start=i*partSize,end=Math.min(file.size,start+partSize),blob=file.slice(start,end);live.set(i,0);const et=await putWithRetry(d.url,blob,s=>{live.set(i,s);update()},2);live.delete(i);doneBytes+=end-start;parts[i]={PartNumber:Number(d.number),ETag:et};update();}};
+   await Promise.all(Array.from({length:Math.min(concurrency,desc.length)},()=>worker()));
+   statusText.textContent="Preparazione video…";
+   const dr=await fetch("/direct-upload/bucket/complete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({upload_id:init.upload_id,multipart_id:init.multipart_id,key:init.key,analysis_key:init.analysis_key,name:file.name,size:file.size,parts:parts.filter(Boolean)})});
+   const done=await dr.json();if(!dr.ok||!done.ok)throw new Error(done.error||"Finalizzazione fallita");
+   const deadline=Date.now()+300000;
+   while(Date.now()<deadline){const sr=await fetch("/direct-upload/bucket/status?upload_id="+encodeURIComponent(init.upload_id),{cache:"no-store"});const st=await sr.json();if(sr.ok&&st.ready)return true;if(!sr.ok&&st.error)throw new Error(st.error);await new Promise(r=>setTimeout(r,500));}
+   throw new Error("Preparazione troppo lunga");
  }
  function chunkPut(blob,m,onProgress){return new Promise((resolve,reject)=>{const x=new XMLHttpRequest();x.open("PUT","/direct-upload/chunk",true);x.setRequestHeader("Content-Type","application/octet-stream");x.setRequestHeader("X-GSF-Upload-ID",m.id);x.setRequestHeader("X-GSF-Filename",encodeURIComponent(m.name));x.setRequestHeader("X-GSF-File-Size",String(m.size));x.setRequestHeader("X-GSF-Chunk-Start",String(m.start));x.setRequestHeader("X-GSF-Chunk-Index",String(m.index));x.setRequestHeader("X-GSF-Chunk-Count",String(m.count));x.upload.onprogress=e=>{if(e.lengthComputable)onProgress(e.loaded)};x.onload=()=>x.status>=200&&x.status<300?resolve():reject(new Error("HTTP "+x.status));x.onerror=()=>reject(new Error("Errore rete"));x.timeout=120000;x.ontimeout=()=>reject(new Error("Timeout"));x.send(blob);});}
+ async function chunkPutWithRetry(blob,m,onProgress,retries=2){
+   let lastErr=null;
+   for(let attempt=0;attempt<=retries;attempt++){
+     try{return await chunkPut(blob,m,onProgress);}
+     catch(err){lastErr=err;if(attempt<retries)await new Promise(r=>setTimeout(r,400*(attempt+1)));}
+   }
+   throw lastErr||new Error("Chunk upload fallito");
+ }
  async function fallbackUpload(file){
-   const CHUNK=4*1024*1024,count=Math.ceil(file.size/CHUNK),id=Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,12);
-   for(let i=0;i<count;i++){const start=i*CHUNK,end=Math.min(file.size,start+CHUNK);await chunkPut(file.slice(start,end),{id,name:file.name,size:file.size,start,index:i,count},sent=>{const pct=Math.min(99,Math.round(((start+sent)/file.size)*100));bar.style.width=pct+"%";statusText.textContent="Caricamento video… "+pct+"%";});}
+   const CHUNK=4*1024*1024,count=Math.max(1,Math.ceil(file.size/CHUNK)),id=fileFingerprint(file);
+   let receivedSet=new Set();
+   try{
+     const sr=await fetch("/direct-upload/chunk/status?upload_id="+encodeURIComponent(id)+"&size="+encodeURIComponent(String(file.size)),{cache:"no-store"});
+     if(sr.ok){
+       const st=await sr.json();
+       if(st&&st.ok&&st.completed){bar.style.width="100%";return true;}
+       if(st&&st.ok&&Array.isArray(st.received))receivedSet=new Set(st.received.map(Number));
+     }
+   }catch(_e){}
+   let completedBytes=0;
+   for(let i=0;i<count;i++){
+     const start=i*CHUNK,end=Math.min(file.size,start+CHUNK),chunkLen=Math.max(0,end-start);
+     if(receivedSet.has(i)){
+       completedBytes+=chunkLen;
+       updateUploadProgressUI(Math.min(99,Math.round((completedBytes/Math.max(1,file.size))*100)));
+       continue;
+     }
+     await chunkPutWithRetry(file.slice(start,end),{id,name:file.name,size:file.size,start,index:i,count},sent=>{
+       const pct=Math.min(99,Math.round(((completedBytes+sent)/Math.max(1,file.size))*100));
+       updateUploadProgressUI(pct);
+     },2);
+     completedBytes+=chunkLen;
+     updateUploadProgressUI(Math.min(99,Math.round((completedBytes/Math.max(1,file.size))*100)));
+   }
    return true;
  }
  pick.addEventListener("change",async()=>{
@@ -3691,6 +3784,8 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
        }
        return;
      }
+   }else if(loaded){
+     try{await saveCurrentBeforeReplacement();}catch(_e){}
    }
    replacePending=false;
 
@@ -3714,14 +3809,24 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    });
    const durationPromise=measureDuration(file);
 
-   uploadBusy=true;gsfAlive("upload.started");setMuralState("uploading");circle.classList.add("busy");rings.classList.remove("uploaded");rings.classList.add("uploading");try{window.parent.postMessage({type:"gsf-upload",state:"running",name:file.name},location.origin)}catch(_e){};status.className="status show";uploadLabel.textContent="CARICAMENTO";uploadHint.textContent="";bar.style.width="1%";
+   clearTimeout(circleResetTimer);
+   uploadBusy=true;gsfAlive("upload.started");setMuralState("uploading");circle.classList.add("busy");circle.removeAttribute("data-gsf-uploader-idle");rings.classList.remove("uploaded");rings.classList.add("uploading");try{window.parent.postMessage({type:"gsf-upload",state:"running",name:file.name},location.origin)}catch(_e){};status.className="status show uploading";statusText.textContent="Caricamento video… 1%";uploadLabel.innerHTML="CARICAMENTO<br>1%";uploadHint.textContent="";bar.style.width="1%";
    try{
      const caps=await capabilities();
      if(caps&&caps.bucket===true)await bucketUpload(file,caps);
      else await fallbackUpload(file);
+     try{
+       await fetch("/direct-upload/projects/save-uploaded-source",{
+         method:"POST",
+         headers:{"Content-Type":"application/json"},
+         body:JSON.stringify({name:file.name,size:file.size})
+       });
+     }catch(_e){}
      bar.style.width="100%";
+     status.className="status show uploaded";
      statusText.textContent="Video caricato";
-     setLoaded(true);
+     uploadLabel.innerHTML="Video caricato";
+     setLoaded(true,true);
      circle.classList.remove("busy");
      uploadBusy=false;
 
@@ -4017,18 +4122,10 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
  window.addEventListener("dragover",e=>{if(rings.classList.contains("naMagnet"))lean(e)});
  window.addEventListener("dragleave",()=>{if(--depth<=0)off()});
  window.addEventListener("drop",off,true);
- // Ready: the orb turns into the gameplay preview, crossed by an AI scan.
+ // Ready: never inject the old video preview into the Home circle on return; keep the circle clean for new uploads.
  let prev=null;
- const showPreview=()=>{
-  if(prev)return;prev=document.createElement("div");prev.className="naPreview";
-  const v=document.createElement("video");v.muted=true;v.loop=true;v.playsInline=true;v.autoplay=true;v.preload="metadata";v.setAttribute("aria-hidden","true");
-  v.src="/editor-media/current?na="+Date.now();
-  const scan=document.createElement("span");scan.className="scan";
-  prev.append(v,scan);circle.prepend(prev);
-  v.addEventListener("loadeddata",()=>{prev&&prev.classList.add("on");v.play&&v.play().catch(()=>{})},{once:true});
-  v.addEventListener("error",()=>{prev&&prev.remove();prev=null},{once:true});
- };
  const hidePreview=()=>{if(prev){prev.remove();prev=null}};
+ const showPreview=()=>{hidePreview();};
  const onState=()=>circle.classList.contains("loaded")?showPreview():hidePreview();
  new MutationObserver(onState).observe(circle,{attributes:true,attributeFilter:["class"]});onState();
  try{if(navigator.vibrate)circle.addEventListener("click",()=>navigator.vibrate(12))}catch(_e){}

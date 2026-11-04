@@ -68,25 +68,32 @@ def _render_v428_uploader_handoff_reset_bridge():
 
         // GSF_V428_UPLOADER_HANDOFF_RESET:
         // Source readiness stays intact. Mark uploader idle so safe replacement works,
-        // but preserve loadedCheck presentation so user sees their confirmed video.
+        // and restore the empty circle with "Carica un nuovo video" after confirmation.
         circle.setAttribute('data-gsf-uploader-idle','true');
         if(replaceConfirm)replaceConfirm.setAttribute('data-gsf-safe-replace','true');
 
+        clearStaleMedia(doc,circle,rings);
         if(circle.getAttribute('data-gsf-reset-requested')==='true'){
-          clearStaleMedia(doc,circle,rings);
           circle.classList.remove('loaded','done');
           rings.classList.remove('uploaded');
           icon.classList.remove('loadedCheck');
           icon.innerHTML=CLOUD;
           label.innerHTML='CARICA<br>IL TUO GAMEPLAY';
           if(hint)hint.textContent='';
+        }else if(circle.getAttribute('data-gsf-has-source')==='true'&&!circle.classList.contains('done')){
+          circle.classList.remove('loaded');
+          rings.classList.remove('uploaded');
+          icon.classList.remove('loadedCheck');
+          icon.innerHTML=CLOUD;
+          label.innerHTML='Carica un<br>nuovo video';
+          if(hint)hint.textContent='';
         }
 
         // Successful handoff is complete; progress belongs only to the upload
         // that is currently running. Preserve an actual error message.
-        if(status&&!status.classList.contains('error'))status.className='status';
-        if(statusText&&!status?.classList.contains('error'))statusText.textContent='';
-        if(bar&&!status?.classList.contains('error'))bar.style.width='0%';
+        if(status&&!status.classList.contains('error')&&!circle.classList.contains('done'))status.className='status';
+        if(statusText&&!status?.classList.contains('error')&&!circle.classList.contains('done'))statusText.textContent='';
+        if(bar&&!status?.classList.contains('error')&&!circle.classList.contains('done'))bar.style.width='0%';
       };
 
       const syncAll=()=>{
