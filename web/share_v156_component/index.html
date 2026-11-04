@@ -1216,7 +1216,14 @@ function close(restore=true){
   if(document.activeElement&&openSheet.contains(document.activeElement)){
     try{document.activeElement.blur()}catch(_e){}
   }
-  const v=openSheet.querySelector('video');if(v)v.pause();
+  const v=openSheet.querySelector('video');
+  if(v){
+    v.pause();
+    if(openSheet.id==='sheet-preview'){
+      v.removeAttribute('src');
+      try{v.load()}catch(_e){}
+    }
+  }
   openSheet.style.removeProperty('max-height');
   openSheet.style.removeProperty('bottom');
   const b=openSheet.querySelector('.sheetBody');
@@ -1487,7 +1494,10 @@ $('#draftBtn').onclick=async()=>{const b=$('#draftBtn');b.disabled=true;try{cons
 $('#peekBtn').onclick=()=>{const v=$('#bigPreview');if(!v.getAttribute('src')&&server.ready)v.src='/share/final?revision='+encodeURIComponent(server.revision);open('preview');setTimeout(()=>{try{v.play()}catch(_e){}},300)};
 
 /* server state */
+let syncPending=false;
 async function sync(){
+  if(syncPending)return;
+  syncPending=true;
   try{
     const r=await fetch('/share/state',{cache:'no-store',credentials:'same-origin'});const j=await r.json();
     if(!r.ok||!j.ok)throw new Error('state');
@@ -1497,7 +1507,11 @@ async function sync(){
     if(j.ready&&(rev!==was||!v.getAttribute('src'))){
       v.src='/share/final?revision='+encodeURIComponent(rev);v.hidden=false;$('#thumbSpin').hidden=true;linkCache={url:'',exp:0};
       $('#bigPreview').removeAttribute('src');
-      try{if(!matchMedia('(prefers-reduced-motion:reduce)').matches)v.play().catch(()=>{})}catch(_e){}
+      try{
+        if(!document.hidden && !matchMedia('(prefers-reduced-motion:reduce)').matches){
+          v.play().catch(()=>{});
+        }
+      }catch(_e){}
     }
     if(!j.ready){v.removeAttribute('src');v.hidden=true;$('#thumbSpin').hidden=false}
     $('#peekBtn').hidden=!j.ready;
@@ -1507,6 +1521,7 @@ async function sync(){
     const sup=server.publish_supported||[],soc=server.social||{};alive('social.status',{connected:sup.filter(p=>soc[p]).length});
     if(j.ready&&aliveState().active_job==='render')alive('render.completed');else if(j.ready)alive('sync',{short_ready:true});
   }catch(_e){$('#coreSub').textContent='Stato non disponibile, riprovo…'}
+  finally{syncPending=false;}
 }
 function renderAll(){renderTexts();renderPlatforms();markTabs()}
 
@@ -1520,8 +1535,18 @@ window.addEventListener('message',e=>{
   const b=$('.plat[data-platform="'+String(e.data.platform||'').replace(/[^a-z]/g,'')+'"]');
   if(b){b.setAttribute('aria-pressed','true');save();renderPlatforms();b.focus({preventScroll:true})}
 });
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
-window.addEventListener('focus',sync);
+document.addEventListener('visibilitychange',()=>{
+  const v=$('#preview');
+  if(document.hidden){
+    if(v)try{v.pause()}catch(_e){}
+  }else{
+    if(server.ready&&v&&v.paused&&!matchMedia('(prefers-reduced-motion:reduce)').matches){
+      try{v.play().catch(()=>{})}catch(_e){}
+    }
+    sync();
+  }
+});
+window.addEventListener('focus',()=>{if(!document.hidden)sync()});
 /* keep clear of the app shell: header on top, Game Bar + footer at the bottom (same-origin parent) */
 function fitShell(){
   let top=0,bottom=0;
@@ -1543,7 +1568,7 @@ fitShell();window.addEventListener('resize',fitShell);
 try{window.parent.addEventListener('resize',fitShell)}catch(_e){}
 let fits=0;const fitTimer=setInterval(()=>{fitShell();if(++fits>20)clearInterval(fitTimer)},500);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)fitShell()});
-load();renderAll();sync();setInterval(()=>{if(!server.ready)sync()},4000);
+load();renderAll();sync();setInterval(()=>{if(!server.ready&&!document.hidden)sync()},4000);
 })();
 /* GSF Alive 2 on Crea Short: the publish circle breathes, the ring guides to the next social. */
 (()=>{if(window.GSFAlive)window.GSFAlive.mount({page:"short",voiceAnchor:"#orbit"})})();

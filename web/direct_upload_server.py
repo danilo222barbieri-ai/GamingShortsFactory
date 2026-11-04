@@ -5096,6 +5096,38 @@ def _share_public_stream(handler,token):
             handler.wfile.write(chunk)
             remaining-=len(chunk)
 
+_FINAL_S3_CACHE: dict[str, tuple[float, bool, int, str]] = {}
+
+def _check_s3_final_cached(sid: str) -> tuple[bool, int, str]:
+    now = time.time()
+    cached = _FINAL_S3_CACHE.get(sid)
+    if cached and (now - cached[0]) < 5.0:
+        return cached[1], cached[2], cached[3]
+    ready = False
+    final_bytes = 0
+    revision = ""
+    try:
+        obj = _s3().get_object(Bucket=S3_BUCKET, Key=_final_meta_key(sid))
+        meta = json.loads(obj["Body"].read().decode("utf-8"))
+        key = str((meta or {}).get("bucket_key") or "")
+        if key and _final_matches_current_upload(sid, meta):
+            head = _s3().head_object(Bucket=S3_BUCKET, Key=key)
+            revision = str(head.get("ETag") or head.get("LastModified") or "")
+            final_bytes = int(head.get("ContentLength") or 0)
+            ready = final_bytes > 1024
+    except Exception:
+        try:
+            if _final_matches_current_upload(sid, {}):
+                head = _s3().head_object(Bucket=S3_BUCKET, Key=_final_bucket_key(sid))
+                revision = str(head.get("ETag") or head.get("LastModified") or "")
+                final_bytes = int(head.get("ContentLength") or 0)
+                ready = final_bytes > 1024
+        except Exception:
+            pass
+    _FINAL_S3_CACHE[sid] = (now, ready, final_bytes, revision)
+    return ready, final_bytes, revision
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version="GSFDirectUpload/2.0"
 
@@ -5369,27 +5401,7 @@ class Handler(BaseHTTPRequestHandler):
             # V411_SHARE_REVISION
             revision=str(stable.stat().st_mtime_ns) if ready else ""
             if not ready and _bucket_enabled():
-                try:
-                    obj=_s3().get_object(Bucket=S3_BUCKET,Key=_final_meta_key(sid))
-                    meta=json.loads(obj["Body"].read().decode("utf-8"))
-                    key=str((meta or {}).get("bucket_key") or "")
-                    if key and _final_matches_current_upload(sid,meta):
-                        head=_s3().head_object(Bucket=S3_BUCKET,Key=key)
-                        revision=str(head.get("ETag") or head.get("LastModified") or "")
-                        final_bytes=int(head.get("ContentLength") or 0)
-                        ready=final_bytes>1024
-                except Exception:
-                    try:
-                        # A legacy object without metadata has no proof that it
-                        # belongs to a newly uploaded gameplay.
-                        if not _final_matches_current_upload(sid,{}):
-                            raise ValueError("previous upload export")
-                        head=_s3().head_object(Bucket=S3_BUCKET,Key=_final_bucket_key(sid))
-                        revision=str(head.get("ETag") or head.get("LastModified") or "")
-                        final_bytes=int(head.get("ContentLength") or 0)
-                        ready=final_bytes>1024
-                    except Exception:
-                        pass
+                ready, final_bytes, revision = _check_s3_final_cached(sid)
             _json(self,200,{
                 "ok":True,
                 "ready":ready,
