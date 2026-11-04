@@ -1661,6 +1661,8 @@ let oauthNavigating=false;
     html+='<button class="row" type="button" data-act-ai><span class="ricon" style="color:var(--gsf-ai)">⚡</span><span class="rtext"><b>Crea con IA</b><small>Analizza il gameplay e trova i momenti migliori</small></span></button>';
    }else if(canImport){
     html+='<button class="row" type="button" data-act-import><span class="ricon" style="color:var(--gsf-ai)">⚡</span><span class="rtext"><b>Importa clip con IA</b><small>Scarica e analizza la clip con l\'IA</small></span></button>';
+    }else if(isTwitch && (item.kind==='twitch_vod' || item.external_id)){
+     html+='<button class="row" type="button" data-act-vod-moments><span class="ricon" style="color:var(--gsf-ai)">\u26a1</span><span class="rtext"><b>Trova i momenti</b><small>Identifica fino a 3 momenti affidabili e guarda l\'anteprima</small></span></button>';
    }else if(isYouTube){
     html+='<div style="background:rgba(39,174,243,.08);border:1px solid rgba(39,174,243,.20);border-radius:var(--gsf-radius-sm);padding:10px 12px;font-size:12px;color:var(--gsf-ink);line-height:1.45;text-align:left"><b>💡 Info ToS YouTube:</b> I video di YouTube non possono essere scaricati via API. Per estrarre Shorts con l\'IA, carica il file originale salvato da OBS o PC.<button class="na-cta" type="button" data-act-upload style="margin-top:8px;width:100%;font-size:12px;padding:8px">'+UPLOAD_ICON+' Carica gameplay</button></div>';
    }else if(isLive){
@@ -1677,6 +1679,7 @@ let oauthNavigating=false;
    const bWatch=sheetBox.querySelector('[data-act-watch]');if(bWatch)bWatch.onclick=()=>{closeSheet();window.open(item.url,'_blank','noopener,noreferrer')};
    const bAi=sheetBox.querySelector('[data-act-ai]');if(bAi)bAi.onclick=()=>{closeSheet();activateLibrarySource(item.id||item.source_id,'ai')};
    const bImport=sheetBox.querySelector('[data-act-import]');if(bImport)bImport.onclick=()=>{closeSheet();importTwitchClip(item.external_id||item.id)};
+    const bVodMoments=sheetBox.querySelector('[data-act-vod-moments]');if(bVodMoments)bVodMoments.onclick=()=>{findTwitchVodMoments(item)};
    const bUpload=sheetBox.querySelector('[data-act-upload]');if(bUpload)bUpload.onclick=()=>{closeSheet();shell("home",{section:""})};
    const bEditor=sheetBox.querySelector('[data-act-editor]');if(bEditor)bEditor.onclick=()=>{closeSheet();activateLibrarySource(item.id||item.source_id,'editor')};
    const bShort=sheetBox.querySelector('[data-act-short]');if(bShort)bShort.onclick=()=>{closeSheet();activateLibrarySource(item.id||item.source_id,'render')};
@@ -1790,6 +1793,54 @@ let oauthNavigating=false;
     if(stillHere&&!document.hidden)top.location.href='/?gsf_page='+target;else toast('Sorgente pronta nella Libreria.');
    }catch(error){if(error.name!=='AbortError')toast(String(error.message||'Sorgente non disponibile.'),'error')}
    finally{if(twitchImportAbort===controller)twitchImportAbort=null}
+  }
+
+  async function findTwitchVodMoments(item){
+   const vodId=item.external_id||item.id;
+   openSheet('<div class="liveActionSheetHead"><div class="liveActionSheetMeta"><div class="liveActionSheetTitle">Analisi VOD Twitch</div><div class="liveActionSheetSub">'+esc(item.title||'VOD')+'</div></div></div><div id="vodMomentsBody" style="padding:14px 0;text-align:center;color:var(--na-text-muted)"><div style="display:inline-block;width:24px;height:24px;border:2.5px solid rgba(39,174,243,.25);border-top-color:#27AEF3;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:10px"></div><div>Cerco i momenti migliori del VOD con l\'IA...</div></div>');
+   try{
+    const res=await (await fetch('/social-connect/twitch/vod-moments?vod_id='+encodeURIComponent(vodId),{cache:'no-store',credentials:'same-origin'})).json();
+    const body=sheetBox.querySelector('#vodMomentsBody');
+    if(!body)return;
+    const moments=Array.isArray(res.moments)?res.moments:[];
+    if(!moments.length){
+     body.innerHTML='<div style="background:rgba(39,174,243,.08);border:1px solid rgba(39,174,243,.22);border-radius:14px;padding:14px;text-align:left;color:var(--gsf-ink);font-size:13px;line-height:1.5"><b>\ud83d\udca1 Momenti non disponibili:</b><p style="margin:6px 0 0">'+esc(res.message||'Nessun momento o clip contrassegnata presente per questo VOD nelle API ufficiali Twitch.')+'</p></div><button class="btn ghost" type="button" style="width:100%;margin-top:12px" onclick="closeSheet()">Chiudi</button>';
+     return;
+    }
+    let selectedIdx=0;
+    function renderVodMomentsList(){
+     let h='<div style="text-align:left;font-size:12px;font-weight:700;color:var(--na-text-muted);margin-bottom:8px">MOMENTI IDENTIFICATI DALL\'IA ('+moments.length+')</div>';
+     h+='<div style="display:flex;flex-direction:column;gap:10px">';
+     moments.forEach((m,idx)=>{
+      const isSel=idx===selectedIdx;
+      const border=isSel?'border:2px solid #27AEF3;background:rgba(39,174,243,.14)':'border:1px solid rgba(121,210,255,.18);background:rgba(16,40,61,.45)';
+      h+='<div class="vodMomentCard" data-moment-idx="'+idx+'" style="display:flex;gap:10px;padding:8px;border-radius:12px;cursor:pointer;'+border+';transition:all .2s ease">';
+      h+='<img src="'+esc(m.thumbnail||'')+'" style="width:100px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0" alt="">';
+      h+='<div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center">';
+      h+='<div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(m.title)+'</div>';
+      h+='<div style="font-size:11px;color:var(--na-text-muted);margin-top:3px">Start: '+Math.round(m.start)+'s \u00b7 '+Math.round(m.duration)+'s \u00b7 <span style="color:#53E0EA;font-weight:700">IA '+m.score+'</span></div>';
+      h+='</div></div>';
+     });
+     h+='</div>';
+     h+='<button class="na-cta" type="button" id="btnImportChosenVodMoment" style="width:100%;margin-top:14px;padding:12px;font-size:14px;font-weight:800;border-radius:14px">\u26a1 Carica su GSF</button>';
+     h+='<button class="btn ghost" type="button" style="width:100%;margin-top:6px" onclick="closeSheet()">Annulla</button>';
+     body.innerHTML=h;
+     body.querySelectorAll('.vodMomentCard').forEach(c=>{
+      c.onclick=()=>{selectedIdx=Number(c.dataset.momentIdx)||0;renderVodMomentsList()};
+     });
+     const bImportMoment=body.querySelector('#btnImportChosenVodMoment');
+     if(bImportMoment){
+      bImportMoment.onclick=()=>{
+       const chosen=moments[selectedIdx];
+       if(chosen)importTwitchClip(chosen.id);
+      };
+     }
+    }
+    renderVodMomentsList();
+   }catch(err){
+    const body=sheetBox.querySelector('#vodMomentsBody');
+    if(body)body.innerHTML='<div style="color:#EF4444;font-size:13px;padding:10px">Errore durante il recupero dei momenti: '+esc(err.message||'Problema di rete')+'</div><button class="btn ghost" type="button" style="width:100%;margin-top:10px" onclick="closeSheet()">Chiudi</button>';
+   }
   }
 
   function openTwitchContent(kind='clips'){sourceFilter=kind;openSources('twitch',kind)}

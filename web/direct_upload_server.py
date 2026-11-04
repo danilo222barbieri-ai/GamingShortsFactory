@@ -3596,6 +3596,73 @@ def _twitch_api(sid,path,params=None):
     except Exception:raise _social421.TwitchError("Impossibile recuperare i contenuti Twitch. Riprova più tardi.") from None
 
 
+
+def _twitch_vod_moments(sid, vod_id):
+    if not vod_id or not re.fullmatch(r"[A-Za-z0-9_-]{1,100}", str(vod_id)):
+        raise ValueError("ID VOD Twitch non valido")
+    token = _twitch_access(sid)
+    vod_resp = _twitch_api(sid, "videos", {"id": str(vod_id)})
+    vod_list = [v for v in vod_resp.get("data", []) if isinstance(v, dict)]
+    if not vod_list:
+        return {"moments": [], "count": 0, "reason": "not_found", "message": "VOD Twitch non trovato o rimosso."}
+    vod = vod_list[0]
+    from web.gsf_sources_v422 import duration_seconds
+    vod_dur = duration_seconds(vod.get("duration")) or 0
+
+    clips_resp = _twitch_api(sid, "clips", {"broadcaster_id": token["user_id"], "first": 100})
+    clips = [c for c in clips_resp.get("data", []) if isinstance(c, dict)]
+
+    matched = []
+    for c in clips:
+        c_vid = str(c.get("video_id") or "")
+        if c_vid == str(vod_id):
+            matched.append(c)
+
+    if not matched:
+        return {
+            "moments": [],
+            "count": 0,
+            "reason": "insufficient_data",
+            "message": "Nessun momento contrassegnato o clip presente per questo VOD nelle API ufficiali Twitch. Per estrarre uno Short, crea prima una clip su Twitch oppure seleziona un gameplay locale.",
+            "vod_title": str(vod.get("title") or "")[:120],
+            "vod_duration": vod_dur,
+        }
+
+    matched.sort(key=lambda x: int(x.get("view_count") or 0), reverse=True)
+    selected = []
+    for c in matched:
+        offset = float(c.get("vod_offset") or 0.0)
+        if any(abs(offset - float(s.get("start") or 0.0)) < 15.0 for s in selected):
+            continue
+        c_id = str(c.get("id") or "")
+        dur = float(c.get("duration") or 30.0)
+        views = int(c.get("view_count") or 0)
+        score = min(98, max(75, 78 + min(20, views * 3)))
+        thumb = str(c.get("thumbnail_url") or "").replace("%{width}", "480").replace("%{height}", "270").replace("{width}", "480").replace("{height}", "270")
+        selected.append({
+            "id": c_id,
+            "title": str(c.get("title") or "Momento Twitch")[:120],
+            "start": round(offset, 2),
+            "duration": round(dur, 2),
+            "views": views,
+            "score": score,
+            "thumbnail": thumb,
+            "url": str(c.get("url") or ""),
+            "embed_url": str(c.get("embed_url") or f"https://clips.twitch.tv/embed?clip={c_id}&parent=localhost"),
+            "can_import": True,
+        })
+        if len(selected) >= 3:
+            break
+
+    return {
+        "moments": selected,
+        "count": len(selected),
+        "vod_id": str(vod_id),
+        "vod_title": str(vod.get("title") or "")[:120],
+        "vod_duration": vod_dur,
+        "reason": "success",
+    }
+
 def _twitch_content(sid,kind,after=""):
     from web.gsf_sources_v422 import source_id,public_source
     if kind not in ("clips","videos","live","all"):raise ValueError("Tipo di contenuto non valido")
@@ -5904,6 +5971,18 @@ class Handler(BaseHTTPRequestHandler):
             except _social421.TwitchError as exc:_json(self,exc.status,{"ok":False,"error":str(exc)})
             except ValueError:_json(self,400,{"ok":False,"error":"Richiesta Twitch non valida"})
             except Exception:_json(self,503,{"ok":False,"error":"Contenuti Twitch temporaneamente non disponibili"})
+            return
+
+        if clean=="/social-connect/twitch/vod-moments":
+            try:
+                query=parse_qs(path.query)
+                vod_id=str((query.get("vod_id") or [""])[0]).strip()
+                sid=_social_sid(self)
+                _json(self,200,{"ok":True,**_twitch_vod_moments(sid,vod_id)})
+            except _social421.TwitchError as exc:
+                _json(self,exc.status or 503,{"ok":False,"error":str(exc)})
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:160]})
             return
         if clean=="/social-connect/facebook/pages":
             sid=_social_sid(self)
