@@ -105,6 +105,7 @@ TIKTOK_SCOPE="user.info.basic,video.publish"
 YOUTUBE_CLIENT_ID=_env_first("GSF_YOUTUBE_CLIENT_ID",default="")
 YOUTUBE_CLIENT_SECRET=_env_first("GSF_YOUTUBE_CLIENT_SECRET",default="")
 YOUTUBE_SCOPE="https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/yt-analytics.readonly"
+YOUTUBE_REDIRECT_URI=_env_first("GSF_YOUTUBE_REDIRECT_URI",default=(PUBLIC_APP_URL+"/auth/youtube/callback") if PUBLIC_APP_URL else "")
 INSTAGRAM_APP_ID=_env_first("GSF_INSTAGRAM_APP_ID",default="")
 INSTAGRAM_APP_SECRET=_env_first("GSF_INSTAGRAM_APP_SECRET",default="")
 INSTAGRAM_SCOPES="instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights"
@@ -1585,8 +1586,9 @@ def _youtube_user_load(sid):
     local=ROOT/"sessions"/sid/"social"/"youtube_token.json"
     try:
         payload=_security_read_json(local)
-        if isinstance(payload,dict) and payload.get("token"):
-            return payload
+        if isinstance(payload,dict) and (payload.get("token") or payload.get("access_token")):
+            if _social_owner_matches(sid,"youtube",payload):
+                return payload
     except Exception:
         pass
     if not _bucket_enabled():
@@ -1594,9 +1596,10 @@ def _youtube_user_load(sid):
     try:
         obj=_s3().get_object(Bucket=S3_BUCKET,Key=_youtube_user_key(sid))
         payload=_security_decrypt_json(obj["Body"].read())
-        if isinstance(payload,dict):
-            _youtube_user_write_local(sid,payload)
-            return payload
+        if isinstance(payload,dict) and (payload.get("token") or payload.get("access_token")):
+            if _social_owner_matches(sid,"youtube",payload):
+                _youtube_user_write_local(sid,payload)
+                return payload
     except Exception:
         pass
     return {}
@@ -1616,18 +1619,16 @@ def _youtube_user_save(sid,payload):
     sid=_safe_id(sid)
     if not sid:
         raise RuntimeError("sessione browser non valida")
+    payload={**dict(payload or {}),"owner_id":_storage_owner_id(sid)}
+    if _bucket_enabled():
+        _s3().put_object(
+            Bucket=S3_BUCKET,
+            Key=_youtube_user_key(sid),
+            Body=_security_encrypt_json(payload),
+            ContentType="application/octet-stream",
+            CacheControl="no-store",
+        )
     _youtube_user_write_local(sid,payload)
-    if not _bucket_enabled():
-        raise RuntimeError("storage persistente non disponibile")
-    _s3().put_object(
-        Bucket=S3_BUCKET,
-        Key=_youtube_user_key(sid),
-        Body=_security_encrypt_json(payload),
-        ContentType="application/octet-stream",
-        CacheControl="no-store",
-    )
-
-
 
 
 def _instagram_user_key(sid):
@@ -1671,7 +1672,7 @@ def _instagram_user_save(sid,payload):
     sid=_safe_id(sid)
     if not sid:
         raise RuntimeError("sessione browser non valida")
-    payload={**payload,"owner_id":_storage_owner_id(sid)}
+    payload={**dict(payload or {}),"owner_id":_storage_owner_id(sid)}
     if not _bucket_enabled():
         raise RuntimeError("storage persistente non disponibile")
     _s3().put_object(
@@ -3711,6 +3712,7 @@ def _youtube_oauth_start(handler,sid):
     if not (PUBLIC_APP_URL and YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET):
         _html(handler,503,_social_page(sid,"Configurazione YouTube incompleta sul server."))
         return
+    redirect_uri=YOUTUBE_REDIRECT_URI or (PUBLIC_APP_URL+"/auth/youtube/callback") if PUBLIC_APP_URL else ""
     state="gsfyt_"+secrets.token_urlsafe(28)
     state_dir=ROOT/"social_oauth"
     state_dir.mkdir(parents=True,exist_ok=True)
@@ -3718,10 +3720,11 @@ def _youtube_oauth_start(handler,sid):
         "created":time.time(),
         "sid":sid,
         "platform":"YouTube",
+        "redirect_uri":redirect_uri,
     })
     params={
         "client_id":YOUTUBE_CLIENT_ID,
-        "redirect_uri":PUBLIC_APP_URL,
+        "redirect_uri":redirect_uri,
         "response_type":"code",
         "scope":YOUTUBE_SCOPE,
         "access_type":"offline",
@@ -3747,6 +3750,7 @@ def _youtube_oauth_callback(handler,query):
         pass
     created=float(pending.get("created",0) or 0)
     sid=_safe_id(pending.get("sid",""))
+    redirect_uri=str(pending.get("redirect_uri") or YOUTUBE_REDIRECT_URI or (PUBLIC_APP_URL+"/auth/youtube/callback") if PUBLIC_APP_URL else "")
     if not state.startswith("gsfyt_") or not sid or not created or time.time()-created>900:
         _html(handler,400,"Stato OAuth YouTube scaduto o non valido. Riapri /social-connect.")
         return
@@ -3762,7 +3766,7 @@ def _youtube_oauth_callback(handler,query):
         "client_secret":YOUTUBE_CLIENT_SECRET,
         "code":code,
         "grant_type":"authorization_code",
-        "redirect_uri":PUBLIC_APP_URL,
+        "redirect_uri":redirect_uri,
     }).encode("utf-8")
     req=urllib.request.Request(
         "https://oauth2.googleapis.com/token",
@@ -3774,17 +3778,47 @@ def _youtube_oauth_callback(handler,query):
         with urllib.request.urlopen(req,timeout=45) as resp:
             payload=json.loads(resp.read().decode("utf-8"))
         access=str(payload.get("access_token","") or "")
-        refresh=str(payload.get("refresh_token","") or "")
         if not access:
             raise RuntimeError(str(payload))
+        existing_token=dict(_youtube_user_load(sid) or {})
+        refresh=str(payload.get("refresh_token") or existing_token.get("refresh_token") or "")
+        expires_in=int(payload.get("expires_in",3600) or 3600)
         scopes=str(payload.get("scope","") or YOUTUBE_SCOPE).split()
+        now=time.time()
+
+        channel_id=""
+        channel_title=""
+        channel_thumbnail=""
+        try:
+            ch_req=urllib.request.Request(
+                "https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&mine=true",
+                headers={"Authorization":f"Bearer {access}"}
+            )
+            with urllib.request.urlopen(ch_req,timeout=15) as ch_resp:
+                ch_data=json.loads(ch_resp.read().decode("utf-8"))
+                items=ch_data.get("items") or []
+                if items:
+                    channel_id=str(items[0].get("id") or "")
+                    snip=items[0].get("snippet") or {}
+                    channel_title=str(snip.get("title") or "")
+                    channel_thumbnail=str((snip.get("thumbnails",{}).get("default") or {}).get("url") or "")
+        except Exception as ch_err:
+            print("GSF_YOUTUBE_CH_FETCH_WARN",sid,repr(str(ch_err))[:160],flush=True)
+
         token={
             "token":access,
+            "access_token":access,
             "refresh_token":refresh,
             "token_uri":"https://oauth2.googleapis.com/token",
             "client_id":YOUTUBE_CLIENT_ID,
             "client_secret":YOUTUBE_CLIENT_SECRET,
             "scopes":scopes or [YOUTUBE_SCOPE],
+            "expires_at":now+expires_in,
+            "channel_id":channel_id,
+            "channel_title":channel_title,
+            "channel_thumbnail":channel_thumbnail,
+            "needs_reauth":False,
+            "saved_at":now,
         }
         _youtube_user_save(sid,token)
         _redirect(handler,"/?gsf_hub=social")
@@ -4274,13 +4308,78 @@ def _analytics_save(sid,payload):
             print("GSF_V148_ANALYTICS_BUCKET_WARN",sid,repr(str(exc))[:180],flush=True)
     return True
 
-def _youtube_analytics_token(sid):
+def _youtube_access_token(sid,min_ttl=180,force_refresh=False):
     token=dict(_youtube_user_load(sid) or {})
+    if not token:
+        return {"error":"not_connected","message":"YouTube non è collegato."}
+    if token.get("needs_reauth"):
+        return {"error":"needs_reauth","message":"YouTube ha revocato o rifiutato l'accesso: ricollega l'account."}
+    access=str(token.get("token") or token.get("access_token") or "")
+    expires_at=float(token.get("expires_at",0) or 0)
+    now=time.time()
+    if not force_refresh and access and (expires_at > (now + min_ttl) or not expires_at):
+        return token
     refresh=str(token.get("refresh_token") or "")
     client_id=str(token.get("client_id") or YOUTUBE_CLIENT_ID or "")
     client_secret=str(token.get("client_secret") or YOUTUBE_CLIENT_SECRET or "")
     if not refresh or not client_id or not client_secret:
+        if not access:
+            token["needs_reauth"]=True
+            try:_youtube_user_save(sid,token)
+            except Exception:pass
+            return {"error":"needs_reauth","message":"Autorizzazione YouTube scaduta: ricollega l'account."}
         return token
+    try:
+        form=urllib.parse.urlencode({
+            "client_id":client_id,
+            "client_secret":client_secret,
+            "refresh_token":refresh,
+            "grant_type":"refresh_token",
+        }).encode("utf-8")
+        req=urllib.request.Request(
+            "https://oauth2.googleapis.com/token",
+            data=form,
+            headers={"Content-Type":"application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req,timeout=30) as resp:
+            payload=json.loads(resp.read().decode("utf-8"))
+        new_access=str(payload.get("access_token") or "")
+        if new_access:
+            token["token"]=new_access
+            token["access_token"]=new_access
+            new_refresh=str(payload.get("refresh_token") or "")
+            if new_refresh:
+                token["refresh_token"]=new_refresh
+            exp_in=int(payload.get("expires_in",3600) or 3600)
+            token["expires_at"]=now+exp_in
+            token["needs_reauth"]=False
+            token["_analytics_refreshed_at"]=now
+            try:_youtube_user_save(sid,token)
+            except Exception:pass
+            return token
+        else:
+            token["needs_reauth"]=True
+            try:_youtube_user_save(sid,token)
+            except Exception:pass
+            return {"error":"needs_reauth","message":"YouTube ha rifiutato il rinnovo del token: ricollega l'account."}
+    except urllib.error.HTTPError as h_err:
+        err_text=h_err.read().decode("utf-8","ignore")
+        print("GSF_YOUTUBE_REFRESH_HTTP_ERR",sid,h_err.code,err_text[:180],flush=True)
+        if h_err.code in (400,401) or "invalid_grant" in err_text:
+            token["needs_reauth"]=True
+            token["reauth_reason"]="invalid_grant"
+            try:_youtube_user_save(sid,token)
+            except Exception:pass
+            return {"error":"needs_reauth","message":"YouTube ha revocato o rifiutato l'accesso: ricollega l'account."}
+        return token
+    except Exception as exc:
+        print("GSF_YOUTUBE_REFRESH_WARN",sid,repr(str(exc))[:180],flush=True)
+        return token
+
+
+def _youtube_analytics_token(sid):
+    return _youtube_access_token(sid)
     try:
         form=urllib.parse.urlencode({
             "client_id":client_id,
@@ -4924,21 +5023,67 @@ def _publish_final_path(sid):
         return stable
     return None
 
+def _instagram_access_token(sid,min_ttl=86400):
+    cfg=dict(_instagram_user_load(sid) or {})
+    if not cfg:
+        cfg=dict(_social_connection_load(sid,"instagram") or {})
+    if not cfg:
+        return {"error":"not_connected","message":"Instagram non è collegato."}
+    if cfg.get("needs_reauth"):
+        return {"error":"needs_reauth","message":"Instagram: autorizzazione scaduta o non valida. Ricollega l'account Instagram nelle Impostazioni."}
+    token=str(cfg.get("access_token") or "")
+    expires_at=float(cfg.get("expires_at",0) or 0)
+    now=time.time()
+    if cfg.get("oauth_mode")=="instagram_login" and token and expires_at and expires_at<(now+min_ttl):
+        try:
+            ref_url="https://graph.instagram.com/refresh_access_token?"+urllib.parse.urlencode({
+                "grant_type":"ig_refresh_token",
+                "access_token":token,
+            })
+            with urllib.request.urlopen(ref_url,timeout=30) as resp:
+                ref_data=json.loads(resp.read().decode("utf-8"))
+            new_token=str(ref_data.get("access_token") or "")
+            if new_token:
+                cfg["access_token"]=new_token
+                new_exp=int(ref_data.get("expires_in",0) or 0)
+                cfg["expires_at"]=now+new_exp if new_exp else expires_at
+                cfg["needs_reauth"]=False
+                try:_instagram_user_save(sid,cfg)
+                except Exception:pass
+        except urllib.error.HTTPError as err:
+            err_body=err.read().decode("utf-8","ignore")
+            if err.code in (400,401) or "OAuthException" in err_body or "190" in err_body:
+                cfg["needs_reauth"]=True
+                try:_instagram_user_save(sid,cfg)
+                except Exception:pass
+                return {"error":"needs_reauth","message":"Instagram: autorizzazione scaduta o non valida. Ricollega l'account Instagram nelle Impostazioni."}
+        except Exception:
+            pass
+    return cfg
+
+
 def _instagram_direct_post(sid,video_path,plan,privacy):
-    cfg=_instagram_user_load(sid) or {}
+    cfg=_instagram_access_token(sid)
+    if cfg.get("error")=="needs_reauth" or cfg.get("needs_reauth"):
+        raise _pm413.PublishError("Instagram: autorizzazione scaduta o non valida. Ricollega l'account Instagram nelle Impostazioni.",code="needs_reauth")
     token=str(cfg.get("access_token") or "")
     ig_id=str(cfg.get("ig_user_id") or cfg.get("instagram_user_id") or "")
-    if not token or not ig_id:
-        sc=_social_connection_load(sid,"instagram") or {}
-        token=str(sc.get("access_token") or "")
-        ig_id=str(sc.get("ig_user_id") or sc.get("instagram_user_id") or "")
     if not token or not ig_id:
         raise _pm413.PublishError("Collega Instagram dal Creator Hub prima di pubblicare.",code="needs_connection")
     caption=str(plan.get("caption") or "")[:2200]
     token_sig,_exp=_pm413.sign_share_link(_share_link_secret(),sid,ttl=86400)
     base_url=(PUBLIC_APP_URL or "https://gaming-shorts-factory-v79-production.up.railway.app").rstrip("/")
     video_url=f"{base_url}/share/public/{token_sig}"
-    create_url=f"https://graph.facebook.com/{META_GRAPH_VERSION}/{ig_id}/media"
+
+    oauth_mode=str(cfg.get("oauth_mode") or "")
+    api_host=str(cfg.get("api_host") or "")
+    # Instagram Login tokens MUST use graph.instagram.com; Facebook Login tokens use graph.facebook.com
+    if oauth_mode=="instagram_login" or api_host.startswith("https://graph.instagram.com"):
+        api_base="https://graph.instagram.com"
+    else:
+        api_base=f"https://graph.facebook.com/{META_GRAPH_VERSION}"
+
+    create_url=f"{api_base}/{ig_id}/media"
     init_data=urllib.parse.urlencode({"media_type":"REELS","video_url":video_url,"caption":caption,"share_to_feed":"true","access_token":token}).encode("utf-8")
     req=urllib.request.Request(create_url,data=init_data,method="POST")
     try:
@@ -4946,24 +5091,35 @@ def _instagram_direct_post(sid,video_path,plan,privacy):
             data=json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         err_body=exc.read().decode("utf-8","ignore")
+        code_err="instagram_api_error"
         try:
-            msg=json.loads(err_body).get("error",{}).get("message","Errore Instagram Reels API")
+            err_json=json.loads(err_body).get("error",{})
+            msg=err_json.get("message","Errore Instagram Reels API")
+            err_subcode=err_json.get("code")
+            if exc.code in (400,401) or err_subcode==190 or "OAuthException" in str(err_json) or "Cannot parse access token" in msg:
+                code_err="needs_reauth"
+                msg="Instagram: autorizzazione scaduta o non valida. Ricollega l'account Instagram nelle Impostazioni."
+                cfg["needs_reauth"]=True
+                try:_instagram_user_save(sid,cfg)
+                except Exception:pass
         except Exception:
             msg=err_body[:180] or "Errore container Instagram"
-        raise _pm413.PublishError(f"Instagram: {msg}",code="instagram_api_error")
+        raise _pm413.PublishError(f"{msg}",code=code_err)
     container_id=data.get("id")
     if not container_id:
         raise _pm413.PublishError("Instagram: Impossibile creare il container Reels.",code="container_error")
-    status_url=f"https://graph.facebook.com/{META_GRAPH_VERSION}/{container_id}?fields=status_code&access_token={token}"
-    for _ in range(6):
+    status_url=f"{api_base}/{container_id}?fields=status_code&access_token={token}"
+    for _ in range(8):
         time.sleep(3)
         try:
             with urllib.request.urlopen(status_url,timeout=15) as sresp:
                 sdata=json.loads(sresp.read().decode("utf-8"))
                 if sdata.get("status_code")=="FINISHED":break
                 elif sdata.get("status_code")=="ERROR":raise _pm413.PublishError("Instagram: Elaborazione video non riuscita.",code="transcode_error")
+        except _pm413.PublishError:
+            raise
         except Exception:pass
-    pub_url=f"https://graph.facebook.com/{META_GRAPH_VERSION}/{ig_id}/media_publish"
+    pub_url=f"{api_base}/{ig_id}/media_publish"
     pub_data=urllib.parse.urlencode({"creation_id":container_id,"access_token":token}).encode("utf-8")
     req_pub=urllib.request.Request(pub_url,data=pub_data,method="POST")
     try:
@@ -4971,6 +5127,21 @@ def _instagram_direct_post(sid,video_path,plan,privacy):
             pdata=json.loads(resp.read().decode("utf-8"))
             media_id=pdata.get("id",container_id)
             return {"id":media_id,"url":"https://www.instagram.com/","privacy":privacy}
+    except urllib.error.HTTPError as exc:
+        err_body=exc.read().decode("utf-8","ignore")
+        code_err="publish_error"
+        try:
+            err_json=json.loads(err_body).get("error",{})
+            msg=err_json.get("message",str(exc))
+            if exc.code in (400,401) or err_json.get("code")==190 or "OAuthException" in str(err_json):
+                code_err="needs_reauth"
+                msg="Instagram: autorizzazione scaduta o non valida. Ricollega l'account Instagram nelle Impostazioni."
+                cfg["needs_reauth"]=True
+                try:_instagram_user_save(sid,cfg)
+                except Exception:pass
+        except Exception:
+            msg=err_body[:180] or str(exc)[:160]
+        raise _pm413.PublishError(f"{msg}",code=code_err)
     except Exception as exc:
         raise _pm413.PublishError(f"Instagram pubblicazione: {str(exc)[:160]}",code="publish_error")
 
@@ -5016,8 +5187,13 @@ def _publish_run(sid,job,request,video_path):
         _publish_update(sid,job,platform,status="running")
         try:
             if platform=="youtube":
-                token=_youtube_analytics_token(sid)
-                result=_pm413.youtube_upload(str(token.get("token") or token.get("access_token") or ""),str(video_path),plan,privacy)
+                token=_youtube_access_token(sid)
+                if token.get("error")=="needs_reauth" or token.get("needs_reauth"):
+                    raise _pm413.PublishError(token.get("message") or "YouTube ha rifiutato l'accesso: ricollega l'account.",code="needs_reauth")
+                yt_access=str(token.get("token") or token.get("access_token") or "")
+                if not yt_access:
+                    raise _pm413.PublishError("YouTube non collegato: ricollega l'account nelle Impostazioni.",code="needs_connection")
+                result=_pm413.youtube_upload(yt_access,str(video_path),plan,privacy)
                 id_type="video_id"
             elif platform=="tiktok":
                 token=_tiktok_analytics_token(sid)
@@ -5663,7 +5839,7 @@ class Handler(BaseHTTPRequestHandler):
         if clean=="/social-connect/youtube/start":
             _youtube_oauth_start(self,_social_sid(self))
             return
-        if clean=="/social-connect/youtube/callback":
+        if clean in ("/social-connect/youtube/callback","/auth/youtube/callback") or (clean in ("","/") and (parse_qs(path.query).get("state") or [""])[0].startswith("gsfyt_")):
             _youtube_oauth_callback(self,parse_qs(path.query))
             return
         if clean=="/social-connect/instagram/start":

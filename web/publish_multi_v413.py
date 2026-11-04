@@ -261,7 +261,7 @@ def youtube_upload(access_token, video_path, plan, privacy="public", opener=None
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", "replace")[:300]
             if exc.code in (401, 403):
-                raise PublishError(_youtube_reason(detail) or "YouTube ha rifiutato l'accesso: ricollega l'account.")
+                raise PublishError(_youtube_reason(detail) or "YouTube ha rifiutato l'accesso: ricollega l'account.", code="needs_reauth")
             last = f"HTTP {exc.code}"
             if exc.code >= 500:
                 time.sleep(min(8, 2 ** attempt))
