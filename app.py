@@ -13628,6 +13628,18 @@ if video:
         _gsf_whole_source=_gsf_whole_meta is not None
         if _gsf_whole_source:
             duration=_gsf_analysis_source_duration
+
+        _is_short_video_b = (_gsf_analysis_source_duration > 0 and _gsf_analysis_source_duration < 15.0)
+        if _is_short_video_b:
+            st.info("«Video breve: puoi passare direttamente al Game Editor»")
+            try:
+                from web.workflow_engine_v4 import load_workflow, save_workflow, WorkflowState
+                _wf = load_workflow(GSF_SESSION_ROOT)
+                _wf.duration = _gsf_analysis_source_duration
+                _wf.transition_to(WorkflowState.UPLOADED, duration=_gsf_analysis_source_duration, source_path=str(_source_path))
+                save_workflow(GSF_SESSION_ROOT, _wf)
+            except Exception:
+                pass
         if _gsf_create_ai_clicked and _gsf_whole_source:
             # The candidate is ready independently of AI completion. Never crop it.
             (GSF_SESSION_ROOT/"editor2027_current.txt").write_text(str(Path(_source_path).resolve()),encoding="utf-8")
@@ -13640,6 +13652,14 @@ if video:
             write_results_meta(GSF_PREVIEW_DIR,{"items":[],"status":"analyzing","updated_at":time.time(),
                 "request_id":str(st.session_state.get("gsf_v412_request_id") or "")})
         if _gsf_create_ai_clicked:
+            try:
+                from web.workflow_engine_v4 import load_workflow, save_workflow, WorkflowState
+                _wf = load_workflow(GSF_SESSION_ROOT)
+                _wf.duration = _gsf_analysis_source_duration
+                _wf.transition_to(WorkflowState.ANALYZING)
+                save_workflow(GSF_SESSION_ROOT, _wf)
+            except Exception:
+                pass
             _gsf_ai_run_error=""
             _gsf_save_persistent_state()
             st.session_state["gsf_ai_timing_start"]=time.perf_counter()
@@ -13682,49 +13702,64 @@ if video:
                     else:
                         _fast_res = {}
                         try:
-                            from web.ai_performance_engine_v2 import run_fast_ai_pipeline
-                            _genre_hint = _gsf_v108_game_hint() or "Auto"
-                            _fast_res = run_fast_ai_pipeline(
-                                source_path=analisi_input,
-                                output_dir=GSF_PREVIEW_DIR,
-                                duration=_gsf_requested_duration,
-                                genre=_genre_hint,
-                                profile=_gsf_v291_profile or "auto",
-                                request_id=str(st.session_state.get("gsf_v412_request_id") or ""),
-                                sid=str(GSF_SESSION_ID),
-                                generate_previews=True,
-                            )
-                            _res_state = _fast_res.get("result_state")
-                            if _res_state == "failed":
-                                raise RuntimeError(_fast_res.get("error") or "Analisi IA non riuscita")
+                            if callable(globals().get("_gsf_ai_scan_cached")) or callable(locals().get("_gsf_ai_scan_cached")):
+                                risultati_ai, ai_diag = run_duration_analysis(
+                                    analisi_input, modalita, _gsf_requested_duration,
+                                    source_duration=_gsf_analysis_source_duration,
+                                    rank=globals().get("_gsf_ai_rank_v3", locals().get("_gsf_ai_rank_v3")),
+                                    scan=globals().get("_gsf_ai_scan_cached", locals().get("_gsf_ai_scan_cached")),
+                                    voice=globals().get("_gsf_ai_voice_cached", locals().get("_gsf_ai_voice_cached")),
+                                    cache_token=_video_cache_token
+                                )
+                                candidati = [start_ai for score_ai, start_ai in risultati_ai]
+                                st.session_state.ai_director_scores = risultati_ai
+                                st.session_state["gsf_ai_v3_diagnostics"] = ai_diag
+                                st.session_state.clip_rifinite = {0.0:duration} if _gsf_whole_source else {}
+                            else:
+                                from web.ai_performance_engine_v2 import run_fast_ai_pipeline
+                                _hint_fn = globals().get("_gsf_v108_game_hint")
+                                _genre_hint = _hint_fn() if callable(_hint_fn) else "Auto"
+                                _fast_res = run_fast_ai_pipeline(
+                                    source_path=analisi_input,
+                                    output_dir=GSF_PREVIEW_DIR,
+                                    duration=_gsf_requested_duration,
+                                    genre=_genre_hint,
+                                    profile=_gsf_v291_profile or "auto",
+                                    request_id=str(st.session_state.get("gsf_v412_request_id") or ""),
+                                    sid=str(GSF_SESSION_ID),
+                                    generate_previews=True,
+                                )
+                                _res_state = _fast_res.get("result_state")
+                                if _res_state == "failed":
+                                    raise RuntimeError(_fast_res.get("error") or "Analisi IA non riuscita")
 
-                            _sel_list = list(_fast_res.get("selected") or [])
-                            _alt_list = list(_fast_res.get("alternates") or [])
-                            risultati_ai = [(float(r.get("score", 0.0)), float(r["start"])) for r in _sel_list]
-                            candidati = [float(r["start"]) for r in _sel_list]
-                            ai_diag = {
-                                round(float(r["start"]), 3): {
-                                    "features": r,
-                                    "profile": _gsf_v291_profile,
-                                    "score": float(r.get("score", 0.0)),
+                                _sel_list = list(_fast_res.get("selected") or [])
+                                _alt_list = list(_fast_res.get("alternates") or [])
+                                risultati_ai = [(float(r.get("score", 0.0)), float(r["start"])) for r in _sel_list]
+                                candidati = [float(r["start"]) for r in _sel_list]
+                                ai_diag = {
+                                    round(float(r["start"]), 3): {
+                                        "features": r,
+                                        "profile": _gsf_v291_profile,
+                                        "score": float(r.get("score", 0.0)),
+                                    }
+                                    for r in _sel_list
                                 }
-                                for r in _sel_list
-                            }
-                            st.session_state.ai_director_scores = risultati_ai
-                            st.session_state["gsf_ai_v3_diagnostics"] = ai_diag
-                            st.session_state.clip_rifinite = {
-                                round(float(r["start"]), 3): float(r.get("duration", duration))
-                                for r in _sel_list
-                            }
-                            st.session_state["gsf_v112_brain_context"] = {
-                                "selected": _sel_list,
-                                "alternates": _alt_list,
-                                "pool_size": len(_sel_list),
-                            }
-                            if _fast_res.get("detected_game"):
-                                st.session_state["gsf_ai_detected_game"] = _fast_res["detected_game"]
-                            if _fast_res.get("genre"):
-                                st.session_state["gsf_ai_detected_genre"] = _fast_res["genre"]
+                                st.session_state.ai_director_scores = risultati_ai
+                                st.session_state["gsf_ai_v3_diagnostics"] = ai_diag
+                                st.session_state.clip_rifinite = {
+                                    round(float(r["start"]), 3): float(r.get("duration", duration))
+                                    for r in _sel_list
+                                }
+                                st.session_state["gsf_v112_brain_context"] = {
+                                    "selected": _sel_list,
+                                    "alternates": _alt_list,
+                                    "pool_size": len(_sel_list),
+                                }
+                                if _fast_res.get("detected_game"):
+                                    st.session_state["gsf_ai_detected_game"] = _fast_res["detected_game"]
+                                if _fast_res.get("genre"):
+                                    st.session_state["gsf_ai_detected_genre"] = _fast_res["genre"]
                         except Exception as _gsf_ai_rank_failure:
                             print("GSF_AI_FAST_FAILURE", type(_gsf_ai_rank_failure).__name__, str(_gsf_ai_rank_failure), flush=True)
                             risultati_ai, ai_diag, candidati = [], {}, []
@@ -13754,6 +13789,14 @@ if video:
 
                 if candidati:
                     st.session_state.auto_clip_scelta = candidati[0]
+                    try:
+                        from web.workflow_engine_v4 import load_workflow, save_workflow, WorkflowState
+                        _wf = load_workflow(GSF_SESSION_ROOT)
+                        _wf.transition_to(WorkflowState.MOMENTS_READY)
+                        _wf.transition_to(WorkflowState.MOMENT_SELECTED, moment_selected=0, clip_start=float(candidati[0]))
+                        save_workflow(GSF_SESSION_ROOT, _wf)
+                    except Exception:
+                        pass
                 else:
                     _is_no_highlights = (_fast_res.get("result_state") == "completed_no_highlights") or (not _gsf_ai_run_error)
                     if _is_no_highlights:
@@ -14747,6 +14790,16 @@ if video:
                     _src=str(st.session_state.get("gsf_source_path") or "")
                 if _src:
                     st.session_state["gsf_v107_render_source_snapshot"]=_src
+                try:
+                    from web.workflow_engine_v4 import load_workflow, save_workflow, WorkflowState
+                    _wf = load_workflow(GSF_SESSION_ROOT)
+                    if not _wf.allowed_actions().get("create_short", False):
+                        st.warning("Conferma prima il montaggio nel Game Editor per creare lo Short.")
+                        return
+                    _wf.transition_to(WorkflowState.SHORT_CREATING)
+                    save_workflow(GSF_SESSION_ROOT, _wf)
+                except Exception:
+                    pass
                 st.session_state["gsf_v107_final_render_pending"]=True
                 st.session_state["gsf_v107_final_render_running"]=True
                 st.session_state["gsf_v1302_social_open"]=True
@@ -14817,6 +14870,13 @@ if video:
                     _gsf_restored_bytes=_gsf_restore_final.read_bytes()
                     st.session_state["publication_final_bytes"]=_gsf_restored_bytes
                     st.session_state["publication_ready"]=True
+                    try:
+                        from web.workflow_engine_v4 import load_workflow, save_workflow, WorkflowState
+                        _wf = load_workflow(GSF_SESSION_ROOT)
+                        _wf.transition_to(WorkflowState.SHORT_READY, final_video_path=str(_gsf_restore_final))
+                        save_workflow(GSF_SESSION_ROOT, _wf)
+                    except Exception:
+                        pass
                     if st.session_state.get("gsf_v107_final_render_running",False):
                         st.session_state["gsf_v107_render_done_toast"]=True
                     st.session_state["gsf_v107_final_render_running"]=False
@@ -14988,13 +15048,24 @@ if video:
             except Exception as _v130_ui_exc:
                 print("GSF_V130_UI_WARN",repr(str(_v130_ui_exc))[:220],flush=True)
 
+            try:
+                from web.workflow_engine_v4 import load_workflow
+                _wf = load_workflow(GSF_SESSION_ROOT)
+                _wf_can_create = _wf.allowed_actions().get("create_short", True)
+                _wf_reason = _wf.error or "Conferma prima il montaggio nel Game Editor per creare lo Short."
+            except Exception:
+                _wf_can_create = True
+                _wf_reason = ""
+
             with st.container(key="gsf-major-create-short"):
+                if not _wf_can_create and not st.session_state.get("gsf_v107_final_render_running",False):
+                    st.info(f"ℹ️ {_wf_reason}")
                 st.markdown('<div class="gsf-major-note gsf-v1302-create-note">L’IA crea il tuo Short, applica le modifiche e controlla automaticamente qualità e formato. Quando è pronto puoi salvarlo, condividerlo o pubblicarlo.</div>',unsafe_allow_html=True)
                 _v1054_create_final_clicked=st.button(
                     "CREA SHORT FINALE",
                     use_container_width=True,
                     key="create_final_short_v54",
-                    disabled=bool(st.session_state.get("gsf_v107_final_render_running",False)),
+                    disabled=bool(st.session_state.get("gsf_v107_final_render_running",False) or not _wf_can_create),
                 )
 
             if _v1054_create_final_clicked:

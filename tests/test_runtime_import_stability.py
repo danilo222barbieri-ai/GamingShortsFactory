@@ -12,7 +12,7 @@ import importlib.util,sys
 from pathlib import Path
 root=Path(sys.argv[1]);web=root/'web'
 sys.path[:0]=[str(web),str(root)]
-prefix=(root/'app.py').read_text().split('from web.render_gate_v293 import',1)[0]
+prefix=(root/'app.py').read_text(encoding='utf-8').split('from web.render_gate_v293 import',1)[0]
 for _ in range(4):
     # Streamlit may remove user modules while legacy helpers left /app/web on
     # the shared interpreter path; this must never select web/web instead.

@@ -48,6 +48,22 @@ from content_memory_v145 import inspect_memory as _content_memory_inspect, upser
 from social_analytics_v148 import collect as _social_analytics_collect, dynamic_performance_score as _social_dynamic_score
 import publish_multi_v413 as _pm413
 import gsf_social_oauth_v421 as _social421
+try:
+    from web.workflow_engine_v4 import (
+        WorkflowState,
+        WorkflowPath,
+        ProjectWorkflow,
+        load_workflow,
+        save_workflow,
+    )
+except ImportError:
+    from workflow_engine_v4 import (
+        WorkflowState,
+        WorkflowPath,
+        ProjectWorkflow,
+        load_workflow,
+        save_workflow,
+    )
 
 try:
     from gsf_editor_v403 import game_director_suggestions, normalize_editor_state, normalize_timeline_markers
@@ -2446,6 +2462,17 @@ def _auto_save_uploaded_source_to_projects(sid,upload_id,source_path,original_na
             pass
     except Exception as exc:
         print("GSF_AUTO_DRAFT_SAVE_WARN",sid,upload_id,repr(str(exc))[:180],flush=True)
+
+    try:
+        dur = _probe_video_duration_fast(source_path)
+        wf = load_workflow(session_root)
+        wf.project_id = proj_id
+        wf.source_path = str(source_path)
+        wf.duration = dur
+        wf.transition_to(WorkflowState.UPLOADED, duration=dur, source_path=str(source_path))
+        save_workflow(session_root, wf)
+    except Exception as _wf_err:
+        print("GSF_WORKFLOW_UPLOAD_WARN", sid, repr(str(_wf_err))[:180], flush=True)
 
     return {
         "ok":True,
@@ -6311,6 +6338,15 @@ class Handler(BaseHTTPRequestHandler):
         if clean=="/drafts/delete":
             _json(self,405,{"ok":False,"error":"method not allowed"})
             return
+        if clean=="/workflow/status":
+            sid=_social_sid(self)
+            if not sid:
+                _json(self,400,{"ok":False,"error":"Sessione browser non valida."})
+                return
+            wf=load_workflow(ROOT/"sessions"/sid)
+            _json(self,200,{"ok":True,"workflow":wf.to_dict()})
+            return
+
         if clean=="/publish/preflight":
             sid=_social_sid(self)
             if not sid:
@@ -6806,6 +6842,10 @@ class Handler(BaseHTTPRequestHandler):
             if not _security_csrf_valid(self,sid):
                 _json(self,403,{"ok":False,"error":"csrf validation failed"})
                 return
+            wf=load_workflow(ROOT/"sessions"/sid)
+            if not wf.allowed_actions().get("publish",False):
+                _json(self,409,{"ok":False,"error":"Lo Short finale deve essere completato prima di esportare o pubblicare."})
+                return
             if path=="/share/link":
                 if not _publish_final_path(sid):
                     _json(self,409,{"ok":False,"error":"Lo Short finale non è ancora pronto."})
@@ -6847,7 +6887,39 @@ class Handler(BaseHTTPRequestHandler):
                 data=_read_json(self,max_bytes=128*1024)
                 raw_state=data.get("state") if isinstance(data,dict) else {}
                 state=_editor_overlay_state_save(sid,raw_state,data.get("context"),expected_source_key=data.get("source_key",""))
+                try:
+                    session_root=ROOT/"sessions"/sid
+                    wf=load_workflow(session_root)
+                    if wf.state in (WorkflowState.EDITOR_READY,WorkflowState.EDITING,WorkflowState.MOMENT_SELECTED):
+                        wf.transition_to(WorkflowState.EDIT_CONFIRMED)
+                        save_workflow(session_root,wf)
+                except Exception:
+                    pass
                 _json(self,200,{"ok":True,"saved":True,"keys":len(state)})
+            except Exception as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+
+        if path=="/workflow/transition":
+            sid=_social_sid(self)
+            if not sid:
+                _json(self,400,{"ok":False,"error":"Sessione browser non valida."})
+                return
+            try:
+                data=_read_json(self,max_bytes=32*1024)
+                target=data.get("target_state")
+                if not target:
+                    _json(self,400,{"ok":False,"error":"target_state required"})
+                    return
+                session_root=ROOT/"sessions"/sid
+                wf=load_workflow(session_root)
+                kwargs={k:v for k,v in data.items() if k!="target_state"}
+                ok=wf.transition_to(WorkflowState(target),**kwargs)
+                if ok:
+                    save_workflow(session_root,wf)
+                    _json(self,200,{"ok":True,"workflow":wf.to_dict()})
+                else:
+                    _json(self,409,{"ok":False,"error":wf.error or "Transizione non autorizzata","workflow":wf.to_dict()})
             except Exception as exc:
                 _json(self,400,{"ok":False,"error":str(exc)[:180]})
             return

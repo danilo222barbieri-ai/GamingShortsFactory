@@ -117,6 +117,8 @@ class WholeSource(unittest.TestCase):
         exec(compile(ast.Module(body=[node],type_ignores=[]),'<actual-duration-bridge>','exec'),ns)
         self.assertEqual(ns['duration'],60)
 
+    import shutil
+    @unittest.skipIf(shutil.which('node') is None, 'node runtime not available on host')
     def test_actual_home_editor_bridge_uses_candidate_length(self):
         import subprocess
         html=(ROOT/'web/home_v154_component/index.html').read_text(encoding='utf-8')
