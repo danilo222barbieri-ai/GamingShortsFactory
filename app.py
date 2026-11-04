@@ -13679,56 +13679,51 @@ if video:
                             st.session_state["gsf_ai_v3_diagnostics"] = cached_ai["diagnostics"]
 
                     else:
+                        _fast_res = {}
                         try:
-                            risultati_ai, ai_diag = run_duration_analysis(
-                                analisi_input, modalita, _gsf_requested_duration,
-                                source_duration=_gsf_analysis_source_duration,
-                                rank=_gsf_ai_rank_v3, scan=_gsf_ai_scan_cached,
-                                voice=_gsf_ai_voice_cached, cache_token=_video_cache_token
+                            from web.ai_performance_engine_v2 import run_fast_ai_pipeline
+                            _genre_hint = _gsf_v108_game_hint() or "Auto"
+                            _fast_res = run_fast_ai_pipeline(
+                                source_path=analisi_input,
+                                output_dir=GSF_PREVIEW_DIR,
+                                duration=_gsf_requested_duration,
+                                genre=_genre_hint,
+                                profile=_gsf_v291_profile or "auto",
+                                request_id=str(st.session_state.get("gsf_v412_request_id") or ""),
+                                sid=str(GSF_SESSION_ID),
+                                generate_previews=True,
                             )
-                        except Exception as _gsf_ai_rank_failure:
-                            print("GSF_AI_RANK_FAILURE",type(_gsf_ai_rank_failure).__name__,flush=True)
-                            risultati_ai, ai_diag = [], {}
-                            _gsf_ai_run_error="L’analisi non è riuscita. Il gameplay è conservato: puoi riprovare o aprirlo nell’Editor dalla Home."
+                            _res_state = _fast_res.get("result_state")
+                            if _res_state == "failed":
+                                raise RuntimeError(_fast_res.get("error") or "Analisi IA non riuscita")
 
-                        candidati = [start_ai for score_ai, start_ai in risultati_ai]
-                        st.session_state.ai_director_scores = risultati_ai
-                        st.session_state["gsf_ai_v3_diagnostics"] = ai_diag
-
-                        # Solo Automatico e Momento migliore rifiniscono i bordi:
-                        # per Azione/Reazioni non vogliamo spostare via il picco trovato.
-                        if not _gsf_whole_source and __import__("web.ai_engines_v412",fromlist=["should_refine"]).should_refine(_gsf_v291_profile, modalita):
-                            clip_rifinite = {}
-                            candidati_rifiniti = []
-                            for start_ai in candidati:
-                                _diag=st.session_state.get("gsf_ai_v3_diagnostics",{}).get(
-                                    round(float(start_ai),3),{}
-                                )
-                                _event_strength=float(
-                                    (_diag.get("features") or {}).get("event_score",0.0)
-                                )
-                                if _event_strength>=0.56 or _gsf_analysis_source_duration <= _gsf_requested_duration + 5.0:
-                                    nuovo_start=float(start_ai)
-                                    nuova_durata=float(duration)
-                                else:
-                                    nuovo_start, nuova_durata = rifinisci_confini_clip(
-                                        analisi_input,
-                                        float(start_ai),
-                                        float(duration)
-                                    )
-                                nuova_durata=float(duration)
-                                candidati_rifiniti.append(nuovo_start)
-                                clip_rifinite[round(nuovo_start, 3)] = nuova_durata
-                            candidati = candidati_rifiniti
-                            st.session_state.clip_rifinite = clip_rifinite
-                            risultati_ai = [
-                                (risultati_ai[i][0], candidati[i])
-                                for i in range(min(len(risultati_ai),len(candidati)))
-                            ]
+                            _sel_list = list(_fast_res.get("selected") or [])
+                            _alt_list = list(_fast_res.get("alternates") or [])
+                            risultati_ai = [(float(r.get("score", 0.0)), float(r["start"])) for r in _sel_list]
+                            candidati = [float(r["start"]) for r in _sel_list]
+                            ai_diag = {
+                                round(float(r["start"]), 3): {
+                                    "features": r,
+                                    "profile": _gsf_v291_profile,
+                                    "score": float(r.get("score", 0.0)),
+                                }
+                                for r in _sel_list
+                            }
                             st.session_state.ai_director_scores = risultati_ai
-                        else:
-                            st.session_state.clip_rifinite = {0.0:duration} if _gsf_whole_source else {}
-
+                            st.session_state["gsf_ai_v3_diagnostics"] = ai_diag
+                            st.session_state.clip_rifinite = {
+                                round(float(r["start"]), 3): float(r.get("duration", duration))
+                                for r in _sel_list
+                            }
+                            st.session_state["gsf_v112_brain_context"] = {
+                                "selected": _sel_list,
+                                "alternates": _alt_list,
+                                "pool_size": len(_sel_list),
+                            }
+                        except Exception as _gsf_ai_rank_failure:
+                            print("GSF_AI_FAST_FAILURE", type(_gsf_ai_rank_failure).__name__, str(_gsf_ai_rank_failure), flush=True)
+                            risultati_ai, ai_diag, candidati = [], {}, []
+                            _gsf_ai_run_error = "L’analisi non è riuscita. Il gameplay è conservato: puoi riprovare o aprirlo nell’Editor dalla Home."
                 if _gsf_whole_source:
                     _gsf_whole_meta["status"]="failed" if _gsf_ai_run_error else "success"
                     _gsf_whole_meta["error"]=_gsf_ai_run_error
@@ -13755,12 +13750,30 @@ if video:
                 if candidati:
                     st.session_state.auto_clip_scelta = candidati[0]
                 else:
-                    _gsf_ai_empty_message=_gsf_ai_run_error or "Non ho trovato momenti validi. Il gameplay è conservato: puoi cambiare motore o aprirlo nell’Editor dalla Home."
-                    from web.ai_engines_v412 import write_results_meta as _gsf_ai_write_failure
-                    _gsf_ai_write_failure(GSF_PREVIEW_DIR,{"items":[],"status":"failed","error_code":"analysis_failed" if _gsf_ai_run_error else "no_moments",
-                        "request_id":str(st.session_state.get("gsf_v412_request_id") or ""),"error":_gsf_ai_empty_message})
-                    st.warning(_gsf_ai_empty_message)
-
+                    _is_no_highlights = (_fast_res.get("result_state") == "completed_no_highlights") or (not _gsf_ai_run_error)
+                    if _is_no_highlights:
+                        _gsf_ai_empty_message = "Nessun momento sufficientemente forte trovato nel gameplay. Il gameplay è conservato: puoi aprirlo nell’Editor dalla Home."
+                        from web.ai_engines_v412 import write_results_meta as _gsf_ai_write_meta
+                        _gsf_ai_write_meta(GSF_PREVIEW_DIR, {
+                            "items": [],
+                            "status": "completed_no_highlights",
+                            "result_state": "completed_no_highlights",
+                            "request_id": str(st.session_state.get("gsf_v412_request_id") or ""),
+                            "message": _gsf_ai_empty_message,
+                        })
+                        st.info(_gsf_ai_empty_message)
+                    else:
+                        _gsf_ai_empty_message = _gsf_ai_run_error or "L’analisi non è riuscita. Il gameplay è conservato: puoi riprovare o aprirlo nell’Editor dalla Home."
+                        from web.ai_engines_v412 import write_results_meta as _gsf_ai_write_failure
+                        _gsf_ai_write_failure(GSF_PREVIEW_DIR, {
+                            "items": [],
+                            "status": "failed",
+                            "result_state": "failed",
+                            "error_code": "analysis_failed",
+                            "request_id": str(st.session_state.get("gsf_v412_request_id") or ""),
+                            "error": _gsf_ai_empty_message,
+                        })
+                        st.warning(_gsf_ai_empty_message)
         if st.session_state.get("auto_clip_modalita") != modalita:
             candidati = []
         else:

@@ -50,8 +50,8 @@ class TestAiEngineV3Blocco2(unittest.TestCase):
         }
         self.assertTrue(is_low_signal_scan(flat_scan))
         selected, alts = smart_rank_candidates(flat_scan, target_duration=15.0, total_seconds=30.0)
-        self.assertTrue(len(selected) > 0)
-        self.assertTrue(any(r.get("low_signal") for r in selected))
+        # Legitimate completed_no_highlights: do not fabricate random clips on low-signal video
+        self.assertEqual(len(selected), 0)
 
     def test_smart_ranking_and_diversity(self):
         # Scan with 2 distinct action peaks at 4s and 18s

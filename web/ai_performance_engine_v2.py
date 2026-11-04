@@ -919,19 +919,20 @@ def smart_rank_candidates(
     total = max(_num(total_seconds, 0.0), n * step)
     max_start = max(0.0, total - dur)
 
-    # Check for low-signal or silent clips
-    if is_low_signal_scan(scan) or max_start <= 0.25:
-        base_candidates = [
-            {"start": 0.0, "score": 0.70, "event": "highlight", "category": "action", "confidence": 0.50, "low_signal": True}
-        ]
-        if max_start > 2.0:
-            base_candidates.append(
-                {"start": round(max_start * 0.5, 3), "score": 0.65, "event": "highlight", "category": "action", "confidence": 0.45, "low_signal": True}
-            )
-            base_candidates.append(
-                {"start": round(max_start, 3), "score": 0.60, "event": "highlight", "category": "action", "confidence": 0.40, "low_signal": True}
-            )
-        return base_candidates[:target_count], []
+    # Check for low-signal or silent clips: strictly distinguish legitimate no-highlights from active video
+    if is_low_signal_scan(scan):
+        return [], []
+
+    if max_start <= 0.25:
+        return [{
+            "start": 0.0,
+            "duration": total,
+            "score": 0.85,
+            "event": "highlight",
+            "category": "action",
+            "confidence": 0.80,
+            "whole_source": True,
+        }], []
 
     user_model = None
     if sid:
@@ -1159,7 +1160,15 @@ def run_fast_ai_pipeline(
     )
 
     candidate_starts = [round(float(r["start"]), 3) for r in selected]
-    durations_map = {round(float(r["start"]), 3): float(r["duration"]) for r in selected}
+    durations_map = {round(float(r["start"]), 3): float(r.get("duration", eff_duration)) for r in selected}
+
+    # Distinguish the 3 strict states: completed_with_results vs completed_no_highlights vs failed
+    if selected:
+        result_state = "completed_with_results"
+        status_label = "ready"
+    else:
+        result_state = "completed_no_highlights"
+        status_label = "completed_no_highlights"
 
     _chk()
     _prog(75.0, "Generazione anteprime ottimizzate...")
@@ -1178,16 +1187,22 @@ def run_fast_ai_pipeline(
         durations=durations_map,
         timings={"total_seconds": round(time.perf_counter() - t_start, 3)},
     )
-    meta["status"] = "ready"
+    meta["status"] = status_label
+    meta["result_state"] = result_state
     meta["genre"] = genre
+    if result_state == "completed_no_highlights":
+        meta["items"] = []
+        meta["message"] = "Nessun momento sufficientemente forte trovato nel gameplay. Puoi aprirlo nell’Editor."
     _v412.write_results_meta(out_dir, meta)
 
-    _prog(100.0, "Momenti IA pronti")
+    _prog(100.0, "Momenti IA pronti" if result_state == "completed_with_results" else "Analisi completata (nessun picco)")
     return {
         "request_id": request_id,
+        "result_state": result_state,
         "candidates": candidate_starts,
         "selected": selected,
         "alternates": alternates,
         "duration": eff_duration,
         "total_time": round(time.perf_counter() - t_start, 3),
+        "message": meta.get("message", ""),
     }

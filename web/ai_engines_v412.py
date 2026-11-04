@@ -338,13 +338,20 @@ def merge_results(meta: Mapping[str, Any] | None, files: Iterable[tuple[int, flo
     """Join the results sheet with the mini preview files. None when there is no sheet."""
     if not isinstance(meta, Mapping):
         return None
-    if meta.get("status") == "analyzing" and time.time() - _num(meta.get("updated_at"), time.time()) >= 120:
+    st = str(meta.get("status") or "")
+    if st == "analyzing" and time.time() - _num(meta.get("updated_at"), time.time()) >= 120:
         meta = {**meta, "status": "failed", "error_code": "analysis_timeout",
                 "error": "L’analisi ha superato il tempo disponibile. Il video è conservato: puoi riprovare o continuare nell’Editor."}
-    if meta.get("status") == "failed" and not meta.get("whole_source"):
-        return {"ok":True,"status":"failed","request_id":str(meta.get("request_id") or ""),
+        st = "failed"
+    if st == "failed" and not meta.get("whole_source"):
+        return {"ok":True,"status":"failed","result_state":"failed","request_id":str(meta.get("request_id") or ""),
                 "error_code":str(meta.get("error_code") or "analysis_failed"),
                 "error":str(meta.get("error") or "Analisi non riuscita. Riprova."),
+                "previews":[],"count":0}
+    if st == "completed_no_highlights":
+        return {"ok":True,"status":"completed_no_highlights","result_state":"completed_no_highlights",
+                "request_id":str(meta.get("request_id") or ""),
+                "message":str(meta.get("message") or "Nessun momento sufficientemente forte trovato nel gameplay. Puoi aprirlo nell’Editor."),
                 "previews":[],"count":0}
     files = list(files)
     previews = []
@@ -366,8 +373,10 @@ def merge_results(meta: Mapping[str, Any] | None, files: Iterable[tuple[int, flo
     return {
         "ok": True,
         "status": str(meta.get("status") or "success"),
+        "result_state": str(meta.get("result_state") or ("completed_with_results" if ready else "completed_no_highlights")),
         "whole_source": bool(meta.get("whole_source")),
         "error": str(meta.get("error") or ""),
+        "message": str(meta.get("message") or ""),
         "request_id": str(meta.get("request_id") or ""),
         "engine": str(meta.get("engine") or ""),
         "pool_size": int(_num(meta.get("pool_size"), 0)),

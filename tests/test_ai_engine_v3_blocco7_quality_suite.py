@@ -77,7 +77,7 @@ class TestAiEngineV3QualitySuite(unittest.TestCase):
             self.assertIn("pre_event_seconds", prof["context_padding"])
 
     def test_03_silent_and_low_signal_honesty(self):
-        # 4 & 6: Silent video & no interesting events
+        # 4 & 6: Silent video & no interesting events -> completed_no_highlights
         silent_scan = {
             "step": 0.5,
             "audio": [0.0] * 40,
@@ -86,8 +86,7 @@ class TestAiEngineV3QualitySuite(unittest.TestCase):
         }
         self.assertTrue(is_low_signal_scan(silent_scan))
         selected, alts = smart_rank_candidates(silent_scan, target_duration=15.0, total_seconds=20.0)
-        self.assertTrue(len(selected) >= 1)
-        self.assertTrue(selected[0].get("low_signal"))
+        self.assertEqual(len(selected), 0)
 
     def test_04_close_moments_and_diversity(self):
         # 5: Nearby peaks must not produce overlapping moments

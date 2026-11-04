@@ -1224,6 +1224,11 @@ async function pollResults(token,deadline){
     const message=String(j.error||"Analisi non riuscita. Riprova.");$("aiStatus").textContent=message;
     alive("failure",{job:"ai",message});return;
   }
+  if(j?.status==='completed_no_highlights'||j?.result_state==='completed_no_highlights'){
+    awaitingResults=false;state.processing=false;setScan("off");render();
+    const message=String(j.message||"Nessun momento sufficientemente forte trovato nel gameplay. Puoi aprirlo nell’Editor.");$("aiStatus").textContent=message;
+    alive("ai.no_highlights",{message});return;
+  }
   if(list&&!j?.whole_source){runInfo={pool:Number(j.pool_size)||0,engine:String(j.engine||"")};if(applyResults(list))return}
   if(Date.now()>=deadline){awaitingResults=false;state.processing=false;setScan("error");render();alive("failure",{job:"ai",message:"I risultati non sono arrivati. Riproviamo."});return}
   setTimeout(()=>pollResults(token,deadline),650)}
