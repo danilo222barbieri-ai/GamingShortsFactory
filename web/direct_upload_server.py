@@ -5790,6 +5790,28 @@ class Handler(BaseHTTPRequestHandler):
                 ),
             })
             return
+        if clean=="/jobs/list":
+            sid=_safe_id(self.headers.get("X-GSF-Session-ID")) or _social_sid(self)
+            if not sid:
+                _json(self,400,{"ok":False,"error":"invalid session"})
+                return
+            mgr=_get_global_job_manager()
+            jobs=mgr.list_jobs(sid,limit=25,include_terminal=True)
+            _json(self,200,{"ok":True,"jobs":jobs,"active_count":sum(1 for j in jobs if j.get("status") in ("queued","running"))})
+            return
+        if clean=="/jobs/status":
+            sid=_safe_id(self.headers.get("X-GSF-Session-ID")) or _social_sid(self)
+            job_id=_safe_id((parse_qs(path.query).get("id") or [""])[0])
+            if not sid or not job_id:
+                _json(self,400,{"ok":False,"error":"invalid session or job id"})
+                return
+            mgr=_get_global_job_manager()
+            job=mgr.get_job(sid,job_id)
+            if not job:
+                _json(self,404,{"ok":False,"error":"job not found"})
+                return
+            _json(self,200,{"ok":True,"job":job})
+            return
         if clean=="/source/restore":
             sid=_social_sid(self)
             requested=str((parse_qs(path.query).get("path") or [""])[0])
@@ -6162,10 +6184,73 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/auth/meta/deauthorize","/auth/meta/data-deletion"):
             _meta_signed_callback(self,"deauthorize" if path.endswith("deauthorize") else "data-deletion")
             return
-        sid=_safe_id(self.headers.get("X-GSF-Session-ID"))
+        sid=_safe_id(self.headers.get("X-GSF-Session-ID")) or _social_sid(self)
         if not sid:
             _json(self,400,{"ok":False,"error":"invalid session"})
             return
+
+        if path.startswith("/jobs/"):
+            mgr=_get_global_job_manager()
+            try:
+                data=_read_json(self,max_bytes=128*1024)
+                data=data if isinstance(data,dict) else {}
+                if path=="/jobs/enqueue":
+                    profile=_creator_account_load(sid) or {}
+                    account_id=_safe_id(profile.get("account_id","")) if isinstance(profile,dict) else ""
+                    job=mgr.enqueue_job(
+                        sid=sid,
+                        kind=str(data.get("kind") or ""),
+                        title=str(data.get("title") or ""),
+                        payload=data.get("payload") if isinstance(data.get("payload"),dict) else {},
+                        idempotency_key=str(data.get("idempotency_key") or ""),
+                        account_id=account_id,
+                        max_retries=int(data.get("max_retries",3) or 3),
+                        auto_retry_on_boot=bool(data.get("auto_retry_on_boot",True)),
+                        initial_status=str(data.get("initial_status") or "queued"),
+                        initial_progress=data.get("initial_progress",0.0),
+                    )
+                    _json(self,202,{"ok":True,"job":job})
+                    return
+                if path=="/jobs/update":
+                    job_id=_safe_id(data.get("id") or data.get("job_id"))
+                    job=mgr.update_job(
+                        sid,
+                        job_id,
+                        status=data.get("status"),
+                        progress=data.get("progress"),
+                        stage=data.get("stage"),
+                        result=data.get("result") if isinstance(data.get("result"),dict) else None,
+                        error=data.get("error"),
+                        pid=data.get("pid"),
+                        sync_s3=bool(data.get("sync_s3",False)),
+                    )
+                    if not job:
+                        _json(self,404,{"ok":False,"error":"job not found"})
+                        return
+                    _json(self,200,{"ok":True,"job":job})
+                    return
+                if path=="/jobs/cancel":
+                    job_id=_safe_id(data.get("id") or data.get("job_id"))
+                    job=mgr.cancel_job(sid,job_id,reason=str(data.get("reason") or "Annullato dall'utente"))
+                    if not job:
+                        _json(self,404,{"ok":False,"error":"job not found"})
+                        return
+                    _json(self,200,{"ok":True,"job":job})
+                    return
+                if path=="/jobs/retry":
+                    job_id=_safe_id(data.get("id") or data.get("job_id"))
+                    job=mgr.retry_job(sid,job_id)
+                    if not job:
+                        _json(self,404,{"ok":False,"error":"job not found"})
+                        return
+                    _json(self,200,{"ok":True,"job":job})
+                    return
+            except ValueError as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:200]})
+                return
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:200]})
+                return
 
         if path=="/creator-hub/sources/activate":
             if not _security_csrf_valid(self,sid):_json(self,403,{"ok":False,"error":"csrf validation failed"});return
@@ -6972,10 +7057,70 @@ def _start_social_analytics_worker():
     threading.Thread(target=run,name="gsf-social-analytics-v148",daemon=True).start()
 
 
+_GLOBAL_JOB_MANAGER=None
+_GLOBAL_JOB_MANAGER_LOCK=threading.Lock()
+
+def _on_global_job_terminal(sid,job):
+    try:
+        status=str((job or {}).get("status") or "")
+        kind=str((job or {}).get("kind") or "")
+        title_map={
+            "upload":"Video caricato",
+            "ai_analysis":"Momenti IA pronti",
+            "whisper":"Sottotitoli IA pronti",
+            "ffmpeg_render":"Short pronto",
+            "create_short":"Short pronto",
+            "export":"Esportazione completata",
+            "social_publish":"Pubblicazione completata",
+            "project_save":"Progetto salvato",
+        }
+        if status=="completed":
+            _push_notify_sid(
+                sid,
+                title=title_map.get(kind,"Elaborazione completata"),
+                body=str(job.get("title") or "Il tuo lavoro in background è terminato."),
+                url="/",
+                tag="gsf-job-done-"+str(job.get("id") or ""),
+            )
+        elif status=="failed":
+            _push_notify_sid(
+                sid,
+                title="Elaborazione interrotta",
+                body=str(job.get("error") or "Si è verificato un problema. Puoi riprovare dall'app."),
+                url="/",
+                tag="gsf-job-fail-"+str(job.get("id") or ""),
+            )
+    except Exception:
+        pass
+
+def _get_global_job_manager():
+    global _GLOBAL_JOB_MANAGER
+    if _GLOBAL_JOB_MANAGER is not None:
+        return _GLOBAL_JOB_MANAGER
+    with _GLOBAL_JOB_MANAGER_LOCK:
+        if _GLOBAL_JOB_MANAGER is None:
+            from global_jobs_v2 import GlobalJobManager
+            _GLOBAL_JOB_MANAGER=GlobalJobManager(
+                runtime_root=ROOT,
+                s3_client_fn=_s3 if _bucket_enabled() else None,
+                s3_bucket=S3_BUCKET if _bucket_enabled() else "",
+                notify_fn=_on_global_job_terminal,
+            )
+            _register_default_job_handlers(_GLOBAL_JOB_MANAGER)
+    return _GLOBAL_JOB_MANAGER
+
+def _register_default_job_handlers(mgr):
+    pass
+
+
 if __name__=="__main__":
     ROOT.mkdir(parents=True,exist_ok=True)
     _ensure_bucket_cors()
     _ai_learning_restore()
+    try:
+        _get_global_job_manager().recover_after_restart()
+    except Exception as _rec_exc:
+        print("GSF_GLOBAL_JOBS_RECOVER_WARN",repr(str(_rec_exc))[:180],flush=True)
     _start_proactive_guardian()
     _start_social_analytics_worker()
     _start_twitch_token_validation()
