@@ -79,8 +79,14 @@ def _candidate(score,start,diagnostics,duration,events,genre,profile,semantic_in
     else: pbonus=.03*event_score+.02*arc+.02*reaction
     g=str(genre or "Auto"); gbonus=0.0
     if g in ("FPS","Battle Royale"): gbonus=.025*motion+.025*event_score+.015*reaction
+    elif g=="Action": gbonus=.028*motion+.022*synergy+.018*event_score
     elif g=="Sports": gbonus=.03*arc+.025*event_score+.015*aftermath
     elif g=="Racing": gbonus=.03*continuity+.025*motion+.015*arc
+    elif g=="Survival": gbonus=.025*arc+.022*reaction+.018*event_score
+    elif g=="Horror": gbonus=.032*reaction+.022*event_score+.015*aftermath
+    elif g=="RPG": gbonus=.026*arc+.022*event_score+.018*synergy
+    elif g=="Platform": gbonus=.028*continuity+.022*motion+.015*reaction
+    elif g=="Narrative": gbonus=.030*arc+.025*reaction+.015*setup
     semantic_conf=_clamp(near.get("semantic_confidence"))
     semantic_excite=_clamp(near.get("semantic_excitement"))
     semantic_signal=max(_clamp(near.get("semantic_score")),.70*semantic_conf+.30*semantic_excite)

@@ -25,44 +25,17 @@ def _clean_series(scan, key):
 
 
 def infer_game_genre(value):
-    """Return a conservative editor/ranking profile from a game/title string."""
-    text=re.sub(r"[^a-z0-9]+"," ",str(value or "").lower()).strip()
-    if not text:
+    """Return a conservative editor/ranking profile from a game/title string (supports 10 genres)."""
+    try:
+        from ai_performance_engine_v2 import infer_game_genre_v2
+        return infer_game_genre_v2(value)
+    except Exception:
+        pass
+    try:
+        from web.ai_performance_engine_v2 import infer_game_genre_v2
+        return infer_game_genre_v2(value)
+    except Exception:
         return "Auto"
-
-    # Specific Battle Royale titles before broad shooter terms.
-    battle=(
-        "fortnite","pubg","playerunknown","warzone","apex legends",
-        "free fire","naraka","realm royale"
-    )
-    if any(x in text for x in battle):
-        return "Battle Royale"
-
-    racing=(
-        "forza","gran turismo","assetto corsa","iracing","need for speed",
-        "f1 20","formula 1","motogp","wrc","dirt rally","the crew",
-        "project cars","racing"
-    )
-    if any(x in text for x in racing):
-        return "Racing"
-
-    sports=(
-        "ea sports fc","fc 24","fc 25","fc 26","fc 27","fifa","efootball",
-        "pes ","nba 2k","madden","nhl ","football","soccer","calcio",
-        "rocket league"
-    )
-    if any(x in text for x in sports):
-        return "Sports"
-
-    fps=(
-        "valorant","counter strike","counterstrike","cs2","call of duty",
-        "overwatch","rainbow six","r6 siege","battlefield","doom",
-        "quake","halo","destiny","the finals","xdefiant","fps"
-    )
-    if any(x in text for x in fps):
-        return "FPS"
-
-    return "Auto"
 
 
 def genre_score_multiplier(genre, profile, features):
@@ -86,10 +59,22 @@ def genre_score_multiplier(genre, profile, features):
 
     if g in {"FPS","Battle Royale"}:
         fit=0.24*motion_burst+0.20*event+0.18*synergy+0.14*reaction+0.12*motion+0.12*sustained
+    elif g=="Action":
+        fit=0.24*sustained+0.22*motion_burst+0.18*synergy+0.16*event+0.12*arc+0.08*motion
     elif g=="Racing":
         fit=0.28*continuity+0.24*sustained+0.22*motion+0.14*synergy+0.12*arc
     elif g=="Sports":
         fit=0.24*arc+0.20*setup+0.20*aftermath+0.16*sustained+0.12*event+0.08*synergy
+    elif g=="Survival":
+        fit=0.22*arc+0.20*reaction+0.18*event+0.16*synergy+0.14*setup+0.10*motion_burst
+    elif g=="Horror":
+        fit=0.30*reaction+0.24*event+0.18*arc+0.16*aftermath+0.12*motion_burst
+    elif g=="RPG":
+        fit=0.24*arc+0.20*event+0.18*synergy+0.16*sustained+0.12*setup+0.10*aftermath
+    elif g=="Platform":
+        fit=0.26*continuity+0.22*sustained+0.18*motion_burst+0.14*reaction+0.12*arc+0.08*event
+    elif g=="Narrative":
+        fit=0.28*arc+0.26*reaction+0.18*setup+0.16*aftermath+0.12*event
     else:
         fit=0.0
 
@@ -361,7 +346,13 @@ def vision_zones_for_genre(genre):
     return {
         "FPS":["CROSSHAIR","KILLFEED","MINIMAP"],
         "Battle Royale":["PLAYER","KILLFEED","MINIMAP"],
+        "Action":["COMBO_METER","BOSS_BAR","PLAYER"],
         "Racing":["VEHICLE","HUD"],
         "Sports":["ACTION","SCOREBOARD"],
+        "Survival":["PLAYER","INVENTORY_BAR","HUD"],
+        "Horror":["CENTER_FOCUS","PLAYER_REACTION"],
+        "RPG":["BOSS_BAR","PLAYER","HUD"],
+        "Platform":["PLAYER","OBSTACLES"],
+        "Narrative":["CHARACTER","SUBTITLES"],
         "Auto":["ACTION","HUD"],
     }.get(g,["ACTION","HUD"])

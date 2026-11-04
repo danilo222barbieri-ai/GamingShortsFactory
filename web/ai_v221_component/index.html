@@ -1181,12 +1181,12 @@ function updateOrb(){const sub=$("orbSub");if(!sub)return;
   sub.textContent=`Motore ${ENGINE_LABEL[state.engine]||"AUTO"} · ${state.duration}s`}
 
 /* ---------- scan: real elapsed time inside the big circle ---------- */
-function setScan(mode){
+function setScan(mode,startedAt=0){
   const view=document.querySelector('[data-view="engines"]');clearInterval(scanTimer);
   view.classList.toggle("failed",mode==="error");failed=mode==="error";
-  if(mode==="off"){view.classList.remove("scanning");setMurals("idle");updateOrb();return}
-  if(mode==="error"){view.classList.remove("scanning");setMurals("error");updateOrb();$("aiStatus").textContent="Tocca il cerchio per riprovare";return}
-  view.classList.add("scanning");setMurals("scanning");scanStarted=Date.now();
+  if(mode==="off"){try{sessionStorage.removeItem("gsf_ai_active_scan_v2")}catch(_e){}view.classList.remove("scanning");setMurals("idle");updateOrb();return}
+  if(mode==="error"){try{sessionStorage.removeItem("gsf_ai_active_scan_v2")}catch(_e){}view.classList.remove("scanning");setMurals("error");updateOrb();$("aiStatus").textContent="Tocca il cerchio per riprovare";return}
+  view.classList.add("scanning");setMurals("scanning");scanStarted=startedAt||Date.now();
   const tick=()=>{const s=(Date.now()-scanStarted)/1000;$("scanTime").textContent=fmt(s);$("aiStatus").textContent="Analizzo gameplay, audio e reazioni… · "+fmt(s)};tick();scanTimer=setInterval(tick,500)}
 
 /* ---------- results bridge: parent state + /ai/results polling ---------- */
@@ -1226,13 +1226,14 @@ async function pollResults(token,deadline){
   }
   if(list&&!j?.whole_source){runInfo={pool:Number(j.pool_size)||0,engine:String(j.engine||"")};if(applyResults(list))return}
   if(Date.now()>=deadline){awaitingResults=false;state.processing=false;setScan("error");render();alive("failure",{job:"ai",message:"I risultati non sono arrivati. Riproviamo."});return}
-  setTimeout(()=>pollResults(token,deadline),1500)}
+  setTimeout(()=>pollResults(token,deadline),650)}
 async function startSearch(){
   if(!state.loaded||state.processing)return;
   awaitingResults=true;state.processing=true;state.previews=[];runInfo={};setScan("on");render();alive("ai.started");
   const token=++pollToken;requestId=Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,9);
   const before=await fetchResults();baseline=signature((before&&Array.isArray(before.previews)?before.previews:[]).filter(d=>d&&d.video));
   if(token!==pollToken)return;
+  try{sessionStorage.setItem("gsf_ai_active_scan_v2",JSON.stringify({requestId,baseline,started:scanStarted,engine:state.engine,duration:state.duration}))}catch(_e){}
   send("create",{engine:state.engine,duration:state.duration,request_id:requestId});
   setTimeout(()=>pollResults(token,Date.now()+RESULTS_TIMEOUT_MS),150)}
 /* after "Cambia short" the app renders the new clip: pick up its video when it is ready */
@@ -1243,7 +1244,7 @@ async function pollReplaced(index,start,deadline){
   const cur=rows()[index];
   if(!cur||Math.abs(Number(cur.start_time??cur.start)-Number(start))>=.4)return;
   if(hit){state.previews=rows().map((x,i)=>i===index?{...x,...hit,_replaced:x._replaced,_original:x._original,alternates:hit.alternates||x.alternates}:x);renderMoments();renderDetail();return}
-  setTimeout(()=>pollReplaced(index,start,deadline),1500)}
+  setTimeout(()=>pollReplaced(index,start,deadline),750)}
 
 /* ---------- autosave: every result, selection and swap is kept as a draft ---------- */
 function autosave(reason){
@@ -1412,6 +1413,7 @@ const draft=store.get();
 if(DEMO)state={...state,loaded:true};
 if(draft&&!DEMO){state={...state,engine:ENGINE_LABEL[draft.engine]?draft.engine:state.engine,duration:draft.duration||state.duration}}
 send("ready");showView("engines");setMurals("idle");render();
+if(!DEMO){try{const active=JSON.parse(sessionStorage.getItem("gsf_ai_active_scan_v2")||"null");if(active&&active.requestId&&Date.now()-Number(active.started||0)<RESULTS_TIMEOUT_MS){requestId=String(active.requestId);baseline=String(active.baseline||"");awaitingResults=true;state.processing=true;setScan("on",Number(active.started)||Date.now());render();const token=++pollToken;setTimeout(()=>pollResults(token,Number(active.started||Date.now())+RESULTS_TIMEOUT_MS),100)}}catch(_e){}}
 })();
 /* GSF Alive 2 on Crea con IA: the search circle breathes with the AI. */
 (()=>{if(/[?&]demo=1/.test(location.search)||!window.GSFAlive)return;window.GSFAlive.mount({page:"ai",voiceAnchor:"#createAi"})})();
