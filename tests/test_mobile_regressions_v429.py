@@ -21,32 +21,37 @@ def _function_source(path: str, name: str) -> str:
     return ast.get_source_segment(text, node) or ""
 
 
-def test_home_mobile_frame_stays_between_global_header_and_gamebar():
+def test_home_mobile_frame_stays_fixed_and_cannot_create_white_ghost_space():
     embed = _source("web/home_v154_embed.py")
+    app = _source("app.py")
 
-    assert "GSF_V429_HOME_SHELL_BOUNDS" in embed
-    assert "top:var(--gsf-shell-content-top,44px) !important;" in embed
-    assert "bottom:var(--gsf-shell-content-bottom,112px) !important;" in embed
-    assert "height:auto !important;" in embed
-    assert "height:100% !important;" in embed
-    assert "min-height:0 !important;" in embed
+    # The modern shell is a full-viewport page, rather than the old V429
+    # header/footer inset wrapper. It must not scroll under GameBar.
+    assert "@media (max-width:760px){" in embed
+    assert "GSF_MOBILE_SURFACE_FIT" in app
+    assert "height:100dvh !important;" in embed
+    assert "position:fixed !important;" in embed
+    assert "inset:0 !important;" in embed
+    assert 'iframe[title*="gsf_home_v154"]' in embed
+    assert "background:#050D16 !important;" in embed
+    assert "z-index:1 !important;" in embed
+    assert "z-index:120 !important;" in embed
 
 
-def test_notifications_use_one_compact_event_surface_on_mobile():
+def test_upload_handoff_bridge_preserves_video_readiness_and_errors():
     bridge = _function_source(
         "web/home_v154_embed.py",
         "_render_v428_uploader_handoff_reset_bridge",
     )
 
-    assert "GSF_V429_COMPACT_NOTIFICATIONS" in bridge
-    assert "width:min(300px,calc(100vw - 28px))!important" in bridge
-    assert "min-height:48px!important" in bridge
-    assert "grid-template-columns:20px minmax(0,1fr) 20px!important" in bridge
-    assert "font-size:14px!important" in bridge
-    assert "font-size:12px!important" in bridge
-
-    # V418 may keep its guidance whispers, but event notifications have one owner.
-    assert "GSF_V429_SINGLE_EVENT_NOTIFICATIONS" in bridge
-    assert "moment.selected" in bridge
-    assert "recovered" in bridge
-    assert "originalAlive.call(notify,state)" in bridge
+    # Never clear the actual video state or swallow an upload error. This bridge
+    # may adjust presentation only, while the Home component owns the lifecycle.
+    assert "GSF_V428_UPLOADER_HANDOFF_RESET" in bridge
+    assert "data-gsf-has-source" in bridge
+    assert "data-gsf-uploader-idle" in bridge
+    assert "if(busy){" in bridge
+    assert "if(event.origin!==P.location.origin" in bridge
+    assert "event.data.state==='done'" in bridge
+    assert "!circle.classList.contains('done')" in bridge
+    assert "!status.classList.contains('error')" in bridge
+    assert "P.addEventListener('message',onMessage)" in bridge
