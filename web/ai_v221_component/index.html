@@ -579,6 +579,8 @@ html,body{background:var(--na-bg)}
     const mode = calmMode(out, now);
     return mode === out.mode ? out : Object.assign({}, out, { mode });
   }
+  // The pure Alive core may be used before the browser UI is mounted.
+  let page = null;
   function nextAction(s) {
     s = s || BASE;
     if (s.error) return "retry";
@@ -653,7 +655,7 @@ html,body{background:var(--na-bg)}
   try { channel = new BroadcastChannel("gsf-alive-v418"); } catch (_e) { channel = null; }
   let state = expire(Object.assign({}, BASE, store.get() || {}), Date.now());
   state.mode = calmMode(state, Date.now());
-  let page = { name: "page", target: null, voiceAnchor: null, dock: "top", orbs: [] };
+  page = { name: "page", target: null, voiceAnchor: null, dock: "top", orbs: [] };
   let mounted = false, lastSpokenSeq = state.seq, lastActivity = Date.now(), hiddenAt = 0;
   const listeners = new Set();
   const TARGET = { home: "home", ai: "ai", short: "social", hub: "hub", editor: "editor" };
