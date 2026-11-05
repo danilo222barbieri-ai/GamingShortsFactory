@@ -13702,7 +13702,7 @@ if video:
                     else:
                         _fast_res = {}
                         try:
-                            if callable(globals().get("_gsf_ai_scan_cached")) or callable(locals().get("_gsf_ai_scan_cached")):
+                            if _gsf_whole_source and (callable(globals().get("_gsf_ai_scan_cached")) or callable(locals().get("_gsf_ai_scan_cached"))):
                                 risultati_ai, ai_diag = run_duration_analysis(
                                     analisi_input, modalita, _gsf_requested_duration,
                                     source_duration=_gsf_analysis_source_duration,

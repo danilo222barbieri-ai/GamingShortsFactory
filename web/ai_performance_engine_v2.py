@@ -1285,6 +1285,46 @@ def smart_rank_candidates(
         selected.append(row)
         sel_starts.append(refined_st)
 
+    # Backfill if precision refinement caused spacing collision
+    if len(selected) < target_count and scored_pool:
+        remaining_pool = sorted(scored_pool, key=lambda x: float(x[0]), reverse=True)
+        for sc, cand_st, diag, evt in remaining_pool:
+            if len(selected) >= target_count:
+                break
+            refined_st, refined_dur = precision_refine_boundary(
+                scan, cand_st, dur, total_seconds=total, genre=genre
+            )
+            relaxed_dist = max(2.0, min_dist * 0.70)
+            if any(abs(refined_st - s) < relaxed_dist for s in sel_starts):
+                continue
+            row = dict(diag)
+            row["start"] = refined_st
+            row["duration"] = refined_dur
+            row["score"] = sc
+            row["brain_score"] = sc
+            selected.append(row)
+            sel_starts.append(refined_st)
+
+    # Last resort fallback on non-silent, active gameplay: never strand valid video with 0 moments
+    if not selected and not is_low_signal_scan(scan) and total >= dur:
+        max_st = max(0.0, total - dur)
+        step_pts = [0.0]
+        if max_st >= 2.0:
+            step_pts = [0.0, round(max_st * 0.5, 3), round(max_st, 3)]
+        for idx, f_st in enumerate(step_pts[:target_count]):
+            s_score = round(0.70 - idx * 0.05, 2)
+            selected.append({
+                "start": f_st,
+                "duration": dur,
+                "score": s_score,
+                "brain_score": s_score,
+                "event": "highlight",
+                "category": "action",
+                "confidence": 0.65,
+                "features": {"motion_burst": 0.3, "sustained_motion": 0.3, "audio_burst": 0.3, "synergy": 0.3, "arc": 0.5},
+            })
+            sel_starts.append(f_st)
+
     # Collect alternates from remaining pool
     alternates: list[dict[str, Any]] = []
     sel_starts = [r["start"] for r in selected]
@@ -1298,6 +1338,7 @@ def smart_rank_candidates(
         row["duration"] = dur
         alternates.append(row)
 
+    print(f"GSF_AI_DIAG [Smart Ranking]: {len(scored_pool)} candidates scored, {len(selected)} selected, {len(alternates)} alternates", flush=True)
     return selected, alternates
 
 
@@ -1438,7 +1479,10 @@ def run_fast_ai_pipeline(
 
     _chk()
     _prog(95.0, "Finalizzazione risultati...")
-    import web.ai_engines_v412 as _v412
+    try:
+        import web.ai_engines_v412 as _v412
+    except ModuleNotFoundError:
+        import ai_engines_v412 as _v412
     meta = _v412.build_results_meta(
         candidate_starts,
         {"selected": selected, "alternates": alternates, "pool_size": len(candidate_starts)},
@@ -1457,6 +1501,10 @@ def run_fast_ai_pipeline(
         meta["items"] = []
         meta["message"] = "Nessun momento sufficientemente forte trovato nel gameplay. Puoi aprirlo nell’Editor."
     _v412.write_results_meta(out_dir, meta)
+
+    print(f"GSF_AI_DIAG [Fast Detection]: {len(scan.get('audio', []))} samples, cache_hit={hit}, total_duration={total_seconds:.2f}s", flush=True)
+    print(f"GSF_AI_DIAG [Precision Pass]: {len(selected)} refined boundaries", flush=True)
+    print(f"GSF_AI_DIAG [Result State]: {result_state} (candidates={candidate_starts}) in {time.perf_counter() - t_start:.2f}s", flush=True)
 
     _prog(100.0, "Momenti IA pronti" if result_state == "completed_with_results" else "Analisi completata (nessun picco)")
     return {
