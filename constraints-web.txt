@@ -47,7 +47,7 @@ pillow==13.0.0
 proto-plus==1.28.4
 protobuf==6.33.6
 pyarrow==25.0.1
-pyasn1==0.6.4
+pyasn1==0.6.5
 pyasn1-modules==0.4.2
 pycparser==3.0
 pydeck==0.9.3
