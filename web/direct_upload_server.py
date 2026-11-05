@@ -7339,6 +7339,67 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,500,{"ok":False,"error":str(exc)[:220]})
             return
 
+        if path=="/chunk/finalize":
+            try:
+                try:
+                    data=_read_json(self,max_bytes=32*1024)
+                except Exception:
+                    data={}
+                data=data if isinstance(data,dict) else {}
+                upload_id=_safe_id(data.get("upload_id") or (parse_qs(urlparse(self.path).query).get("upload_id") or [""])[0])
+                if not sid or not upload_id:
+                    _json(self,400,{"ok":False,"error":"invalid session or upload id"})
+                    return
+                media=ROOT/"sessions"/sid/"media"
+                media.mkdir(parents=True,exist_ok=True)
+                marker=media/".direct_upload_ready.json"
+                if marker.is_file():
+                    try:
+                        mdata=json.loads(marker.read_text(encoding="utf-8"))
+                        mpath=Path(str(mdata.get("path") or ""))
+                        if str(mdata.get("upload_id",""))==upload_id and mpath.is_file():
+                            _json(self,200,{"ok":True,"completed":True,"path":str(mpath),"upload_id":upload_id})
+                            return
+                    except Exception:
+                        pass
+                upload_dir=ROOT/"sessions"/sid/"direct_upload"/upload_id
+                state_path=upload_dir/"state.json"
+                data_path=upload_dir/"upload.tmp"
+                if not (state_path.is_file() and data_path.is_file()):
+                    _json(self,404,{"ok":False,"error":"upload tmp not found"})
+                    return
+                lock=_state_lock(sid,upload_id)
+                with lock:
+                    st=json.loads(state_path.read_text(encoding="utf-8"))
+                    st_count=int(st.get("count",0) or 0)
+                    received=set(st.get("received") or [])
+                    if st_count<=0 or len(received)!=st_count:
+                        _json(self,409,{"ok":False,"error":f"incomplete chunks ({len(received)}/{st_count})","received":sorted(received),"count":st_count})
+                        return
+                    safe_stem=st.get("stem") or "source"
+                    ext=st.get("ext") or ".mp4"
+                    original_name=st.get("name") or "Gameplay"
+                    total=int(st.get("total",0) or data_path.stat().st_size)
+                    final=media/f"source_direct_{safe_stem}_{upload_id}{ext}"
+                    _security_validate_media(data_path,ext)
+                    os.replace(data_path,final)
+                    _write_json_atomic(marker,{
+                        "path":str(final),
+                        "name":original_name,
+                        "size":total,
+                        "upload_id":upload_id,
+                        "completed_at":time.time(),
+                        "storage":"direct_fallback",
+                    })
+                    state_path.unlink(missing_ok=True)
+                    try: upload_dir.rmdir()
+                    except OSError: pass
+                    _auto_save_uploaded_source_to_projects(sid,upload_id,str(final),original_name,total,"","")
+                _json(self,200,{"ok":True,"completed":True,"path":str(final),"upload_id":upload_id})
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":str(exc)[:200]})
+            return
+
         if path=="/projects/save-uploaded-source":
             try:
                 try:
@@ -7356,6 +7417,39 @@ class Handler(BaseHTTPRequestHandler):
                 original_name=str(meta.get("name") or data.get("name") or "Gameplay")
                 upload_id=_safe_id(meta.get("upload_id") or data.get("upload_id") or "current")
                 total=int(meta.get("size") or data.get("size") or 0)
+                # Resilient recovery: if .direct_upload_ready.json was not yet written,
+                # check if upload_dir has completed chunks and finalize now
+                if not source_path and upload_id:
+                    upload_dir=ROOT/"sessions"/sid/"direct_upload"/upload_id
+                    state_path=upload_dir/"state.json"
+                    data_path=upload_dir/"upload.tmp"
+                    if state_path.is_file() and data_path.is_file():
+                        try:
+                            st=json.loads(state_path.read_text(encoding="utf-8"))
+                            st_count=int(st.get("count",0) or 0)
+                            received=set(st.get("received") or [])
+                            if st_count>0 and len(received)==st_count:
+                                media=ROOT/"sessions"/sid/"media"
+                                media.mkdir(parents=True,exist_ok=True)
+                                safe_stem=st.get("stem") or "source"
+                                ext=st.get("ext") or ".mp4"
+                                final=media/f"source_direct_{safe_stem}_{upload_id}{ext}"
+                                _security_validate_media(data_path,ext)
+                                os.replace(data_path,final)
+                                _write_json_atomic(marker,{
+                                    "path":str(final),
+                                    "name":original_name,
+                                    "size":total or data_path.stat().st_size,
+                                    "upload_id":upload_id,
+                                    "completed_at":time.time(),
+                                    "storage":"direct_fallback",
+                                })
+                                source_path=str(final)
+                                state_path.unlink(missing_ok=True)
+                                try: upload_dir.rmdir()
+                                except OSError: pass
+                        except Exception as _rec_exc:
+                            print("GSF_SAVE_RECOVERY_WARN",type(_rec_exc).__name__,flush=True)
                 if not source_path:
                     _json(self,404,{"ok":False,"error":"Nessun video caricato trovato per il salvataggio nei Progetti."})
                     return
