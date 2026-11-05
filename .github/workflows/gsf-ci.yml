@@ -83,7 +83,7 @@ jobs:
       - name: Core, state, Alive, Game Editor and coordination tests
         run: |
           set -e
-          python -m pytest -q tests
+          PYTHONPATH=web python -m pytest -q tests
           python -m unittest discover -s tools -p 'test_gsf_*.py'
 
       - name: V410 hardening is canonical (patches must be a no-op)
