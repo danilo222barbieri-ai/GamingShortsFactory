@@ -3625,7 +3625,7 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
      uploadIcon.innerHTML=`<svg viewBox="0 0 64 64" aria-hidden="true" class="gsfLoadedCheckSvg"><path class="gsfCheckGhost" d="M12 35c4.5 3.7 8.1 7.2 12.6 11.1C33 35.2 42.6 24.2 52.4 16"/><path class="gsfCheckMain" d="M13.2 34.2c4.1 3.5 7.8 7 11.7 10.5C33.4 34 43 23.4 52 16.2"/></svg>`;
      uploadLabel.innerHTML="Video caricato";uploadHint.textContent="";pick.disabled=false;
      clearTimeout(circleResetTimer);
-     circleResetTimer=window.setTimeout(restoreEmptyCircleForNewVideo,650);
+     // Never erase the completed confirmation after 650 ms.
    }
    else{
      restoreEmptyCircleForNewVideo();
