@@ -354,14 +354,15 @@ def build_alive_status_css() -> str:
     return """
 <style id="gsf-alive-status-style">
 .gsf-alive-status {
-  position:fixed; left:50%; bottom:78px; transform:translateX(-50%); z-index:9999;
+  position:fixed; left:50%; bottom:calc(var(--gsf-shell-gamebar-h, 66px) + max(16px, env(safe-area-inset-bottom)) + 16px);
+  transform:translateX(-50%); z-index:9999;
   pointer-events:none;
   display:flex; align-items:center; justify-content:center; gap:.5rem;
   width:max-content; max-width:min(92vw, 560px); margin:0;
   padding:.52rem .78rem; border-radius:999px;
-  background:rgba(255,255,255,.72); border:1px solid rgba(24,87,130,.10);
-  box-shadow:0 8px 24px rgba(16,40,61,.06); backdrop-filter:blur(14px);
-  color:#294761; font-size:.84rem; line-height:1.2;
+  background:rgba(16,40,61,.94); border:1px solid rgba(121,210,255,.25);
+  box-shadow:0 8px 24px rgba(0,0,0,.4); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  color:#EAF6FF; font-size:.84rem; line-height:1.2;
 }
 .gsf-alive-status--compact { padding:.42rem .68rem; }
 .gsf-alive-dot { width:.48rem; height:.48rem; border-radius:50%; background:#56cfa0; flex:none; }

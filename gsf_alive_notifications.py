@@ -96,12 +96,14 @@ def build_alive_notification_css() -> str:
     return """
 <style id="gsf-alive-notification-style">
 .gsf-alive-notification {
-  position:fixed; left:50%; bottom:84px; transform:translateX(-50%) rotate(-1deg);
+  position:fixed; left:50%; bottom:84px;
+  bottom:calc(var(--gsf-shell-gamebar-h, 66px) + max(16px, env(safe-area-inset-bottom)) + 16px);
+  transform:translateX(-50%) rotate(-1deg);
   z-index:2147483640; pointer-events:none; width:max-content; max-width:min(88vw, 520px);
   display:flex; align-items:center; gap:.52rem; padding:.58rem .82rem;
-  border-radius:16px; border:1px solid rgba(24,87,130,.10);
-  background:rgba(255,255,255,.84); color:#294761;
-  box-shadow:0 10px 28px rgba(16,40,61,.09); backdrop-filter:blur(16px);
+  border-radius:16px; border:1px solid rgba(121,210,255,.25);
+  background:rgba(16,40,61,.94); color:#EAF6FF;
+  box-shadow:0 10px 28px rgba(0,0,0,.45); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
   font-size:.86rem; line-height:1.2; font-weight:650;
   animation:gsfAliveToast 4.4s cubic-bezier(.22,.8,.22,1) forwards;
 }
