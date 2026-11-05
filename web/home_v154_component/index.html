@@ -3616,7 +3616,9 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    loaded=!!on;gsfAlive("sync",{video_ready:loaded});
    setMuralState(loaded?"ready":"idle"); view.classList.toggle("loadedView",loaded);
    circle.setAttribute("data-gsf-has-source",loaded?"true":"false");
-   if(loaded&&fromUploadComplete){
+   // An acknowledged upload must remain visibly ready across Streamlit rerenders.
+   // The circle can still be tapped to replace the video after confirmation.
+   if(loaded){
      circle.classList.add("loaded","done");
      rings.classList.remove("uploading");rings.classList.add("uploaded");
      uploadIcon.classList.add("loadedCheck");
