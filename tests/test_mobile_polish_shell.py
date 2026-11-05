@@ -47,7 +47,11 @@ def test_page_canvas_starts_with_the_header_colour():
     for name, path in surfaces.items():
         text = path.read_text(encoding="utf-8")
         assert "GSF_HEADER_CANVAS" in text, name
-        assert re.search(r"linear-gradient\(180deg,#FAFDFF 0%", text, re.I), name
+        if name == "hub":
+            # Hub deliberately inherits the parent's canvas to avoid white flashes.
+            assert re.search(r"background:\s*transparent;", text, re.I), name
+        else:
+            assert re.search(r"linear-gradient\(180deg,#FAFDFF 0%", text, re.I), name
     assert "linear-gradient(180deg,#FAFDFF 0%" in APP
 
 
