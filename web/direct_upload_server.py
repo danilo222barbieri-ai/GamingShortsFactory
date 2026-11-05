@@ -2249,6 +2249,10 @@ def _draft_delete(sid,draft_id):
     if not sid or not draft_id:
         return False
     owner=_storage_owner_id(sid)
+    # Do not report success for a missing or inaccessible draft. A valid CSRF
+    # token authorizes the action, not the existence of a foreign draft.
+    if not _draft_load(sid,draft_id) and not (owner and owner!=sid and _draft_load(owner,draft_id)):
+        return False
     for target_sid in set(filter(None, (sid, owner))):
         root=_draft_dir(target_sid)
         try:
