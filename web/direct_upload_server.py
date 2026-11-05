@@ -6510,6 +6510,9 @@ class Handler(BaseHTTPRequestHandler):
             youtube_state=_youtube_user_load(sid)
             tiktok_state=_tiktok_user_load(sid)
             instagram_state=_instagram_user_load(sid)
+            # The Creator Hub status endpoint is readable without OAuth storage.
+            # Never load social secrets when the bucket is absent (e.g. CI gate).
+            facebook_connection=_social_connection_load(sid,"facebook") if _bucket_enabled() else {}
             drafts=[]
             for row in all_drafts[:max(1,int(limits.get("drafts") or FREE_DRAFT_LIMIT))]:
                 if not isinstance(row,dict):
@@ -6574,11 +6577,11 @@ class Handler(BaseHTTPRequestHandler):
                 } for row in all_shorts[:max(1,int(limits.get("shorts") or FREE_SHORT_LIMIT))]],
                 "project":project,
                 "facebook_page":{
-                    "connected":bool((_social_connection_load(sid,"facebook") or {}).get("selected_page_id")),
-                    "id":str((_social_connection_load(sid,"facebook") or {}).get("selected_page_id") or ""),
-                    "name":str((_social_connection_load(sid,"facebook") or {}).get("selected_page_name") or ""),
-                    "has_pages":bool((_social_connection_load(sid,"facebook") or {}).get("pages")),
-                    "page_count":len((_social_connection_load(sid,"facebook") or {}).get("pages") or []),
+                    "connected":bool(facebook_connection.get("selected_page_id")),
+                    "id":str(facebook_connection.get("selected_page_id") or ""),
+                    "name":str(facebook_connection.get("selected_page_name") or ""),
+                    "has_pages":bool(facebook_connection.get("pages")),
+                    "page_count":len(facebook_connection.get("pages") or []),
                 },
             })
             return
