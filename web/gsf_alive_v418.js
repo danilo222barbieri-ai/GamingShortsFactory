@@ -159,6 +159,8 @@
     const mode = calmMode(out, now);
     return mode === out.mode ? out : Object.assign({}, out, { mode });
   }
+  // The pure Alive core may be used before the browser UI is mounted.
+  let page = null;
   function nextAction(s) {
     s = s || BASE;
     if (s.error) return "retry";
