@@ -1299,7 +1299,18 @@ def _redirect(handler,url):
     handler.end_headers()
 
 def _social_sid(handler):
-    return _safe_id(handler.headers.get("X-GSF-Session-ID"))
+    sid = _safe_id(handler.headers.get("X-GSF-Session-ID"))
+    if sid:
+        return sid
+    cookie = str(handler.headers.get("Cookie") or "")
+    if "gsf_sid=" in cookie:
+        for part in cookie.split(";"):
+            part = part.strip()
+            if part.startswith("gsf_sid="):
+                val = _safe_id(part.split("=", 1)[1])
+                if val:
+                    return val
+    return ""
 
 
 # GSF_SECURITY_V410 — application-layer hardening.
@@ -6637,7 +6648,7 @@ class Handler(BaseHTTPRequestHandler):
             })
             return
         if clean=="/bucket/status":
-            sid=_safe_id(self.headers.get("X-GSF-Session-ID"))
+            sid=_safe_id(self.headers.get("X-GSF-Session-ID")) or _social_sid(self)
             upload_id=_safe_id((parse_qs(path.query).get("upload_id") or [""])[0])
             if not sid or not upload_id:
                 _json(self,400,{"ok":False,"error":"invalid status id"})
@@ -7712,7 +7723,7 @@ class Handler(BaseHTTPRequestHandler):
             _json(self,404,{"ok":False,"error":"not found"})
             return
 
-        sid=_safe_id(self.headers.get("X-GSF-Session-ID"))
+        sid=_safe_id(self.headers.get("X-GSF-Session-ID")) or _social_sid(self)
         upload_id=_safe_id(self.headers.get("X-GSF-Upload-ID"))
         if not sid or not upload_id:
             _json(self,400,{"ok":False,"error":"invalid session or upload id"})
