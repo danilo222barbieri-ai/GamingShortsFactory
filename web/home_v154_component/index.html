@@ -3930,26 +3930,28 @@ circle.addEventListener("click", async (ev) => {
 
 pick.addEventListener("change",async()=>{
   const file=pick.files&&pick.files[0];if(!file||uploadBusy)return;
-  const ext=(file.name.split(".").pop()||"").toLowerCase();if(!["mp4","mov","mkv"].includes(ext)){status.className="status show error";statusText.textContent="Formato non supportato";pick.value="";replacePending=false;return;}
-
-  if(loaded&&replacePending){
-    try{
-      await saveCurrentBeforeReplacement();
-      parentToast("Bozza salvata","","success");
-    }catch(e){
-      pick.value="";
-      replacePending=false;
-      if(e&&e.code==="storage_limit"){
-        parentToast("Bozze piene","Hai raggiunto il limite di "+String(e.limit||5)+" bozze. Elimina una bozza dal Creator Hub prima di caricare un nuovo video.","error");
-      }else{
-        parentToast("Nuovo video bloccato",String((e&&e.message)||"Non posso verificare la bozza. Il lavoro corrente resta intatto."),"error");
-      }
-      return;
-    }
-  }else if(loaded){
-    try{await saveCurrentBeforeReplacement();}catch(_e){}
+  const ext=(file.name.split(".").pop()||"").toLowerCase();
+  const isVideoExt=["mp4","mov","mkv","webm","m4v","qt"].includes(ext);
+  const isVideoMime=Boolean(file.type&&file.type.startsWith("video/"));
+  if(!isVideoExt&&!isVideoMime){
+    console.warn("[GSF_UPLOAD_DIAG] invalid_format", {ext, type:file.type});
+    status.className="status show error";
+    statusText.textContent="Formato non supportato";
+    pick.value="";
+    replacePending=false;
+    return;
   }
-  replacePending=false;
+
+  // 1. Immediate visual feedback: mark busy, show progress bar and 1% state instantly
+  clearTimeout(circleResetTimer);
+  uploadBusy=true;
+  gsfAlive("upload.started");
+  setMuralState("uploading");
+  circle.classList.add("busy");
+  circle.removeAttribute("data-gsf-uploader-idle");
+  rings.classList.remove("uploaded");
+  rings.classList.add("uploading");
+  closeReplaceToast();
 
   const measureDuration=(f)=>new Promise((resolve)=>{
     try{
@@ -3971,9 +3973,8 @@ pick.addEventListener("change",async()=>{
   });
   const durationPromise=measureDuration(file);
 
-  clearTimeout(circleResetTimer);
-  uploadBusy=true;gsfAlive("upload.started");setMuralState("uploading");circle.classList.add("busy");circle.removeAttribute("data-gsf-uploader-idle");rings.classList.remove("uploaded");rings.classList.add("uploading");try{window.parent.postMessage({type:"gsf-upload",state:"running",name:file.name},location.origin)}catch(_e){};
-  
+  try{window.parent.postMessage({type:"gsf-upload",state:"running",name:file.name},location.origin)}catch(_e){}
+
   const uploadId = fileFingerprint(file);
   activeUploadSession = {
     id: uploadId,
@@ -3985,15 +3986,48 @@ pick.addEventListener("change",async()=>{
   };
 
   setUploadState(UPLOAD_ST.UPLOADING, {pct: 1});
+  console.log("[GSF_UPLOAD_DIAG] upload_started", {size: file.size, hasSession: Boolean(uploadId)});
+
+  // 2. Draft preservation (non-blocking for new video upload)
+  if(loaded){
+    try{
+      await Promise.race([
+        saveCurrentBeforeReplacement(),
+        new Promise((_, reject)=>setTimeout(()=>reject(new Error("draft_save_timeout")), 2000))
+      ]);
+      if(replacePending)parentToast("Bozza salvata","","success");
+    }catch(e){
+      if(e&&e.code==="storage_limit"){
+        pick.value="";
+        replacePending=false;
+        uploadBusy=false;
+        circle.classList.remove("busy");
+        rings.classList.remove("uploading");
+        setUploadState(UPLOAD_ST.FAILED, {message: "Bozze piene"});
+        parentToast("Bozze piene","Hai raggiunto il limite di "+String(e.limit||5)+" bozze. Elimina una bozza dal Creator Hub prima di caricare un nuovo video.","error");
+        return;
+      }
+      console.warn("[GSF_UPLOAD_DIAG] previous_draft_save_skipped", (e&&e.message)||e);
+    }
+  }
+  replacePending=false;
 
   try{
     const caps=await capabilities();
-    if(caps&&caps.bucket===true)await bucketUpload(file,caps);
-    else await fallbackUpload(file);
+    if(caps&&caps.bucket===true){
+      console.log("[GSF_UPLOAD_DIAG] starting_bucket_upload");
+      await bucketUpload(file,caps);
+    } else {
+      console.log("[GSF_UPLOAD_DIAG] starting_fallback_upload");
+      await fallbackUpload(file);
+    }
 
+    console.log("[GSF_UPLOAD_DIAG] starting_project_finalization");
     await executeProjectFinalization(file, uploadId, durationPromise);
+    console.log("[GSF_UPLOAD_DIAG] upload_and_project_complete");
   }
   catch(e){
+    console.error("[GSF_UPLOAD_DIAG] upload_error", (e&&e.message)||e);
     if(activeUploadSession && activeUploadSession.transferDone){
       setUploadState(UPLOAD_ST.RECOVERABLE_ERROR, {message: e.message || "Finalizzazione interrotta"});
       parentToast("Caricamento recuperabile", "I dati sono al sicuro. Tocca per finalizzare il video.", "warning");
