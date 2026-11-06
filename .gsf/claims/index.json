@@ -1695,6 +1695,33 @@
       ],
       "scope": "Closed beta V435 hardening: current Home notification regression tests and measured isolated upload runtime validation; no redesign or deploy until blockers closed",
       "state": "abandoned"
+    },
+    {
+      "branch": "chat/v442-stability-and-ux-recovery-upload-finalizati-cd24bb",
+      "created_at": "2026-11-06T11:32:35+01:00",
+      "id": "v442-stability-and-ux-recovery-upload-finalizati-cd24bb",
+      "owner": "chat/v442-stability-and-ux-recovery-upload-finalizati-cd24bb",
+      "paths": [
+        "PROJECT_STATUS.md",
+        "app.py",
+        "tests/test_gsf_pulse_v439.py",
+        "tests/test_resumable_upload_and_home_blocco2.py",
+        "tests/test_social_library_v441.py",
+        "tests/test_upload_completion_v440.py",
+        "tests/test_v442_*.py",
+        "web/ai_v221_component/index.html",
+        "web/creator_hub_v156_component/index.html",
+        "web/direct_upload_server.py",
+        "web/gsf_alive_v418.js",
+        "web/gsf_bucket_bridge.py",
+        "web/gsf_social_oauth_v421.py",
+        "web/home_v154_component/index.html",
+        "web/home_v154_embed.py",
+        "web/nginx.conf.template",
+        "web/share_v156_component/index.html"
+      ],
+      "scope": "V442 stability and UX recovery: upload finalization/server duration/marker fencing, Twitch and YouTube content states, authoritative social state for Crea Short, unified GSF Pulse regression",
+      "state": "active"
     }
   ],
   "version": 1
