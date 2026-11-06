@@ -125,17 +125,38 @@ def test_home_component_resumable_upload_and_clean_circle_contracts():
     # 2. Real transfer progress & confirmed completion «Video caricato»
     assert "function updateUploadProgressUI(pct)" in home_html
     assert 'statusText.textContent = "Video caricato";' in home_html
-    assert 'if(loaded){' in home_html
+    assert 'if(loaded&&uploadAcknowledgement){' in home_html
     assert 'circleResetTimer=window.setTimeout(restoreEmptyCircleForNewVideo,650);' not in home_html
     assert 'uploadLabel.innerHTML="Video caricato"' in home_html
 
     # 3. Auto-save to Projects
     assert 'fetch("/direct-upload/projects/save-uploaded-source"' in home_html
 
-    # 4. Restore empty circle with «Carica un nuovo video»
+    # 4. Restore the original uploader prompt after returning from AI
     assert "function restoreEmptyCircleForNewVideo()" in home_html
-    assert 'uploadLabel.innerHTML=loaded?"Carica un<br>nuovo video":"CARICA<br>IL TUO GAMEPLAY"' in home_html
-    assert "label.innerHTML='Carica un<br>nuovo video'" in home_embed
+    assert 'uploadLabel.innerHTML="CARICA<br>IL TUO GAMEPLAY"' in home_html
+    assert "label.innerHTML='CARICA<br>IL TUO GAMEPLAY'" in home_embed
 
     # 5. Never restore old video preview (.naPreview) when returning to Home
     assert "const showPreview=()=>{hidePreview();};" in home_html
+
+
+def test_upload_acknowledgement_dismisses_on_navigation_but_keeps_source():
+    home = (ROOT / "web/home_v154_component/index.html").read_text(encoding="utf-8")
+
+    # Show success when the server confirms the new upload, keep it through
+    # rerenders, then clear it when leaving Home for Momenti IA or Editor.
+    assert 'const UPLOAD_ACK_KEY="gsf_home_upload_ack_v437"' in home
+    assert 'if(fromUploadComplete)setUploadAcknowledgement(true);' in home
+    assert 'if(uploadBusy&&!fromUploadComplete){fitViewport();return;}' in home
+    assert 'if(target!=="home")setUploadAcknowledgement(false);' in home
+    assert 'window.parent.addEventListener("gsf:surfacechange",onHomeSurfaceChange' in home
+    assert 'else if(!uploadBusy&&!uploadAcknowledgement)' in home
+    assert 'restoreEmptyCircleForNewVideo();' in home
+
+    # UI reset does not clear the saved source/IA/Editor readiness; it must
+    # also retain the safe-replacement confirmation for a second video.
+    assert 'circle.setAttribute("data-gsf-has-source",loaded?"true":"false");' in home
+    assert 'view.classList.toggle("loadedView",loaded);' in home
+    assert 'if(!loaded||uploadBusy||currentUploadState===UPLOAD_ST.RECOVERABLE_ERROR)return;' in home
+    assert 'openReplaceToast();' in home
