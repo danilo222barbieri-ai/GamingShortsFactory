@@ -3911,14 +3911,15 @@ async function bucketUpload(file,caps){
   
   setUploadState(UPLOAD_ST.TRANSFER_COMPLETE);
   setUploadState(UPLOAD_ST.FINALIZING);
-  if(activeUploadSession)activeUploadSession.transferDone=true;
+  // A completed transfer is not yet a finalized object. Retry from the
+  // selected file if the multipart COMPLETE request fails.
 
   const dr=await fetch("/direct-upload/bucket/complete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({upload_id:init.upload_id,multipart_id:init.multipart_id,key:init.key,analysis_key:init.analysis_key,name:file.name,size:file.size,parts:parts.filter(Boolean)})});
   const done=await dr.json();if(!dr.ok||!done.ok)throw new Error(done.error||"Finalizzazione fallita");
   
   setUploadState(UPLOAD_ST.VERIFYING);
   const deadline=Date.now()+300000;
-  while(Date.now()<deadline){const sr=await fetch("/direct-upload/bucket/status?upload_id="+encodeURIComponent(init.upload_id),{cache:"no-store"});const st=await sr.json();if(sr.ok&&st.ready)return true;if(!sr.ok&&st.error)throw new Error(st.error);await new Promise(r=>setTimeout(r,500));}
+  while(Date.now()<deadline){const sr=await fetch("/direct-upload/bucket/status?upload_id="+encodeURIComponent(init.upload_id),{cache:"no-store"});const st=await sr.json();if(sr.ok&&st.ready){if(activeUploadSession)activeUploadSession.transferDone=true;return init.upload_id};if(!sr.ok&&st.error)throw new Error(st.error);await new Promise(r=>setTimeout(r,500));}
   throw new Error("Preparazione troppo lunga");
 }
 function chunkPut(blob,m,onProgress){return new Promise((resolve,reject)=>{const x=new XMLHttpRequest();x.open("PUT","/direct-upload/chunk",true);x.setRequestHeader("Content-Type","application/octet-stream");x.setRequestHeader("X-GSF-Upload-ID",m.id);x.setRequestHeader("X-GSF-Filename",encodeURIComponent(m.name));x.setRequestHeader("X-GSF-File-Size",String(m.size));x.setRequestHeader("X-GSF-Chunk-Start",String(m.start));x.setRequestHeader("X-GSF-Chunk-Index",String(m.index));x.setRequestHeader("X-GSF-Chunk-Count",String(m.count));x.upload.onprogress=e=>{if(e.lengthComputable)onProgress(e.loaded)};x.onload=()=>x.status>=200&&x.status<300?resolve():reject(new Error("HTTP "+x.status));x.onerror=()=>reject(new Error("Errore rete"));x.timeout=120000;x.ontimeout=()=>reject(new Error("Timeout"));x.send(blob);});}
@@ -3940,7 +3941,8 @@ async function fallbackUpload(file){
       const st=await sr.json();
       if(st&&st.ok&&st.completed){
         setUploadState(UPLOAD_ST.VERIFYING);
-        return true;
+        if(activeUploadSession)activeUploadSession.transferDone=true;
+        return id;
       }
       if(st&&st.ok&&Array.isArray(st.received))receivedSet=new Set(st.received.map(Number));
     }
@@ -3963,7 +3965,7 @@ async function fallbackUpload(file){
   
   setUploadState(UPLOAD_ST.TRANSFER_COMPLETE);
   setUploadState(UPLOAD_ST.FINALIZING);
-  if(activeUploadSession)activeUploadSession.transferDone=true;
+  // Do not mark the source recoverable before chunk finalization succeeds.
 
   // Explicit finalization verification with retry
   const finRes = await fetch("/direct-upload/chunk/finalize", {
@@ -3976,7 +3978,8 @@ async function fallbackUpload(file){
     throw new Error(j.error || "Finalizzazione chunk non riuscita");
   }
   setUploadState(UPLOAD_ST.VERIFYING);
-  return true;
+  if(activeUploadSession)activeUploadSession.transferDone=true;
+  return id;
 }
 
 async function executeProjectFinalization(file, uploadId, durationPromise) {
@@ -3994,17 +3997,30 @@ async function executeProjectFinalization(file, uploadId, durationPromise) {
   if (!saveJson.ok) {
     throw new Error(saveJson.error || "Salvataggio nei Progetti non confermato");
   }
+  // GSF_V442_ACK_FENCE: a 200 response for the previous marker is not an ACK
+  // for this upload. The server must echo the requested upload id and size.
+  if(String(saveJson.upload_id||"")!==String(uploadId) ||
+     Number(saveJson.size||0)!==Number(file.size)){
+    throw new Error("La conferma del server non corrisponde al nuovo video.");
+  }
 
   setUploadState(UPLOAD_ST.COMPLETED);
 
-  // Metadata reading is advisory: once the project is committed it must not
-  // block or roll back success. Some mobile codecs never fire loadedmetadata.
-  let actualSec = await Promise.race([
-    Promise.resolve(durationPromise).catch(()=>null),
-    new Promise(resolve=>setTimeout(()=>resolve(null),3000))
-  ]);
-  if (!(Number(actualSec)>0) && Number(duration)>0) actualSec=Number(duration);
-  const isUnder15 = actualSec !== null && actualSec < 15;
+  // Duration from the verified server media probe is authoritative. Never
+  // use the 15/30/60-second UI setting as the original video's duration.
+  let actualSec=Number(saveJson.duration);
+  if(!Number.isFinite(actualSec)||actualSec<=0){
+    actualSec=await Promise.race([
+      Promise.resolve(durationPromise).then(v=>Number(v)||0).catch(()=>0),
+      new Promise(resolve=>setTimeout(()=>resolve(0),2500))
+    ]);
+  }
+  if(!Number.isFinite(actualSec)||actualSec<=0){
+    statusText.textContent="Video caricato · durata non disponibile";
+    value({event:"upload_complete",duration:0,engine});
+    return;
+  }
+  const isUnder15=actualSec<15;
 
   gsfAlive("upload.completed", {duration: actualSec});
   try {
@@ -4018,14 +4034,14 @@ async function executeProjectFinalization(file, uploadId, durationPromise) {
 
   if (isUnder15) {
     const sStr = Math.round(actualSec * 10) / 10;
-    parentToast("Gameplay pronto (" + sStr + "s)", "Video < 15s · Apertura Game Editor...", "success");
+    // Success is already visible in the uploader circle (Pulse stays quiet).
     setEngine("manual");
     gsfAlive("editor.opened", {duration: actualSec, reason: "video_under_15s"});
     shellNav("editor", {duration: actualSec, engine: "manual"});
     value({event: "open_editor", duration: actualSec, engine: "manual"});
   } else if (actualSec !== null && actualSec >= 15) {
     const sStr = Math.round(actualSec);
-    parentToast("Gameplay pronto (" + sStr + "s)", "Durata >= 15s · Cerco momenti con IA...", "success");
+    // Do not duplicate the successful upload with a second toast.
     shellNav("ai", {duration: actualSec, engine: engine || "auto", auto_search: true});
     // The AI iframe sends the ONE create_ai request after its ready handshake.
     // This event only refreshes Streamlit's source state after finalization.
@@ -4149,16 +4165,17 @@ pick.addEventListener("change",async()=>{
 
   try{
     const caps=await capabilities();
+    let verifiedUploadId;
     if(caps&&caps.bucket===true){
       console.log("[GSF_UPLOAD_DIAG] starting_bucket_upload");
-      await bucketUpload(file,caps);
+      verifiedUploadId=await bucketUpload(file,caps);
     } else {
       console.log("[GSF_UPLOAD_DIAG] starting_fallback_upload");
-      await fallbackUpload(file);
+      verifiedUploadId=await fallbackUpload(file);
     }
 
     console.log("[GSF_UPLOAD_DIAG] starting_project_finalization");
-    await executeProjectFinalization(file, uploadId, durationPromise);
+    await executeProjectFinalization(file, verifiedUploadId, durationPromise);
     console.log("[GSF_UPLOAD_DIAG] upload_and_project_complete");
   }
   catch(e){
