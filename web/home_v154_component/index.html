@@ -3386,7 +3386,7 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
  const uploadLabel=document.getElementById("uploadLabel"),uploadHint=document.getElementById("uploadHint");
  const status=document.getElementById("status"),statusText=document.getElementById("statusText"),bar=document.getElementById("bar");
  const cta=document.getElementById("primaryCta");
- let loaded=false,duration=15,engine="",uploadBusy=false,previewData=[],replacePending=false;
+ let loaded=false,duration=15,engine="",uploadBusy=false,previewData=[],replacePending=false,replacementSetupBusy=false;
  // GSF_V437_UPLOAD_ACK: success is a temporary visual acknowledgement, not source state.
  // Keep it through Home rerenders, but dismiss it on navigation to another surface.
  const UPLOAD_ACK_KEY="gsf_home_upload_ack_v437";
@@ -3726,7 +3726,31 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
      err.limit=(j&&j.limit)||0;
      throw err;
    }
-   return j;
+   return {...j,csrf_token:header.csrf_token||""};
+ }
+ async function prepareCleanSourceAfterDraft(saved,uploadId){
+   const response=await fetch("/workflow/prepare-new-upload",{
+     method:"POST",
+     credentials:"same-origin",
+     headers:{"Content-Type":"application/json","X-GSF-CSRF":saved.csrf_token},
+     body:JSON.stringify({draft_id:saved.id,upload_id:uploadId})
+   });
+   const body=await response.json().catch(()=>({}));
+   if(!response.ok||!body.ok||!body.reset)throw new Error(body.error||"Impossibile iniziare un nuovo progetto.");
+   return body;
+ }
+ function resetOldAiBrowserState(nextUploadId){
+   // These are current-project references, not the persisted Creator Hub drafts.
+   try{sessionStorage.removeItem("gsf_ai_active_scan_v2")}catch(_e){}
+   try{sessionStorage.removeItem("gsf_ai_selected_moment_v288")}catch(_e){}
+   try{localStorage.removeItem("gsf_ai_draft_v412")}catch(_e){}
+   try{
+     window.parent.postMessage({type:"GSF_NEW_VIDEO_RESET",upload_id:nextUploadId},location.origin);
+     window.parent.document.querySelectorAll("#gsf-ai-overlay-v221 iframe").forEach(frame=>{
+       try{frame.contentWindow?.postMessage({type:"GSF_AI_RESET_SOURCE",upload_id:nextUploadId},location.origin)}catch(_e){}
+     });
+   }catch(_e){}
+   gsfAlive("video.cleared");
  }
 
  const replaceToast=document.getElementById("replaceToast");
@@ -4017,7 +4041,7 @@ circle.addEventListener("click", async (ev) => {
 }, true);
 
 pick.addEventListener("change",async()=>{
-  const file=pick.files&&pick.files[0];if(!file||uploadBusy)return;
+  const file=pick.files&&pick.files[0];if(!file||uploadBusy||replacementSetupBusy)return;
   const ext=(file.name.split(".").pop()||"").toLowerCase();
   const isVideoExt=["mp4","mov","mkv","webm","m4v","qt"].includes(ext);
   const isVideoMime=Boolean(file.type&&file.type.startsWith("video/"));
@@ -4030,7 +4054,34 @@ pick.addEventListener("change",async()=>{
     return;
   }
 
-  // 1. Immediate visual feedback: mark busy, show progress bar and 1% state instantly
+  // A second video is a new project. The previous draft must be recoverable
+  // BEFORE clearing AI/Editor state or transferring a single byte of the new file.
+  if(loaded){
+    replacementSetupBusy=true;
+    status.className="status show saving";
+    statusText.textContent="Salvo il lavoro precedente nelle Bozze…";
+    uploadLabel.innerHTML="SALVATAGGIO<br>BOZZA";
+    try{
+      const draft=await saveCurrentBeforeReplacement();
+      await prepareCleanSourceAfterDraft(draft,fileFingerprint(file));
+      resetOldAiBrowserState(fileFingerprint(file));
+      parentToast("Lavoro precedente salvato","Nuovo progetto pronto","success");
+    }catch(error){
+      const message=String(error?.message||"Bozza non verificata. Il vecchio video resta disponibile.");
+      console.warn("[GSF_NEW_SOURCE_ABORT]",message);
+      status.className="status show error";
+      statusText.textContent=message;
+      uploadLabel.innerHTML="CARICA<br>IL TUO GAMEPLAY";
+      pick.value="";
+      replacePending=false;
+      replacementSetupBusy=false;
+      parentToast("Cambio video annullato",message,"error");
+      return;
+    }
+    replacementSetupBusy=false;
+  }
+
+  // 1. Transfer begins only after the previous source has a verified draft.
   clearTimeout(circleResetTimer);
   setUploadAcknowledgement(false);
   circle.classList.remove("loaded","done");
@@ -4080,28 +4131,7 @@ pick.addEventListener("change",async()=>{
   setUploadState(UPLOAD_ST.UPLOADING, {pct: 1});
   console.log("[GSF_UPLOAD_DIAG] upload_started", {size: file.size, hasSession: Boolean(uploadId)});
 
-  // 2. Draft preservation (non-blocking for new video upload)
-  if(loaded){
-    try{
-      await Promise.race([
-        saveCurrentBeforeReplacement(),
-        new Promise((_, reject)=>setTimeout(()=>reject(new Error("draft_save_timeout")), 2000))
-      ]);
-      if(replacePending)parentToast("Bozza salvata","","success");
-    }catch(e){
-      if(e&&e.code==="storage_limit"){
-        pick.value="";
-        replacePending=false;
-        uploadBusy=false;
-        circle.classList.remove("busy");
-        rings.classList.remove("uploading");
-        setUploadState(UPLOAD_ST.FAILED, {message: "Bozze piene"});
-        parentToast("Bozze piene","Hai raggiunto il limite di "+String(e.limit||5)+" bozze. Elimina una bozza dal Creator Hub prima di caricare un nuovo video.","error");
-        return;
-      }
-      console.warn("[GSF_UPLOAD_DIAG] previous_draft_save_skipped", (e&&e.message)||e);
-    }
-  }
+  // The verified draft and source reset were completed before upload start.
   replacePending=false;
 
   try{
