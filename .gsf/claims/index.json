@@ -486,7 +486,7 @@
         "web/test_v404_fast_startup.py",
         "web/test_v410_security_hardening.py"
       ],
-      "scope": "ui-pipeline: canonical mobile UI source of truth — build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
+      "scope": "ui-pipeline: canonical mobile UI source of truth \u2014 build copies canonical files, no legacy patch chain, immutable runtime, guard tests",
       "state": "completed"
     },
     {
@@ -1076,7 +1076,7 @@
         "web/publish_short_v405_component/**",
         "web/share_v156_component/**"
       ],
-      "scope": "ui: Night Arena single look — shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
+      "scope": "ui: Night Arena single look \u2014 shared theme + Creator Hub, Crea con IA, Share/Crea Short, Publish pages + Home, shell (app.py) and in-player mobile Game Editor (owner request 2026-10-16)",
       "state": "completed"
     },
     {
@@ -1457,6 +1457,7 @@
         "blocker": "Confirmed official stable Streamlit1.66.0 and nightly1.66.1.dev20261020 requirepillow<13; audit fixes eight PillowCVEs only13. No supported compatible fix found and no suppression applied.",
         "blockers": "Railway API returned Deploys have been paused temporarily twice (INVALID_ARGUMENT). No new deployment created. Six Meta/Instagram/Twitch credentials remain absent.",
         "ci": "39612720454 FAIL dependency audit only; Editor shell39612720272 PASS; Production Gate39612720276 in progress at checkpoint.",
+        "closure": "branch tip 7c49b0456deed4708a4b195474148c983a5464b1 is an ancestor of origin/main; PR #187 merged 2026-10-21T17:12:24Z",
         "commit": "ba9c2dad69fee7cda56e37747bf1694a138ec558",
         "dependency_lock_handoff_20261026": "closed-beta-v435-hardening-current-home-notifica-4860a6",
         "deploy_authorization": "User explicitly approved unchanged frontend repo/main reconnection with vai after permission question. Authorization persists.",
@@ -1503,6 +1504,7 @@
         "release_policy": "User reiterates release authorization: deploy PR187 as soon as dependencies and required checks pass; no additional approval needed. No bypass authorized.",
         "source_library": "User approved architecture and explicitly instructed direct implementation; OAuth deploy BUILDING7aab3e32, user took over deployment monitoring. Implement source library in branch.",
         "startup_scope": "Reuse canonical notification client at first-paint bootstrap; no second notification engine, no mobile gate change. Railway deferred.",
+        "superseded_by": "V442 stability work",
         "terminal_status": "BLOCKED_DEPENDENCY_AUDIT",
         "tests": {
           "ci_contracts": "8 passed",
@@ -1518,7 +1520,8 @@
         "v435_e2e_handoff": {
           "reason": "Same beta validation task: update obsolete uploader/FATTO test flow to current UI and exact export acceptance.",
           "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
-        }
+        },
+        "verification": "git merge-base --is-ancestor + GitHub API pull/187"
       },
       "id": "complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
       "owner": "chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
@@ -1559,7 +1562,7 @@
         "web/test_v413_publish_multi.py"
       ],
       "scope": "Complete existing social OAuth Meta TikTok Twitch and signed Meta callbacks; user-requested Twitch source library design, no deployment while Railway paused; user requested Alive Ultra Fluid, shared notification continuity, player motion and mobile cold layout recovery2026-10-21",
-      "state": "active"
+      "state": "completed"
     },
     {
       "branch": "chat/feature-freeze-mobile-regressions-20261022",
@@ -1653,6 +1656,9 @@
     {
       "branch": "chat/closed-beta-v435-hardening-current-home-notifica-4860a6",
       "created_at": "2026-10-26T12:42:16+00:00",
+      "evidence": {
+        "public_e2e_verification": "User requires verified deployed upload-to-second-export; reuse existing real E2E in existing post-deploy verifier, retaining version/page/CSRF checks; local environment currently offline."
+      },
       "id": "closed-beta-v435-hardening-current-home-notifica-4860a6",
       "owner": "Codex beta V435 validation",
       "paths": [
@@ -1682,10 +1688,7 @@
         "web/test_v105_dependency_lock.py"
       ],
       "scope": "Closed beta V435 hardening: current Home notification regression tests and measured isolated upload runtime validation; no redesign or deploy until blockers closed",
-      "state": "active",
-      "evidence": {
-        "public_e2e_verification": "User requires verified deployed upload-to-second-export; reuse existing real E2E in existing post-deploy verifier, retaining version/page/CSRF checks; local environment currently offline."
-      }
+      "state": "active"
     }
   ],
   "version": 1

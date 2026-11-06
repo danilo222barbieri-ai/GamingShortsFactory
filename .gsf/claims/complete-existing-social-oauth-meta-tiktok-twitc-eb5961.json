@@ -8,6 +8,7 @@
     "blocker": "Confirmed official stable Streamlit1.66.0 and nightly1.66.1.dev20261020 requirepillow<13; audit fixes eight PillowCVEs only13. No supported compatible fix found and no suppression applied.",
     "blockers": "Railway API returned Deploys have been paused temporarily twice (INVALID_ARGUMENT). No new deployment created. Six Meta/Instagram/Twitch credentials remain absent.",
     "ci": "39612720454 FAIL dependency audit only; Editor shell39612720272 PASS; Production Gate39612720276 in progress at checkpoint.",
+    "closure": "branch tip 7c49b0456deed4708a4b195474148c983a5464b1 is an ancestor of origin/main; PR #187 merged 2026-10-21T17:12:24Z",
     "commit": "ba9c2dad69fee7cda56e37747bf1694a138ec558",
     "dependency_lock_handoff_20261026": "closed-beta-v435-hardening-current-home-notifica-4860a6",
     "deploy_authorization": "User explicitly approved unchanged frontend repo/main reconnection with vai after permission question. Authorization persists.",
@@ -54,6 +55,7 @@
     "release_policy": "User reiterates release authorization: deploy PR187 as soon as dependencies and required checks pass; no additional approval needed. No bypass authorized.",
     "source_library": "User approved architecture and explicitly instructed direct implementation; OAuth deploy BUILDING7aab3e32, user took over deployment monitoring. Implement source library in branch.",
     "startup_scope": "Reuse canonical notification client at first-paint bootstrap; no second notification engine, no mobile gate change. Railway deferred.",
+    "superseded_by": "V442 stability work",
     "terminal_status": "BLOCKED_DEPENDENCY_AUDIT",
     "tests": {
       "ci_contracts": "8 passed",
@@ -67,9 +69,10 @@
     "updated_at": "2026-10-21T16:04:00Z",
     "upstream_dependency_fix": "Official Streamlit merged Allow Pillow13 commit81bdb8a8a207691f17ec94df9eabc96b6b50ea7a on2026-10-21T10:17:53Z; develop now permits Pillow<14. PyPI stable1.66.0 and nightly1.66.1.dev20261020 still require<13; no compatible published prerelease/backport found. Official nightly schedule04:30UTC. Wait for published auditable release, then normal resolver/audit/full runtime checks. No override or CVE suppression.",
     "v435_e2e_handoff": {
-      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6",
-      "reason": "Same beta validation task: update obsolete uploader/FATTO test flow to current UI and exact export acceptance."
-    }
+      "reason": "Same beta validation task: update obsolete uploader/FATTO test flow to current UI and exact export acceptance.",
+      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
+    },
+    "verification": "git merge-base --is-ancestor + GitHub API pull/187"
   },
   "id": "complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
   "owner": "chat/complete-existing-social-oauth-meta-tiktok-twitc-eb5961",
@@ -110,5 +113,5 @@
     "web/test_v413_publish_multi.py"
   ],
   "scope": "Complete existing social OAuth Meta TikTok Twitch and signed Meta callbacks; user-requested Twitch source library design, no deployment while Railway paused; user requested Alive Ultra Fluid, shared notification continuity, player motion and mobile cold layout recovery2026-10-21",
-  "state": "active"
+  "state": "completed"
 }
