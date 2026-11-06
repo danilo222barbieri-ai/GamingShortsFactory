@@ -3739,13 +3739,23 @@ def _twitch_content(sid,kind,after=""):
     if kind not in ("clips","videos","live","all"):raise ValueError("Tipo di contenuto non valido")
     if kind=="all":
         merged=[]
+        failed=[]
+        succeeded=0
         for sub in ("live","videos","clips"):
             try:
                 res=_twitch_content(sid,sub,after="")
                 merged.extend(res.get("data",[]) or [])
+                succeeded+=1
+            except _social421.TwitchError as exc:
+                # Do not disguise expired/revoked credentials as an empty library.
+                if exc.status in (401,403):
+                    raise
+                failed.append(sub)
             except Exception:
-                pass
-        return {"data":merged,"cursor":"","type":"all"}
+                failed.append(sub)
+        if not succeeded:
+            raise _social421.TwitchError("Impossibile caricare i contenuti Twitch. Riprova.",503)
+        return {"data":merged,"cursor":"","type":"all","partial":bool(failed),"unavailable_sections":failed}
     token=_twitch_access(sid);owner=_source_owner(sid)
     endpoint="streams" if kind=="live" else kind
     params={"broadcaster_id" if kind=="clips" else "user_id":token["user_id"],"first":20}
