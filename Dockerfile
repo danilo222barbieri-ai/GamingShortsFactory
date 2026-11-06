@@ -58,6 +58,9 @@ RUN ln -s /app/app.py /app/GamingShortsFactory_V293_RENDER_MEMORY_GUARD.py && \
 # Byte-compile for fast cold starts (__pycache__ is outside the manifest).
 RUN python -m compileall -q /app/app.py /app/web /app/gsf_core
 
+# Lazy imports only fail at request time: prove them as the servers will run them.
+RUN cd /app && python /app/web/check_runtime_imports_v443.py
+
 # Record the manifest of what will be served, then prove the image equals it.
 # The generated public icons must remain readable by nginx regardless of
 # the permissions of the source image in the checkout.

@@ -54,7 +54,7 @@ def test_dockerfile_runs_no_legacy_chain():
     # the only allowed in-image mutation of a non-repo file
     runs = re.findall(r"^RUN .*$", cmds, re.M)
     py_scripts = sorted(set(re.findall(r"python (/app/web/[\w./-]+\.py)", cmds)))
-    allowed = {"/app/web/install_adsense_bridge.py", "/app/web/test_v410_security_hardening.py"}
+    allowed = {"/app/web/install_adsense_bridge.py", "/app/web/test_v410_security_hardening.py", "/app/web/check_runtime_imports_v443.py"}
     assert set(py_scripts) <= allowed, f"unexpected build-time scripts: {sorted(set(py_scripts) - allowed)}"
     assert runs, "no RUN steps parsed"
     assert re.search(r'^CMD \["/app/web/start_web\.sh"\]', cmds, re.M)

@@ -185,6 +185,9 @@ jobs:
         timeout-minutes: 3
         run: docker exec gsf-production-gate python /app/web/runtime_smoke_v107.py
 
+      - name: Lazy web imports resolve inside the running image
+        run: docker exec gsf-production-gate sh -c 'cd /app && python /app/web/check_runtime_imports_v443.py'
+
       - name: Image serves exactly the repository UI
         run: |
           set -euo pipefail
@@ -235,6 +238,7 @@ jobs:
           GSF_BROWSER=webkit python -m unittest discover -s tests -p test_ai_failure_recovery_v425.py
           GSF_BROWSER=webkit python -m unittest discover -s tests -p test_feature_freeze_mobile.py
           GSF_BROWSER=webkit python -m unittest discover -s tests -p test_publish_recovery_v426.py
+          GSF_BROWSER=webkit python -m unittest discover -s tests -p test_v443_browser.py
 
       - name: Upload mobile WebKit evidence
         if: always()
