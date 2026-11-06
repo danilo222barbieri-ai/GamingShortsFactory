@@ -11565,8 +11565,20 @@ if _gsf_direct_source is not None:
         # A completed replacement upload starts a new video workflow. Reuse
         # the existing reset, retaining the newly uploaded source and drafts.
         _gsf_v75_reset_engine_workflow()
+        # GSF_V438_FRESH_SOURCE_STATE: the prior video is already protected
+        # by a verified Creator Hub draft. Do not carry its AI state, candidate
+        # scores, Editor recipe, or pending publish task into the new video.
         for _key in list(st.session_state.keys()):
-            if str(_key).startswith(("gsf_editor_","gsf_manual_","gsf_v107_")):
+            _name=str(_key)
+            if _name.startswith((
+                "gsf_editor_", "gsf_manual_", "gsf_v107_",
+                "gsf_ai_", "gsf_v291_", "gsf_v412_", "gsf_v154_",
+                "gsf_fast_ai_", "gsf_pending_engine_",
+            )) or _name in (
+                "candidati", "candidati_ai", "risultati_ai", "risultati_batch",
+                "clip_rifinite", "ai_director_scores", "modalita_gsf",
+                "selected_moment", "moment_selected", "gsf_final_recipe",
+            ):
                 st.session_state.pop(_key,None)
         for _artifact in ("editor2027_current.txt","render_job.json","media/gaming_short_finale_share.mp4"):
             (GSF_SESSION_ROOT/_artifact).unlink(missing_ok=True)
