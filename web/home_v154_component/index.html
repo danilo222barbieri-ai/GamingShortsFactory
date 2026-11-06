@@ -4174,6 +4174,9 @@ pick.addEventListener("change",async()=>{
       verifiedUploadId=await fallbackUpload(file);
     }
 
+    // The bucket allocates a new server-side id; store it so a recoverable
+    // project-save retry cannot accidentally use the local fingerprint.
+    if(activeUploadSession)activeUploadSession.id=verifiedUploadId;
     console.log("[GSF_UPLOAD_DIAG] starting_project_finalization");
     await executeProjectFinalization(file, verifiedUploadId, durationPromise);
     console.log("[GSF_UPLOAD_DIAG] upload_and_project_complete");
