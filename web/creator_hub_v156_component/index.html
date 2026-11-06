@@ -1346,8 +1346,9 @@ let oauthNavigating=false;
     btn.textContent="Gestisci";
     btn.className="btn";
    } else {
-    st.textContent=yes?"Collegato":"Non collegato";
-    btn.textContent=yes?"Scollega":"Collega";
+    const link=(state.social_status||{})[key];
+    st.textContent=yes?"Collegato":link==="unavailable"?"Verifica in corso":link==="expired"?"Accesso scaduto":"Non collegato";
+    btn.textContent=yes?"Scollega":link==="unavailable"?"Riprova":link==="expired"?"Ricollega":"Collega";
     btn.className=yes?"btn danger":"btn";
    }
    btn.disabled=false;
@@ -1364,11 +1365,12 @@ let oauthNavigating=false;
   if(list)list.innerHTML=PLATFORMS.map(p=>'<div class="row socialCard" data-platform="'+p.key+'"><span class="logoBox">'+logo(p)+'</span><span class="rtext"><b>'+p.name+'</b><small class="socialState">…</small></span><button class="btn" type="button" data-connect="'+p.key+'">Collega</button></div>').join("");
   $$(".socialDot").forEach(b=>b.onclick=()=>{
    const key=b.dataset.social;
+   if((state.social_status||{})[key]==="unavailable"){loadState();return}
    if(!socialIsOn(key)){connectSocial(key);return}
    openView("settings");
    setTimeout(()=>{const c=document.querySelector('.socialCard[data-platform="'+key+'"]');if(c){c.scrollIntoView({block:"center"});c.animate&&c.animate([{background:"#EEF9FF"},{background:"transparent"}],{duration:900})}},30);
   });
-  $$("[data-connect]").forEach(b=>b.onclick=()=>connectSocial(b.dataset.connect));
+  $$("[data-connect]").forEach(b=>b.onclick=()=>{if((state.social_status||{})[b.dataset.connect]==="unavailable"){loadState();return}connectSocial(b.dataset.connect)});
  }
 
  function cardHtml(kind,item){
@@ -1725,7 +1727,8 @@ let oauthNavigating=false;
      host.querySelector('[data-goto-settings]').onclick=()=>openView('settings');
      return;
    }
-   if(sourceProvider==='twitch'&&!socialIsOn('twitch')){
+   // Only a verified "not connected" asks for OAuth; an unverifiable state tries the listing.
+   if(sourceProvider==='twitch'&&!socialIsOn('twitch')&&(state.social_status||{}).twitch!=='unavailable'){
      host.innerHTML='<div class="liveStateBox unconnected"><div class="liveStateIcon twitch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 2.5 3 6.6v13h4.4v2.4h2.5l2.4-2.4h3.6l5.1-5.1V2.5zm1.8 1.9h12.4v8.8l-2.7 2.7h-4.4l-2.4 2.4v-2.4H6.8zm4.2 3.2h1.8v4.6H11zm4.6 0h1.8v4.6h-1.8z"/></svg></div><h3>Twitch non collegato</h3><p>Collega il tuo canale Twitch nelle Impostazioni per vedere Live, VOD e Clip in tempo reale.</p><button class="na-cta liveStateCta" type="button" data-goto-settings>Vai a Impostazioni</button></div>';
      host.querySelector('[data-goto-settings]').onclick=()=>openView('settings');
      return;
@@ -1746,6 +1749,10 @@ let oauthNavigating=false;
     if(sourceProvider==='youtube'){
       if(sourceFilter==='live')rawItems=rawItems.filter(r=>r.is_live);
       else if(sourceFilter==='clips')rawItems=rawItems.filter(r=>r.duration&&r.duration<=60);
+    }
+    if(!rawItems.length&&data.partial){
+      host.innerHTML='<div class="liveStateBox"><h3>Alcune sezioni Twitch non sono raggiungibili. Riprova tra poco.</h3></div>';
+      return;
     }
     if(!rawItems.length){
       const emptyMsg=sourceFilter==='live'?'Nessuna diretta attiva al momento.'

@@ -3964,15 +3964,7 @@ def _start_twitch_token_validation():
 
 
 def _social_connected(sid,provider):
-    try:
-        token=_social_connection_load(sid,provider)
-        if not token.get("access_token"):
-            return False
-        if provider=="facebook":
-            return bool(token.get("selected_page_id") and token.get("selected_page_token") and not token.get("needs_reauth"))
-        exp=float(token.get("expires_at",0) or 0)
-        return exp==0 or exp>time.time()
-    except Exception:return False
+    return _social_status_of(sid,provider)==SOCIAL_CONNECTED
 
 
 def _creator_facebook_start(handler,sid):
@@ -5478,15 +5470,52 @@ def _guardian_restore_source_from_marker(sid):
         print("GSF_GUARDIAN_SOURCE_RESTORE_WARN",sid,repr(str(exc))[:220],flush=True)
     return ""
 
-def _creator_social_snapshot(sid,providers=None):
-    providers=dict(providers or {})
-    return {
-        "youtube":bool(_youtube_user_load(sid)),
-        "tiktok":bool(_tiktok_user_load(sid)),
-        "instagram":bool(_instagram_user_load(sid)),
-        "facebook":_social_connected(sid,"facebook"),
-        "twitch":_social_connected(sid,"twitch"),
-    }
+SOCIAL_CONNECTED,SOCIAL_EXPIRED,SOCIAL_NONE,SOCIAL_UNAVAILABLE="connected","expired","not_connected","unavailable"
+
+def _social_object_state(key):
+    """True/False when storage answers, None when it cannot be verified right now."""
+    if not _bucket_enabled():
+        return False
+    try:
+        _s3().head_object(Bucket=S3_BUCKET,Key=key)
+        return True
+    except Exception as exc:
+        code=str(getattr(exc,"response",{}).get("Error",{}).get("Code",""))
+        if isinstance(exc,FileNotFoundError) or code in ("NoSuchKey","404","NotFound"):
+            return False
+        print("GSF_SOCIAL_STATE_UNAVAILABLE",type(exc).__name__,flush=True)
+        return None
+
+def _social_status_of(sid,provider):
+    """Single source of truth for Creator Hub, Crea Short and publish preflight."""
+    try:
+        if provider in ("youtube","tiktok","instagram"):
+            load,key={"youtube":(_youtube_user_load,_youtube_user_key),"tiktok":(_tiktok_user_load,_tiktok_user_key),"instagram":(_instagram_user_load,_instagram_user_key)}[provider]
+            token=load(sid)
+            if token:
+                return SOCIAL_EXPIRED if token.get("needs_reauth") else SOCIAL_CONNECTED
+            # The loaders return {} on any storage failure too: never read that as "not connected".
+            present=_social_object_state(key(sid))
+            if present is None:return SOCIAL_UNAVAILABLE
+            return SOCIAL_EXPIRED if present else SOCIAL_NONE
+        token=_social_connection_load(sid,provider)
+        if not token.get("access_token"):return SOCIAL_NONE
+        if token.get("needs_reauth"):return SOCIAL_EXPIRED
+        # A short-lived access token with a refresh token is still a valid authorization.
+        if provider=="twitch" and token.get("refresh_token"):return SOCIAL_CONNECTED
+        exp=float(token.get("expires_at",0) or 0)
+        return SOCIAL_CONNECTED if exp==0 or exp>time.time() else SOCIAL_EXPIRED
+    except Exception as exc:
+        if not _bucket_enabled():return SOCIAL_NONE
+        print("GSF_SOCIAL_STATE_UNAVAILABLE",provider,type(exc).__name__,flush=True)
+        return SOCIAL_UNAVAILABLE
+
+def _social_status_snapshot(sid):
+    return {provider:_social_status_of(sid,provider) for provider in ("youtube","tiktok","instagram","facebook","twitch")}
+
+def _creator_social_snapshot(sid,providers=None,status=None):
+    status=status or _social_status_snapshot(sid)
+    return {provider:value==SOCIAL_CONNECTED for provider,value in status.items()}
 
 def _guardian_tick(sid,force=False):
     sid=_safe_id(sid)
@@ -5958,6 +5987,12 @@ def _publish_preflight(sid,platforms):
     checks={}
     for platform in platforms:
         p_info={"platform":platform,"ready":False,"status":"unknown","message":""}
+        if _social_status_of(sid,platform)==SOCIAL_UNAVAILABLE:
+            # A storage hiccup is not a disconnect: never ask for OAuth again.
+            p_info["status"]="unavailable"
+            p_info["message"]="Verifica del collegamento momentaneamente non disponibile. Riprova tra poco."
+            checks[platform]=p_info
+            continue
         if platform=="youtube":
             tok=_youtube_user_load(sid)
             if not tok:
@@ -6007,6 +6042,9 @@ def _publish_preflight(sid,platforms):
             if not tok:
                 p_info["status"]="needs_connection"
                 p_info["message"]="TikTok non ancora collegato."
+            elif tok.get("needs_reauth"):
+                p_info["status"]="needs_reauth"
+                p_info["message"]="TikTok: accesso scaduto. Ricollega l'account nelle Impostazioni."
             else:
                 p_info["ready"]=True
                 p_info["status"]="ready"
@@ -6646,7 +6684,8 @@ class Handler(BaseHTTPRequestHandler):
                 return
             profile=_creator_account_load(sid) or {}
             providers=dict(profile.get("providers") or {}) if isinstance(profile,dict) else {}
-            social_snapshot=_creator_social_snapshot(sid,providers)
+            social_status=_social_status_snapshot(sid)
+            social_snapshot=_creator_social_snapshot(sid,providers,social_status)
             stable,_job=_final_local_paths(sid)
             ready=_local_final_is_current(sid)
             final_bytes=int(stable.stat().st_size) if ready else 0
@@ -6661,6 +6700,7 @@ class Handler(BaseHTTPRequestHandler):
                 "revision":revision,
                 "video_url":"/share/final" if ready else "",
                 "social":social_snapshot,
+                "social_status":social_status,
                 # V413_PUBLISH_MULTI
                 "csrf_token":_security_csrf_token(sid),
                 "dropbox_app_key":DROPBOX_APP_KEY,
@@ -6762,16 +6802,18 @@ class Handler(BaseHTTPRequestHandler):
                 return
             profile=_creator_account_load(sid) or {}
             providers=dict(profile.get("providers") or {}) if isinstance(profile,dict) else {}
-            social_snapshot=_creator_social_snapshot(sid,providers)
+            social_status=_social_status_snapshot(sid)
+            social_snapshot=_creator_social_snapshot(sid,providers,social_status)
             limits=_storage_limits_for_sid(sid)
             all_drafts=_draft_list(sid)
             all_shorts=_short_list(sid)
-            youtube_state=_youtube_user_load(sid)
-            tiktok_state=_tiktok_user_load(sid)
-            instagram_state=_instagram_user_load(sid)
             # The Creator Hub status endpoint is readable without OAuth storage.
             # Never load social secrets when the bucket is absent (e.g. CI gate).
-            facebook_connection=_social_connection_load(sid,"facebook") if _bucket_enabled() else {}
+            try:
+                facebook_connection=_social_connection_load(sid,"facebook") if _bucket_enabled() else {}
+            except Exception as exc:
+                print("GSF_SOCIAL_STATE_UNAVAILABLE","facebook",type(exc).__name__,flush=True)
+                facebook_connection={}
             drafts=[]
             for row in all_drafts[:max(1,int(limits.get("drafts") or FREE_DRAFT_LIMIT))]:
                 if not isinstance(row,dict):

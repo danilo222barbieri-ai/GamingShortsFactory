@@ -44,7 +44,7 @@ require(smoke,'editor-media/current','runtime smoke empty Editor media coverage'
 
 # Creator Hub social state is loaded once and reused in the response and count.
 require(companion,'def _creator_social_snapshot','Creator Hub social snapshot helper')
-require(companion,'social_snapshot=_creator_social_snapshot(sid,providers)','Creator Hub snapshot single acquisition')
+require(companion,'social_snapshot=_creator_social_snapshot(sid,providers,social_status)','Creator Hub snapshot single acquisition')
 require(companion,'"social":social_snapshot','Creator Hub snapshot response reuse')
 require(companion,'sum(1 for connected in social_snapshot.values() if connected)','Creator Hub snapshot stats reuse')
 

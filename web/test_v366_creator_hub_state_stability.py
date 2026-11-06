@@ -39,12 +39,8 @@ required_server = (
     '# V366_CREATOR_HUB_STATE_STABILITY',
     'if clean=="/creator-hub/avatar":',
     'if path=="/creator-hub/client-error":',
-    'youtube_state=_youtube_user_load(sid)',
-    'tiktok_state=_tiktok_user_load(sid)',
-    'instagram_state=_instagram_user_load(sid)',
-    'bool(youtube_state)',
-    'bool(tiktok_state)',
-    'bool(instagram_state)',
+    'social_status=_social_status_snapshot(sid)',
+    '"social_status":social_status',
     'GSF_HUB_CLIENT_ERROR',
     '"/creator-hub/avatar" if str(profile.get("avatar") or "").startswith("data:image/")',
     'scope=str((parse_qs(path.query).get("scope") or [""])[0] or "")',
@@ -53,11 +49,13 @@ required_server = (
 for token in required_server:
     assert token in s, 'V366 server contract missing: ' + token
 
-# The state route must not reload the same three social providers twice.
+# The state route must not reload the same three social providers twice:
+# it reads them once, through the status snapshot shared with Crea Short.
 state_block = s.split('if clean=="/creator-hub/state":',1)[1].split('if clean=="/account":',1)[0]
-assert state_block.count('_youtube_user_load(sid)') == 1
-assert state_block.count('_tiktok_user_load(sid)') == 1
-assert state_block.count('_instagram_user_load(sid)') == 1
+assert state_block.count('_social_status_snapshot(sid)') == 1
+assert state_block.count('_youtube_user_load(sid)') == 0
+assert state_block.count('_tiktok_user_load(sid)') == 0
+assert state_block.count('_instagram_user_load(sid)') == 0
 
 # Header scope must return before any drafts/Shorts/social-provider work begins.
 header_pos = state_block.index('if scope=="header":')

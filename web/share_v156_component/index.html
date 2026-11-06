@@ -1168,7 +1168,8 @@ const SUGGEST={all:['gaming','shorts','gameplay','gamer','clip','highlights','vi
 const PRIVACY_LABEL={public:'Pubblico',unlisted:'Non in elenco',private:'Privato'};
 const STORE='gsf_crea_short_v413';
 
-let server={ready:false,social:{},csrf_token:'',dropbox_app_key:'',publish_supported:['youtube','tiktok','instagram','facebook'],publish_job:{},revision:''};
+let serverKnown=false;
+let server={ready:false,social:{},social_status:{},csrf_token:'',dropbox_app_key:'',publish_supported:['youtube','tiktok','instagram','facebook'],publish_job:{},revision:''};
 let scope='all', privacy='public', polling=null;
 const texts={all:{title:'',description:'',tags:[]}};
 
@@ -1324,7 +1325,11 @@ function renderPlatforms(){
   $$('.plat').forEach(b=>{
     const p=b.dataset.platform, lbl=$('[data-status]',b), st=$('.st',b), r=recent()?res[p]:null;
     lbl.className='lbl';
-    if(social[p]){lbl.textContent='Collegato';lbl.classList.add('on')}
+    // Never ask to connect when the state has simply not been verified.
+    const linkState=!serverKnown?'unavailable':((server.social_status||{})[p]||(social[p]?'connected':'not_connected'));
+    if(linkState==='connected'){lbl.textContent='Collegato';lbl.classList.add('on')}
+    else if(linkState==='unavailable'){lbl.textContent='Verifica…'}
+    else if(linkState==='expired'){lbl.textContent='Ricollega';lbl.classList.add('go')}
     else{lbl.textContent='Collega';lbl.classList.add('go')}
     if(lbl.classList.contains('go'))lbl.setAttribute('data-alive-next','connect_social');else lbl.removeAttribute('data-alive-next');
     st.className='st'+(r?(r.confirmation_pending||r.status==='running'||r.status==='queued'?' run':r.status==='done'?' ok':r.status==='error'?' ko':''):'');
@@ -1352,7 +1357,7 @@ $$('.plat').forEach(b=>b.onclick=()=>{
   if(busy())return;
   const p=b.dataset.platform, on=b.getAttribute('aria-pressed')!=='true';
   b.setAttribute('aria-pressed',String(on));save();renderPlatforms();
-  if(on&&(server.publish_supported||[]).includes(p)&&!(server.social||{})[p])toast(NAMES[p]+' non è collegato: tocca di nuovo "Collega" per farlo');
+  if(on&&serverKnown&&(server.social_status||{})[p]!=='unavailable'&&(server.publish_supported||[]).includes(p)&&!(server.social||{})[p])toast(NAMES[p]+' non è collegato: tocca di nuovo "Collega" per farlo');
   if(on&&!(server.publish_supported||[]).includes(p))toast(NAMES[p]+': condividi il video e completa il post nell’app');
 });
 $$('.plat .lbl').forEach(l=>l.addEventListener('click',e=>{const b=l.closest('.plat'),p=b.dataset.platform;if(l.classList.contains('go')){e.stopPropagation();connect(p)}}));
@@ -1428,7 +1433,10 @@ $('#publishBtn').onclick=async()=>{
     const response=await fetch('/share/state',{cache:'no-store',credentials:'same-origin'});
     const snapshot=await response.json();
     if(!response.ok||!snapshot.ok)throw new Error(snapshot.error||'Social state unavailable');
+    serverKnown=true;
     server.social=snapshot.social||{};
+    server.social_status=snapshot.social_status||{};
+    server.preflight=snapshot.preflight||server.preflight;
     server.csrf_token=snapshot.csrf_token||server.csrf_token;
     server.publish_supported=snapshot.publish_supported||server.publish_supported;
     renderPlatforms();
@@ -1436,8 +1444,13 @@ $('#publishBtn').onclick=async()=>{
     toast('Impossibile verificare i social collegati. Riprova senza scollegarli.');
     return;
   }
+  const unverified=sel.find(p=>(server.social_status||{})[p]==='unavailable');
+  if(unverified){toast('Impossibile verificare '+NAMES[unverified]+' ora. Riprova senza scollegarlo.');return}
   const notConn=sel.find(p=>!(server.social||{})[p]);
   if(notConn){toast(NAMES[notConn]+' non è collegato. Tocca Collega per connetterti.');connect(notConn);return}
+  // Connected is not enough: publish only with the permissions the platform requires.
+  const blocked=sel.map(p=>((server.preflight||{}).checks||{})[p]).find(c=>c&&c.ready===false);
+  if(blocked){toast(blocked.message||'Collegamento da completare nelle Impostazioni.');return}
   if(sel.includes('youtube')&&!String(effective('youtube').title||'').trim()){open('texts');pickScope('all');setTimeout(()=>$('#fTitle').focus(),300);toast('Serve un titolo per YouTube');return}
   const btn=$('#publishBtn');btn.disabled=true;$('#coreTitle').textContent='Avvio…';
   try{
@@ -1515,6 +1528,7 @@ async function sync(){
     const r=await fetch('/share/state',{cache:'no-store',credentials:'same-origin'});const j=await r.json();
     if(!r.ok||!j.ok)throw new Error('state');
     const rev=String(j.revision||''), was=server.revision;
+    serverKnown=true;
     Object.assign(server,j);server.revision=rev;
     const v=$('#preview');
     if(j.ready&&(rev!==was||!v.getAttribute('src'))){
