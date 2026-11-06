@@ -11565,8 +11565,20 @@ if _gsf_direct_source is not None:
         # A completed replacement upload starts a new video workflow. Reuse
         # the existing reset, retaining the newly uploaded source and drafts.
         _gsf_v75_reset_engine_workflow()
+        # GSF_V438_FRESH_SOURCE_STATE: the prior video is already protected
+        # by a verified Creator Hub draft. Do not carry its AI state, candidate
+        # scores, Editor recipe, or pending publish task into the new video.
         for _key in list(st.session_state.keys()):
-            if str(_key).startswith(("gsf_editor_","gsf_manual_","gsf_v107_")):
+            _name=str(_key)
+            if _name.startswith((
+                "gsf_editor_", "gsf_manual_", "gsf_v107_",
+                "gsf_ai_", "gsf_v291_", "gsf_v412_", "gsf_v154_",
+                "gsf_fast_ai_", "gsf_pending_engine_",
+            )) or _name in (
+                "candidati", "candidati_ai", "risultati_ai", "risultati_batch",
+                "clip_rifinite", "ai_director_scores", "modalita_gsf",
+                "selected_moment", "moment_selected", "gsf_final_recipe",
+            ):
                 st.session_state.pop(_key,None)
         for _artifact in ("editor2027_current.txt","render_job.json","media/gaming_short_finale_share.mp4"):
             (GSF_SESSION_ROOT/_artifact).unlink(missing_ok=True)
@@ -17222,6 +17234,12 @@ if GSF_WEB_MODE:
       const o=document.getElementById('gsf-ai-overlay-v221');if(!o)return;
       const bridge=P.GSFNavigation.bridge('ai',globalThis.frameElement);
       const frame=o.querySelector('iframe');
+      let frameReady=false,pendingAutoSearch=null;
+      const startWhenReady=()=>{
+        if(!frameReady||!pendingAutoSearch)return;
+        const data=pendingAutoSearch;pendingAutoSearch=null;
+        try{frame.contentWindow.postMessage({type:'GSF_AI_START_SEARCH',data},location.origin)}catch(_e){}
+      };
       const broadcastHome=(payload)=>{
         document.querySelectorAll('iframe').forEach(f=>{
           try{if(f!==frame&&f.contentWindow)f.contentWindow.postMessage(payload,location.origin)}catch(e){}
@@ -17232,10 +17250,12 @@ if GSF_WEB_MODE:
       };
       const ensureFrame=()=>{
         if(frame.dataset.loaded==='1')return;
+        frameReady=false;
         frame.contentWindow.location.replace(frame.dataset.src||'/ai-v221/');
         frame.dataset.loaded='1';
       };
       const open=(data={},remember=true)=>{
+        if(data&&data.auto_search)pendingAutoSearch={...data};
         ensureFrame();
         const so=document.getElementById('gsf-social-overlay-v159');if(so){so.classList.remove('is-open');so.style.opacity='0';so.style.visibility='hidden';so.style.pointerEvents='none'}
         const ed=document.getElementById('gsf-editor-overlay-v220');if(ed){ed.classList.remove('is-open');ed.style.opacity='0';ed.style.visibility='hidden';ed.style.pointerEvents='none'}
@@ -17243,9 +17263,9 @@ if GSF_WEB_MODE:
         if(remember)try{sessionStorage.setItem(KEY,'1')}catch(e){}
         setTimeout(()=>{
           broadcastHome({type:'GSF_AI_COMMAND',action:'get_state'});
-          if(data&&(data.auto_search||data.target==='ai')){
-            try{frame.contentWindow.postMessage({type:'GSF_AI_START_SEARCH',data},location.origin)}catch(_e){}
-          }
+          // A fixed 80ms timeout can fire before Safari loads the iframe.
+          // Search starts only after the AI page acknowledges it is ready.
+          startWhenReady();
         },80);
       };
       const close=()=>{o.classList.remove('is-open');o.style.opacity='0';o.style.visibility='hidden';o.style.pointerEvents='none';o.setAttribute('aria-hidden','true');try{sessionStorage.setItem(KEY,'0')}catch(e){}};
@@ -17254,7 +17274,7 @@ if GSF_WEB_MODE:
         if(e.origin!==location.origin||!e.data)return;
         if(e.data.type==='GSF_AI_UI'){
           const action=String(e.data.action||'');
-          if(action==='ready'){broadcastHome({type:'GSF_AI_COMMAND',action:'get_state'});return}
+          if(action==='ready'){frameReady=true;broadcastHome({type:'GSF_AI_COMMAND',action:'get_state'});startWhenReady();return}
           const selection={action,candidate_id:e.data.candidate_id,video:e.data.video,start_time:e.data.start_time,end_time:e.data.end_time,duration:e.data.duration,engine:e.data.engine,index:e.data.index,request_id:e.data.request_id,restore:e.data.restore===true};
           if(action==='create_short'){
             broadcastHome({...selection,type:'GSF_AI_COMMAND',action:'select_moment'});
@@ -17269,6 +17289,11 @@ if GSF_WEB_MODE:
             return;
           }
           broadcastHome({type:'GSF_AI_COMMAND',...selection});
+          return;
+        }
+        if(e.data.type==='GSF_NEW_VIDEO_RESET'){
+          pendingAutoSearch=null;
+          try{frame.contentWindow.postMessage({type:'GSF_AI_RESET_SOURCE',upload_id:e.data.upload_id},location.origin)}catch(_e){}
           return;
         }
         if(e.data.type==='GSF_SHELL_NAV'&&e.data.target==='ai-state')forwardState(e.data);

@@ -1153,7 +1153,8 @@ const MURALS={
   scanning:["Sto guardando<br>il tuo gameplay","Audio, azione<br>e reazioni"],
   error:["Qualcosa<br>si è inceppato","Il gameplay<br>è ancora qui"]};
 let state={...DEFAULT_STATE};
-let awaitingResults=false,pollToken=0,scanStarted=0,scanTimer=null,saveTimer=null,sheetIndex=-1,requestId="",baseline="",runInfo={},muralMode="",failed=false;
+let awaitingResults=false,pollToken=0,scanStarted=0,scanTimer=null,saveTimer=null,sheetIndex=-1,requestId="",baseline="",runInfo={},muralMode="",failed=false,freshSourcePending=false;
+try{freshSourcePending=!!sessionStorage.getItem("gsf_ai_source_epoch_v438")}catch(_e){}
 const $=id=>document.getElementById(id);
 const alive=(type,data)=>{if(DEMO)return;try{window.GSFAlive&&window.GSFAlive.emit(type,data)}catch(_e){}};
 const send=(action,data={})=>{if(DEMO)return demoHost(action,data);try{parent.postMessage({type:"GSF_AI_UI",action,...data},location.origin)}catch(_e){}};
@@ -1197,10 +1198,30 @@ function setScan(mode,startedAt=0){
 function applyResults(list){
   const next=(Array.isArray(list)?list:[]).filter(Boolean).slice(0,3);
   if(!next.length)return false;
+  freshSourcePending=false;try{sessionStorage.removeItem("gsf_ai_source_epoch_v438")}catch(_e){}
   state.previews=next;state.processing=false;
   if(awaitingResults||!document.querySelector('[data-view="moments"]').classList.contains("is-active")){state.selectedMoment=0;awaitingResults=false;showView("moments")}
   setScan("off");render();if(!next[0]?.whole_source){autosave("results");alive("ai.found",{count:next.length})};return true}
 const signature=list=>list.map(d=>String(d.video||"")+"@"+String(d.mtime||"")).join("|");
+function resetForNewSource(){
+  // The old video belongs to a verified Creator Hub draft. Stop every stale
+  // timer/poll and discard only browser state for the current AI analysis.
+  ++pollToken;
+  awaitingResults=false;
+  clearTimeout(saveTimer);saveTimer=null;
+  clearInterval(scanTimer);scanTimer=null;
+  requestId="";baseline="";scanStarted=0;runInfo={};sheetIndex=-1;
+  freshSourcePending=true;
+  try{sessionStorage.setItem("gsf_ai_source_epoch_v438",String(Date.now()))}catch(_e){}
+  try{sessionStorage.removeItem("gsf_ai_active_scan_v2")}catch(_e){}
+  try{localStorage.removeItem(DRAFT_KEY)}catch(_e){}
+  stopPlayback();
+  state={...DEFAULT_STATE,previews:[]};
+  closeSheet();
+  showView("engines");
+  setScan("off");
+  render();
+}
 async function fetchResults(){if(DEMO)return null;const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),6000);try{const r=await fetch("/ai/results?_="+Date.now(),{cache:"no-store",credentials:"same-origin",signal:controller.signal});if(!r.ok)return null;return await r.json()}catch(_e){return null}finally{clearTimeout(timer)}}
 function freshRows(j){
   const rows=(j&&Array.isArray(j.previews)?j.previews:[]).filter(Boolean);
@@ -1228,7 +1249,7 @@ async function pollResults(token,deadline){
     const message=String(j.error||"Analisi non riuscita. Riprova.");$("aiStatus").textContent=message;
     alive("failure",{job:"ai",message});return;
   }
-  if(j?.status==='completed_no_highlights'||j?.result_state==='completed_no_highlights'){
+  if(j?.request_id===requestId&&(j?.status==='completed_no_highlights'||j?.result_state==='completed_no_highlights')){
     awaitingResults=false;state.processing=false;setScan("off");render();
     const message=String(j.message||"Nessun momento sufficientemente forte trovato nel gameplay. Puoi aprirlo nell’Editor.");$("aiStatus").textContent=message;
     alive("ai.no_highlights",{message});return;
@@ -1369,10 +1390,13 @@ $("restoreAi").addEventListener("click",restoreShort);
 $("sheetWrap").addEventListener("click",e=>{if(e.target===$("sheetWrap"))closeSheet()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("sheetWrap").hidden)closeSheet()});
 async function checkResultsOrScan(){
-  if(DEMO)return;
+  if(DEMO||freshSourcePending||awaitingResults)return;
   const j=await fetchResults();
-  if(!j)return;
-  if(j.status==="analyzing"||j.status==="running"){
+  if(!j||freshSourcePending||awaitingResults)return;
+  const activeScan=(()=>{try{return JSON.parse(sessionStorage.getItem("gsf_ai_active_scan_v2")||"null")}catch(_e){return null}})();
+  if((j.status==="analyzing"||j.status==="running")&&activeScan?.requestId&&j.request_id===activeScan.requestId){
+    requestId=String(activeScan.requestId);
+    baseline=String(activeScan.baseline||"");
     awaitingResults=true;state.processing=true;
     setScan("on",Number(j.updated_at?j.updated_at*1000:Date.now()));
     render();
@@ -1388,6 +1412,9 @@ async function checkResultsOrScan(){
 }
 window.addEventListener("message",event=>{
   if(event.origin!==location.origin||!event.data)return;
+  if(event.data.type==="GSF_AI_RESET_SOURCE"){
+    resetForNewSource();return;
+  }
   if(event.data.type==="GSF_AI_START_SEARCH"){
     state.loaded=true;
     if(!awaitingResults&&!state.processing){
@@ -1396,11 +1423,14 @@ window.addEventListener("message",event=>{
     return;
   }
   if(event.data.type==="GSF_AI_STATE"){
+    // The previous source can still be echoed by Streamlit while the new
+    // upload is in flight. Ignore it until new analysis produces fresh results.
+    if(freshSourcePending)return;
     const incoming={...event.data.state};const list=incoming.previews;delete incoming.previews;
     state={...state,...incoming};if(!Number.isInteger(Number(state.selectedMoment)))state.selectedMoment=0;
     const hasPreviews=Array.isArray(list)&&list.length>0;
-    if(hasPreviews&&applyResults(list))return;
-    if(state.loaded&&!state.processing&&!awaitingResults)checkResultsOrScan();
+    if(hasPreviews&&!freshSourcePending&&applyResults(list))return;
+    if(state.loaded&&!state.processing&&!awaitingResults&&!freshSourcePending)checkResultsOrScan();
     render();
   }
 });
