@@ -249,6 +249,31 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      - name: V444 mandatory flow on mobile WebKit
+        timeout-minutes: 30
+        run: |
+          python -m pip install --disable-pip-version-check playwright
+          python -m playwright install --with-deps webkit
+          GSF_BROWSER=webkit python -m unittest discover -s tests -p test_v444_flow.py
+          # Real uploads into the running production image: 5 min, 60 s and 8 s.
+          docker exec gsf-production-gate sh -c 'cd /tmp && F=/usr/bin/ffmpeg &&
+            $F -loglevel error -y -f lavfi -i testsrc2=size=640x360:rate=30 -f lavfi -i sine=frequency=440 -t 300 -c:v libx264 -preset ultrafast -crf 32 -pix_fmt yuv420p -c:a aac five_min.mp4 &&
+            $F -loglevel error -y -f lavfi -i mandelbrot=size=640x360:rate=30 -f lavfi -i sine=frequency=330 -t 60 -c:v libx264 -preset ultrafast -crf 32 -pix_fmt yuv420p -c:a aac second60.mp4 &&
+            $F -loglevel error -y -f lavfi -i testsrc=size=640x360:rate=30 -f lavfi -i sine=frequency=660 -t 8 -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac short8.mp4'
+          mkdir -p /tmp/gsf-v444-media
+          for f in five_min second60 short8; do docker cp gsf-production-gate:/tmp/$f.mp4 /tmp/gsf-v444-media/; done
+          GSF_V444_REQUIRED=1 GSF_BROWSER=webkit GSF_BASE_URL=http://127.0.0.1:18080 GSF_V444_MEDIA=/tmp/gsf-v444-media \
+            python -m unittest discover -v -s tests -p test_v444_full_flow.py
+
+      - name: Upload V444 flow evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gsf-v444-flow-${{ github.sha }}
+          path: /tmp/gsf-v444-*.png
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Promote tested commit to Railway
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
