@@ -75,7 +75,7 @@ def _scan_cache_signature(input_file: str | Path, engine_version: str = "") -> s
         raw = f"{engine_version}|{p.resolve()}|{st.st_size}|{st.st_mtime_ns}"
     except Exception:
         raw = f"{engine_version}|{input_file}"
-    return hashlib.sha1(raw.encode("utf-8", errors="ignore")).hexdigest()[:24]
+    return hashlib.sha1(raw.encode("utf-8", errors="ignore"), usedforsecurity=False).hexdigest()[:24]
 
 
 def load_cached_scan(input_file: str | Path, preview_dir: str | Path | None = None, engine_version: str = "") -> tuple[dict[str, Any] | None, bool]:

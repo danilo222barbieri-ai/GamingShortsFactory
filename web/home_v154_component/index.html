@@ -3616,14 +3616,16 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    loaded=!!on;gsfAlive("sync",{video_ready:loaded});
    setMuralState(loaded?"ready":"idle"); view.classList.toggle("loadedView",loaded);
    circle.setAttribute("data-gsf-has-source",loaded?"true":"false");
-   if(loaded&&fromUploadComplete){
+   // An acknowledged upload must remain visibly ready across Streamlit rerenders.
+   // The circle can still be tapped to replace the video after confirmation.
+   if(loaded){
      circle.classList.add("loaded","done");
      rings.classList.remove("uploading");rings.classList.add("uploaded");
      uploadIcon.classList.add("loadedCheck");
      uploadIcon.innerHTML=`<svg viewBox="0 0 64 64" aria-hidden="true" class="gsfLoadedCheckSvg"><path class="gsfCheckGhost" d="M12 35c4.5 3.7 8.1 7.2 12.6 11.1C33 35.2 42.6 24.2 52.4 16"/><path class="gsfCheckMain" d="M13.2 34.2c4.1 3.5 7.8 7 11.7 10.5C33.4 34 43 23.4 52 16.2"/></svg>`;
      uploadLabel.innerHTML="Video caricato";uploadHint.textContent="";pick.disabled=false;
      clearTimeout(circleResetTimer);
-     circleResetTimer=window.setTimeout(restoreEmptyCircleForNewVideo,650);
+     // Never erase the completed confirmation after 650 ms.
    }
    else{
      restoreEmptyCircleForNewVideo();
@@ -4573,6 +4575,8 @@ pick.addEventListener("change",async()=>{
     const mode = calmMode(out, now);
     return mode === out.mode ? out : Object.assign({}, out, { mode });
   }
+  // The pure Alive core may be used before the browser UI is mounted.
+  let page = null;
   function nextAction(s) {
     s = s || BASE;
     if (s.error) return "retry";
@@ -4647,7 +4651,7 @@ pick.addEventListener("change",async()=>{
   try { channel = new BroadcastChannel("gsf-alive-v418"); } catch (_e) { channel = null; }
   let state = expire(Object.assign({}, BASE, store.get() || {}), Date.now());
   state.mode = calmMode(state, Date.now());
-  let page = { name: "page", target: null, voiceAnchor: null, dock: "top", orbs: [] };
+  page = { name: "page", target: null, voiceAnchor: null, dock: "top", orbs: [] };
   let mounted = false, lastSpokenSeq = state.seq, lastActivity = Date.now(), hiddenAt = 0;
   const listeners = new Set();
   const TARGET = { home: "home", ai: "ai", short: "social", hub: "hub", editor: "editor" };

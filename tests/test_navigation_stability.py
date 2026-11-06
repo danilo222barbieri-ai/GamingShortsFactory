@@ -373,7 +373,7 @@ def test_crea_short_opens_the_canonical_page_and_starts_the_render():
     assert "fetch('/share/state'" in app
     # The page shows why nothing is rendering yet.
     assert "e.data.type!=='GSF_SHARE_NOTICE'" in share
-    assert "sub=shortNotice||'Lo Short finale sta arrivando'" in share
+    assert "sub=shortNotice||'Genera lo Short con l\\'IA o Editor prima di pubblicare'" in share
 
 
 class InspectorCancellationAttribution(unittest.TestCase):

@@ -124,7 +124,9 @@ def test_home_component_resumable_upload_and_clean_circle_contracts():
 
     # 2. Real transfer progress & confirmed completion «Video caricato»
     assert "function updateUploadProgressUI(pct)" in home_html
-    assert 'statusText.textContent="Video caricato"' in home_html
+    assert 'statusText.textContent = "Video caricato";' in home_html
+    assert 'if(loaded){' in home_html
+    assert 'circleResetTimer=window.setTimeout(restoreEmptyCircleForNewVideo,650);' not in home_html
     assert 'uploadLabel.innerHTML="Video caricato"' in home_html
 
     # 3. Auto-save to Projects
