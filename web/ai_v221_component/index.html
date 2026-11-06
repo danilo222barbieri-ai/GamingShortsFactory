@@ -1420,6 +1420,9 @@ window.addEventListener("message",event=>{
     return;
   }
   if(event.data.type==="GSF_AI_STATE"){
+    // The previous source can still be echoed by Streamlit while the new
+    // upload is in flight. Ignore it until new analysis produces fresh results.
+    if(freshSourcePending)return;
     const incoming={...event.data.state};const list=incoming.previews;delete incoming.previews;
     state={...state,...incoming};if(!Number.isInteger(Number(state.selectedMoment)))state.selectedMoment=0;
     const hasPreviews=Array.isArray(list)&&list.length>0;
