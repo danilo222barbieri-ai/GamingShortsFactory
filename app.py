@@ -18359,6 +18359,10 @@ if GSF_WEB_MODE:
         P.__GSF_GLOBAL_SHELL_V343=true;
         keepGlobalShellMounted();syncAccount();syncSocials();
         P.addEventListener('gsf:profile-updated',syncAccount);
+        /* GSF_V443_HOME_LOAD_RECOVERY: a Home iframe whose document never loaded cannot
+           repeat its ready handshake. Reload it well before Streamlit's 60s warning. */
+        let homeWaitingSince=0,homeReloads=0;
+        P.setInterval(()=>{const f=D.querySelector('iframe[title*="gsf_home_v154"]');const hidden=!!f&&P.getComputedStyle(f).display==='none';if(!hidden){homeWaitingSince=0;homeReloads=0;return}if(!homeWaitingSince)homeWaitingSince=Date.now();if(Date.now()-homeWaitingSince>15000&&homeReloads<3){homeReloads+=1;homeWaitingSince=Date.now();console.warn('[GSF_HOME_RELOAD]',homeReloads);f.src=f.src}},2000);
         P.GSFNavigation.registerSurface('hub',{open:data=>focusHub(data.section||'dashboard'),close:()=>hide(D.getElementById('gsf-creator-hub-live-v160'))});
         P.GSFNavigation.registerSurface('short',{open:openShort,close:()=>hide(D.getElementById('gsf-short-overlay-v343'))});
         const observer=new P.MutationObserver(()=>keepGlobalShellMounted());observer.observe(D.documentElement,{childList:true,subtree:true});

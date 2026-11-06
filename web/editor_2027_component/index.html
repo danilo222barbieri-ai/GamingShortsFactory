@@ -1485,12 +1485,18 @@ html body #ng27#ng27 .createShortJourneyBtn *{color:var(--na-cta-ink)!important}
    renderEventMap();
    setFrameHeight(hostHeight);
  }
+ // GSF_V443_READY_HANDSHAKE: repeat until the first render proves it arrived.
+ let renderReceived=false,readyAttempts=0;
+ const announceReady=()=>{if(!renderReceived)sendMessage(COMPONENT_READY,{apiVersion:1})};
+ const readyTimer=setInterval(()=>{if(renderReceived||++readyAttempts>120){clearInterval(readyTimer);return}announceReady()},500);
  window.addEventListener("message",(event)=>{
    if(event.data && event.data.type===RENDER){
+     renderReceived=true;clearInterval(readyTimer);
      receiveHost(event.data.args||{});
    }
  });
- sendMessage(COMPONENT_READY,{apiVersion:1});
+ window.addEventListener("pageshow",announceReady);
+ announceReady();
  fitEditorViewport();
  window.setTimeout(fitEditorViewport,120);
  window.setTimeout(()=>{

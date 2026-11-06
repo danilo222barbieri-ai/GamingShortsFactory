@@ -1969,6 +1969,20 @@ def _creator_account_load(sid):
     return {}
 
 
+def _creator_session_account_strict(sid):
+    """Account bound to this session; raises when storage cannot answer."""
+    if not _bucket_enabled():
+        return ""
+    try:
+        raw=_s3().get_object(Bucket=S3_BUCKET,Key=_creator_session_key(sid))["Body"].read()
+    except Exception as exc:
+        code=str(getattr(exc,"response",{}).get("Error",{}).get("Code",""))
+        if isinstance(exc,FileNotFoundError) or code in ("NoSuchKey","404","NotFound"):
+            return ""
+        raise
+    payload=json.loads(raw.decode("utf-8"))
+    return _safe_id(payload.get("account_id","")) if isinstance(payload,dict) else ""
+
 def _creator_account_save(sid,profile):
     sid=_safe_id(sid)
     profile=dict(profile or {})
@@ -7344,6 +7358,10 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 data=_read_json(self,max_bytes=2*1024*1024)
                 profile=_creator_account_load(sid) or {}
+                # A transient read failure returns {}: saving that would detach the
+                # session from its account and with it every connected social.
+                if not _safe_id(profile.get("account_id","")) and _creator_session_account_strict(sid):
+                    raise ConnectionError("account profile unreadable")
                 name=str(data.get("display_name") or profile.get("display_name") or "Creator").strip()[:80] or "Creator"
                 avatar=str(data.get("avatar") or "").strip()
                 if avatar:
@@ -7351,7 +7369,10 @@ class Handler(BaseHTTPRequestHandler):
                     profile["avatar"]=avatar
                 profile["display_name"]=name; profile["updated_at"]=time.time(); _creator_account_save(sid,profile)
                 _json(self,200,{"ok":True,"display_name":name,"updated_at":profile["updated_at"]})
-            except Exception as exc: _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            except ValueError as exc: _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            except Exception as exc:
+                print("GSF_PROFILE_SAVE_ERROR",type(exc).__name__,repr(str(exc))[:200],flush=True)
+                _json(self,503,{"ok":False,"error":"Profilo non aggiornato. Riprova tra poco."})
             return
         if path=="/social-connect/facebook/select-page":
             sid=_social_sid(self)
