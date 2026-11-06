@@ -3629,6 +3629,8 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    if(fromUploadComplete)setUploadAcknowledgement(true);
    setMuralState(loaded?"ready":"idle"); view.classList.toggle("loadedView",loaded);
    circle.setAttribute("data-gsf-has-source",loaded?"true":"false");
+   // A parent rerender cannot reset an upload that is still transferring.
+   if(uploadBusy&&!fromUploadComplete){fitViewport();return;}
    // Show the check only for the freshly completed upload. Returning from AI
    // retains loaded=true for the workflow, but presents the empty uploader.
    if(loaded&&uploadAcknowledgement){
