@@ -3391,11 +3391,16 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
  // Keep it through Home rerenders, but dismiss it on navigation to another surface.
  const UPLOAD_ACK_KEY="gsf_home_upload_ack_v437";
  let uploadAcknowledgement=false;
- try{uploadAcknowledgement=sessionStorage.getItem(UPLOAD_ACK_KEY)==="1"}catch(_e){}
+ try{
+   const stamped=Number(sessionStorage.getItem(UPLOAD_ACK_KEY)||0);
+   // A short-lived confirmation survives Streamlit iframe remounts, not new projects.
+   uploadAcknowledgement=stamped>0&&Date.now()-stamped<45000;
+   if(!uploadAcknowledgement)sessionStorage.removeItem(UPLOAD_ACK_KEY);
+ }catch(_e){}
  function setUploadAcknowledgement(visible){
    uploadAcknowledgement=!!visible;
    try{
-     if(uploadAcknowledgement)sessionStorage.setItem(UPLOAD_ACK_KEY,"1");
+     if(uploadAcknowledgement)sessionStorage.setItem(UPLOAD_ACK_KEY,String(Date.now()));
      else sessionStorage.removeItem(UPLOAD_ACK_KEY);
    }catch(_e){}
  }
@@ -3992,8 +3997,13 @@ async function executeProjectFinalization(file, uploadId, durationPromise) {
 
   setUploadState(UPLOAD_ST.COMPLETED);
 
-  let actualSec = await durationPromise;
-  if (!actualSec && Number.isFinite(Number(duration))) actualSec = Number(duration);
+  // Metadata reading is advisory: once the project is committed it must not
+  // block or roll back success. Some mobile codecs never fire loadedmetadata.
+  let actualSec = await Promise.race([
+    Promise.resolve(durationPromise).catch(()=>null),
+    new Promise(resolve=>setTimeout(()=>resolve(null),3000))
+  ]);
+  if (!(Number(actualSec)>0) && Number(duration)>0) actualSec=Number(duration);
   const isUnder15 = actualSec !== null && actualSec < 15;
 
   gsfAlive("upload.completed", {duration: actualSec});
@@ -4153,6 +4163,12 @@ pick.addEventListener("change",async()=>{
   }
   catch(e){
     console.error("[GSF_UPLOAD_DIAG] upload_error", (e&&e.message)||e);
+    if(currentUploadState===UPLOAD_ST.COMPLETED){
+      // The server committed the upload. A downstream navigation/metadata
+      // error must never turn a successful upload into an empty uploader.
+      console.warn("[GSF_UPLOAD_DIAG] post_commit_handoff_failed", (e&&e.message)||e);
+      return;
+    }
     if(activeUploadSession && activeUploadSession.transferDone){
       setUploadState(UPLOAD_ST.RECOVERABLE_ERROR, {message: e.message || "Finalizzazione interrotta"});
       parentToast("Caricamento recuperabile", "I dati sono al sicuro. Tocca per finalizzare il video.", "warning");
@@ -4323,7 +4339,24 @@ pick.addEventListener("change",async()=>{
  });
  function receive(args){
    args=args||{};
-   setLoaded(!!args.loaded);
+   const incomingLoaded=!!args.loaded;
+   // GSF_V440_UPLOAD_COMPLETION_GUARD: Streamlit can echo the prior
+   // loaded=false snapshot while a transfer or the post-save handoff runs.
+   // A stale echo must never clear the confirmation already committed by
+   // /direct-upload/projects/save-uploaded-source.
+   const committed=currentUploadState===UPLOAD_ST.COMPLETED;
+   const inFlight=uploadBusy||currentUploadState===UPLOAD_ST.RECOVERABLE_ERROR;
+   if(incomingLoaded){
+     setLoaded(true);
+   }else if(committed||inFlight){
+     // Keep the active upload/progress/error UI unchanged.
+   }else if(uploadAcknowledgement){
+     // Iframe was remounted shortly after confirmed completion.
+     // The acknowledgement is time-bounded and cleared on navigation/new upload.
+     setLoaded(true);
+   }else{
+     setLoaded(false);
+   }
    setDuration(Number(args.duration)||15,false);
    if(args.engine)setEngine(String(args.engine),false);
    renderMoments(args.previews||[]);
