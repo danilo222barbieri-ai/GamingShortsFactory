@@ -189,6 +189,9 @@ def test_new_video_requires_verified_draft_before_transfer():
     assert 'sessionStorage.removeItem("gsf_ai_active_scan_v2")' in ai
     assert 'localStorage.removeItem(DRAFT_KEY)' in ai
     assert 'freshSourcePending' in ai
+    assert 'sessionStorage.setItem("gsf_ai_source_epoch_v438"' in html
+    assert 'sessionStorage.getItem("gsf_ai_source_epoch_v438")' in ai
+    assert 'sessionStorage.removeItem("gsf_ai_source_epoch_v438")' in ai
     assert 'frameReady=true;' in app
     assert "startWhenReady();" in app
     assert 'value({event: "upload_complete", duration: actualSec, engine: engine || "auto"});' in html
