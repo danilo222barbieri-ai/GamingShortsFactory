@@ -1074,7 +1074,7 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
             os.fsync(out.fileno())
         if tmp.stat().st_size!=total:
             raise IOError(f"bucket materialization size mismatch {tmp.stat().st_size} != {total}")
-        _security_validate_media(tmp,ext)
+        media_info=_security_validate_media(tmp,ext)
         os.replace(tmp,final)
         marker=media/".direct_upload_ready.json"
         if before_publish:before_publish()
@@ -1086,6 +1086,7 @@ def _materialize_bucket_object(sid,upload_id,key,original_name,safe_stem,ext,tot
             "upload_id":upload_id,
             "completed_at":time.time(),
             "storage":"railway_bucket",
+            "duration":float(media_info["duration"]),
             "bucket_key":key,
             "analysis_key":analysis_key,
         })
@@ -7544,7 +7545,7 @@ class Handler(BaseHTTPRequestHandler):
                     original_name=st.get("name") or "Gameplay"
                     total=int(st.get("total",0) or data_path.stat().st_size)
                     final=media/f"source_direct_{safe_stem}_{upload_id}{ext}"
-                    _security_validate_media(data_path,ext)
+                    media_info=_security_validate_media(data_path,ext)
                     os.replace(data_path,final)
                     _write_json_atomic(marker,{
                         "path":str(final),
@@ -7553,6 +7554,7 @@ class Handler(BaseHTTPRequestHandler):
                         "upload_id":upload_id,
                         "completed_at":time.time(),
                         "storage":"direct_fallback",
+                        "duration":float(media_info["duration"]),
                     })
                     state_path.unlink(missing_ok=True)
                     try: upload_dir.rmdir()
@@ -7564,65 +7566,83 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path=="/projects/save-uploaded-source":
+            # V442: the ACK must reference the specific upload requested by the
+            # browser. An old ready marker is never proof that the new file exists.
             try:
-                try:
-                    data=_read_json(self,max_bytes=32*1024)
-                except Exception:
-                    data={}
-                data=data if isinstance(data,dict) else {}
-                marker=ROOT/"sessions"/sid/"media"/".direct_upload_ready.json"
+                data=_read_json(self,max_bytes=32*1024)
+                if not isinstance(data,dict):
+                    raise ValueError("Invalid project payload")
+                requested_id=_safe_id(data.get("upload_id") or "")
+                if not sid or not requested_id:
+                    _json(self,400,{"ok":False,"error":"Identificativo caricamento mancante."})
+                    return
+                media=ROOT/"sessions"/sid/"media"
+                marker=media/".direct_upload_ready.json"
                 meta={}
                 if marker.is_file():
                     raw_m=json.loads(marker.read_text(encoding="utf-8"))
-                    if isinstance(raw_m,dict):
+                    if isinstance(raw_m,dict) and _safe_id(raw_m.get("upload_id"))==requested_id:
                         meta=dict(raw_m)
-                source_path=str(meta.get("path") or data.get("path") or "")
+                source_path=str(meta.get("path") or "")
                 original_name=str(meta.get("name") or data.get("name") or "Gameplay")
-                upload_id=_safe_id(meta.get("upload_id") or data.get("upload_id") or "current")
                 total=int(meta.get("size") or data.get("size") or 0)
-                # Resilient recovery: if .direct_upload_ready.json was not yet written,
-                # check if upload_dir has completed chunks and finalize now
-                if not source_path and upload_id:
-                    upload_dir=ROOT/"sessions"/sid/"direct_upload"/upload_id
+
+                # Only recover chunks belonging to this exact request. Never
+                # substitute the previous video's ready marker.
+                if not source_path:
+                    upload_dir=ROOT/"sessions"/sid/"direct_upload"/requested_id
                     state_path=upload_dir/"state.json"
                     data_path=upload_dir/"upload.tmp"
                     if state_path.is_file() and data_path.is_file():
-                        try:
-                            st=json.loads(state_path.read_text(encoding="utf-8"))
-                            st_count=int(st.get("count",0) or 0)
-                            received=set(st.get("received") or [])
-                            if st_count>0 and len(received)==st_count:
-                                media=ROOT/"sessions"/sid/"media"
-                                media.mkdir(parents=True,exist_ok=True)
-                                safe_stem=st.get("stem") or "source"
-                                ext=st.get("ext") or ".mp4"
-                                final=media/f"source_direct_{safe_stem}_{upload_id}{ext}"
-                                _security_validate_media(data_path,ext)
-                                os.replace(data_path,final)
-                                _write_json_atomic(marker,{
-                                    "path":str(final),
-                                    "name":original_name,
-                                    "size":total or data_path.stat().st_size,
-                                    "upload_id":upload_id,
-                                    "completed_at":time.time(),
-                                    "storage":"direct_fallback",
-                                })
-                                source_path=str(final)
-                                state_path.unlink(missing_ok=True)
-                                try: upload_dir.rmdir()
-                                except OSError: pass
-                        except Exception as _rec_exc:
-                            print("GSF_SAVE_RECOVERY_WARN",type(_rec_exc).__name__,flush=True)
+                        st=json.loads(state_path.read_text(encoding="utf-8"))
+                        st_count=int(st.get("count",0) or 0)
+                        received=set(st.get("received") or [])
+                        if st_count>0 and len(received)==st_count:
+                            media.mkdir(parents=True,exist_ok=True)
+                            safe_stem=st.get("stem") or "source"
+                            ext=st.get("ext") or ".mp4"
+                            final=media/f"source_direct_{safe_stem}_{requested_id}{ext}"
+                            info=_security_validate_media(data_path,ext)
+                            source_size=data_path.stat().st_size
+                            os.replace(data_path,final)
+                            meta={
+                                "path":str(final),"name":str(st.get("name") or original_name),
+                                "size":source_size,"upload_id":requested_id,
+                                "completed_at":time.time(),"storage":"direct_fallback",
+                                "duration":float(info["duration"]),
+                            }
+                            _write_json_atomic(marker,meta)
+                            source_path=str(final)
+                            original_name=str(meta["name"])
+                            total=source_size
+                            state_path.unlink(missing_ok=True)
+                            try:upload_dir.rmdir()
+                            except OSError:pass
+
                 if not source_path:
-                    _json(self,404,{"ok":False,"error":"Nessun video caricato trovato per il salvataggio nei Progetti."})
+                    _json(self,409,{"ok":False,"error":"Il nuovo video non è ancora pronto. Riprova la finalizzazione."})
+                    return
+                source=Path(source_path).resolve()
+                if not source.is_file() or not source.is_relative_to(media.resolve()):
+                    _json(self,409,{"ok":False,"error":"Sorgente non verificata per questo caricamento."})
+                    return
+                actual_size=source.stat().st_size
+                requested_size=int(data.get("size") or 0)
+                if not actual_size or (requested_size and actual_size!=requested_size) or (total and total!=actual_size):
+                    _json(self,409,{"ok":False,"error":"Dimensione del video diversa da quella caricata."})
                     return
                 res=_auto_save_uploaded_source_to_projects(
-                    sid,upload_id,source_path,original_name,total,
+                    sid,requested_id,str(source),original_name,actual_size,
                     str(meta.get("bucket_key") or ""),str(meta.get("analysis_key") or ""),
                 )
-                _json(self,200 if res.get("ok") else 400,res)
+                res["duration"]=float(meta.get("duration") or _probe_video_duration_fast(source) or 0)
+                res["size"]=actual_size
+                _json(self,200 if res.get("ok") else 409,res)
+            except (ValueError,TypeError) as exc:
+                _json(self,400,{"ok":False,"error":str(exc)[:180]})
             except Exception as exc:
-                _json(self,500,{"ok":False,"error":str(exc)[:200]})
+                print("GSF_V442_PROJECT_ACK_WARN",type(exc).__name__,flush=True)
+                _json(self,503,{"ok":False,"error":"Salvataggio progetto non verificabile. Riprova."})
             return
 
         if path=="/bucket/init":
