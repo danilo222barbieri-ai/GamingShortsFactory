@@ -63,7 +63,12 @@ def sync_project(session):
 def render_queue_runtime(st_module):
     sync_project(st_module.session_state)
     state = sync_alive_from_session(st_module.session_state)
-    render_alive(st_module, state, show_status=state.mode.value in {'working', 'celebrate', 'error'})
-    render_alive_notification(st_module, st_module.session_state, state)
+    # GSF_V444_STABLE_SLOT: this runs right before the Home component. Status and
+    # notifications appear only on some reruns; emitted loose, they shift Home's
+    # position, React moves its node and the browser reloads the iframe, killing
+    # the upload continuation mid-flight. One container is always emitted.
+    with st_module.container():
+        render_alive(st_module, state, show_status=state.mode.value in {'working', 'celebrate', 'error'})
+        render_alive_notification(st_module, st_module.session_state, state)
 
 
