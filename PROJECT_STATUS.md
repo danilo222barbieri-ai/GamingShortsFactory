@@ -1,8 +1,10 @@
 # Gaming Shorts Factory — Project Status
 
-## Total consolidation — 2026-11-06 (local, pending owner push approval)
+## Total consolidation — 2026-11-06 (LIVE)
 
-- Owner request: one operative version, no new branches, no deploy, no Railway changes. Operative branch is `main`; consolidation commits are on local `main` only and are **not pushed** until the owner approves (a push runs the Production Gate, which auto-promotes on green).
+- Release: owner approved the push; `515d967..5889e36` pushed to main. GSF Production Gate 42224599726 **SUCCESS** (8m44s), promotion commit eec7e53 (frontend marker 5889e36; worker marker unchanged, no worker files touched). Railway frontend deployment 2c965222 **SUCCESS** 13:30 UTC; GSF Production UI Verify 42225770880 **SUCCESS**: production `/healthz` serves release eec7e53 with ui_digest a2be8e66…. Previous release for rollback: 213144d.
+
+- Owner request: one operative version, no new branches, no deploy, no Railway changes. Operative branch is `main`; consolidation commits were prepared on local `main` and pushed only after explicit owner approval.
 - Start point: `main` 515d967 (safety tag `safety/pre-consolidation-20261106`, local only: tag push is blocked by this session's proxy). Production at start: frontend deploy 213144d (code 7f3ab42, PR #211), worker 7f3ab42, both Railway SUCCESS; `/healthz` all true. Frontend memory limit is 8 GB (7-day peak 2.96 GB).
 - Inventory: 295 remote branches. 132 fully integrated (ancestors of main), 13 CI screenshot artifacts (no code), 149 diverged. Diverged branches older than 2026-10-13 are 400–2,200 commits behind and either already absorbed (≥90% of added lines present in main) or superseded by later rewrites; recovering them would overwrite newer code. No branch deleted.
 - Recovered: V442 (owner stopped that chat and authorized takeover) — 4 commits (per-upload ACK fence with server upload id and verified duration; YouTube single refresh on 401, explicit 401/403/429/503 errors, live listing) plus new tests `tests/test_v442_upload_ack_and_youtube.py` and V427/V440 contracts updated to the intended behaviour. From PR #203 (V435): passive toasts let taps through (re-applied to GSF Pulse) with `tests/test_toast_tap_through.py`. Stale `tornado` constraint bumped to 6.6 (3 CVEs; not installed at runtime since Streamlit 1.66.1 uses starlette/uvicorn).
