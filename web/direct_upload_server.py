@@ -5410,6 +5410,74 @@ def _start_proactive_guardian():
 # V319 AI RESULTS BRIDGE
 _AI_RESULT_FILE_RE = re.compile(r'(?:^|[_-])(?:mini|candidate|preview)[_-]?([1-3])(?:[^0-9].*)?\.mp4$', re.IGNORECASE)
 
+# GSF_V438_SOURCE_EPOCH: do not expose moments from a previous source after
+# a verified draft handoff. Keep previous media files intact for draft recovery.
+_AI_SOURCE_EPOCH_NAME = ".gsf_ai_source_epoch.json"
+
+def _ai_source_epoch(sid):
+    path = ROOT / "sessions" / _safe_id(sid) / "media" / _AI_SOURCE_EPOCH_NAME
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError, TypeError):
+        return {}
+
+
+def _ai_begin_new_source(sid, draft_id, next_upload_id):
+    """Verify existing draft, then invalidate old workflow/results without deleting drafts."""
+    sid = _safe_id(sid)
+    draft_id = _safe_id(draft_id)
+    next_upload_id = _safe_id(next_upload_id)
+    if not sid or not draft_id or not next_upload_id:
+        raise ValueError("Dati del nuovo caricamento mancanti.")
+    draft = _draft_load(sid, draft_id)
+    source_ref = (draft.get("source_ref") or {}) if isinstance(draft, dict) else {}
+    if not draft or not isinstance(source_ref, dict):
+        raise RuntimeError("La bozza precedente non risulta salvata.")
+    ref_path = Path(str(source_ref.get("draft_path") or source_ref.get("path") or ""))
+    if not ref_path.is_file() and not source_ref.get("bucket_key"):
+        raise RuntimeError("La bozza precedente non è recuperabile.")
+
+    media_dir = ROOT / "sessions" / sid / "media"
+    marker = media_dir / ".direct_upload_ready.json"
+    try:
+        current = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        current = {}
+    if not isinstance(current, dict):
+        current = {}
+    current_id = _safe_id(current.get("upload_id", ""))
+    draft_source_id = _safe_id(source_ref.get("upload_id", ""))
+    if current_id and draft_source_id != current_id:
+        raise RuntimeError("La bozza salvata non corrisponde al video corrente.")
+
+    # The epoch is committed only after the draft has been verified.
+    # Stale previews remain on disk for the old draft; only the active project
+    # is reset. A fresh upload will get a different ID and a new AI request.
+    stamp = time.time()
+    _write_json_atomic(media_dir / _AI_SOURCE_EPOCH_NAME, {
+        "reset_at": stamp,
+        "previous_upload_id": current_id,
+        "next_upload_id": next_upload_id,
+        "draft_id": draft_id,
+    })
+    try:
+        wf = load_workflow(ROOT / "sessions" / sid)
+        wf.transition_to(WorkflowState.UPLOADING)
+        save_workflow(ROOT / "sessions" / sid, wf)
+    except Exception as exc:
+        print("GSF_NEW_SOURCE_WORKFLOW_WARN", type(exc).__name__, flush=True)
+    # Stop jobs associated with the abandoned video; never cancel the new upload.
+    try:
+        mgr = _get_global_job_manager()
+        for job in mgr.list_jobs(sid, limit=30, include_terminal=False):
+            if str(job.get("kind") or "") in ("ai_analysis", "render", "ai_render"):
+                mgr.cancel_job(sid, job["id"], reason="Nuovo video: lavoro precedente in bozza")
+    except Exception as exc:
+        print("GSF_NEW_SOURCE_CANCEL_WARN", type(exc).__name__, flush=True)
+    return {"ok": True, "reset": True, "draft_id": draft_id, "upload_id": next_upload_id}
+
+
 def _ai_results_payload(sid):
     sid = _safe_id(sid)
     if not sid:
@@ -5417,13 +5485,26 @@ def _ai_results_payload(sid):
     media_dir = ROOT / "sessions" / sid / "media"
     if not media_dir.is_dir():
         return {"ok":True,"previews":[],"count":0}
+    epoch = _ai_source_epoch(sid)
+    reset_at = float(epoch.get("reset_at") or 0)
+    if reset_at:
+        try:
+            ready = json.loads((media_dir / ".direct_upload_ready.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            ready = {}
+        # Until the new source is finalized, the prior AI is never current.
+        if not isinstance(ready, dict) or _safe_id(ready.get("upload_id", "")) != _safe_id(epoch.get("next_upload_id", "")):
+            return {"ok": True, "status": "idle", "previews": [], "count": 0}
     # V412 AI ENGINES: when the app wrote a results sheet, join it with the
     # start-stamped mini previews (score, reason, times, alternates, request id).
     try:
         import ai_engines_v412 as _v412
+        meta = _v412.read_results_meta(media_dir)
+        if reset_at and (not meta or float(meta.get("updated_at") or 0) < reset_at):
+            meta = None
+        minis = [x for x in _v412.mini_files(media_dir) if x[2] >= reset_at] if reset_at else _v412.mini_files(media_dir)
         merged = _v412.merge_results(
-            _v412.read_results_meta(media_dir),
-            _v412.mini_files(media_dir),
+            meta, minis,
             lambda name: "/media/" + sid + "/media/" + urllib.parse.quote(name, safe=""),
         )
         if merged is not None:
@@ -5433,6 +5514,8 @@ def _ai_results_payload(sid):
     by_index = {}
     for path in media_dir.iterdir():
         if not path.is_file() or path.suffix.lower() != ".mp4":
+            continue
+        if reset_at and path.stat().st_mtime < reset_at:
             continue
         match = _AI_RESULT_FILE_RE.search(path.name)
         if not match:
@@ -6916,6 +6999,22 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,200,{"ok":True,"saved":True,"keys":len(state)})
             except Exception as exc:
                 _json(self,400,{"ok":False,"error":str(exc)[:180]})
+            return
+
+        if path=="/workflow/prepare-new-upload":
+            if not _security_csrf_valid(self,sid):
+                _json(self,403,{"ok":False,"error":"csrf validation failed"})
+                return
+            try:
+                data=_read_json(self,max_bytes=16384)
+                result=_ai_begin_new_source(
+                    sid, data.get("draft_id"), data.get("upload_id")
+                )
+                _json(self,200,result)
+            except (ValueError,RuntimeError) as exc:
+                _json(self,409,{"ok":False,"error":str(exc)[:200]})
+            except Exception as exc:
+                _json(self,500,{"ok":False,"error":"Impossibile preparare il nuovo progetto."})
             return
 
         if path=="/workflow/transition":
