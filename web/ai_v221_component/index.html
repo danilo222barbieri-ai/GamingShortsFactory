@@ -1154,6 +1154,7 @@ const MURALS={
   error:["Qualcosa<br>si è inceppato","Il gameplay<br>è ancora qui"]};
 let state={...DEFAULT_STATE};
 let awaitingResults=false,pollToken=0,scanStarted=0,scanTimer=null,saveTimer=null,sheetIndex=-1,requestId="",baseline="",runInfo={},muralMode="",failed=false,freshSourcePending=false;
+try{freshSourcePending=!!sessionStorage.getItem("gsf_ai_source_epoch_v438")}catch(_e){}
 const $=id=>document.getElementById(id);
 const alive=(type,data)=>{if(DEMO)return;try{window.GSFAlive&&window.GSFAlive.emit(type,data)}catch(_e){}};
 const send=(action,data={})=>{if(DEMO)return demoHost(action,data);try{parent.postMessage({type:"GSF_AI_UI",action,...data},location.origin)}catch(_e){}};
@@ -1197,7 +1198,8 @@ function setScan(mode,startedAt=0){
 function applyResults(list){
   const next=(Array.isArray(list)?list:[]).filter(Boolean).slice(0,3);
   if(!next.length)return false;
-  freshSourcePending=false;state.previews=next;state.processing=false;
+  freshSourcePending=false;try{sessionStorage.removeItem("gsf_ai_source_epoch_v438")}catch(_e){}
+  state.previews=next;state.processing=false;
   if(awaitingResults||!document.querySelector('[data-view="moments"]').classList.contains("is-active")){state.selectedMoment=0;awaitingResults=false;showView("moments")}
   setScan("off");render();if(!next[0]?.whole_source){autosave("results");alive("ai.found",{count:next.length})};return true}
 const signature=list=>list.map(d=>String(d.video||"")+"@"+String(d.mtime||"")).join("|");
@@ -1210,6 +1212,7 @@ function resetForNewSource(){
   clearInterval(scanTimer);scanTimer=null;
   requestId="";baseline="";scanStarted=0;runInfo={};sheetIndex=-1;
   freshSourcePending=true;
+  try{sessionStorage.setItem("gsf_ai_source_epoch_v438",String(Date.now()))}catch(_e){}
   try{sessionStorage.removeItem("gsf_ai_active_scan_v2")}catch(_e){}
   try{localStorage.removeItem(DRAFT_KEY)}catch(_e){}
   stopPlayback();
