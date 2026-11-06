@@ -334,12 +334,16 @@ def mini_files(directory: Path | str) -> list[tuple[int, float, float, str]]:
     return out
 
 
+
+# A real analysis of a long gameplay can exceed two minutes on the shared runtime.
+ANALYSIS_STALE_SECONDS = 420
+
 def merge_results(meta: Mapping[str, Any] | None, files: Iterable[tuple[int, float, float, str]], url_for) -> dict[str, Any] | None:
     """Join the results sheet with the mini preview files. None when there is no sheet."""
     if not isinstance(meta, Mapping):
         return None
     st = str(meta.get("status") or "")
-    if st == "analyzing" and time.time() - _num(meta.get("updated_at"), time.time()) >= 120:
+    if st == "analyzing" and time.time() - _num(meta.get("updated_at"), time.time()) >= ANALYSIS_STALE_SECONDS:
         meta = {**meta, "status": "failed", "error_code": "analysis_timeout",
                 "error": "L’analisi ha superato il tempo disponibile. Il video è conservato: puoi riprovare o continuare nell’Editor."}
         st = "failed"
@@ -370,10 +374,22 @@ def merge_results(meta: Mapping[str, Any] | None, files: Iterable[tuple[int, flo
         row["mtime"] = best[0] if best else 0.0
         previews.append(row)
     ready = [row for row in previews if row["video"]]
+    status = str(meta.get("status") or "success")
+    if meta.get("result_state"):
+        result_state = str(meta.get("result_state"))
+    elif status == "analyzing":
+        # GSF_V444: an analysis still running has no verdict yet. Reporting
+        # "no highlights" here made the AI page stop polling before the moments
+        # existed, so they only appeared after leaving and re-entering the page.
+        result_state = "analyzing"
+    elif previews and len(ready) < len(previews):
+        result_state = "rendering_previews"
+    else:
+        result_state = "completed_with_results" if ready else "completed_no_highlights"
     return {
         "ok": True,
-        "status": str(meta.get("status") or "success"),
-        "result_state": str(meta.get("result_state") or ("completed_with_results" if ready else "completed_no_highlights")),
+        "status": status,
+        "result_state": result_state,
         "whole_source": bool(meta.get("whole_source")),
         "error": str(meta.get("error") or ""),
         "message": str(meta.get("message") or ""),

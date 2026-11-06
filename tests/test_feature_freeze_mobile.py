@@ -179,7 +179,7 @@ class WholeSource(unittest.TestCase):
         import time
         for whole in (False,True):
             meta=ai.whole_source_meta(9,15,request_id='current',video_url='/media/source.mp4') if whole else {'items':[],'request_id':'current','status':'analyzing'}
-            meta['updated_at']=time.time()-121
+            meta['updated_at']=time.time()-ai.ANALYSIS_STALE_SECONDS-1
             result=ai.merge_results(meta,[],lambda p:'/media/'+p)
             self.assertEqual(result['status'],'failed')
             self.assertIn('tempo',result['error'])

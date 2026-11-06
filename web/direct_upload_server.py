@@ -6413,6 +6413,7 @@ class Handler(BaseHTTPRequestHandler):
         if clean=="/ai/results":
             sid=_social_sid(self)
             _json(self,200,_ai_results_payload(sid))
+            return
 
         if clean=="/ai/preferences":
             sid=_social_sid(self)

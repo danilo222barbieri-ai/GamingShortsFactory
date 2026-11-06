@@ -1144,7 +1144,7 @@ const DEMO=/[?&]demo=1/.test(location.search);
 const ENGINE_LABEL={auto:"AUTO",action:"AZIONE",reaction:"REAZIONI",best:"STORIA"};
 const DEFAULT_STATE={loaded:false,duration:15,engine:"auto",previews:[],selectedMoment:0,processing:false};
 const DRAFT_KEY="gsf_ai_draft_v412";
-const RESULTS_TIMEOUT_MS=120000;
+const RESULTS_TIMEOUT_MS=450000; /* GSF_V444: the server (420s staleness) owns the verdict */
 const MURALS={
   idle:["Che cosa vuoi<br>trovare?","L'IA guarda<br>tutto il video"],
   scanning:["Sto guardando<br>il tuo gameplay","Audio, azione<br>e reazioni"],
@@ -1246,7 +1246,8 @@ async function pollResults(token,deadline){
     const message=String(j.error||"Analisi non riuscita. Riprova.");$("aiStatus").textContent=message;
     alive("failure",{job:"ai",message});return;
   }
-  if(j?.request_id===requestId&&(j?.status==='completed_no_highlights'||j?.result_state==='completed_no_highlights')){
+  // Only a finished analysis can say "no highlights"; while it runs, keep polling.
+  if(j?.request_id===requestId&&j?.status!=='analyzing'&&(j?.status==='completed_no_highlights'||j?.result_state==='completed_no_highlights')){
     awaitingResults=false;state.processing=false;setScan("off");render();
     const message=String(j.message||"Nessun momento sufficientemente forte trovato nel gameplay. Puoi aprirlo nell’Editor.");$("aiStatus").textContent=message;
     alive("ai.no_highlights",{message});return;
@@ -1284,7 +1285,7 @@ function autosave(reason){
 /* ---------- selection & actions ---------- */
 function selectedPayload(){const r=rows(),index=Math.max(0,Math.min(Number(state.selectedMoment)||0,Math.max(r.length-1,0))),item=r[index]||{};return{index,candidate_id:item.candidate_id||"",video:item.video||"",start_time:item.start_time??item.start,end_time:item.end_time??item.end}}
 function confirmSelectedMoment(index){try{if(window.GSFAlive&&!window.GSFAlive.state().moment_selected)alive("moment.selected",{index})}catch(_e){}}
-function selectMoment(index){if(index===state.selectedMoment){confirmSelectedMoment(index);return;}state.selectedMoment=index;alive("moment.selected",{index});stopPlayback();renderMoments();renderDetail();send("select_moment",{index});try{fetch('/workflow/transition',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target_state:'MOMENT_SELECTED',moment_selected:index})})}catch(_e){}autosave("select")}
+function selectMoment(index){if(index===state.selectedMoment){confirmSelectedMoment(index);/* a second tap plays the preview: never a dead tap */try{playIn(document.querySelector(`.short[data-index="${index}"]`),rows()[index])}catch(_e){}return;}state.selectedMoment=index;alive("moment.selected",{index});stopPlayback();renderMoments();renderDetail();send("select_moment",{index});try{fetch('/workflow/transition',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target_state:'MOMENT_SELECTED',moment_selected:index})})}catch(_e){}autosave("select")}
 function createSelectedShort(){const payload=selectedPayload();alive("moment.selected",{index:payload.index});try{window.GSFAlive&&window.GSFAlive.watchRender()}catch(_e){}send("preview",{...payload,intent:"create_short"});send("create_short",payload)}
 function editSelectedMoment(){const payload=selectedPayload();confirmSelectedMoment(payload.index);send("preview",{...payload,intent:"edit"});send("open_editor",payload)}
 
