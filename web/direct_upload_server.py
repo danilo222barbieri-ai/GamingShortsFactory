@@ -6042,7 +6042,8 @@ def _publish_preflight(sid,platforms):
                 p_info["status"]="ready"
                 p_info["message"]=f"Pronto: account @{tok.get('username') or 'Instagram'}"
         elif platform=="facebook":
-            sc=_social_connection_load(sid,"facebook") or {}
+            # Without a bucket there is no stored Facebook connection to read.
+            sc=(_social_connection_load(sid,"facebook") if _bucket_enabled() else {}) or {}
             if not sc or not sc.get("access_token"):
                 p_info["status"]="needs_connection"
                 p_info["message"]="Facebook non collegato: collega l'account nelle Impostazioni."

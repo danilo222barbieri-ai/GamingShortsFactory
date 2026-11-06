@@ -45,6 +45,16 @@ class ResultsState(unittest.TestCase):
         self.assertEqual(out["status"], "failed")
 
 
+class ShareStateWithoutBucket(unittest.TestCase):
+    def test_preflight_never_crashes_without_storage(self):
+        sys.path.insert(0, str(ROOT / "web"))
+        from unittest.mock import patch
+        import web.direct_upload_server as dus
+        with patch.object(dus, "_bucket_enabled", lambda: False), patch.object(dus, "_publish_final_path", lambda sid: ""):
+            out = dus._publish_preflight("sidv444nobucket", ["youtube", "tiktok", "instagram", "facebook"])
+        self.assertEqual(out["checks"]["facebook"]["status"], "needs_connection")
+
+
 class SequenceContracts(unittest.TestCase):
     app = (ROOT / "app.py").read_text(encoding="utf-8")
     home = (ROOT / "web/home_v154_component/index.html").read_text(encoding="utf-8")
