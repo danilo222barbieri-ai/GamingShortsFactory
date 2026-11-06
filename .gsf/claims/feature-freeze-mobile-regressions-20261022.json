@@ -2,6 +2,7 @@
   "branch": "chat/feature-freeze-mobile-regressions-20261022",
   "created_at": "2026-10-22T22:18:04+02:00",
   "evidence": {
+    "closure": "PR #192 merged 2026-10-23T07:04:02Z; remote branch deleted after merge; claim scope was feature-freeze work already integrated",
     "commit": "3f332b96c68d2b37cbd1c71384d70ed027c74e86",
     "gate": "39912466489 first attempt failed before OAuth tests at apt mirror timeout3minutes; failed job retried on new runner; current result pending",
     "handoff": "Owner directs PR193 release; PROJECT_STATUS transferred to pr193-webkit-gate-release-20261023",
@@ -39,12 +40,13 @@
       "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
     },
     "v435_render_admission_handoff": {
-      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6",
       "paths": [
         "app.py"
       ],
-      "reason": "Same user-authorized stabilization: repeated isolated1GiB mixed concurrency adds one confirmed OOM kill; implement narrow existing frontend render admission/backpressure, preserve pipeline."
-    }
+      "reason": "Same user-authorized stabilization: repeated isolated1GiB mixed concurrency adds one confirmed OOM kill; implement narrow existing frontend render admission/backpressure, preserve pipeline.",
+      "to": "closed-beta-v435-hardening-current-home-notifica-4860a6"
+    },
+    "verification": "GitHub API pull/192 state closed merged=true"
   },
   "id": "feature-freeze-mobile-regressions-20261022",
   "owner": "chat/feature-freeze-mobile-regressions-20261022",
@@ -59,5 +61,5 @@
     "web/install_adsense_bridge.py"
   ],
   "scope": "Feature freeze: short source AI, mobile OAuth shell, Home white gap, compact notifications; no merge/deploy",
-  "state": "active"
+  "state": "completed"
 }
