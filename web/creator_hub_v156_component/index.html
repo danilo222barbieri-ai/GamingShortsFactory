@@ -1740,7 +1740,7 @@ let oauthNavigating=false;
 
    try{
     const response=await fetch(url,{cache:'no-store',credentials:'same-origin',signal}),data=await response.json();
-    if(!response.ok||!data.ok){const error=new Error(data.error||'Contenuti non disponibili.');error.status=response.status;throw error}
+    if(!response.ok||!data.ok||data.error){const error=new Error(data.error||'Contenuti non disponibili.');error.status=response.status;throw error}
     if(signal.aborted||current!=='live')return;
     let rawItems=data.data||[];
     if(sourceProvider==='youtube'){
@@ -1756,6 +1756,13 @@ let oauthNavigating=false;
       return;
     }
     host.innerHTML=rawItems.map(row=>renderHorizontalCard(row)).join('');
+    if(data.partial){
+      const note=document.createElement('p');
+      note.className='livePartialNotice';
+      note.textContent='Alcune sezioni Twitch non sono raggiungibili. I contenuti disponibili sono mostrati qui.';
+      note.style.cssText='padding:10px 12px;font-size:12px;opacity:.85';
+      host.prepend(note);
+    }
     const cardEls=host.querySelectorAll('.liveHorizontalCard');
     rawItems.forEach((row,i)=>{
       const card=cardEls[i];
