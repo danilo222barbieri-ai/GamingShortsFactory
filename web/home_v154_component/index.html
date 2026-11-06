@@ -3387,6 +3387,18 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
  const status=document.getElementById("status"),statusText=document.getElementById("statusText"),bar=document.getElementById("bar");
  const cta=document.getElementById("primaryCta");
  let loaded=false,duration=15,engine="",uploadBusy=false,previewData=[],replacePending=false;
+ // GSF_V437_UPLOAD_ACK: success is a temporary visual acknowledgement, not source state.
+ // Keep it through Home rerenders, but dismiss it on navigation to another surface.
+ const UPLOAD_ACK_KEY="gsf_home_upload_ack_v437";
+ let uploadAcknowledgement=false;
+ try{uploadAcknowledgement=sessionStorage.getItem(UPLOAD_ACK_KEY)==="1"}catch(_e){}
+ function setUploadAcknowledgement(visible){
+   uploadAcknowledgement=!!visible;
+   try{
+     if(uploadAcknowledgement)sessionStorage.setItem(UPLOAD_ACK_KEY,"1");
+     else sessionStorage.removeItem(UPLOAD_ACK_KEY);
+   }catch(_e){}
+ }
 
  const muralPrimary=document.querySelector("#muralPrimary .guideText");
  const muralUpload=document.querySelector("#muralUpload .guideText");
@@ -3602,7 +3614,7 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    rings.classList.remove("uploading","uploaded");
    uploadIcon.classList.remove("loadedCheck");
    uploadIcon.innerHTML=CLOUD_SVG;
-   uploadLabel.innerHTML=loaded?"Carica un<br>nuovo video":"CARICA<br>IL TUO GAMEPLAY";
+   uploadLabel.innerHTML="CARICA<br>IL TUO GAMEPLAY";
    uploadHint.textContent="";
    if(status&&!status.classList.contains("error")){
      status.className="status";
@@ -3614,11 +3626,12 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
  }
  function setLoaded(on,fromUploadComplete=false){
    loaded=!!on;gsfAlive("sync",{video_ready:loaded});
+   if(fromUploadComplete)setUploadAcknowledgement(true);
    setMuralState(loaded?"ready":"idle"); view.classList.toggle("loadedView",loaded);
    circle.setAttribute("data-gsf-has-source",loaded?"true":"false");
-   // An acknowledged upload must remain visibly ready across Streamlit rerenders.
-   // The circle can still be tapped to replace the video after confirmation.
-   if(loaded){
+   // Show the check only for the freshly completed upload. Returning from AI
+   // retains loaded=true for the workflow, but presents the empty uploader.
+   if(loaded&&uploadAcknowledgement){
      circle.classList.add("loaded","done");
      rings.classList.remove("uploading");rings.classList.add("uploaded");
      uploadIcon.classList.add("loadedCheck");
@@ -3632,8 +3645,22 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    }
    fitViewport();
  }
+ function onHomeSurfaceChange(event){
+   const target=String(event?.detail?.target||"");
+   if(!target)return;
+   if(target!=="home"){
+     // The acknowledgement has been seen. Do not erase the saved video.
+     setUploadAcknowledgement(false);
+   }else if(!uploadBusy&&!uploadAcknowledgement){
+     // A return to Home is a new upload opportunity, not a new upload completion.
+     restoreEmptyCircleForNewVideo();
+   }
+ }
+ try{window.parent.addEventListener("gsf:surfacechange",onHomeSurfaceChange,{signal:parentResources.signal})}catch(_e){}
  function shellNav(target,data={}){
     // V370_SINGLE_NAVIGATION_OWNER: Home emits intent only. V343 owns parent surfaces.
+    // Clear persisted acknowledgement before navigating in case the iframe remounts.
+    if(target!=="home")setUploadAcknowledgement(false);
     try{
       window.parent.postMessage({type:"GSF_SHELL_NAV",target,...data},location.origin);
       return true;
@@ -3726,7 +3753,9 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    closeReplaceToast();
  });
  circle.addEventListener("click",(ev)=>{
-   if(!loaded||uploadBusy||!circle.classList.contains("loaded"))return;
+   // Source ownership is independent of the visible green check. Still ask
+   // permission before replacing an existing video after returning from AI.
+   if(!loaded||uploadBusy||currentUploadState===UPLOAD_ST.RECOVERABLE_ERROR)return;
    ev.preventDefault();
    ev.stopPropagation();
    if(typeof ev.stopImmediatePropagation==="function")ev.stopImmediatePropagation();
@@ -4001,6 +4030,10 @@ pick.addEventListener("change",async()=>{
 
   // 1. Immediate visual feedback: mark busy, show progress bar and 1% state instantly
   clearTimeout(circleResetTimer);
+  setUploadAcknowledgement(false);
+  circle.classList.remove("loaded","done");
+  uploadIcon.classList.remove("loadedCheck");
+  uploadIcon.innerHTML=CLOUD_SVG;
   uploadBusy=true;
   gsfAlive("upload.started");
   setMuralState("uploading");
