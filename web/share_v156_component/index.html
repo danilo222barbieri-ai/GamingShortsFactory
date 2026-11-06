@@ -1422,6 +1422,20 @@ $('#publishBtn').onclick=async()=>{
     return;
   }
   const sel=selected();if(!sel.length){toast('Tocca almeno un social sull\'anello');return}
+  // V441: do not interpret an old iframe snapshot as an OAuth disconnect.
+  // Validate the latest server connection state before any reconnect prompt.
+  try{
+    const response=await fetch('/share/state',{cache:'no-store',credentials:'same-origin'});
+    const snapshot=await response.json();
+    if(!response.ok||!snapshot.ok)throw new Error(snapshot.error||'Social state unavailable');
+    server.social=snapshot.social||{};
+    server.csrf_token=snapshot.csrf_token||server.csrf_token;
+    server.publish_supported=snapshot.publish_supported||server.publish_supported;
+    renderPlatforms();
+  }catch(error){
+    toast('Impossibile verificare i social collegati. Riprova senza scollegarli.');
+    return;
+  }
   const notConn=sel.find(p=>!(server.social||{})[p]);
   if(notConn){toast(NAMES[notConn]+' non è collegato. Tocca Collega per connetterti.');connect(notConn);return}
   if(sel.includes('youtube')&&!String(effective('youtube').title||'').trim()){open('texts');pickScope('all');setTimeout(()=>$('#fTitle').focus(),300);toast('Serve un titolo per YouTube');return}
