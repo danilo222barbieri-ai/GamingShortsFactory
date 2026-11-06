@@ -34,20 +34,19 @@ class NotificationContinuity(unittest.TestCase):
   self.page.clock.install();self.page.evaluate("GSFNotify.upsert('long-analysis',{title:'Analisi in corso',kind:'working'})")
   self.page.clock.run_for(12000);self.assertEqual(self.page.locator('.gsf-site-toast').count(),1)
   self.page.evaluate("GSFNotify.update('long-analysis',{title:'Pronto',kind:'success'})");self.page.clock.run_for(5000);self.assertEqual(self.page.locator('.gsf-site-toast').count(),0)
- def test_real_alive_events_evolve_one_process_notification(self):
+ def test_real_alive_events_use_inline_status_until_action_is_needed(self):
   self.page.evaluate((ROOT/'web/gsf_alive_v418.js').read_text())
-  self.page.evaluate("()=>{GSFAlive.emit('ai.started');window.processNotice=document.querySelector('.gsf-site-toast');GSFAlive.emit('ai.found',{count:1})}")
+  self.page.evaluate("()=>{GSFAlive.emit('ai.started');GSFAlive.emit('ai.found',{count:1})}")
+  self.assertEqual(self.page.locator('.gsf-site-toast').count(),0,'IA progress and results belong to the AI page, not toast popups')
+  self.page.evaluate("GSFAlive.emit('failure',{job:'ai',message:'Analisi interrotta'})")
   self.assertEqual(self.page.locator('.gsf-site-toast').count(),1)
-  self.assertTrue(self.page.evaluate("processNotice===document.querySelector('.gsf-site-toast')"))
-  self.assertIn('un momento',self.page.locator('.gsf-site-toast').inner_text())
-  self.assertEqual(self.page.locator('.gsf-site-toast').get_attribute('data-kind'),'success')
+  self.assertEqual(self.page.locator('.gsf-site-toast').get_attribute('data-kind'),'error')
   self.assertFalse(self.errors,self.errors)
- def test_source_process_uses_shared_monitor_and_completes_in_place(self):
+ def test_source_process_uses_shared_monitor_without_obstructive_toast(self):
   self.page.route('**/direct-upload/bucket/status?*',lambda r:r.fulfill(json={'ok':True,'ready':True}))
-  self.page.evaluate("()=>{window.sourceDone=false;GSFNotify.trackSource({upload_id:'clipimport1'}).then(()=>sourceDone=true);window.trackedNotice=document.querySelector('.gsf-site-toast')}")
+  self.page.evaluate("()=>{window.sourceDone=false;GSFNotify.trackSource({upload_id:'clipimport1'}).then(()=>sourceDone=true)}")
   self.page.wait_for_function('sourceDone',timeout=4000)
-  self.assertTrue(self.page.evaluate("trackedNotice===document.querySelector('.gsf-site-toast')"))
-  self.assertEqual(self.page.locator('.gsf-site-toast').get_attribute('data-kind'),'success')
+  self.assertEqual(self.page.locator('.gsf-site-toast').count(),0,'successful import is already visible in its source UI')
  def test_source_monitor_timeout_also_cleans_up_network_failures(self):
   self.page.route('**/direct-upload/bucket/status?*',lambda r:r.fulfill(status=503,json={'error':'outage'}))
   self.page.clock.install();self.page.evaluate("()=>{window.expiredSource=false;GSFNotify.trackSource({upload_id:'offlineimport'}).then(()=>expiredSource=true)}")
@@ -60,11 +59,11 @@ class NotificationContinuity(unittest.TestCase):
  def test_dark_notifications_respect_actual_header_safe_zone(self):
   self.page.evaluate("GSFNotify.show('Progetto salvato','','success')");self.page.wait_for_timeout(300)
   result=self.page.locator('.gsf-site-toast').evaluate("e=>({top:e.getBoundingClientRect().top,bottom:e.getBoundingClientRect().bottom,bg:getComputedStyle(e).backgroundColor})")
-  self.assertGreaterEqual(result['top'],0);self.assertLessEqual(result['bottom'],90)
+  self.assertGreaterEqual(result['top'],90);self.assertLessEqual(result['bottom'],764)
   self.assertNotIn('255, 255, 255',result['bg'])
  def test_burst_uses_bounded_visible_queue(self):
   self.page.evaluate("()=>{for(let i=0;i<12;i++)GSFNotify.show('Evento '+i,'','info')}")
-  self.assertLessEqual(self.page.locator('.gsf-site-toast').count(),2)
+  self.assertLessEqual(self.page.locator('.gsf-site-toast').count(),1)
  def test_safe_zone_on_required_iphone_viewports(self):
   for width,height in [(375,667),(390,844),(393,852),(430,932)]:
    with self.subTest(viewport=(width,height)):
@@ -73,7 +72,7 @@ class NotificationContinuity(unittest.TestCase):
     self.page.wait_for_timeout(300)
     box=self.page.locator('[data-notice-id="viewport"]').bounding_box()
     self.assertGreaterEqual(box['x'],0);self.assertLessEqual(box['x']+box['width'],width)
-    self.assertGreaterEqual(box['y'],0);self.assertLessEqual(box['y']+box['height'],90)
+    self.assertGreaterEqual(box['y'],90);self.assertLessEqual(box['y']+box['height'],height-80)
  def test_clearing_project_removes_obsolete_process(self):
   self.page.clock.install();self.page.evaluate((ROOT/'web/gsf_alive_v418.js').read_text())
   self.page.evaluate("()=>{GSFAlive.emit('ai.started');GSFAlive.emit('video.cleared')}")
