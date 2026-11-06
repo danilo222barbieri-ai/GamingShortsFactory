@@ -26,7 +26,7 @@ sys.modules["boto3"] = boto3
 sys.modules["boto3.s3"] = boto3_s3
 sys.modules["boto3.s3.transfer"] = boto3_s3_transfer
 
-from web.direct_upload_server import _parse_yt_duration, _youtube_content
+from web.direct_upload_server import _parse_yt_duration, _youtube_content, _YouTubeContentError
 
 
 class TestYouTubeContent(unittest.TestCase):
@@ -40,11 +40,12 @@ class TestYouTubeContent(unittest.TestCase):
 
     @patch("web.direct_upload_server._youtube_analytics_token")
     def test_youtube_content_disconnected(self, mock_token):
+        # V442: a missing/expired authorization is an explicit 401, so the Hub
+        # can tell "not connected" apart from "no content" or "API down".
         mock_token.return_value = {}
-        res = _youtube_content("test-sid")
-        self.assertFalse(res["connected"])
-        self.assertEqual(res["data"], [])
-        self.assertIsNone(res["channel"])
+        with self.assertRaises(_YouTubeContentError) as ctx:
+            _youtube_content("test-sid")
+        self.assertEqual(ctx.exception.status, 401)
 
     @patch("web.direct_upload_server.urllib.request.urlopen")
     @patch("web.direct_upload_server._youtube_analytics_token")
@@ -100,7 +101,7 @@ class TestYouTubeContent(unittest.TestCase):
         self.assertEqual(video["views"], 3500)
         self.assertEqual(video["likes"], 210)
         self.assertFalse(video["can_import"])
-        self.assertIn("ToS", video["import_reason"])
+        self.assertIn("API ufficiali", video["import_reason"])
 
 
 if __name__ == "__main__":

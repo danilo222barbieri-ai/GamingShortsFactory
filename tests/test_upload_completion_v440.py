@@ -24,7 +24,10 @@ def test_server_save_precedes_completion_and_success_is_not_rolled_back():
     finalization = src.split("async function executeProjectFinalization(", 1)[1].split("// Tapping circle", 1)[0]
     assert finalization.index('"/direct-upload/projects/save-uploaded-source"') < finalization.index("setUploadState(UPLOAD_ST.COMPLETED)")
     assert "Promise.race([" in finalization
-    assert "setTimeout(()=>resolve(null),3000)" in finalization
+    # V442: the server's verified media duration is authoritative; the browser
+    # metadata probe is only a bounded fallback and can never block success.
+    assert "let actualSec=Number(saveJson.duration);" in finalization
+    assert "setTimeout(()=>resolve(0),2500)" in finalization
     assert "GSF_UPLOAD_DIAG] post_commit_handoff_failed" in src
     assert "if(currentUploadState===UPLOAD_ST.COMPLETED)" in src
 
