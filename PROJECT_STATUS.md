@@ -1,5 +1,19 @@
 # Gaming Shorts Factory — Project Status
 
+## V444 mandatory flow — 2026-11-06 (LIVE, real-device checks pending)
+
+- Owner order: work only on `main`, no branch/PR; no claim opened (same exception as V443).
+- Commits `701c715`, `ff3be1e`, `ced5431`, `bc91cb9`, `f38e822`, `31b325a`, `e867db3`. Gate 42298073718 SUCCESS incl. blocking step "V444 mandatory flow on mobile WebKit"; promotion d87db2a; Railway frontend deployment 4c0c6484 SUCCESS; UI Verify SUCCESS. Rollback tag `safety/pre-v444` (21d1b40).
+- Causes found by running the real stack (nginx + upload server + Streamlit) with real 5 min / 60 s / 8 s uploads:
+  1. Alive status/notifications were emitted loose right before Home only on some reruns; after an upload they shifted Home, React moved its node and the browser reloaded the iframe mid-finalization (check and next step lost at random). Fixed with one always-emitted container in `web/queue_runtime_v411.py`.
+  2. `/ai/results` labelled a running analysis `completed_no_highlights`; the AI page stopped polling, so moments appeared only after leaving and re-entering. `merge_results` now reports `analyzing` / `rendering_previews`; staleness 420 s; `/ai/results` returns instead of falling through.
+  3. The V428 bridge reset the uploader to "CARICA" after every upload; removed. The check now mirrors the server-verified active project.
+  4. AI results created `draft_ai_<upload>` drafts; now they only update the active project state. Bozze only on video replacement.
+  5. ≥15 s uploads auto-started the analysis; now they wait on Home for "Trova i momenti" (one press = one analysis). <15 s still opens the Game Editor.
+  6. Gate image only: `/share/state` 502 without a bucket (Facebook preflight); fixed.
+- Tests: `tests/test_v444_flow.py` (units, contracts, AI page in browser; the legacy case fails on the old page), `tests/test_v444_full_flow.py` (15-step flow, WebKit iPhone in the Gate). Local suite: 521 passed, 12 failed (same 11+1 baseline browser-path failures as untouched main), 50 skipped.
+- Not verified: real iPhone/PWA, real OAuth accounts. The pre-existing `workflow_engine_v4` server state machine is reused, not rewritten; the UI follows server state (`loaded`, `/ai/results`). The CI step "OAuth session…" timeout was raised from 3 to 10 min (apt mirror).
+
 ## V443 stability recovery — 2026-11-06 (LIVE, real-account checks pending)
 
 - Owner order: work only on `main`, no branch, no PR; this overrides the AGENTS.md claim/branch protocol for this task, so no claim was opened.
