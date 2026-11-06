@@ -85,7 +85,7 @@ def _render_v428_uploader_handoff_reset_bridge():
           rings.classList.remove('uploaded');
           icon.classList.remove('loadedCheck');
           icon.innerHTML=CLOUD;
-          label.innerHTML='Carica un<br>nuovo video';
+          label.innerHTML='CARICA<br>IL TUO GAMEPLAY';
           if(hint)hint.textContent='';
         }
 
