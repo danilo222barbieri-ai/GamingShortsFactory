@@ -115,7 +115,8 @@ require("_gsf_v412_replace(" in app and "_gsf_v412_select(" in app, "app applica
 require('"index" not in _gsf_v154_event' in app, "aprire l'editor dai risultati non cancella la ricerca IA")
 require("build_results_meta" in app and "write_results_meta" in app, "app scrive la scheda risultati")
 require("_v412.merge_results(" in server, "endpoint unisce scheda e clip")
-require('"draft_ai_"+' in app and "/drafts/save" in app and "gsf_v412_autosaved" in app, "bozza automatica unica nel Creator Hub")
+# V444: AI results update the active project; Bozze only on video replacement.
+require('"draft_ai_"+' not in app and "gsf_v412_autosaved" in app and "GSF_V444_ACTIVE_PROJECT" in app, "risultati IA nel progetto attivo, nessuna bozza automatica")
 compile(app, "app.py", "exec")
 print("[ OK ] app.py compila")
 

@@ -13935,9 +13935,10 @@ if video:
                 except Exception as _gsf_v412_meta_exc:
                     print("GSF_V412_META_WARN",repr(str(_gsf_v412_meta_exc))[:220],flush=True)
 
-                # V412 AUTOSAVE: every AI result, selection or "Cambia short"
-                # updates ONE automatic draft in the Creator Hub (stable id, no
-                # duplicates). Posted in the background so the UI never waits.
+                # GSF_V444_ACTIVE_PROJECT: AI results, selection and "Cambia short"
+                # update the ACTIVE project state only. Bozze are created solely
+                # when a new upload replaces this project (/drafts/save-current,
+                # which reads this same persisted state), never on AI completion.
                 try:
                     _gsf_v412_sig=repr((
                         st.session_state.get("gsf_v412_request_id"),
@@ -13947,25 +13948,6 @@ if video:
                     if GSF_WEB_MODE and st.session_state.get("gsf_v412_autosaved")!=_gsf_v412_sig:
                         st.session_state["gsf_v412_autosaved"]=_gsf_v412_sig
                         _gsf_save_persistent_state()
-                        _gsf_v412_state=json.loads(GSF_SESSION_STATE_FILE.read_text(encoding="utf-8")) if GSF_SESSION_STATE_FILE.is_file() else {}
-                        _gsf_v412_src=str(st.session_state.get("gsf_source_name") or "Gameplay")[:120]
-                        _gsf_v412_owner=re.sub(r"[^A-Za-z0-9_-]+","",str(st.session_state.get("gsf_upload_id") or ""))[:40] or hashlib.sha256(_gsf_v412_src.encode("utf-8")).hexdigest()[:16]
-                        _gsf_v412_body=json.dumps({
-                            "id":"draft_ai_"+_gsf_v412_owner,
-                            "title":"Bozza IA · "+_gsf_v412_src,
-                            "source_name":_gsf_v412_src,
-                            "state":_gsf_v412_state if isinstance(_gsf_v412_state,dict) else {},
-                        },ensure_ascii=False,default=str).encode("utf-8")
-                        def _gsf_v412_post(_body=_gsf_v412_body,_sid=str(GSF_SESSION_ID)):
-                            try:
-                                import urllib.request as _gsf_v412_url
-                                _gsf_v412_url.urlopen(_gsf_v412_url.Request(
-                                    "http://127.0.0.1:8502/drafts/save",data=_body,method="POST",
-                                    headers={"Content-Type":"application/json","X-GSF-Session-ID":_sid},
-                                ),timeout=15).read()
-                            except Exception as _gsf_v412_post_exc:
-                                print("GSF_V412_AUTOSAVE_WARN",repr(str(_gsf_v412_post_exc))[:200],flush=True)
-                        __import__("threading").Thread(target=_gsf_v412_post,daemon=True).start()
                 except Exception as _gsf_v412_save_exc:
                     print("GSF_V412_AUTOSAVE_WARN",repr(str(_gsf_v412_save_exc))[:200],flush=True)
 

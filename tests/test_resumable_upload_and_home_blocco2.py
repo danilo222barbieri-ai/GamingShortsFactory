@@ -124,7 +124,7 @@ def test_home_component_resumable_upload_and_clean_circle_contracts():
     # 2. Real transfer progress & confirmed completion «Video caricato»
     assert "function updateUploadProgressUI(pct)" in home_html
     assert 'statusText.textContent = "Video caricato";' in home_html
-    assert 'if(loaded&&uploadAcknowledgement){' in home_html
+    assert 'if(loaded){' in home_html  # V444: the check mirrors the active project
     assert 'circleResetTimer=window.setTimeout(restoreEmptyCircleForNewVideo,650);' not in home_html
     assert 'uploadLabel.innerHTML="Video caricato"' in home_html
 
@@ -140,17 +140,17 @@ def test_home_component_resumable_upload_and_clean_circle_contracts():
     assert "const showPreview=()=>{hidePreview();};" in home_html
 
 
-def test_upload_acknowledgement_dismisses_on_navigation_but_keeps_source():
+def test_upload_check_persists_while_the_project_is_active():
     home = (ROOT / "web/home_v154_component/index.html").read_text(encoding="utf-8")
 
-    # Show success when the server confirms the new upload, keep it through
-    # rerenders, then clear it when leaving Home for Momenti IA or Editor.
+    # V444: show success when the server confirms the upload and keep it
+    # through rerenders, navigation and refresh while the project is active.
     assert 'const UPLOAD_ACK_KEY="gsf_home_upload_ack_v437"' in home
     assert 'if(fromUploadComplete)setUploadAcknowledgement(true);' in home
     assert 'if(uploadBusy&&!fromUploadComplete){fitViewport();return;}' in home
     assert 'if(target!=="home")setUploadAcknowledgement(false);' in home
     assert 'window.parent.addEventListener("gsf:surfacechange",onHomeSurfaceChange' in home
-    assert 'else if(!uploadBusy&&!uploadAcknowledgement)' in home
+    assert '}else if(!uploadBusy){\n     // Back on Home the active project is still confirmed by its check.\n     setLoaded(loaded);' in home
     assert 'restoreEmptyCircleForNewVideo();' in home
 
     # UI reset does not clear the saved source/IA/Editor readiness; it must

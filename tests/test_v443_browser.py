@@ -83,7 +83,10 @@ class HomeBrowser(unittest.TestCase):
         self.assertEqual(len(toasts), 1, toasts)
         self.assertNotIn("module", " ".join(toasts[0]).lower())
         self.assertEqual(frame.locator("#statusText").inner_text(), "")
-        self.assertNotIn("Video caricato", frame.locator("#uploadLabel").inner_text())
+        # V444: the replacement failed, so the previous project is still active
+        # and keeps its check; the single toast says so explicitly.
+        self.assertEqual(frame.locator("#uploadLabel").inner_text(), "Video caricato")
+        self.assertIn("ancora attivo", " ".join(toasts[0]))
         self.assertFalse(any(path.startswith("/direct-upload/") or path == "/workflow/prepare-new-upload" for path, _ in self.calls))
 
     def test_replacement_is_decided_by_the_server_not_by_loaded(self):

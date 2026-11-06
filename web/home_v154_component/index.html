@@ -3636,9 +3636,10 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    circle.setAttribute("data-gsf-has-source",loaded?"true":"false");
    // A parent rerender cannot reset an upload that is still transferring.
    if(uploadBusy&&!fromUploadComplete){fitViewport();return;}
-   // Show the check only for the freshly completed upload. Returning from AI
-   // retains loaded=true for the workflow, but presents the empty uploader.
-   if(loaded&&uploadAcknowledgement){
+   // GSF_V444_PERSISTENT_ACK: the check mirrors the server-verified active
+   // project (`loaded` comes from the source Streamlit restored). It stays
+   // through reruns, navigation and AI results; only a new upload replaces it.
+   if(loaded){
      circle.classList.add("loaded","done");
      rings.classList.remove("uploading");rings.classList.add("uploaded");
      uploadIcon.classList.add("loadedCheck");
@@ -3658,9 +3659,9 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    if(target!=="home"){
      // The acknowledgement has been seen. Do not erase the saved video.
      setUploadAcknowledgement(false);
-   }else if(!uploadBusy&&!uploadAcknowledgement){
-     // A return to Home is a new upload opportunity, not a new upload completion.
-     restoreEmptyCircleForNewVideo();
+   }else if(!uploadBusy){
+     // Back on Home the active project is still confirmed by its check.
+     setLoaded(loaded);
    }
  }
  try{window.parent.addEventListener("gsf:surfacechange",onHomeSurfaceChange,{signal:parentResources.signal})}catch(_e){}
@@ -4047,10 +4048,8 @@ async function executeProjectFinalization(file, uploadId, durationPromise) {
     value({event: "open_editor", duration: actualSec, engine: "manual"});
   } else if (actualSec !== null && actualSec >= 15) {
     const sStr = Math.round(actualSec);
-    // Do not duplicate the successful upload with a second toast.
-    shellNav("ai", {duration: actualSec, engine: engine || "auto", auto_search: true});
-    // The AI iframe sends the ONE create_ai request after its ready handshake.
-    // This event only refreshes Streamlit's source state after finalization.
+    // GSF_V444_SEQUENCE: UPLOAD → check → the user presses "Trova i momenti".
+    // No automatic analysis: the AI card is now unlocked on Home.
     value({event: "upload_complete", duration: actualSec, engine: engine || "auto"});
   } else {
     value({event: "upload_complete", duration, engine});
@@ -4227,11 +4226,21 @@ pick.addEventListener("change",async()=>{
  window.addEventListener("GSF_HOME_MANUAL_EDITOR",()=>{setEngine("manual");value({event:"open_editor",duration,engine:"manual"});});
  document.querySelectorAll(".feature").forEach(b=>b.addEventListener("click",()=>{
    const action=b.dataset.action||"";
-   if(action==="ai"){shellNav("ai");value({event:"open_ai",duration,engine});}
-   if(action==="short"){try{window.GSFAlive&&window.GSFAlive.watchRender()}catch(_e){}}
-   if(action==="editor"){setEngine("manual");shellNav("editor");value({event:"open_editor",duration,engine:"manual"});}
-   if(action==="short"){shellNav("short");value({event:"create_short",duration,engine});}
+   // A command that cannot run yet says why instead of opening an empty page.
+   homeFeature(action);
  }));
+ // GSF_V444: single owner of the three Home commands (the mobile touch owner
+ // below calls it too), so a press always runs exactly one real action.
+ function homeFeature(action){
+   if(!loaded&&(action==="ai"||action==="short")){parentToast("Carica prima un video","Tocca il cerchio per scegliere il gameplay.","info");return true;}
+   // "Trova i momenti": one press opens the AI page and starts the analysis.
+   if(action==="ai"){shellNav("ai",{duration,engine:engine||"auto",auto_search:true});return true;}
+   if(action==="editor"){setEngine("manual");shellNav("editor");value({event:"open_editor",duration,engine:"manual"});return true;}
+   // Opening Crea Short never starts a render by itself: the page has its own button.
+   if(action==="short"){shellNav("short");return true;}
+   return false;
+ }
+ window.GSFHomeFeature=homeFeature;
  document.querySelectorAll(".navItem").forEach(b=>b.addEventListener("click",()=>{
    document.querySelectorAll(".navItem").forEach(x=>x.classList.remove("active"));b.classList.add("active");
    const nav=b.dataset.nav||"";
@@ -4442,6 +4451,7 @@ pick.addEventListener("change",async()=>{
   }
 
   function run(action){
+    if(typeof window.GSFHomeFeature==='function')return window.GSFHomeFeature(action);
     if(action==='ai')return GSF_V333_OPEN_AI();
     if(action==='editor')return GSF_V333_OPEN_EDITOR();
     if(action==='short')return GSF_V333_OPEN_SHORT();

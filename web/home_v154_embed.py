@@ -272,5 +272,6 @@ def render_home_v154(*, loaded=False, duration=15, engine="", height=900, key="g
         key=str(key),
         default=None,
     )
-    _render_v428_uploader_handoff_reset_bridge()
+    # GSF_V444: the V428 bridge reset the circle to "CARICA" after every
+    # upload; the check must now persist while the project is active.
     return value if isinstance(value, dict) else None
