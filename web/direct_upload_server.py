@@ -3808,6 +3808,7 @@ def _twitch_content(sid,kind,after=""):
         merged=[]
         failed=[]
         succeeded=0
+        first_error=None
         for sub in ("live","videos","clips"):
             try:
                 res=_twitch_content(sid,sub,after="")
@@ -3817,11 +3818,15 @@ def _twitch_content(sid,kind,after=""):
                 # Do not disguise expired/revoked credentials as an empty library.
                 if exc.status==401:
                     raise
+                # 403/429/5xx on one section must not hide the sections that work.
+                print("GSF_TWITCH_SECTION_FAILED",sub,exc.status,flush=True)
                 failed.append(sub)
-            except Exception:
+                first_error=first_error or exc
+            except Exception as exc:
+                print("GSF_TWITCH_SECTION_FAILED",sub,type(exc).__name__,flush=True)
                 failed.append(sub)
         if not succeeded:
-            raise _social421.TwitchError("Impossibile caricare i contenuti Twitch. Riprova.",503)
+            raise first_error or _social421.TwitchError("Impossibile caricare i contenuti Twitch. Riprova.",503)
         return {"data":merged,"cursor":"","type":"all","partial":bool(failed),"unavailable_sections":failed}
     token=_twitch_access(sid);owner=_source_owner(sid)
     endpoint="streams" if kind=="live" else kind
@@ -3846,13 +3851,18 @@ def _twitch_content(sid,kind,after=""):
         url=str(row.get("url") or "")
         if kind=="live" and re.fullmatch(r"[A-Za-z0-9_]{1,30}",str(row.get("user_login") or "")):url="https://www.twitch.tv/"+row["user_login"]
         record={"id":identity,"kind":source_kind,"provider":"twitch","external_id":external,"title":str(row.get("title") or "")[:200],"thumbnail":thumb,"game_name":row.get("game_name") if kind=="live" else games.get(str(row.get("game_id")),""),"created_at":row.get("created_at"),"started_at":row.get("started_at"),"duration":row.get("duration"),"url":url,"status":"discovered","is_live":kind=="live"}
-        previous=_source_load(sid,identity)
-        original_receipt=dict(previous)
-        if previous:
-            previous=_source_checked(previous)
-            record={**record,**{key:previous[key] for key in ('status','bucket_key','analysis_key','upload_id','origin_sid','size','local_path','import_started_at','completed_at') if key in previous}}
-        try:_source_catalog(sid).save_if_unchanged({**record,'owner_id':owner,'provider_user_id':token['user_id']},original_receipt)
-        except ValueError:record=_source_load(sid,identity) or record
+        # The catalog only enriches a listing Twitch already returned: a storage
+        # failure here must not turn real content into a failed section.
+        try:
+            previous=_source_load(sid,identity)
+            original_receipt=dict(previous)
+            if previous:
+                previous=_source_checked(previous)
+                record={**record,**{key:previous[key] for key in ('status','bucket_key','analysis_key','upload_id','origin_sid','size','local_path','import_started_at','completed_at') if key in previous}}
+            try:_source_catalog(sid).save_if_unchanged({**record,'owner_id':owner,'provider_user_id':token['user_id']},original_receipt)
+            except ValueError:record=_source_load(sid,identity) or record
+        except Exception as exc:
+            print("GSF_SOURCE_CATALOG_WARN",type(exc).__name__,flush=True)
         item=public_source(record)
         # Keep the existing content API's external ID contract for old Hub clients.
         item.update(id=external,source_id=identity,importable=item["can_import"],video_type=str(row.get("type") or "") if kind=="videos" else "")
@@ -6325,7 +6335,9 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,200,{"ok":True,**_twitch_content(_social_sid(self),str((query.get("type") or ["clips"])[0]),str((query.get("after") or [""])[0]))})
             except _social421.TwitchError as exc:_json(self,exc.status,{"ok":False,"error":str(exc)})
             except ValueError:_json(self,400,{"ok":False,"error":"Richiesta Twitch non valida"})
-            except Exception:_json(self,503,{"ok":False,"error":"Contenuti Twitch temporaneamente non disponibili"})
+            except Exception as exc:
+                print("GSF_TWITCH_CONTENT_ERROR",type(exc).__name__,repr(str(exc))[:200],flush=True)
+                _json(self,503,{"ok":False,"error":"Contenuti Twitch temporaneamente non disponibili"})
             return
 
         if clean=="/social-connect/twitch/vod-moments":
@@ -6852,13 +6864,8 @@ class Handler(BaseHTTPRequestHandler):
                     "plan":str(profile.get("plan") or "FREE")[:24] if isinstance(profile,dict) else "FREE",
                     "creator_level":int(profile.get("creator_level") or 1) if isinstance(profile,dict) else 1,
                 },
-                "social":{
-                    "youtube":bool(youtube_state),
-                    "tiktok":bool(tiktok_state),
-                    "instagram":bool(instagram_state),
-                    "facebook":bool(_social_connected(sid,"facebook") or providers.get("facebook")),
-                    "twitch":bool(social_snapshot.get("twitch")),
-                },
+                "social":social_snapshot,
+                "social_status":social_status,
                 "stats":{
                     "shorts_created":len(all_shorts),
                     "shorts_published":sum(1 for row in all_shorts if (row or {}).get("published")),

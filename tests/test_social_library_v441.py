@@ -8,7 +8,8 @@ SHARE=(ROOT/"web/share_v156_component/index.html").read_text(encoding="utf-8")
 def test_twitch_all_does_not_swallow_all_provider_errors():
     source=SERVER.split('def _twitch_content(',1)[1].split('def _twitch_clip_source(',1)[0]
     assert 'if not succeeded:' in source
-    assert 'if exc.status in (401,403):' in source
+    assert 'if exc.status==401:' in source
+    assert 'raise first_error or' in source
     assert '"partial":bool(failed)' in source
 
 def test_hub_reports_youtube_error_payload_and_partial_twitch_content():
