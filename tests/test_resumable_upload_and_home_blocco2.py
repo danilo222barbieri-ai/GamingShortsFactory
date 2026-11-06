@@ -160,3 +160,96 @@ def test_upload_acknowledgement_dismisses_on_navigation_but_keeps_source():
     assert 'view.classList.toggle("loadedView",loaded);' in home
     assert 'if(!loaded||uploadBusy||currentUploadState===UPLOAD_ST.RECOVERABLE_ERROR)return;' in home
     assert 'openReplaceToast();' in home
+
+
+def test_new_video_requires_verified_draft_before_transfer():
+    html = (ROOT / "web/home_v154_component/index.html").read_text(encoding="utf-8")
+    ai = (ROOT / "web/ai_v221_component/index.html").read_text(encoding="utf-8")
+    edge = (ROOT / "web/nginx.conf.template").read_text(encoding="utf-8")
+    app = (ROOT / "app.py").read_text(encoding="utf-8")
+
+    # Never bypass draft failure/timeouts: no bytes move before its confirmation.
+    start = html.index('pick.addEventListener("change",async()=>')
+    save = html.index('const draft=await saveCurrentBeforeReplacement();', start)
+    reset = html.index('await prepareCleanSourceAfterDraft(draft,fileFingerprint(file));', save)
+    transfer = html.index('uploadBusy=true;', reset)
+    assert start < save < reset < transfer
+    assert "draft_save_timeout" not in html
+    assert 'pick.value="";' in html[reset:transfer]
+    assert '"/workflow/prepare-new-upload"' in html
+    assert 'location = /workflow/prepare-new-upload' in edge
+    assert 'limit_except POST { deny all; }' in edge
+    assert 'GSF_V438_FRESH_SOURCE_STATE' in app
+
+    # Old scanning timers, selected moments and previews must be reset. New
+    # analysis starts once the iframe is ready, not after a fixed 80ms guess.
+    assert 'GSF_NEW_VIDEO_RESET' in html
+    assert 'GSF_AI_RESET_SOURCE' in ai
+    assert '++pollToken;' in ai
+    assert 'sessionStorage.removeItem("gsf_ai_active_scan_v2")' in ai
+    assert 'localStorage.removeItem(DRAFT_KEY)' in ai
+    assert 'freshSourcePending' in ai
+    assert 'frameReady=true;' in app
+    assert "startWhenReady();" in app
+    assert 'value({event: "upload_complete", duration: actualSec, engine: engine || "auto"});' in html
+
+
+def test_ai_results_do_not_mix_two_uploaded_sources(tmp_path, monkeypatch):
+    import os
+    import time
+    import web.direct_upload_server as dus
+
+    monkeypatch.setattr(dus, "ROOT", tmp_path)
+    sid = "source_epoch_test"
+    media = tmp_path / "sessions" / sid / "media"
+    media.mkdir(parents=True)
+    prior = media / "mini_1_2.mp4"
+    prior.write_bytes(b"old moment")
+    old_time = time.time() - 100
+    os.utime(prior, (old_time, old_time))
+    dus._write_json_atomic(media / ".direct_upload_ready.json", {
+        "path": str(media / "source_old.mp4"),
+        "upload_id": "old123",
+        "completed_at": old_time,
+    })
+    dus._write_json_atomic(media / "ai_results_meta.json", {
+        "status": "success", "updated_at": old_time,
+        "request_id": "old-ai", "items": [{"index": 0, "start_time": 2.0}],
+    })
+    dus._write_json_atomic(media / dus._AI_SOURCE_EPOCH_NAME, {
+        "reset_at": time.time() - 1,
+        "previous_upload_id": "old123", "next_upload_id": "new-client-fingerprint",
+    })
+
+    pending = dus._ai_results_payload(sid)
+    assert pending["previews"] == []
+    assert pending["status"] == "idle"
+
+    # The bucket allocates a different upload ID: the epoch must accept it.
+    fresh = media / "mini_1_5.mp4"
+    fresh.write_bytes(b"new moment")
+    dus._write_json_atomic(media / ".direct_upload_ready.json", {
+        "path": str(media / "source_new.mp4"),
+        "upload_id": "bucket-new-id",
+        "completed_at": time.time(),
+    })
+    dus._write_json_atomic(media / "ai_results_meta.json", {
+        "status": "success", "updated_at": time.time(),
+        "request_id": "new-ai", "items": [{"index": 0, "start_time": 5.0}],
+    })
+    result = dus._ai_results_payload(sid)
+    assert result["request_id"] == "new-ai"
+    assert result["count"] == 1
+    assert "mini_1_5.mp4" in result["previews"][0]["video"]
+    assert all("mini_1_2.mp4" not in x.get("video", "") for x in result["previews"])
+
+
+def test_new_video_reset_refuses_unverified_drafts(tmp_path, monkeypatch):
+    import pytest
+    import web.direct_upload_server as dus
+
+    monkeypatch.setattr(dus, "ROOT", tmp_path)
+    sid = "new_source_unverified"
+    with pytest.raises(RuntimeError, match="bozza"):
+        dus._ai_begin_new_source(sid, "not-saved", "new-video")
+    assert not (tmp_path / "sessions" / sid / "media" / dus._AI_SOURCE_EPOCH_NAME).exists()
