@@ -37,6 +37,13 @@ class MandatoryFlow(unittest.TestCase):
         engine = getattr(self.pw, os.environ.get("GSF_BROWSER", "chromium"))
         self.browser = engine.launch()
         self.context = self.browser.new_context(**self.pw.devices["iPhone 13"])
+        # Production serves HTTPS, where the Secure session cookie sticks. The gate
+        # image is plain http on 127.0.0.1 and WebKit drops Secure cookies there,
+        # so each request would get a new session. Seed the same id a real
+        # browser keeps (nginx reuses an existing gsf_sid).
+        import uuid
+        self.context.add_cookies([{"name": "gsf_sid", "value": "v444" + uuid.uuid4().hex,
+                                   "url": BASE + "/", "httpOnly": True, "sameSite": "Lax"}])
         self.page = self.context.new_page()
         self.page.on("console", lambda m: print("CONSOLE", m.text[:200]) if "GSF" in m.text else None)
         self.page.goto(BASE + "/", wait_until="domcontentloaded")
