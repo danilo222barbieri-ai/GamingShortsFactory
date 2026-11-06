@@ -4016,7 +4016,9 @@ async function executeProjectFinalization(file, uploadId, durationPromise) {
     const sStr = Math.round(actualSec);
     parentToast("Gameplay pronto (" + sStr + "s)", "Durata >= 15s · Cerco momenti con IA...", "success");
     shellNav("ai", {duration: actualSec, engine: engine || "auto", auto_search: true});
-    value({event: "create_ai", duration: actualSec, engine: engine || "auto"});
+    // The AI iframe sends the ONE create_ai request after its ready handshake.
+    // This event only refreshes Streamlit's source state after finalization.
+    value({event: "upload_complete", duration: actualSec, engine: engine || "auto"});
   } else {
     value({event: "upload_complete", duration, engine});
   }
