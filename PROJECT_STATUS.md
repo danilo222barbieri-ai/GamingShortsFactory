@@ -1,5 +1,14 @@
 # Gaming Shorts Factory — Project Status
 
+## V443 stability recovery — 2026-11-06 (LIVE, real-account checks pending)
+
+- Owner order: work only on `main`, no branch, no PR; this overrides the AGENTS.md claim/branch protocol for this task, so no claim was opened.
+- Commits `1671121`, `8184949`, `7895581`, `7dadc9c`, `edd12f0`, `35e56eb`. Gate 42245822241 SUCCESS (real image build, in-image import check, WebKit including `test_v443_browser.py`); promotion c15f01a; Railway frontend deployment 271923f3 SUCCESS; UI Verify 42247392152 SUCCESS, digest 9bb026c9…. Worker marker unchanged. Previous release for rollback: eec7e53.
+- Root cause (blocks 1, 4, part of 3): `web/web/` shadowed `web/` for servers launched as scripts from /app/web, so lazy `from web.x import` failed at request time. Production logs showed it on `/job/status` (502), `/share/state`, `/drafts/save-current` (409), Twitch content (503). `web/web/__init__.py` now extends `__path__`; `web/check_runtime_imports_v443.py` runs in the Dockerfile and in the Gate container.
+- Block 2: no `draft_auto_` on upload; the service has no volume, so the active project is mirrored to `active-projects/<sid>.json`; replacement is decided by the server (`for_replacement`). Block 3: `_social_status_of` is the single status source. Block 4: failed sections no longer hide working ones. Block 5: the block is Streamlit's component-ready warning; Home/Editor repeat the handshake and a never-loaded Home iframe reloads; rename cannot detach the account on a read failure. Block 6: one readable notification.
+- Local: pytest 505 passed / 11 failed / 53 skipped; the same 11 fail on untouched main in this environment (Chromium path and browser cases). Docker registries are blocked in the session, so the image was only built in the Gate.
+- Unverified: iPhone/PWA and real OAuth accounts; Block 5 trigger after a rename was not reproduced on a device. Open: editor overlay state is not in the mirror, so a redeploy can lose unsaved edits of the active project; FREE draft limit (5) blocks a video change while full, and earlier premature auto-drafts count against it; stale `active` claims still need owner confirmation; `AGENTS.md` still forbids product work on `main`.
+
 ## Total consolidation — 2026-11-06 (LIVE)
 
 - Release: owner approved the push; `515d967..5889e36` pushed to main. GSF Production Gate 42224599726 **SUCCESS** (8m44s), promotion commit eec7e53 (frontend marker 5889e36; worker marker unchanged, no worker files touched). Railway frontend deployment 2c965222 **SUCCESS** 13:30 UTC; GSF Production UI Verify 42225770880 **SUCCESS**: production `/healthz` serves release eec7e53 with ui_digest a2be8e66…. Previous release for rollback: 213144d.
