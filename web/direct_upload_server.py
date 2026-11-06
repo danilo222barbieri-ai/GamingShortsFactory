@@ -5492,8 +5492,15 @@ def _ai_results_payload(sid):
             ready = json.loads((media_dir / ".direct_upload_ready.json").read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError):
             ready = {}
-        # Until the new source is finalized, the prior AI is never current.
-        if not isinstance(ready, dict) or _safe_id(ready.get("upload_id", "")) != _safe_id(epoch.get("next_upload_id", "")):
+        # Bucket upload IDs are allocated server-side and differ from browser
+        # fingerprints. A new ready marker must identify a different upload,
+        # or have been finalized after the project was reset.
+        if not isinstance(ready, dict):
+            ready = {}
+        ready_id = _safe_id(ready.get("upload_id", ""))
+        old_id = _safe_id(epoch.get("previous_upload_id", ""))
+        ready_after_reset = float(ready.get("completed_at") or 0) >= reset_at
+        if not ready_id or (ready_id == old_id and not ready_after_reset):
             return {"ok": True, "status": "idle", "previews": [], "count": 0}
     # V412 AI ENGINES: when the app wrote a results sheet, join it with the
     # start-stamped mini previews (score, reason, times, alternates, request id).
