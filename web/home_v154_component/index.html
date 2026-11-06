@@ -3742,6 +3742,7 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
  function resetOldAiBrowserState(nextUploadId){
    // These are current-project references, not the persisted Creator Hub drafts.
    try{sessionStorage.removeItem("gsf_ai_active_scan_v2")}catch(_e){}
+   try{sessionStorage.setItem("gsf_ai_source_epoch_v438",String(nextUploadId))}catch(_e){}
    try{sessionStorage.removeItem("gsf_ai_selected_moment_v288")}catch(_e){}
    try{localStorage.removeItem("gsf_ai_draft_v412")}catch(_e){}
    try{
