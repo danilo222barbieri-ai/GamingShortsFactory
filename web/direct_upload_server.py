@@ -2397,6 +2397,8 @@ def _current_project_save_draft(sid,title=""):
 
 def _current_project_delete(sid):
     root,idx,pid,pdata=_current_project_record(sid)
+    if pid:
+        _active_project_forget(sid)
     if not pid:
         return False
     try:
@@ -2414,8 +2416,92 @@ def _current_project_delete(sid):
     print("GSF_PROJECT_DELETED",_safe_id(sid),pid,flush=True)
     return True
 
+def _active_project_key(sid):
+    return f"active-projects/{_safe_id(sid)}.json"
+
+_ACTIVE_RESTORE_CHECKED=set()
+
+def _active_project_persist(sid,upload_id,source_path,name,total,bucket_key,analysis_key,state,pdata,has_account):
+    """Mirror the active project so it survives a redeploy of the ephemeral runtime disk."""
+    if not _bucket_enabled():
+        return
+    def write(key,analysis):
+        record={"version":1,"upload_id":upload_id,"state":state,"project":pdata,"marker":{
+            "path":source_path,"name":name,"size":int(total or 0),"upload_id":upload_id,
+            "completed_at":time.time(),"storage":"railway_bucket","bucket_key":key,"analysis_key":analysis,
+        }}
+        _s3().put_object(Bucket=S3_BUCKET,Key=_active_project_key(sid),
+            Body=_security_encrypt_json(record),ContentType="application/octet-stream",CacheControl="no-store")
+    def run():
+        try:
+            key,analysis=bucket_key,analysis_key
+            if not key:
+                persisted=_persist_fallback_source_to_bucket(sid,upload_id,source_path,name,int(total or 0)) or {}
+                key,analysis=str(persisted.get("bucket_key") or ""),str(persisted.get("analysis_key") or "")
+            if key:
+                write(key,analysis)
+        except Exception as exc:
+            print("GSF_ACTIVE_PROJECT_PERSIST_WARN",type(exc).__name__,flush=True)
+    if bucket_key:
+        run()
+    else:
+        threading.Thread(target=run,name="gsf-active-project",daemon=True).start()
+
+def _active_project_forget(sid):
+    if _bucket_enabled():
+        try:_s3().delete_object(Bucket=S3_BUCKET,Key=_active_project_key(sid))
+        except Exception as exc:print("GSF_ACTIVE_PROJECT_FORGET_WARN",type(exc).__name__,flush=True)
+
+def _active_project_restore(sid):
+    """After a redeploy, rebuild the local active project from its durable mirror."""
+    sid=_safe_id(sid)
+    if not sid or sid in _ACTIVE_RESTORE_CHECKED or not _bucket_enabled():
+        return False
+    root=ROOT/"sessions"/sid
+    marker=root/"media"/".direct_upload_ready.json"
+    if marker.is_file():
+        _ACTIVE_RESTORE_CHECKED.add(sid)
+        return False
+    try:
+        raw=_s3().get_object(Bucket=S3_BUCKET,Key=_active_project_key(sid))["Body"].read()
+    except Exception as exc:
+        code=str(getattr(exc,"response",{}).get("Error",{}).get("Code",""))
+        if isinstance(exc,FileNotFoundError) or code in ("NoSuchKey","404","NotFound"):
+            _ACTIVE_RESTORE_CHECKED.add(sid)
+        else:
+            print("GSF_ACTIVE_PROJECT_RESTORE_WARN",type(exc).__name__,flush=True)
+        return False
+    try:
+        record=_security_decrypt_json(raw)
+        meta=dict(record.get("marker") or {})
+        if not meta.get("bucket_key"):
+            raise ValueError("mirror without durable source")
+        marker.parent.mkdir(parents=True,exist_ok=True)
+        state=record.get("state") if isinstance(record.get("state"),dict) else {}
+        state_path=root/"session_state.json"
+        if state and not state_path.exists():
+            _write_json_atomic(state_path,state)
+        pdata=record.get("project") if isinstance(record.get("project"),dict) else {}
+        pid=_safe_id(pdata.get("id",""))
+        if pid:
+            profile=_creator_account_load(sid) or {}
+            account_id=_safe_id(profile.get("account_id","")) if isinstance(profile,dict) else ""
+            project_root=(ROOT/"creator-projects"/account_id) if account_id else (root/"projects")
+            (project_root/pid).mkdir(parents=True,exist_ok=True)
+            _write_json_atomic(project_root/pid/"project_state.json",pdata)
+            if not (project_root/"index.json").exists():
+                row={"id":pid,"title":pdata.get("title"),"source_name":pdata.get("source_name"),"upload_id":pdata.get("upload_id"),"updated_at":pdata.get("updated_at")}
+                _write_json_atomic(project_root/"index.json",{"active_project_id":pid,"active_project_title":pdata.get("title"),"updated_at":time.time(),"projects":[row],"items":[row]})
+        _write_json_atomic(marker,meta)
+        _ACTIVE_RESTORE_CHECKED.add(sid)
+        print("GSF_ACTIVE_PROJECT_RESTORED",sid,flush=True)
+        return True
+    except Exception as exc:
+        print("GSF_ACTIVE_PROJECT_RESTORE_WARN",type(exc).__name__,flush=True)
+        return False
+
 def _auto_save_uploaded_source_to_projects(sid,upload_id,source_path,original_name,total=0,bucket_key="",analysis_key=""):
-    """Idempotently save a newly uploaded video into Projects & Drafts without duplication."""
+    """Idempotently register a newly uploaded video as the active project (never as a draft)."""
     sid=_safe_id(sid)
     upload_id=_safe_id(upload_id) or "current"
     if not sid or not source_path:
@@ -2484,31 +2570,10 @@ def _auto_save_uploaded_source_to_projects(sid,upload_id,source_path,original_na
     idx["items"]=projects_list[:50]
     _write_json_atomic(idx_path,idx)
 
-    # 3. Upsert deterministic auto-draft (`draft_auto_<upload_id>`) so Creator Hub -> Progetti shows it immediately.
-    draft_id="draft_auto_"+upload_id
-    draft_payload={
-        "id":draft_id,
-        "title":title,
-        "source_name":clean_name,
-        "state":state,
-    }
-    draft_res={}
-    try:
-        draft_res=_draft_save(sid,draft_payload)
-    except StorageQuotaError:
-        # If quota is full of old automatic drafts, rotate the oldest auto-draft so new upload is saved.
-        try:
-            existing_drafts=_draft_list(sid)
-            auto_drafts=[d for d in existing_drafts if isinstance(d,dict) and str(d.get("id") or "").startswith("draft_auto_")]
-            if auto_drafts:
-                oldest=min(auto_drafts,key=lambda x:float(x.get("updated_at") or 0))
-                if oldest.get("id"):
-                    _draft_delete(sid,oldest["id"])
-                    draft_res=_draft_save(sid,draft_payload)
-        except Exception:
-            pass
-    except Exception as exc:
-        print("GSF_AUTO_DRAFT_SAVE_WARN",sid,upload_id,repr(str(exc))[:180],flush=True)
+    # 3. The upload is the ACTIVE project, not a draft. It becomes a draft only
+    # when a later upload replaces it (/drafts/save-current). The runtime disk is
+    # ephemeral, so the active project itself is mirrored to durable storage.
+    _active_project_persist(sid,upload_id,str(source_path),clean_name,total,bucket_key,analysis_key,state,pdata,bool(account_id))
 
     try:
         dur = _probe_video_duration_fast(source_path)
@@ -2525,7 +2590,6 @@ def _auto_save_uploaded_source_to_projects(sid,upload_id,source_path,original_na
         "ok":True,
         "saved":True,
         "project_id":proj_id,
-        "draft_id":draft_res.get("id") or draft_id,
         "upload_id":upload_id,
         "title":title,
         "source_name":clean_name,
@@ -3751,7 +3815,7 @@ def _twitch_content(sid,kind,after=""):
                 succeeded+=1
             except _social421.TwitchError as exc:
                 # Do not disguise expired/revoked credentials as an empty library.
-                if exc.status in (401,403):
+                if exc.status==401:
                     raise
                 failed.append(sub)
             except Exception:
@@ -5428,6 +5492,7 @@ def _guardian_tick(sid,force=False):
     sid=_safe_id(sid)
     if not sid:
         return {"ok":False,"error":"invalid session"}
+    _active_project_restore(sid)
     now=time.time()
     with _GUARDIAN_CACHE_LOCK:
         cached=dict(_GUARDIAN_CACHE.get(sid) or {})
@@ -7121,6 +7186,7 @@ class Handler(BaseHTTPRequestHandler):
             except (ValueError,RuntimeError) as exc:
                 _json(self,409,{"ok":False,"error":str(exc)[:200]})
             except Exception as exc:
+                print("GSF_PREPARE_NEW_UPLOAD_ERROR",type(exc).__name__,repr(str(exc))[:220],flush=True)
                 _json(self,500,{"ok":False,"error":"Impossibile preparare il nuovo progetto."})
             return
 
@@ -7311,6 +7377,10 @@ class Handler(BaseHTTPRequestHandler):
                 _json(self,403,{"ok":False,"error":"csrf validation failed"})
                 return
             try:
+                _active_project_restore(sid)
+                try:request_data=_read_json(self,max_bytes=4096)
+                except ValueError:request_data={}
+                for_replacement=isinstance(request_data,dict) and request_data.get("for_replacement") is True
                 root=ROOT/"sessions"/sid
                 state={}
 
@@ -7344,12 +7414,18 @@ class Handler(BaseHTTPRequestHandler):
                 source_name=str(meta.get("name") or state.get("gsf_source_name") or "Gameplay")[:160]
                 upload_id=_safe_id(meta.get("upload_id",""))
 
-                if not source_path:
-                    raise RuntimeError("Nessuna sorgente corrente da mettere al sicuro.")
-
-                source=Path(source_path)
+                source=Path(source_path) if source_path else None
+                # The server, not the visual state of the Home circle, decides if
+                # there is an active project to protect before a new upload.
+                if for_replacement and (source is None or (not source.is_file() and not meta.get("bucket_key"))):
+                    if source is not None:
+                        print("GSF_REPLACEMENT_SOURCE_GONE",sid,flush=True)
+                    _json(self,200,{"ok":True,"verified":True,"no_source":True})
+                    return
+                if source is None:
+                    raise RuntimeError("Nessun video corrente da salvare.")
                 if not source.is_file() and not meta.get("bucket_key"):
-                    raise RuntimeError("La sorgente corrente non è recuperabile: nuovo upload bloccato.")
+                    raise RuntimeError("Il video corrente non è più recuperabile.")
 
                 # If this was a direct-fallback upload, make it persistent before we approve replacement.
                 if _bucket_enabled() and source.is_file() and upload_id and not meta.get("bucket_key"):
@@ -7359,7 +7435,7 @@ class Handler(BaseHTTPRequestHandler):
                     if persisted:
                         meta.update(persisted)
                     if not meta.get("bucket_key"):
-                        raise RuntimeError("Salvataggio persistente non verificato: nuovo upload bloccato.")
+                        raise RuntimeError("Salvataggio del video non verificato. Il progetto attuale resta attivo.")
 
                 state["gsf_source_path"]=source_path
                 state["gsf_editor_source_path"]=source_path
@@ -7381,7 +7457,7 @@ class Handler(BaseHTTPRequestHandler):
                 local_ref=Path(str(source_ref.get("draft_path") or source_ref.get("path") or source_path))
                 recoverable=bool(local_ref.is_file() or source_ref.get("bucket_key") or meta.get("bucket_key"))
                 if not saved or not recoverable:
-                    raise RuntimeError("Verifica bozza non riuscita: nuovo upload bloccato.")
+                    raise RuntimeError("Verifica della bozza non riuscita. Il progetto attuale resta attivo.")
 
                 _json(self,200,{
                     "ok":True,
@@ -7392,8 +7468,16 @@ class Handler(BaseHTTPRequestHandler):
                 })
             except StorageQuotaError as exc:
                 _json(self,409,{"ok":False,"verified":False,"code":"storage_limit","kind":exc.kind,"limit":exc.limit,"plan":exc.plan,"error":str(exc)})
+            except RuntimeError as exc:
+                if type(exc) is RuntimeError:
+                    _json(self,409,{"ok":False,"verified":False,"error":str(exc)[:220]})
+                else:
+                    print("GSF_DRAFT_SAVE_CURRENT_ERROR",type(exc).__name__,repr(str(exc))[:220],flush=True)
+                    _json(self,503,{"ok":False,"verified":False,"error":"Salvataggio della bozza non riuscito. Il progetto attuale resta attivo: riprova."})
             except Exception as exc:
-                _json(self,409,{"ok":False,"verified":False,"error":str(exc)[:220]})
+                # Technical detail stays in the logs; the UI gets a recoverable message.
+                print("GSF_DRAFT_SAVE_CURRENT_ERROR",type(exc).__name__,repr(str(exc))[:220],flush=True)
+                _json(self,503,{"ok":False,"verified":False,"error":"Salvataggio della bozza non riuscito. Il progetto attuale resta attivo: riprova."})
             return
 
         # V304 project/draft detail actions.

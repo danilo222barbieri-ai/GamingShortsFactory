@@ -3709,6 +3709,12 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
    if(emit)value({event:"engine",duration,engine});
  }
 
+ function readableMessage(raw,fallback){
+   // Technical detail belongs to the logs, never to the interface.
+   const text=String(raw||"").trim();
+   if(!text||/No module|Traceback|Exception|Error\b|errno|HTTP \d|botocore|\bfetch\b|undefined|\.py\b/i.test(text))return fallback;
+   return text;
+ }
  function parentToast(title,body="",kind="success"){
    try{
      const n=window.parent&&window.parent.GSFNotify;
@@ -3722,7 +3728,7 @@ html.gsf-v343-parent-ready #home154 .features{top:0!important}
      method:"POST",
      credentials:"same-origin",
      headers:{"Content-Type":"application/json","X-GSF-CSRF":header.csrf_token||""},
-     body:"{}"
+     body:JSON.stringify({for_replacement:true})
    });
    let j={};try{j=await r.json()}catch(_e){}
    if(!r.ok||!j||!j.ok||!j.verified){
@@ -3856,8 +3862,8 @@ function setUploadState(st, detail = {}) {
     activeUploadSession = null;
   } else if (st === UPLOAD_ST.RECOVERABLE_ERROR) {
     status.className = "status show error recoverable";
-    const msg = detail.message || "Finalizzazione interrotta";
-    statusText.textContent = msg + " — tocca per completare";
+    statusText.textContent = "Video trasferito — tocca per completare";
+    if (detail.message) console.warn("[GSF_UPLOAD_DIAG] recoverable", detail.message);
     uploadLabel.innerHTML = "COMPLETA<br>CARICAMENTO";
     circle.classList.remove("busy");
     uploadBusy = false;
@@ -3866,7 +3872,7 @@ function setUploadState(st, detail = {}) {
     rings.classList.remove("uploading");
     if (loaded) rings.classList.add("uploaded");
     status.className = "status show error";
-    statusText.textContent = detail.message || "Upload interrotto — riprova";
+    statusText.textContent = readableMessage(detail.message, "Caricamento interrotto — riprova");
     bar.style.width = "0";
     circle.classList.remove("busy");
     uploadBusy = false;
@@ -4064,7 +4070,7 @@ circle.addEventListener("click", async (ev) => {
       await executeProjectFinalization(file, uploadId, durationPromise);
     } catch (retryErr) {
       setUploadState(UPLOAD_ST.RECOVERABLE_ERROR, {message: retryErr.message || "Errore retry"});
-      parentToast("Finalizzazione non riuscita", String(retryErr.message || "Riprova tra poco"), "error");
+      parentToast("Finalizzazione non riuscita", readableMessage(retryErr.message, "Riprova tra poco."), "error");
     }
   }
 }, true);
@@ -4085,26 +4091,33 @@ pick.addEventListener("change",async()=>{
 
   // A second video is a new project. The previous draft must be recoverable
   // BEFORE clearing AI/Editor state or transferring a single byte of the new file.
-  if(loaded){
+  // The server is authoritative: the Home circle may show the empty uploader
+  // while an active project exists, so `loaded` alone never decides this.
+  {
     replacementSetupBusy=true;
     status.className="status show saving";
-    statusText.textContent="Salvo il lavoro precedente nelle Bozze…";
-    uploadLabel.innerHTML="SALVATAGGIO<br>BOZZA";
+    statusText.textContent="Preparazione del caricamento…";
+    uploadLabel.innerHTML="PREPARAZIONE";
     try{
       const draft=await saveCurrentBeforeReplacement();
-      await prepareCleanSourceAfterDraft(draft,fileFingerprint(file));
-      resetOldAiBrowserState(fileFingerprint(file));
-      parentToast("Lavoro precedente salvato","Nuovo progetto pronto","success");
+      if(!draft.no_source){
+        await prepareCleanSourceAfterDraft(draft,fileFingerprint(file));
+        resetOldAiBrowserState(fileFingerprint(file));
+        parentToast("Lavoro precedente salvato","Lo trovi nelle Bozze","success");
+      }
     }catch(error){
-      const message=String(error?.message||"Bozza non verificata. Il vecchio video resta disponibile.");
-      console.warn("[GSF_NEW_SOURCE_ABORT]",message);
-      status.className="status show error";
-      statusText.textContent=message;
-      uploadLabel.innerHTML="CARICA<br>IL TUO GAMEPLAY";
+      const message=readableMessage(error?.message,"Bozza non verificata. Riprova.");
+      console.warn("[GSF_NEW_SOURCE_ABORT]",String(error?.message||error));
+      // One notification only (GSF Pulse): the circle goes back to its upload
+      // state, without a second copy of the error or a stale "Video caricato".
+      status.className="status";
+      statusText.textContent="";
       pick.value="";
       replacePending=false;
       replacementSetupBusy=false;
-      parentToast("Cambio video annullato",message,"error");
+      setUploadAcknowledgement(false);
+      setLoaded(loaded);
+      parentToast("Video non cambiato",message+" Il progetto attuale è ancora attivo.","error");
       return;
     }
     replacementSetupBusy=false;
@@ -4381,9 +4394,17 @@ pick.addEventListener("change",async()=>{
    if(args.engine)setEngine(String(args.engine),false);
    renderMoments(args.previews||[]);
  }
- window.addEventListener("message",e=>{if(e.data&&e.data.type===RENDER)receive(e.data.args||{});});
+ // GSF_V443_READY_HANDSHAKE: Streamlit shows its English "trouble loading the
+ // component" block after 60s without this handshake, and a single message can
+ // be lost when a resumed iPhone WebView remounts the iframe. Repeat until the
+ // first render proves it arrived; a repeated ready is idempotent for Streamlit.
+ let renderReceived=false,readyAttempts=0;
+ const announceReady=()=>{if(!renderReceived)send(COMPONENT_READY,{apiVersion:1})};
+ const readyTimer=setInterval(()=>{if(renderReceived||++readyAttempts>120){clearInterval(readyTimer);return}announceReady()},500);
+ window.addEventListener("message",e=>{if(e.data&&e.data.type===RENDER){renderReceived=true;clearInterval(readyTimer);receive(e.data.args||{});}});
+ window.addEventListener("pageshow",announceReady);
  setMuralState(loaded?"ready":"idle",true);
- send(COMPONENT_READY,{apiVersion:1});
+ announceReady();
  collapseParentHomeSpacers();
  fitViewport();
  window.setTimeout(()=>{collapseParentHomeSpacers();fitViewport()},120);

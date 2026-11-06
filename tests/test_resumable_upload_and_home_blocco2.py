@@ -51,9 +51,8 @@ def test_auto_save_uploaded_source_to_projects_is_idempotent():
             assert proj_index["items"][0]["id"] == "proj_up123"
             assert proj_index["items"][0]["video_filename"] == "Warzone_Clip.mp4"
 
-            drafts = dus._draft_list(sid)
-            assert len(drafts) == 1
-            assert drafts[0]["id"] == "draft_auto_up123"
+            # V443: an upload is the active project; it becomes a draft only on replacement.
+            assert dus._draft_list(sid) == []
 
             session_state = json.loads(
                 (tmp_root / "sessions" / sid / "session_state.json").read_text(encoding="utf-8")
