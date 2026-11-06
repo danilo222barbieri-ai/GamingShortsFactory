@@ -270,12 +270,14 @@ class Mobile(unittest.TestCase):
                 page.set_content('<header id="gsf-global-header" style="height:44px"></header><main id="content" style="height:400px">Gameplay</main><nav id="gsf-global-gamebar" style="position:fixed;bottom:10px;height:66px"></nav>')
                 before=page.locator('#content').bounding_box();page.evaluate(code)
                 page.evaluate("()=>{const s={last:'ai.started',active_job:'ai',message:'IA · Analizzo il gameplay…',seq:1,updated:1};GSFNotify.alive(s);GSFNotify.alive(s)}")
+                self.assertEqual(page.locator('.gsf-site-toast').count(),0,'IA running is shown inside the IA surface and activity center')
+                page.evaluate("GSFNotify.show('Bozza salvata','','success')")
                 self.assertEqual(page.locator('.gsf-site-toast').count(),1)
-                self.assertLessEqual(page.locator('.gsf-site-toast').bounding_box()['height'],40)
+                self.assertLessEqual(page.locator('.gsf-site-toast').bounding_box()['height'],44)
                 self.assertEqual(page.locator('#content').bounding_box(),before)
                 pill=page.locator('.gsf-site-toast').bounding_box()
                 header=page.locator('#gsf-global-header').bounding_box()
-                self.assertLessEqual(pill['y']+pill['height'],header['y']+header['height'])
+                self.assertGreaterEqual(pill['y'],header['y']+header['height'])
 
     def test_oauth_keeps_parent_shell_and_returns_to_social(self):
         hub=(ROOT/'web/creator_hub_v156_component/index.html').read_text(encoding='utf-8')

@@ -87,8 +87,10 @@ def test_global_notifications_are_one_readable_pen_surface_outside_header():
     client = _function_source("web/direct_upload_server.py", "_push_client_bytes")
     assert "GSF_V428_PEN_NOTIFICATIONS" in client
     assert "const inline=false" in client
-    assert "Caveat" in client
-    assert "kind==='error'?9000:6500" in client
+    assert "Caveat" not in client
+    assert "GSF_PULSE_V439" in client
+    assert "Nunito Sans" in client
+    assert "kind==='error'?8500:r.data.kind==='warning'?5000:2800" in client
     # The old placement literally squeezed notifications between brand and profile.
     assert "brand.getBoundingClientRect().right" not in client
     assert "account.getBoundingClientRect().left" not in client

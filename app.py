@@ -680,7 +680,7 @@ except Exception:
     pass
 
 _gsf_restore_persistent_state()
-if st.session_state.pop("gsf_v107_draft_resumed",False):
+if st.session_state.pop("gsf_v107_draft_resumed",False) and not GSF_WEB_MODE:
     st.toast("💾 Bozza ripristinata.")
 
 
@@ -12022,7 +12022,7 @@ if video is not None:
                     _u.urlopen(_req,timeout=15).read()
                     st.session_state.pop("gsf_v1302_new_video_confirm",None)
                     _gsf_start_new_video()
-                    st.toast("Bozza salvata nel Creator Hub.")
+                    if not GSF_WEB_MODE: st.toast("Bozza salvata nel Creator Hub.")
                     st.rerun()
                 except Exception as _exc:
                     print("GSF_V1302_NEW_VIDEO_DRAFT_WARN",repr(str(_exc))[:220],flush=True)
@@ -13413,7 +13413,7 @@ if video:
                 )
                 _u.urlopen(_req,timeout=8).read()
                 st.session_state.pop("gsf_v107_engine_change_draft_pending",None)
-                st.toast("💾 Bozza salvata nel Creator Hub.")
+                if not GSF_WEB_MODE: st.toast("💾 Bozza salvata nel Creator Hub.")
             except Exception as _draft_exc:
                 print("GSF_ENGINE_DRAFT_SAVE_WARN",repr(str(_draft_exc)),flush=True)
                 st.warning("Non sono riuscito a salvare la bozza. Riprova.")
@@ -15087,10 +15087,10 @@ if video:
             _gsf_v107_pending=bool(
                 st.session_state.pop("gsf_v107_final_render_pending",False)
             )
-            if st.session_state.pop("gsf_v107_render_done_toast",False):
+            if st.session_state.pop("gsf_v107_render_done_toast",False) and not GSF_WEB_MODE:
                 st.toast("✅ Short completato.")
             if _gsf_v107_pending and not st.session_state.get("gsf_v107_render_toast_shown",False):
-                st.toast("🎬 Short in lavorazione · puoi continuare a usare l’app.")
+                if not GSF_WEB_MODE: st.toast("🎬 Short in lavorazione · puoi continuare a usare l’app.")
                 st.session_state["gsf_v107_render_toast_shown"]=True
             if _gsf_v107_pending:
                 _snap=st.session_state.get("gsf_v107_render_recipe_snapshot")

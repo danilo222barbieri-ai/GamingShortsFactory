@@ -636,7 +636,7 @@ def _push_client_bytes():
     const records=new Map(),pending=[],docs=new WeakSet();let host=null,serial=0,layoutFrame=0;
     const reduced=()=>UI.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const CSS=`
-#gsf-site-toast-stack{position:fixed;left:50%;right:auto;top:max(10px,env(safe-area-inset-top,0px));z-index:2147483647;width:min(360px,calc(100vw - 32px));display:flex;flex-direction:column;gap:8px;pointer-events:none;font-family:'Caveat','Segoe Print','Bradley Hand',cursive;overflow:hidden;contain:layout style;transform:translateX(-50%)}
+#gsf-site-toast-stack{position:fixed;left:50%;right:auto;top:max(10px,env(safe-area-inset-top,0px));z-index:2147483647;width:min(360px,calc(100vw - 32px));display:flex;flex-direction:column;gap:8px;pointer-events:none;font-family:"Nunito Sans","Avenir Next","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden;contain:layout style;transform:translateX(-50%)}
 .gsf-site-toast{position:relative;flex:none;box-sizing:border-box;display:grid;grid-template-columns:28px minmax(0,1fr) 28px;gap:9px;align-items:center;width:100%;min-height:72px;padding:10px;border:1px solid rgba(121,210,255,.28);border-radius:18px;background:rgba(8,24,39,.94);color:#eaf6ff;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 10px 28px rgba(0,0,0,.3);pointer-events:auto;opacity:0;transform:translateY(-7px);transition:opacity .22s ease,transform .22s cubic-bezier(.2,.8,.2,1);overflow:hidden}
 .gsf-site-toast.gsf-show{opacity:1;transform:translateY(0)}.gsf-site-toast.gsf-hide{opacity:0;transform:translateY(-5px);pointer-events:none}
 .gsf-site-toast-icon{width:28px;height:28px;display:grid;place-items:center;color:#79d2ff}.gsf-site-toast-icon img{width:26px;height:26px;object-fit:contain;border-radius:7px}.gsf-site-toast-copy{min-width:0}.gsf-site-toast-title{font-size:17px;font-weight:700;line-height:1.05;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gsf-site-toast-body{font-size:15px;line-height:1.15;color:#c8deed;min-height:17px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px}
@@ -656,6 +656,30 @@ def _push_client_bytes():
 .gsf-pill .gsf-site-toast:nth-child(n+2){visibility:hidden;pointer-events:none}
 .gsf-pill .gsf-site-toast-actions:not([hidden])~*{display:none}
 .gsf-pill .gsf-site-toast-action{min-height:24px;padding:2px 5px;border-radius:999px;font-size:10px}
+/* GSF_PULSE_V439: a single unobtrusive, accessible glass notification surface. */
+#gsf-site-toast-stack{width:min(308px,calc(100vw - 40px));gap:0;font-family:"Nunito Sans","Avenir Next","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.gsf-site-toast{min-height:42px;padding:8px 10px;grid-template-columns:12px minmax(0,1fr) 24px;gap:9px;border:1px solid rgba(121,210,255,.20);border-radius:14px;background:rgba(7,20,34,.87);box-shadow:0 5px 18px rgba(0,0,0,.18);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);transform:translateY(-4px);transition:opacity .2s ease,transform .2s ease}
+.gsf-site-toast.gsf-hide{transform:translateY(-3px)}
+.gsf-site-toast-icon{width:12px;height:12px;display:grid;place-items:center}
+.gsf-site-toast-icon img{display:none}
+.gsf-site-toast-icon:before{content:"";width:7px;height:7px;border-radius:50%;background:#79d2ff;box-shadow:0 0 7px rgba(121,210,255,.24)}
+.gsf-site-toast[data-kind=success] .gsf-site-toast-icon:before{background:#5ed6a0}
+.gsf-site-toast[data-kind=error] .gsf-site-toast-icon:before{background:#ff929a}
+.gsf-site-toast[data-kind=warning] .gsf-site-toast-icon:before{background:#ffca75}
+.gsf-site-toast[data-kind=working] .gsf-site-toast-icon:before{display:none}
+.gsf-site-toast[data-kind=success]{border-color:rgba(94,214,160,.25)}
+.gsf-site-toast[data-kind=error]{border-color:rgba(255,146,154,.45)}
+.gsf-site-toast[data-kind=warning]{border-color:rgba(255,202,117,.35)}
+.gsf-site-toast-title{font-size:12.5px;font-weight:700;line-height:1.25;letter-spacing:0;white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.gsf-site-toast-body{font-size:11.5px;line-height:1.3;min-height:0;color:#acc4d4;margin-top:3px}
+.gsf-site-toast:not([data-kind=error]):not([data-kind=warning]):not([data-kind=confirm]) .gsf-site-toast-body{display:none}
+.gsf-site-toast-close{width:24px;height:24px;font-size:16px;color:#91adbf}
+.gsf-site-toast-bar{height:1px;opacity:.32}
+.gsf-site-toast-actions{grid-column:2/4;justify-content:flex-end;gap:6px}
+.gsf-site-toast-action{min-height:32px;padding:5px 10px;border-radius:10px;font-size:11px;background:rgba(121,210,255,.07)}
+.gsf-site-toast[data-kind=confirm]{min-height:70px}
+.gsf-site-toast[data-kind=confirm] .gsf-site-toast-body{display:block}
+#gsf-site-toast-stack.gsf-compact .gsf-site-toast:nth-child(n+2){visibility:hidden;pointer-events:none}
 @media(prefers-reduced-motion:reduce){.gsf-site-toast,.gsf-site-toast-bar{transition:none!important;animation:none!important}.gsf-site-toast-icon{animation:none!important}.gsf-site-toast-bar{opacity:.5}}
 `;
     const styleFor=doc=>{if(!doc.getElementById('gsf-site-toast-style')){const style=doc.createElement('style');style.id='gsf-site-toast-style';style.textContent=CSS;(doc.head||doc.documentElement).appendChild(style)}};
@@ -680,9 +704,9 @@ def _push_client_bytes():
     const attachDocument=doc=>{if(!doc||docs.has(doc))return;docs.add(doc);doc.addEventListener('fullscreenchange',layout);doc.addEventListener('webkitfullscreenchange',layout)};
     const ensure=()=>{if(!host){host=UI.document.createElement('div');host.id='gsf-site-toast-stack';host.setAttribute('aria-live','polite');host.setAttribute('aria-atomic','false');UI.document.body.appendChild(host);attachDocument(UI.document)}position();return host};
     const clearTimers=r=>{UI.clearTimeout(r.timer);UI.clearTimeout(r.exitTimer);r.timer=r.exitTimer=0};
-    const drain=()=>{while(pending.length&&[...records.values()].filter(r=>r.el).length<2){const r=pending.shift();if(records.get(r.id)===r)mount(r)}};
+    const drain=()=>{while(pending.length&&[...records.values()].filter(r=>r.el).length<1){const r=pending.shift();if(records.get(r.id)===r)mount(r)}};
     const dismiss=id=>{const r=records.get(String(id));if(!r)return false;clearTimers(r);r.closing=true;const finish=()=>{if(records.get(r.id)!==r)return;r.el?.remove();records.delete(r.id);const i=pending.indexOf(r);if(i>=0)pending.splice(i,1);drain();layout()};if(!r.el||reduced())finish();else{r.el.classList.add('gsf-hide');r.exitTimer=UI.setTimeout(finish,230)}return true};
-    const lifetime=r=>{UI.clearTimeout(r.timer);r.timer=0;if(r.data.kind==='working'||r.data.kind==='confirm'||UI.document.hidden)return;const ttl=r.data.ttl===undefined?(r.data.kind==='error'?9000:6500):Number(r.data.ttl);if(ttl>0)r.timer=UI.setTimeout(()=>dismiss(r.id),Math.min(ttl,60000))};
+    const lifetime=r=>{UI.clearTimeout(r.timer);r.timer=0;if(r.data.kind==='working'||r.data.kind==='confirm'||UI.document.hidden)return;const ttl=r.data.ttl===undefined?(r.data.kind==='error'?8500:r.data.kind==='warning'?5000:2800):Number(r.data.ttl);if(ttl>0)r.timer=UI.setTimeout(()=>dismiss(r.id),Math.min(ttl,60000))};
     const paint=r=>{
       if(!r.el)return;const e=r.el,d=r.data;clearTimers(r);r.closing=false;e.classList.remove('gsf-hide');e.dataset.kind=d.kind||'info';const setText=(selector,value)=>{const node=e.querySelector(selector);if(node.textContent!==value)node.textContent=value};setText('.gsf-site-toast-title',String(d.title||'Gaming Shorts Factory'));setText('.gsf-site-toast-body',String(d.body||''));
       const known=typeof d.progress==='number'&&Number.isFinite(d.progress);e.classList.toggle('gsf-progress-known',known);e.querySelector('.gsf-site-toast-bar').style.transform=known?'scaleX('+Math.max(0,Math.min(1,d.progress))+')':'';
@@ -701,7 +725,7 @@ def _push_client_bytes():
     const upsert=(id,data={})=>{id=String(id||'').slice(0,180);if(!id)return false;let r=records.get(id);
       if(r){r.data={...r.data,...data};paint(r)}else{
         if(records.size>=8){const expendable=pending.find(x=>!['working','confirm','error'].includes(x.data.kind));if(expendable)dismiss(expendable.id);else return false}
-        r={id,data:{kind:'info',...data},el:null,timer:0,exitTimer:0,closing:false};records.set(id,r);if([...records.values()].filter(x=>x.el).length<2)mount(r);else pending.push(r)
+        r={id,data:{kind:'info',...data},el:null,timer:0,exitTimer:0,closing:false};records.set(id,r);if([...records.values()].filter(x=>x.el).length<1)mount(r);else pending.push(r)
       }
       return {id,update:patch=>upsert(id,patch),close:()=>dismiss(id)}
     };
@@ -712,17 +736,22 @@ def _push_client_bytes():
     };
     const aliveSeen=new Map(),aliveJobs=new Set();
     const alive=state=>{
-      const event=String(state.last||''),job=event==='failure'?state.error_job:event.split('.')[0];
-      const terminal=['upload.completed','ai.found','render.completed','render.cancelled','publish.completed'];
-      for(const r of records.values()){const previous=r.id.startsWith('alive:')?r.id.slice(6):'';if(previous&&r.data.kind==='working'&&previous!==state.active_job&&previous!==job)dismiss(r.id)}
-      if(!['upload','ai','render','publish'].includes(job)&&event!=='editor.saved')return false;
-      if(!state.active_job&&!terminal.includes(event)&&event!=='failure'&&event!=='editor.saved')return false;
+      const event=String(state.last||''),job=event==='failure'?String(state.error_job||''):event.split('.')[0];
+      if(!['upload','ai','render','publish'].includes(job)&&event!=='editor.saved')return true;
       const stamp=String(state.updated)+':'+String(state.seq);if(aliveSeen.get(job)===stamp)return true;aliveSeen.set(job,stamp);
+      if(['upload','ai','render','publish'].includes(job))aliveJobs.add(job);
       if(event==='render.cancelled'){dismiss('alive:render');aliveJobs.delete('render');return true}
-      const kind=event==='failure'||(event==='publish.completed'&&!state.published)?'error':state.active_job===job?'working':'success';
-      const target=job==='render'&&kind==='success'?'short':job==='ai'&&kind==='success'&&state.moments_count>0?'ai':kind==='error'?({upload:'home',ai:'ai',render:'short',publish:'social'}[job]):null;
+      // GSF Pulse: upload already confirms inside the circle, IA inside Moments,
+      // and ongoing work inside the Activity Center. These never open toasts.
+      if(event==='upload.completed'||event==='ai.found'||event==='ai.no_highlights'||event.endsWith('.started')||event.endsWith('.progress'))return true;
+      const kind=event==='failure'||(event==='publish.completed'&&!state.published)?'error':'success';
+      const target=kind==='error'?({upload:'home',ai:'ai',render:'short',publish:'social'}[job]||'home'):event==='render.completed'?'short':null;
       const onClick=target&&UI.GSFNavigation?()=>UI.GSFNavigation.navigate({target}):null;
-      aliveJobs.add(job);upsert('alive:'+job,{title:String(state.message||'GSF'),body:'',kind,progress:kind==='working'?state.progress:1,onClick,actionLabel:kind==='error'?'Riapri':'Apri'});return true;
+      if(event==='failure'||event==='render.completed'||event==='publish.completed'||event==='editor.saved'){
+        const title=event==='render.completed'?'Short pronto':event==='editor.saved'?'Modifiche salvate':event==='publish.completed'?(kind==='error'?'Pubblicazione non riuscita':'Pubblicazione completata'):String(state.message||'Operazione non riuscita');
+        upsert('alive:'+job,{title,body:'',kind,onClick,actionLabel:kind==='error'?'Riprova':'Apri'});
+      }
+      return true;
     };
     const sourceJobs=new Map();
     const trackSource=job=>{
@@ -730,7 +759,7 @@ def _push_client_bytes():
       if(sourceJobs.has(id))return sourceJobs.get(id).promise;
       if(sourceJobs.size>=2)return Promise.resolve({error:'Attendi il completamento dell’importazione corrente.'});
       let finish;const promise=new Promise(resolve=>finish=resolve);
-      sourceJobs.set(id,{id,promise,finish,started:Date.now()});aliveJobs.add('upload');upsert('alive:upload',{title:'Importazione gameplay',body:'Puoi continuare a navigare.',kind:'working',onClick:null});return promise;
+      sourceJobs.set(id,{id,promise,finish,started:Date.now()});aliveJobs.add('upload');return promise;
     };
     const pollSources=async signal=>{
       for(const job of sourceJobs.values()){
@@ -740,7 +769,7 @@ def _push_client_bytes():
         if(!status.ready&&!status.error&&!timedOut)continue;
         sourceJobs.delete(job.id);uploadActive=false;
         const kind=status.ready?'success':status.error?'error':'warning';
-        upsert('alive:upload',{title:status.ready?'Gameplay importato':status.error?'Importazione non riuscita':'Importazione da verificare',body:status.ready?'Disponibile nella Libreria.':'Il progetto precedente resta disponibile.',kind,progress:status.ready?1:null,onClick:UI.GSFNavigation?()=>UI.GSFNavigation.navigate({target:'hub',section:'live'}):null,actionLabel:'Apri Libreria'});
+        if(!status.ready)upsert('alive:upload',{title:status.error?'Importazione non riuscita':'Importazione da verificare',body:'Il progetto precedente resta disponibile.',kind,progress:null,onClick:UI.GSFNavigation?()=>UI.GSFNavigation.navigate({target:'hub',section:'live'}):null,actionLabel:'Apri Libreria'});
         job.finish(status.ready?status:{error:status.error?'Importazione non riuscita.':'Verifica lo stato nella Libreria prima di riprovare.'});
       }
     };
@@ -761,7 +790,7 @@ def _push_client_bytes():
   window.addEventListener("message",(event)=>{
     const d=event.data||{};if(d.type!=="gsf-upload")return;const state=String(d.state||"");
     if(state==="running"){if(!uploadActive){uploadCycle+=1;uploadActive=true;}}
-    else if(state==="done"){uploadActive=false;if(uploadDoneCycle!==uploadCycle){uploadDoneCycle=uploadCycle;const name=String(d.name||"").trim();if(!window.GSFNotify.handles("upload"))showToast("Video caricato","","success",{id:"alive:upload"});}}
+    else if(state==="done"){uploadActive=false;if(uploadDoneCycle!==uploadCycle){uploadDoneCycle=uploadCycle;/* Upload success belongs exclusively to the uploader circle. */}}
     else if(state==="error"){const wasActive=uploadActive;uploadActive=false;if(wasActive)showToast("Upload interrotto","Il caricamento non è stato completato. Puoi riprovare senza perdere il resto del lavoro.","error");}
   });
 
@@ -888,9 +917,9 @@ def _push_client_bytes():
         const prev=seenStates.get(j.id);
         seenStates.set(j.id,j.status);
         if(prev&&prev!==j.status){
-          if(j.status==='completed'&&j.kind!=='create_short'&&j.kind!=='upload'){
+          if(j.status==='completed'&&!['create_short','upload','ai_analysis'].includes(j.kind)){
             showToast(String(j.title||'Elaborazione completata'),String(j.stage_label||'Completato in background.'),'success',{token:'bg-job-done-'+j.id+'-'+String(j.completed_at||1),persistent:true});
-          }else if(j.status==='failed'&&j.kind!=='create_short'&&j.kind!=='upload'){
+          }else if(j.status==='failed'&&!['create_short','upload','ai_analysis'].includes(j.kind)){
             showToast(String(j.title||'Elaborazione interrotta'),String(j.error||'Puoi riprovare dal Centro Attività.'),'error',{token:'bg-job-fail-'+j.id+'-'+String(j.updated_at||1),persistent:true});
           }
         }
