@@ -136,7 +136,9 @@ jobs:
             web/game_brain_v112.py
 
       - name: OAuth session, signature and isolation contracts
-        timeout-minutes: 3
+        # The step installs ffmpeg (66 MB) from the runner's apt mirror; 3 minutes
+        # timed out twice on a slow mirror without any test having run.
+        timeout-minutes: 10
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends ffmpeg
